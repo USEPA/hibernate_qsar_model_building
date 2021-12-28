@@ -1,0 +1,61 @@
+package gov.epa.databases.dev_qsar.qsar_datasets.service;
+
+import java.util.List;
+import java.util.Set;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Validator;
+
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+
+import gov.epa.databases.dev_qsar.DevQsarValidator;
+import gov.epa.databases.dev_qsar.qsar_datasets.QsarDatasetsSession;
+import gov.epa.databases.dev_qsar.qsar_datasets.dao.DataPointInSplittingDao;
+import gov.epa.databases.dev_qsar.qsar_datasets.dao.DataPointInSplittingDaoImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
+
+public class DataPointInSplittingServiceImpl implements DataPointInSplittingService {
+	
+	private Validator validator;
+	
+	public DataPointInSplittingServiceImpl() {
+		this.validator = DevQsarValidator.getValidator();
+	}
+	
+	public List<DataPointInSplitting> findByDatasetNameAndSplittingName(String datasetName, String splittingName) {
+		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
+		return findByDatasetNameAndSplittingName(datasetName, splittingName, session);
+	}
+	
+	public List<DataPointInSplitting> findByDatasetNameAndSplittingName(String datasetName, String splittingName, Session session) {
+		Transaction t = session.beginTransaction();
+		DataPointInSplittingDao dataPointInSplittingDao = new DataPointInSplittingDaoImpl();
+		List<DataPointInSplitting> dataPointsInSplitting = 
+				dataPointInSplittingDao.findByDatasetNameAndSplittingName(datasetName, splittingName, session);
+		t.rollback();
+		return dataPointsInSplitting;
+	}
+	
+	@Override
+	public Set<ConstraintViolation<DataPointInSplitting>> create(DataPointInSplitting dpis) {
+		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
+		return create(dpis, session);
+	}
+
+	@Override
+	public Set<ConstraintViolation<DataPointInSplitting>> create(DataPointInSplitting dpis, Session session) {
+		Set<ConstraintViolation<DataPointInSplitting>> violations = validator.validate(dpis);
+		if (!violations.isEmpty()) {
+			return violations;
+		}
+		
+		Transaction t = session.beginTransaction();
+		session.save(dpis);
+		session.flush();
+		session.refresh(dpis);
+		t.commit();
+		return null;
+	}
+
+}
