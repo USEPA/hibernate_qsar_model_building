@@ -41,5 +41,21 @@ public class DescriptorValuesServiceImpl implements DescriptorValuesService {
 		t.rollback();
 		return descriptorValues;
 	}
+	
+	@Override
+	public List<DescriptorValues> findByCanonQsarSmiles(String canonQsarSmiles) {
+		Session session = QsarDescriptorsSession.getSessionFactory().getCurrentSession();
+		return findByCanonQsarSmiles(canonQsarSmiles, session);
+	}
+
+	@Override
+	public List<DescriptorValues> findByCanonQsarSmiles(String canonQsarSmiles, Session session) {
+		Transaction t = session.beginTransaction();
+		DescriptorValuesDao descriptorValuesDao = new DescriptorValuesDaoImpl();
+		List<DescriptorValues> descriptorValues = 
+				descriptorValuesDao.findByCanonQsarSmiles(canonQsarSmiles, session);
+		t.rollback();
+		return descriptorValues;
+	}
 
 }

@@ -1,4 +1,4 @@
-package gov.epa.builders.splitting;
+package gov.epa.endpoints.splittings;
 
 import java.util.HashMap;
 
@@ -9,7 +9,6 @@ import org.apache.log4j.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import gov.epa.builders.model.ModelBuilder;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
@@ -18,6 +17,7 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServ
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
+import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.web_services.SplittingWebService;
 import gov.epa.web_services.SplittingWebService.SplittingCalculationResponse;
 import kong.unirest.HttpResponse;

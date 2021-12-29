@@ -11,5 +11,7 @@ public interface DescriptorValuesDao {
 	public DescriptorValues findByCanonQsarSmilesAndDescriptorSetName(String canonQsarSmiles, String descriptorSetName, Session session);
 	
 	public List<DescriptorValues> findByDescriptorSetName(String descriptorSetName, Session session);
+	
+	public List<DescriptorValues> findByCanonQsarSmiles(String canonQsarSmiles, Session session);
 
 }

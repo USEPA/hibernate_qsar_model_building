@@ -1,4 +1,4 @@
-package gov.epa.builders.model;
+package gov.epa.endpoints.models;
 
 import java.util.List;
 import java.util.Map;

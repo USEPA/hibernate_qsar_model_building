@@ -16,4 +16,8 @@ public interface DescriptorValuesService {
 	
 	public List<DescriptorValues> findByDescriptorSetName(String descriptorSetName, Session session);
 
+	public List<DescriptorValues> findByCanonQsarSmiles(String canonQsarSmiles);
+	
+	public List<DescriptorValues> findByCanonQsarSmiles(String canonQsarSmiles, Session session);
+
 }

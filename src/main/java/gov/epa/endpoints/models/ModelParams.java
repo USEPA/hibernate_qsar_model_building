@@ -1,4 +1,4 @@
-package gov.epa.builders.model;
+package gov.epa.endpoints.models;
 
 /**
  * Class defining the parameters to be used for a particular model

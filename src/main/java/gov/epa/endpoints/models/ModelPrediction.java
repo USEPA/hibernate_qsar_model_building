@@ -1,4 +1,4 @@
-package gov.epa.builders.model;
+package gov.epa.endpoints.models;
 
 public class ModelPrediction {
 	public String ID;
