@@ -28,7 +28,6 @@ public class PredictionReport {
 	public static class PredictionReportDataPoint extends ReportDataPoint {
 		public double experimentalPropertyValue;
 		public List<QsarPredictedValue> qsarPredictedValues = new ArrayList<QsarPredictedValue>();
-		
 		public String descriptorValues;
 
 		public PredictionReportDataPoint(DataPoint dp) {
