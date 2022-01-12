@@ -14,7 +14,7 @@ import org.apache.log4j.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.PredictionReportGenerator;

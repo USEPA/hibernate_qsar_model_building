@@ -83,6 +83,14 @@ public class DevQsarConstants {
 	public static final String LOG_KM_HL = "LogKmHL";
 	public static final String LOG_KOA = "LogKOA";
 	
+	public static final String DEV_TOX ="DevTox";
+	public static final String IGC50 ="IGC50";
+	public static final String LC50 ="LC50";
+	public static final String LC50DM ="LC50DM";
+	public static final String LD50="LD50";
+	public static final String LLNA ="LLNA";
+	public static final String MUTAGENCITY ="Mutagenicity";
+	
 	// Unit names
 	public static final String BINARY = "Binary";
 	public static final String G_L = "g/L";
