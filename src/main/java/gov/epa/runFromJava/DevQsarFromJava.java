@@ -27,13 +27,19 @@ public class DevQsarFromJava {
 	public void buildModel(String modelWsServer,int modelWsPort,String datasetName,String descriptorSetName,
 			String splittingName, boolean removeLogDescriptors,String methodName,String lanId) {
 
-		Logger apacheLogger = LogManager.getLogger("org.apache.http");
-		apacheLogger.setLevel(Level.WARN);
 
 		if (!modelWsServer.startsWith("http://")) {
 			modelWsServer = "http://" + modelWsServer;
 		}
 
+		
+		String[] loggerNames = {"org.apache.http", "org.hibernate", "com.mchange","org.apache.http.wire"};
+        for (String loggerName:loggerNames) {
+               Logger thisLogger = LogManager.getLogger(loggerName);
+               thisLogger.setLevel(Level.WARN);
+        }
+
+		
 		ModelWebService modelWs = new ModelWebService(modelWsServer, modelWsPort);
 		ModelBuilder mb = new ModelBuilder(modelWs, lanId);
 		Long modelId = mb.build(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName);
@@ -126,7 +132,8 @@ public class DevQsarFromJava {
 		String modelWsServer=DevQsarConstants.SERVER_819;
 		int modelWsPort=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
 		//		String endpoint=DevQsarConstants.LOG_BCF;
-		String endpoint=DevQsarConstants.LOG_KOW;
+//		String endpoint=DevQsarConstants.LOG_KOW;
+		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
 		String datasetName = endpoint+" OPERA";
 		String descriptorSetName = "T.E.S.T. 5.1";
 		String splittingName="OPERA";
