@@ -11,6 +11,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -19,11 +20,58 @@ import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.PredictionReportGenerator;
 import gov.epa.web_services.ModelWebService;
+import kong.unirest.HttpResponse;
+import kong.unirest.Unirest;
 
 public class DevQsarFromJava {
 
 
+	/**
+	 * Run using webservice
+	 * 
+	 * @param server
+	 * @param port
+	 * @param modelWsServer
+	 * @param modelWsPort
+	 * @param datasetName
+	 * @param descriptorSetName
+	 * @param splittingName
+	 * @param removeLogDescriptors
+	 * @param methodName
+	 * @param lanId
+	 */
+	public void buildModel(String server,String port, String modelWsServer,int modelWsPort,String datasetName,String descriptorSetName,
+			String splittingName, boolean removeLogDescriptors,String methodName,String lanId) {
 
+		System.out.println(server+":"+port+"/models/build");
+		
+		HttpResponse<String> response = Unirest.get(server+":"+port+"/models/build")
+				.queryString("model-ws-port", modelWsPort)
+				.queryString("model-ws-server", modelWsServer)				
+				.queryString("dataset-name", datasetName)
+				.queryString("descriptor-set-name", descriptorSetName)
+				.queryString("splitting-name",splittingName)
+				.queryString("remove-log-descriptors",removeLogDescriptors+"")
+				.queryString("method-name",methodName)
+				.queryString("lanid",lanId)
+				.asString();
+		
+//		System.out.println("Report="+response.getBody());
+		
+	}
+	
+	/**
+	 * Run using direct java code
+	 * 
+	 * @param modelWsServer
+	 * @param modelWsPort
+	 * @param datasetName
+	 * @param descriptorSetName
+	 * @param splittingName
+	 * @param removeLogDescriptors
+	 * @param methodName
+	 * @param lanId
+	 */
 	public void buildModel(String modelWsServer,int modelWsPort,String datasetName,String descriptorSetName,
 			String splittingName, boolean removeLogDescriptors,String methodName,String lanId) {
 
@@ -44,10 +92,9 @@ public class DevQsarFromJava {
 		ModelBuilder mb = new ModelBuilder(modelWs, lanId);
 		Long modelId = mb.build(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName);
 
-		PredictionReportGenerator gen = new PredictionReportGenerator();
-		PredictionReport report=gen.generateForModelPredictions(modelId);
-
-		writeReport(datasetName, descriptorSetName, report);
+//		PredictionReportGenerator gen = new PredictionReportGenerator();
+//		PredictionReport report=gen.generateForModelPredictions(modelId);
+//		writeReport(datasetName, descriptorSetName, report);//dont really need to write report since we probably want report from all models in one json file anyways
 
 	}
 
@@ -140,8 +187,13 @@ public class DevQsarFromJava {
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 		String methodName=DevQsarConstants.SVM;
 		String lanId="tmarti02";
-		d.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
+
+//		d.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
+//				splittingName, removeLogDescriptors,methodName,lanId);
+
+		d.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
 				splittingName, removeLogDescriptors,methodName,lanId);
+
 
 		//*****************************************************************************************			
 		//		String descriptorSetName = "T.E.S.T. 5.1";
