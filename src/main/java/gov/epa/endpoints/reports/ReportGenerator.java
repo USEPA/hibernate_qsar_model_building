@@ -71,7 +71,7 @@ public class ReportGenerator {
 			for (String dtxcid:dtxcids) {
 				DsstoxRecord dr = mapDsstoxRecords.get(dtxcid);
 				if (dr!=null) {
-					dp.originalCompounds.add(new OriginalCompound(dtxcid, dr.casrn, dr.preferredName, dr.smiles));
+					dp.originalCompounds.add(new OriginalCompound(dtxcid, dr.casrn, dr.preferredName, dr.smiles, dr.molWeight));
 				} else {
 					System.out.println("DSSTox record not found for DTXCID: " + dtxcid);
 				}

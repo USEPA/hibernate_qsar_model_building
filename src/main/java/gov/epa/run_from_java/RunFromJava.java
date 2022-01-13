@@ -95,7 +95,7 @@ public class RunFromJava {
 
 
 	private void writeReport(String datasetName, String descriptorSetName, PredictionReport report) {
-		String filePath = "reports/"+ datasetName + "_" + descriptorSetName + "_PredictionReport.json";
+		String filePath = "data/reports/"+ datasetName + "_" + descriptorSetName + "_PredictionReport.json";
 
 		File file = new File(filePath);
 		if (file.getParentFile()!=null) {
@@ -183,10 +183,10 @@ public class RunFromJava {
 		String methodName=DevQsarConstants.SVM;
 		String lanId="tmarti02";
 
-		run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-				splittingName, removeLogDescriptors,methodName,lanId);
+//		run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
+//				splittingName, removeLogDescriptors,methodName,lanId);
 
-//		d.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
+//		run.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
 //				splittingName, removeLogDescriptors,methodName,lanId);
 
 
@@ -194,9 +194,9 @@ public class RunFromJava {
 		//		String descriptorSetName = "T.E.S.T. 5.1";
 		//		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
 		//		String datasetName = endpoint+" OPERA";
-		//		d.reportAllPredictions(datasetName,descriptorSetName);		
+				run.reportAllPredictions(datasetName,descriptorSetName);		
 		//*****************************************************************************************	
-		//		d.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);
+		//		run.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);
 		//*****************************************************************************************
 
 
