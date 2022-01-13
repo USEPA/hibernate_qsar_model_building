@@ -22,5 +22,9 @@ public interface ModelService {
 	public Set<ConstraintViolation<Model>> create(Model model);
 	
 	public Set<ConstraintViolation<Model>> create(Model model, Session session);
+	
+	public Set<ConstraintViolation<Model>> update(Model model);
+	
+	public Set<ConstraintViolation<Model>> update(Model model, Session session);
 
 }

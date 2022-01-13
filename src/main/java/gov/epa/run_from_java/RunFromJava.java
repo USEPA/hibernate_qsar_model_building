@@ -1,5 +1,4 @@
-package gov.epa.runFromJava;
-
+package gov.epa.run_from_java;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -23,7 +22,16 @@ import gov.epa.web_services.ModelWebService;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
-public class DevQsarFromJava {
+public class RunFromJava {
+	
+	public RunFromJava() {
+		// Make sure Unirest is configured
+		try {
+			Unirest.config().followRedirects(true).socketTimeout(000).connectTimeout(000);
+		} catch (Exception e) {
+			// Ignore
+		}
+	}
 
 
 	/**
@@ -75,18 +83,9 @@ public class DevQsarFromJava {
 	public void buildModel(String modelWsServer,int modelWsPort,String datasetName,String descriptorSetName,
 			String splittingName, boolean removeLogDescriptors,String methodName,String lanId) {
 
-
 		if (!modelWsServer.startsWith("http://")) {
 			modelWsServer = "http://" + modelWsServer;
 		}
-
-		
-		String[] loggerNames = {"org.apache.http", "org.hibernate", "com.mchange","org.apache.http.wire"};
-        for (String loggerName:loggerNames) {
-               Logger thisLogger = LogManager.getLogger(loggerName);
-               thisLogger.setLevel(Level.WARN);
-        }
-
 		
 		ModelWebService modelWs = new ModelWebService(modelWsServer, modelWsPort);
 		ModelBuilder mb = new ModelBuilder(modelWs, lanId);
@@ -172,7 +171,7 @@ public class DevQsarFromJava {
 
 	public static void main(String[] args) {
 
-		DevQsarFromJava d=new DevQsarFromJava();
+		RunFromJava run=new RunFromJava();
 
 		//*****************************************************************************************
 		// Build model:		
@@ -188,11 +187,11 @@ public class DevQsarFromJava {
 		String methodName=DevQsarConstants.SVM;
 		String lanId="tmarti02";
 
-//		d.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-//				splittingName, removeLogDescriptors,methodName,lanId);
-
-		d.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
+		run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
 				splittingName, removeLogDescriptors,methodName,lanId);
+
+//		d.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
+//				splittingName, removeLogDescriptors,methodName,lanId);
 
 
 		//*****************************************************************************************			

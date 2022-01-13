@@ -70,4 +70,26 @@ public class ModelServiceImpl implements ModelService {
 		return null;
 	}
 
+	@Override
+	public Set<ConstraintViolation<Model>> update(Model model) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return update(model, session);
+	}
+
+	@Override
+	public Set<ConstraintViolation<Model>> update(Model model, Session session) {
+		Set<ConstraintViolation<Model>> violations = validator.validate(model);
+		if (!violations.isEmpty()) {
+			return violations;
+		}
+		
+		Transaction t = session.beginTransaction();
+		session.clear();
+		session.update(model);
+		session.flush();
+		session.refresh(model);
+		t.commit();
+		return null;
+	}
+
 }

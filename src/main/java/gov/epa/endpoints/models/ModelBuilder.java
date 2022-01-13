@@ -132,45 +132,54 @@ public class ModelBuilder {
 	 * @param data
 	 * @param params
 	 */
-	public void train(ModelData data, ModelParams params) {
+	public Long train(ModelData data, String methodName) {
 		if (data.trainingSetInstances==null) {
 			logger.error("Dataset instances were not initialized");
-			return;
+			return null;
 		}
 		
 		logger.debug("Building Python model with dataset = " + data.datasetName + ", descriptors = " + data.descriptorSetName
-				+ ", splitting = " + data.splittingName + " using QSAR method = " + params.qsarMethod);
+				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName);
 		
-		params.wsModelId = String.valueOf(rand.nextInt(1000000));
+		Method genericMethod = methodService.findByName(methodName);
+		if (genericMethod==null) {
+			genericMethod = new Method(methodName, methodName, null, false, lanId);
+			methodService.create(genericMethod);
+		}
 		
+		Model model = new Model(genericMethod, data.descriptorSetName, data.datasetName, data.splittingName, lanId);
+		modelService.create(model);
+		
+		String strModelId = String.valueOf(model.getId());
 		byte[] bytes = modelWebService.callTrain(data.trainingSetInstances, 
-				data.removeLogDescriptors, params.qsarMethod, params.wsModelId).getBody();
-		String hyperparameters = modelWebService.callDetails(params.qsarMethod, params.wsModelId).getBody();
-		String description = modelWebService.callInfo(params.qsarMethod).getBody();
+				data.removeLogDescriptors, methodName, strModelId).getBody();
+		String hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
+		String description = modelWebService.callInfo(methodName).getBody();
 		
 		JsonObject jo = gson.fromJson(hyperparameters, JsonObject.class);
 		String version = jo.get("version").getAsString();
 		Boolean isBinary = jo.get("is_binary").getAsBoolean();
 		String classOrRegr = isBinary ? "classifier" : "regressor";
-		String fullMethodName = params.qsarMethod + "_" + classOrRegr + "_" + version;
+		String fullMethodName = methodName + "_" + classOrRegr + "_" + version;
 		
-		Method dbMethod = methodService.findByName(fullMethodName);
-		if (dbMethod==null) {
-			Method method = new Method(fullMethodName, description, hyperparameters, isBinary, lanId);
+		Method method = methodService.findByName(fullMethodName);
+		if (method==null) {
+			method = new Method(fullMethodName, description, hyperparameters, isBinary, lanId);
 			methodService.create(method);
 		} else {
 			JsonParser parser = new JsonParser();
-			if (!parser.parse(hyperparameters).equals(parser.parse(dbMethod.getHyperparameters()))) {
+			if (!parser.parse(hyperparameters).equals(parser.parse(method.getHyperparameters()))) {
 				logger.warn("Hyperparameters for " + fullMethodName + " have changed");
 			}
 		}
 		
-		Model model = new Model(dbMethod, data.descriptorSetName, data.datasetName, data.splittingName, lanId);
-		modelService.create(model);
+		model.setMethod(method);
+		modelService.update(model);
+		
 		ModelBytes modelBytes = new ModelBytes(model, bytes, lanId);
 		modelBytesService.create(modelBytes);
 		
-		params.dbModelId = model.getId();
+		return model.getId();
 	}
 
 	/**
@@ -178,8 +187,8 @@ public class ModelBuilder {
 	 * @param data
 	 * @param params
 	 */
-	public void predict(ModelData data, ModelParams params) {
-		if (params.dbModelId==null) {
+	public void predict(ModelData data, String methodName, Long modelId) {
+		if (modelId==null) {
 			logger.error("Model with supplied parameters has not been built");
 			return;
 		} else if (data.predictionSetInstances==null) {
@@ -188,16 +197,17 @@ public class ModelBuilder {
 		}
 		
 		logger.debug("Validating Python model with dataset = " + data.datasetName + ", descriptors = " + data.descriptorSetName
-				+ ", splitting = " + data.splittingName + " using QSAR method = " + params.qsarMethod 
-				+ " (qsar_models ID = " + params.dbModelId + ")");
+				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName 
+				+ " (qsar_models ID = " + modelId + ")");
 		
-		ModelBytes modelBytes = modelBytesService.findByModelId(params.dbModelId);
+		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
 		Model model = modelBytes.getModel();
 		byte[] bytes = modelBytes.getBytes();
 		
-		modelWebService.callInit(bytes, params.qsarMethod, params.wsModelId).getBody();
+		String strModelId = String.valueOf(modelId);
+		modelWebService.callInit(bytes, methodName, strModelId).getBody();
 		
-		String predictResponse = modelWebService.callPredict(data.predictionSetInstances, params.qsarMethod, params.wsModelId).getBody();
+		String predictResponse = modelWebService.callPredict(data.predictionSetInstances, methodName, strModelId).getBody();
 		ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);
 		
 		for (ModelPrediction pythonModelResponse:modelPredictions) {
@@ -205,7 +215,7 @@ public class ModelBuilder {
 			predictionService.create(prediction);
 		}
 		
-		predictTraining(model, data, params);
+		predictTraining(model, data, methodName, strModelId);
 		
 		Map<String, Double> modelStatisticValues = null;
 		if (model.getMethod().getIsBinary()) {
@@ -218,13 +228,13 @@ public class ModelBuilder {
 		postModelStatistics(modelStatisticValues, model);
 	}
 	
-	private void predictTraining(Model model, ModelData data, ModelParams params) {
+	private void predictTraining(Model model, ModelData data, String methodName, String strModelId) {
 		if (data.trainingSetInstances==null) {
 			logger.error("Dataset instances were not initialized");
 			return;
 		}
 		
-		String predictTrainingResponse = modelWebService.callPredict(data.trainingSetInstances, params.qsarMethod, params.wsModelId).getBody();
+		String predictTrainingResponse = modelWebService.callPredict(data.trainingSetInstances, methodName, strModelId).getBody();
 		ModelPrediction[] modelTrainingPredictions = gson.fromJson(predictTrainingResponse, ModelPrediction[].class);
 		
 		for (ModelPrediction pythonModelResponse:modelTrainingPredictions) {
@@ -236,11 +246,10 @@ public class ModelBuilder {
 	public Long build(String datasetName, String descriptorSetName, String splittingName, boolean removeLogDescriptors,
 			String methodName) {
 		ModelData data = initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
-		ModelParams params = new ModelParams(methodName);
 		
-		train(data, params);
-		predict(data, params);
+		Long modelId = train(data, methodName);
+		predict(data, methodName, modelId);
 		
-		return params.dbModelId;
+		return modelId;
 	}
 }
