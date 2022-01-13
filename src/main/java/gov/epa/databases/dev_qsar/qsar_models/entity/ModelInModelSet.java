@@ -8,6 +8,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -26,12 +27,12 @@ public class ModelInModelSet {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 	
-	@OneToOne
+	@ManyToOne
 	@NotNull(message="Model required")
 	@JoinColumn(name="fk_model_id")
 	private Model model;
 	
-	@OneToOne
+	@ManyToOne
 	@NotNull(message="Model set required")
 	@JoinColumn(name="fk_model_set_id")
 	private ModelSet modelSet;

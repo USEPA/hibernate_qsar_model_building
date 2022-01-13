@@ -32,7 +32,7 @@ public class ReportGenerator {
 		String[] loggerNames = {"org.apache.http", "org.hibernate", "com.mchange"};
 		for (String loggerName:loggerNames) {
 			Logger thisLogger = LogManager.getLogger(loggerName);
-			thisLogger.setLevel(Level.WARN);
+			thisLogger.setLevel(Level.ERROR);
 		}
 		
 		// Make sure Unirest is configured

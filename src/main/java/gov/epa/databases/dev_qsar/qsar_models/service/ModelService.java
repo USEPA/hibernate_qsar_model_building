@@ -26,5 +26,9 @@ public interface ModelService {
 	public Set<ConstraintViolation<Model>> update(Model model);
 	
 	public Set<ConstraintViolation<Model>> update(Model model, Session session);
+	
+	public void delete(Model model);
+	
+	public void delete(Model model, Session session);
 
 }
