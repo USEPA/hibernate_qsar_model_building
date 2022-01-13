@@ -1,5 +1,6 @@
 package gov.epa.controller;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,7 +39,7 @@ public class DevQsarController {
 		return gen.generateForModelPredictions(modelId);
 	}
 	
-	@GetMapping("/models/delete")
+	@DeleteMapping("/models")
 	public void deleteModel(@RequestParam(name="model-id") Long modelId) {
 		ModelService modelService = new ModelServiceImpl();
 		Model model = modelService.findById(modelId);
