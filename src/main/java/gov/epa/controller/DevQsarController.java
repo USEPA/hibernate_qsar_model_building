@@ -1,9 +1,13 @@
 package gov.epa.controller;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.reports.descriptors.DescriptorReport;
 import gov.epa.endpoints.reports.descriptors.DescriptorReportGenerator;
@@ -33,6 +37,13 @@ public class DevQsarController {
 		
 		PredictionReportGenerator gen = new PredictionReportGenerator();
 		return gen.generateForModelPredictions(modelId);
+	}
+	
+	@DeleteMapping("/models")
+	public void deleteModel(@RequestParam(name="model-id") Long modelId) {
+		ModelService modelService = new ModelServiceImpl();
+		Model model = modelService.findById(modelId);
+		modelService.delete(model);
 	}
 	
 	@GetMapping("/reports/predictions/model")

@@ -1,15 +1,10 @@
-package gov.epa.runFromJava;
-
+package gov.epa.run_from_java;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Vector;
-
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 
 
 import com.google.gson.Gson;
@@ -27,7 +22,16 @@ import gov.epa.web_services.ModelWebService;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
-public class DevQsarFromJava {
+public class RunFromJava {
+	
+	public RunFromJava() {
+		// Make sure Unirest is configured
+		try {
+			Unirest.config().followRedirects(true).socketTimeout(000).connectTimeout(000);
+		} catch (Exception e) {
+			// Ignore
+		}
+	}
 
 	static PredictionReportGenerator gen = new PredictionReportGenerator();
 
@@ -88,18 +92,9 @@ public class DevQsarFromJava {
 	public void buildModel(String modelWsServer,int modelWsPort,String datasetName,String descriptorSetName,
 			String splittingName, boolean removeLogDescriptors,String methodName,String lanId) {
 
-
 		if (!modelWsServer.startsWith("http://")) {
 			modelWsServer = "http://" + modelWsServer;
 		}
-
-		
-		String[] loggerNames = {"org.apache.http", "org.hibernate", "com.mchange","org.apache.http.wire"};
-        for (String loggerName:loggerNames) {
-               Logger thisLogger = LogManager.getLogger(loggerName);
-               thisLogger.setLevel(Level.WARN);
-        }
-
 		
 		ModelWebService modelWs = new ModelWebService(modelWsServer, modelWsPort);
 		ModelBuilder mb = new ModelBuilder(modelWs, lanId);
@@ -112,8 +107,10 @@ public class DevQsarFromJava {
 	}
 
 
+
 	private static void writeReport(String datasetName, String descriptorSetName, PredictionReport report) {
 		String filePath = "reports/"+ datasetName + "_" + descriptorSetName + "_PredictionReport.json";
+
 
 		File file = new File(filePath);
 		if (file.getParentFile()!=null) {
@@ -199,8 +196,8 @@ public class DevQsarFromJava {
 
 	public static void main(String[] args) {
 
-		DevQsarFromJava d=new DevQsarFromJava();
 		String lanId="tmarti02";
+		RunFromJava run=new RunFromJava();
 
 		//*****************************************************************************************
 		// Build model:		
@@ -233,24 +230,29 @@ public class DevQsarFromJava {
 //
 //		}
 		
-		String methodName=DevQsarConstants.SVM;
+		//*****************************************************************************************
+//		String methodName=DevQsarConstants.SVM;
 //		String methodName=DevQsarConstants.DNN;
 //		String methodName=DevQsarConstants.RF;
 //		String methodName=DevQsarConstants.XGB;
-
-//		d.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
+//
+//		run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
+//				splittingName, removeLogDescriptors,methodName,lanId);
+//
+//		run.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
 //				splittingName, removeLogDescriptors,methodName,lanId);
 
-//		d.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
-//				splittingName, removeLogDescriptors,methodName,lanId);
 
-
-//		d.testInit(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING, methodName, 104L);
-		
+		//*****************************************************************************************
+//		d.testInit(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING, methodName, 104L);	
 		//*****************************************************************************************			
-		d.reportAllPredictions(datasetName,descriptorSetName);		
+		//		String descriptorSetName = "T.E.S.T. 5.1";
+		//		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
+		//		String datasetName = endpoint+" OPERA";
+		run.reportAllPredictions(datasetName,descriptorSetName);		
+
 		//*****************************************************************************************	
-		//		d.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);
+		//		run.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);
 		//*****************************************************************************************
 
 

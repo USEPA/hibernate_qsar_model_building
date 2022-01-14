@@ -32,7 +32,7 @@ public class ReportGenerator {
 		String[] loggerNames = {"org.apache.http", "org.hibernate", "com.mchange"};
 		for (String loggerName:loggerNames) {
 			Logger thisLogger = LogManager.getLogger(loggerName);
-			thisLogger.setLevel(Level.WARN);
+			thisLogger.setLevel(Level.ERROR);
 		}
 		
 		// Make sure Unirest is configured
@@ -71,7 +71,7 @@ public class ReportGenerator {
 			for (String dtxcid:dtxcids) {
 				DsstoxRecord dr = mapDsstoxRecords.get(dtxcid);
 				if (dr!=null) {
-					dp.originalCompounds.add(new OriginalCompound(dtxcid, dr.casrn, dr.preferredName, dr.smiles));
+					dp.originalCompounds.add(new OriginalCompound(dtxcid, dr.casrn, dr.preferredName, dr.smiles, dr.molWeight));
 				} else {
 					System.out.println("DSSTox record not found for DTXCID: " + dtxcid);
 				}
