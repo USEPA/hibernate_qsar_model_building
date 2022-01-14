@@ -89,22 +89,33 @@ public class DevQsarConstants {
 	public static final String LC50DM ="LC50DM";
 	public static final String LD50="LD50";
 	public static final String LLNA ="LLNA";
-	public static final String MUTAGENCITY ="Mutagenicity";
+	public static final String MUTAGENICITY ="Mutagenicity";
 	
 	// Unit names
 	public static final String BINARY = "Binary";
 	public static final String G_L = "g/L";
+	public static final String MG_L = "mg/L";
+	public static final String MG_KG = "mg/kg";
+	public static final String L_KG = "L/kg";
 	public static final String DEG_C = "C";
 	public static final String LOG_UNITS = "Log units";
 	public static final String MOLAR = "M";
 	public static final String LOG_M = "log10(M)";
 	public static final String NEG_LOG_M = "-log10(M)";
+	public static final String NEG_LOG_MOL_KG = "-log10(mol/kg)";
 	public static final String LOG_L_KG = "log10(L/kg)";
 	public static final String G_CM3 = "g/cm3";
 	public static final String ATM_M3_MOL = "atm-m3/mol";
 	public static final String NEG_LOG_ATM_M3_MOL = "-log10(atm-m3/mol)";
+	public static final String LOG_ATM_M3_MOL = "log10(atm-m3/mol)";
 	public static final String MMHG = "mmHg";
 	public static final String NEG_LOG_MMHG = "-log10(mmHg)";
+	public static final String LOG_MMHG = "log10(mmHg)";
+	public static final String LOG_HR = "log10(hr)";
+	public static final String LOG_DAYS = "log10(days)";
+	public static final String DAYS = "days";
+	public static final String LOG_CM3_MOLECULE_SEC="log10(cm3/molecule-sec)";
+	public static final String CM3_MOLECULE_SEC="cm3/molecule-sec";
 	
 	// Integer codes for train/test splitting
 	public static final Integer TRAIN_SPLIT_NUM = 0;
@@ -145,6 +156,7 @@ public class DevQsarConstants {
 	public static final String POS_CONCORDANCE = "Positive Concordance";
 	public static final String NEG_CONCORDANCE = "Negative Concordance";
 	public static final String R2 = "R2";
+	
 	
 	// Acceptable atoms in structures for modeling
 	public static HashSet<String> getAcceptableAtomsSet() {

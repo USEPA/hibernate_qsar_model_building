@@ -15,6 +15,8 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.PredictionReportGenerator;
@@ -92,6 +94,8 @@ public class RunFromJava {
 	public void buildModel(String modelWsServer,int modelWsPort,String datasetName,String descriptorSetName,
 			String splittingName, boolean removeLogDescriptors,String methodName,String lanId) {
 
+		System.out.println("Building "+methodName+" model for "+datasetName);
+		
 		if (!modelWsServer.startsWith("http://")) {
 			modelWsServer = "http://" + modelWsServer;
 		}
@@ -173,7 +177,7 @@ public class RunFromJava {
 			sets.add(DevQsarConstants.LC50DM+" TEST");//
 			sets.add(DevQsarConstants.LD50+" TEST");//
 			sets.add(DevQsarConstants.LLNA+" TEST");//
-			sets.add(DevQsarConstants.MUTAGENCITY+" TEST");//
+			sets.add(DevQsarConstants.MUTAGENICITY+" TEST");//
 
 		}
 		return sets;
@@ -194,11 +198,20 @@ public class RunFromJava {
 
 	}
 
+	void deleteModel(long modelID) {
+		ModelService modelService = new ModelServiceImpl();
+		Model model = modelService.findById(modelID);
+		modelService.delete(model);
+
+	}
+	
 	public static void main(String[] args) {
 
 		String lanId="tmarti02";
 		RunFromJava run=new RunFromJava();
 
+//		run.deleteModel(12L);
+		
 		//*****************************************************************************************
 		// Build model:		
 		String modelWsServer=DevQsarConstants.SERVER_819;
@@ -209,13 +222,14 @@ public class RunFromJava {
 //		String sampleSource="TEST";
 		
 //		String endpoint=DevQsarConstants.LOG_BCF;
-//		String endpoint=DevQsarConstants.LOG_KOW;
-		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
+		String endpoint=DevQsarConstants.LOG_KOW;
+//		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
+//		String endpoint=DevQsarConstants.BOILING_POINT;
 //		String endpoint=DevQsarConstants.LLNA;
 //		String endpoint=DevQsarConstants.LOG_KOW;
 //		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
-		
-		
+//		String endpoint=DevQsarConstants.DEV_TOX;
+				
 		String datasetName = endpoint +" "+sampleSource;
 		String splittingName=sampleSource;		
 		String descriptorSetName = "T.E.S.T. 5.1";		
@@ -223,21 +237,22 @@ public class RunFromJava {
 		
 //		String methods[]= {DevQsarConstants.SVM,DevQsarConstants.DNN,DevQsarConstants.RF,DevQsarConstants.XGB};
 //		for (String method:methods) {
-//			d.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
+//			System.out.println(method);
+//			run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
 //			splittingName, removeLogDescriptors,method,lanId);
-////			d.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
+////			run.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
 ////			splittingName, removeLogDescriptors,method,lanId);
 //
 //		}
 		
 		//*****************************************************************************************
-//		String methodName=DevQsarConstants.SVM;
+		String methodName=DevQsarConstants.SVM;
 //		String methodName=DevQsarConstants.DNN;
 //		String methodName=DevQsarConstants.RF;
 //		String methodName=DevQsarConstants.XGB;
 //
-//		run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-//				splittingName, removeLogDescriptors,methodName,lanId);
+		run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
+				splittingName, removeLogDescriptors,methodName,lanId);
 //
 //		run.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
 //				splittingName, removeLogDescriptors,methodName,lanId);
@@ -249,7 +264,7 @@ public class RunFromJava {
 		//		String descriptorSetName = "T.E.S.T. 5.1";
 		//		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
 		//		String datasetName = endpoint+" OPERA";
-		run.reportAllPredictions(datasetName,descriptorSetName);		
+//		run.reportAllPredictions(datasetName,descriptorSetName);		
 
 		//*****************************************************************************************	
 		//		run.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);
