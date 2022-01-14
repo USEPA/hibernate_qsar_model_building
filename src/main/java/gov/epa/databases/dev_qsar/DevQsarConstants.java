@@ -99,6 +99,7 @@ public class DevQsarConstants {
 	public static final String MOLAR = "M";
 	public static final String LOG_M = "log10(M)";
 	public static final String NEG_LOG_M = "-log10(M)";
+	public static final String LOG_L_KG = "log10(L/kg)";
 	public static final String G_CM3 = "g/cm3";
 	public static final String ATM_M3_MOL = "atm-m3/mol";
 	public static final String NEG_LOG_ATM_M3_MOL = "-log10(atm-m3/mol)";

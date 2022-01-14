@@ -26,9 +26,10 @@ public class PredictionReport {
 	}
 	
 	public static class PredictionReportDataPoint extends ReportDataPoint {
-		public double experimentalPropertyValue;
+		public Double experimentalPropertyValue;
 		public List<QsarPredictedValue> qsarPredictedValues = new ArrayList<QsarPredictedValue>();
 		public String descriptorValues;
+		public String errorMessage;//in case prediction couldnt be generated due to descriptor generation error for example
 
 		public PredictionReportDataPoint(DataPoint dp) {
 			this.canonQsarSmiles = dp.getCanonQsarSmiles();
