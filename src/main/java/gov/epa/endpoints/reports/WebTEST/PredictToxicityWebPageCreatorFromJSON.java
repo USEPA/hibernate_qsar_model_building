@@ -60,7 +60,8 @@ public class PredictToxicityWebPageCreatorFromJSON {
 		List<Analog>analogsAD=pr.getApplicabilityDomainNN().getAnalogsAD();
 		
 		fw.write("<table border=\"1\" cellpadding=\"3\" cellspacing=\"0\">\r\n");
-		
+		fw.write("<caption>Applicability domain</caption>");
+				
 		fw.write("\n<tr bgcolor=\"#D3D3D3\">\n");
 		fw.write("<th>Test chemical</th>");
 		

@@ -1,8 +1,6 @@
 package gov.epa.endpoints.reports.WebTEST;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -13,15 +11,12 @@ import com.google.gson.GsonBuilder;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.endpoints.reports.WebTEST.ApplicabilityDomain.AD_simNN_All_descriptors;
-import gov.epa.endpoints.reports.WebTEST.ApplicabilityDomain.Analog;
 import gov.epa.endpoints.reports.WebTEST.ApplicabilityDomain.AnalogFinder;
 import gov.epa.endpoints.reports.WebTEST.ReportClasses.PredictionResults;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportMetadata;
 import gov.epa.run_from_java.RunFromJava;
-import wekalite.CSVLoader;
-import wekalite.Instance;
 import wekalite.Instances;
 
 
