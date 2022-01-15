@@ -1,19 +1,15 @@
 package gov.epa.endpoints.reports.WebTEST;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Hashtable;
 import java.util.List;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.endpoints.reports.WebTEST.ReportClasses.PredictionResults;
@@ -24,8 +20,6 @@ import gov.epa.run_from_java.RunFromJava;
 import wekalite.CSVLoader;
 import wekalite.Instance;
 import wekalite.Instances;
-
-import gov.epa.endpoints.reports.predictions.QsarPredictedValue;
 
 
 public class GenerateWebTestReport {
@@ -164,7 +158,7 @@ public class GenerateWebTestReport {
 		int counter=0;
 		
 
-		StringBuilder sb = new StringBuilder();		
+		StringBuilder sb = new StringBuilder();	//use StringBuilder to create tsv since a lot faster than merging strings from each line	
 		sb.append("ID"+del+"Property"+del+descriptorHeader+"\r\n");    		
 		
 		for (PredictionReportDataPoint dataPoint:dataSetData.predictionReportDataPoints) {
@@ -229,14 +223,11 @@ public class GenerateWebTestReport {
 			
 			List<Analog>analogsTraining=AnalogFinder.findAnalogsWekalite(evalInstance2d, dataset.instancesTraining, 10, 0.5, true, AnalogFinder.typeSimilarityMeasureCosineSimilarityCoefficient);
 			List<Analog>analogsPrediction=AnalogFinder.findAnalogsWekalite(evalInstance2d, dataset.instancesPrediction, 10, 0.5, true, AnalogFinder.typeSimilarityMeasureCosineSimilarityCoefficient);
-						
 //			System.out.println(analogsTraining.size());
-//			System.out.println(analogsPrediction.size());
-			
+//			System.out.println(analogsPrediction.size());			
 								
 			String canonQSARsmiles=testDataPoint.canonQsarSmiles;
-
-			
+		
 			//TODO where should look up of experimental value occur??? 
 			ExpRecord er=LookupExpValBySmiles(canonQSARsmiles, dataset.ht_datapoints);
 									
@@ -246,7 +237,6 @@ public class GenerateWebTestReport {
 //			double MW=evalInstance2d.value("MW");
 //			double MW_Frag=evalInstance2d.value("MW_Frag");
 
-			
 			addPredictionsToAnalogs(analogsTraining, dataset.ht_datapoints);
 			addPredictionsToAnalogs(analogsPrediction, dataset.ht_datapoints);
 
@@ -258,9 +248,8 @@ public class GenerateWebTestReport {
 //			Gson gson = new GsonBuilder().setPrettyPrinting().create();
 //	        String json = gson.toJson(predictionResults);
 //	        System.out.println(json);
-
 			
-	        //Create webpage:
+	        //Create webpage from results object:
 	        PredictToxicityWebPageCreatorFromJSON htmlCreator=new PredictToxicityWebPageCreatorFromJSON();
 	        htmlCreator.writeConsensusResultsWebPages(predictionResults, outputFilePath);	        
 
@@ -482,6 +471,8 @@ public class GenerateWebTestReport {
 	
 	public static void main(String[] args) {
 
+		boolean genReport=true;
+		
 		String descriptorSet="T.E.S.T. 5.1";
 		
 		String sampleSource="OPERA";
@@ -496,7 +487,8 @@ public class GenerateWebTestReport {
 //		String endpoint=DevQsarConstants.LOG_KOA;//done
 //		String endpoint=DevQsarConstants.LOG_KOC;//done
 //		String endpoint=DevQsarConstants.LOG_OH;//done
-		String endpoint=DevQsarConstants.BOILING_POINT;//done
+//		String endpoint=DevQsarConstants.BOILING_POINT;//done
+		String endpoint=DevQsarConstants.LOG_KOW;//done
 		
 //		String sampleSource="TEST";
 //		String endpoint=DevQsarConstants.LC50;//done
@@ -510,16 +502,21 @@ public class GenerateWebTestReport {
 		String datasetName = endpoint +" "+sampleSource;
 		System.out.println("Generating report for "+datasetName);
 		
-		//Create report as json file by querying the postgres db: (takes time- should use storeDataSetData to cache it)
-		RunFromJava.reportAllPredictions(datasetName, descriptorSet);
+		PredictionReport data=null;
+		String filepathReport="reports/"+datasetName+"_"+descriptorSet+"_PredictionReport.json";		
+
 		
-		//Load report from json file:
-		String filepath="reports/"+datasetName+"_"+descriptorSet+"_PredictionReport.json";		
-		PredictionReport data=loadDataSetFromJson(filepath);	
+		if (genReport) {
+			//Create report as json file by querying the postgres db: (takes time- should use storeDataSetData to cache it)
+			data=RunFromJava.reportAllPredictions(datasetName, descriptorSet);
+		} else {
+			//Load report from json file:
+			data=loadDataSetFromJson(filepathReport);	
+		}
 		
-		
+			
 		//Use first data point as predicted value to simulate a prediction run:
-		PredictionReport data2=loadDataSetFromJson(filepath);//load again so can have basically have clone of first data point
+		PredictionReport data2=loadDataSetFromJson(filepathReport);//load again so can have basically have clone of first data point
 		PredictionReportDataPoint testDataPoint=(PredictionReportDataPoint) data2.predictionReportDataPoints.get(0);		
 		
 		System.out.print("Storing report data in cache...");

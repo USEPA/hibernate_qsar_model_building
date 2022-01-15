@@ -133,7 +133,7 @@ public class RunFromJava {
 
 
 
-	public static void reportAllPredictions(String datasetName,String descriptorSetName) {
+	public static PredictionReport reportAllPredictions(String datasetName,String descriptorSetName) {
 
 		long t1=System.currentTimeMillis();
 		PredictionReport report=gen.generateForAllPredictions(datasetName, descriptorSetName);
@@ -142,7 +142,8 @@ public class RunFromJava {
 		double time=(t2-t1)/1000.0;
 		System.out.println("Time to generate report for "+datasetName+" = "+time+" seconds");
 
-		writeReport(datasetName, descriptorSetName, report);	
+		writeReport(datasetName, descriptorSetName, report);
+		return report;
 	}
 
 
@@ -210,7 +211,9 @@ public class RunFromJava {
 		String lanId="tmarti02";
 		RunFromJava run=new RunFromJava();
 
-//		run.deleteModel(12L);
+//		run.deleteModel(127L);
+//		if(true) return;
+		
 		
 		//*****************************************************************************************
 		// Build model:		
