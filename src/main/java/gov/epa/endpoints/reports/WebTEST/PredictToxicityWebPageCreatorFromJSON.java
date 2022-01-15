@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Vector;
 
 import org.apache.logging.log4j.LogManager;
@@ -19,7 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
-
+import gov.epa.endpoints.reports.WebTEST.ApplicabilityDomain.Analog;
 import gov.epa.endpoints.reports.WebTEST.ReportClasses.CancerStats;
 import gov.epa.endpoints.reports.WebTEST.ReportClasses.ClusterModel;
 import gov.epa.endpoints.reports.WebTEST.ReportClasses.ClusterTable;
@@ -50,6 +51,61 @@ public class PredictToxicityWebPageCreatorFromJSON {
 
 	}
 	
+	private void writeAD_NN(FileWriter fw,PredictionResults pr) throws Exception {
+		
+		String imgURL="https://comptox.epa.gov/dashboard-api/ccdapp1/chemical-files/image/by-dtxcid/";
+		DecimalFormat df=new DecimalFormat("0.00");
+		DecimalFormat d0=new DecimalFormat("0");
+		
+		List<Analog>analogsAD=pr.getApplicabilityDomainNN().getAnalogsAD();
+		
+		fw.write("<table border=\"1\" cellpadding=\"3\" cellspacing=\"0\">\r\n");
+		
+		fw.write("\n<tr bgcolor=\"#D3D3D3\">\n");
+		fw.write("<th>Test chemical</th>");
+		
+		for (int i=0;i<analogsAD.size();i++) fw.write("<th>Training Neighbor "+(i+1)+"</th>");
+		
+		fw.write("<th>Result</th>");
+		fw.write("</tr>");
+
+		
+		fw.write("<tr>");
+		
+		fw.write("<td>");
+		fw.write("<figure>");
+		// fw.write(HtmlUtil.generateImgSrc(analog.ID, outputFolder + "/img"));
+		fw.write("<img src=\""+pr.getImageURL()+"\" height=150>");
+		fw.write("<figcaption><br>exp="+pr.getPredictionResultsPrimaryTable().getExpToxValue()+"</figcaption>");
+		fw.write("</figure></td>");
+
+		
+		
+		for (Analog analog:analogsAD) {
+			
+			// gsid=analog.ID.substring(8,analog.ID.length());	
+			fw.write("<td>");
+			fw.write("<figure>");
+			// fw.write(HtmlUtil.generateImgSrc(analog.ID, outputFolder + "/img"));
+			fw.write("<img src=\""+imgURL+analog.dtxcid+"\" height=150>");
+			fw.write("<figcaption>"+"SC="+df.format(analog.sim)+"<br>exp="+analog.exp+"</figcaption>");
+			fw.write("</figure></td>");
+		}	
+		
+		fw.write("<td>SC for "+d0.format(pr.getApplicabilityDomainNN().getFracTrainingForAD()*100)+"% training coverage="+df.format(pr.getApplicabilityDomainNN().getScFracTraining())+"<br>");
+		fw.write("Average SC="+df.format(pr.getApplicabilityDomainNN().getAvgSCNN())+"<br>");
+		
+		if (pr.getApplicabilityDomainNN().getAvgSCNN()>=pr.getApplicabilityDomainNN().getScFracTraining()) {
+			fw.write("<font color=green><b>Result: Inside AD</font></b>");
+		} else {
+			fw.write("<font color=red><b>Result: Outside AD</font></b>");
+		}
+		
+		fw.write("</td>");
+		
+		fw.write("</tr>");
+		fw.write("</table></td>\r\n");
+	}
 	
 	private void writeBinaryPredictionTable(PredictionResults pr,FileWriter fw) throws Exception {
 		PredictionResultsPrimaryTable prpt=pr.getPredictionResultsPrimaryTable();
@@ -587,8 +643,11 @@ public class PredictToxicityWebPageCreatorFromJSON {
 			fw.write("<p><a href=\"../StructureData/DescriptorData_"+pr.getCAS()+".html\">Descriptor values for " + "test chemical</a></p>\n");
 //			fw.write("<p><a href=\"../StructureData/descriptordata.html\">Descriptor values for " + "test chemical</a></p>\n");
 		}
-		fw.write("<br><hr>\n");
+		fw.write("<br>\n");
 		
+		writeAD_NN(fw, pr);
+		
+		fw.write("<br><hr>\n");
 		
 		for (int i=0;i<pr.getSimilarChemicals().size();i++) {
 			this.writeSimilarChemicals(pr, pr.getSimilarChemicals().get(i), fw, units);

@@ -1,4 +1,4 @@
-package gov.epa.endpoints.reports.WebTEST;
+package gov.epa.endpoints.reports.WebTEST.ApplicabilityDomain;
 
 public class Analog {
 

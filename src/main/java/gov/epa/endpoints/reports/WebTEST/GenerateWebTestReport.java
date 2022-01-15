@@ -12,6 +12,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.endpoints.reports.WebTEST.ApplicabilityDomain.AD_simNN_All_descriptors;
+import gov.epa.endpoints.reports.WebTEST.ApplicabilityDomain.Analog;
+import gov.epa.endpoints.reports.WebTEST.ApplicabilityDomain.AnalogFinder;
 import gov.epa.endpoints.reports.WebTEST.ReportClasses.PredictionResults;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
@@ -45,6 +48,9 @@ public class GenerateWebTestReport {
 		PredictionReportMetadata metadata;		
 		Double maeTraining;
 		double maePrediction;
+		public double scFracTraining;
+		public String simMeasure;
+		public double fracTrainingForAD;
 		
 	}
 	
@@ -118,6 +124,13 @@ public class GenerateWebTestReport {
 		}    		
     	
     	dataset.metadata=data.predictionReportMetadata;
+
+
+		//Data for Applicability domain
+		dataset.simMeasure=AnalogFinder.typeSimilarityMeasureCosineSimilarityCoefficient;
+		dataset.fracTrainingForAD=0.95;
+    	dataset.scFracTraining=AD_simNN_All_descriptors.calculateAvgSC_trainingSet(3, dataset.instancesTraining,dataset.simMeasure,dataset.fracTrainingForAD);
+//    	System.out.println("scFracTraining="+dataset.scFracTraining);
     	
     }
 //
@@ -138,12 +151,6 @@ public class GenerateWebTestReport {
 //
 //	
 //	
-	private static Instance createInstance(PredictionReportDataPoint dataPoint, String descriptorHeader, String del) {
-		String strInstances="ID"+del+"Property"+del+descriptorHeader+"\r\n";    		
-		strInstances+=dataPoint.canonQsarSmiles+"\t"+dataPoint.experimentalPropertyValue+"\t"+dataPoint.descriptorValues+"\r\n";
-		Instances instances = instancesFromString(strInstances);		
-		return instances.firstInstance();
-	}
 	
 	public static Instances createWekaliteInstances(PredictionReport dataSetData, String descriptorHeader, 
 			int splitNum) {
@@ -178,36 +185,15 @@ public class GenerateWebTestReport {
 		
 		//				System.out.println(strInstances);
 
-		Instances instances = instancesFromString(strInstances);
+		Instances instances = Instances.instancesFromString(strInstances);
 		instances.calculateMeans();
 		instances.calculateStdDevs();
 		return instances;
 	}
 	
-	/**
-	 * @param strTSV
-	 * @return
-	 * @throws IOException
-	 */
-	public static wekalite.Instances instancesFromString(String strTSV)  {
-		try {
-			String del=",";
-			if (strTSV.contains("\t")) del="\t";
-
-			InputStream inputStream = new ByteArrayInputStream(strTSV.getBytes());
-
-			CSVLoader atf = new CSVLoader();
-			Instances dataset=atf.getDatasetFromInputStream(inputStream, del);
-			return dataset;
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			return null;
-		}
-
-	}
+		
 	
-	
-	static void generateReport(String dataSetName, PredictionReport.PredictionReportDataPoint testDataPoint, String outputFilePath) {
+	static void generateReport(String dataSetName, PredictionReportDataPoint testDataPoint, String outputFilePath) {
 		
 		try {
 			Dataset dataset=htDatasets.get(dataSetName);
@@ -219,10 +205,7 @@ public class GenerateWebTestReport {
 //			boolean isBinaryEndpoint=TESTConstants.isBinary(endpoint);//Where should code be to check this? Is it stored in db?
 //			System.out.println(descriptorHeader);			
 						
-			Instance evalInstance2d = createInstance(testDataPoint,descriptorHeader,"\t");			
 			
-			List<Analog>analogsTraining=AnalogFinder.findAnalogsWekalite(evalInstance2d, dataset.instancesTraining, 10, 0.5, true, AnalogFinder.typeSimilarityMeasureCosineSimilarityCoefficient);
-			List<Analog>analogsPrediction=AnalogFinder.findAnalogsWekalite(evalInstance2d, dataset.instancesPrediction, 10, 0.5, true, AnalogFinder.typeSimilarityMeasureCosineSimilarityCoefficient);
 //			System.out.println(analogsTraining.size());
 //			System.out.println(analogsPrediction.size());			
 								
@@ -237,13 +220,10 @@ public class GenerateWebTestReport {
 //			double MW=evalInstance2d.value("MW");
 //			double MW_Frag=evalInstance2d.value("MW_Frag");
 
-			addPredictionsToAnalogs(analogsTraining, dataset.ht_datapoints);
-			addPredictionsToAnalogs(analogsPrediction, dataset.ht_datapoints);
 
 			//Create results as object:
 			PredictToxicityJSONCreator jsonCreator=new PredictToxicityJSONCreator();			
-			PredictionResults predictionResults = jsonCreator.generatePredictionResultsConsensus(
-					er,datasetMetadata,testDataPoint, analogsPrediction, analogsTraining,dataset.maeTraining,dataset.maePrediction);
+			PredictionResults predictionResults = jsonCreator.generatePredictionResultsConsensus(er,testDataPoint, dataset);
 
 //			Gson gson = new GsonBuilder().setPrettyPrinting().create();
 //	        String json = gson.toJson(predictionResults);
@@ -283,176 +263,6 @@ public class GenerateWebTestReport {
 	}
 
 	
-	
-//
-//
-//
-
-	private static void addPredictionsToAnalogs(List<Analog> analogs,
-			Hashtable<String, PredictionReportDataPoint> htPredsForDataSet) {
-		for (Analog analog:analogs) {
-
-			if (htPredsForDataSet.get(analog.ID)==null) {
-				//			System.out.println(analog.ID);
-				continue;
-			}
-			PredictionReportDataPoint dataPoint=htPredsForDataSet.get(analog.ID);		
-			//		System.out.println(dataPoint.canonQsarSmiles+"\t"+dataPoint.qsarPredictedValues.size());
-			analog.dtxcid=dataPoint.originalCompounds.get(0).dtxcid;
-			analog.casrn=dataPoint.originalCompounds.get(0).casrn;
-
-			if (dataPoint.qsarPredictedValues==null) continue;
-			analog.pred=PredictToxicityJSONCreator.calculateConsensusToxicityValue(dataPoint.qsarPredictedValues);
-
-		}
-	}
-	
-	
-
-	
-//	static TESTPredictedValue getTESTPredictedValue(String endpoint, String method, String CAS, Double ExpToxVal,
-//			Double PredToxVal, double MW, String error) {
-//
-//		TESTPredictedValue v = new TESTPredictedValue(CAS, endpoint, method);
-//		if (ExpToxVal !=null)
-
-//			v.expValMolarLog = ExpToxVal;
-//		if (PredToxVal !=null)
-//			v.predValMolarLog = PredToxVal;
-//
-//		try {
-//			Double ExpToxValMass = null;
-//			Double PredToxValMass = null;
-//			if (TESTConstants.isLogMolar(endpoint)) {
-//				if (PredToxVal != null) {
-//					PredToxValMass = PredictToxicityJSONCreator.getToxValMass(endpoint, PredToxVal, MW);
-//					v.predValMass = PredToxValMass;
-//				}
-//
-//				if (ExpToxVal != null) {
-//					ExpToxValMass = PredictToxicityJSONCreator.getToxValMass(endpoint, ExpToxVal, MW);
-//					v.expValMass = ExpToxValMass;
-//				}
-//			} else {
-//				PredToxValMass = PredToxVal;
-//				v.predValMass = PredToxValMass;
-//
-//				ExpToxValMass = ExpToxVal;
-//				v.expValMass = ExpToxValMass;
-//			}
-//
-//			v.error = error;
-//
-//		} catch (Exception ex) {
-////			logger.catching(ex);
-//		}
-//
-//		return v;
-//	}
-//	
-//	
-//	static TESTPredictedValue getTESTPredictedValueBinary(String endpoint, String method, String CAS, double ExpToxVal,
-//			double PredToxVal, double MW, String error) {
-//		TESTPredictedValue v = new TESTPredictedValue(CAS, endpoint, method);
-//		try {
-//
-//			if (ExpToxVal == -9999) {
-//			} else {
-//				v.expValMolarLog = ExpToxVal;
-//			}
-//			if (PredToxVal == -9999) {
-//			} else {
-//				v.predValMolarLog = PredToxVal;
-//			}
-//
-//			if (ExpToxVal == -9999) {
-//			} else {
-//				if (ExpToxVal < 0.5) {
-//					if (endpoint.equals(TESTConstants.ChoiceReproTox)) {
-//						v.message = "Developmental NON-toxicant";
-//					} else if (endpoint.equals(TESTConstants.ChoiceMutagenicity)) {
-//						v.message = "Mutagenicity Negative";
-//					} else if (endpoint.equals(TESTConstants.ChoiceEstrogenReceptor)) {
-//						v.message = "Does NOT bind to estrogen receptor";
-//					}
-//					v.expActive = false;
-//				} else {
-//					if (endpoint.equals(TESTConstants.ChoiceReproTox)) {
-//						v.message = "Developmental toxicant";
-//					} else if (endpoint.equals(TESTConstants.ChoiceMutagenicity)) {
-//						v.message = "Mutagenicity Positive";
-//					} else if (endpoint.equals(TESTConstants.ChoiceEstrogenReceptor)) {
-//						v.message = "Binds to estrogen receptor";
-//					}
-//					v.expActive = true;
-//				}
-//			}
-//
-//			if (PredToxVal == -9999) {
-//			} else {
-//				if (PredToxVal < 0.5) {
-//					if (endpoint.equals(TESTConstants.ChoiceReproTox)) {
-//						v.message = "Developmental NON-toxicant";
-//					} else if (endpoint.equals(TESTConstants.ChoiceMutagenicity)) {
-//						v.message = "Mutagenicity Negative";
-//					} else if (endpoint.equals(TESTConstants.ChoiceEstrogenReceptor)) {
-//						v.message = "Does NOT bind to estrogen receptor";
-//					}
-//					v.predActive = false;
-//				} else {
-//					if (endpoint.equals(TESTConstants.ChoiceReproTox)) {
-//						v.message = "Developmental toxicant";
-//					} else if (endpoint.equals(TESTConstants.ChoiceMutagenicity)) {
-//						v.message = "Mutagenicity Positive";
-//					} else if (endpoint.equals(TESTConstants.ChoiceEstrogenReceptor)) {
-//						v.message = "Binds to estrogen receptor";
-//					}
-//					v.predActive = true;
-//				}
-//			}
-//
-//			// write error:
-//			v.error = error;
-//
-//		} catch (Exception ex) {
-////			logger.catching(ex);
-//		}
-//
-//		return v;
-//	}
-	
-//	static TESTPredictedValue getTESTPredictedValue(String endpoint, String method, String CAS, double ExpToxVal,
-//			double PredToxVal, double MW, String error, boolean isBinary) {
-//		if (!isBinary) {
-//			return getTESTPredictedValue(endpoint, method, CAS, ExpToxVal, PredToxVal, MW, error);
-//		} else {
-//			return getTESTPredictedValueBinary(endpoint, method, CAS, ExpToxVal, PredToxVal, MW, error);
-//		}
-//	}
-	
-	
-	
-//	static Double calculateConsensusToxicity(ArrayList<Double> preds) {
-//		Double pred = Double.valueOf(0.0);
-//		int predcount = 0;
-//		double minPredCount=2;
-//
-//		for (int i = 0; i < preds.size(); i++) {
-//			if (preds.get(i) > -9999) {
-//				predcount++;
-//				pred += preds.get(i);
-//			}
-//		}
-//
-//		if (predcount < minPredCount)
-//			return null;
-//
-//		pred /= (double) predcount;
-//		// System.out.println(pred);
-//		return pred;
-//	}
-
-	
 	public static PredictionReport loadDataSetFromJson(String jsonfilepath) {
 
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -471,11 +281,11 @@ public class GenerateWebTestReport {
 	
 	public static void main(String[] args) {
 
-		boolean genReport=true;
+		boolean genReport=false;
 		
 		String descriptorSet="T.E.S.T. 5.1";
 		
-		String sampleSource="OPERA";
+//		String sampleSource="OPERA";
 //		String endpoint=DevQsarConstants.MELTING_POINT;//done
 //		String endpoint=DevQsarConstants.LOG_BCF;//done
 //		String endpoint=DevQsarConstants.LOG_HALF_LIFE;//done
@@ -488,13 +298,13 @@ public class GenerateWebTestReport {
 //		String endpoint=DevQsarConstants.LOG_KOC;//done
 //		String endpoint=DevQsarConstants.LOG_OH;//done
 //		String endpoint=DevQsarConstants.BOILING_POINT;//done
-		String endpoint=DevQsarConstants.LOG_KOW;//done
+//		String endpoint=DevQsarConstants.LOG_KOW;//done
 		
-//		String sampleSource="TEST";
+		String sampleSource="TEST";
 //		String endpoint=DevQsarConstants.LC50;//done
 //		String endpoint=DevQsarConstants.LC50DM//done;
 //		String endpoint=DevQsarConstants.LD50;//done
-//		String endpoint=DevQsarConstants.IGC50;//done
+		String endpoint=DevQsarConstants.IGC50;//done
 //		String endpoint=DevQsarConstants.DEV_TOX;//done
 //		String endpoint=DevQsarConstants.MUTAGENICITY;
 //		String endpoint=DevQsarConstants.LLNA;

@@ -4,12 +4,17 @@ import java.util.Comparator;
 import java.util.Hashtable;
 import java.util.List;
 
+import gov.epa.endpoints.reports.WebTEST.GenerateWebTestReport.Dataset;
 import gov.epa.endpoints.reports.WebTEST.fraChart.JLabelChart;
+import gov.epa.endpoints.reports.WebTEST.ApplicabilityDomain.Analog;
+import gov.epa.endpoints.reports.WebTEST.ApplicabilityDomain.AnalogFinder;
 import gov.epa.endpoints.reports.WebTEST.ReportClasses.*;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.QsarPredictedValue;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportMetadata;
+import wekalite.Instance;
+import wekalite.Instances;
 
 import java.text.DecimalFormat;
 //
@@ -210,22 +215,21 @@ public class PredictToxicityJSONCreator {
 //	}
 	
 	public PredictionResults generatePredictionResultsConsensus(					
-			ExpRecord er,PredictionReportMetadata metadata, PredictionReportDataPoint testDataPoint,			
-			List<Analog> analogsPrediction, List<Analog> analogsTraining,Double maeTraining,Double maePrediction) {
+			ExpRecord er,PredictionReportDataPoint  testDataPoint, Dataset dataset) {
 		
 		PredictionResults pr=new PredictionResults();
 
 		try {
-			String units=metadata.datasetUnit;
-			boolean isBinaryEndpoint=metadata.datasetUnit.toLowerCase().contains("binary");
+			String units=dataset.metadata.datasetUnit;
+			boolean isBinaryEndpoint=dataset.metadata.datasetUnit.toLowerCase().contains("binary");
 			
 			//Do we want to set isLogMolar based on data set name or is this sufficient?
-			boolean isLogMolarEndpoint=metadata.datasetUnit.toLowerCase().contains("log");
+			boolean isLogMolarEndpoint=dataset.metadata.datasetUnit.toLowerCase().contains("log");
 			
 			String method="Consensus";
 
 			pr.setCAS(testDataPoint.originalCompounds.get(0).casrn);
-			pr.setEndpoint(metadata.datasetProperty);
+			pr.setEndpoint(dataset.metadata.datasetProperty);
 			pr.setBinaryEndpoint(isBinaryEndpoint);
 			pr.setLogMolarEndpoint(isLogMolarEndpoint);
 			pr.setMethod(method);
@@ -264,9 +268,32 @@ public class PredictToxicityJSONCreator {
 				predToxVal=calculateConsensusToxicityValue(testDataPoint.qsarPredictedValues);
 			}
 			
+			writeAnalogs(dataset,testDataPoint,pr,er);
+			
+			
+	    	String descriptorHeader=dataset.metadata.descriptorSetHeader;
+			Instance evalInstance2d = createInstance(testDataPoint,descriptorHeader,"\t");			
+			List<Analog>analogsTraining=AnalogFinder.findAnalogsWekalite(evalInstance2d, dataset.instancesTraining, 10, 0.5, true, dataset.simMeasure);
+			List<Analog>analogsPrediction=AnalogFinder.findAnalogsWekalite(evalInstance2d, dataset.instancesPrediction, 10, 0.5, true, dataset.simMeasure);
+			addPredictionsToAnalogs(analogsTraining, dataset.ht_datapoints);
+			addPredictionsToAnalogs(analogsPrediction, dataset.ht_datapoints);
+			writeSimilarChemicals(pr,"test", analogsPrediction, er.expToxValue, predToxVal,dtxcid,units,dataset.maePrediction);
+			writeSimilarChemicals(pr,"training", analogsTraining, er.expToxValue, predToxVal,dtxcid,units,dataset.maeTraining);
 
-			writeSimilarChemicals(pr,"test", analogsPrediction, er.expToxValue, predToxVal,dtxcid,units,maePrediction);
-			writeSimilarChemicals(pr,"training", analogsTraining, er.expToxValue, predToxVal,dtxcid,units,maeTraining);
+			List<Analog>analogsAD=AnalogFinder.findAnalogsWekalite(evalInstance2d, dataset.instancesTraining, 3, 0, true, dataset.simMeasure);
+			addPredictionsToAnalogs(analogsAD, dataset.ht_datapoints);
+			double avgSim=0;
+			for (Analog analog:analogsAD) avgSim+=analog.sim;
+			avgSim/=(double)analogsAD.size();
+			
+//			System.out.println(avgSim+"\t"+dataset.scFracTraining);
+			
+			ApplicabilityDomainNN adn=new ApplicabilityDomainNN();
+			adn.setScFracTraining(dataset.scFracTraining);
+			adn.setAvgSCNN(avgSim);
+			adn.setAnalogsAD(analogsAD);
+			adn.setFracTrainingForAD(dataset.fracTrainingForAD);
+			pr.setApplicabilityDomainNN(adn);
 
 			long t2=System.currentTimeMillis();
 			
@@ -274,7 +301,7 @@ public class PredictToxicityJSONCreator {
 //				System.out.println("isBinary in generatePredictionResultsConsensus");
 				WriteBinaryPredictionTable(pr, dtxcid,er,predToxVal,testDataPoint.errorMessage);
 			} else {
-				writeMainTable(metadata, pr, dtxcid, predToxVal, predToxUnc, MW, er, testDataPoint.errorMessage);
+				writeMainTable(dataset.metadata, pr, dtxcid, predToxVal, predToxUnc, MW, er, testDataPoint.errorMessage);
 			}
 			this.writeIndividualPredictionsForConsensus(pr,testDataPoint.qsarPredictedValues,units);			
 			return pr;
@@ -285,6 +312,42 @@ public class PredictToxicityJSONCreator {
 
 		return pr;
 	}
+	
+	void writeAnalogs(Dataset dataset,PredictionReportDataPoint  testDataPoint,PredictionResults pr,ExpRecord er) {
+		
+		
+		
+		
+		
+	}
+	
+	public static Instance createInstance(PredictionReportDataPoint dataPoint, String descriptorHeader, String del) {
+		String strInstances="ID"+del+"Property"+del+descriptorHeader+"\r\n";    		
+		strInstances+=dataPoint.canonQsarSmiles+"\t"+dataPoint.experimentalPropertyValue+"\t"+dataPoint.descriptorValues+"\r\n";
+		Instances instances = Instances.instancesFromString(strInstances);		
+		return instances.firstInstance();
+	}
+	
+	private static void addPredictionsToAnalogs(List<Analog> analogs,
+			Hashtable<String, PredictionReportDataPoint> htPredsForDataSet) {
+		for (Analog analog:analogs) {
+
+			if (htPredsForDataSet.get(analog.ID)==null) {
+				//			System.out.println(analog.ID);
+				continue;
+			}
+			PredictionReportDataPoint dataPoint=htPredsForDataSet.get(analog.ID);		
+			//		System.out.println(dataPoint.canonQsarSmiles+"\t"+dataPoint.qsarPredictedValues.size());
+			analog.dtxcid=dataPoint.originalCompounds.get(0).dtxcid;
+			analog.casrn=dataPoint.originalCompounds.get(0).casrn;
+
+			if (dataPoint.qsarPredictedValues==null) continue;
+			analog.pred=PredictToxicityJSONCreator.calculateConsensusToxicityValue(dataPoint.qsarPredictedValues);
+
+		}
+	}
+
+	
 	
 //	private TESTPredictedValue createConsensusTPV(PredictionReportData data, PredictionReportData.PredictionReportDataPoint testDataPoint,
 //			String endpoint, double MW,boolean isBinary) {

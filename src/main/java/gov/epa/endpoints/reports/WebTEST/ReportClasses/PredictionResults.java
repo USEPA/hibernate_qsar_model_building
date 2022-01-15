@@ -43,8 +43,18 @@ public class PredictionResults {
     
 	//Similar chemicals tables for test and training sets:
 	private Vector<SimilarChemicals> similarChemicals = new Vector<>();
+	
+	private ApplicabilityDomainNN ApplicabilityDomainNN;
 
 	
+	public ApplicabilityDomainNN getApplicabilityDomainNN() {
+		return ApplicabilityDomainNN;
+	}
+
+	public void setApplicabilityDomainNN(ApplicabilityDomainNN applicabilityDomainNN) {
+		ApplicabilityDomainNN = applicabilityDomainNN;
+	}
+
 	public String getReportBase() {
 		return reportBase;
 	}

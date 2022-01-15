@@ -3,6 +3,7 @@ package wekalite;
 
 import java.util.Hashtable;
 import java.util.Vector;
+import java.io.ByteArrayInputStream;
 
 //import org.apache.poi.ss.usermodel.Row;
 //import org.apache.poi.ss.usermodel.Sheet;
@@ -11,6 +12,8 @@ import java.util.Vector;
 
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 //import java.util.ListIterator;//slows things down!
@@ -59,6 +62,31 @@ public class Instances {
 
 		
 	}
+	
+	
+	/**
+	 * @param strTSV
+	 * @return
+	 * @throws IOException
+	 */
+	public static wekalite.Instances instancesFromString(String strTSV)  {
+		try {
+			String del=",";
+			if (strTSV.contains("\t")) del="\t";
+
+			InputStream inputStream = new ByteArrayInputStream(strTSV.getBytes());
+
+			CSVLoader atf = new CSVLoader();
+			Instances dataset=atf.getDatasetFromInputStream(inputStream, del);
+			return dataset;
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+
+	}
+	
+	
 	public void removeDescriptor(String descriptorName) {
 		
 		int numAttr=getAttributeNumber(descriptorName);

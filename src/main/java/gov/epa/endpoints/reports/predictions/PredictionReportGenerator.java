@@ -1,8 +1,17 @@
 package gov.epa.endpoints.reports.predictions;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.apache.log4j.BasicConfigurator;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
@@ -148,5 +157,108 @@ public class PredictionReportGenerator extends ReportGenerator {
 		addModelDescriptorValues();
 		addModelPredictions(modelId);
 		return predictionReport;
+	}
+	
+	void createAllReports () {
+		
+//		String [] datasets= {"LC50 TEST","IGC50 TEST","LC50DM TEST",
+//				"LD50 TEST","LLNA TEST","Mutagenicity TEST","LogBCF OPERA",
+//				"LogHalfLife OPERA","LogKmHL OPERA","LogKOA OPERA","LogKOC OPERA","LogOH OPERA",
+//				"Water solubility OPERA","Melting point OPERA","Vapor pressure OPERA","Octanol water partition coefficient OPERA"};
+
+		
+		String [] datasets= {"LC50DM TEST",
+				"LD50 TEST","LLNA TEST","Mutagenicity TEST","LogBCF OPERA",
+				"LogHalfLife OPERA","LogKmHL OPERA","LogKOA OPERA","LogKOC OPERA","LogOH OPERA",
+				"Water solubility OPERA","Melting point OPERA"};
+
+		
+		String descriptorSetName = "T.E.S.T. 5.1";
+
+		
+		for (String datasetName:datasets) {
+			
+			String filePath = "reports/"+ datasetName + "_" + descriptorSetName + "_PredictionReport.json";
+			
+			File file = new File(filePath);
+			if (file.getParentFile()!=null) {
+				file.getParentFile().mkdirs();
+			}
+			
+			long t1=System.currentTimeMillis();
+			
+			PredictionReport report=generateForAllPredictions(datasetName, descriptorSetName);
+			
+			long t2=System.currentTimeMillis();
+			
+			double time=(t2-t1)/1000.0;
+			System.out.println("Time to generate report = "+time+" seconds");
+
+			
+			Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+			try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+				writer.write(gson.toJson(report));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+	}
+	
+	
+	public static void main(String[] args) {
+		BasicConfigurator.configure();
+
+		PredictionReportGenerator gen = new PredictionReportGenerator();
+		gen.createAllReports();
+		
+		if (true) return;
+		
+		
+//		String datasetName = "LC50 TEST";
+		String datasetName = "IGC50 TEST";
+//		String datasetName = "LC50 DM TEST";
+//		String datasetName = "LD50 TEST";
+//		String datasetName = "LLNA TEST";
+//		String datasetName = "Mutagenicity TEST";
+//		String datasetName = "LogBCF OPERA";
+//		String datasetName = "LogHalfLife OPERA";
+//		String datasetName = "LogKmHL OPERA";
+//		String datasetName = "LogKOA OPERA";
+//		String datasetName = "LogKOC OPERA";
+//		String datasetName = "LogOH OPERA";
+//		String datasetName = "Water solubility OPERA";
+//		String datasetName = "Melting point OPERA";
+//		String datasetName = "Vapor pressure OPERA";
+//		String datasetName = "Octanol water partition coefficient OPERA";
+		
+		String descriptorSetName = "T.E.S.T. 5.1";
+		
+		String filePath = "reports/"+ datasetName + "_" + descriptorSetName + "_PredictionReport.json";
+		
+		File file = new File(filePath);
+		if (file.getParentFile()!=null) {
+			file.getParentFile().mkdirs();
+		}
+		
+		long t1=System.currentTimeMillis();
+		
+		PredictionReport report=gen.generateForAllPredictions(datasetName, descriptorSetName);
+		
+		long t2=System.currentTimeMillis();
+		
+		double time=(t2-t1)/1000.0;
+		System.out.println("Time to generate report = "+time+" seconds");
+
+		
+		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+			writer.write(gson.toJson(report));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 	}
 }
