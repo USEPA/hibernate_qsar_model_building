@@ -89,7 +89,7 @@ public class PredictToxicityWebPageCreatorFromJSON {
 			fw.write("<figure>");
 			// fw.write(HtmlUtil.generateImgSrc(analog.ID, outputFolder + "/img"));
 			fw.write("<img src=\""+imgURL+analog.dtxcid+"\" height=150>");
-			fw.write("<figcaption>"+"SC="+df.format(analog.sim)+"<br>exp="+analog.exp+"</figcaption>");
+			fw.write("<figcaption>"+"SC="+df.format(analog.sim)+"<br>exp="+df.format(analog.exp)+"</figcaption>");
 			fw.write("</figure></td>");
 		}	
 		

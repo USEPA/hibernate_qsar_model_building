@@ -268,9 +268,6 @@ public class PredictToxicityJSONCreator {
 				predToxVal=calculateConsensusToxicityValue(testDataPoint.qsarPredictedValues);
 			}
 			
-			writeAnalogs(dataset,testDataPoint,pr,er);
-			
-			
 	    	String descriptorHeader=dataset.metadata.descriptorSetHeader;
 			Instance evalInstance2d = createInstance(testDataPoint,descriptorHeader,"\t");			
 			List<Analog>analogsTraining=AnalogFinder.findAnalogsWekalite(evalInstance2d, dataset.instancesTraining, 10, 0.5, true, dataset.simMeasure);
@@ -312,14 +309,7 @@ public class PredictToxicityJSONCreator {
 
 		return pr;
 	}
-	
-	void writeAnalogs(Dataset dataset,PredictionReportDataPoint  testDataPoint,PredictionResults pr,ExpRecord er) {
-		
-		
-		
-		
-		
-	}
+
 	
 	public static Instance createInstance(PredictionReportDataPoint dataPoint, String descriptorHeader, String del) {
 		String strInstances="ID"+del+"Property"+del+descriptorHeader+"\r\n";    		
