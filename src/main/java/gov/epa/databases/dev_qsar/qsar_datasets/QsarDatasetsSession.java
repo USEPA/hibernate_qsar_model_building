@@ -20,6 +20,8 @@ public class QsarDatasetsSession {
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.Property.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.PropertyCategory.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.PropertyInCategory.class);
         	
         	config.setProperty("hibernate.connection.driver_class", "org.postgresql.Driver");
         	
@@ -32,7 +34,7 @@ public class QsarDatasetsSession {
         	config.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
         	config.setProperty("hibernate.current_session_context_class", "thread");
         	config.setProperty("hibernate.show_sql", "false");
-        	config.setProperty("hibernate.hbm2ddl.auto", "none");
+        	config.setProperty("hibernate.hbm2ddl.auto", "update");
             
             config.setProperty("hibernate.c3p0.acquire_increment", "1");
             config.setProperty("hibernate.c3p0.idle_test_period", "300"); // Must be <= timeout
