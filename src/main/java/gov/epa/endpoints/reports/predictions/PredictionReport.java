@@ -11,14 +11,16 @@ public class PredictionReport {
 	public static class PredictionReportMetadata {
 		public String datasetName;
 		public String datasetProperty;
+		public String datasetPropertyDescription;
 		public String datasetUnit;
 		public String descriptorSetName;
 		public String descriptorSetHeader;
 		
-		public PredictionReportMetadata(String datasetName, String datasetProperty, String datasetUnit, 
+		public PredictionReportMetadata(String datasetName, String datasetProperty, String datasetPropertyDescription, String datasetUnit, 
 				String descriptorSetName, String descriptorSetHeader) {
 			this.datasetName = datasetName;
 			this.datasetProperty = datasetProperty;
+			this.datasetPropertyDescription = datasetPropertyDescription;
 			this.datasetUnit = datasetUnit;
 			this.descriptorSetName = descriptorSetName;
 			this.descriptorSetHeader = descriptorSetHeader;

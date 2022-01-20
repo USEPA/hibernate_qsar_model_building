@@ -28,6 +28,7 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
@@ -68,6 +69,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 		DescriptorSet descriptorSet = descriptorSetService.findByName(descriptorSetName);
 		predictionReport.predictionReportMetadata = new PredictionReportMetadata(datasetName, 
 				dataset.getProperty().getName(), 
+				dataset.getProperty().getDescription(),
 				dataset.getUnit().getName(),
 				descriptorSetName,
 				descriptorSet.getHeadersTsv());
@@ -102,17 +104,18 @@ public class PredictionReportGenerator extends ReportGenerator {
 			Map<String, Integer> splittingMap = dataPointsInSplitting.stream()
 					.collect(Collectors.toMap(dpis -> dpis.getDataPoint().getCanonQsarSmiles(), dpis -> dpis.getSplitNum()));
 			
-			String modelMethodName = model.getMethod().getName();
+			Method method = model.getMethod();
 			List<Prediction> modelPredictions = predictionService.findByModelId(model.getId());
 			Map<String, Prediction> modelPredictionsMap = modelPredictions.stream()
 					.collect(Collectors.toMap(p -> p.getCanonQsarSmiles(), p -> p));
 			for (PredictionReportDataPoint data:predictionReport.predictionReportDataPoints) {
 				Prediction pred = modelPredictionsMap.get(data.canonQsarSmiles);
 				if (pred!=null) {
-					data.qsarPredictedValues.add(new QsarPredictedValue(modelMethodName, pred.getQsarPredictedValue(), 
-							splittingMap.get(data.canonQsarSmiles)));
+					data.qsarPredictedValues.add(new QsarPredictedValue(method.getName(), method.getDescription(),
+							pred.getQsarPredictedValue(), splittingMap.get(data.canonQsarSmiles)));
 				} else {
-					data.qsarPredictedValues.add(new QsarPredictedValue(modelMethodName, null, splittingMap.get(data.canonQsarSmiles)));
+					data.qsarPredictedValues.add(new QsarPredictedValue(method.getName(), method.getDescription(), 
+							null, splittingMap.get(data.canonQsarSmiles)));
 				}
 			}
 		}
@@ -127,17 +130,18 @@ public class PredictionReportGenerator extends ReportGenerator {
 		Map<String, Integer> splittingMap = dataPointsInSplitting.stream()
 				.collect(Collectors.toMap(dpis -> dpis.getDataPoint().getCanonQsarSmiles(), dpis -> dpis.getSplitNum()));
 		
-		String modelMethodName = model.getMethod().getName();
+		Method method = model.getMethod();
 		List<Prediction> modelPredictions = predictionService.findByModelId(model.getId());
 		Map<String, Prediction> modelPredictionsMap = modelPredictions.stream()
 				.collect(Collectors.toMap(p -> p.getCanonQsarSmiles(), p -> p));
 		for (PredictionReportDataPoint data:predictionReport.predictionReportDataPoints) {
 			Prediction pred = modelPredictionsMap.get(data.canonQsarSmiles);
 			if (pred!=null) {
-				data.qsarPredictedValues.add(new QsarPredictedValue(modelMethodName, pred.getQsarPredictedValue(), 
-						splittingMap.get(data.canonQsarSmiles)));
+				data.qsarPredictedValues.add(new QsarPredictedValue(method.getName(), method.getDescription(), 
+						pred.getQsarPredictedValue(), splittingMap.get(data.canonQsarSmiles)));
 			} else {
-				data.qsarPredictedValues.add(new QsarPredictedValue(modelMethodName, null, splittingMap.get(data.canonQsarSmiles)));
+				data.qsarPredictedValues.add(new QsarPredictedValue(method.getName(), method.getDescription(), 
+						null, splittingMap.get(data.canonQsarSmiles)));
 			}
 		}
 	}
