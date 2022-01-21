@@ -9,7 +9,6 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -55,6 +54,12 @@ public class ModelInModelSet {
 	private String createdBy;
 	
 	public ModelInModelSet() {}
+	
+	public ModelInModelSet(Model model, ModelSet modelSet, String createdBy) {
+		this.model = model;
+		this.modelSet = modelSet;
+		this.createdBy = createdBy;
+	}
 
 	public Long getId() {
 		return id;

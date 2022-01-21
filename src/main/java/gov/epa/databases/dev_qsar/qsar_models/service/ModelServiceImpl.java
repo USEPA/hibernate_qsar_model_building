@@ -36,6 +36,32 @@ public class ModelServiceImpl implements ModelService {
 		return model;
 	}
 	
+	public List<Model> findByIds(List<Long> modelIds) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return findByIds(modelIds, session);
+	}
+	
+	public List<Model> findByIds(List<Long> modelIds, Session session) {
+		Transaction t = session.beginTransaction();
+		ModelDao modelDao = new ModelDaoImpl();
+		List<Model> models = modelDao.findByIds(modelIds, session);
+		t.rollback();
+		return models;
+	}
+	
+	public List<Model> findByIdsInRangeInclusive(Long minModelId, Long maxModelId) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return findByIdsInRangeInclusive(minModelId, maxModelId, session);
+	}
+	
+	public List<Model> findByIdsInRangeInclusive(Long minModelId, Long maxModelId, Session session) {
+		Transaction t = session.beginTransaction();
+		ModelDao modelDao = new ModelDaoImpl();
+		List<Model> models = modelDao.findByIdsInRangeInclusive(minModelId, maxModelId, session);
+		t.rollback();
+		return models;
+	}
+	
 	public List<Model> findByDatasetName(String datasetName) {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
 		return findByDatasetName(datasetName, session);

@@ -113,7 +113,7 @@ public class RunFromJava {
 
 
 	private static void writeReport(String datasetName, String descriptorSetName, PredictionReport report) {
-		String filePath = "reports/"+ datasetName + "_" + descriptorSetName + "_PredictionReport.json";
+		String filePath = "data/reports/"+ datasetName + "_" + descriptorSetName + "_PredictionReport.json";
 
 
 		File file = new File(filePath);
@@ -224,8 +224,8 @@ public class RunFromJava {
 		String sampleSource="OPERA";
 //		String sampleSource="TEST";
 		
-//		String endpoint=DevQsarConstants.LOG_BCF;
-		String endpoint=DevQsarConstants.LOG_KOW;
+		String endpoint=DevQsarConstants.LOG_BCF;
+//		String endpoint=DevQsarConstants.LOG_KOW;
 //		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
 //		String endpoint=DevQsarConstants.BOILING_POINT;
 //		String endpoint=DevQsarConstants.LLNA;
@@ -254,8 +254,8 @@ public class RunFromJava {
 //		String methodName=DevQsarConstants.RF;
 //		String methodName=DevQsarConstants.XGB;
 //
-		run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-				splittingName, removeLogDescriptors,methodName,lanId);
+//		run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
+//				splittingName, removeLogDescriptors,methodName,lanId);
 //
 //		run.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
 //				splittingName, removeLogDescriptors,methodName,lanId);
@@ -267,7 +267,7 @@ public class RunFromJava {
 		//		String descriptorSetName = "T.E.S.T. 5.1";
 		//		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
 		//		String datasetName = endpoint+" OPERA";
-//		run.reportAllPredictions(datasetName,descriptorSetName);		
+		run.reportAllPredictions(datasetName,descriptorSetName);		
 
 		//*****************************************************************************************	
 		//		run.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);

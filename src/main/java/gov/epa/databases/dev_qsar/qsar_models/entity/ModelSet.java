@@ -49,6 +49,12 @@ public class ModelSet {
 	private String createdBy;
 	
 	public ModelSet() {}
+	
+	public ModelSet(String name, String description, String createdBy) {
+		this.name = name;
+		this.description = description;
+		this.createdBy = createdBy;
+	}
 
 	public Long getId() {
 		return id;

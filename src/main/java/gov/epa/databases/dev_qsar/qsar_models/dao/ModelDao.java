@@ -10,6 +10,10 @@ public interface ModelDao {
 	
 	public Model findById(Long modelId, Session session);
 	
+	public List<Model> findByIds(List<Long> modelIds, Session session);
+	
+	public List<Model> findByIdsInRangeInclusive(Long minModelId, Long maxModelId, Session session);
+	
 	public List<Model> findByDatasetName(String datasetName, Session session);
 
 }
