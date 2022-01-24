@@ -34,7 +34,7 @@ public class ParameterAcceptableUnit {
 	@NotNull(message="Unit required to set acceptable unit")
 	@ManyToOne
 	@JoinColumn(name="fk_unit_id")
-	private Unit unit;
+	private ExpPropUnit unit;
 	
 	@Column(name="created_at")
 	@CreationTimestamp
@@ -71,11 +71,11 @@ public class ParameterAcceptableUnit {
 		this.parameter = parameter;
 	}
 
-	public Unit getUnit() {
+	public ExpPropUnit getUnit() {
 		return unit;
 	}
 
-	public void setUnit(Unit unit) {
+	public void setUnit(ExpPropUnit unit) {
 		this.unit = unit;
 	}
 

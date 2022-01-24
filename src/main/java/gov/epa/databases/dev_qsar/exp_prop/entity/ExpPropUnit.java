@@ -18,7 +18,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name="units", indexes={@Index(name="unit_name_idx", columnList="name", unique=true)})
-public class Unit {
+public class ExpPropUnit {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
@@ -47,7 +47,7 @@ public class Unit {
 	@Column(name="updated_by")
 	private String updatedBy;
 	
-	public Unit() {}
+	public ExpPropUnit() {}
 
 	public Long getId() {
 		return id;

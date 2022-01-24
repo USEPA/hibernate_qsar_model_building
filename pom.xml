@@ -69,6 +69,36 @@
 	    <artifactId>log4j</artifactId>
 	    <version>1.2.17</version>
 	</dependency>
+
+	<dependency>
+		<groupId>org.openscience.cdk</groupId>
+		<artifactId>cdk-bundle</artifactId>
+		<version>2.0</version>
+	</dependency>
+
+	<dependency>
+		<groupId>com.epam.indigo</groupId>
+		<artifactId>indigo</artifactId>
+		<version>1.3.0beta.r354</version>
+	</dependency>
+	<dependency>
+		<groupId>com.epam.indigo</groupId>
+		<artifactId>indigo-inchi</artifactId>
+		<version>1.3.0beta.r354</version>
+	</dependency>
+
+	<dependency>
+    	<groupId>uk.ac.cam.ch.opsin</groupId>
+    	<artifactId>opsin-core</artifactId>
+    	<version>2.5.0</version>
+    	<type>pom</type>
+	</dependency>
+	<dependency>
+    	<groupId>uk.ac.cam.ch.opsin</groupId>
+    	<artifactId>opsin-inchi</artifactId>
+    	<version>2.5.0</version>
+    	<type>pom</type>
+	</dependency>
 	
   </dependencies>
   

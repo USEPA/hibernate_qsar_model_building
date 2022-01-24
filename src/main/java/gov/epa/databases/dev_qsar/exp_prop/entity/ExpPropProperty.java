@@ -23,7 +23,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name="properties", indexes={@Index(name="property_name_idx", columnList="name", unique=true)})
-public class Property {
+public class ExpPropProperty {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
@@ -64,7 +64,7 @@ public class Property {
 	@ManyToMany(mappedBy="property", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	private List<PropertyAcceptableUnit> propertiesAcceptableUnits;
 	
-	public Property() {}
+	public ExpPropProperty() {}
 
 	public Long getId() {
 		return id;

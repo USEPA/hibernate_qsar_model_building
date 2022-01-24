@@ -39,7 +39,7 @@ public class ParameterValue {
 	@NotNull(message="Unit required to add parameter value")
 	@ManyToOne
 	@JoinColumn(name="fk_unit_id")
-	private Unit unit;
+	private ExpPropUnit unit;
 	
 	@Column(name="value_qualifier")
 	private String valueQualifier;
@@ -102,11 +102,11 @@ public class ParameterValue {
 		this.parameter = parameter;
 	}
 
-	public Unit getUnit() {
+	public ExpPropUnit getUnit() {
 		return unit;
 	}
 
-	public void setUnit(Unit unit) {
+	public void setUnit(ExpPropUnit unit) {
 		this.unit = unit;
 	}
 

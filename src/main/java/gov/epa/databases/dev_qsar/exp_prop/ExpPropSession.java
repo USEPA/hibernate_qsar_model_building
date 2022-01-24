@@ -17,7 +17,7 @@ public class ExpPropSession {
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.exp_prop.entity.Parameter.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.exp_prop.entity.ParameterAcceptableUnit.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue.class);
-        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.exp_prop.entity.Property.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.exp_prop.entity.PropertyAcceptableParameter.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.exp_prop.entity.PropertyAcceptableUnit.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.exp_prop.entity.PropertyCategory.class);
@@ -25,7 +25,7 @@ public class ExpPropSession {
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical.class);
-        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.exp_prop.entity.Unit.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropUnit.class);
         	
         	config.setProperty("hibernate.connection.driver_class", "org.postgresql.Driver");
         	

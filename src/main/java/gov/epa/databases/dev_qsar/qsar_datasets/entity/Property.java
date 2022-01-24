@@ -16,6 +16,8 @@ import javax.validation.constraints.NotBlank;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
+
 @Entity
 @Table(name="properties", indexes={@Index(name="property_name_idx", columnList="name", unique=true)})
 public class Property {
@@ -54,6 +56,10 @@ public class Property {
 		this.setName(name);
 		this.setDescription(description);
 		this.setCreatedBy(createdBy);
+	}
+	
+	public static Property fromExpPropProperty(ExpPropProperty expPropProperty, String lanId) {
+		return new Property(expPropProperty.getName(), expPropProperty.getDescription(), lanId);
 	}
 
 	public Long getId() {

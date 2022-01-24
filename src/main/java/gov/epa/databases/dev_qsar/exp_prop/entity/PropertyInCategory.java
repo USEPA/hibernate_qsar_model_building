@@ -29,7 +29,7 @@ public class PropertyInCategory {
 	@NotNull(message="Property required to set property category")
 	@ManyToOne
 	@JoinColumn(name="fk_property_id")
-	private Property property;
+	private ExpPropProperty property;
 	
 	@NotNull(message="Category required to set property category")
 	@ManyToOne
@@ -63,11 +63,11 @@ public class PropertyInCategory {
 		this.id = id;
 	}
 
-	public Property getProperty() {
+	public ExpPropProperty getProperty() {
 		return property;
 	}
 
-	public void setProperty(Property property) {
+	public void setProperty(ExpPropProperty property) {
 		this.property = property;
 	}
 

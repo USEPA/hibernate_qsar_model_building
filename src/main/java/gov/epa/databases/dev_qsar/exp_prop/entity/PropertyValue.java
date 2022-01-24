@@ -24,6 +24,9 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.endpoints.datasets.classes.ExplainedResponse;
+
 @Entity
 @Table(name="property_values")
 public class PropertyValue {
@@ -39,12 +42,12 @@ public class PropertyValue {
 	@NotNull(message="Property required to create property value")
 	@ManyToOne
 	@JoinColumn(name="fk_property_id")
-	private Property property;
+	private ExpPropProperty property;
 	
 	@NotNull(message="Unit required to create property value")
 	@ManyToOne
 	@JoinColumn(name="fk_unit_id")
-	private Unit unit;
+	private ExpPropUnit unit;
 	
 	@ManyToOne
 	@JoinColumn(name="fk_public_source_id")
@@ -118,6 +121,132 @@ public class PropertyValue {
 	
 	public PropertyValue() {}
 	
+	public String generateConciseValueString() {
+		if (valueText!=null) {
+			return valueText;
+		}
+		
+		String unitAbbr = unit.getAbbreviation();
+		if (unitAbbr==null) { unitAbbr = ""; }
+		
+		if (valuePointEstimate!=null) {
+			String qual = valueQualifier==null ? "" : valueQualifier;
+			String error = valueError==null ? "" : ("+/-" + String.valueOf(valueError));
+			return qual + String.valueOf(valuePointEstimate) + error + " " + unitAbbr;
+		}
+		
+		if (valueMin!=null || valueMax!=null) {
+			return String.valueOf(valueMin) + "-" + String.valueOf(valueMax) + " " + unitAbbr;
+		}
+		
+		return null;
+	}
+	
+	public ExplainedResponse validateValue() {
+		Double pointEstimate = getValuePointEstimate();
+		String propertyName = getProperty().getName();
+		Double value = null;
+		if (pointEstimate!=null) {
+			// If point estimate available, set as candidate value
+			value = pointEstimate;
+		} else {
+			// If min and max exist...
+			Double max = getValueMax();
+			Double min = getValueMin();
+			
+			if (max==null && min==null) {
+				return new ExplainedResponse(false, "No numerical data");
+			} else if (max==null || min==null) {
+				return new ExplainedResponse(false, "Range with null max or min");
+			}
+		
+			// ...and are within defined tolerance...
+			Boolean rangeCheck = checkRangeForProperty(min, max, propertyName);
+			if (rangeCheck==null || !rangeCheck) {
+				return new ExplainedResponse(false, "Range width outside tolerance");
+			}
+		
+			// ...then set mean as candidate value
+			value = (min + max) / 2.0;
+		}
+		
+		// Check if binary value is actually binary
+		String unitName = getUnit().getName();
+		if (unitName.equals(DevQsarConstants.BINARY) && !(value==1 || value==0)) {
+			return new ExplainedResponse(false, "Binary value indicated, but property value is not binary");
+		}
+		
+		// Check if property value (in original units) is realistic for property in question
+		Boolean realisticValueCheck = checkRealisticValueForProperty(value, propertyName, unitName);
+		if (realisticValueCheck==null || !realisticValueCheck) {
+			return new ExplainedResponse(false, "Unrealistic value for property");
+		}
+		
+		return new ExplainedResponse(true, value, "Convertible QSAR property value available");
+	}
+	
+	public static Boolean checkRangeForProperty(double min, double max, String propertyName) {
+		if (propertyName.equals(DevQsarConstants.PKA) 
+				|| propertyName.equals(DevQsarConstants.LOG_KOW)) {
+			return isRangeWithinTolerance(min, max, DevQsarConstants.LOG_RANGE_TOLERANCE);
+		} else if (propertyName.equals(DevQsarConstants.MELTING_POINT) 
+				|| propertyName.equals(DevQsarConstants.BOILING_POINT) 
+				|| propertyName.equals(DevQsarConstants.FLASH_POINT)) {
+			return isRangeWithinTolerance(min, max, DevQsarConstants.TEMP_RANGE_TOLERANCE);
+		} else if (propertyName.equals(DevQsarConstants.DENSITY)) {
+			return isRangeWithinTolerance(min, max, DevQsarConstants.DENSITY_RANGE_TOLERANCE);
+		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE) 
+				|| propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT) 
+				|| propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
+			return isRangeWithinLogTolerance(min, max, DevQsarConstants.LOG_RANGE_TOLERANCE, DevQsarConstants.ZERO_TOLERANCE);
+		} else {
+			return null;
+		}
+	}
+	
+	private static boolean isRangeWithinTolerance(double min, double max, double rangeTolerance) {
+		return max - min <= rangeTolerance;
+	}
+	
+	private static boolean isRangeWithinLogTolerance(double min, double max, double logRangeTolerance, double zeroTolerance) {
+		if (Math.abs(min) > zeroTolerance) {
+			return Math.log10(max / min) <= logRangeTolerance;
+		} else {
+			return false;
+		}
+	}
+	
+	// Check if property value (in original units) is realistic for property in question
+	public static Boolean checkRealisticValueForProperty(Double candidateValue, String propertyName, String unitName) {
+		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
+			if (candidateValue <= 0.0
+					|| (unitName.equals(DevQsarConstants.G_L) && candidateValue > DevQsarConstants.MAX_WATER_SOLUBILITY)) {
+				return false;
+			} else {
+				return true;
+			}
+		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
+			return candidateValue > 0.0;
+		} else {
+			// TBD
+			return true;
+		}
+	}
+	
+	public ParameterValue getParameterValue(String parameterName) {
+		if (parameterValues==null || parameterValues.size()==0) {
+			return null;
+		}
+		
+		for (ParameterValue pav:parameterValues) {
+			if (pav.getParameter().getName().equals(parameterName)) {
+				return pav;
+			}
+		}
+		
+		return null;
+	}
+	
 	@AssertTrue(message = "Public or literature source is required")
 	private boolean isPublicSourceOrLiteratureSourceExists() {
 	    return publicSource != null || literatureSource != null;
@@ -135,11 +264,11 @@ public class PropertyValue {
 		this.id = id;
 	}
 
-	public Property getProperty() {
+	public ExpPropProperty getProperty() {
 		return property;
 	}
 
-	public void setProperty(Property property) {
+	public void setProperty(ExpPropProperty property) {
 		this.property = property;
 	}
 
@@ -167,11 +296,11 @@ public class PropertyValue {
 		this.parameterValues.addAll(parameterValues);
 	}
 
-	public Unit getUnit() {
+	public ExpPropUnit getUnit() {
 		return unit;
 	}
 
-	public void setUnit(Unit unit) {
+	public void setUnit(ExpPropUnit unit) {
 		this.unit = unit;
 	}
 

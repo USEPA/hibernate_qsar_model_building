@@ -29,7 +29,7 @@ public class PropertyAcceptableParameter {
 	@NotNull(message="Property required to set acceptable parameter")
 	@ManyToOne
 	@JoinColumn(name="fk_property_id")
-	private Property property;
+	private ExpPropProperty property;
 	
 	@NotNull(message="Parameter required to set acceptable parameter")
 	@ManyToOne
@@ -63,11 +63,11 @@ public class PropertyAcceptableParameter {
 		this.id = id;
 	}
 
-	public Property getProperty() {
+	public ExpPropProperty getProperty() {
 		return property;
 	}
 
-	public void setProperty(Property property) {
+	public void setProperty(ExpPropProperty property) {
 		this.property = property;
 	}
 

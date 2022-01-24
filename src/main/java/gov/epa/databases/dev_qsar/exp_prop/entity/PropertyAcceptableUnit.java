@@ -29,12 +29,12 @@ public class PropertyAcceptableUnit {
 	@NotNull(message="Property required to set acceptable unit")
 	@ManyToOne
 	@JoinColumn(name="fk_property_id")
-	private Property property;
+	private ExpPropProperty property;
 	
 	@NotNull(message="Unit required to set acceptable unit")
 	@ManyToOne
 	@JoinColumn(name="fk_unit_id")
-	private Unit unit;
+	private ExpPropUnit unit;
 	
 	@Column(name="created_at")
 	@CreationTimestamp
@@ -63,19 +63,19 @@ public class PropertyAcceptableUnit {
 		this.id = id;
 	}
 
-	public Property getProperty() {
+	public ExpPropProperty getProperty() {
 		return property;
 	}
 
-	public void setProperty(Property property) {
+	public void setProperty(ExpPropProperty property) {
 		this.property = property;
 	}
 
-	public Unit getUnit() {
+	public ExpPropUnit getUnit() {
 		return unit;
 	}
 
-	public void setUnit(Unit unit) {
+	public void setUnit(ExpPropUnit unit) {
 		this.unit = unit;
 	}
 

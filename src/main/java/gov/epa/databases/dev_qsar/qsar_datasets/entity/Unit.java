@@ -16,6 +16,8 @@ import javax.validation.constraints.NotBlank;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropUnit;
+
 @Entity
 @Table(name="units", indexes={@Index(name="unit_name_idx", columnList="name", unique=true)})
 public class Unit {
@@ -53,6 +55,10 @@ public class Unit {
 		this.setName(name);
 		this.setAbbreviation(abbreviation);
 		this.setCreatedBy(createdBy);
+	}
+	
+	public static Unit fromExpPropUnit(ExpPropUnit expPropUnit, String lanId) {
+		return new Unit(expPropUnit.getName(), expPropUnit.getAbbreviation(), lanId);
 	}
 
 	public Long getId() {
