@@ -122,8 +122,6 @@ public class ModelServiceImpl implements ModelService {
 	public void delete(Model model) {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
 		delete(model, session);
-		
-		
 	}
 
 	@Override

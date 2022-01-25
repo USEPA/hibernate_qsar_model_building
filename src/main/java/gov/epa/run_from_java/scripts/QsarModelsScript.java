@@ -84,9 +84,19 @@ public class QsarModelsScript {
 		}
 	}
 	
+	public void removeModelFromSet(Long modelId, Long modelSetId) {
+		ModelInModelSet modelInModelSet = modelInModelSetService.findByModelIdAndModelSetId(modelId, modelSetId);
+		if (modelInModelSet==null) {
+			System.out.println("Warning: Model " + modelId + " not in model set " + modelSetId);
+			return;
+		}
+		
+		modelInModelSetService.delete(modelInModelSet);
+	}
+	
 	public static void main(String[] args) {
 		QsarModelsScript script = new QsarModelsScript("gsincl01");
-		script.addModelRangeToSet(1L, 4L, 7L);
+		script.removeModelFromSet(6L, 7L);
 	}
 
 }

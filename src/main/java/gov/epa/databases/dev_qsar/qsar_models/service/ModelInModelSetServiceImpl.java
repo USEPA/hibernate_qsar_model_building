@@ -58,4 +58,22 @@ public class ModelInModelSetServiceImpl implements ModelInModelSetService {
 		return modelInModelSet;
 	}
 
+	@Override
+	public void delete(ModelInModelSet modelInModelSet) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		delete(modelInModelSet, session);
+	}
+
+	@Override
+	public void delete(ModelInModelSet modelInModelSet, Session session) {
+		if (modelInModelSet.getId()==null) {
+			return;
+		}
+		
+		Transaction t = session.beginTransaction();
+		session.delete(modelInModelSet);
+		session.flush();
+		t.commit();
+	}
+
 }
