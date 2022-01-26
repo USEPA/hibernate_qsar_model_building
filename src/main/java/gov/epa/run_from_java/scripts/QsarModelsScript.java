@@ -5,6 +5,9 @@ import java.util.Set;
 
 import javax.validation.ConstraintViolation;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
@@ -14,6 +17,8 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
+import gov.epa.endpoints.reports.model_sets.ModelSetTable;
+import gov.epa.endpoints.reports.model_sets.ModelSetTableGenerator;
 
 public class QsarModelsScript {
 	
@@ -42,12 +47,12 @@ public class QsarModelsScript {
 	}
 
 	public void addModelListToSet(List<Long> modelIds, Long modelSetId) {
-		List<Model> models = modelService.findByIds(modelIds);
+		List<Model> models = modelService.findByIdIn(modelIds);
 		addModelsToSet(models, modelSetId);
 	}
 	
 	public void addModelRangeToSet(Long minModelId, Long maxModelId, Long modelSetId) {
-		List<Model> models = modelService.findByIdsInRangeInclusive(minModelId, maxModelId);
+		List<Model> models = modelService.findByIdInRangeInclusive(minModelId, maxModelId);
 		addModelsToSet(models, modelSetId);
 	}
 
@@ -95,8 +100,13 @@ public class QsarModelsScript {
 	}
 	
 	public static void main(String[] args) {
-		QsarModelsScript script = new QsarModelsScript("gsincl01");
-		script.removeModelFromSet(6L, 7L);
+//		QsarModelsScript script = new QsarModelsScript("gsincl01");
+//		script.removeModelFromSet(6L, 7L);
+		
+		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+		ModelSetTableGenerator gen = new ModelSetTableGenerator();
+		ModelSetTable table = gen.generate(7L);
+		System.out.println(gson.toJson(table));
 	}
 
 }

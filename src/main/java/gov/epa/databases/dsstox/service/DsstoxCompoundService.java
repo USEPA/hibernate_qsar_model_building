@@ -10,29 +10,29 @@ import gov.epa.databases.dsstox.entity.DsstoxCompound;
 
 public interface DsstoxCompoundService {
 
-	DsstoxCompound findById(Long id);
+	public DsstoxCompound findById(Long id);
 
-	DsstoxCompound findById(Long id, Session session);
+	public DsstoxCompound findById(Long id, Session session);
 	
-	List<DsstoxCompound> findByIdIn(Collection<Long> dtxcids);
+	public List<DsstoxCompound> findByIdIn(Collection<Long> ids);
 
-	List<DsstoxCompound> findByIdIn(Collection<Long> dtxcids, Session session);
+	public List<DsstoxCompound> findByIdIn(Collection<Long> ids, Session session);
 
-	DsstoxCompound findByDtxcid(String dtxcid);
+	public DsstoxCompound findByDtxcid(String dtxcid);
 
-	DsstoxCompound findByDtxcid(String dtxcid, Session session);
+	public DsstoxCompound findByDtxcid(String dtxcid, Session session);
 
-	List<DsstoxCompound> findByDtxcidIn(Collection<String> dtxcids);
+	public List<DsstoxCompound> findByDtxcidIn(Collection<String> dtxcids);
 
-	List<DsstoxCompound> findByDtxcidIn(Collection<String> dtxcids, Session session);
+	public List<DsstoxCompound> findByDtxcidIn(Collection<String> dtxcids, Session session);
 	
-	DsstoxCompound findByInchikey(String inchikey);
+	public DsstoxCompound findByInchikey(String inchikey);
 
-	DsstoxCompound findByInchikey(String inchikey, Session session);
+	public DsstoxCompound findByInchikey(String inchikey, Session session);
 	
-	List<DsstoxCompound> findByInchikeyIn(Collection<String> dtxcids);
+	public List<DsstoxCompound> findByInchikeyIn(Collection<String> inchikeys);
 
-	List<DsstoxCompound> findByInchikeyIn(Collection<String> dtxcids, Session session);
+	public List<DsstoxCompound> findByInchikeyIn(Collection<String> inchikeys, Session session);
 	
 	public List<DsstoxRecord> findDsstoxRecordsByDtxcidIn(Collection<String> dtxcids);
 	

@@ -3,7 +3,6 @@ package gov.epa.endpoints.datasets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -14,6 +13,7 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
@@ -50,6 +50,13 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetServiceI
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServiceImpl;
 import gov.epa.databases.dsstox.DsstoxRecord;
+import gov.epa.databases.dsstox.entity.ChemicalList;
+import gov.epa.databases.dsstox.service.ChemicalListService;
+import gov.epa.databases.dsstox.service.ChemicalListServiceImpl;
+import gov.epa.databases.dsstox.service.DsstoxCompoundService;
+import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
+import gov.epa.databases.dsstox.service.SourceSubstanceService;
+import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
 import gov.epa.endpoints.datasets.classes.MappedPropertyValue;
 import gov.epa.endpoints.datasets.classes.PropertyValueMerger;
@@ -171,10 +178,10 @@ public class DatasetCreator {
 		// But JDBC connections aren't too expensive to initialize, so reinitializing once for every dataset isn't a problem
 		try (DsstoxMapper dsstoxMapper = new DsstoxMapper(params, standardizer, finalUnitName, params.mappingParams.omitSalts, 
 				acceptableAtoms, lanId)) {
-			if (params.mappingParams.dsstoxMappingId.equals(DevQsarConstants.BY_CASRN)
-					|| params.mappingParams.dsstoxMappingId.equals(DevQsarConstants.BY_DTXSID)
-					|| params.mappingParams.dsstoxMappingId.equals(DevQsarConstants.BY_DTXCID)
-					|| params.mappingParams.dsstoxMappingId.equals(DevQsarConstants.BY_LIST)) {
+			if (params.mappingParams.dsstoxMappingId.equals(DevQsarConstants.MAPPING_BY_CASRN)
+					|| params.mappingParams.dsstoxMappingId.equals(DevQsarConstants.MAPPING_BY_DTXSID)
+					|| params.mappingParams.dsstoxMappingId.equals(DevQsarConstants.MAPPING_BY_DTXCID)
+					|| params.mappingParams.dsstoxMappingId.equals(DevQsarConstants.MAPPING_BY_LIST)) {
 				mappedPropertyValues = dsstoxMapper.map(propertyValues);
 			} else {
 				// TODO implementation of:
@@ -242,7 +249,7 @@ public class DatasetCreator {
 		}
 		
 		// Send list through batch standardization and get output as a map from input SMILES to standardized SMILES
-		HashMap<String, String> standardizedSmilesMap = batchStandardizeSmiles(smilesToBatchStandardize);
+		Map<String, String> standardizedSmilesMap = batchStandardizeSmiles(smilesToBatchStandardize);
 		// If standardization failed, don't try to get results
 		if (standardizedSmilesMap.isEmpty()) { return; }
 		
@@ -258,8 +265,8 @@ public class DatasetCreator {
 		}
 	}
 
-	private HashMap<String, String> batchStandardizeSmiles(List<String> smilesToBatchStandardize) {
-		HashMap<String, String> standardizedSmilesMap = new HashMap<String, String>();
+	private Map<String, String> batchStandardizeSmiles(List<String> smilesToBatchStandardize) {
+		Map<String, String> standardizedSmilesMap = new HashMap<String, String>();
 		BatchStandardizeResponseWithStatus batchStandardizeResponse = standardizer.callBatchStandardize(smilesToBatchStandardize);
 		
 		if (batchStandardizeResponse.status==200) {
@@ -338,8 +345,8 @@ public class DatasetCreator {
 		}
 	}
 	
-	private HashMap<String, List<MappedPropertyValue>> unifyPropertyValuesByStructure(List<MappedPropertyValue> mappedPropertyValues) {
-		HashMap<String, List<MappedPropertyValue>> unifiedPropertyValues = 
+	private Map<String, List<MappedPropertyValue>> unifyPropertyValuesByStructure(List<MappedPropertyValue> mappedPropertyValues) {
+		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = 
 				new HashMap<String, List<MappedPropertyValue>>();
 		Double datasetStdev = MathUtil.stdevS(mappedPropertyValues.stream().map(mpv -> mpv.qsarPropertyValue).collect(Collectors.toList()));
 		for (MappedPropertyValue mpv:mappedPropertyValues) {
@@ -418,7 +425,7 @@ public class DatasetCreator {
 		return dataset;
 	}
 	
-	private void postDataPoints(HashMap<String, List<MappedPropertyValue>> unifiedPropertyValues, Dataset dataset) {
+	private void postDataPoints(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, Dataset dataset) {
 		for (String structure:unifiedPropertyValues.keySet()) {
 			List<MappedPropertyValue> structurePropertyValues = unifiedPropertyValues.get(structure);
 			String unitName = dataset.getUnit().getName();
@@ -516,7 +523,7 @@ public class DatasetCreator {
 		System.out.println("Calculation time: " + (t4 - t3)/1000.0 + " s");
 		
 		System.out.println("Unifying structures...");
-		HashMap<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues);
+		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues);
 		
 		System.out.println("Posting final merged values...");
 		long t7 = System.currentTimeMillis();
@@ -534,26 +541,37 @@ public class DatasetCreator {
 //				DevQsarConstants.PORT_STANDARDIZER_OPERA,
 //				DevQsarConstants.STANDARDIZER_OPERA,
 //				true);
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
-		DescriptorWebService testDescriptorWebService = new DescriptorWebService(DevQsarConstants.SERVER_LOCAL,
-				DevQsarConstants.PORT_TEST_DESCRIPTORS,
-				"TEST-descriptors/");
-		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, testDescriptorWebService, "gsincl01");
+//		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
+//		DescriptorWebService testDescriptorWebService = new DescriptorWebService(DevQsarConstants.SERVER_LOCAL,
+//				DevQsarConstants.PORT_TEST_DESCRIPTORS,
+//				"TEST-descriptors/");
+//		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, testDescriptorWebService, "gsincl01");
 		
 //		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
 //		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
 //		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
 //		bounds.add(temperatureBound);
 //		bounds.add(phBound);
-		MappingParams mappingParams = new MappingParams(DevQsarConstants.BY_LIST, "ExpProp_WaterSolubility_WithChemProp_120121", 
-				false, true, false, true, true, false, true);
-		DatasetParams params = new DatasetParams("ExpProp_WaterSolubility_WithChemProp_Unfiltered_TestNewMapping", 
-				"Final Henry's law constant experimental dataset from exp_prop, "
-				+ "without parameter filtering, with refactored mapping", 
-				DevQsarConstants.WATER_SOLUBILITY,
-				mappingParams);
+//		MappingParams mappingParams = new MappingParams(DevQsarConstants.BY_LIST, "ExpProp_WaterSolubility_WithChemProp_120121", 
+//				false, true, false, true, true, false, true);
+//		DatasetParams params = new DatasetParams("ExpProp_WaterSolubility_WithChemProp_Unfiltered_TestNewMapping", 
+//				"Final Henry's law constant experimental dataset from exp_prop, "
+//				+ "without parameter filtering, with refactored mapping", 
+//				DevQsarConstants.WATER_SOLUBILITY,
+//				mappingParams);
 //				bounds);
 
-		creator.createPropertyDataset(params, true);
+//		creator.createPropertyDataset(params, true);
+		
+		String chemicalListName = "WIKIPEDIA_2022_DRAFT";
+		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+		ChemicalListService clServ = new ChemicalListServiceImpl();
+		ChemicalList chemicalList = clServ.findByName(chemicalListName);
+		System.out.println(gson.toJson(chemicalList));
+		
+		SourceSubstanceService ssServ = new SourceSubstanceServiceImpl();
+		List<DsstoxRecord> dsstoxRecords = ssServ.findDsstoxRecordsByChemicalListName(chemicalListName);
+		System.out.println(gson.toJson(dsstoxRecords.iterator().next()));
+		System.out.println(dsstoxRecords.size());
 	}
 }

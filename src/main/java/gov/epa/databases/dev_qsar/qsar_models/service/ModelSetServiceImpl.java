@@ -35,6 +35,19 @@ public class ModelSetServiceImpl implements ModelSetService {
 		return modelSet;
 	}
 	
+	public ModelSet findByName(String modelSetName) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return findByName(modelSetName, session);
+	}
+	
+	public ModelSet findByName(String modelSetName, Session session) {
+		Transaction t = session.beginTransaction();
+		ModelSetDao modelSetDao = new ModelSetDaoImpl();
+		ModelSet modelSet = modelSetDao.findByName(modelSetName, session);
+		t.rollback();
+		return modelSet;
+	}
+	
 	@Override
 	public Set<ConstraintViolation<ModelSet>> create(ModelSet modelSet) {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();

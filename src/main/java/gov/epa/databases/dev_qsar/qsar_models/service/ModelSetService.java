@@ -14,6 +14,10 @@ public interface ModelSetService {
 	
 	public ModelSet findById(Long modelSetId, Session session);
 	
+	public ModelSet findByName(String modelSetName);
+	
+	public ModelSet findByName(String modelSetName, Session session);
+	
 	public Set<ConstraintViolation<ModelSet>> create(ModelSet modelSet);
 	
 	public Set<ConstraintViolation<ModelSet>> create(ModelSet modelSet, Session session);

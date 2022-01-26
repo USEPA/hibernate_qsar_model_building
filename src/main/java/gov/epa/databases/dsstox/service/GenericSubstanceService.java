@@ -9,20 +9,20 @@ import gov.epa.databases.dsstox.entity.GenericSubstance;
 
 public interface GenericSubstanceService {
 	
-	GenericSubstance findByDtxsid(String dtxsid);
+	public GenericSubstance findByDtxsid(String dtxsid);
 
-	GenericSubstance findByDtxsid(String dtxsid, Session session);
+	public GenericSubstance findByDtxsid(String dtxsid, Session session);
 
-	List<GenericSubstance> findByDtxsidIn(Collection<String> dtxsids);
+	public List<GenericSubstance> findByDtxsidIn(Collection<String> dtxsids);
 
-	List<GenericSubstance> findByDtxsidIn(Collection<String> dtxsids, Session session);
+	public List<GenericSubstance> findByDtxsidIn(Collection<String> dtxsids, Session session);
 	
-	GenericSubstance findByCasrn(String casrn);
+	public GenericSubstance findByCasrn(String casrn);
 
-	GenericSubstance findByCasrn(String casrn, Session session);
+	public GenericSubstance findByCasrn(String casrn, Session session);
 
-	List<GenericSubstance> findByCasrnIn(Collection<String> casrns);
+	public List<GenericSubstance> findByCasrnIn(Collection<String> casrns);
 
-	List<GenericSubstance> findByCasrnIn(Collection<String> casrns, Session session);
+	public List<GenericSubstance> findByCasrnIn(Collection<String> casrns, Session session);
 
 }

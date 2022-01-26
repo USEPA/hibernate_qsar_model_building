@@ -19,6 +19,10 @@ public class DsstoxSession {
         	config.addAnnotatedClass(gov.epa.databases.dsstox.entity.GenericSubstance.class);
         	config.addAnnotatedClass(gov.epa.databases.dsstox.entity.GenericSubstanceCompound.class);
         	config.addAnnotatedClass(gov.epa.databases.dsstox.entity.QcLevel.class);
+        	config.addAnnotatedClass(gov.epa.databases.dsstox.entity.ChemicalList.class);
+        	config.addAnnotatedClass(gov.epa.databases.dsstox.entity.SourceSubstance.class);
+        	config.addAnnotatedClass(gov.epa.databases.dsstox.entity.SourceSubstanceIdentifier.class);
+        	config.addAnnotatedClass(gov.epa.databases.dsstox.entity.SourceGenericSubstanceMapping.class);
         	
         	config.setProperty("hibernate.connection.driver_class", "com.mysql.jdbc.Driver");
         	
@@ -30,7 +34,7 @@ public class DsstoxSession {
             
         	config.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQL5Dialect");
         	config.setProperty("hibernate.current_session_context_class", "thread");
-        	config.setProperty("hibernate.show_sql", "false");
+        	config.setProperty("hibernate.show_sql", "true");
         	config.setProperty("hibernate.hbm2ddl.auto", "none");
             
             config.setProperty("hibernate.c3p0.acquire_increment", "1");

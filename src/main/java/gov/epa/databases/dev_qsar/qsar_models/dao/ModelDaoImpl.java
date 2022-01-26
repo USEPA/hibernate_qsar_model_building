@@ -14,6 +14,10 @@ public class ModelDaoImpl implements ModelDao {
 	private static final String HQL_BY_IDS = "from Model m where m.id in (:modelIds)";
 	private static final String HQL_BY_IDS_IN_RANGE_INCLUSIVE = "from Model m where m.id >= :minModelId and m.id <= :maxModelId";
 	private static final String HQL_BY_DATASET_NAME = "from Model m where m.datasetName = :datasetName";
+	private static final String HQL_BY_MODEL_SET_ID = "select m from Model m "
+			+ "join m.modelInModelSets mms "
+			+ "join mms.modelSet ms "
+			+ "where ms.id = :modelSetId";
 	
 	@Override
 	public Model findById(Long modelId, Session session) {
@@ -24,7 +28,7 @@ public class ModelDaoImpl implements ModelDao {
 	}
 	
 	@Override
-	public List<Model> findByIds(List<Long> modelIds, Session session) {
+	public List<Model> findByIdIn(List<Long> modelIds, Session session) {
 		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
 		Query query = session.createQuery(HQL_BY_IDS);
 		query.setParameter("modelIds", modelIds);
@@ -32,7 +36,7 @@ public class ModelDaoImpl implements ModelDao {
 	}
 	
 	@Override
-	public List<Model> findByIdsInRangeInclusive(Long minModelId, Long maxModelId, Session session) {
+	public List<Model> findByIdInRangeInclusive(Long minModelId, Long maxModelId, Session session) {
 		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
 		Query query = session.createQuery(HQL_BY_IDS_IN_RANGE_INCLUSIVE);
 		query.setParameter("minModelId", minModelId);
@@ -45,6 +49,14 @@ public class ModelDaoImpl implements ModelDao {
 		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
 		Query query = session.createQuery(HQL_BY_DATASET_NAME);
 		query.setParameter("datasetName", datasetName);
+		return (List<Model>) query.list();
+	}
+	
+	@Override
+	public List<Model> findByModelSetId(Long modelSetId, Session session) {
+		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
+		Query query = session.createQuery(HQL_BY_MODEL_SET_ID);
+		query.setParameter("modelSetId", modelSetId);
 		return (List<Model>) query.list();
 	}
 

@@ -7,5 +7,7 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
 public interface ModelSetDao {
 	
 	public ModelSet findById(Long modelSetId, Session session);
+	
+	public ModelSet findByName(String modelSetName, Session session);
 
 }

@@ -1,19 +1,24 @@
 package gov.epa.databases.dev_qsar.qsar_datasets.entity;
 
 import java.util.Date;
+import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
+import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.constraints.NotBlank;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
@@ -49,6 +54,10 @@ public class Property {
 	@NotBlank(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
+	
+	@ManyToMany(mappedBy="property", fetch=FetchType.EAGER)
+	@Fetch(value=FetchMode.SUBSELECT)
+	private List<PropertyInCategory> propertyInCategories;
 	
 	public Property() {}
 	
@@ -116,5 +125,13 @@ public class Property {
 
 	public void setCreatedBy(String createdBy) {
 		this.createdBy = createdBy;
+	}
+
+	public List<PropertyInCategory> getPropertyInCategories() {
+		return propertyInCategories;
+	}
+
+	public void setPropertyInCategories(List<PropertyInCategory> propertyInCategories) {
+		this.propertyInCategories = propertyInCategories;
 	}
 }

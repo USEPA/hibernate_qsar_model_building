@@ -45,10 +45,10 @@ public class DevQsarConstants {
 	public static final int PORT_STANDARDIZER_JAVA = 5010;
 	
 	// DSSTox mapping strategies
-	public static final String BY_CASRN = "CASRN";
-	public static final String BY_DTXCID = "DTXCID";
-	public static final String BY_DTXSID = "DTXSID";
-	public static final String BY_LIST = "LIST";
+	public static final String MAPPING_BY_CASRN = "CASRN";
+	public static final String MAPPING_BY_DTXCID = "DTXCID";
+	public static final String MAPPING_BY_DTXSID = "DTXSID";
+	public static final String MAPPING_BY_LIST = "LIST";
 	
 	// Standardizer types
 	public static final String QSAR_READY = "QSAR_READY";
@@ -134,6 +134,7 @@ public class DevQsarConstants {
 	public static final String INPUT_NAME2STRUCTURE = "NAME2STRUCTURE";
 	public static final String INPUT_MAPPED_IDENTIFIER = "MAPPED_IDENTIFIER";
 	public static final String INPUT_DTXCID = "DTXCID";
+	public static final String INPUT_DTXSID = "DTXSID";
 	public static final String INPUT_SMILES = "SMILES";
 	public static final String INPUT_INCHIKEY = "INCHIKEY";
 	

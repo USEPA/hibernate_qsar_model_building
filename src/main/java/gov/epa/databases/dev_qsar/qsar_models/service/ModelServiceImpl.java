@@ -36,28 +36,28 @@ public class ModelServiceImpl implements ModelService {
 		return model;
 	}
 	
-	public List<Model> findByIds(List<Long> modelIds) {
+	public List<Model> findByIdIn(List<Long> modelIds) {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
-		return findByIds(modelIds, session);
+		return findByIdIn(modelIds, session);
 	}
 	
-	public List<Model> findByIds(List<Long> modelIds, Session session) {
+	public List<Model> findByIdIn(List<Long> modelIds, Session session) {
 		Transaction t = session.beginTransaction();
 		ModelDao modelDao = new ModelDaoImpl();
-		List<Model> models = modelDao.findByIds(modelIds, session);
+		List<Model> models = modelDao.findByIdIn(modelIds, session);
 		t.rollback();
 		return models;
 	}
 	
-	public List<Model> findByIdsInRangeInclusive(Long minModelId, Long maxModelId) {
+	public List<Model> findByIdInRangeInclusive(Long minModelId, Long maxModelId) {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
-		return findByIdsInRangeInclusive(minModelId, maxModelId, session);
+		return findByIdInRangeInclusive(minModelId, maxModelId, session);
 	}
 	
-	public List<Model> findByIdsInRangeInclusive(Long minModelId, Long maxModelId, Session session) {
+	public List<Model> findByIdInRangeInclusive(Long minModelId, Long maxModelId, Session session) {
 		Transaction t = session.beginTransaction();
 		ModelDao modelDao = new ModelDaoImpl();
-		List<Model> models = modelDao.findByIdsInRangeInclusive(minModelId, maxModelId, session);
+		List<Model> models = modelDao.findByIdInRangeInclusive(minModelId, maxModelId, session);
 		t.rollback();
 		return models;
 	}
@@ -71,6 +71,19 @@ public class ModelServiceImpl implements ModelService {
 		Transaction t = session.beginTransaction();
 		ModelDao modelDao = new ModelDaoImpl();
 		List<Model> models = modelDao.findByDatasetName(datasetName, session);
+		t.rollback();
+		return models;
+	}
+	
+	public List<Model> findByModelSetId(Long modelSetId) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return findByModelSetId(modelSetId, session);
+	}
+	
+	public List<Model> findByModelSetId(Long modelSetId, Session session) {
+		Transaction t = session.beginTransaction();
+		ModelDao modelDao = new ModelDaoImpl();
+		List<Model> models = modelDao.findByModelSetId(modelSetId, session);
 		t.rollback();
 		return models;
 	}

@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_models.service;
 
+import java.util.List;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
@@ -9,6 +10,10 @@ import org.hibernate.Session;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 
 public interface ModelStatisticService {
+	
+	public List<ModelStatistic> findByModelId(Long modelId);
+	
+	public List<ModelStatistic> findByModelId(Long modelId, Session session);
 	
 	public Set<ConstraintViolation<ModelStatistic>> create(ModelStatistic modelStatistic);
 	

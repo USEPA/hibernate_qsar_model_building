@@ -15,17 +15,21 @@ public interface ModelService {
 	
 	public Model findById(Long modelId, Session session);
 	
-	public List<Model> findByIds(List<Long> modelIds);
+	public List<Model> findByIdIn(List<Long> modelIds);
 	
-	public List<Model> findByIds(List<Long> modelIds, Session session);
+	public List<Model> findByIdIn(List<Long> modelIds, Session session);
 	
-	public List<Model> findByIdsInRangeInclusive(Long minModelId, Long maxModelId);
+	public List<Model> findByIdInRangeInclusive(Long minModelId, Long maxModelId);
 	
-	public List<Model> findByIdsInRangeInclusive(Long minModelId, Long maxModelId, Session session);
+	public List<Model> findByIdInRangeInclusive(Long minModelId, Long maxModelId, Session session);
 	
 	public List<Model> findByDatasetName(String datasetName);
 	
 	public List<Model> findByDatasetName(String datasetName, Session session);
+	
+	public List<Model> findByModelSetId(Long modelSetId);
+	
+	public List<Model> findByModelSetId(Long modelSetId, Session session);
 	
 	public Set<ConstraintViolation<Model>> create(Model model);
 	

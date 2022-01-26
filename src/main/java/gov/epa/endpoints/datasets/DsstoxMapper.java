@@ -33,7 +33,17 @@ import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
+import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundService;
+import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundServiceImpl;
 import gov.epa.databases.dsstox.DsstoxRecord;
+import gov.epa.databases.dsstox.entity.ChemicalList;
+import gov.epa.databases.dsstox.entity.SourceSubstance;
+import gov.epa.databases.dsstox.entity.SourceSubstanceIdentifier;
+import gov.epa.databases.dsstox.service.ChemicalListService;
+import gov.epa.databases.dsstox.service.ChemicalListServiceImpl;
+import gov.epa.databases.dsstox.service.DsstoxCompoundService;
+import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
+import gov.epa.databases.dsstox.service.SourceSubstanceService;
 import gov.epa.endpoints.datasets.classes.DiscardedPropertyValue;
 import gov.epa.endpoints.datasets.classes.DsstoxConflict;
 import gov.epa.endpoints.datasets.classes.DsstoxConflictRecord;
@@ -46,7 +56,7 @@ import gov.epa.web_services.standardizers.Standardizer.StandardizeResponse;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithStatus;
 import kong.unirest.HttpResponse;
 
-public class DsstoxMapper implements AutoCloseable {
+public class DsstoxMapper {
 	
 	// Column headers for ChemReg import
 	private static final String EXTERNAL_ID_HEADER = "EXTERNAL_ID";
@@ -106,8 +116,19 @@ public class DsstoxMapper implements AutoCloseable {
 	
 	private static Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 	
+	private CompoundService compoundService;
+	
+	private DsstoxCompoundService dsstoxCompoundService;
+	private ChemicalListService chemicalListService;
+	private SourceSubstanceService sourceSubstanceService;
+	
 	public DsstoxMapper(DatasetParams datasetParams, Standardizer standardizer, String finalUnitName, 
 			boolean omitSalts, Set<String> acceptableAtoms, String lanId) throws IOException {
+		this.compoundService = new CompoundServiceImpl();
+		
+		this.dsstoxCompoundService = new DsstoxCompoundServiceImpl();
+		this.chemicalListService = new ChemicalListServiceImpl();
+		
 		this.datasetParams = datasetParams;
 		
 		this.datasetFileName = datasetParams.datasetName.replaceAll("[^A-Za-z0-9-_]+","_");
@@ -145,10 +166,10 @@ public class DsstoxMapper implements AutoCloseable {
 				checkChemicalList = datasetParams.datasetName;
 			}
 			
-			boolean chemicalListExists = queryDsstox.chemicalListExists(checkChemicalList);
-			if (chemicalListExists) {
+			ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
+			if (chemicalList!=null) {
 				// If chemical list already added to DSSTox, queries all records from it
-				dsstoxRecords = queryDsstox.getRecordsWithSourceSubstances(checkChemicalList);
+				dsstoxRecords = sourceSubstanceService.findDsstoxRecordsByChemicalListName(checkChemicalList);
 			} else {
 				// If chemical list not in DSSTox, write the import file for the user to add
 				writeChemRegImportFile(propertyValuesMap);
@@ -206,16 +227,16 @@ public class DsstoxMapper implements AutoCloseable {
 			if (sc!=null) {
 				String id = null;
 				switch (datasetParams.mappingParams.dsstoxMappingId) {
-				case DevQsarConstants.BY_CASRN:
+				case DevQsarConstants.MAPPING_BY_CASRN:
 					id = sc.getSourceCasrn();
 					break;
-				case DevQsarConstants.BY_DTXSID:
+				case DevQsarConstants.MAPPING_BY_DTXSID:
 					id = sc.getSourceDtxsid();
 					break;
-				case DevQsarConstants.BY_DTXCID:
+				case DevQsarConstants.MAPPING_BY_DTXCID:
 					id = sc.getSourceDtxcid();
 					break;
-				case DevQsarConstants.BY_LIST:
+				case DevQsarConstants.MAPPING_BY_LIST:
 					id = sc.generateSrcChemId();
 					break;
 				}
@@ -240,16 +261,16 @@ public class DsstoxMapper implements AutoCloseable {
 			if (dr!=null) {
 				String id = null;
 				switch (datasetParams.mappingParams.dsstoxMappingId) {
-				case DevQsarConstants.BY_CASRN:
+				case DevQsarConstants.MAPPING_BY_CASRN:
 					id = dr.casrn;
 					break;
-				case DevQsarConstants.BY_DTXSID:
+				case DevQsarConstants.MAPPING_BY_DTXSID:
 					id = dr.dsstoxSubstanceId;
 					break;
-				case DevQsarConstants.BY_DTXCID:
+				case DevQsarConstants.MAPPING_BY_DTXCID:
 					id = dr.dsstoxCompoundId;
 					break;
-				case DevQsarConstants.BY_LIST:
+				case DevQsarConstants.MAPPING_BY_LIST:
 					id = dr.externalId;
 					break;
 				}
@@ -348,7 +369,7 @@ public class DsstoxMapper implements AutoCloseable {
 		if (bin.contains(DTXRID_MATCH)) {
 			// If source chemical is identified by DTXRID only, fetch the source substance identifiers associated
 			// with that DTXRID, and then go through mapping with those as usual using the bin string from that source substance mapping
-			bin = queryDsstox.fillInSourceSubstanceIdentifiers(sc).replaceAll("</?b>", "").replaceAll("<br/>", ", ");
+			bin = fillInSourceSubstanceIdentifiers(sc).replaceAll("</?b>", "").replaceAll("<br/>", ", ");
 			bin = bin.replaceAll("(CAS-RN matched (other record:  )?)[^,]+", "$1" + SOURCE_CASRN_HEADER);
 			bin = bin.replaceAll("(Preferred Name matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
 			bin = bin.replaceAll("(Valid Synonym matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
@@ -375,7 +396,7 @@ public class DsstoxMapper implements AutoCloseable {
 		
 		if (bin.contains(DTXSID_CONFLICT)) {
 			// If another record matches the DTXSID, get that one instead
-			List<DsstoxRecord> dtxsidMatches = queryDsstox.getRecords(sc.getSourceDtxsid(), DevQsarConstants.BY_DTXSID);
+			List<DsstoxRecord> dtxsidMatches = queryDsstox.getRecords(sc.getSourceDtxsid(), DevQsarConstants.INPUT_DTXSID);
 			if (dtxsidMatches.size()==1) {
 				DsstoxRecord dtxsidMatch = dtxsidMatches.iterator().next();
 				return new ExplainedResponse(true, dtxsidMatch, "Matched source DTXSID or DTXCID");
@@ -604,15 +625,14 @@ public class DsstoxMapper implements AutoCloseable {
 		
 		String sourceDtxcidStr = cleanDelimiters(sourceChemical.getSourceDtxcid(), true);
 		if (sourceDtxcidStr!=null && sourceDtxcidStr.contains("|")) {
-			String conflictType = DevQsarConstants.BY_DTXCID;
+			String conflictType = DevQsarConstants.INPUT_DTXCID;
 			if (conflict.bestDsstoxRecord.dsstoxCompoundId!=null && sourceDtxcidStr.contains(conflict.bestDsstoxRecord.dsstoxCompoundId) 
 					&& !conflict.bestDsstoxRecord.connectionReason.contains(DTXCID_MATCH)) {
 				conflict.bestDsstoxRecord.connectionReason = conflict.bestDsstoxRecord.connectionReason + "<br/>" + DTXCID_MATCH;
 			}
 			
 			String[] sourceDtxcids = sourceDtxcidStr.split("\\|");
-			List<DsstoxRecord> dtxcidConflicts = queryDsstox.getRecords(new HashSet<String>(Arrays.asList(sourceDtxcids)), 
-					conflictType);
+			List<DsstoxRecord> dtxcidConflicts = dsstoxCompoundService.findDsstoxRecordsByDtxcidIn(Arrays.asList(sourceDtxcids));
 			if (dtxcidConflicts!=null && !dtxcidConflicts.isEmpty()) {
 				for (DsstoxRecord dr:dtxcidConflicts) {
 					addDsstoxConflictRecord(dr, conflict, conflictDtxsids, conflictType);
@@ -625,7 +645,7 @@ public class DsstoxMapper implements AutoCloseable {
 		
 		String sourceDtxsidStr = cleanDelimiters(sourceChemical.getSourceDtxsid(), true);
 		if (sourceDtxsidStr!=null && sourceDtxsidStr.contains("|")) {
-			String conflictType = DevQsarConstants.BY_DTXSID;
+			String conflictType = DevQsarConstants.INPUT_DTXSID;
 			if (conflict.bestDsstoxRecord.dsstoxSubstanceId!=null && sourceDtxsidStr.contains(conflict.bestDsstoxRecord.dsstoxSubstanceId) 
 					&& !conflict.bestDsstoxRecord.connectionReason.contains(DTXSID_MATCH)) {
 				conflict.bestDsstoxRecord.connectionReason = conflict.bestDsstoxRecord.connectionReason + "<br/>" + DTXSID_MATCH;
@@ -986,35 +1006,60 @@ public class DsstoxMapper implements AutoCloseable {
 				|| bin.contains(AMBIGUOUS_SYNONYM_CONFLICT);
 	}
 	
+	private String fillInSourceSubstanceIdentifiers(SourceChemical sc) {
+		String dtxrid = sc.getSourceDtxrid();
+		if (dtxrid==null) {
+			return null;
+		}
+		
+		SourceSubstance sourceSubstance = sourceSubstanceService.findByDtxrid(dtxrid);
+		for (SourceSubstanceIdentifier ssi:sourceSubstance.getSourceSubstanceIdentifiers()) {
+			String identifier = ssi.getIdentifier();
+			switch (ssi.getIdentifierType()) {
+			case "DTXSID":
+				sc.setSourceDtxsid(identifier);
+				break;
+			case "NAME":
+				sc.setSourceChemicalName(identifier);
+				break;
+			case "CASRN":
+				sc.setSourceCasrn(identifier);
+				break;
+			case "SMILES":
+			case "STRUCTURE":
+				sc.setSourceSmiles(identifier);
+				break;
+			}
+		}
+		
+		return sourceSubstance.getSourceGenericSubstanceMapping().getConnectionReason();
+	}
+	
 	private String standardizeSmiles(String srcChemId, DsstoxRecord dr) {
 		// Check (by DTXCID) if compound already has a standardization
-		HttpResponse<Compound> compoundResponse = 
-				QueryQsarDescriptors.getCompound(dr.dsstoxCompoundId, standardizerName);
+		Compound compound = compoundService.findByDtxcidAndStandardizer(dr.dsstoxCompoundId, standardizerName);
 		
-		if (compoundResponse.getStatus()==200) {
-			Compound compound = compoundResponse.getBody();
-			return compound.getCanonQsarSmiles();
-		} else {
+		if (compound==null) {
 			StandardizeResponseWithStatus standardizeResponse = standardizer.callStandardize(dr.smiles);
 			if (standardizeResponse.status==200) {
 				StandardizeResponse standardizeResponseData = standardizeResponse.standardizeResponse;
+				String standardizedSmiles = null;
 				if (standardizeResponseData.success) {
-					String standardizedSmiles = standardizeResponseData.qsarStandardizedSmiles;
-					Compound compound = new Compound(dr.dsstoxCompoundId, standardizedSmiles, standardizerName, lanId);
-					QueryQsarDescriptors.postCompound(compound);
-					return standardizedSmiles;
+					standardizedSmiles = standardizeResponseData.qsarStandardizedSmiles;
 				} else {
 					logger.warn(srcChemId + ": Standardization failed for SMILES: " + dr.smiles);
-					Compound compound = new Compound(dr.dsstoxCompoundId, null, standardizerName, lanId);
-					QueryQsarDescriptors.postCompound(compound);
 				}
+				compound = new Compound(dr.dsstoxCompoundId, standardizedSmiles, standardizerName, lanId);
+				compoundService.create(compound);
 			} else {
+				// In case there's a server error that prevents standardization, don't save the null standardization
+				// We want to try again later!
 				logger.warn(srcChemId + ": Standardizer HTTP response failed for SMILES: " 
 						+ dr.smiles + " with code " + standardizeResponse.status);
 			}
 		}
 		
-		return null;
+		return compound.getCanonQsarSmiles();
 	}
 
 	private void writeChemRegImportFile(Map<String, List<PropertyValue>> propertyValuesMap) {
@@ -1209,13 +1254,6 @@ public class DsstoxMapper implements AutoCloseable {
 		}
 		
 		return sb.toString();
-	}
-	
-	@Override
-	public void close() throws SQLException, IOException {
-		if (!queryDsstox.isClosed()) {
-			queryDsstox.close();
-		}
 	}
 
 }

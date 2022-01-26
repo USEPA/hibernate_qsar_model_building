@@ -77,6 +77,24 @@ public class ParameterValue {
 	private String updatedBy;
 	
 	public ParameterValue() {}
+	
+	public String generateConciseValueString() {
+		if (valueText!=null) {
+			return valueText;
+		}
+		
+		if (valuePointEstimate!=null) {
+			String qual = valueQualifier==null ? "" : valueQualifier;
+			String error = valueError==null ? "" : ("+/-" + String.valueOf(valueError));
+			return qual + String.valueOf(valuePointEstimate) + error;
+		}
+		
+		if (valueMin!=null || valueMax!=null) {
+			return String.valueOf(valueMin) + "-" + String.valueOf(valueMax);
+		}
+		
+		return null;
+	}
 
 	public Long getId() {
 		return id;

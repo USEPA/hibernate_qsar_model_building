@@ -139,4 +139,124 @@ public class DsstoxRecord {
 			}
 		}
 	}
+
+	public String getDsstoxRecordId() {
+		return dsstoxRecordId;
+	}
+
+	public void setDsstoxRecordId(String dsstoxRecordId) {
+		this.dsstoxRecordId = dsstoxRecordId;
+	}
+
+	public String getExternalId() {
+		return externalId;
+	}
+
+	public void setExternalId(String externalId) {
+		this.externalId = externalId;
+	}
+
+	public String getConnectionReason() {
+		return connectionReason;
+	}
+
+	public void setConnectionReason(String connectionReason) {
+		this.connectionReason = connectionReason;
+	}
+
+	public Double getLinkageScore() {
+		return linkageScore;
+	}
+
+	public void setLinkageScore(Double linkageScore) {
+		this.linkageScore = linkageScore;
+	}
+
+	public Boolean getCuratorValidated() {
+		return curatorValidated;
+	}
+
+	public void setCuratorValidated(Boolean curatorValidated) {
+		this.curatorValidated = curatorValidated;
+	}
+
+	public String getDsstoxSubstanceId() {
+		return dsstoxSubstanceId;
+	}
+
+	public void setDsstoxSubstanceId(String dsstoxSubstanceId) {
+		this.dsstoxSubstanceId = dsstoxSubstanceId;
+	}
+
+	public String getDsstoxCompoundId() {
+		return dsstoxCompoundId;
+	}
+
+	public void setDsstoxCompoundId(String dsstoxCompoundId) {
+		this.dsstoxCompoundId = dsstoxCompoundId;
+	}
+
+	public String getCasrn() {
+		return casrn;
+	}
+
+	public void setCasrn(String casrn) {
+		this.casrn = casrn;
+	}
+
+	public String getPreferredName() {
+		return preferredName;
+	}
+
+	public void setPreferredName(String preferredName) {
+		this.preferredName = preferredName;
+	}
+
+	public String getSubstanceType() {
+		return substanceType;
+	}
+
+	public void setSubstanceType(String substanceType) {
+		this.substanceType = substanceType;
+	}
+
+	public String getSmiles() {
+		return smiles;
+	}
+
+	public void setSmiles(String smiles) {
+		this.smiles = smiles;
+	}
+
+	public Double getMolWeight() {
+		return molWeight;
+	}
+
+	public void setMolWeight(Double molWeight) {
+		this.molWeight = molWeight;
+	}
+
+	public String getQsarReadySmiles() {
+		return qsarReadySmiles;
+	}
+
+	public void setQsarReadySmiles(String qsarReadySmiles) {
+		this.qsarReadySmiles = qsarReadySmiles;
+	}
+
+	public String getMsReadySmiles() {
+		return msReadySmiles;
+	}
+
+	public void setMsReadySmiles(String msReadySmiles) {
+		this.msReadySmiles = msReadySmiles;
+	}
+
+	public String getSynonymQuality() {
+		return synonymQuality;
+	}
+
+	public void setSynonymQuality(String synonymQuality) {
+		this.synonymQuality = synonymQuality;
+	}
 }

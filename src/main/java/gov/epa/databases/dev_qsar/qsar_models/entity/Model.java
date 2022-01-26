@@ -67,10 +67,10 @@ public class Model {
 	@OneToOne(mappedBy="model", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	private ModelBytes modelBytes;
 	
-	@OneToMany(mappedBy="model", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	@OneToMany(mappedBy="model", cascade=CascadeType.ALL)
 	private List<ModelInModelSet> modelInModelSets;
 	
-	@OneToMany(mappedBy="model", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	@OneToMany(mappedBy="model", cascade=CascadeType.ALL)
 	private List<ModelStatistic> modelStatistics;
 	
 	@OneToMany(mappedBy="model", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
