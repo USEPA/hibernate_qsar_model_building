@@ -11,6 +11,8 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.reports.descriptors.DescriptorReport;
 import gov.epa.endpoints.reports.descriptors.DescriptorReportGenerator;
+import gov.epa.endpoints.reports.model_sets.ModelSetTable;
+import gov.epa.endpoints.reports.model_sets.ModelSetTableGenerator;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.PredictionReportGenerator;
 import gov.epa.web_services.ModelWebService;
@@ -70,6 +72,12 @@ public class DevQsarController {
 			@RequestParam(name="descriptor-set-name") String descriptorSetName) {
 		DescriptorReportGenerator gen = new DescriptorReportGenerator();
 		return gen.generateForDescriptorSet(datasetName, descriptorSetName);
+	}
+	
+	@GetMapping("/reports/model_sets")
+	public ModelSetTable reportModelSetTable(@RequestParam(name="model-set-name") String modelSetName) {
+		ModelSetTableGenerator gen = new ModelSetTableGenerator();
+		return gen.generate(modelSetName);
 	}
 
 }
