@@ -221,14 +221,14 @@ public class RunFromJava {
 //		String modelWsServer=DevQsarConstants.SERVER_LOCAL;
 		int modelWsPort=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
 		
-//		String sampleSource="OPERA";
-		String sampleSource="TEST";
+		String sampleSource="OPERA";
+//		String sampleSource="TEST";
 		
-//		String endpoint=DevQsarConstants.LOG_BCF;
+		String endpoint=DevQsarConstants.LOG_OH;
 //		String endpoint=DevQsarConstants.LOG_KOW;
 //		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
 //		String endpoint=DevQsarConstants.BOILING_POINT;
-		String endpoint=DevQsarConstants.LLNA;
+//		String endpoint=DevQsarConstants.LLNA;
 //		String endpoint=DevQsarConstants.LOG_KOW;
 //		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
 //		String endpoint=DevQsarConstants.DEV_TOX;

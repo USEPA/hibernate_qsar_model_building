@@ -6,6 +6,7 @@ import java.util.List;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
+import gov.epa.databases.dsstox.DsstoxRecord;
 import gov.epa.databases.dsstox.DsstoxSession;
 import gov.epa.databases.dsstox.dao.GenericSubstanceDao;
 import gov.epa.databases.dsstox.dao.GenericSubstanceDaoImpl;
@@ -69,6 +70,111 @@ public class GenericSubstanceServiceImpl implements GenericSubstanceService {
 		Transaction t = session.beginTransaction();
 		GenericSubstanceDao GenericSubstanceDao = new GenericSubstanceDaoImpl();
 		List<GenericSubstance> GenericSubstances = GenericSubstanceDao.findByCasrnIn(casrns, session);
+		t.rollback();
+		return GenericSubstances;
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByDtxsidIn(Collection<String> dtxsids) {
+		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+		return findAsDsstoxRecordsByDtxsidIn(dtxsids, session);
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByDtxsidIn(Collection<String> dtxsids, Session session) {
+		Transaction t = session.beginTransaction();
+		GenericSubstanceDao GenericSubstanceDao = new GenericSubstanceDaoImpl();
+		List<DsstoxRecord> GenericSubstances = GenericSubstanceDao.findAsDsstoxRecordsByDtxsidIn(dtxsids, session);
+		t.rollback();
+		return GenericSubstances;
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByCasrnIn(Collection<String> casrns) {
+		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+		return findAsDsstoxRecordsByCasrnIn(casrns, session);
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByCasrnIn(Collection<String> casrns, Session session) {
+		Transaction t = session.beginTransaction();
+		GenericSubstanceDao GenericSubstanceDao = new GenericSubstanceDaoImpl();
+		List<DsstoxRecord> GenericSubstances = GenericSubstanceDao.findAsDsstoxRecordsByCasrnIn(casrns, session);
+		t.rollback();
+		return GenericSubstances;
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByDtxsid(String dtxsid) {
+		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+		return findAsDsstoxRecordsByCasrn(dtxsid, session);
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByDtxsid(String dtxsid, Session session) {
+		Transaction t = session.beginTransaction();
+		GenericSubstanceDao GenericSubstanceDao = new GenericSubstanceDaoImpl();
+		List<DsstoxRecord> GenericSubstances = GenericSubstanceDao.findAsDsstoxRecordsByDtxsid(dtxsid, session);
+		t.rollback();
+		return GenericSubstances;
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByCasrn(String casrn) {
+		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+		return findAsDsstoxRecordsByCasrn(casrn, session);
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByCasrn(String casrn, Session session) {
+		Transaction t = session.beginTransaction();
+		GenericSubstanceDao GenericSubstanceDao = new GenericSubstanceDaoImpl();
+		List<DsstoxRecord> GenericSubstances = GenericSubstanceDao.findAsDsstoxRecordsByCasrn(casrn, session);
+		t.rollback();
+		return GenericSubstances;
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByPreferredName(String preferredName) {
+		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+		return findAsDsstoxRecordsByPreferredName(preferredName, session);
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByPreferredName(String preferredName, Session session) {
+		Transaction t = session.beginTransaction();
+		GenericSubstanceDao GenericSubstanceDao = new GenericSubstanceDaoImpl();
+		List<DsstoxRecord> GenericSubstances = GenericSubstanceDao.findAsDsstoxRecordsByPreferredName(preferredName, session);
+		t.rollback();
+		return GenericSubstances;
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByOtherCasrn(String otherCasrn) {
+		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+		return findAsDsstoxRecordsByOtherCasrn(otherCasrn, session);
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByOtherCasrn(String otherCasrn, Session session) {
+		Transaction t = session.beginTransaction();
+		GenericSubstanceDao GenericSubstanceDao = new GenericSubstanceDaoImpl();
+		List<DsstoxRecord> GenericSubstances = GenericSubstanceDao.findAsDsstoxRecordsByOtherCasrn(otherCasrn, session);
+		t.rollback();
+		return GenericSubstances;
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsWithSynonymQualityBySynonym(String synonym) {
+		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+		return findAsDsstoxRecordsWithSynonymQualityBySynonym(synonym, session);
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsWithSynonymQualityBySynonym(String synonym, Session session) {
+		Transaction t = session.beginTransaction();
+		GenericSubstanceDao GenericSubstanceDao = new GenericSubstanceDaoImpl();
+		List<DsstoxRecord> GenericSubstances = GenericSubstanceDao.findAsDsstoxRecordsWithSynonymQualityBySynonym(synonym, session);
 		t.rollback();
 		return GenericSubstances;
 	}

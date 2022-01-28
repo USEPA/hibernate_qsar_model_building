@@ -10,15 +10,16 @@ import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 
 public class PropertyValueDaoImpl implements PropertyValueDao {
 	
-	private static final String HQL_BY_PROPERTY_NAME = "from PropertyValue pv where pv.property.name = :propertyName";
-	private static final String HQL_BY_PROPERTY_NAME_USE_KEEP = "from PropertyValue pv "
-			+ "where pv.property.name = :propertyName "
+	private static final String HQL_SELECT_WITH_FETCH = "select pv from PropertyValue pv "
+			+ "left join fetch pv.sourceChemical sc "
+			+ "left join fetch pv.literatureSource ls "
+			+ "left join fetch pv.publicSource ps ";
+	private static final String HQL_WHERE_BY_PROPERTY_NAME = "where pv.property.name = :propertyName";
+	private static final String HQL_WHERE_BY_PROPERTY_NAME_USE_KEEP = "where pv.property.name = :propertyName "
 			+ "and pv.keep = true";
-	private static final String HQL_BY_PROPERTY_NAME_OMIT_VALUE_QUALIFIERS = "from PropertyValue pv "
-			+ "where pv.property.name = :propertyName "
+	private static final String HQL_WHERE_BY_PROPERTY_NAME_OMIT_VALUE_QUALIFIERS = "where pv.property.name = :propertyName "
 			+ "and (pv.valueQualifier is null or pv.valueQualifier = '~')";
-	private static final String HQL_BY_PROPERTY_NAME_USE_KEEP_AND_OMIT_VALUE_QUALIFIERS = "from PropertyValue pv "
-			+ "where pv.property.name = :propertyName "
+	private static final String HQL_WHERE_BY_PROPERTY_NAME_USE_KEEP_AND_OMIT_VALUE_QUALIFIERS = "where pv.property.name = :propertyName "
 			+ "and pv.keep = true "
 			+ "and (pv.valueQualifier is null or pv.valueQualifier = '~')";
 
@@ -28,15 +29,15 @@ public class PropertyValueDaoImpl implements PropertyValueDao {
 			boolean omitValueQualifiers, Session session) {
 		if (session==null) { session = ExpPropSession.getSessionFactory().getCurrentSession(); }
 		
-		String hql = null;
+		String hql = HQL_SELECT_WITH_FETCH;
 		if (useKeep && omitValueQualifiers) {
-			hql = HQL_BY_PROPERTY_NAME_USE_KEEP_AND_OMIT_VALUE_QUALIFIERS;
+			hql += HQL_WHERE_BY_PROPERTY_NAME_USE_KEEP_AND_OMIT_VALUE_QUALIFIERS;
 		} else if (useKeep) {
-			hql = HQL_BY_PROPERTY_NAME_USE_KEEP;
+			hql += HQL_WHERE_BY_PROPERTY_NAME_USE_KEEP;
 		} else if (omitValueQualifiers) {
-			hql = HQL_BY_PROPERTY_NAME_OMIT_VALUE_QUALIFIERS;
+			hql += HQL_WHERE_BY_PROPERTY_NAME_OMIT_VALUE_QUALIFIERS;
 		} else {
-			hql = HQL_BY_PROPERTY_NAME;
+			hql += HQL_WHERE_BY_PROPERTY_NAME;
 		}
 		
 		Query query = session.createQuery(hql);

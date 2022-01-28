@@ -58,7 +58,7 @@ public class ReportGenerator {
 			}
 		}
 		
-		List<DsstoxRecord> dsstoxRecords = dsstoxCompoundService.findDsstoxRecordsByDtxcidIn(allDtxcids);
+		List<DsstoxRecord> dsstoxRecords = dsstoxCompoundService.findAsDsstoxRecordsByDtxcidIn(allDtxcids);
 		Map<String, DsstoxRecord> mapDsstoxRecords = new HashMap<String, DsstoxRecord>();
 		for (DsstoxRecord dr:dsstoxRecords) {
 			if (allDtxcids.remove(dr.dsstoxCompoundId)) {

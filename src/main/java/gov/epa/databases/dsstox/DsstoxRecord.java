@@ -11,7 +11,7 @@ import org.openscience.cdk.graph.ConnectivityChecker;
 import org.openscience.cdk.interfaces.IAtom;
 import org.openscience.cdk.smiles.SmilesParser;
 
-import gov.epa.endpoints.datasets.classes.ExplainedResponse;
+import gov.epa.endpoints.datasets.ExplainedResponse;
 
 public class DsstoxRecord {
 	public String dsstoxRecordId;

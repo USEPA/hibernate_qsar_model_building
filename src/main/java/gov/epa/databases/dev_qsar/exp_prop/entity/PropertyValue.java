@@ -25,7 +25,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.endpoints.datasets.classes.ExplainedResponse;
+import gov.epa.endpoints.datasets.ExplainedResponse;
 
 @Entity
 @Table(name="property_values")

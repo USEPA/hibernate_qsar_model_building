@@ -29,16 +29,31 @@ public class SourceSubstanceServiceImpl implements SourceSubstanceService {
 	}
 	
 	@Override
-	public List<DsstoxRecord> findDsstoxRecordsByChemicalListName(String chemicalListName) {
+	public List<DsstoxRecord> findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(String chemicalListName) {
 		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
-		return findDsstoxRecordsByChemicalListName(chemicalListName, session);
+		return findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(chemicalListName, session);
 	}
 	
 	@Override
-	public List<DsstoxRecord> findDsstoxRecordsByChemicalListName(String chemicalListName, Session session) {
+	public List<DsstoxRecord> findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(String chemicalListName, Session session) {
 		Transaction t = session.beginTransaction();
 		SourceSubstanceDao sourceSubstanceDao = new SourceSubstanceDaoImpl();
-		List<DsstoxRecord> dsstoxRecords = sourceSubstanceDao.findDsstoxRecordsByChemicalListName(chemicalListName, session);
+		List<DsstoxRecord> dsstoxRecords = sourceSubstanceDao.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(chemicalListName, session);
+		t.rollback();
+		return dsstoxRecords;
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsWithSourceSubstanceByIdentifier(String identifier) {
+		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+		return findAsDsstoxRecordsWithSourceSubstanceByIdentifier(identifier, session);
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsWithSourceSubstanceByIdentifier(String identifier, Session session) {
+		Transaction t = session.beginTransaction();
+		SourceSubstanceDao sourceSubstanceDao = new SourceSubstanceDaoImpl();
+		List<DsstoxRecord> dsstoxRecords = sourceSubstanceDao.findAsDsstoxRecordsWithSourceSubstanceByIdentifier(identifier, session);
 		t.rollback();
 		return dsstoxRecords;
 	}

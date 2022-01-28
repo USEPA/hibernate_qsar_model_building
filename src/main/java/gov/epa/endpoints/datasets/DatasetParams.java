@@ -6,22 +6,20 @@ import java.util.List;
 
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
-import gov.epa.endpoints.datasets.classes.BoundParameterValue;
-import gov.epa.endpoints.datasets.classes.ExplainedResponse;
 
 public class DatasetParams {
 	
 	public static class MappingParams {
-		String dsstoxMappingId;
-		String chemicalListName;
-		boolean isNaive;
-		boolean useCuratorValidation;
-		boolean requireCuratorValidation;
-		boolean autoResolveConflicts;
-		boolean validateConflictsTogether;
-		boolean omitOpsinAmbiguousNames;
-		boolean omitUvcbKeywords;
-		boolean omitSalts;
+		public String dsstoxMappingId;
+		public String chemicalListName;
+		public boolean isNaive;
+		public boolean useCuratorValidation;
+		public boolean requireCuratorValidation;
+		public boolean autoResolveConflicts;
+		public boolean validateConflictsTogether;
+		public boolean omitOpsinAmbiguousNames;
+		public boolean omitUvcbKeywords;
+		public boolean omitSalts;
 		
 		public MappingParams(String dsstoxMappingId, String chemicalListName, boolean isNaive, boolean useValidation, 
 				boolean requireValidation, boolean resolveConflicts,
@@ -44,14 +42,14 @@ public class DatasetParams {
 		}
 	}
 	
-	String datasetName;
-	String datasetDescription;
+	public String datasetName;
+	public String datasetDescription;
 	
-	String propertyName;
+	public String propertyName;
 	
-	MappingParams mappingParams;
+	public MappingParams mappingParams;
 	
-	List<BoundParameterValue> bounds;
+	public List<BoundParameterValue> bounds;
 	
 	public DatasetParams(String datasetName, String datasetDescription, String propertyName, 
 			MappingParams mappingParams, List<BoundParameterValue> bounds) {

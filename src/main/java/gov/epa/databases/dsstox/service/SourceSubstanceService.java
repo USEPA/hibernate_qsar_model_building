@@ -13,8 +13,12 @@ public interface SourceSubstanceService {
 	
 	public SourceSubstance findByDtxrid(String dtxrid, Session session);
 
-	public List<DsstoxRecord> findDsstoxRecordsByChemicalListName(String chemicalListName);
+	public List<DsstoxRecord> findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(String chemicalListName);
 	
-	public List<DsstoxRecord> findDsstoxRecordsByChemicalListName(String chemicalListName, Session session);
+	public List<DsstoxRecord> findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(String chemicalListName, Session session);
+	
+	public List<DsstoxRecord> findAsDsstoxRecordsWithSourceSubstanceByIdentifier(String identifier);
+	
+	public List<DsstoxRecord> findAsDsstoxRecordsWithSourceSubstanceByIdentifier(String identifier, Session session);
 
 }

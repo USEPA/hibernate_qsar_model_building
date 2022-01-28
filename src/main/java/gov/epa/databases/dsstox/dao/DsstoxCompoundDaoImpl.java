@@ -12,33 +12,15 @@ import gov.epa.databases.dsstox.DsstoxSession;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 
 public class DsstoxCompoundDaoImpl implements DsstoxCompoundDao {
-	private static final String HQL_BY_ID = "select c from DsstoxCompound c "
-			+ "left join fetch c.genericSubstanceCompound gsc "
-			+ "left join fetch gsc.genericSubstance gs "
-			+ "left join fetch gs.qcLevel "
-			+ "where c.id = :id";
-	private static final String HQL_BY_ID_LIST = "select c from DsstoxCompound c "
-			+ "left join fetch c.genericSubstanceCompound gsc "
-			+ "left join fetch gsc.genericSubstance gs "
-			+ "left join fetch gs.qcLevel "
-			+ "where c.id in (:ids)";
+	private static final String HQL_BY_ID = "from DsstoxCompound c where c.id = :id";
+	private static final String HQL_BY_ID_LIST = "from DsstoxCompound c where c.id in (:ids)";
 	private static final String HQL_BY_DTXCID = "from DsstoxCompound c where c.dsstoxCompoundId = :dtxcid";
-	private static final String HQL_BY_DTXCID_LIST = "from DsstoxCompound c "
-			+ "left join fetch c.genericSubstanceCompound gsc "
-			+ "left join fetch gsc.genericSubstance gs "
-			+ "left join fetch gs.qcLevel "
-			+ "where c.dsstoxCompoundId in (:dtxcids)";
-	private static final String HQL_BY_INCHIKEY = "select c from DsstoxCompound c "
-			+ "left join fetch c.genericSubstanceCompound gsc "
-			+ "left join fetch gsc.genericSubstance gs "
-			+ "left join fetch gs.qcLevel "
-			+ "where c.jchemInchikey = :inchikey or c.indigoInchikey = :inchikey";
-	private static final String HQL_BY_INCHIKEY_LIST = "select c from DsstoxCompound c "
-			+ "left join fetch c.genericSubstanceCompound gsc "
-			+ "left join fetch gsc.genericSubstance gs "
-			+ "left join fetch gs.qcLevel "
-			+ "where c.jchemInchikey in (:inchikeys) or c.indigoInchikey in (:inchikeys)";
-	private static final String HQL_DSSTOX_RECORDS_BY_DTXCID_LIST = "select distinct gs.dsstoxSubstanceId as dsstoxSubstanceId, "
+	private static final String HQL_BY_DTXCID_LIST = "from DsstoxCompound c where c.dsstoxCompoundId in (:dtxcids)";
+	private static final String HQL_BY_INCHIKEY = "from DsstoxCompound c where c.jchemInchikey = :inchikey "
+			+ "or c.indigoInchikey = :inchikey";
+	private static final String HQL_BY_INCHIKEY_LIST = "from DsstoxCompound c where c.jchemInchikey in (:inchikeys) "
+			+ "or c.indigoInchikey in (:inchikeys)";
+	private static final String HQL_SELECT_AS_DSSTOX_RECORDS = "select distinct gs.dsstoxSubstanceId as dsstoxSubstanceId, "
 			+ "c.dsstoxCompoundId as dsstoxCompoundId, "
 			+ "gs.casrn as casrn, "
 			+ "gs.preferredName as preferredName, "
@@ -49,9 +31,11 @@ public class DsstoxCompoundDaoImpl implements DsstoxCompoundDao {
 			+ "from DsstoxCompound c "
 			+ "left join c.genericSubstanceCompound gsc "
 			+ "left join gsc.genericSubstance gs "
-			+ "left join c.successorRelationships cr "
-			+ "left join DsstoxCompound c2 on cr.successorCompound = c2 "
-			+ "where c.dsstoxCompoundId in (:dtxcids) ";
+			+ "left join c.successorRelationships cr with cr.compoundRelationshipType.id = 1 "
+			+ "left join DsstoxCompound c2 on cr.successorCompound = c2 ";
+	private static final String HQL_WHERE_BY_DTXCID = "where c.dsstoxCompoundId = :dtxcid";
+	private static final String HQL_WHERE_BY_DTXCID_LIST = "where c.dsstoxCompoundId in (:dtxcids) ";
+	private static final String HQL_WHERE_BY_INCHIKEY = "where c.jchemInchikey = :inchikey or c.indigoInchikey = :inchikey";
 
 	@Override
 	public DsstoxCompound findById(Long id, Session session) {
@@ -102,10 +86,28 @@ public class DsstoxCompoundDaoImpl implements DsstoxCompoundDao {
 	}
 	
 	@Override
-	public List<DsstoxRecord> findDsstoxRecordsByDtxcidIn(Collection<String> dtxcids, Session session) {
+	public List<DsstoxRecord> findAsDsstoxRecordsByDtxcidIn(Collection<String> dtxcids, Session session) {
 		if (session==null) { session = DsstoxSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_DSSTOX_RECORDS_BY_DTXCID_LIST);
+		Query query = session.createQuery(HQL_SELECT_AS_DSSTOX_RECORDS + HQL_WHERE_BY_DTXCID_LIST);
 		query.setParameterList("dtxcids", dtxcids);		
+		query.setResultTransformer(new AliasToBeanResultTransformer(DsstoxRecord.class));
+		return (List<DsstoxRecord>) query.list();
+	}
+	
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByDtxcid(String dtxcid, Session session) {
+		if (session==null) { session = DsstoxSession.getSessionFactory().getCurrentSession(); }
+		Query query = session.createQuery(HQL_SELECT_AS_DSSTOX_RECORDS + HQL_WHERE_BY_DTXCID);
+		query.setParameter("dtxcid", dtxcid);		
+		query.setResultTransformer(new AliasToBeanResultTransformer(DsstoxRecord.class));
+		return (List<DsstoxRecord>) query.list();
+	}
+	
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByInchikey(String inchikey, Session session) {
+		if (session==null) { session = DsstoxSession.getSessionFactory().getCurrentSession(); }
+		Query query = session.createQuery(HQL_SELECT_AS_DSSTOX_RECORDS + HQL_WHERE_BY_INCHIKEY);
+		query.setParameter("inchikey", inchikey);		
 		query.setResultTransformer(new AliasToBeanResultTransformer(DsstoxRecord.class));
 		return (List<DsstoxRecord>) query.list();
 	}

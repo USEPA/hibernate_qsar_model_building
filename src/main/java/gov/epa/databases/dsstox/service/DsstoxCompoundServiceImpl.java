@@ -105,16 +105,46 @@ public class DsstoxCompoundServiceImpl implements DsstoxCompoundService {
 	}
 	
 	@Override
-	public List<DsstoxRecord> findDsstoxRecordsByDtxcidIn(Collection<String> dtxcids) {
+	public List<DsstoxRecord> findAsDsstoxRecordsByDtxcidIn(Collection<String> dtxcids) {
 		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
-		return findDsstoxRecordsByDtxcidIn(dtxcids, session);
+		return findAsDsstoxRecordsByDtxcidIn(dtxcids, session);
 	}
 	
 	@Override
-	public List<DsstoxRecord> findDsstoxRecordsByDtxcidIn(Collection<String> dtxcids, Session session) {
+	public List<DsstoxRecord> findAsDsstoxRecordsByDtxcidIn(Collection<String> dtxcids, Session session) {
 		Transaction t = session.beginTransaction();
 		DsstoxCompoundDao compoundDao = new DsstoxCompoundDaoImpl();
-		List<DsstoxRecord> compounds = compoundDao.findDsstoxRecordsByDtxcidIn(dtxcids, session);
+		List<DsstoxRecord> compounds = compoundDao.findAsDsstoxRecordsByDtxcidIn(dtxcids, session);
+		t.rollback();
+		return compounds;
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByDtxcid(String dtxcid) {
+		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+		return findAsDsstoxRecordsByDtxcid(dtxcid, session);
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByDtxcid(String dtxcid, Session session) {
+		Transaction t = session.beginTransaction();
+		DsstoxCompoundDao compoundDao = new DsstoxCompoundDaoImpl();
+		List<DsstoxRecord> compounds = compoundDao.findAsDsstoxRecordsByDtxcid(dtxcid, session);
+		t.rollback();
+		return compounds;
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByInchikey(String inchikey) {
+		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+		return findAsDsstoxRecordsByDtxcid(inchikey, session);
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByInchikey(String inchikey, Session session) {
+		Transaction t = session.beginTransaction();
+		DsstoxCompoundDao compoundDao = new DsstoxCompoundDaoImpl();
+		List<DsstoxRecord> compounds = compoundDao.findAsDsstoxRecordsByInchikey(inchikey, session);
 		t.rollback();
 		return compounds;
 	}

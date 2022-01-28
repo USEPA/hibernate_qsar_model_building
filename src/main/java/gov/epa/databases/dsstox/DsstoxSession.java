@@ -23,6 +23,8 @@ public class DsstoxSession {
         	config.addAnnotatedClass(gov.epa.databases.dsstox.entity.SourceSubstance.class);
         	config.addAnnotatedClass(gov.epa.databases.dsstox.entity.SourceSubstanceIdentifier.class);
         	config.addAnnotatedClass(gov.epa.databases.dsstox.entity.SourceGenericSubstanceMapping.class);
+        	config.addAnnotatedClass(gov.epa.databases.dsstox.entity.Synonym.class);
+        	config.addAnnotatedClass(gov.epa.databases.dsstox.entity.OtherCasrn.class);
         	
         	config.setProperty("hibernate.connection.driver_class", "com.mysql.jdbc.Driver");
         	

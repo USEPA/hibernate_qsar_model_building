@@ -11,6 +11,8 @@ public interface SourceSubstanceDao {
 	
 	public SourceSubstance findByDtxrid(String dtxrid, Session session);
 	
-	public List<DsstoxRecord> findDsstoxRecordsByChemicalListName(String chemicalListName, Session session);
+	public List<DsstoxRecord> findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(String chemicalListName, Session session);
+	
+	public List<DsstoxRecord> findAsDsstoxRecordsWithSourceSubstanceByIdentifier(String identifier, Session session);
 
 }

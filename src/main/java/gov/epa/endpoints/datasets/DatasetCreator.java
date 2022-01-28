@@ -1,5 +1,6 @@
 package gov.epa.endpoints.datasets;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -58,8 +59,7 @@ import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
 import gov.epa.databases.dsstox.service.SourceSubstanceService;
 import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
-import gov.epa.endpoints.datasets.classes.MappedPropertyValue;
-import gov.epa.endpoints.datasets.classes.PropertyValueMerger;
+import gov.epa.endpoints.datasets.dsstox_mapping.DsstoxMapper;
 import gov.epa.util.MathUtil;
 import gov.epa.web_services.DescriptorWebService;
 import gov.epa.web_services.DescriptorWebService.DescriptorCalculationResponse;
@@ -71,6 +71,7 @@ import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponse.
 import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponseWithStatus;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponse;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithStatus;
+import gov.epa.web_services.standardizers.WebServiceStandardizer;
 import kong.unirest.Unirest;
 
 public class DatasetCreator {
@@ -172,12 +173,11 @@ public class DatasetCreator {
 		
 		String finalUnitName = finalUnits.get(params.propertyName);
 		params.mappingParams.omitSalts = physchemPropertyNames.contains(params.propertyName); // Omit salts for physchem properties
-		
-		// Connection will time out for large datasets if initialized during construction as a component of the DatasetCreator
-		// Connection validation in MySQL Connector doesn't seem to work
-		// But JDBC connections aren't too expensive to initialize, so reinitializing once for every dataset isn't a problem
-		try (DsstoxMapper dsstoxMapper = new DsstoxMapper(params, standardizer, finalUnitName, params.mappingParams.omitSalts, 
-				acceptableAtoms, lanId)) {
+
+		try {
+			DsstoxMapper dsstoxMapper = new DsstoxMapper(params, standardizer, finalUnitName, params.mappingParams.omitSalts, 
+					acceptableAtoms, lanId);
+			
 			if (params.mappingParams.dsstoxMappingId.equals(DevQsarConstants.MAPPING_BY_CASRN)
 					|| params.mappingParams.dsstoxMappingId.equals(DevQsarConstants.MAPPING_BY_DTXSID)
 					|| params.mappingParams.dsstoxMappingId.equals(DevQsarConstants.MAPPING_BY_DTXCID)
@@ -189,7 +189,7 @@ public class DatasetCreator {
 				logger.error("Mapping strategy " + params.mappingParams.dsstoxMappingId + " not implemented");
 				return null;
 			}
-		} catch (Exception e) {
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -533,45 +533,26 @@ public class DatasetCreator {
 	}
 	
 	public static void main(String[] args) {
-//		WebServiceStandardizer javaStandardizer = new WebServiceStandardizer(DevQsarConstants.SERVER_LOCAL,
-//				DevQsarConstants.PORT_STANDARDIZER_JAVA,
-//				DevQsarConstants.STANDARDIZER_SCI_DATA_EXPERTS,
-//				false);
-//		WebServiceStandardizer operaStandardizer = new WebServiceStandardizer(DevQsarConstants.SERVER_LOCAL,
-//				DevQsarConstants.PORT_STANDARDIZER_OPERA,
-//				DevQsarConstants.STANDARDIZER_OPERA,
-//				true);
-//		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
-//		DescriptorWebService testDescriptorWebService = new DescriptorWebService(DevQsarConstants.SERVER_LOCAL,
-//				DevQsarConstants.PORT_TEST_DESCRIPTORS,
-//				"TEST-descriptors/");
-//		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, testDescriptorWebService, "gsincl01");
+		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
+		DescriptorWebService testDescriptorWebService = new DescriptorWebService(DevQsarConstants.SERVER_819,
+				DevQsarConstants.PORT_TEST_DESCRIPTORS,
+				"TEST-descriptors/");
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, testDescriptorWebService, "gsincl01");
 		
-//		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
-//		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
-//		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
-//		bounds.add(temperatureBound);
-//		bounds.add(phBound);
-//		MappingParams mappingParams = new MappingParams(DevQsarConstants.BY_LIST, "ExpProp_WaterSolubility_WithChemProp_120121", 
-//				false, true, false, true, true, false, true);
-//		DatasetParams params = new DatasetParams("ExpProp_WaterSolubility_WithChemProp_Unfiltered_TestNewMapping", 
-//				"Final Henry's law constant experimental dataset from exp_prop, "
-//				+ "without parameter filtering, with refactored mapping", 
-//				DevQsarConstants.WATER_SOLUBILITY,
-//				mappingParams);
+		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
+		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
+		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+		bounds.add(temperatureBound);
+		bounds.add(phBound);
+		MappingParams mappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, "ExpProp_WaterSolubility_WithChemProp_120121", 
+				false, true, false, true, true, false, true);
+		DatasetParams params = new DatasetParams("ExpProp_WaterSolubility_WithChemProp_Unfiltered_TestNewMapping", 
+				"Final Henry's law constant experimental dataset from exp_prop, "
+				+ "without parameter filtering, with refactored mapping", 
+				DevQsarConstants.WATER_SOLUBILITY,
+				mappingParams);
 //				bounds);
 
-//		creator.createPropertyDataset(params, true);
-		
-		String chemicalListName = "WIKIPEDIA_2022_DRAFT";
-		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-		ChemicalListService clServ = new ChemicalListServiceImpl();
-		ChemicalList chemicalList = clServ.findByName(chemicalListName);
-		System.out.println(gson.toJson(chemicalList));
-		
-		SourceSubstanceService ssServ = new SourceSubstanceServiceImpl();
-		List<DsstoxRecord> dsstoxRecords = ssServ.findDsstoxRecordsByChemicalListName(chemicalListName);
-		System.out.println(gson.toJson(dsstoxRecords.iterator().next()));
-		System.out.println(dsstoxRecords.size());
+		creator.createPropertyDataset(params, true);
 	}
 }

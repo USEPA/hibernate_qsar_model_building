@@ -64,8 +64,8 @@ public class Model {
 	@Column(name="created_by")
 	private String createdBy;
 	
-	@OneToOne(mappedBy="model", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
-	private ModelBytes modelBytes;
+//	@OneToOne(mappedBy="model", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+//	private ModelBytes modelBytes;
 	
 	@OneToMany(mappedBy="model", cascade=CascadeType.ALL)
 	private List<ModelInModelSet> modelInModelSets;
@@ -73,7 +73,7 @@ public class Model {
 	@OneToMany(mappedBy="model", cascade=CascadeType.ALL)
 	private List<ModelStatistic> modelStatistics;
 	
-	@OneToMany(mappedBy="model", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	@OneToMany(mappedBy="model", cascade=CascadeType.ALL)
 	private List<Prediction> predictions;
 	
 	public Model() {}

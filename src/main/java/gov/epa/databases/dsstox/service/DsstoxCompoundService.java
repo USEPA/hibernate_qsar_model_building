@@ -34,8 +34,16 @@ public interface DsstoxCompoundService {
 
 	public List<DsstoxCompound> findByInchikeyIn(Collection<String> inchikeys, Session session);
 	
-	public List<DsstoxRecord> findDsstoxRecordsByDtxcidIn(Collection<String> dtxcids);
+	public List<DsstoxRecord> findAsDsstoxRecordsByDtxcid(String dtxcid);
 	
-	public List<DsstoxRecord> findDsstoxRecordsByDtxcidIn(Collection<String> dtxcids, Session session);
+	public List<DsstoxRecord> findAsDsstoxRecordsByDtxcid(String dtxcid, Session session);
+	
+	public List<DsstoxRecord> findAsDsstoxRecordsByInchikey(String inchikey);
+	
+	public List<DsstoxRecord> findAsDsstoxRecordsByInchikey(String inchikey, Session session);
+	
+	public List<DsstoxRecord> findAsDsstoxRecordsByDtxcidIn(Collection<String> dtxcids);
+	
+	public List<DsstoxRecord> findAsDsstoxRecordsByDtxcidIn(Collection<String> dtxcids, Session session);
 
 }
