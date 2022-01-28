@@ -58,9 +58,6 @@ public class PredictionReportGenerator extends ReportGenerator {
 	
 	public PredictionReportGenerator() {
 		super();
-				
-		this.predictionReport = new PredictionReport();
-		
 		datasetService = new DatasetServiceImpl();
 		descriptorSetService = new DescriptorSetServiceImpl();
 		dataPointService = new DataPointServiceImpl();
@@ -72,6 +69,8 @@ public class PredictionReportGenerator extends ReportGenerator {
 	}
 	
 	private void initPredictionReport(String datasetName, String descriptorSetName) {
+		this.predictionReport = new PredictionReport();
+		
 		Dataset dataset = datasetService.findByName(datasetName);
 		DescriptorSet descriptorSet = descriptorSetService.findByName(descriptorSetName);
 		predictionReport.predictionReportMetadata = new PredictionReportMetadata(datasetName, 
