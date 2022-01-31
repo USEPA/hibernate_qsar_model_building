@@ -16,25 +16,25 @@ public class PredictionReport {
 		public String datasetUnit;
 		public String descriptorSetName;
 		public String descriptorSetHeader;
+		public String splittingName;
 		
 		public PredictionReportMetadata(String datasetName, String datasetProperty, String datasetPropertyDescription, String datasetUnit, 
-				String descriptorSetName, String descriptorSetHeader) {
+				String descriptorSetName, String descriptorSetHeader, String splittingName) {
 			this.datasetName = datasetName;
 			this.datasetProperty = datasetProperty;
 			this.datasetPropertyDescription = datasetPropertyDescription;
 			this.datasetUnit = datasetUnit;
 			this.descriptorSetName = descriptorSetName;
 			this.descriptorSetHeader = descriptorSetHeader;
+			this.splittingName = splittingName;
 		}
 	}
 	
 	public static class PredictionReportModelMetadata extends ModelMetadata {
-		public String splittingName;
 		public List<PredictionReportModelStatistic> predictionReportModelStatistics = new ArrayList<PredictionReportModelStatistic>();
 		
-		public PredictionReportModelMetadata(String qsarMethodName, String qsarMethodDescription, String splittingName) {
+		public PredictionReportModelMetadata(String qsarMethodName, String qsarMethodDescription) {
 			super(qsarMethodName, qsarMethodDescription);
-			this.splittingName = splittingName;
 		}
 	}
 	

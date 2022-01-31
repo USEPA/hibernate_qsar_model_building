@@ -55,6 +55,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 	private ModelStatisticService modelStatisticService;
 	
 	private PredictionReport predictionReport;
+	private Map<String, Integer> splittingMap;
 	
 	public PredictionReportGenerator() {
 		super();
@@ -68,23 +69,30 @@ public class PredictionReportGenerator extends ReportGenerator {
 		modelStatisticService = new ModelStatisticServiceImpl();
 	}
 	
-	private void initPredictionReport(String datasetName, String descriptorSetName) {
+	private void initPredictionReport(String datasetName, String descriptorSetName, String splittingName) {
 		this.predictionReport = new PredictionReport();
 		
 		Dataset dataset = datasetService.findByName(datasetName);
 		DescriptorSet descriptorSet = descriptorSetService.findByName(descriptorSetName);
-		predictionReport.predictionReportMetadata = new PredictionReportMetadata(datasetName, 
+		this.predictionReport.predictionReportMetadata = new PredictionReportMetadata(datasetName, 
 				dataset.getProperty().getName(), 
 				dataset.getProperty().getDescription(),
 				dataset.getUnit().getName(),
 				descriptorSetName,
-				descriptorSet.getHeadersTsv());
+				descriptorSet.getHeadersTsv(),
+				splittingName);
 		
 		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
 		List<PredictionReportDataPoint> predictionReportData = dataPoints.stream()
 				.map(dp -> new PredictionReportDataPoint(dp))
 				.collect(Collectors.toList());
-		predictionReport.predictionReportDataPoints = predictionReportData;
+		this.predictionReport.predictionReportDataPoints = predictionReportData;
+		System.out.println(predictionReportData.size());
+		
+		List<DataPointInSplitting> dataPointsInSplitting = 
+				dataPointInSplittingService.findByDatasetNameAndSplittingName(datasetName, splittingName);
+		this.splittingMap = dataPointsInSplitting.stream()
+				.collect(Collectors.toMap(dpis -> dpis.getDataPoint().getCanonQsarSmiles(), dpis -> dpis.getSplitNum()));
 	}
 	
 	private void addDescriptorValues() {
@@ -101,6 +109,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 		List<Model> models = modelService.findByDatasetName(predictionReport.predictionReportMetadata.datasetName);
 		models = models.stream()
 				.filter(m -> m.getDescriptorSetName().equals(predictionReport.predictionReportMetadata.descriptorSetName))
+				.filter(m -> m.getSplittingName().equals(predictionReport.predictionReportMetadata.splittingName))
 				.collect(Collectors.toList());
 		for (Model model:models) {
 			addModelPredictionsAndMetadata(model);
@@ -113,19 +122,12 @@ public class PredictionReportGenerator extends ReportGenerator {
 		}
 		
 		PredictionReportModelMetadata modelMetadata = new PredictionReportModelMetadata(model.getMethod().getName(),
-				model.getMethod().getDescription(),
-				model.getSplittingName());
+				model.getMethod().getDescription());
 		List<ModelStatistic> modelStatistics = modelStatisticService.findByModelId(model.getId());
 		modelMetadata.predictionReportModelStatistics = modelStatistics.stream()
 				.map(ms -> new PredictionReportModelStatistic(ms.getStatistic().getName(), ms.getStatisticValue()))
 				.collect(Collectors.toList());
 		predictionReport.predictionReportModelMetadata.add(modelMetadata);
-		
-		List<DataPointInSplitting> dataPointsInSplitting = 
-				dataPointInSplittingService.findByDatasetNameAndSplittingName(predictionReport.predictionReportMetadata.datasetName, 
-				model.getSplittingName());
-		Map<String, Integer> splittingMap = dataPointsInSplitting.stream()
-				.collect(Collectors.toMap(dpis -> dpis.getDataPoint().getCanonQsarSmiles(), dpis -> dpis.getSplitNum()));
 		
 		Method method = model.getMethod();
 		List<Prediction> modelPredictions = predictionService.findByModelId(model.getId());
@@ -143,8 +145,8 @@ public class PredictionReportGenerator extends ReportGenerator {
 		}
 	}
 	
-	public PredictionReport generateForAllPredictions(String datasetName, String descriptorSetName) {
-		initPredictionReport(datasetName, descriptorSetName);
+	public PredictionReport generateForAllPredictions(String datasetName, String descriptorSetName, String splittingName) {
+		initPredictionReport(datasetName, descriptorSetName, splittingName);
 		addOriginalCompounds(predictionReport.predictionReportDataPoints);
 		addDescriptorValues();
 		addAllPredictions();
@@ -153,7 +155,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 	
 	public PredictionReport generateForModelPredictions(Long modelId) {
 		Model model = modelService.findById(modelId);
-		initPredictionReport(model.getDatasetName(), model.getDescriptorSetName());
+		initPredictionReport(model.getDatasetName(), model.getDescriptorSetName(), model.getSplittingName());
 		addOriginalCompounds(predictionReport.predictionReportDataPoints);
 		addDescriptorValues();
 		addModelPredictionsAndMetadata(model);
@@ -178,8 +180,9 @@ public class PredictionReportGenerator extends ReportGenerator {
 
 		
 		for (String datasetName:datasets) {
+			String splittingName = datasetName.substring(datasetName.lastIndexOf(" ") + 1);
 			
-			String filePath = "reports/"+ datasetName + "_" + descriptorSetName + "_PredictionReport.json";
+			String filePath = "data/reports/"+ datasetName + "_" + descriptorSetName + "_" + splittingName + "_PredictionReport.json";
 			
 			File file = new File(filePath);
 			if (file.getParentFile()!=null) {
@@ -188,7 +191,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 			
 			long t1=System.currentTimeMillis();
 			
-			PredictionReport report=generateForAllPredictions(datasetName, descriptorSetName);
+			PredictionReport report=generateForAllPredictions(datasetName, descriptorSetName, splittingName);
 			
 			long t2=System.currentTimeMillis();
 			
@@ -234,6 +237,9 @@ public class PredictionReportGenerator extends ReportGenerator {
 //		String datasetName = "Vapor pressure OPERA";
 //		String datasetName = "Octanol water partition coefficient OPERA";
 		
+		String splittingName = "TEST";
+//		String splittingName = "OPERA";
+		
 		String descriptorSetName = "T.E.S.T. 5.1";
 		
 		String filePath = "data/reports/"+ datasetName + "_" + descriptorSetName + "_PredictionReport.json";
@@ -245,7 +251,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 		
 		long t1=System.currentTimeMillis();
 		
-		PredictionReport report=gen.generateForAllPredictions(datasetName, descriptorSetName);
+		PredictionReport report=gen.generateForAllPredictions(datasetName, descriptorSetName, splittingName);
 		
 		long t2=System.currentTimeMillis();
 		
