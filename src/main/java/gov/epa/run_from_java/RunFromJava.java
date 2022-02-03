@@ -133,10 +133,10 @@ public class RunFromJava {
 
 
 
-	public static PredictionReport reportAllPredictions(String datasetName,String descriptorSetName) {
+	public static PredictionReport reportAllPredictions(String datasetName,String descriptorSetName,String splittingName) {
 
 		long t1=System.currentTimeMillis();
-		PredictionReport report=gen.generateForAllPredictions(datasetName, descriptorSetName);
+		PredictionReport report=gen.generateForAllPredictions(datasetName, descriptorSetName,splittingName);
 		long t2=System.currentTimeMillis();
 
 		double time=(t2-t1)/1000.0;
@@ -147,9 +147,9 @@ public class RunFromJava {
 	}
 
 
-	public void reportAllPredictions(Vector<String> datasetNames,String descriptorSetName) {
+	public void reportAllPredictions(Vector<String> datasetNames,String descriptorSetName,String splittingName) {
 		for (String datasetName:datasetNames) {
-			reportAllPredictions(datasetName, descriptorSetName);
+			reportAllPredictions(datasetName, descriptorSetName,splittingName);
 		}
 	}
 
@@ -224,13 +224,13 @@ public class RunFromJava {
 		String sampleSource="OPERA";
 //		String sampleSource="TEST";
 		
-		String endpoint=DevQsarConstants.LOG_OH;
+//		String endpoint=DevQsarConstants.LOG_OH;
 //		String endpoint=DevQsarConstants.LOG_KOW;
 //		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
 //		String endpoint=DevQsarConstants.BOILING_POINT;
 //		String endpoint=DevQsarConstants.LLNA;
 //		String endpoint=DevQsarConstants.LOG_KOW;
-//		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
+		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
 //		String endpoint=DevQsarConstants.DEV_TOX;
 				
 		String datasetName = endpoint +" "+sampleSource;
@@ -267,7 +267,7 @@ public class RunFromJava {
 		//		String descriptorSetName = "T.E.S.T. 5.1";
 		//		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
 		//		String datasetName = endpoint+" OPERA";
-		run.reportAllPredictions(datasetName,descriptorSetName);		
+		run.reportAllPredictions(datasetName,descriptorSetName,splittingName);		
 
 		//*****************************************************************************************	
 		//		run.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);

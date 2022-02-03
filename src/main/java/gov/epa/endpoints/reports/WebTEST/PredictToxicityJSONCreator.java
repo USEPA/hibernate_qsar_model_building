@@ -13,6 +13,8 @@ import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.QsarPredictedValue;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportMetadata;
+import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
+import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelStatistic;
 import wekalite.Instance;
 import wekalite.Instances;
 
@@ -230,6 +232,8 @@ public class PredictToxicityJSONCreator {
 
 			pr.setCAS(testDataPoint.originalCompounds.get(0).casrn);
 			pr.setEndpoint(dataset.metadata.datasetProperty);
+			pr.setEndpointDescription(dataset.metadata.datasetPropertyDescription);
+			
 			pr.setBinaryEndpoint(isBinaryEndpoint);
 			pr.setLogMolarEndpoint(isLogMolarEndpoint);
 			pr.setMethod(method);
@@ -300,7 +304,7 @@ public class PredictToxicityJSONCreator {
 			} else {
 				writeMainTable(dataset.metadata, pr, dtxcid, predToxVal, predToxUnc, MW, er, testDataPoint.errorMessage);
 			}
-			this.writeIndividualPredictionsForConsensus(pr,testDataPoint.qsarPredictedValues,units);			
+			this.writeIndividualPredictionsForConsensus(pr,testDataPoint.qsarPredictedValues,units,dataset.predictionReportModelMetadata);			
 			return pr;
 
 		} catch (Exception ex) {
@@ -866,7 +870,7 @@ private static void createQSARUnitsRow(String units, Double predToxVal, Double p
 //	 * @param createDetailedConsensusReport
 //	 * @throws Exception
 //	 */
-	private void writeIndividualPredictionsForConsensus(PredictionResults pr, List<QsarPredictedValue>preds,String units)
+	private void writeIndividualPredictionsForConsensus(PredictionResults pr, List<QsarPredictedValue>preds,String units,List<PredictionReportModelMetadata> predictionReportModelMetadata)
 					throws Exception {
 
 		IndividualPredictionsForConsensus individualPredictionsForConsensus = new IndividualPredictionsForConsensus();
@@ -887,6 +891,7 @@ private static void createQSARUnitsRow(String units, Double predToxVal, Double p
 			IndividualPredictionsForConsensus.PredictionIndividualMethod predIndMethod = new IndividualPredictionsForConsensus().new PredictionIndividualMethod();
 
 			predIndMethod.setMethod(pred.qsarMethodName);
+			predIndMethod.setMethodDescription(getMethodDescription(predictionReportModelMetadata,pred.qsarMethodName));
 			
 			
 			if (pred.qsarPredictedValue==null) {
@@ -897,6 +902,31 @@ private static void createQSARUnitsRow(String units, Double predToxVal, Double p
 			individualPredictionsForConsensus.getConsensusPredictions().add(predIndMethod);
 		}
 
+	}
+	
+	private String getMethodDescription(List<PredictionReportModelMetadata> predictionReportModelMetadata,String methodName) {
+
+		for (PredictionReportModelMetadata modelMetadata:predictionReportModelMetadata) {
+			if (modelMetadata.qsarMethodName.equals(methodName)) {
+				return addHyperlinkToDescription(modelMetadata.qsarMethodDescription);
+			}
+		}
+		
+		return "N/A";
+		
+	}
+	
+	
+	private String addHyperlinkToDescription (String description) {
+		if (!description.contains("http")) {
+			return description;
+		} else {			
+			String link=description.substring(description.indexOf("(")+1,description.indexOf(")"));
+			String text = description.substring(0, description.indexOf("("));
+			String result= "<a href=\""+link+"\" target=\"_blank\">"+text+"</a>";
+//			System.out.println(result);
+			return result;			
+		}
 	}
 
 	

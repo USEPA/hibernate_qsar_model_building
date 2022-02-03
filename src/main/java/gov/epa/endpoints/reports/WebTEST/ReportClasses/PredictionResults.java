@@ -11,6 +11,9 @@ public class PredictionResults {
     private String CAS;//test chemical CAS (chemical being predicted)
 
     private String endpoint; //endpoint being calculated
+    private String endpointDescription;
+
+    
     private String method;//method used to calculate endpoint
 
     private int imgSize;//size of image to display
@@ -46,6 +49,7 @@ public class PredictionResults {
 	
 	private ApplicabilityDomainNN ApplicabilityDomainNN;
 
+	
 	
 	public ApplicabilityDomainNN getApplicabilityDomainNN() {
 		return ApplicabilityDomainNN;
@@ -203,4 +207,13 @@ public class PredictionResults {
     public void setWebPathDetails(String webPath2) {
         this.webPathDetails = webPath2;
     }
+
+	public void setEndpointDescription(String endpointDescription) {
+		this.endpointDescription=endpointDescription;		
+	}
+	
+	public String getEndpointDescription() {
+		return endpointDescription;		
+	}
+
 }

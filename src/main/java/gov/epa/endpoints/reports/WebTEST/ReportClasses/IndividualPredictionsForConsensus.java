@@ -12,7 +12,17 @@ public class IndividualPredictionsForConsensus {
 
     public class PredictionIndividualMethod {
         String method;
-        String prediction;
+        String methodDescription;
+        
+        public String getMethodDescription() {
+			return methodDescription;
+		}
+
+		public void setMethodDescription(String methodDescription) {
+			this.methodDescription = methodDescription;
+		}
+
+		String prediction;
         String fileName;
 
         public String getMethod() {
