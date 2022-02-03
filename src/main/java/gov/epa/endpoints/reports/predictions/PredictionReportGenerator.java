@@ -122,7 +122,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 			return;
 		}
 		
-		PredictionReportModelMetadata modelMetadata = new PredictionReportModelMetadata(model.getMethod().getName(),
+		PredictionReportModelMetadata modelMetadata = new PredictionReportModelMetadata(model.getId(), model.getMethod().getName(),
 				model.getMethod().getDescription());
 		List<ModelStatistic> modelStatistics = modelStatisticService.findByModelId(model.getId());
 		modelMetadata.predictionReportModelStatistics = modelStatistics.stream()
