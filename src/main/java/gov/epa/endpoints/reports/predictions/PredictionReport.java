@@ -11,6 +11,7 @@ public class PredictionReport {
 	
 	public static class PredictionReportMetadata {
 		public String datasetName;
+		public String datasetDescription;
 		public String datasetProperty;
 		public String datasetPropertyDescription;
 		public String datasetUnit;
@@ -18,9 +19,10 @@ public class PredictionReport {
 		public String descriptorSetHeader;
 		public String splittingName;
 		
-		public PredictionReportMetadata(String datasetName, String datasetProperty, String datasetPropertyDescription, String datasetUnit, 
-				String descriptorSetName, String descriptorSetHeader, String splittingName) {
+		public PredictionReportMetadata(String datasetName, String datasetDescription, String datasetProperty, String datasetPropertyDescription, 
+				String datasetUnit, String descriptorSetName, String descriptorSetHeader, String splittingName) {
 			this.datasetName = datasetName;
+			this.datasetDescription = datasetDescription;
 			this.datasetProperty = datasetProperty;
 			this.datasetPropertyDescription = datasetPropertyDescription;
 			this.datasetUnit = datasetUnit;

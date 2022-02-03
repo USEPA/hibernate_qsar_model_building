@@ -75,6 +75,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 		Dataset dataset = datasetService.findByName(datasetName);
 		DescriptorSet descriptorSet = descriptorSetService.findByName(descriptorSetName);
 		this.predictionReport.predictionReportMetadata = new PredictionReportMetadata(datasetName, 
+				dataset.getDescription(),
 				dataset.getProperty().getName(), 
 				dataset.getProperty().getDescription(),
 				dataset.getUnit().getName(),
