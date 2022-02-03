@@ -42,6 +42,8 @@ public class PredictToxicityWebPageCreatorFromJSON {
 	private void writeHeaderInfo(FileWriter fw, String CAS, String endpoint, String method) throws IOException {
 
 		fw.write("<html>\n");
+		
+		writeToolTipStyle(fw);
 		fw.write("<head>\n");
 
 		// fw.write("<title>Prediction results from the "+method+" method\n");
@@ -49,6 +51,40 @@ public class PredictToxicityWebPageCreatorFromJSON {
 		fw.write("</title>\n");
 		fw.write("</head>\n");
 
+	}
+	
+	private void writeToolTipStyle(FileWriter fw) throws IOException {
+		
+		
+		String style="<style>\r\n"
+				+ ".tooltip {\r\n"
+				+ "  position: relative;\r\n"
+				+ "  display: inline-block;\r\n"
+				+ "  border-bottom: 1px dotted black;\r\n"
+				+ "}\r\n"
+				+ "\r\n"
+				+ ".tooltip .tooltiptext {\r\n"
+				+ "  visibility: hidden;\r\n"
+				+ "  width: 120px;\r\n"
+				+ "  background-color: black;\r\n"
+				+ "  color: #fff;\r\n"
+				+ "  text-align: center;\r\n"
+				+ "  border-radius: 6px;\r\n"
+				+ "  padding: 5px 0;\r\n"
+				+ "  \r\n"
+				+ "  /* Position the tooltip */\r\n"
+				+ "  position: absolute;\r\n"
+				+ "  z-index: 1;\r\n"
+				+ "  top: -5px;\r\n"
+				+ "  left: 105%;\r\n"
+				+ "}\r\n"
+				+ "\r\n"
+				+ ".tooltip:hover .tooltiptext {\r\n"
+				+ "  visibility: visible;\r\n"
+				+ "}\r\n"
+				+ "</style>";
+		fw.write(style);
+		
 	}
 	
 	private void writeAD_NN(FileWriter fw,PredictionResults pr) throws Exception {
@@ -613,8 +649,14 @@ public class PredictToxicityWebPageCreatorFromJSON {
 		
 		this.writeHeaderInfo(fw, pr.getCAS(), pr.getEndpoint(), pr.getMethod());
 
-		fw.write("<h2>Predicted " + pr.getEndpoint() + " for <font color=\"blue\">" + pr.getCAS() + "</font> from " + pr.getMethod() + " method</h2>\n");
+//		fw.write("<h2>Predicted " + pr.getEndpoint() + " for <font color=\"blue\">" + pr.getCAS() + "</font> from " + pr.getMethod() + " method</h2>\n");
 
+//		fw.write("<h2>Predicted ");
+//		fw.write("<div class=\"tooltip\">"+pr.getEndpoint()+"<span class=\"tooltiptext\">Tooltip text</span></div>");
+//		fw.write(" for <font color=\"blue\">" + pr.getCAS() + "</font> from " + pr.getMethod() + " method</h2>\n");
+				
+		fw.write("<h2>Predicted ");
+		fw.write(pr.getEndpointDescription()+" for <font color=\"blue\">" + pr.getCAS() + "</font> from " + pr.getMethod() + " method</h2>\n");
 		
 		
 		if (pr.isBinaryEndpoint()) {
@@ -938,7 +980,8 @@ public class PredictToxicityWebPageCreatorFromJSON {
 
 		fw.write("<tr bgcolor=\"#D3D3D3\">\n");
 		fw.write("<th>Method</th>\n");
-
+		fw.write("<th>Method Description</th>\n");
+		
 		
 		fw.write("<th>Predicted value<br>" + units + "</th>\n");
 		
@@ -949,21 +992,26 @@ public class PredictToxicityWebPageCreatorFromJSON {
 		
 		for (int i = 0; i < vecPredCons.size(); i++) {
 			
-			PredictionIndividualMethod predConsensus=vecPredCons.get(i);
+			PredictionIndividualMethod predictionIndividualMethod=vecPredCons.get(i);
 			
-			String method=predConsensus.getMethod();
-			String pred=predConsensus.getPrediction();
+			String method=predictionIndividualMethod.getMethod();
+			String methodDescription=predictionIndividualMethod.getMethodDescription();
+			
+			String pred=predictionIndividualMethod.getPrediction();
+			
 			
 			if (method.equals("Consensus"))	continue;
 			
 			fw.write("<tr>\n");
 
 			fw.write("<td>" + method + "</td>\n");
+			fw.write("<td>" + methodDescription + "</td>\n");
 
 			if (pr.isCreateDetailedReport())
-				this.writeCenteredTD(fw, "<a href=\"" + predConsensus.getFileName() + "\">"+pred+"</a>");
-			else 
+				this.writeCenteredTD(fw, "<a href=\"" + predictionIndividualMethod.getFileName() + "\">"+pred+"</a>");
+			else {
 				this.writeCenteredTD(fw, pred);
+			}
 
 			fw.write("</tr>\n");
 		}

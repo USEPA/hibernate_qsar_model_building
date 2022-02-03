@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 import com.google.gson.Gson;
@@ -16,6 +17,7 @@ import gov.epa.endpoints.reports.WebTEST.ReportClasses.PredictionResults;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportMetadata;
+import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
 import gov.epa.run_from_java.RunFromJava;
 import wekalite.Instances;
 
@@ -40,7 +42,8 @@ public class GenerateWebTestReport {
 		Instances instancesTraining;
 		Instances instancesPrediction;
 		Hashtable<String, PredictionReportDataPoint>ht_datapoints;
-		PredictionReportMetadata metadata;		
+		PredictionReportMetadata metadata;
+		List<PredictionReportModelMetadata> predictionReportModelMetadata;
 		Double maeTraining;
 		double maePrediction;
 		public double scFracTraining;
@@ -85,12 +88,12 @@ public class GenerateWebTestReport {
     /**
      * Allows one to cache the data for a dataset so new reports can be generated quickly
      * 
-     * @param data
+     * @param predictionReport
      */
-    public static void storeDataSetInCache(PredictionReport data) {
+    public static void storeDataSetInCache(PredictionReport predictionReport) {
     	
-    	String dataSetName=data.predictionReportMetadata.datasetName;
-    	String descriptorHeader=data.predictionReportMetadata.descriptorSetHeader;
+    	String dataSetName=predictionReport.predictionReportMetadata.datasetName;
+    	String descriptorHeader=predictionReport.predictionReportMetadata.descriptorSetHeader;
     	
     	//TODO- right now mass units are figured out using PredictToxicityJSONCreator.getMassUnits()
 //    	data.predictionReportMetadata.datasetUnitMass=TESTConstants.getMassUnits(data.predictionReportMetadata.datasetProperty);
@@ -103,14 +106,14 @@ public class GenerateWebTestReport {
     	Dataset dataset=new Dataset();    	
     	htDatasets.put(dataSetName, dataset);
     	
-    	dataset.instancesTraining=createWekaliteInstances(data, descriptorHeader, 0);
-    	dataset.instancesPrediction=createWekaliteInstances(data, descriptorHeader, 1);
-    	dataset.maeTraining=CalculateMAE(data.predictionReportDataPoints, 0);
-    	dataset.maePrediction=CalculateMAE(data.predictionReportDataPoints, 1);
+    	dataset.instancesTraining=createWekaliteInstances(predictionReport, descriptorHeader, 0);
+    	dataset.instancesPrediction=createWekaliteInstances(predictionReport, descriptorHeader, 1);
+    	dataset.maeTraining=CalculateMAE(predictionReport.predictionReportDataPoints, 0);
+    	dataset.maePrediction=CalculateMAE(predictionReport.predictionReportDataPoints, 1);
     	
     	dataset.ht_datapoints=new Hashtable<String,PredictionReportDataPoint>();//lookup predictions by smiles	    	
     	//Store predictions by smiles:
-		for (PredictionReportDataPoint dataPoint:data.predictionReportDataPoints) {
+		for (PredictionReportDataPoint dataPoint:predictionReport.predictionReportDataPoints) {
 			dataset.ht_datapoints.put(dataPoint.canonQsarSmiles, dataPoint);
 
 			//delete descriptor info since already storing in the instances...
@@ -118,7 +121,8 @@ public class GenerateWebTestReport {
 //			System.out.println(dataPoint.canonQsarSmiles+"\t"+ht.get(dataPoint.canonQsarSmiles).qsarPredictedValues.size());
 		}    		
     	
-    	dataset.metadata=data.predictionReportMetadata;
+    	dataset.metadata=predictionReport.predictionReportMetadata;
+    	dataset.predictionReportModelMetadata=predictionReport.predictionReportModelMetadata;
 
 
 		//Data for Applicability domain
@@ -264,8 +268,8 @@ public class GenerateWebTestReport {
 
 		try {
 			Reader reader = Files.newBufferedReader(Paths.get(jsonfilepath));
-			PredictionReport data=gson.fromJson(reader, PredictionReport.class);
-			return data;
+			PredictionReport predictionReport=gson.fromJson(reader, PredictionReport.class);
+			return predictionReport;
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -280,11 +284,11 @@ public class GenerateWebTestReport {
 		
 		String descriptorSet="T.E.S.T. 5.1";
 		
-//		String sampleSource="OPERA";
+		String sampleSource="OPERA";
 //		String endpoint=DevQsarConstants.MELTING_POINT;//done
 //		String endpoint=DevQsarConstants.LOG_BCF;//done
 //		String endpoint=DevQsarConstants.LOG_HALF_LIFE;//done
-//		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;//done
+		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;//done
 //		String endpoint=DevQsarConstants.VAPOR_PRESSURE;//done
 //		String endpoint=DevQsarConstants.WATER_SOLUBILITY;//done
 //		String endpoint=DevQsarConstants.MELTING_POINT;//done
@@ -295,28 +299,29 @@ public class GenerateWebTestReport {
 //		String endpoint=DevQsarConstants.BOILING_POINT;//done
 //		String endpoint=DevQsarConstants.LOG_KOW;//done
 		
-		String sampleSource="TEST";
+//		String sampleSource="TEST";
 //		String endpoint=DevQsarConstants.LC50;//done
 //		String endpoint=DevQsarConstants.LC50DM//done;
 //		String endpoint=DevQsarConstants.LD50;//done
-		String endpoint=DevQsarConstants.IGC50;//done
+//		String endpoint=DevQsarConstants.IGC50;//done
 //		String endpoint=DevQsarConstants.DEV_TOX;//done
 //		String endpoint=DevQsarConstants.MUTAGENICITY;
 //		String endpoint=DevQsarConstants.LLNA;
-		
+
+		String splittingName=sampleSource;
 		String datasetName = endpoint +" "+sampleSource;
 		System.out.println("Generating report for "+datasetName);
 		
-		PredictionReport data=null;
-		String filepathReport="reports/"+datasetName+"_"+descriptorSet+"_PredictionReport.json";		
+		PredictionReport predictionReport=null;
+		String filepathReport="data/reports/"+datasetName+"_"+descriptorSet+"_PredictionReport.json";		
 
 		
 		if (genReport) {
 			//Create report as json file by querying the postgres db: (takes time- should use storeDataSetData to cache it)
-			data=RunFromJava.reportAllPredictions(datasetName, descriptorSet);
+			predictionReport=RunFromJava.reportAllPredictions(datasetName, descriptorSet,splittingName);
 		} else {
 			//Load report from json file:
-			data=loadDataSetFromJson(filepathReport);	
+			predictionReport=loadDataSetFromJson(filepathReport);	
 		}
 		
 			
@@ -325,13 +330,13 @@ public class GenerateWebTestReport {
 		PredictionReportDataPoint testDataPoint=(PredictionReportDataPoint) data2.predictionReportDataPoints.get(0);		
 		
 		System.out.print("Storing report data in cache...");
-		storeDataSetInCache(data);//store dataset info in cache
+		storeDataSetInCache(predictionReport);//store dataset info in cache
 //		System.out.println("number of data points in json file="+data.predictionReportDataPoints.size());
 		System.out.print("done\n");
 	
 
-		String outputPath="reports/"+data.predictionReportMetadata.datasetName+".html";
-		generateReport(data.predictionReportMetadata.datasetName, testDataPoint,outputPath);
+		String outputPath="data/reports/"+predictionReport.predictionReportMetadata.datasetName+".html";
+		generateReport(predictionReport.predictionReportMetadata.datasetName, testDataPoint,outputPath);
 
 	}
 
