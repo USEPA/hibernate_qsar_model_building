@@ -14,7 +14,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
-import gov.epa.endpoints.reports.model_sets.ModelSetTable.ModelSetTableModelMetadata;
+import gov.epa.endpoints.reports.ModelMetadata;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable.ModelSetTableRow;
 
 public class ModelSetTableGenerator {
@@ -37,21 +37,23 @@ public class ModelSetTableGenerator {
 		Map<String, ModelSetTableRow> rowMap = new HashMap<String, ModelSetTableRow>();
 		for (Model model:models) {
 			String datasetName = model.getDatasetName();
-			ModelSetTableRow row = rowMap.get(datasetName);
+			String descriptorSetName = model.getDescriptorSetName();
+			String splittingName = model.getSplittingName();
+			String mapId = String.join("_", datasetName, descriptorSetName, splittingName);
+			ModelSetTableRow row = rowMap.get(mapId);
 			
 			if (row==null) {
 				Dataset dataset = datasetService.findByName(datasetName);
-				row = new ModelSetTableRow(dataset);
+				row = new ModelSetTableRow(dataset, descriptorSetName, splittingName);
 			}
 			
 			Method method = model.getMethod();
-			row.modelSetTableModelMetadata.add(new ModelSetTableModelMetadata(model.getId(), method.getName(), method.getDescription(),
-					model.getDescriptorSetName(), model.getSplittingName()));
-			rowMap.put(datasetName, row);
+			row.modelMetadata.add(new ModelMetadata(model.getId(), method.getName(), method.getDescription()));
+			rowMap.put(mapId, row);
 		}
 		
-		for (String datasetName:rowMap.keySet()) {
-			modelSetTable.modelSetTableRows.add(rowMap.get(datasetName));
+		for (String mapId:rowMap.keySet()) {
+			modelSetTable.modelSetTableRows.add(rowMap.get(mapId));
 		}
 		
 		return modelSetTable;

@@ -17,13 +17,18 @@ public class ModelSetTable {
 		String propertyName;
 		String propertyDescription;
 		String propertyType;
+		
 		Long datasetId;
 		String datasetName;
 		String datasetDescription;
 		String datasetUnitName;
-		List<ModelSetTableModelMetadata> modelSetTableModelMetadata = new ArrayList<ModelSetTableModelMetadata>();
 		
-		public ModelSetTableRow(Dataset dataset) {
+		String descriptorSetName;
+		String splittingName;
+		
+		List<ModelMetadata> modelMetadata = new ArrayList<ModelMetadata>();
+		
+		public ModelSetTableRow(Dataset dataset, String descriptorSetName, String splittingName) {
 			this.datasetId = dataset.getId();
 			this.datasetName = dataset.getName();
 			this.datasetDescription = dataset.getDescription();
@@ -51,16 +56,7 @@ public class ModelSetTable {
 			
 			Unit unit = dataset.getUnit();
 			this.datasetUnitName = unit.getName();
-		}
-	}
-	
-	public static class ModelSetTableModelMetadata extends ModelMetadata {
-		String descriptorSetName;
-		String splittingName;
-		
-		public ModelSetTableModelMetadata(Long modelId, String qsarMethodName, String qsarMethodDescription,
-				String descriptorSetName, String splittingName) {
-			super(modelId, qsarMethodName, qsarMethodDescription);
+			
 			this.descriptorSetName = descriptorSetName;
 			this.splittingName = splittingName;
 		}
