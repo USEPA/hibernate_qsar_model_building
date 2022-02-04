@@ -14,7 +14,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
-import gov.epa.endpoints.reports.ModelMetadata;
+import gov.epa.endpoints.reports.model_sets.ModelSetTable.ModelSetTableModelMetadata;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable.ModelSetTableRow;
 
 public class ModelSetTableGenerator {
@@ -45,7 +45,8 @@ public class ModelSetTableGenerator {
 			}
 			
 			Method method = model.getMethod();
-			row.modelMetadata.add(new ModelMetadata(model.getId(), method.getName(), method.getDescription()));
+			row.modelSetTableModelMetadata.add(new ModelSetTableModelMetadata(model.getId(), method.getName(), method.getDescription(),
+					model.getDescriptorSetName(), model.getSplittingName()));
 			rowMap.put(datasetName, row);
 		}
 		

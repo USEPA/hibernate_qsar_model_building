@@ -7,23 +7,29 @@ import java.util.stream.Collectors;
 
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit;
 import gov.epa.endpoints.reports.ModelMetadata;
 
 public class ModelSetTable {
 	
 	public static class ModelSetTableRow {
+		Long propertyId;
 		String propertyName;
 		String propertyDescription;
+		String propertyType;
+		Long datasetId;
 		String datasetName;
 		String datasetDescription;
-		String propertyType;
-		List<ModelMetadata> modelMetadata = new ArrayList<ModelMetadata>();
+		String datasetUnitName;
+		List<ModelSetTableModelMetadata> modelSetTableModelMetadata = new ArrayList<ModelSetTableModelMetadata>();
 		
 		public ModelSetTableRow(Dataset dataset) {
+			this.datasetId = dataset.getId();
 			this.datasetName = dataset.getName();
 			this.datasetDescription = dataset.getDescription();
 			
 			Property property = dataset.getProperty();
+			this.propertyId = property.getId();
 			this.propertyName = property.getName();
 			this.propertyDescription = property.getDescription();
 			
@@ -42,6 +48,21 @@ public class ModelSetTable {
 			} else {
 				this.propertyType = "Other";
 			}
+			
+			Unit unit = dataset.getUnit();
+			this.datasetUnitName = unit.getName();
+		}
+	}
+	
+	public static class ModelSetTableModelMetadata extends ModelMetadata {
+		String descriptorSetName;
+		String splittingName;
+		
+		public ModelSetTableModelMetadata(Long modelId, String qsarMethodName, String qsarMethodDescription,
+				String descriptorSetName, String splittingName) {
+			super(modelId, qsarMethodName, qsarMethodDescription);
+			this.descriptorSetName = descriptorSetName;
+			this.splittingName = splittingName;
 		}
 	}
 	
