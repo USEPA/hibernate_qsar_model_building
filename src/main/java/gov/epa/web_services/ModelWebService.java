@@ -66,4 +66,15 @@ public class ModelWebService extends WebService {
 		
 		return response;
 	}
+	
+	public HttpResponse<String> callDescriptors(byte[] modelBytes, String qsarMethod, String modelId) {
+		InputStream model = new BufferedInputStream(new ByteArrayInputStream(modelBytes));
+		HttpResponse<String> response = Unirest.post(server+":"+port+"/models/{qsar_method}/descriptors")
+				.routeParam("qsar_method", qsarMethod)
+				.field("model_id", modelId)
+				.field("model", model, "model.bin")
+				.asString();
+		
+		return response;
+	}
 }

@@ -1,9 +1,12 @@
 package gov.epa.endpoints.models;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
@@ -56,7 +59,6 @@ public class ModelBuilder {
 	
 	private static Logger logger = LogManager.getLogger(ModelBuilder.class);
 	private static Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-	private static Random rand = new Random();
 	
 	public ModelBuilder(ModelWebService modelWebService, String lanId) {
 		// Set logging providers for Hibernate and MChange
@@ -251,5 +253,40 @@ public class ModelBuilder {
 		predict(data, methodName, modelId);
 		
 		return modelId;
+	}
+	
+	public void listDescriptors(Long modelId) {
+		if (modelId==null) {
+			logger.error("Model with supplied parameters has not been built");
+			return;
+		}
+		
+		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
+		if (modelBytes==null) {
+			return;
+		}
+		
+		byte[] bytes = modelBytes.getBytes();
+		
+		Model model = modelBytes.getModel();
+		String fullMethodName = model.getMethod().getName();
+		String methodName = fullMethodName.substring(0, fullMethodName.indexOf("_"));
+		
+		String strModelId = String.valueOf(modelId);
+		String descriptors = modelWebService.callDescriptors(bytes, methodName, strModelId).getBody();
+		
+		String fileName = "data/descriptors/" + model.getDatasetName()
+			+ "_" + model.getDescriptorSetName()
+			+ "_" + model.getSplittingName()
+			+ "_" + methodName + "_" + modelId + "_descriptors.txt";
+		File file = new File(fileName);
+		file.getParentFile().mkdirs();
+		
+		try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+			bw.write(descriptors);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }
