@@ -24,6 +24,8 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.endpoints.datasets.ExplainedResponse;
 
@@ -42,6 +44,7 @@ public class PropertyValue {
 	@NotNull(message="Property required to create property value")
 	@ManyToOne
 	@JoinColumn(name="fk_property_id")
+	@JsonManagedReference
 	private ExpPropProperty property;
 	
 	@NotNull(message="Unit required to create property value")
@@ -51,10 +54,12 @@ public class PropertyValue {
 	
 	@ManyToOne
 	@JoinColumn(name="fk_public_source_id")
+	@JsonManagedReference
 	private PublicSource publicSource;
 	
 	@ManyToOne
 	@JoinColumn(name="fk_literature_source_id")
+	@JsonManagedReference
 	private LiteratureSource literatureSource;
 	
 	// If there is a direct link to a static page with chemical information available

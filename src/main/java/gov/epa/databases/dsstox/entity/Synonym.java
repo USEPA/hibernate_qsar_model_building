@@ -34,10 +34,10 @@ public class Synonym {
 	private String source;
 
 	@Column(name="synonym_type")
-	private String type;
+	private String synonymType;
 
 	@Column(name="synonym_quality")
-	private String quality;
+	private String synonymQuality;
 
 	@Column(name="qc_notes")
 	private String qcNotes;
@@ -93,19 +93,19 @@ public class Synonym {
 	}
 
 	public String getType() {
-		return type;
+		return synonymType;
 	}
 
 	public void setType(String type) {
-		this.type = type;
+		this.synonymType = type;
 	}
 
 	public String getQuality() {
-		return quality;
+		return synonymQuality;
 	}
 
 	public void setQuality(String quality) {
-		this.quality = quality;
+		this.synonymQuality = quality;
 	}
 
 	public String getQcNotes() {

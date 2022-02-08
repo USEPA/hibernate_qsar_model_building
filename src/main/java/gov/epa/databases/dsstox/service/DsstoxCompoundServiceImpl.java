@@ -137,7 +137,7 @@ public class DsstoxCompoundServiceImpl implements DsstoxCompoundService {
 	@Override
 	public List<DsstoxRecord> findAsDsstoxRecordsByInchikey(String inchikey) {
 		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
-		return findAsDsstoxRecordsByDtxcid(inchikey, session);
+		return findAsDsstoxRecordsByInchikey(inchikey, session);
 	}
 
 	@Override

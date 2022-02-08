@@ -18,6 +18,7 @@ import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.validator.constraints.Length;
 
 @Entity
 @Table(name="datasets", indexes={@Index(name="dataset_name_idx", columnList="name", unique=true)})
@@ -45,6 +46,7 @@ public class Dataset {
 	private Unit unit;
 	
 	@Column(name="dsstox_mapping_strategy", length=2047)
+	@Length(max=2047)
 	private String dsstoxMappingStrategy;
 	
 	@Column(name="updated_at")

@@ -19,6 +19,8 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 @Entity
 @Table(name="parameter_values", uniqueConstraints={@UniqueConstraint(columnNames = {"fk_parameter_id", "fk_property_value_id"})})
 public class ParameterValue {
@@ -29,6 +31,7 @@ public class ParameterValue {
 	@NotNull(message="Property value required to add parameter value")
 	@ManyToOne
 	@JoinColumn(name="fk_property_value_id")
+	@JsonBackReference
 	private PropertyValue propertyValue;
 	
 	@NotNull(message="Parameter required to add parameter value")

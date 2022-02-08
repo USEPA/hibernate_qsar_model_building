@@ -107,7 +107,7 @@ public class GenericSubstanceServiceImpl implements GenericSubstanceService {
 	@Override
 	public List<DsstoxRecord> findAsDsstoxRecordsByDtxsid(String dtxsid) {
 		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
-		return findAsDsstoxRecordsByCasrn(dtxsid, session);
+		return findAsDsstoxRecordsByDtxsid(dtxsid, session);
 	}
 
 	@Override

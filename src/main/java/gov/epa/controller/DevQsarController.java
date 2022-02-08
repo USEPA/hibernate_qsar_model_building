@@ -56,9 +56,10 @@ public class DevQsarController {
 	
 	@GetMapping("/reports/predictions/all")
 	public PredictionReport reportAllPredictions(@RequestParam(name="dataset-name") String datasetName, 
-			@RequestParam(name="descriptor-set-name") String descriptorSetName) {
+			@RequestParam(name="descriptor-set-name") String descriptorSetName,
+			@RequestParam(name="splitting-name") String splittingName) {
 		PredictionReportGenerator gen = new PredictionReportGenerator();
-		return gen.generateForAllPredictions(datasetName, descriptorSetName);
+		return gen.generateForAllPredictions(datasetName, descriptorSetName, splittingName);
 	}
 	
 	@GetMapping("/reports/descriptors/all")

@@ -20,6 +20,9 @@ import javax.validation.constraints.NotBlank;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name="public_sources", indexes={@Index(name="pubsrc_name_idx", columnList="name", unique=true)})
 public class PublicSource {
@@ -60,8 +63,9 @@ public class PublicSource {
 	@Column(name="updated_by")
 	private String updatedBy;
 	
+	@JsonBackReference
 	@OneToMany(mappedBy="publicSource", cascade=CascadeType.ALL, orphanRemoval=true, fetch=FetchType.LAZY)
-	private List<PropertyValue> propertyValues;
+	private transient List<PropertyValue> propertyValues;
 	
 	public PublicSource() {}
 
@@ -145,6 +149,7 @@ public class PublicSource {
 		this.updatedBy = updatedBy;
 	}
 
+	@JsonIgnore
 	public List<PropertyValue> getPropertyValues() {
 		return propertyValues;
 	}

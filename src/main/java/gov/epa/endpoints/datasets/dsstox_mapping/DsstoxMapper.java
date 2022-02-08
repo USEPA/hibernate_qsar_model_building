@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,27 +68,27 @@ public class DsstoxMapper {
 	private static final String SOURCE_SMILES_HEADER = "SOURCE_SMILES";
 
 	// "Connection reason" strings (i.e. mapping bin labels) in ChemReg
-	private static final String CASRN_MATCH = "CAS-RN matched " + SOURCE_CASRN_HEADER;
-	private static final String PREFERRED_NAME_MATCH = "Preferred Name matched " + SOURCE_CHEMICAL_NAME_HEADER;
-	private static final String VALID_SYNONYM_MATCH = "Valid Synonym matched " + SOURCE_CHEMICAL_NAME_HEADER;
-	private static final String UNIQUE_SYNONYM_MATCH = "Unique Synonym matched " + SOURCE_CHEMICAL_NAME_HEADER;
-	private static final String AMBIGUOUS_SYNONYM_MATCH = "Ambiguous Synonym matched " + SOURCE_CHEMICAL_NAME_HEADER;
-	private static final String NAME2STRUCTURE_MATCH = "Name2Structure matched " + SOURCE_CHEMICAL_NAME_HEADER;
-	private static final String MAPPED_IDENTIFIER_MATCH = "Mapped Identifier matched " + SOURCE_CHEMICAL_NAME_HEADER;
-	private static final String STRUCTURE_MATCH = "Structure matched " + SOURCE_SMILES_HEADER;
-	private static final String DTXSID_MATCH = "DTXSID matched " + SOURCE_DTXSID_HEADER;
-	private static final String DTXCID_MATCH = "DTXCID matched " + SOURCE_DTXCID_HEADER;
-	private static final String DTXRID_MATCH = "DTXRID matched " + SOURCE_DTXRID_HEADER;
-	private static final String DTXSID_CONFLICT = "DTXSID matched other record:  " + SOURCE_DTXSID_HEADER;
-	private static final String CASRN_CONFLICT = "CAS-RN matched other record:  " + SOURCE_CASRN_HEADER;
-	private static final String OTHER_CASRN_CONFLICT = "Other CAS-RN matched other record:  " + SOURCE_CASRN_HEADER;
-	private static final String PREFERRED_NAME_CONFLICT = "Preferred Name matched other record:  " + SOURCE_CHEMICAL_NAME_HEADER;
-	private static final String VALID_SYNONYM_CONFLICT = "Valid Synonym matched other record:  " + SOURCE_CHEMICAL_NAME_HEADER;
-	private static final String UNIQUE_SYNONYM_CONFLICT = "Unique Synonym matched other record:  " + SOURCE_CHEMICAL_NAME_HEADER;
-	private static final String AMBIGUOUS_SYNONYM_CONFLICT = "Ambiguous Synonym matched other record:  " + SOURCE_CHEMICAL_NAME_HEADER;
-	private static final String NAME2STRUCTURE_CONFLICT = "Name2Structure matched other record:  " + SOURCE_CHEMICAL_NAME_HEADER;
-	private static final String MAPPED_IDENTIFIER_CONFLICT = "Mapped Identifier matched other record:  " + SOURCE_CHEMICAL_NAME_HEADER;
-	private static final String STRUCTURE_CONFLICT = "Structure matched other record:  " + SOURCE_SMILES_HEADER;
+	static final String CASRN_MATCH = "CAS-RN matched " + SOURCE_CASRN_HEADER;
+	static final String PREFERRED_NAME_MATCH = "Preferred Name matched " + SOURCE_CHEMICAL_NAME_HEADER;
+	static final String VALID_SYNONYM_MATCH = "Valid Synonym matched " + SOURCE_CHEMICAL_NAME_HEADER;
+	static final String UNIQUE_SYNONYM_MATCH = "Unique Synonym matched " + SOURCE_CHEMICAL_NAME_HEADER;
+	static final String AMBIGUOUS_SYNONYM_MATCH = "Ambiguous Synonym matched " + SOURCE_CHEMICAL_NAME_HEADER;
+	static final String NAME2STRUCTURE_MATCH = "Name2Structure matched " + SOURCE_CHEMICAL_NAME_HEADER;
+	static final String MAPPED_IDENTIFIER_MATCH = "Mapped Identifier matched " + SOURCE_CHEMICAL_NAME_HEADER;
+	static final String STRUCTURE_MATCH = "Structure matched " + SOURCE_SMILES_HEADER;
+	static final String DTXSID_MATCH = "DTXSID matched " + SOURCE_DTXSID_HEADER;
+	static final String DTXCID_MATCH = "DTXCID matched " + SOURCE_DTXCID_HEADER;
+	static final String DTXRID_MATCH = "DTXRID matched " + SOURCE_DTXRID_HEADER;
+	static final String DTXSID_CONFLICT = "DTXSID matched other record:  " + SOURCE_DTXSID_HEADER;
+	static final String CASRN_CONFLICT = "CAS-RN matched other record:  " + SOURCE_CASRN_HEADER;
+	static final String OTHER_CASRN_CONFLICT = "Other CAS-RN matched other record:  " + SOURCE_CASRN_HEADER;
+	static final String PREFERRED_NAME_CONFLICT = "Preferred Name matched other record:  " + SOURCE_CHEMICAL_NAME_HEADER;
+	static final String VALID_SYNONYM_CONFLICT = "Valid Synonym matched other record:  " + SOURCE_CHEMICAL_NAME_HEADER;
+	static final String UNIQUE_SYNONYM_CONFLICT = "Unique Synonym matched other record:  " + SOURCE_CHEMICAL_NAME_HEADER;
+	static final String AMBIGUOUS_SYNONYM_CONFLICT = "Ambiguous Synonym matched other record:  " + SOURCE_CHEMICAL_NAME_HEADER;
+	static final String NAME2STRUCTURE_CONFLICT = "Name2Structure matched other record:  " + SOURCE_CHEMICAL_NAME_HEADER;
+	static final String MAPPED_IDENTIFIER_CONFLICT = "Mapped Identifier matched other record:  " + SOURCE_CHEMICAL_NAME_HEADER;
+	static final String STRUCTURE_CONFLICT = "Structure matched other record:  " + SOURCE_SMILES_HEADER;
 
 	public static final double DSSTOX_ID_SCORE = 5.0;
 	public static final double CASRN_OR_STRICT_NAME_SCORE = 1.0;
@@ -152,7 +153,7 @@ public class DsstoxMapper {
 		
 		Logger opsinLogger = LogManager.getLogger("uk.ac.cam.ch.wwmm.opsin");
 		opsinLogger.setLevel(Level.WARN);
-		logger.setLevel(Level.DEBUG);
+		logger.setLevel(Level.ERROR);
 	}
 	
 	private List<DsstoxRecord> getDsstoxRecords(String input, String inputType) {
@@ -237,12 +238,42 @@ public class DsstoxMapper {
 		
 		List<MappedPropertyValue> mappedPropertyValues = mapPropertyValuesToDsstoxRecords();
 		if (mappedPropertyValues!=null) {
-			writeMappingFile(mappedPropertyValues);
+			if (!checkYourWork(mappedPropertyValues, propertyValues.size())) {
+				logger.warn(datasetParams.datasetName + ": Number of property values or DSSTox records mapped and discarded do not add up");
+			}
+			
+//			writeMappingFile(mappedPropertyValues);
 			writeConflictFile();
 			writeDiscardedPropertyValuesFile();
 		}
 		
 		return mappedPropertyValues;
+	}
+	
+	private boolean checkYourWork(List<MappedPropertyValue> mappedPropertyValues, int countInputPropertyValues) {
+		int countMappedPropertyValues = mappedPropertyValues.size();
+		int countDiscardedPropertyValues = discardedPropertyValues.size();
+		boolean checkPropertyValuesCount = (countMappedPropertyValues ==
+				countInputPropertyValues - countDiscardedPropertyValues);
+		
+		System.out.println("Out of " + countInputPropertyValues + " input property values: "
+				+ countDiscardedPropertyValues + " were discarded, "
+				+ "leaving " + countMappedPropertyValues + " mapped");
+		
+		int countResolvedConflicts = 0;
+		int countRejectedConflicts = 0;
+		for (DsstoxConflict conflict:conflicts) {
+			if (conflict.accept) {
+				countResolvedConflicts++;
+			} else {
+				countRejectedConflicts++;
+			}
+		}
+		
+		System.out.println("Found " + conflicts.size() + " conflicts total: "
+				+ countResolvedConflicts + " were accepted, " + countRejectedConflicts + " were rejected");
+		
+		return checkPropertyValuesCount;
 	}
 	
 	private void initDsstoxRecordsMap(List<DsstoxRecord> dsstoxRecords) {
@@ -421,7 +452,7 @@ public class DsstoxMapper {
 		
 		if (bin.contains(DTXSID_CONFLICT)) {
 			// If another record matches the DTXSID, get that one instead
-			List<DsstoxRecord> dtxsidMatches = getDsstoxRecords(sc.getSourceDtxsid(), DevQsarConstants.INPUT_DTXSID);
+			List<DsstoxRecord> dtxsidMatches = getDsstoxRecords(sc.getSourceDtxsid(), DevQsarConstants.INPUT_DTXSID);		
 			if (dtxsidMatches.size()==1) {
 				DsstoxRecord dtxsidMatch = dtxsidMatches.iterator().next();
 				return new ExplainedResponse(true, dtxsidMatch, "Matched source DTXSID or DTXCID");
@@ -432,7 +463,7 @@ public class DsstoxMapper {
 		}
 		
 		if (sc.getSourceChemicalName()!=null && !sc.getSourceChemicalName().isBlank()) {
-			if (datasetParams.mappingParams.omitUvcbKeywords && hasUvcbKeywords(sc.getSourceChemicalName())) {
+			if (datasetParams.mappingParams.omitUvcbKeywords && DsstoxMapperStringUtil.hasUvcbKeywords(sc.getSourceChemicalName())) {
 				// Reject any records with names containing Charlie's UVCB keywords
 				return new ExplainedResponse(false, "UVCB keywords in name");
 			}
@@ -446,12 +477,12 @@ public class DsstoxMapper {
 			}
 		}
 		
-		if ((hasMappingConflict(bin) || hasDelimiters(sc)) && 
-				datasetParams.mappingParams.autoResolveConflicts) {
+		if (datasetParams.mappingParams.autoResolveConflicts 
+				&& (DsstoxMapperStringUtil.hasMappingConflict(bin) || DsstoxMapperStringUtil.hasDelimiters(sc))) {
 			// If applying auto conflict resolution, do it
 			DsstoxConflict conflict = new DsstoxConflict(sc, dr);
 			
-			if (hasMappingConflict(bin)) {
+			if (DsstoxMapperStringUtil.hasMappingConflict(bin)) {
 				boolean foundAllMappingConflicts = findMappingConflicts(conflict, bin);
 				if (!foundAllMappingConflicts) {
 					swapBetterMatch(conflict, bin);
@@ -461,9 +492,9 @@ public class DsstoxMapper {
 				}
 			}
 			
-			if (hasDelimiters(sc)) {
-				boolean foundAllPipeDelimiterConflicts = findDelimiterConflicts(conflict);
-				if (!foundAllPipeDelimiterConflicts) {
+			if (DsstoxMapperStringUtil.hasDelimiters(sc)) {
+				boolean foundAllDelimiterConflicts = findDelimiterConflicts(conflict);
+				if (!foundAllDelimiterConflicts) {
 					swapBetterMatch(conflict, bin);
 					conflict.setAcceptAndReason(false, "Conflict resolution failed: The indicated alternative records were not found in DSSTox");
 					conflicts.add(conflict);
@@ -481,7 +512,7 @@ public class DsstoxMapper {
 			} else {
 				return new ExplainedResponse(true, conflict.bestDsstoxRecord, conflict.reason);
 			}
-		} else if (hasMappingConflict(bin) || hasDelimiters(sc)) {
+		} else if (DsstoxMapperStringUtil.hasMappingConflict(bin) || DsstoxMapperStringUtil.hasDelimiters(sc)) {
 			// Reject conflicted mappings
 			return new ExplainedResponse(false, "Auto conflict resolution not selected");
 		}
@@ -542,7 +573,7 @@ public class DsstoxMapper {
 			}
 		}
 		
-		if (hasSynonymConflict(bin)) {
+		if (DsstoxMapperStringUtil.hasSynonymConflict(bin)) {
 			List<DsstoxRecord> synonymConflicts = getDsstoxRecords(sourceChemical.getSourceChemicalName(), DevQsarConstants.INPUT_SYNONYM);
 			if (synonymConflicts!=null && !synonymConflicts.isEmpty()) {
 				for (DsstoxRecord dr:synonymConflicts) {
@@ -625,7 +656,7 @@ public class DsstoxMapper {
 			conflictDtxsids.add(bestDsstoxRecord.dsstoxSubstanceId);
 		}
 		
-		String sourceCasrnStr = cleanDelimiters(sourceChemical.getSourceCasrn(), false);
+		String sourceCasrnStr = DsstoxMapperStringUtil.cleanDelimiters(sourceChemical.getSourceCasrn(), false);
 		if (sourceCasrnStr!=null && sourceCasrnStr.contains("|")) {
 			String conflictType = DevQsarConstants.INPUT_CASRN;
 			if (conflict.bestDsstoxRecord.casrn!=null && sourceCasrnStr.contains(conflict.bestDsstoxRecord.casrn) 
@@ -634,18 +665,19 @@ public class DsstoxMapper {
 			}
 			
 			String[] sourceCasrns = sourceCasrnStr.split("\\|");
-			List<DsstoxRecord> casrnConflicts = getDsstoxRecords(Arrays.asList(sourceCasrns), conflictType);
-			if (casrnConflicts!=null && !casrnConflicts.isEmpty()) {
+			Set<String> sourceCasrnSet = new HashSet<String>(Arrays.asList(sourceCasrns));
+			List<DsstoxRecord> casrnConflicts = getDsstoxRecords(sourceCasrnSet, conflictType);
+			if (casrnConflicts!=null && casrnConflicts.size()==sourceCasrnSet.size()) {
 				for (DsstoxRecord dr:casrnConflicts) {
 					addDsstoxConflictRecord(dr, conflict, conflictDtxsids, conflictType);
 				}
 			} else {
-				logger.debug(srcChemId + ": No records were found for pipe-delimited CASRNs");
+				logger.debug(srcChemId + ": Missing records for pipe-delimited CASRNs");
 				return false;
 			}
 		}
 		
-		String sourceDtxcidStr = cleanDelimiters(sourceChemical.getSourceDtxcid(), true);
+		String sourceDtxcidStr = DsstoxMapperStringUtil.cleanDelimiters(sourceChemical.getSourceDtxcid(), true);
 		if (sourceDtxcidStr!=null && sourceDtxcidStr.contains("|")) {
 			String conflictType = DevQsarConstants.INPUT_DTXCID;
 			if (conflict.bestDsstoxRecord.dsstoxCompoundId!=null && sourceDtxcidStr.contains(conflict.bestDsstoxRecord.dsstoxCompoundId) 
@@ -654,18 +686,19 @@ public class DsstoxMapper {
 			}
 			
 			String[] sourceDtxcids = sourceDtxcidStr.split("\\|");
-			List<DsstoxRecord> dtxcidConflicts = getDsstoxRecords(Arrays.asList(sourceDtxcids), conflictType);
-			if (dtxcidConflicts!=null && !dtxcidConflicts.isEmpty()) {
+			Set<String> sourceDtxcidSet = new HashSet<String>(Arrays.asList(sourceDtxcids));
+			List<DsstoxRecord> dtxcidConflicts = getDsstoxRecords(sourceDtxcidSet, conflictType);
+			if (dtxcidConflicts!=null && dtxcidConflicts.size()==sourceDtxcidSet.size()) {
 				for (DsstoxRecord dr:dtxcidConflicts) {
 					addDsstoxConflictRecord(dr, conflict, conflictDtxsids, conflictType);
 				}
 			} else {
-				logger.debug(srcChemId + ": No records were found for pipe-delimited DTXCIDs");
+				logger.debug(srcChemId + ": Missing records for pipe-delimited DTXCIDs");
 				return false;
 			}
 		}
 		
-		String sourceDtxsidStr = cleanDelimiters(sourceChemical.getSourceDtxsid(), true);
+		String sourceDtxsidStr = DsstoxMapperStringUtil.cleanDelimiters(sourceChemical.getSourceDtxsid(), true);
 		if (sourceDtxsidStr!=null && sourceDtxsidStr.contains("|")) {
 			String conflictType = DevQsarConstants.INPUT_DTXSID;
 			if (conflict.bestDsstoxRecord.dsstoxSubstanceId!=null && sourceDtxsidStr.contains(conflict.bestDsstoxRecord.dsstoxSubstanceId) 
@@ -674,13 +707,14 @@ public class DsstoxMapper {
 			}
 			
 			String[] sourceDtxsids = sourceDtxsidStr.split("\\|");
-			List<DsstoxRecord> dtxsidConflicts = getDsstoxRecords(Arrays.asList(sourceDtxsids), conflictType);
-			if (dtxsidConflicts!=null && !dtxsidConflicts.isEmpty()) {
+			Set<String> sourceDtxsidSet = new HashSet<String>(Arrays.asList(sourceDtxsids));
+			List<DsstoxRecord> dtxsidConflicts = getDsstoxRecords(sourceDtxsidSet, conflictType);
+			if (dtxsidConflicts!=null && dtxsidConflicts.size()==sourceDtxsidSet.size()) {
 				for (DsstoxRecord dr:dtxsidConflicts) {
 					addDsstoxConflictRecord(dr, conflict, conflictDtxsids, conflictType);
 				}
 			} else {
-				logger.debug(srcChemId + ": No records were found for pipe-delimited DTXSIDs");
+				logger.debug(srcChemId + ": Missing records for pipe-delimited DTXSIDs");
 				return false;
 			}
 		}
@@ -722,9 +756,6 @@ public class DsstoxMapper {
 			return conflict;
 		}
 		
-		int countNoStructures = 0;
-		int countStructuresAgree = 0;
-		
 		String drQsarReadySmiles = null;
 		String drStandardizedInchikey = null;
 		String drQsarReadyInchikey = null;
@@ -750,7 +781,7 @@ public class DsstoxMapper {
 		}
 		
 		conflict.setAcceptAndReason(true, 
-				"Conflict resolved: QSAR-ready or standardized SMILES agree above threshold " + DevQsarConstants.CONFLICT_FRAC_AGREE);
+				"Conflict resolved: QSAR-ready or standardized SMILES agree");
 		for (DsstoxConflictRecord dsstoxConflictRecord:conflict.dsstoxConflictRecords) {
 			DsstoxRecord dcr = dsstoxConflictRecord.dsstoxRecord;
 			String dcrQsarReadySmiles = null;
@@ -765,15 +796,13 @@ public class DsstoxMapper {
 					// If conflict record has a structure, standardize it
 					dsstoxConflictRecord.standardizedSmiles = standardizeSmiles(srcChemId, dcr);
 				} else {
-					// Otherwise, it's a no-structure record; count it and move on
-					countNoStructures++;
+					// Otherwise, it's a no-structure record; move on
 					continue;
 				}
 				
 				if (dsstoxConflictRecord.standardizedSmiles==null) {
-//					conflict.setAcceptAndReason(false, "Conflict resolution failed: Standardization unavailable for conflict record");
-//					return conflict;
-					continue;
+					conflict.setAcceptAndReason(false, "Conflict resolution failed: Standardization unavailable for conflict record");
+					return conflict;
 				} else {
 					// Calculate inchikey from the standardized SMILES for an additional check
 					dcrStandardizedInchikey = StructureUtil.indigoInchikeyFromSmiles(dsstoxConflictRecord.standardizedSmiles);
@@ -787,9 +816,8 @@ public class DsstoxMapper {
 				
 				// Check if standardization worked
 				if (conflict.bestStandardizedSmiles==null) {
-//					conflict.setAcceptAndReason(false, "Conflict resolution failed: Standardization unavailable for best record");
-//					return conflict;
-					continue;
+					conflict.setAcceptAndReason(false, "Conflict resolution failed: Standardization unavailable for best record");
+					return conflict;
 				} else {
 					drStandardizedInchikey = StructureUtil.indigoInchikeyFromSmiles(conflict.bestStandardizedSmiles);
 				}
@@ -797,9 +825,8 @@ public class DsstoxMapper {
 				boolean inchikeysDisagree = drStandardizedInchikey!=null && dcrStandardizedInchikey!=null &&
 						!drStandardizedInchikey.equals(dcrStandardizedInchikey);
 				if (!conflict.bestStandardizedSmiles.equals(dsstoxConflictRecord.standardizedSmiles) && inchikeysDisagree) {
-//					conflict.setAcceptAndReason(false, "Conflict rejected: Standardized SMILES do not match");
-//					return conflict;
-					continue;
+					conflict.setAcceptAndReason(false, "Conflict rejected: Standardized SMILES do not match");
+					return conflict;
 				}
 			} else {
 				// If both best and current conflict record have QSAR-ready SMILES, use that instead
@@ -809,33 +836,25 @@ public class DsstoxMapper {
 				boolean inchikeysDisagree = drQsarReadyInchikey!=null && dcrQsarReadyInchikey!=null &&
 						!drQsarReadyInchikey.equals(dcrQsarReadyInchikey);
 				if (!drQsarReadySmiles.equals(dcrQsarReadySmiles) && inchikeysDisagree) {
-//					conflict.setAcceptAndReason(false, "Conflict rejected: QSAR-ready SMILES do not match");
-//					return conflict;
-					continue;
+					conflict.setAcceptAndReason(false, "Conflict rejected: QSAR-ready SMILES do not match");
+					return conflict;
 				}
 			}
-			
-			countStructuresAgree++;
-		}
-		
-		conflict.fracAgree = (1.0 + countStructuresAgree)/(1.0 + conflict.dsstoxConflictRecords.size() - countNoStructures);
-		if (conflict.fracAgree < DevQsarConstants.CONFLICT_FRAC_AGREE) {
-			conflict.setAcceptAndReason(false, 
-					"Conflict rejected: Agreement does not surpass threshold " + DevQsarConstants.CONFLICT_FRAC_AGREE);
-			return conflict;
 		}
 		
 		return conflict;
 	}
 	
 	private double swapBetterMatch(DsstoxConflict conflict, String bin) {
+		DsstoxRecord lastBestRecord = conflict.bestDsstoxRecord;
 		double maxScore = scoreDsstoxRecord(bin);
 		int argMaxScore = -1;
 		int size = conflict.dsstoxConflictRecords.size();
 		for (int i = 0; i < size; i++) {
 			DsstoxConflictRecord currentRecord = conflict.dsstoxConflictRecords.get(i);
 			double score = currentRecord.score();
-			if (score > maxScore || (score==maxScore && !conflict.bestDsstoxRecord.isWellDefined() && currentRecord.dsstoxRecord.isWellDefined())) {
+			if (score > maxScore || (score==maxScore && !lastBestRecord.isWellDefined() && currentRecord.dsstoxRecord.isWellDefined())) {
+				lastBestRecord = currentRecord.dsstoxRecord;
 				maxScore = score;
 				argMaxScore = i;
 			}
@@ -864,17 +883,17 @@ public class DsstoxMapper {
 		boolean accept = false;
 		if (sourceHasCasrn && sourceHasChemicalName) {
 			// Accept any chemical name match as long as CASRN supports it
-			accept = bin.contains(CASRN_MATCH) && lenientChemicalNameMatch(bin);
+			accept = bin.contains(CASRN_MATCH) && DsstoxMapperStringUtil.lenientChemicalNameMatch(bin);
 		} else if (sourceHasChemicalName && sourceHasSmiles) {
 			// If no CASRN, ignore SMILES and allow only preferred, valid, or unique synonym matches
-			accept = strictChemicalNameMatch(bin);
+			accept = DsstoxMapperStringUtil.strictChemicalNameMatch(bin);
 		} else if (sourceHasCasrn && sourceHasSmiles) {
 			accept = bin.contains(CASRN_MATCH);
 		} else if (sourceHasCasrn) {
 			accept = bin.contains(CASRN_MATCH);
 		} else if (sourceHasChemicalName) {
 			// If chemical name alone, allow only preferred, valid, or unique synonym matches
-			accept = strictChemicalNameMatch(bin);
+			accept = DsstoxMapperStringUtil.strictChemicalNameMatch(bin);
 		} else if (sourceHasSmiles) {
 			// Source-provided SMILES match is not good enough
 			accept = false;
@@ -891,12 +910,12 @@ public class DsstoxMapper {
 		boolean match = false;
 		if (sourceHasCasrn && sourceHasChemicalName && sourceHasSmiles) {
 			match = bin.contains(CASRN_MATCH) && !sc.getSourceCasrn().contains("|")
-					&& lenientChemicalNameMatch(bin) && bin.contains(STRUCTURE_MATCH);
+					&& DsstoxMapperStringUtil.lenientChemicalNameMatch(bin) && bin.contains(STRUCTURE_MATCH);
 		} else if (sourceHasCasrn && sourceHasChemicalName) {
 			match = bin.contains(CASRN_MATCH) && !sc.getSourceCasrn().contains("|")
-					&& lenientChemicalNameMatch(bin);
+					&& DsstoxMapperStringUtil.lenientChemicalNameMatch(bin);
 		} else if (sourceHasChemicalName && sourceHasSmiles) {
-			match = strictChemicalNameMatch(bin) && bin.contains(STRUCTURE_MATCH);
+			match = DsstoxMapperStringUtil.strictChemicalNameMatch(bin) && bin.contains(STRUCTURE_MATCH);
 		} else if (sourceHasCasrn && sourceHasSmiles) {
 			match = bin.contains(CASRN_MATCH) && !sc.getSourceCasrn().contains("|")
 					&& bin.contains(STRUCTURE_MATCH);
@@ -929,102 +948,13 @@ public class DsstoxMapper {
 			score += CASRN_OR_STRICT_NAME_SCORE;
 		}
 		
-		if (strictChemicalNameMatch(bin)) {
+		if (DsstoxMapperStringUtil.strictChemicalNameMatch(bin)) {
 			score += CASRN_OR_STRICT_NAME_SCORE;
-		} else if (lenientChemicalNameMatch(bin)) {
+		} else if (DsstoxMapperStringUtil.lenientChemicalNameMatch(bin)) {
 			score += LENIENT_NAME_SCORE;
 		}
 		
 		return score;
-	}
-	
-	/**
-	 * Check if chemical name contains any of a list of UVCB keywords compiled by Charlie Lowe
-	 * @param name	the chemical name to check
-	 * @return		true if name contains any keyword, false else
-	 */
-	private boolean hasUvcbKeywords(String name) {
-		if (name==null) {
-			return false;
-		} else {
-			return name.contains("reaction")
-					|| name.contains("salts")
-					|| name.contains("molecule")
-					|| name.contains("gmt")
-					|| name.contains("petroleum")
-					|| name.contains("mass")
-					|| name.contains("products")
-					|| name.contains("hydrocarbons")
-					|| name.contains("fatty")
-					|| name.contains("light")
-					|| name.contains("oil")
-					|| name.contains("distillates")
-					|| name.contains("unsaturated")
-					|| name.contains("fraction")
-					|| name.contains("mix")
-					|| name.contains("derivs")
-					|| name.contains("ethoxylated")
-					|| name.contains("isomers")
-					|| name.contains("branched")
-					|| name.contains("steamcracked")
-					|| name.contains("even")
-					|| name.contains("numbered")
-					|| name.contains("hydrogenated")
-					|| name.contains("alkenes")
-					|| name.contains("esterification");
-		}
-	}
-	
-	private boolean lenientChemicalNameMatch(String bin) {
-		return bin.contains(PREFERRED_NAME_MATCH) 
-				|| bin.contains(VALID_SYNONYM_MATCH)
-				|| bin.contains(UNIQUE_SYNONYM_MATCH)
-				|| bin.contains(AMBIGUOUS_SYNONYM_MATCH)
-				|| bin.contains(NAME2STRUCTURE_MATCH)
-				|| bin.contains(MAPPED_IDENTIFIER_MATCH);
-	}
-	
-	private boolean strictChemicalNameMatch(String bin) {
-		return bin.contains(PREFERRED_NAME_MATCH) 
-				|| bin.contains(VALID_SYNONYM_MATCH)
-				|| bin.contains(UNIQUE_SYNONYM_MATCH);
-	}
-	
-	private boolean hasDelimiters(SourceChemical sc) {
-		String casrn = sc.getSourceCasrn();
-		String dtxcid = sc.getSourceDtxcid();
-		String dtxsid = sc.getSourceDtxsid();
-		return (casrn!=null && (casrn.contains("|") || casrn.contains(";")))
-				|| (dtxcid!=null && (dtxcid.contains("|") || dtxcid.contains(";")))
-				|| (dtxsid!=null && (dtxsid.contains("|") || dtxsid.contains(";")));
-	}
-	
-	private String cleanDelimiters(String str, boolean isDsstoxId) {
-		if (str==null) {
-			return null;
-		} 
-		
-		str = str.replaceAll("; ?", "|");
-		if (isDsstoxId) {
-			return str.replaceAll("[^DTXSCRID0-9\\|]", "");
-		} else {
-			return str.replaceAll("[^0-9\\|-]", "");
-		}
-	}
-	
-	private boolean hasMappingConflict(String bin) {
-		return bin.contains(CASRN_CONFLICT)
-				|| bin.contains(PREFERRED_NAME_CONFLICT)
-				|| hasSynonymConflict(bin)
-				|| bin.contains(NAME2STRUCTURE_CONFLICT)
-				|| bin.contains(MAPPED_IDENTIFIER_CONFLICT)
-				|| bin.contains(STRUCTURE_CONFLICT);
-	}
-	
-	private boolean hasSynonymConflict(String bin) {
-		return bin.contains(VALID_SYNONYM_CONFLICT)
-				|| bin.contains(UNIQUE_SYNONYM_CONFLICT)
-				|| bin.contains(AMBIGUOUS_SYNONYM_CONFLICT);
 	}
 	
 	private String fillInSourceSubstanceIdentifiers(SourceChemical sc) {
@@ -1077,6 +1007,7 @@ public class DsstoxMapper {
 				// We want to try again later!
 				logger.warn(srcChemId + ": Standardizer HTTP response failed for SMILES: " 
 						+ dr.smiles + " with code " + standardizeResponse.status);
+				return null;
 			}
 		}
 		

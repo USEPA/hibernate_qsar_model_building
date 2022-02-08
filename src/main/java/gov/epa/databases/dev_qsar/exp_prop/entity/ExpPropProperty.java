@@ -21,6 +21,9 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 @Entity
 @Table(name="properties", indexes={@Index(name="property_name_idx", columnList="name", unique=true)})
 public class ExpPropProperty {
@@ -53,7 +56,8 @@ public class ExpPropProperty {
 	private String updatedBy;
 	
 	@OneToMany(mappedBy="property", cascade=CascadeType.ALL, orphanRemoval=true, fetch=FetchType.LAZY)
-	private List<PropertyValue> propertyValues;
+	@JsonBackReference
+	private transient List<PropertyValue> propertyValues;
 	
 	@ManyToMany(mappedBy="property", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	private List<PropertyInCategory> propertiesInCategories;
@@ -125,7 +129,32 @@ public class ExpPropProperty {
 	public List<PropertyValue> getPropertyValues() {
 		return propertyValues;
 	}
-	
-	
 
+	public List<PropertyInCategory> getPropertiesInCategories() {
+		return propertiesInCategories;
+	}
+
+	public void setPropertiesInCategories(List<PropertyInCategory> propertiesInCategories) {
+		this.propertiesInCategories = propertiesInCategories;
+	}
+
+	public List<PropertyAcceptableParameter> getPropertiesAcceptableParameters() {
+		return propertiesAcceptableParameters;
+	}
+
+	public void setPropertiesAcceptableParameters(List<PropertyAcceptableParameter> propertiesAcceptableParameters) {
+		this.propertiesAcceptableParameters = propertiesAcceptableParameters;
+	}
+
+	public List<PropertyAcceptableUnit> getPropertiesAcceptableUnits() {
+		return propertiesAcceptableUnits;
+	}
+
+	public void setPropertiesAcceptableUnits(List<PropertyAcceptableUnit> propertiesAcceptableUnits) {
+		this.propertiesAcceptableUnits = propertiesAcceptableUnits;
+	}
+
+	public void setPropertyValues(List<PropertyValue> propertyValues) {
+		this.propertyValues = propertyValues;
+	}
 }

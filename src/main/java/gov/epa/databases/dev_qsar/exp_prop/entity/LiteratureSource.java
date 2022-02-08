@@ -20,6 +20,9 @@ import javax.validation.constraints.NotBlank;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name="literature_sources", indexes={@Index(name="litsrc_name_idx", columnList="name", unique=true)})
 public class LiteratureSource {
@@ -68,7 +71,8 @@ public class LiteratureSource {
 	private String updatedBy;
 	
 	@OneToMany(mappedBy="literatureSource", cascade=CascadeType.ALL, orphanRemoval=true, fetch=FetchType.LAZY)
-	private List<PropertyValue> propertyValues;
+	@JsonBackReference
+	private transient List<PropertyValue> propertyValues;
 	
 	public LiteratureSource() {}
 

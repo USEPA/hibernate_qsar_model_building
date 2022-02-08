@@ -10,8 +10,11 @@ import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 
 public class PropertyValueDaoImpl implements PropertyValueDao {
 	
-	private static final String HQL_SELECT_WITH_FETCH = "select pv from PropertyValue pv "
+	private static final String HQL_SELECT_WITH_FETCH = "select distinct pv from PropertyValue pv "
 			+ "left join fetch pv.sourceChemical sc "
+			+ "left join fetch pv.unit u "
+			+ "left join fetch pv.property p "
+			+ "left join fetch pv.parameterValues pav "
 			+ "left join fetch pv.literatureSource ls "
 			+ "left join fetch pv.publicSource ps ";
 	private static final String HQL_WHERE_BY_PROPERTY_NAME = "where pv.property.name = :propertyName";

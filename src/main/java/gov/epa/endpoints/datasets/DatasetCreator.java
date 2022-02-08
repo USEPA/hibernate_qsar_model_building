@@ -2,7 +2,6 @@ package gov.epa.endpoints.datasets;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +13,6 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
@@ -51,13 +49,6 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetServiceI
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServiceImpl;
 import gov.epa.databases.dsstox.DsstoxRecord;
-import gov.epa.databases.dsstox.entity.ChemicalList;
-import gov.epa.databases.dsstox.service.ChemicalListService;
-import gov.epa.databases.dsstox.service.ChemicalListServiceImpl;
-import gov.epa.databases.dsstox.service.DsstoxCompoundService;
-import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
-import gov.epa.databases.dsstox.service.SourceSubstanceService;
-import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
 import gov.epa.endpoints.datasets.dsstox_mapping.DsstoxMapper;
 import gov.epa.util.MathUtil;
@@ -71,7 +62,6 @@ import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponse.
 import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponseWithStatus;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponse;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithStatus;
-import gov.epa.web_services.standardizers.WebServiceStandardizer;
 import kong.unirest.Unirest;
 
 public class DatasetCreator {
@@ -485,6 +475,7 @@ public class DatasetCreator {
 			mappedPropertyValues = mapPropertyValuesToDsstoxRecords(propertyValues, params);
 		} catch (Exception e) {
 			logger.error("Failed DSSTox query: " + e.getMessage());
+			e.printStackTrace();
 			return;
 		}
 		
@@ -506,7 +497,6 @@ public class DatasetCreator {
 		
 		Dataset dataset = new Dataset(params.datasetName, params.datasetDescription, property, unit, 
 				gson.toJson(params.mappingParams), lanId);
-		System.out.println(gson.toJson(dataset));
 		dataset = initializeDataset(dataset);
 		if (dataset==null) { return; }
 		
@@ -539,20 +529,20 @@ public class DatasetCreator {
 				"TEST-descriptors/");
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, testDescriptorWebService, "gsincl01");
 		
-		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
-		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
-		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
-		bounds.add(temperatureBound);
-		bounds.add(phBound);
+//		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
+//		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
+//		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+//		bounds.add(temperatureBound);
+//		bounds.add(phBound);
 		MappingParams mappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, "ExpProp_WaterSolubility_WithChemProp_120121", 
 				false, true, false, true, true, false, true);
-		DatasetParams params = new DatasetParams("ExpProp_WaterSolubility_WithChemProp_Unfiltered_TestNewMapping", 
-				"Final Henry's law constant experimental dataset from exp_prop, "
-				+ "without parameter filtering, with refactored mapping", 
+		DatasetParams params = new DatasetParams("ExpProp_WaterSolubility_WithChemProp_Unfiltered_Hibernate", 
+				"Final water solubility experimental dataset from exp_prop, "
+				+ "without parameter filtering, with mapping in Hibernate", 
 				DevQsarConstants.WATER_SOLUBILITY,
 				mappingParams);
 //				bounds);
 
-		creator.createPropertyDataset(params, true);
+		creator.createPropertyDataset(params, false);
 	}
 }
