@@ -1,8 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_models.service;
 
-import java.util.Set;
-
-import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 
 import org.hibernate.Session;
 
@@ -18,8 +16,8 @@ public interface ModelSetService {
 	
 	public ModelSet findByName(String modelSetName, Session session);
 	
-	public Set<ConstraintViolation<ModelSet>> create(ModelSet modelSet);
+	public ModelSet create(ModelSet modelSet) throws ConstraintViolationException;
 	
-	public Set<ConstraintViolation<ModelSet>> create(ModelSet modelSet, Session session);
+	public ModelSet create(ModelSet modelSet, Session session) throws ConstraintViolationException;
 
 }

@@ -13,6 +13,7 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.PredictionDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 
 import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 
 public class PredictionServiceImpl implements PredictionService {
@@ -37,24 +38,31 @@ public class PredictionServiceImpl implements PredictionService {
 	}
 
 	@Override
-	public Set<ConstraintViolation<Prediction>> create(Prediction prediction) {
+	public Prediction create(Prediction prediction) throws ConstraintViolationException {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
 		return create(prediction, session);
 	}
 
 	@Override
-	public Set<ConstraintViolation<Prediction>> create(Prediction prediction, Session session) {
+	public Prediction create(Prediction prediction, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<Prediction>> violations = validator.validate(prediction);
 		if (!violations.isEmpty()) {
-			return violations;
+			throw new ConstraintViolationException(violations);
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.save(prediction);
-		session.flush();
-		session.refresh(prediction);
-		t.commit();
-		return null;
+		
+		try {
+			session.save(prediction);
+			session.flush();
+			session.refresh(prediction);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return prediction;
 	}
 
 }

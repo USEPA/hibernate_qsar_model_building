@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 
 import org.hibernate.Session;
@@ -38,24 +39,31 @@ public class DataPointInSplittingServiceImpl implements DataPointInSplittingServ
 	}
 	
 	@Override
-	public Set<ConstraintViolation<DataPointInSplitting>> create(DataPointInSplitting dpis) {
+	public DataPointInSplitting create(DataPointInSplitting dpis) throws ConstraintViolationException {
 		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
 		return create(dpis, session);
 	}
 
 	@Override
-	public Set<ConstraintViolation<DataPointInSplitting>> create(DataPointInSplitting dpis, Session session) {
+	public DataPointInSplitting create(DataPointInSplitting dpis, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<DataPointInSplitting>> violations = validator.validate(dpis);
 		if (!violations.isEmpty()) {
-			return violations;
+			throw new ConstraintViolationException(violations);
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.save(dpis);
-		session.flush();
-		session.refresh(dpis);
-		t.commit();
-		return null;
+		
+		try {
+			session.save(dpis);
+			session.flush();
+			session.refresh(dpis);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return dpis;
 	}
 
 }

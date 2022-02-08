@@ -1,9 +1,8 @@
 package gov.epa.databases.dev_qsar.qsar_descriptors.service;
 
 import java.util.List;
-import java.util.Set;
 
-import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 
 import org.hibernate.Session;
 
@@ -19,8 +18,8 @@ public interface CompoundService {
 	
 	public List<Compound> findByCanonQsarSmiles(String canonQsarSmiles, Session session);
 	
-	public Set<ConstraintViolation<Compound>> create(Compound compound);
+	public Compound create(Compound compound) throws ConstraintViolationException;
 	
-	public Set<ConstraintViolation<Compound>> create(Compound compound, Session session);
+	public Compound create(Compound compound, Session session) throws ConstraintViolationException;
 
 }

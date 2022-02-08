@@ -3,6 +3,7 @@ package gov.epa.databases.dev_qsar.qsar_datasets.service;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 
 import org.hibernate.Session;
@@ -21,24 +22,31 @@ public class DataPointContributorServiceImpl implements DataPointContributorServ
 	}
 
 	@Override
-	public Set<ConstraintViolation<DataPointContributor>> create(DataPointContributor dataPointContributor) {
+	public DataPointContributor create(DataPointContributor dataPointContributor) throws ConstraintViolationException {
 		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
 		return create(dataPointContributor, session);
 	}
 
 	@Override
-	public Set<ConstraintViolation<DataPointContributor>> create(DataPointContributor dataPointContributor, Session session) {
+	public DataPointContributor create(DataPointContributor dataPointContributor, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<DataPointContributor>> violations = validator.validate(dataPointContributor);
 		if (!violations.isEmpty()) {
-			return violations;
+			throw new ConstraintViolationException(violations);
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.save(dataPointContributor);
-		session.flush();
-		session.refresh(dataPointContributor);
-		t.commit();
-		return null;
+		
+		try {
+			session.save(dataPointContributor);
+			session.flush();
+			session.refresh(dataPointContributor);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return dataPointContributor;
 	}
 
 }

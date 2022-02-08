@@ -1,9 +1,8 @@
 package gov.epa.databases.dev_qsar.qsar_descriptors.service;
 
 import java.util.List;
-import java.util.Set;
 
-import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 
 import org.hibernate.Session;
 
@@ -23,8 +22,8 @@ public interface DescriptorValuesService {
 	
 	public List<DescriptorValues> findByCanonQsarSmiles(String canonQsarSmiles, Session session);
 	
-	public Set<ConstraintViolation<DescriptorValues>> create(DescriptorValues descriptorValues);
+	public DescriptorValues create(DescriptorValues descriptorValues) throws ConstraintViolationException;
 	
-	public Set<ConstraintViolation<DescriptorValues>> create(DescriptorValues descriptorValues, Session session);
+	public DescriptorValues create(DescriptorValues descriptorValues, Session session) throws ConstraintViolationException;
 
 }

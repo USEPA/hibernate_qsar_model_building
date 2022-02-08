@@ -12,6 +12,7 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.MethodDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 
 import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 
 public class MethodServiceImpl implements MethodService {
@@ -36,24 +37,31 @@ public class MethodServiceImpl implements MethodService {
 	}
 	
 	@Override
-	public Set<ConstraintViolation<Method>> create(Method method) {
+	public Method create(Method method) throws ConstraintViolationException {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
 		return create(method, session);
 	}
 
 	@Override
-	public Set<ConstraintViolation<Method>> create(Method method, Session session) {
+	public Method create(Method method, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<Method>> violations = validator.validate(method);
 		if (!violations.isEmpty()) {
-			return violations;
+			throw new ConstraintViolationException(violations);
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.save(method);
-		session.flush();
-		session.refresh(method);
-		t.commit();
-		return null;
+		
+		try {
+			session.save(method);
+			session.flush();
+			session.refresh(method);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return method;
 	}
 
 }

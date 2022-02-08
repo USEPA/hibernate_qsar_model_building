@@ -3,6 +3,7 @@ package gov.epa.databases.dev_qsar.qsar_models.service;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 
 import org.hibernate.Session;
@@ -49,24 +50,31 @@ public class ModelSetServiceImpl implements ModelSetService {
 	}
 	
 	@Override
-	public Set<ConstraintViolation<ModelSet>> create(ModelSet modelSet) {
+	public ModelSet create(ModelSet modelSet) throws ConstraintViolationException {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
 		return create(modelSet, session);
 	}
 
 	@Override
-	public Set<ConstraintViolation<ModelSet>> create(ModelSet modelSet, Session session) {
+	public ModelSet create(ModelSet modelSet, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<ModelSet>> violations = validator.validate(modelSet);
 		if (!violations.isEmpty()) {
-			return violations;
+			throw new ConstraintViolationException(violations);
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.save(modelSet);
-		session.flush();
-		session.refresh(modelSet);
-		t.commit();
-		return null;
+		
+		try {
+			session.save(modelSet);
+			session.flush();
+			session.refresh(modelSet);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return modelSet;
 	}
 
 }

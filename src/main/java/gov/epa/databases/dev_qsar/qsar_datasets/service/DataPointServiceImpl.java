@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 
 import org.hibernate.Session;
@@ -37,24 +38,31 @@ public class DataPointServiceImpl implements DataPointService {
 	}
 	
 	@Override
-	public Set<ConstraintViolation<DataPoint>> create(DataPoint dataPoint) {
+	public DataPoint create(DataPoint dataPoint) throws ConstraintViolationException {
 		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
 		return create(dataPoint, session);
 	}
 
 	@Override
-	public Set<ConstraintViolation<DataPoint>> create(DataPoint dataPoint, Session session) {
+	public DataPoint create(DataPoint dataPoint, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<DataPoint>> violations = validator.validate(dataPoint);
 		if (!violations.isEmpty()) {
-			return violations;
+			throw new ConstraintViolationException(violations);
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.save(dataPoint);
-		session.flush();
-		session.refresh(dataPoint);
-		t.commit();
-		return null;
+		
+		try {
+			session.save(dataPoint);
+			session.flush();
+			session.refresh(dataPoint);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return dataPoint;
 	}
 
 }

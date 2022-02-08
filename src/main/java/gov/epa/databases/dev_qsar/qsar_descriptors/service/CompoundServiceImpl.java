@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 
 import org.hibernate.Session;
@@ -17,7 +18,7 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
 
 public class CompoundServiceImpl implements CompoundService {
 	
-	private Validator validator;
+	Validator validator;
 	
 	public CompoundServiceImpl() {
 		this.validator = DevQsarValidator.getValidator();
@@ -50,24 +51,30 @@ public class CompoundServiceImpl implements CompoundService {
 	}
 	
 	@Override
-	public Set<ConstraintViolation<Compound>> create(Compound compound) {
+	public Compound create(Compound compound) throws ConstraintViolationException {
 		Session session = QsarDescriptorsSession.getSessionFactory().getCurrentSession();
 		return create(compound, session);
 	}
 
 	@Override
-	public Set<ConstraintViolation<Compound>> create(Compound compound, Session session) {
+	public Compound create(Compound compound, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<Compound>> violations = validator.validate(compound);
 		if (!violations.isEmpty()) {
-			return violations;
+			throw new ConstraintViolationException(violations);
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.save(compound);
-		session.flush();
-		session.refresh(compound);
-		t.commit();
-		return null;
+		
+		try {
+			session.save(compound);
+			session.flush();
+			session.refresh(compound);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return compound;
 	}
-
 }

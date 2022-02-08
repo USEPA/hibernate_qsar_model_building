@@ -13,6 +13,7 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.ModelDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 
 import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 
 public class ModelServiceImpl implements ModelService {
@@ -89,46 +90,60 @@ public class ModelServiceImpl implements ModelService {
 	}
 
 	@Override
-	public Set<ConstraintViolation<Model>> create(Model model) {
+	public Model create(Model model) throws ConstraintViolationException {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
 		return create(model, session);
 	}
 
 	@Override
-	public Set<ConstraintViolation<Model>> create(Model model, Session session) {
+	public Model create(Model model, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<Model>> violations = validator.validate(model);
 		if (!violations.isEmpty()) {
-			return violations;
+			throw new ConstraintViolationException(violations);
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.save(model);
-		session.flush();
-		session.refresh(model);
-		t.commit();
-		return null;
+		
+		try {
+			session.save(model);
+			session.flush();
+			session.refresh(model);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return model;
 	}
 
 	@Override
-	public Set<ConstraintViolation<Model>> update(Model model) {
+	public Model update(Model model) throws ConstraintViolationException {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
 		return update(model, session);
 	}
 
 	@Override
-	public Set<ConstraintViolation<Model>> update(Model model, Session session) {
+	public Model update(Model model, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<Model>> violations = validator.validate(model);
 		if (!violations.isEmpty()) {
-			return violations;
+			throw new ConstraintViolationException(violations);
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.clear();
-		session.update(model);
-		session.flush();
-		session.refresh(model);
-		t.commit();
-		return null;
+		
+		try {
+			session.clear();
+			session.update(model);
+			session.flush();
+			session.refresh(model);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return model;
 	}
 
 	@Override

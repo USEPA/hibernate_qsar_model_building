@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 
 import org.hibernate.Session;
@@ -71,24 +72,32 @@ public class DescriptorValuesServiceImpl implements DescriptorValuesService {
 	
 
 	@Override
-	public Set<ConstraintViolation<DescriptorValues>> create(DescriptorValues descriptorValues) {
+	public DescriptorValues create(DescriptorValues descriptorValues) throws ConstraintViolationException {
 		Session session = QsarDescriptorsSession.getSessionFactory().getCurrentSession();
 		return create(descriptorValues, session);
 	}
 
 	@Override
-	public Set<ConstraintViolation<DescriptorValues>> create(DescriptorValues descriptorValues, Session session) {
+	public DescriptorValues create(DescriptorValues descriptorValues, Session session) 
+			throws ConstraintViolationException {
 		Set<ConstraintViolation<DescriptorValues>> violations = validator.validate(descriptorValues);
 		if (!violations.isEmpty()) {
-			return violations;
+			throw new ConstraintViolationException(violations);
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.save(descriptorValues);
-		session.flush();
-		session.refresh(descriptorValues);
-		t.commit();
-		return null;
+		
+		try {
+			session.save(descriptorValues);
+			session.flush();
+			session.refresh(descriptorValues);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return descriptorValues;
 	}
 
 }

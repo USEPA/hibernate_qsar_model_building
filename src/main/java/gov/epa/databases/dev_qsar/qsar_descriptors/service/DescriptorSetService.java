@@ -1,8 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_descriptors.service;
 
-import java.util.Set;
-
-import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 
 import org.hibernate.Session;
 
@@ -14,8 +12,8 @@ public interface DescriptorSetService {
 	
 	public DescriptorSet findByName(String descriptorSetName, Session session);
 	
-	public Set<ConstraintViolation<DescriptorSet>> create(DescriptorSet descriptorSet);
+	public DescriptorSet create(DescriptorSet descriptorSet) throws ConstraintViolationException;
 	
-	public Set<ConstraintViolation<DescriptorSet>> create(DescriptorSet descriptorSet, Session session);
+	public DescriptorSet create(DescriptorSet descriptorSet, Session session) throws ConstraintViolationException;
 
 }

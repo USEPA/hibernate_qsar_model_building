@@ -1,8 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_datasets.service;
 
-import java.util.Set;
-
-import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 
 import org.hibernate.Session;
 
@@ -14,8 +12,8 @@ public interface DatasetService {
 	
 	public Dataset findByName(String datasetName, Session session);
 	
-	public Set<ConstraintViolation<Dataset>> create(Dataset dataset);
+	public Dataset create(Dataset dataset) throws ConstraintViolationException;
 	
-	public Set<ConstraintViolation<Dataset>> create(Dataset dataset, Session session);
+	public Dataset create(Dataset dataset, Session session) throws ConstraintViolationException;
 
 }

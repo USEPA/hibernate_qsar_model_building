@@ -13,6 +13,7 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.ModelStatisticDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 
 import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 
 public class ModelStatisticServiceImpl implements ModelStatisticService {
@@ -39,24 +40,31 @@ public class ModelStatisticServiceImpl implements ModelStatisticService {
 	}
 
 	@Override
-	public Set<ConstraintViolation<ModelStatistic>> create(ModelStatistic modelStatistic) {
+	public ModelStatistic create(ModelStatistic modelStatistic) throws ConstraintViolationException {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
 		return create(modelStatistic, session);
 	}
 
 	@Override
-	public Set<ConstraintViolation<ModelStatistic>> create(ModelStatistic modelStatistic, Session session) {
+	public ModelStatistic create(ModelStatistic modelStatistic, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<ModelStatistic>> violations = validator.validate(modelStatistic);
 		if (!violations.isEmpty()) {
-			return violations;
+			throw new ConstraintViolationException(violations);
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.save(modelStatistic);
-		session.flush();
-		session.refresh(modelStatistic);
-		t.commit();
-		return null;
+		
+		try {
+			session.save(modelStatistic);
+			session.flush();
+			session.refresh(modelStatistic);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return modelStatistic;
 	}
 
 }

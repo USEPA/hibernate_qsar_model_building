@@ -1,8 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_datasets.service;
 
-import java.util.Set;
-
-import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 
 import org.hibernate.Session;
 
@@ -14,8 +12,8 @@ public interface SplittingService {
 	
 	public Splitting findByName(String splittingName, Session session);
 	
-	public Set<ConstraintViolation<Splitting>> create(Splitting splitting);
+	public Splitting create(Splitting splitting) throws ConstraintViolationException;
 	
-	public Set<ConstraintViolation<Splitting>> create(Splitting splitting, Session session);
+	public Splitting create(Splitting splitting, Session session) throws ConstraintViolationException;
 
 }

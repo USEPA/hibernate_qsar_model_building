@@ -1,13 +1,12 @@
 package gov.epa.databases.dev_qsar.qsar_models.service;
 
 import java.util.List;
-import java.util.Set;
 
 import org.hibernate.Session;
 
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 
-import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 
 public interface PredictionService {
 	
@@ -15,8 +14,8 @@ public interface PredictionService {
 	
 	public List<Prediction> findByModelId(Long modelId, Session session);
 	
-	public Set<ConstraintViolation<Prediction>> create(Prediction prediction);
+	public Prediction create(Prediction prediction) throws ConstraintViolationException;
 	
-	public Set<ConstraintViolation<Prediction>> create(Prediction prediction, Session session);
+	public Prediction create(Prediction prediction, Session session) throws ConstraintViolationException;
 
 }

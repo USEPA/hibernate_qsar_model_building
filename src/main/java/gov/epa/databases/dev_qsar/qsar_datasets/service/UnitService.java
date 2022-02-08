@@ -1,8 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_datasets.service;
 
-import java.util.Set;
-
-import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 
 import org.hibernate.Session;
 
@@ -14,8 +12,8 @@ public interface UnitService {
 	
 	public Unit findByName(String unitName, Session session);
 	
-	public Set<ConstraintViolation<Unit>> create(Unit unit);
+	public Unit create(Unit unit) throws ConstraintViolationException;
 	
-	public Set<ConstraintViolation<Unit>> create(Unit unit, Session session);
+	public Unit create(Unit unit, Session session) throws ConstraintViolationException;
 
 }

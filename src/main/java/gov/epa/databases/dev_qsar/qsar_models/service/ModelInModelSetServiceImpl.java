@@ -12,6 +12,7 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.ModelInModelSetDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
 
 import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 
 public class ModelInModelSetServiceImpl implements ModelInModelSetService {
@@ -23,24 +24,31 @@ public class ModelInModelSetServiceImpl implements ModelInModelSetService {
 	}
 	
 	@Override
-	public Set<ConstraintViolation<ModelInModelSet>> create(ModelInModelSet modelInModelSet) {
+	public ModelInModelSet create(ModelInModelSet modelInModelSet) throws ConstraintViolationException {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
 		return create(modelInModelSet, session);
 	}
 
 	@Override
-	public Set<ConstraintViolation<ModelInModelSet>> create(ModelInModelSet modelInModelSet, Session session) {
+	public ModelInModelSet create(ModelInModelSet modelInModelSet, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<ModelInModelSet>> violations = validator.validate(modelInModelSet);
 		if (!violations.isEmpty()) {
-			return violations;
+			throw new ConstraintViolationException(violations);
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.save(modelInModelSet);
-		session.flush();
-		session.refresh(modelInModelSet);
-		t.commit();
-		return null;
+		
+		try {
+			session.save(modelInModelSet);
+			session.flush();
+			session.refresh(modelInModelSet);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return modelInModelSet;
 	}
 
 	@Override
