@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import javax.validation.ConstraintViolationException;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -117,24 +119,12 @@ public class ModelBuilder {
 	}
 	
 	/**
-	 * Adds a set of model statistics to the qsar_models database
-	 * @param modelStatisticValues	a map of statistic names to calculated values
-	 * @param model					the model the statistics were calculated before (TODO: this is inelegant--how to fix it?)
-	 */
-	private void postModelStatistics(Map<String, Double> modelStatisticValues, Model model) {
-		for (String statisticName:modelStatisticValues.keySet()) {
-			Statistic statistic = statisticService.findByName(statisticName);
-			ModelStatistic modelStatistic = new ModelStatistic(statistic, model, modelStatisticValues.get(statisticName), lanId);
-			modelStatisticService.create(modelStatistic);
-		}
-	}
-	
-	/**
 	 * Builds a Python model with the given data and parameters
 	 * @param data
 	 * @param params
 	 */
-	public Long train(ModelData data, String methodName) {
+	@SuppressWarnings("deprecation")
+	public Long train(ModelData data, String methodName) throws ConstraintViolationException {
 		if (data.trainingSetInstances==null) {
 			logger.error("Dataset instances were not initialized");
 			return null;
@@ -189,7 +179,7 @@ public class ModelBuilder {
 	 * @param data
 	 * @param params
 	 */
-	public void predict(ModelData data, String methodName, Long modelId) {
+	public void predict(ModelData data, String methodName, Long modelId) throws ConstraintViolationException {
 		if (modelId==null) {
 			logger.error("Model with supplied parameters has not been built");
 			return;
@@ -214,7 +204,11 @@ public class ModelBuilder {
 		
 		for (ModelPrediction pythonModelResponse:modelPredictions) {
 			Prediction prediction = new Prediction(pythonModelResponse.ID, model, pythonModelResponse.pred, lanId);
-			predictionService.create(prediction);
+			try {
+				predictionService.create(prediction);
+			} catch (ConstraintViolationException e) {
+				System.out.println(e.getMessage());
+			}
 		}
 		
 		predictTraining(model, data, methodName, strModelId);
@@ -227,6 +221,7 @@ public class ModelBuilder {
 			modelStatisticValues = 
 					ModelStatisticCalculator.calculateContinuousStatistics(Arrays.asList(modelPredictions), data.meanExpTraining);
 		}
+		
 		postModelStatistics(modelStatisticValues, model);
 	}
 	
@@ -241,12 +236,35 @@ public class ModelBuilder {
 		
 		for (ModelPrediction pythonModelResponse:modelTrainingPredictions) {
 			Prediction prediction = new Prediction(pythonModelResponse.ID, model, pythonModelResponse.pred, lanId);
-			predictionService.create(prediction);
+			
+			try {
+				predictionService.create(prediction);
+			} catch (ConstraintViolationException e) {
+				System.out.println(e.getMessage());
+			}
+		}
+	}
+
+	/**
+	 * Adds a set of model statistics to the qsar_models database
+	 * @param modelStatisticValues	a map of statistic names to calculated values
+	 * @param model					the model the statistics were calculated before (TODO: this is inelegant--how to fix it?)
+	 */
+	private void postModelStatistics(Map<String, Double> modelStatisticValues, Model model) {
+		for (String statisticName:modelStatisticValues.keySet()) {
+			Statistic statistic = statisticService.findByName(statisticName);
+			ModelStatistic modelStatistic = new ModelStatistic(statistic, model, modelStatisticValues.get(statisticName), lanId);
+			
+			try {
+				modelStatisticService.create(modelStatistic);
+			} catch (ConstraintViolationException e) {
+				System.out.println(e.getMessage());
+			}
 		}
 	}
 
 	public Long build(String datasetName, String descriptorSetName, String splittingName, boolean removeLogDescriptors,
-			String methodName) {
+			String methodName) throws ConstraintViolationException {
 		ModelData data = initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
 		
 		Long modelId = train(data, methodName);

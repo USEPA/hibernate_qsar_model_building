@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.validation.ConstraintViolationException;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -1000,8 +1002,14 @@ public class DsstoxMapper {
 				} else {
 					logger.warn(srcChemId + ": Standardization failed for SMILES: " + dr.smiles);
 				}
+				
 				compound = new Compound(dr.dsstoxCompoundId, standardizedSmiles, standardizerName, lanId);
-				compoundService.create(compound);
+				
+				try {
+					compoundService.create(compound);
+				} catch (ConstraintViolationException e) {
+					System.out.println(e.getMessage());
+				}
 			} else {
 				// In case there's a server error that prevents standardization, don't save the null standardization
 				// We want to try again later!

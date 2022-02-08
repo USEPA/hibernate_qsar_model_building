@@ -1,9 +1,8 @@
 package gov.epa.run_from_java.scripts;
 
 import java.util.List;
-import java.util.Set;
 
-import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -35,7 +34,7 @@ public class QsarModelsScript {
 		this.lanId = lanId;
 	}
 	
-	public void createModelSet(String name, String description) {
+	public void createModelSet(String name, String description) throws ConstraintViolationException {
 		ModelSet modelSet = new ModelSet(name, description, lanId);
 		modelSetService.create(modelSet);
 	}
@@ -56,7 +55,7 @@ public class QsarModelsScript {
 		addModelsToSet(models, modelSetId);
 	}
 
-	private void addModelToSet(Model model, ModelSet modelSet) {
+	private void addModelToSet(Model model, ModelSet modelSet) throws ConstraintViolationException {
 		if (model==null) {
 			System.out.println("Error: Null model");
 			return;
@@ -73,19 +72,17 @@ public class QsarModelsScript {
 		}
 		
 		ModelInModelSet modelInModelSet = new ModelInModelSet(model, modelSet, lanId);
-		Set<ConstraintViolation<ModelInModelSet>> violations = modelInModelSetService.create(modelInModelSet);
-		if (violations!=null && !violations.isEmpty()) {
-			System.out.println("Error: Failed to add model " + modelId + " to model set " + modelSetId + ":");
-			for (ConstraintViolation<ModelInModelSet> violation:violations) {
-				System.out.println("\t" + violation.getMessage());
-			}
-		}
+		modelInModelSetService.create(modelInModelSet);
 	}
 	
 	private void addModelsToSet(List<Model> models, Long modelSetId) {
 		ModelSet modelSet = modelSetService.findById(modelSetId);
 		for (Model model:models) {
-			addModelToSet(model, modelSet);
+			try {
+				addModelToSet(model, modelSet);
+			} catch (ConstraintViolationException e) {
+				System.out.println(e.getMessage());
+			}
 		}
 	}
 	
@@ -105,7 +102,7 @@ public class QsarModelsScript {
 		
 		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 		ModelSetTableGenerator gen = new ModelSetTableGenerator();
-		ModelSetTable table = gen.generate(7L);
+		ModelSetTable table = gen.generate(1L);
 		System.out.println(gson.toJson(table));
 	}
 

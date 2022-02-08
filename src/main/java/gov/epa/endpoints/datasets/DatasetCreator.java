@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.validation.ConstraintViolationException;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -93,7 +95,8 @@ public class DatasetCreator {
 	
 	private static final Logger logger = LogManager.getLogger(DatasetCreator.class);
 	
-	public DatasetCreator(Standardizer standardizer, DescriptorWebService descriptorWebService, String lanId) {
+	public DatasetCreator(Standardizer standardizer, DescriptorWebService descriptorWebService, String lanId) 
+			throws ConstraintViolationException {
 		this.compoundService = new CompoundServiceImpl();
 		this.descriptorSetService = new DescriptorSetServiceImpl();
 		this.descriptorValuesService = new DescriptorValuesServiceImpl();
@@ -139,10 +142,6 @@ public class DatasetCreator {
 					descriptorInfoResponse.headersTsv,
 					lanId);
 			descriptorSetService.create(descriptorSet);
-		}
-		
-		if (descriptorSet==null) {
-			throw new IllegalArgumentException("Failed descriptor set creation");
 		}
 		
 //		this.gson = new GsonBuilder().disableHtmlEscaping().create();
@@ -291,8 +290,12 @@ public class DatasetCreator {
 				}
 				
 				Compound compound = new Compound(dr.dsstoxCompoundId, mpv.standardizedSmiles, standardizerName, lanId);
-				compoundService.create(compound);
-				mpv.compound = compound;
+				
+				try {
+					mpv.compound = compoundService.create(compound);
+				} catch (ConstraintViolationException e) {
+					System.out.println(e.getMessage());
+				}
 			} else if (!mpv.isStandardized) {
 				logger.info(mpv.id + ": Skipped compound upload due to missing standardization");
 			} else if (mpv.compound!=null) {
@@ -329,7 +332,12 @@ public class DatasetCreator {
 					}
 					
 					descriptorValues = new DescriptorValues(mpv.standardizedSmiles, descriptorSet, valuesTsv, lanId);
-					descriptorValuesService.create(descriptorValues);
+					
+					try {
+						descriptorValuesService.create(descriptorValues);
+					} catch (ConstraintViolationException e) {
+						System.out.println(e.getMessage());
+					}
 				}
 			}
 		}
@@ -371,7 +379,7 @@ public class DatasetCreator {
 		return unifiedPropertyValues;
 	}
 	
-	private Property initializeProperty(List<PropertyValue> propertyValues) {
+	private Property initializeProperty(List<PropertyValue> propertyValues) throws ConstraintViolationException {
 		ExpPropProperty expPropProperty = propertyValues.iterator().next().getProperty();
 		Property property = propertyService.findByName(expPropProperty.getName());
 		if (property==null) {
@@ -382,7 +390,7 @@ public class DatasetCreator {
 		return property;
 	}
 	
-	private Unit initializeUnit(DatasetParams params) {
+	private Unit initializeUnit(DatasetParams params) throws ConstraintViolationException {
 		String finalUnitName = finalUnits.get(params.propertyName);
 		Unit unit = unitService.findByName(finalUnitName);
 		if (unit==null) {
@@ -403,7 +411,7 @@ public class DatasetCreator {
 		return unit;
 	}
 	
-	private Dataset initializeDataset(Dataset dataset) {
+	private Dataset initializeDataset(Dataset dataset) throws ConstraintViolationException {
 		Dataset findDataset = datasetService.findByName(dataset.getName());
 		if (findDataset!=null) {
 			logger.error("Dataset with name " + dataset.getName() + " already exists");
@@ -445,12 +453,22 @@ public class DatasetCreator {
 			}
 			
 			DataPoint dataPoint = new DataPoint(structure, finalValue, dataset, false, lanId);
-			dataPointService.create(dataPoint);
-				
-			for (MappedPropertyValue mpv:structurePropertyValues) {
-				String expPropId = mpv.propertyValue.generateExpPropId();
-				DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, expPropId, lanId);
-				dataPointContributorService.create(dataPointContributor);
+			
+			try {
+				dataPointService.create(dataPoint);
+					
+				for (MappedPropertyValue mpv:structurePropertyValues) {
+					String expPropId = mpv.propertyValue.generateExpPropId();
+					DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, expPropId, lanId);
+					
+					try {
+						dataPointContributorService.create(dataPointContributor);
+					} catch (ConstraintViolationException e1) {
+						System.out.println(e1.getMessage());
+					}
+				}
+			} catch (ConstraintViolationException e) {
+				System.out.println(e.getMessage());
 			}
 		}
 	}
