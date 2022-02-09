@@ -58,7 +58,7 @@ import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDa
 public class ExcelPredictionReportGenerator {
 	
 	
-	String path = "C:\\Users\\CRAMSLAN\\OneDrive - Environmental Protection Agency (EPA)\\VDI_Repo\\java\\mm\\new_hibernate_qsar_model_building\\reports";
+	String path = "C:\\Users\\CRAMSLAN\\OneDrive - Environmental Protection Agency (EPA)\\VDI_Repo\\java\\mm\\new_hibernate_qsar_model_building\\data\\reports";
 
 	
 	public Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -68,7 +68,7 @@ public class ExcelPredictionReportGenerator {
 	Workbook wb = new XSSFWorkbook();
 	
 	private Boolean isBinary;
-	String reportName = "LogHalfLife OPERA_T.E.S.T. 5.1_PredictionReport.json";
+	String reportName = "Water solubility OPERA_T.E.S.T. 5.1_OPERA_PredictionReport.json";
 	public FileOutputStream out;
 
 	
@@ -122,7 +122,7 @@ public class ExcelPredictionReportGenerator {
 	public static void main(String [] args) {
 		ExcelPredictionReportGenerator per = new ExcelPredictionReportGenerator();
 		per.isBinary = false;
-		per.reportName = "LogHalfLife OPERA_T.E.S.T. 5.1_PredictionReport.json";
+		per.reportName = "Water solubility OPERA_T.E.S.T. 5.1_OPERA_PredictionReport.json";
 		per.notmain(per.wb);
 	}
 	
@@ -156,10 +156,11 @@ public class ExcelPredictionReportGenerator {
 		}
 		
 		generateCoverSheet(report);
-		// generateSummarySheet(report);
 		generateSplitSheet(report);
 		
 		ArrayList<modelHashTables> manyModelHashTables = new ArrayList<modelHashTables>();
+		// purely for resizing
+		ArrayList<String> modelNames = new ArrayList<String>();
 		for (int i = 0; i < report.predictionReportDataPoints.get(0).qsarPredictedValues.size(); i++) {
 		
 		// this is like the second return type for generatePredictionSheet
@@ -169,6 +170,7 @@ public class ExcelPredictionReportGenerator {
 		populateSheet(map, modelHashTables.modelName, false);
 		manyModelHashTables.add(modelHashTables);
 		
+		modelNames.add(modelHashTables.modelName);
 		}
 		List<ModelPrediction> modelPredictions = new ArrayList<ModelPrediction>();
 		modelHashTables consensusHashTables = new modelHashTables(); //
@@ -182,9 +184,25 @@ public class ExcelPredictionReportGenerator {
 
 		wb.setSheetOrder("Summary", 1);
 		
+		
+		String[] trainTest = {"Training", "Test"};
+		for (String s:trainTest) {
+			XSSFSheet sheet = (XSSFSheet) wb.getSheet(s);
+			sheet.setColumnWidth(2, 50 * 256);
+			sheet.setColumnWidth(3, 50 * 256);
+			sheet.setColumnWidth(5, 50 * 256);
+		}
+		
+		modelNames.add("Consensus");
+		for (String s:modelNames) {
+			XSSFSheet sheet = (XSSFSheet) wb.getSheet(s);
+			sheet.setColumnWidth(0, 50 * 256);
+		}
+		
+		
 	     
 	     try {
-	     out = new FileOutputStream(new File("data/" + report.predictionReportMetadata.datasetName + "_Prediction_Report.xlsx"));
+	     out = new FileOutputStream(new File("data/reports/" + report.predictionReportMetadata.datasetName + "_Prediction_Report.xlsx"));
 	     		
 	             wb.write(out);
 	             out.close();
@@ -232,6 +250,7 @@ public class ExcelPredictionReportGenerator {
 			
 		    populateSheet(trainMap, "Training", true);
 		    populateSheet(testMap, "Test", true);
+		    
 
 		}
 	
@@ -241,7 +260,7 @@ public class ExcelPredictionReportGenerator {
 			spreadsheetMap.put("A", prepareCoverSheetRow("Property Name", predictionReport.predictionReportMetadata.datasetProperty));
 			spreadsheetMap.put("B", prepareCoverSheetRow("Property Description", predictionReport.predictionReportMetadata.datasetPropertyDescription));
 			spreadsheetMap.put("C", prepareCoverSheetRow("Dataset Name", predictionReport.predictionReportMetadata.datasetName));
-			spreadsheetMap.put("D", prepareCoverSheetRow("Dataset Description", "HardCodeThis?Data set appearing in TEST 5.1.1."));
+			spreadsheetMap.put("D", prepareCoverSheetRow("Dataset Description", "TODO"));
 			spreadsheetMap.put("E", prepareCoverSheetRow("Property Units", predictionReport.predictionReportMetadata.datasetUnit));
 			spreadsheetMap.put("F", prepareCoverSheetRow("Descriptor Set Name", predictionReport.predictionReportMetadata.descriptorSetName));
 			
@@ -483,8 +502,10 @@ public class ExcelPredictionReportGenerator {
 		   XSSFSheet sheet = (XSSFSheet) wb.createSheet(methodName);
 		   CellStyle cellStyle = wb.createCellStyle();
 		   cellStyle.setDataFormat(wb.createDataFormat().getFormat("0.000"));
+		   cellStyle.setAlignment(CellStyle.ALIGN_CENTER);
 		   CellStyle cellStyle2 = wb.createCellStyle();
 		   cellStyle2.setDataFormat(wb.createDataFormat().getFormat("0"));
+		   cellStyle2.setAlignment(CellStyle.ALIGN_CENTER);
 
 		   XSSFRow row;
 		   Set < String > keyid = spreadsheetMap.keySet();
@@ -508,6 +529,26 @@ public class ExcelPredictionReportGenerator {
 		            
 		            if (obj instanceof Number) {
 		            cell.setCellValue((Double)obj);
+		            		            
+		            
+		            
+				     if (!(methodName.equals("Cover sheet")) && (cellid != 1)) {
+				    	 cell.setCellStyle(cellStyle);
+				     }
+				     
+				     
+				    	 if (isBinary==true) {
+					     sheet.setAutoFilter(CellRangeAddress.valueOf("A1:J1"));
+					     autoSizeColumns(wb);
+					     
+				    	 } else if (isBinary == false) {
+						  sheet.setAutoFilter(CellRangeAddress.valueOf("A1:I1"));
+				    	 } else if (methodName.equals("Test") || methodName.equals("Training")) {
+				    		 sheet.setAutoFilter(CellRangeAddress.valueOf("A1:G1"));
+
+				    	 
+				     } 
+
 		            
 		            } else {
 			            cell.setCellValue((String)obj);
@@ -523,7 +564,7 @@ public class ExcelPredictionReportGenerator {
 			            		cell.setCellStyle(boldstyle);
 			            	}
 			            }
-			            
+
 			            
 			            
 			            
@@ -544,10 +585,11 @@ public class ExcelPredictionReportGenerator {
 		     
 		     if (methodName.equals("Summary")) {
 		    	 if (isBinary==true) {
-			     sheet.setAutoFilter(CellRangeAddress.valueOf("A1:J1"));
+			     sheet.setAutoFilter(CellRangeAddress.valueOf("A1:I1"));
 			     autoSizeColumns(wb);
+			     
 		    	 } else if (isBinary == false) {
-				  sheet.setAutoFilter(CellRangeAddress.valueOf("A1:I1"));
+				  sheet.setAutoFilter(CellRangeAddress.valueOf("A1:H1"));
 		    	 } 
 		    	 
 		     } else if (methodName.equals("Test") || methodName.equals("Training")) {
