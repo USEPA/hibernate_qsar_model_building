@@ -10,6 +10,7 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 
 public class ModelDaoImpl implements ModelDao {
 	
+	private static final String HQL_GET_ALL = "select m from Model m ";
 	private static final String HQL_BY_ID = "from Model m where m.id = :modelId";
 	private static final String HQL_BY_IDS = "from Model m where m.id in (:modelIds)";
 	private static final String HQL_BY_IDS_IN_RANGE_INCLUSIVE = "from Model m where m.id >= :minModelId and m.id <= :maxModelId";
@@ -25,6 +26,13 @@ public class ModelDaoImpl implements ModelDao {
 		Query query = session.createQuery(HQL_BY_ID);
 		query.setParameter("modelId", modelId);
 		return (Model) query.uniqueResult();
+	}
+	
+	@Override
+	public List<Model> getAll(Session session) {
+		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
+		Query query = session.createQuery(HQL_GET_ALL);
+		return (List<Model>) query.list();
 	}
 	
 	@Override

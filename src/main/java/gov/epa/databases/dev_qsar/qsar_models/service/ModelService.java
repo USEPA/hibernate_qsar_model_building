@@ -15,6 +15,10 @@ public interface ModelService {
 	
 	public Model findById(Long modelId, Session session);
 	
+	public List<Model> getAll();
+	
+	public List<Model> getAll(Session session);
+	
 	public List<Model> findByIdIn(List<Long> modelIds);
 	
 	public List<Model> findByIdIn(List<Long> modelIds, Session session);

@@ -20,11 +20,15 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.PredictionReportGenerator;
+import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelModelStatisticsOld;
+import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelPredictionReportGenerator;
 import gov.epa.web_services.ModelWebService;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
 public class RunFromJava {
+	
+	
 	
 	public RunFromJava() {
 		// Make sure Unirest is configured
@@ -272,6 +276,17 @@ public class RunFromJava {
 		//*****************************************************************************************	
 		//		run.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);
 		//*****************************************************************************************
+
+	*/
+		// generate excel prediction reports //
+		
+		ExcelPredictionReportGenerator per = ExcelPredictionReportGenerator.prepareReportFactory("Water solubility OPERA_T.E.S.T. 5.1_OPERA_PredictionReport.json","data\\ExcelReports");
+		per.generate(per.wb);
+		
+		// generate full model database report //
+		ExcelModelStatisticsOld ems = ExcelModelStatisticsOld.prepareFactory("data/ExcelReports");
+		ems.generate();
+
 
 
 	}

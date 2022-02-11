@@ -1,4 +1,4 @@
-package gov.epa.endpoints.reports.predictions.ExcelPredictionReport;
+package gov.epa.endpoints.reports.predictions.ExcelReports;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -58,22 +58,23 @@ import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDa
 public class ExcelPredictionReportGenerator {
 	
 	
-	String path = "C:\\Users\\CRAMSLAN\\OneDrive - Environmental Protection Agency (EPA)\\VDI_Repo\\java\\mm\\new_hibernate_qsar_model_building\\data\\reports";
+	String outpath;
+	String inpath = "data\\reports";
 
 	
 	public Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 	
 	private PredictionReport report;
 	
-	Workbook wb = new XSSFWorkbook();
+	public Workbook wb = new XSSFWorkbook();
 	
 	private Boolean isBinary;
-	String reportName = "Water solubility OPERA_T.E.S.T. 5.1_OPERA_PredictionReport.json";
+	String reportName;
 	public FileOutputStream out;
 
 	
 	
-	static class ContinuousStats {
+	private static class ContinuousStats {
 		Double R2;
 		Double Q2;
 		Double RMSE;
@@ -99,13 +100,30 @@ public class ExcelPredictionReportGenerator {
 		}
 	
 	
-	static class BinaryStats {
+	private static class BinaryStats {
 		Double BA;
 		Double SN;
 		Double SP;
 		Double Coverage;
 		private ArrayList<String> binaryStats = new ArrayList<String>(Arrays.asList("BA", "SN", "SP", "Coverage"));
-	}
+		
+		// switch statement limited to newer version of java on strings for some reason
+		private void align(String statisticName, Double statisticValue) {
+			if (statisticName.toLowerCase().equals("ba")) {
+				this.BA = statisticValue;
+			} else if (statisticName.toLowerCase().equals("sn")) {
+				this.SN = statisticValue;
+			} else if (statisticName.toLowerCase().equals("sp")) {
+				this.SP = statisticValue;
+			} else if (statisticName.toLowerCase().equals("coverage")) {
+				this.Coverage = statisticValue;
+			}
+		
+			}
+		}
+
+		
+	
 	
 	
 
@@ -120,28 +138,26 @@ public class ExcelPredictionReportGenerator {
 	}
 
 	public static void main(String [] args) {
-		ExcelPredictionReportGenerator per = new ExcelPredictionReportGenerator();
-		per.isBinary = false;
-		per.reportName = "Water solubility OPERA_T.E.S.T. 5.1_OPERA_PredictionReport.json";
-		per.notmain(per.wb);
+		ExcelPredictionReportGenerator per = prepareReportFactory("Water solubility OPERA_T.E.S.T. 5.1_OPERA_PredictionReport.json","data\\ExcelReports");
+		per.generate(per.wb);
 	}
 	
 	
-	public void prepareReport(String PredictionReportJsonString) {
+	public static ExcelPredictionReportGenerator prepareReportFactory(String reportName, String outpath) {
 		ExcelPredictionReportGenerator per = new ExcelPredictionReportGenerator();
-		per.isBinary = false;
-		per.reportName = "LogHalfLife OPERA_T.E.S.T. 5.1_PredictionReport.json";
-		per.notmain(per.wb);
+		per.reportName = reportName;
+		per.outpath = outpath;
+		return per;
 	}
 
 
-	private void notmain(Workbook wb) {
+	public void generate(Workbook wb) {
 		int methods;
 		PredictionReport report = null;
 		
 		List<PredictionReportDataPoint> predictionReportDataPoints = null;
         
-		File jsonFile = new File(path + File.separator + reportName);
+		File jsonFile = new File(System.getProperty("user.dir") + File.separator + inpath + File.separator + reportName);
 
 		
 		try {
@@ -155,15 +171,18 @@ public class ExcelPredictionReportGenerator {
 			e.printStackTrace();
 		}
 		
+		isBinary = report.predictionReportMetadata.datasetUnit.equalsIgnoreCase("binary") ? true : false;
+		
+		
 		generateCoverSheet(report);
 		generateSplitSheet(report);
 		
 		ArrayList<modelHashTables> manyModelHashTables = new ArrayList<modelHashTables>();
-		// purely for resizing
+		// purely for resizing later on
 		ArrayList<String> modelNames = new ArrayList<String>();
 		for (int i = 0; i < report.predictionReportDataPoints.get(0).qsarPredictedValues.size(); i++) {
 		
-		// this is like the second return type for generatePredictionSheet
+		// this is like the second return type for generatePredictionSheet, added to w/ side effects
 		modelHashTables modelHashTables = new modelHashTables();
 		Map < String, Object[] > map = generatePredictionSheet(report.predictionReportDataPoints,i,modelHashTables);
 		
@@ -174,14 +193,24 @@ public class ExcelPredictionReportGenerator {
 		}
 		List<ModelPrediction> modelPredictions = new ArrayList<ModelPrediction>();
 		modelHashTables consensusHashTables = new modelHashTables(); //
+		
 		Map < String, Object[] > consensusMap = generateConsensusSheet(manyModelHashTables, consensusHashTables, modelPredictions);
 		
 		
-		populateSheet(consensusMap, "Consensus", false);	
-		HashMap<String, Double> consensusStatisticsMap = ModelStatisticCalculator.calculateContinuousStatistics(modelPredictions, findExperimentalAverage(modelPredictions));
-		
-		generateSummarySheet(report, consensusStatisticsMap);
+		populateSheet(consensusMap, "Consensus", false);
+		if (isBinary == false) {
+		HashMap<String, Double> StatisticsMap = ModelStatisticCalculator.calculateContinuousStatistics(modelPredictions, findExperimentalAverage(modelPredictions));
+		generateSummarySheet(report, StatisticsMap);
 
+		} else if (isBinary == true) {
+			HashMap<String, Double> StatisticsMap = ModelStatisticCalculator.calculateBinaryStatistics(modelPredictions, 0.5);
+			generateSummarySheet(report, StatisticsMap);
+
+
+		}
+		
+
+		
 		wb.setSheetOrder("Summary", 1);
 		
 		
@@ -198,11 +227,15 @@ public class ExcelPredictionReportGenerator {
 			XSSFSheet sheet = (XSSFSheet) wb.getSheet(s);
 			sheet.setColumnWidth(0, 50 * 256);
 		}
-		
-		
-	     
+	    
 	     try {
-	     out = new FileOutputStream(new File("data/reports/" + report.predictionReportMetadata.datasetName + "_Prediction_Report.xlsx"));
+	    	 
+		 		File file = new File(outpath + File.separator + report.predictionReportMetadata.datasetName + "_Prediction_Report.xlsx");
+		 		if (file.getParentFile()!=null) {
+					file.getParentFile().mkdirs();
+				}
+		 		out = new FileOutputStream(file);
+
 	     		
 	             wb.write(out);
 	             out.close();
@@ -233,12 +266,14 @@ public class ExcelPredictionReportGenerator {
 				try {
 					oc = predictionReport.predictionReportDataPoints.get(i).originalCompounds.get(0);
 				} catch (IndexOutOfBoundsException ex) {
-					ex.printStackTrace();	
+					// ex.printStackTrace();
+					continue;
 				}
 				String canonQsarSmiles = predictionReport.predictionReportDataPoints.get(i).canonQsarSmiles;
 				boolean train = predictionReport.predictionReportDataPoints.get(i).qsarPredictedValues.get(0).splitNum == 0 ? true : false;
 				if (oc != null) {
-				Object[] row = new Object[] { oc.dtxcid, oc.casrn, oc.preferredName, oc.smiles, oc.molWeight, canonQsarSmiles, predictionReport.predictionReportDataPoints.get(i).experimentalPropertyValue };
+				Object[] row = new Object[] { oc.dtxcid, oc.casrn, oc.preferredName, oc.smiles, oc.molWeight, canonQsarSmiles, predictionReport.predictionReportDataPoints.get(i).experimentalPropertyValue 
+						};
 				
 				if (train == true) {
 					trainMap.put("BBB" + String.valueOf(i), row);
@@ -319,7 +354,23 @@ public class ExcelPredictionReportGenerator {
 	        	
 	        	// "R2", "Q2", "RMSE", "MAE", "Coverage"
 	        	
-	        	if (isBinary == false) {
+	        	if (isBinary == true) {
+	        		rowArrayList.add(predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics);
+		        	BinaryStats bs = new BinaryStats();
+
+		        	for (int j = 0; j < predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.size(); j++) {
+		        		bs.align(predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticName, predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticValue);	
+		        	}
+
+	        		Object[] row = new Object[] { predictionReport.predictionReportMetadata.datasetName,
+	        				predictionReport.predictionReportMetadata.descriptorSetName,
+	        				predictionReport.predictionReportModelMetadata.get(i).qsarMethodName,
+	        				bs.BA,bs.SN,bs.SP,bs.Coverage};
+
+			        spreadsheetMap.put("BBB" + String.valueOf(i), row);
+
+	        	
+	        	} else if (isBinary == false) {
 	        		rowArrayList.add(predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics);
 	        	
 	        	ContinuousStats cs = new ContinuousStats();
@@ -340,8 +391,10 @@ public class ExcelPredictionReportGenerator {
 		        spreadsheetMap.put("BBB" + String.valueOf(i), row);
 		        
 
+	        	}
 	        }
-	        }
+	        
+	        if (isBinary == false) {
 	        // adds the consensus row
         	ContinuousStats cs = new ContinuousStats();
         	cs.R2 = consensusStatisticsMap.get(DevQsarConstants.R2);
@@ -361,6 +414,23 @@ public class ExcelPredictionReportGenerator {
 	        this should be for adding consensus stats
 	        */
 		    populateSheet(spreadsheetMap, "Summary", true);
+	        } else if (isBinary == true) {
+	        	BinaryStats bs = new BinaryStats();
+	        	bs.BA = consensusStatisticsMap.get(DevQsarConstants.BALANCED_ACCURACY);
+	        	bs.SN = consensusStatisticsMap.get(DevQsarConstants.SENSITIVITY);
+	        	bs.SP = consensusStatisticsMap.get(DevQsarConstants.SPECIFICITY);
+	        	bs.Coverage = consensusStatisticsMap.get(DevQsarConstants.COVERAGE);
+	        	
+	    		Object[] consensusrow = new Object[] { predictionReport.predictionReportMetadata.datasetName,
+	    				predictionReport.predictionReportMetadata.descriptorSetName,
+	    				"Consensus",
+	    				bs.BA,bs.SN,bs.SP,bs.Coverage
+	    		};
+		        spreadsheetMap.put("CCC", consensusrow);
+
+			    populateSheet(spreadsheetMap, "Summary", true);
+
+	        }
 
 
 	}	
@@ -538,8 +608,8 @@ public class ExcelPredictionReportGenerator {
 				     
 				     
 				    	 if (isBinary==true) {
-					     sheet.setAutoFilter(CellRangeAddress.valueOf("A1:J1"));
-					     autoSizeColumns(wb);
+					     // sheet.setAutoFilter(CellRangeAddress.valueOf("A1:J1"));
+					     // autoSizeColumns(wb);
 					     
 				    	 } else if (isBinary == false) {
 						  sheet.setAutoFilter(CellRangeAddress.valueOf("A1:I1"));
@@ -550,7 +620,7 @@ public class ExcelPredictionReportGenerator {
 				     } 
 
 		            
-		            } else {
+		            } else if (obj instanceof String) {
 			            cell.setCellValue((String)obj);
 			            
 			            
@@ -585,8 +655,8 @@ public class ExcelPredictionReportGenerator {
 		     
 		     if (methodName.equals("Summary")) {
 		    	 if (isBinary==true) {
-			     sheet.setAutoFilter(CellRangeAddress.valueOf("A1:I1"));
-			     autoSizeColumns(wb);
+			     sheet.setAutoFilter(CellRangeAddress.valueOf("A1:G1"));
+			     // autoSizeColumns(wb);
 			     
 		    	 } else if (isBinary == false) {
 				  sheet.setAutoFilter(CellRangeAddress.valueOf("A1:H1"));
@@ -599,11 +669,17 @@ public class ExcelPredictionReportGenerator {
 
 		     } else if (methodName.equals("Cover sheet")) {
 		     } else {
+		    	 
+		    if (isBinary == false) {
 		     ExcelUtilities eu = new ExcelUtilities();
 		     eu.GenerateChart(sheet,"Exp","Pred",methodName,"");
 		     
 		     sheet.setAutoFilter(CellRangeAddress.valueOf("A1:D1"));
-		     
+		    } else if (isBinary == true) {
+		    
+			     sheet.setAutoFilter(CellRangeAddress.valueOf("A1:D1"));
+
+		    }
 		     }
 		     autoSizeColumns(wb);
 
