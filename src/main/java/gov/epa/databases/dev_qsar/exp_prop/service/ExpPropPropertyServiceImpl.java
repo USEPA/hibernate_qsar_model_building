@@ -24,5 +24,18 @@ public class ExpPropPropertyServiceImpl implements ExpPropPropertyService {
 		t.rollback();
 		return expPropProperty;
 	}
+	
+	public List<ExpPropProperty> findAll() {
+		Session session = ExpPropSession.getSessionFactory().getCurrentSession();
+		return findAll(session);
+	}
+	
+	public List<ExpPropProperty> findAll(Session session) {
+		Transaction t = session.beginTransaction();
+		ExpPropPropertyDao expPropPropertyDao = new ExpPropPropertyDaoImpl();
+		List<ExpPropProperty> expPropPropertys = expPropPropertyDao.findAll(session);
+		t.rollback();
+		return expPropPropertys;
+	}
 
 }

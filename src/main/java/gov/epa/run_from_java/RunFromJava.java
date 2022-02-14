@@ -109,6 +109,17 @@ public class RunFromJava {
 //		writeReport(datasetName, descriptorSetName, report);//dont really need to write report since we probably want report from all models in one json file anyways
 
 	}
+	
+	public void listDescriptors(String modelWsServer,int modelWsPort,Long modelId,String lanId) {
+		
+		if (!modelWsServer.startsWith("http://")) {
+			modelWsServer = "http://" + modelWsServer;
+		}
+		
+		ModelWebService modelWs = new ModelWebService(modelWsServer, modelWsPort);
+		ModelBuilder mb = new ModelBuilder(modelWs, lanId);
+		mb.listDescriptors(modelId);
+	}
 
 
 
@@ -217,7 +228,7 @@ public class RunFromJava {
 		
 		//*****************************************************************************************
 		// Build model:		
-		String modelWsServer=DevQsarConstants.SERVER_819;
+		String modelWsServer="10.140.73.169";
 //		String modelWsServer=DevQsarConstants.SERVER_LOCAL;
 		int modelWsPort=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
 		
@@ -238,6 +249,10 @@ public class RunFromJava {
 		String descriptorSetName = "T.E.S.T. 5.1";		
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 		
+		for (Long l = 1L; l <= 128L; l++) {
+			run.listDescriptors(modelWsServer, modelWsPort, l, "gsincl01");
+		}
+		
 //		String methods[]= {DevQsarConstants.SVM,DevQsarConstants.DNN,DevQsarConstants.RF,DevQsarConstants.XGB};
 //		for (String method:methods) {
 //			System.out.println(method);
@@ -249,7 +264,7 @@ public class RunFromJava {
 //		}
 		
 		//*****************************************************************************************
-		String methodName=DevQsarConstants.SVM;
+//		String methodName=DevQsarConstants.SVM;
 //		String methodName=DevQsarConstants.DNN;
 //		String methodName=DevQsarConstants.RF;
 //		String methodName=DevQsarConstants.XGB;
@@ -267,7 +282,7 @@ public class RunFromJava {
 		//		String descriptorSetName = "T.E.S.T. 5.1";
 		//		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
 		//		String datasetName = endpoint+" OPERA";
-		run.reportAllPredictions(datasetName,descriptorSetName,splittingName);		
+//		run.reportAllPredictions(datasetName,descriptorSetName,splittingName);		
 
 		//*****************************************************************************************	
 		//		run.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);

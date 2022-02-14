@@ -5,11 +5,8 @@ import java.util.Set;
 
 import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.AtomContainerSet;
-import org.openscience.cdk.DefaultChemObjectBuilder;
-import org.openscience.cdk.depict.DepictionGenerator;
 import org.openscience.cdk.graph.ConnectivityChecker;
 import org.openscience.cdk.interfaces.IAtom;
-import org.openscience.cdk.smiles.SmilesParser;
 
 import gov.epa.endpoints.datasets.ExplainedResponse;
 
@@ -44,9 +41,6 @@ public class DsstoxRecord {
 		this.qsarReadySmiles = qsarReadySmiles;
 	}
 	
-	private static final SmilesParser parser = new SmilesParser(DefaultChemObjectBuilder.getInstance());
-	private static final DepictionGenerator generator = new DepictionGenerator();
-	
 	public ExplainedResponse validateStructure(boolean omitSalts, Set<String> acceptableAtoms) {
 		if (substanceType==null || substanceType.isBlank()
 				|| substanceType.equals("Mineral/Composite")
@@ -64,7 +58,7 @@ public class DsstoxRecord {
 		}
 		
 		try {
-			AtomContainer molecule = (AtomContainer) parser.parseSmiles(smiles.trim());
+			AtomContainer molecule = (AtomContainer) DsstoxSession.smilesParser.parseSmiles(smiles.trim());
 			
 			if (molecule==null || molecule.getAtomCount() <= 1) {
 				return new ExplainedResponse(false, "Single atom");
@@ -78,7 +72,7 @@ public class DsstoxRecord {
 			boolean containsCarbon = false;
 			boolean containsUnacceptableAtom = false;
 			Iterator<IAtom> atoms = molecule.atoms().iterator();
-			while (atoms.hasNext() && !(containsCarbon || containsUnacceptableAtom)) {
+			while (atoms.hasNext() && !(containsCarbon && containsUnacceptableAtom)) {
 				IAtom atom = atoms.next();
 				String symbol = atom.getSymbol();
 				
@@ -131,8 +125,8 @@ public class DsstoxRecord {
 			return false;
 		} else {
 			try {
-				AtomContainer ac = (AtomContainer) parser.parseSmiles(smiles);
-				generator.depict(ac);
+				AtomContainer ac = (AtomContainer) DsstoxSession.smilesParser.parseSmiles(smiles);
+				DsstoxSession.depictionGenerator.depict(ac);
 				return true;
 			} catch (Exception e) {
 				return false;

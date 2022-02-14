@@ -18,6 +18,7 @@ import javax.validation.constraints.NotBlank;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.validator.constraints.Length;
 
 @Entity
 @Table(name="source_chemicals", uniqueConstraints={@UniqueConstraint(columnNames = {
@@ -37,10 +38,12 @@ public class SourceChemical {
 	@Column(name="source_casrn")
 	private String sourceCasrn;
 	
-	@Column(name="source_smiles")
+	@Column(name="source_smiles", length=255)
+	@Length(max=255)
 	private String sourceSmiles;
 	
-	@Column(name="source_chemical_name")
+	@Column(name="source_chemical_name", length=255)
+	@Length(max=255)
 	private String sourceChemicalName;
 	
 	@ManyToOne

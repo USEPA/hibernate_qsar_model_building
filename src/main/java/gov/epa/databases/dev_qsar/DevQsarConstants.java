@@ -119,7 +119,7 @@ public class DevQsarConstants {
 	
 	// Integer codes for train/test splitting
 	public static final Integer TRAIN_SPLIT_NUM = 0;
-	public static final Integer PREDICT_SPLIT_NUM = 1;
+	public static final Integer TEST_SPLIT_NUM = 1;
 	
 	// Splitting names
 	public static final String SPLITTING_RND_REPRESENTATIVE = "RND_REPRESENTATIVE";
@@ -146,7 +146,8 @@ public class DevQsarConstants {
 	public static final String DNN = "dnn";
 	
 	// Statistic names in qsar_models database
-	public static final String Q2 = "Q2";
+	public static final String Q2_TEST = "Q2_Test";
+	public static final String R2_TRAINING = "R2_Training";
 	public static final String COVERAGE = "Coverage";
 	public static final String MAE = "MAE";
 	public static final String RMSE = "RMSE";
@@ -154,10 +155,11 @@ public class DevQsarConstants {
 	public static final String SENSITIVITY = "SN";
 	public static final String SPECIFICITY = "SP";
 	public static final String CONCORDANCE = "Concordance";
-	public static final String POS_CONCORDANCE = "Positive Concordance";
-	public static final String NEG_CONCORDANCE = "Negative Concordance";
-	public static final String R2 = "R2";
-	
+	public static final String POS_CONCORDANCE = "PosConcordance";
+	public static final String NEG_CONCORDANCE = "NegConcordance";
+	public static final String PEARSON_RSQ = "PearsonRSQ";
+	public static final String TAG_TEST = "_Test";
+	public static final String TAG_TRAINING = "_Training";
 	
 	// Acceptable atoms in structures for modeling
 	public static HashSet<String> getAcceptableAtomsSet() {

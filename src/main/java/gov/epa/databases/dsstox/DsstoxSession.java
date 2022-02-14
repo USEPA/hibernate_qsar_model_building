@@ -5,11 +5,17 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistry;
+import org.openscience.cdk.DefaultChemObjectBuilder;
+import org.openscience.cdk.depict.DepictionGenerator;
+import org.openscience.cdk.smiles.SmilesParser;
 
 public class DsstoxSession {
 	private static SessionFactory sessionFactory = null;
  
-    public static SessionFactory getSessionFactory() {
+    public static SmilesParser smilesParser = new SmilesParser(DefaultChemObjectBuilder.getInstance());
+	public static DepictionGenerator depictionGenerator = new DepictionGenerator();
+
+	public static SessionFactory getSessionFactory() {
         if (sessionFactory==null) {
         	Configuration config = new Configuration();
         	

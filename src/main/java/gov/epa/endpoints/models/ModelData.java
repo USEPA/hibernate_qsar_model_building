@@ -60,7 +60,7 @@ public class ModelData {
 						sbTraining.append(instance);
 						this.meanExpTraining += dp.getQsarPropertyValue();
 						countTraining++;
-					} else if (splitNum==DevQsarConstants.PREDICT_SPLIT_NUM) {
+					} else if (splitNum==DevQsarConstants.TEST_SPLIT_NUM) {
 						sbPrediction.append(instance);
 					}
 				}

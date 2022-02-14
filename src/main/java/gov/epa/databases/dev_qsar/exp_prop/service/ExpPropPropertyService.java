@@ -11,5 +11,9 @@ public interface ExpPropPropertyService {
 	public List<ExpPropProperty> findByPropertyCategoryName(String propertyCategoryName);
 	
 	public List<ExpPropProperty> findByPropertyCategoryName(String propertyCategoryName, Session session);
+	
+	public List<ExpPropProperty> findAll();
+	
+	public List<ExpPropProperty> findAll(Session session);
 
 }

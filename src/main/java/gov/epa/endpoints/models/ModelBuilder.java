@@ -211,24 +211,38 @@ public class ModelBuilder {
 			}
 		}
 		
-		predictTraining(model, data, methodName, strModelId);
+		List<ModelPrediction> modelTrainingPredictions = predictTraining(model, data, methodName, strModelId);
 		
-		Map<String, Double> modelStatisticValues = null;
+		Map<String, Double> modelTestStatisticValues = null;
+		Map<String, Double> modelTrainingStatisticValues = null;
 		if (model.getMethod().getIsBinary()) {
-			modelStatisticValues = 
-					ModelStatisticCalculator.calculateBinaryStatistics(Arrays.asList(modelPredictions), DevQsarConstants.BINARY_CUTOFF);
+			modelTestStatisticValues = 
+					ModelStatisticCalculator.calculateBinaryStatistics(Arrays.asList(modelPredictions), 
+							DevQsarConstants.BINARY_CUTOFF,
+							DevQsarConstants.TAG_TEST);
+			modelTrainingStatisticValues = 
+					ModelStatisticCalculator.calculateBinaryStatistics(modelTrainingPredictions, 
+							DevQsarConstants.BINARY_CUTOFF,
+							DevQsarConstants.TAG_TRAINING);
 		} else {
-			modelStatisticValues = 
-					ModelStatisticCalculator.calculateContinuousStatistics(Arrays.asList(modelPredictions), data.meanExpTraining);
+			modelTestStatisticValues = 
+					ModelStatisticCalculator.calculateContinuousStatistics(Arrays.asList(modelPredictions), 
+							data.meanExpTraining,
+							DevQsarConstants.TAG_TEST);
+			modelTrainingStatisticValues = 
+					ModelStatisticCalculator.calculateContinuousStatistics(modelTrainingPredictions, 
+							data.meanExpTraining,
+							DevQsarConstants.TAG_TRAINING);
 		}
 		
-		postModelStatistics(modelStatisticValues, model);
+		postModelStatistics(modelTestStatisticValues, model);
+		postModelStatistics(modelTrainingStatisticValues, model);
 	}
 	
-	private void predictTraining(Model model, ModelData data, String methodName, String strModelId) {
+	private List<ModelPrediction> predictTraining(Model model, ModelData data, String methodName, String strModelId) {
 		if (data.trainingSetInstances==null) {
 			logger.error("Dataset instances were not initialized");
-			return;
+			return null;
 		}
 		
 		String predictTrainingResponse = modelWebService.callPredict(data.trainingSetInstances, methodName, strModelId).getBody();
@@ -243,6 +257,8 @@ public class ModelBuilder {
 				System.out.println(e.getMessage());
 			}
 		}
+		
+		return Arrays.asList(modelTrainingPredictions);
 	}
 
 	/**

@@ -2,6 +2,7 @@ package gov.epa.endpoints.models;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 
@@ -18,7 +19,7 @@ public class ModelStatisticCalculator {
 	 * @param cutoff			the cutoff to consider a non-binary value as positive or negative
 	 * @return					a map of statistic names to calculated values
 	 */
-	public static HashMap<String, Double> calculateBinaryStatistics(List<ModelPrediction> modelPredictions, Double cutoff) {
+	public static Map<String, Double> calculateBinaryStatistics(List<ModelPrediction> modelPredictions, Double cutoff, String tag) {
 		int countTotal = 0;
 		int countPredicted = 0;
 		int countPositive = 0;
@@ -59,11 +60,11 @@ public class ModelStatisticCalculator {
 		Double balancedAccuracy = (sensitivity + specificity) / 2.0;
 		
 		HashMap<String, Double> modelStatisticValues = new HashMap<String, Double>();
-		modelStatisticValues.put(DevQsarConstants.COVERAGE, coverage);
-		modelStatisticValues.put(DevQsarConstants.CONCORDANCE, concordance);
-		modelStatisticValues.put(DevQsarConstants.SENSITIVITY, sensitivity);
-		modelStatisticValues.put(DevQsarConstants.SPECIFICITY, specificity);
-		modelStatisticValues.put(DevQsarConstants.BALANCED_ACCURACY, balancedAccuracy);
+		modelStatisticValues.put(DevQsarConstants.COVERAGE + tag, coverage);
+		modelStatisticValues.put(DevQsarConstants.CONCORDANCE + tag, concordance);
+		modelStatisticValues.put(DevQsarConstants.SENSITIVITY + tag, sensitivity);
+		modelStatisticValues.put(DevQsarConstants.SPECIFICITY + tag, specificity);
+		modelStatisticValues.put(DevQsarConstants.BALANCED_ACCURACY + tag, balancedAccuracy);
 		
 		return modelStatisticValues;
 	}
@@ -74,7 +75,8 @@ public class ModelStatisticCalculator {
 	 * @param meanExpTraining	the average experimental value in the training set
 	 * @return					a map of statistic names to calculated values
 	 */
-	public static HashMap<String, Double> calculateContinuousStatistics(List<ModelPrediction> modelPredictions, Double meanExpTraining) {
+	public static Map<String, Double> calculateContinuousStatistics(List<ModelPrediction> modelPredictions, Double meanExpTraining, 
+			String tag) {
 		// Loop once to get counts and means
 		int countTotal = 0;
 		int countPredicted = 0;
@@ -111,28 +113,33 @@ public class ModelStatisticCalculator {
 			// Update MAE
 			mae += Math.abs(mp.exp - mp.pred);
 			
-			// Update terms for R2
+			// Update terms for Person RSQ
 			termXY += (mp.exp - meanExp) * (mp.pred - meanPred);
 			termXX += (mp.exp - meanExp) * (mp.exp - meanExp);
 			termYY += (mp.pred - meanPred) * (mp.pred - meanPred);
 			
-			// Update sums for Q2
+			// Update sums for coefficient of determination
 			ss += Math.pow(mp.exp - mp.pred, 2.0);
 			ssTotal += Math.pow(mp.exp - meanExpTraining, 2.0);
 		}
 		
 		Double coverage = (double) countPredicted / (double) countTotal;
 		mae /= (double) countPredicted;
-		Double r2 = termXY * termXY / (termXX * termYY);
-		Double q2 = 1 - ss / ssTotal;
+		Double pearsonRsq = termXY * termXY / (termXX * termYY);
+		Double coeffDet = 1 - ss / ssTotal;
 		Double rmse = Math.sqrt(ss / (double) countPredicted);
 		
 		HashMap<String, Double> modelStatisticValues = new HashMap<String, Double>();
-		modelStatisticValues.put(DevQsarConstants.COVERAGE, coverage);
-		modelStatisticValues.put(DevQsarConstants.MAE, mae);
-		modelStatisticValues.put(DevQsarConstants.R2, r2);
-		modelStatisticValues.put(DevQsarConstants.Q2, q2);
-		modelStatisticValues.put(DevQsarConstants.RMSE, rmse);
+		modelStatisticValues.put(DevQsarConstants.COVERAGE + tag, coverage);
+		modelStatisticValues.put(DevQsarConstants.MAE + tag, mae);
+		modelStatisticValues.put(DevQsarConstants.PEARSON_RSQ + tag, pearsonRsq);
+		modelStatisticValues.put(DevQsarConstants.RMSE + tag, rmse);
+		
+		if (tag.equals(DevQsarConstants.TAG_TEST)) {
+			modelStatisticValues.put(DevQsarConstants.Q2_TEST, coeffDet);
+		} else if (tag.equals(DevQsarConstants.TAG_TRAINING)) {
+			modelStatisticValues.put(DevQsarConstants.R2_TRAINING, coeffDet);
+		}
 		
 		return modelStatisticValues;
 	}

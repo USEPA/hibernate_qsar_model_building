@@ -3,7 +3,9 @@ package gov.epa.databases.dsstox.dao;
 import java.util.Collection;
 import java.util.List;
 
+import org.hibernate.Criteria;
 import org.hibernate.Session;
+import org.hibernate.criterion.Restrictions;
 import org.hibernate.query.Query;
 import org.hibernate.transform.AliasToBeanResultTransformer;
 

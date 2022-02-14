@@ -1,5 +1,6 @@
 package gov.epa.endpoints.datasets;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -343,7 +344,8 @@ public class DatasetCreator {
 		}
 	}
 	
-	private Map<String, List<MappedPropertyValue>> unifyPropertyValuesByStructure(List<MappedPropertyValue> mappedPropertyValues) {
+	private Map<String, List<MappedPropertyValue>> unifyPropertyValuesByStructure(List<MappedPropertyValue> mappedPropertyValues,
+			boolean useStdevFilter) {
 		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = 
 				new HashMap<String, List<MappedPropertyValue>>();
 		Double datasetStdev = MathUtil.stdevS(mappedPropertyValues.stream().map(mpv -> mpv.qsarPropertyValue).collect(Collectors.toList()));
@@ -366,13 +368,15 @@ public class DatasetCreator {
 			unifiedPropertyValues.put(structure, structurePropertyValues);
 		}
 		
-		for (String structure:unifiedPropertyValues.keySet()) {
-			List<MappedPropertyValue> structurePropertyValues = unifiedPropertyValues.get(structure);
-			Double stdev = MathUtil.stdevS(structurePropertyValues.stream().map(mpv -> mpv.qsarPropertyValue).collect(Collectors.toList()));
-			if (stdev > DevQsarConstants.STDEV_WIDTH_TOLERANCE * datasetStdev) {
-				logger.info(structure + ": Removed data point due to high stdev: " 
-						+ stdev + " > " + DevQsarConstants.STDEV_WIDTH_TOLERANCE + "*" + datasetStdev);
-				unifiedPropertyValues.remove(structure);
+		if (useStdevFilter) {
+			for (String structure:unifiedPropertyValues.keySet()) {
+				List<MappedPropertyValue> structurePropertyValues = unifiedPropertyValues.get(structure);
+				Double stdev = MathUtil.stdevS(structurePropertyValues.stream().map(mpv -> mpv.qsarPropertyValue).collect(Collectors.toList()));
+				if (stdev > DevQsarConstants.STDEV_WIDTH_TOLERANCE * datasetStdev) {
+					logger.info(structure + ": Removed data point due to high stdev: " 
+							+ stdev + " > " + DevQsarConstants.STDEV_WIDTH_TOLERANCE + "*" + datasetStdev);
+					unifiedPropertyValues.remove(structure);
+				}
 			}
 		}
 		
@@ -473,7 +477,7 @@ public class DatasetCreator {
 		}
 	}
 
-	public void createPropertyDataset(DatasetParams params, boolean testMapping) {
+	public void createPropertyDataset(DatasetParams params) {
 		Gson gson = new Gson();
 		
 		System.out.println("Selecting experimental property data for " + params.propertyName + "...");
@@ -502,11 +506,6 @@ public class DatasetCreator {
 			return;
 		}
 		
-		if (testMapping) {
-			logger.info(params.datasetName + ": Exiting DSSTox mapping test, " + mappedPropertyValues.size() + " mappings accepted");
-			return;
-		}
-		
 		Property property = initializeProperty(propertyValues);
 		if (property==null) { return; }
 		
@@ -531,13 +530,54 @@ public class DatasetCreator {
 		System.out.println("Calculation time: " + (t4 - t3)/1000.0 + " s");
 		
 		System.out.println("Unifying structures...");
-		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues);
+		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, true);
 		
 		System.out.println("Posting final merged values...");
 		long t7 = System.currentTimeMillis();
 		postDataPoints(unifiedPropertyValues, dataset);
 		long t8 = System.currentTimeMillis();
 		System.out.println("Time to post: " + (t8 - t7)/1000.0 + " s");
+	}
+	
+	public void mapPropertyDataset(DatasetParams params) {
+		System.out.println("Selecting experimental property data for " + params.propertyName + "...");
+		long t5 = System.currentTimeMillis();
+		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(params.propertyName, true, true);
+		long t6 = System.currentTimeMillis();
+		System.out.println("Selection time = " + (t6 - t5)/1000.0 + " s");
+		
+		if (propertyValues==null || propertyValues.isEmpty()) {
+			logger.error(params.datasetName + ": Experimental property data unavailable");
+			return;
+		}
+		
+		System.out.println("Retrieving DSSTox structure data...");
+		List<MappedPropertyValue> mappedPropertyValues = null;
+		try {
+			mappedPropertyValues = mapPropertyValuesToDsstoxRecords(propertyValues, params);
+		} catch (Exception e) {
+			logger.error("Failed DSSTox query: " + e.getMessage());
+			e.printStackTrace();
+			return;
+		}
+		
+		if (mappedPropertyValues==null || mappedPropertyValues.isEmpty()) {
+			logger.error(params.datasetName + ": DSSTox structure data unavailable");
+			return;
+		}
+		
+		System.out.println("Standardizing structures using " + standardizerName + "...");
+		long t1 = System.currentTimeMillis();
+		standardize(mappedPropertyValues);
+		long t2 = System.currentTimeMillis();
+		System.out.println("Standardization time: " + (t2 - t1)/1000.0 + " s");
+		
+		System.out.println("Unifying structures...");
+		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, false);
+	
+		String datasetFileName = params.datasetName.replaceAll("[^A-Za-z0-9-_]+","_");
+		String datasetFolderPath = DevQsarConstants.OUTPUT_FOLDER_PATH + File.separator + datasetFileName;
+		String fileName = "data_point_contributors.tsv";
 	}
 	
 	public static void main(String[] args) {
@@ -547,20 +587,20 @@ public class DatasetCreator {
 				"TEST-descriptors/");
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, testDescriptorWebService, "gsincl01");
 		
-//		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
-//		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
-//		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
-//		bounds.add(temperatureBound);
-//		bounds.add(phBound);
+		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
+		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
+		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+		bounds.add(temperatureBound);
+		bounds.add(phBound);
 		MappingParams mappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, "ExpProp_WaterSolubility_WithChemProp_120121", 
 				false, true, false, true, true, false, true);
-		DatasetParams params = new DatasetParams("ExpProp_WaterSolubility_WithChemProp_Unfiltered_Hibernate", 
-				"Final water solubility experimental dataset from exp_prop, "
-				+ "without parameter filtering, with mapping in Hibernate", 
+		DatasetParams params = new DatasetParams("ExpProp_WaterSolubility_WithChemProp_Unfiltered_Hibernate_FixedUnacceptableAtoms", 
+				"Water solubility experimental dataset from exp_prop, with ChemProp data, "
+				+ "without parameter filtering, with Hibernate mapping, fixed unacceptable atom exclusion", 
 				DevQsarConstants.WATER_SOLUBILITY,
 				mappingParams);
 //				bounds);
 
-		creator.createPropertyDataset(params, false);
+		creator.mapPropertyDataset(params);
 	}
 }

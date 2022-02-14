@@ -10,6 +10,7 @@ import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 
 public class PropertyValueDaoImpl implements PropertyValueDao {
 	
+	private static final String HQL_WHERE_BY_ID = "where pv.id = :id";
 	private static final String HQL_SELECT_WITH_FETCH = "select distinct pv from PropertyValue pv "
 			+ "left join fetch pv.sourceChemical sc "
 			+ "left join fetch pv.unit u "
@@ -26,6 +27,14 @@ public class PropertyValueDaoImpl implements PropertyValueDao {
 			+ "and pv.keep = true "
 			+ "and (pv.valueQualifier is null or pv.valueQualifier = '~')";
 
+	@Override
+	public PropertyValue findById(Long id, Session session) {
+		if (session==null) { session = ExpPropSession.getSessionFactory().getCurrentSession(); }
+		
+		Query query = session.createQuery(HQL_SELECT_WITH_FETCH + HQL_WHERE_BY_ID);
+		query.setParameter("id", id);
+		return (PropertyValue) query.uniqueResult();
+	}
 
 	@Override
 	public List<PropertyValue> findByPropertyNameWithOptions(String propertyName, boolean useKeep,

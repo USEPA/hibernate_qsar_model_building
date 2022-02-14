@@ -9,5 +9,7 @@ import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
 public interface ExpPropPropertyDao {
 	
 	public List<ExpPropProperty> findByPropertyCategoryName(String propertyCategoryName, Session session);
+	
+	public List<ExpPropProperty> findAll(Session session);
 
 }

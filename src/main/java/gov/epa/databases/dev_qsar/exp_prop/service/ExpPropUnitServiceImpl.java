@@ -1,5 +1,7 @@
 package gov.epa.databases.dev_qsar.exp_prop.service;
 
+import java.util.List;
+
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
@@ -21,6 +23,19 @@ public class ExpPropUnitServiceImpl implements ExpPropUnitService {
 		ExpPropUnit expPropUnit = expPropUnitDao.findByName(unitName, session);
 		t.rollback();
 		return expPropUnit;
+	}
+	
+	public List<ExpPropUnit> findAll() {
+		Session session = ExpPropSession.getSessionFactory().getCurrentSession();
+		return findAll(session);
+	}
+	
+	public List<ExpPropUnit> findAll(Session session) {
+		Transaction t = session.beginTransaction();
+		ExpPropUnitDao expPropUnitDao = new ExpPropUnitDaoImpl();
+		List<ExpPropUnit> expPropUnits = expPropUnitDao.findAll(session);
+		t.rollback();
+		return expPropUnits;
 	}
 
 }

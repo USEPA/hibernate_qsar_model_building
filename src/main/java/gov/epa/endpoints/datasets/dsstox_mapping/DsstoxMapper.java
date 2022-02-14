@@ -158,7 +158,7 @@ public class DsstoxMapper {
 		logger.setLevel(Level.ERROR);
 	}
 	
-	private List<DsstoxRecord> getDsstoxRecords(String input, String inputType) {
+	public List<DsstoxRecord> getDsstoxRecords(String input, String inputType) {
 		List<DsstoxRecord> dsstoxRecords = null;
 		switch (inputType) {
 		case DevQsarConstants.INPUT_DTXCID:
@@ -194,24 +194,40 @@ public class DsstoxMapper {
 		return dsstoxRecords;
 	}
 	
-	private List<DsstoxRecord> getDsstoxRecords(Collection<String> inputs, String inputType) {
-		List<DsstoxRecord> dsstoxRecords = null;
-		switch (inputType) {
-		case DevQsarConstants.INPUT_DTXCID:
-			dsstoxRecords = dsstoxCompoundService.findAsDsstoxRecordsByDtxcidIn(inputs);
-			break;
-		case DevQsarConstants.INPUT_DTXSID:
-			dsstoxRecords = genericSubstanceService.findAsDsstoxRecordsByDtxsidIn(inputs);
-			break;
-		case DevQsarConstants.INPUT_CASRN:
-			dsstoxRecords = genericSubstanceService.findAsDsstoxRecordsByCasrnIn(inputs);
-			break;
+	public List<DsstoxRecord> getDsstoxRecords(Collection<String> inputs, String inputType) {
+		List<DsstoxRecord> dsstoxRecords = new ArrayList<DsstoxRecord>();
+		if (inputs.size() <= 1000) {
+			switch (inputType) {
+			case DevQsarConstants.INPUT_DTXCID:
+				dsstoxRecords = dsstoxCompoundService.findAsDsstoxRecordsByDtxcidIn(inputs);
+				break;
+			case DevQsarConstants.INPUT_DTXSID:
+				dsstoxRecords = genericSubstanceService.findAsDsstoxRecordsByDtxsidIn(inputs);
+				break;
+			case DevQsarConstants.INPUT_CASRN:
+				dsstoxRecords = genericSubstanceService.findAsDsstoxRecordsByCasrnIn(inputs);
+				break;
+			}
+		} else {
+			int count = 0;
+			Set<String> subset = new HashSet<String>();
+			for (String input:inputs) {
+				subset.add(input);
+				count++;
+				if (count==1000) {
+					dsstoxRecords.addAll(getDsstoxRecords(subset, inputType));
+					subset = new HashSet<String>();
+					count = 0;
+				}
+			}
+			dsstoxRecords.addAll(getDsstoxRecords(subset, inputType));
 		}
 		
 		return dsstoxRecords;
 	}
 	
 	public List<MappedPropertyValue> map(List<PropertyValue> propertyValues) {
+		initPropertyValuesMap(propertyValues);
 		List<DsstoxRecord> dsstoxRecords = null;
 		if (datasetParams.mappingParams.isNaive) {	
 			// For naive mapping strategies (CASRN, DTXSID, DTXCID), pull the DSSTox records and map them directly
@@ -236,7 +252,6 @@ public class DsstoxMapper {
 		}
 		
 		initDsstoxRecordsMap(dsstoxRecords);
-		initPropertyValuesMap(propertyValues);
 		
 		List<MappedPropertyValue> mappedPropertyValues = mapPropertyValuesToDsstoxRecords();
 		if (mappedPropertyValues!=null) {

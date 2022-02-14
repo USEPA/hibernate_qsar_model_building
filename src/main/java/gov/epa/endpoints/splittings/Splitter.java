@@ -74,32 +74,32 @@ public class Splitter {
 	}
 	
 	public void split(String datasetName, String descriptorSetName) {
-		String tsv = InstanceUtil.generateTsv(datasetName, descriptorSetName);
-		
-	    SplittingCalculationResponse[] splittingResponse = 
-	            splittingWebService.callCalculation(tsv, false).getBody();
-	    
-	    if (splittingResponse==null) {
-	    	System.out.println("Splitting failed");
-	        return;
-	    }
-	    
-	    HashMap<String, DataPoint> dataPointsMap = InstanceUtil.getDataPoints(datasetName);
-	    for (SplittingCalculationResponse split:splittingResponse) {
-	        String smiles = split.ID;
-	        Integer splitNum = null;
-            if (split.t_p.equals("t")) {
-                splitNum = DevQsarConstants.TRAIN_SPLIT_NUM;
-            } else if (split.t_p.equals("p")) {
-                splitNum = DevQsarConstants.PREDICT_SPLIT_NUM;
-            }
-	        
-	        DataPoint dp = dataPointsMap.get(smiles);
-	        if (dp!=null && splitNum!=null) {
-	            DataPointInSplitting dpis = new DataPointInSplitting(dp, splitting, splitNum, lanId);
-	            dataPointInSplittingService.create(dpis);
-	        }
-	    }
+//		String tsv = InstanceUtil.generateTsv(datasetName, descriptorSetName);
+//		
+//	    SplittingCalculationResponse[] splittingResponse = 
+//	            splittingWebService.callCalculation(tsv, false).getBody();
+//	    
+//	    if (splittingResponse==null) {
+//	    	System.out.println("Splitting failed");
+//	        return;
+//	    }
+//	    
+//	    HashMap<String, DataPoint> dataPointsMap = InstanceUtil.getDataPoints(datasetName);
+//	    for (SplittingCalculationResponse split:splittingResponse) {
+//	        String smiles = split.ID;
+//	        Integer splitNum = null;
+//            if (split.t_p.equals("t")) {
+//                splitNum = DevQsarConstants.TRAIN_SPLIT_NUM;
+//            } else if (split.t_p.equals("p")) {
+//                splitNum = DevQsarConstants.PREDICT_SPLIT_NUM;
+//            }
+//	        
+//	        DataPoint dp = dataPointsMap.get(smiles);
+//	        if (dp!=null && splitNum!=null) {
+//	            DataPointInSplitting dpis = new DataPointInSplitting(dp, splitting, splitNum, lanId);
+//	            dataPointInSplittingService.create(dpis);
+//	        }
+//	    }
 	}
 	
 	public static void main(String[] args) {
