@@ -8,6 +8,8 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 
 public interface ModelDao {
 	
+	public List<Model> getAll(Session session);
+	
 	public Model findById(Long modelId, Session session);
 	
 	public List<Model> findByIdIn(List<Long> modelIds, Session session);

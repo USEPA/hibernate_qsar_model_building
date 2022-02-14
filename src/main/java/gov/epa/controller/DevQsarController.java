@@ -1,5 +1,12 @@
 package gov.epa.controller;
 
+import java.util.Random;
+
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -54,6 +61,7 @@ public class DevQsarController {
 		return gen.generateForModelPredictions(modelId);
 	}
 	
+	/*
 	@GetMapping("/reports/predictions/all")
 	public PredictionReport reportAllPredictions(@RequestParam(name="dataset-name") String datasetName, 
 			@RequestParam(name="descriptor-set-name") String descriptorSetName,
@@ -61,6 +69,7 @@ public class DevQsarController {
 		PredictionReportGenerator gen = new PredictionReportGenerator();
 		return gen.generateForAllPredictions(datasetName, descriptorSetName, splittingName);
 	}
+	*/
 	
 	@GetMapping("/reports/descriptors/all")
 	public DescriptorReport reportDescriptors(@RequestParam(name="dataset-name") String datasetName) {
@@ -81,4 +90,22 @@ public class DevQsarController {
 		return gen.generate(modelSetName);
 	}
 
+	
+	
+	// method argument should be prediction report json rather than predictionreport object right?
+	@GetMapping("/download/reports/")
+	public ResponseEntity<Resource> downloadExcelPredictionReport() { //@RequestParam(name="prediction-report") PredictionReport predictionReport) {
+		byte[] blob = new byte[20];
+		new Random().nextBytes(blob);
+		ByteArrayResource resource = new ByteArrayResource(blob);
+		String fileName = "NonsenseFileName.bin";
+		Long fileLength = Long.valueOf(blob.length);
+		
+		return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .contentLength(fileLength)
+                .contentType(MediaType.parseMediaType("application/octet-stream"))
+                .body(resource);
+
+	}
 }
