@@ -164,4 +164,19 @@ public class ModelServiceImpl implements ModelService {
 		t.commit();
 	}
 
+	@Override
+	public List<Model> getAll() {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return getAll(session);
+	}
+
+	@Override
+	public List<Model> getAll(Session session) {
+		Transaction t = session.beginTransaction();
+		ModelDao modelDao = new ModelDaoImpl();
+		List<Model> models = modelDao.getAll(session);
+		t.rollback();
+		return models;
+	}
+
 }
