@@ -6,14 +6,12 @@ import java.util.List;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -34,6 +32,10 @@ public class Model {
 	@ManyToOne
 	@JoinColumn(name="fk_method_id")
 	private Method method;
+	
+	@ManyToOne
+	@JoinColumn(name="fk_descriptor_embedding_id")
+	private DescriptorEmbedding descriptorEmbedding;
 	
 	@NotNull(message="Descriptor set name required")
 	@Column(name="descriptor_set_name")
@@ -80,6 +82,16 @@ public class Model {
 	
 	public Model(Method method, String descriptorSetName, String datasetName, String splittingName, String createdBy) {
 		this.setMethod(method);
+		this.setDescriptorSetName(descriptorSetName);
+		this.setDatasetName(datasetName);
+		this.setSplittingName(splittingName);
+		this.setCreatedBy(createdBy);
+	}
+	
+	public Model(Method method, DescriptorEmbedding descriptorEmbedding, 
+			String descriptorSetName, String datasetName, String splittingName, String createdBy) {
+		this.setMethod(method);
+		this.setDescriptorEmbedding(descriptorEmbedding);
 		this.setDescriptorSetName(descriptorSetName);
 		this.setDatasetName(datasetName);
 		this.setSplittingName(splittingName);
@@ -156,5 +168,13 @@ public class Model {
 
 	public void setCreatedBy(String createdBy) {
 		this.createdBy = createdBy;
+	}
+
+	public DescriptorEmbedding getDescriptorEmbedding() {
+		return descriptorEmbedding;
+	}
+
+	public void setDescriptorEmbedding(DescriptorEmbedding descriptorEmbedding) {
+		this.descriptorEmbedding = descriptorEmbedding;
 	}
 }
