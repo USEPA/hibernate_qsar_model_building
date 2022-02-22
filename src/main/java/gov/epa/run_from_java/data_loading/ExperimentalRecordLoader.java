@@ -475,7 +475,7 @@ public class ExperimentalRecordLoader {
 		System.out.println("Retrieved " + records.size() + " records");
 		
 		List<ExperimentalRecord> recordsList = records.stream()
-				.filter(r -> r.property_name.equals(DevQsarConstants.DENSITY))
+				.filter(r -> r.property_name.equals(DevQsarConstants.FLASH_POINT))
 				.collect(Collectors.toList());
 		
 		System.out.println("Loading " + recordsList.size() + " records...");

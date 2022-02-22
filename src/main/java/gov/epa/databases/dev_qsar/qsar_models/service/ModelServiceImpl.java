@@ -11,6 +11,7 @@ import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -156,6 +157,13 @@ public class ModelServiceImpl implements ModelService {
 	public void delete(Model model, Session session) {
 		if (model.getId()==null) {
 			return;
+		}
+		
+		// This is a bad way to do this, but there isn't really a better one
+		ModelBytesService modelBytesService = new ModelBytesServiceImpl();
+		ModelBytes modelBytes = modelBytesService.findByModelId(model.getId());
+		if (modelBytes!=null) {
+			modelBytesService.delete(modelBytes);
 		}
 		
 		Transaction t = session.beginTransaction();

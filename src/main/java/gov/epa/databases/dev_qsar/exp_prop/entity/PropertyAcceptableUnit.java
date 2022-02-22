@@ -54,6 +54,12 @@ public class PropertyAcceptableUnit {
 	private String updatedBy;
 	
 	public PropertyAcceptableUnit() {}
+	
+	public PropertyAcceptableUnit(ExpPropProperty p, ExpPropUnit u, String createdBy) {
+		this.property = p;
+		this.unit = u;
+		this.createdBy = createdBy;
+	}
 
 	public Long getId() {
 		return id;

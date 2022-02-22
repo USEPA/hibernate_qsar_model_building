@@ -22,7 +22,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
 @Table(name="properties", indexes={@Index(name="property_name_idx", columnList="name", unique=true)})
@@ -69,6 +68,12 @@ public class ExpPropProperty {
 	private List<PropertyAcceptableUnit> propertiesAcceptableUnits;
 	
 	public ExpPropProperty() {}
+	
+	public ExpPropProperty(String name, String description, String createdBy) {
+		this.name = name;
+		this.description = description;
+		this.createdBy = createdBy;
+	}
 
 	public Long getId() {
 		return id;

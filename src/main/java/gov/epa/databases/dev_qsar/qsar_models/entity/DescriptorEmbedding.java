@@ -36,9 +36,17 @@ public class DescriptorEmbedding {
 	@Column(name="descriptor_set_name")
 	private String descriptorSetName;
 	
+	@NotBlank(message="Dataset name required")
+	@Column(name="dataset_name")
+	private String datasetName;
+	
 	@NotNull
 	@Column(name="embedding_tsv", length=2047)
 	private String embeddingTsv;
+	
+	@NotNull
+	@Column(name="importance_tsv", length=2047)
+	private String importanceTsv;
 
 	@Column(name="updated_at")
 	@UpdateTimestamp
@@ -136,5 +144,21 @@ public class DescriptorEmbedding {
 
 	public void setDescriptorSetName(String descriptorSetName) {
 		this.descriptorSetName = descriptorSetName;
+	}
+
+	public String getDatasetName() {
+		return datasetName;
+	}
+
+	public void setDatasetName(String datasetName) {
+		this.datasetName = datasetName;
+	}
+
+	public String getImportanceTsv() {
+		return importanceTsv;
+	}
+
+	public void setImportanceTsv(String importanceTsv) {
+		this.importanceTsv = importanceTsv;
 	}
 }

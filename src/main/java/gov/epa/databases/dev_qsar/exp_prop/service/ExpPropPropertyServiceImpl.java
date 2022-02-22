@@ -1,16 +1,28 @@
 package gov.epa.databases.dev_qsar.exp_prop.service;
 
 import java.util.List;
+import java.util.Set;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
+import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.exp_prop.ExpPropSession;
 import gov.epa.databases.dev_qsar.exp_prop.dao.ExpPropPropertyDao;
 import gov.epa.databases.dev_qsar.exp_prop.dao.ExpPropPropertyDaoImpl;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
 
 public class ExpPropPropertyServiceImpl implements ExpPropPropertyService {
+	
+	private Validator validator;
+	
+	public ExpPropPropertyServiceImpl() {
+		this.validator = DevQsarValidator.getValidator();
+	}
 	
 	public List<ExpPropProperty> findByPropertyCategoryName(String propertyCategoryName) {
 		Session session = ExpPropSession.getSessionFactory().getCurrentSession();
@@ -36,6 +48,37 @@ public class ExpPropPropertyServiceImpl implements ExpPropPropertyService {
 		List<ExpPropProperty> expPropPropertys = expPropPropertyDao.findAll(session);
 		t.rollback();
 		return expPropPropertys;
+	}
+
+	@Override
+	public ExpPropProperty create(ExpPropProperty property) throws ConstraintViolationException {
+		Session session = ExpPropSession.getSessionFactory().getCurrentSession();
+		return create(property, session);
+	}
+
+	@Override
+	public ExpPropProperty create(ExpPropProperty property, Session session) throws ConstraintViolationException {
+		Set<ConstraintViolation<ExpPropProperty>> violations = validator.validate(property);
+		if (!violations.isEmpty()) {
+			throw new ConstraintViolationException(violations);
+		}
+		
+		Transaction t = session.beginTransaction();
+		
+		try {
+			session.save(property);
+			session.flush();
+			session.refresh(property);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		} catch (Exception e) {
+			t.rollback();
+			throw e;
+		}
+		
+		return property;
 	}
 
 }

@@ -26,12 +26,15 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServ
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorValues;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
+import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingService;
+import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.MethodService;
 import gov.epa.databases.dev_qsar.qsar_models.service.MethodServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
@@ -56,6 +59,7 @@ public class ModelBuilder {
 	private ModelService modelService;
 	private ModelStatisticService modelStatisticService;
 	private PredictionService predictionService;
+	private DescriptorEmbeddingService descriptorEmbeddingService;
 	private ModelWebService modelWebService;
 	private String lanId;
 	
@@ -94,6 +98,7 @@ public class ModelBuilder {
 		modelService = new ModelServiceImpl();
 		modelStatisticService = new ModelStatisticServiceImpl();
 		predictionService = new PredictionServiceImpl();
+		descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 	}
 	
 	public ModelData initModelData(String datasetName, String descriptorSetName, String splittingName, boolean removeLogDescriptors) {
@@ -145,6 +150,75 @@ public class ModelBuilder {
 		String strModelId = String.valueOf(model.getId());
 		byte[] bytes = modelWebService.callTrain(data.trainingSetInstances, 
 				data.removeLogDescriptors, methodName, strModelId).getBody();
+		String hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
+		String description = modelWebService.callInfo(methodName).getBody();
+		
+		JsonObject jo = gson.fromJson(hyperparameters, JsonObject.class);
+		String version = jo.get("version").getAsString();
+		Boolean isBinary = jo.get("is_binary").getAsBoolean();
+		String classOrRegr = isBinary ? "classifier" : "regressor";
+		String fullMethodName = methodName + "_" + classOrRegr + "_" + version;
+		
+		Method method = methodService.findByName(fullMethodName);
+		if (method==null) {
+			method = new Method(fullMethodName, description, hyperparameters, isBinary, lanId);
+			methodService.create(method);
+		} else {
+			JsonParser parser = new JsonParser();
+			if (!parser.parse(hyperparameters).equals(parser.parse(method.getHyperparameters()))) {
+				logger.warn("Hyperparameters for " + fullMethodName + " have changed");
+			}
+		}
+		
+		model.setMethod(method);
+		modelService.update(model);
+		
+		ModelBytes modelBytes = new ModelBytes(model, bytes, lanId);
+		modelBytesService.create(modelBytes);
+		
+		return model.getId();
+	}
+	
+	/**
+	 * Builds a Python model with the given data and parameters
+	 * @param data
+	 * @param params
+	 */
+	@SuppressWarnings("deprecation")
+	public Long trainWithPreselectedDescriptors(ModelData data, String methodName, String descriptorEmbeddingName) 
+			throws ConstraintViolationException {
+		if (data.trainingSetInstances==null) {
+			logger.error("Dataset instances were not initialized");
+			return null;
+		}
+		
+		logger.debug("Building Python model with dataset = " + data.datasetName + ", descriptors = " + data.descriptorSetName
+				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName);
+		
+		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByName(descriptorEmbeddingName);
+		if (descriptorEmbedding==null) {
+			logger.error("No such descriptor embedding");
+			return null;
+		} else if (!descriptorEmbedding.getDescriptorSetName().equals(data.descriptorSetName)) {
+			logger.error("Descriptor embedding for wrong descriptor set");
+			return null;
+		} else if (!descriptorEmbedding.getDatasetName().equals(data.datasetName)) {
+			logger.error("Descriptor embedding for wrong dataset");
+			return null;
+		}
+		
+		Method genericMethod = methodService.findByName(methodName);
+		if (genericMethod==null) {
+			genericMethod = new Method(methodName, methodName, null, false, lanId);
+			methodService.create(genericMethod);
+		}
+		
+		Model model = new Model(genericMethod, descriptorEmbedding, data.descriptorSetName, data.datasetName, data.splittingName, lanId);
+		modelService.create(model);
+		
+		String strModelId = String.valueOf(model.getId());
+		byte[] bytes = modelWebService.callTrainWithPreselectedDescriptors(data.trainingSetInstances, 
+				data.removeLogDescriptors, methodName, strModelId, descriptorEmbedding.getEmbeddingTsv()).getBody();
 		String hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
 		String description = modelWebService.callInfo(methodName).getBody();
 		
@@ -284,6 +358,16 @@ public class ModelBuilder {
 		ModelData data = initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
 		
 		Long modelId = train(data, methodName);
+		predict(data, methodName, modelId);
+		
+		return modelId;
+	}
+	
+	public Long buildWithPreselectedDescriptors(String datasetName, String descriptorSetName, String splittingName, 
+			boolean removeLogDescriptors, String methodName, String descriptorEmbeddingName) throws ConstraintViolationException {
+		ModelData data = initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
+		
+		Long modelId = trainWithPreselectedDescriptors(data, methodName, descriptorEmbeddingName);
 		predict(data, methodName, modelId);
 		
 		return modelId;

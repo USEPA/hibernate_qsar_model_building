@@ -1,16 +1,28 @@
 package gov.epa.databases.dev_qsar.exp_prop.service;
 
 import java.util.List;
+import java.util.Set;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
+import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.exp_prop.ExpPropSession;
 import gov.epa.databases.dev_qsar.exp_prop.dao.ParameterDao;
 import gov.epa.databases.dev_qsar.exp_prop.dao.ParameterDaoImpl;
 import gov.epa.databases.dev_qsar.exp_prop.entity.Parameter;
 
 public class ParameterServiceImpl implements ParameterService {
+	
+	private Validator validator;
+	
+	public ParameterServiceImpl() {
+		this.validator = DevQsarValidator.getValidator();
+	}
 	
 	public Parameter findByName(String parameterName) {
 		Session session = ExpPropSession.getSessionFactory().getCurrentSession();
@@ -36,6 +48,37 @@ public class ParameterServiceImpl implements ParameterService {
 		List<Parameter> parameters = parameterDao.findAll(session);
 		t.rollback();
 		return parameters;
+	}
+
+	@Override
+	public Parameter create(Parameter parameter) throws ConstraintViolationException {
+		Session session = ExpPropSession.getSessionFactory().getCurrentSession();
+		return create(parameter, session);
+	}
+
+	@Override
+	public Parameter create(Parameter parameter, Session session) throws ConstraintViolationException {
+		Set<ConstraintViolation<Parameter>> violations = validator.validate(parameter);
+		if (!violations.isEmpty()) {
+			throw new ConstraintViolationException(violations);
+		}
+		
+		Transaction t = session.beginTransaction();
+		
+		try {
+			session.save(parameter);
+			session.flush();
+			session.refresh(parameter);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		} catch (Exception e) {
+			t.rollback();
+			throw e;
+		}
+		
+		return parameter;
 	}
 
 }

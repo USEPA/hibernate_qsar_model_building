@@ -48,6 +48,12 @@ public class Parameter {
 	private String updatedBy;
 	
 	public Parameter() {}
+	
+	public Parameter(String name, String description, String createdBy) {
+		this.name = name;
+		this.description = description;
+		this.createdBy = createdBy;
+	}
 
 	public Long getId() {
 		return id;

@@ -54,6 +54,12 @@ public class PropertyAcceptableParameter {
 	private String updatedBy;
 	
 	public PropertyAcceptableParameter() {}
+	
+	public PropertyAcceptableParameter(ExpPropProperty p, Parameter pa, String createdBy) {
+		this.property = p;
+		this.parameter = pa;
+		this.createdBy = createdBy;
+	}
 
 	public Long getId() {
 		return id;
