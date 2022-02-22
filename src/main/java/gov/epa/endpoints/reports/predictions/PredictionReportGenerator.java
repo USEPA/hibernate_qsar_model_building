@@ -30,10 +30,13 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServi
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionService;
@@ -53,6 +56,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 	private DataPointInSplittingService dataPointInSplittingService;
 	private ModelService modelService;
 	private ModelStatisticService modelStatisticService;
+	private ModelSetService modelSetService;
 	
 	private PredictionReport predictionReport;
 	private Map<String, Integer> splittingMap;
@@ -67,6 +71,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 		dataPointInSplittingService = new DataPointInSplittingServiceImpl();
 		modelService = new ModelServiceImpl();
 		modelStatisticService = new ModelStatisticServiceImpl();
+		modelSetService = new ModelSetServiceImpl();
 	}
 	
 	private void initPredictionReport(String datasetName, String descriptorSetName, String splittingName) {
@@ -117,6 +122,19 @@ public class PredictionReportGenerator extends ReportGenerator {
 		}
 	}
 	
+	private void addModelSetPredictions(String modelSetName) {
+		ModelSet modelSet = modelSetService.findByName(modelSetName);
+		List<Model> models = modelService.findByModelSetId(modelSet.getId());
+		models = models.stream()
+				.filter(m -> m.getDatasetName().equals(predictionReport.predictionReportMetadata.datasetName))
+				.filter(m -> m.getDescriptorSetName().equals(predictionReport.predictionReportMetadata.descriptorSetName))
+				.filter(m -> m.getSplittingName().equals(predictionReport.predictionReportMetadata.splittingName))
+				.collect(Collectors.toList());
+		for (Model model:models) {
+			addModelPredictionsAndMetadata(model);
+		}
+	}
+	
 	private void addModelPredictionsAndMetadata(Model model) {
 		if (model==null) {
 			return;
@@ -151,6 +169,15 @@ public class PredictionReportGenerator extends ReportGenerator {
 		addOriginalCompounds(predictionReport.predictionReportDataPoints);
 		addDescriptorValues();
 		addAllPredictions();
+		return predictionReport;
+	}
+	
+	public PredictionReport generateForModelSetPredictions(String datasetName, String descriptorSetName, String splittingName,
+			String modelSetName) {
+		initPredictionReport(datasetName, descriptorSetName, splittingName);
+		addOriginalCompounds(predictionReport.predictionReportDataPoints);
+		addDescriptorValues();
+		addModelSetPredictions(modelSetName);
 		return predictionReport;
 	}
 	
