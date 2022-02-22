@@ -215,6 +215,12 @@ public class RunFromJava {
 	}
 
 	void deleteModel(long modelID) {
+		ModelBytesService modelBytesService = new ModelBytesServiceImpl();
+		ModelBytes modelBytes = modelBytesService.findByModelId(modelID);
+		if (modelBytes!=null) {
+			modelBytesService.delete(modelBytes);
+		}
+		
 		ModelService modelService = new ModelServiceImpl();
 		Model model = modelService.findById(modelID);
 		modelService.delete(model);

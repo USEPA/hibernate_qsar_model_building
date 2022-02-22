@@ -159,13 +159,6 @@ public class ModelServiceImpl implements ModelService {
 			return;
 		}
 		
-		// This is a bad way to do this, but there isn't really a better one
-		ModelBytesService modelBytesService = new ModelBytesServiceImpl();
-		ModelBytes modelBytes = modelBytesService.findByModelId(model.getId());
-		if (modelBytes!=null) {
-			modelBytesService.delete(modelBytes);
-		}
-		
 		Transaction t = session.beginTransaction();
 		session.delete(model);
 		session.flush();
