@@ -148,10 +148,10 @@ public class RunFromJava {
 
 
 
-	public static PredictionReport reportAllPredictions(String datasetName,String descriptorSetName,String splittingName) {
+	public static PredictionReport reportAllPredictions(String datasetName,String descriptorSetName,String splittingName,String modelSetName) {
 
 		long t1=System.currentTimeMillis();
-		PredictionReport report=gen.generateForAllPredictions(datasetName, descriptorSetName,splittingName);
+		PredictionReport report=gen.generateForModelSetPredictions(datasetName, descriptorSetName, splittingName, modelSetName);
 		long t2=System.currentTimeMillis();
 
 		double time=(t2-t1)/1000.0;
@@ -162,9 +162,9 @@ public class RunFromJava {
 	}
 
 
-	public void reportAllPredictions(Vector<String> datasetNames,String descriptorSetName,String splittingName) {
+	public void reportAllPredictions(Vector<String> datasetNames,String descriptorSetName,String splittingName,String modelSetName) {
 		for (String datasetName:datasetNames) {
-			reportAllPredictions(datasetName, descriptorSetName,splittingName);
+			reportAllPredictions(datasetName, descriptorSetName,splittingName,modelSetName);
 		}
 	}
 

@@ -280,33 +280,35 @@ public class GenerateWebTestReport {
 	
 	public static void main(String[] args) {
 
-		boolean genReport=false;
+		boolean genReport=true;
 		
-		String descriptorSet="T.E.S.T. 5.1";
+		String descriptorSet="T.E.S.T. 5.1";		
+		String modelSetName="Sample models";
 		
-		String sampleSource="OPERA";
-//		String endpoint=DevQsarConstants.MELTING_POINT;//done
-//		String endpoint=DevQsarConstants.LOG_BCF;//done
-//		String endpoint=DevQsarConstants.LOG_HALF_LIFE;//done
-		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;//done
-//		String endpoint=DevQsarConstants.VAPOR_PRESSURE;//done
-//		String endpoint=DevQsarConstants.WATER_SOLUBILITY;//done
-//		String endpoint=DevQsarConstants.MELTING_POINT;//done
-//		String endpoint=DevQsarConstants.LOG_KM_HL;//done
-//		String endpoint=DevQsarConstants.LOG_KOA;//done
+//		String sampleSource="OPERA";
+//		String endpoint=DevQsarConstants.MELTING_POINT;//
+//		String endpoint=DevQsarConstants.LOG_HALF_LIFE;//
+//		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;//
+//		String endpoint=DevQsarConstants.VAPOR_PRESSURE;//
+//		String endpoint=DevQsarConstants.MELTING_POINT;//
+//		String endpoint=DevQsarConstants.BOILING_POINT;//
+//		String endpoint=DevQsarConstants.LOG_KOW;//
 //		String endpoint=DevQsarConstants.LOG_KOC;//done
+//		String endpoint=DevQsarConstants.LOG_KOA;//done
+//		String endpoint=DevQsarConstants.WATER_SOLUBILITY;//done
+//		String endpoint=DevQsarConstants.LOG_BCF;//done
+//		String endpoint=DevQsarConstants.LOG_KM_HL;//done
 //		String endpoint=DevQsarConstants.LOG_OH;//done
-//		String endpoint=DevQsarConstants.BOILING_POINT;//done
-//		String endpoint=DevQsarConstants.LOG_KOW;//done
+
 		
-//		String sampleSource="TEST";
+		String sampleSource="TEST";
 //		String endpoint=DevQsarConstants.LC50;//done
-//		String endpoint=DevQsarConstants.LC50DM//done;
+//		String endpoint=DevQsarConstants.LC50DM;//done;
 //		String endpoint=DevQsarConstants.LD50;//done
 //		String endpoint=DevQsarConstants.IGC50;//done
 //		String endpoint=DevQsarConstants.DEV_TOX;//done
 //		String endpoint=DevQsarConstants.MUTAGENICITY;
-//		String endpoint=DevQsarConstants.LLNA;
+		String endpoint=DevQsarConstants.LLNA;//need to delete some models!
 
 		String splittingName=sampleSource;
 		String datasetName = endpoint +" "+sampleSource;
@@ -318,7 +320,7 @@ public class GenerateWebTestReport {
 		
 		if (genReport) {
 			//Create report as json file by querying the postgres db: (takes time- should use storeDataSetData to cache it)
-			predictionReport=RunFromJava.reportAllPredictions(datasetName, descriptorSet,splittingName);
+			predictionReport=RunFromJava.reportAllPredictions(datasetName, descriptorSet,splittingName,modelSetName);
 		} else {
 			//Load report from json file:
 			predictionReport=loadDataSetFromJson(filepathReport);	
