@@ -2,6 +2,8 @@ package gov.epa.databases.dev_qsar.exp_prop.service;
 
 import java.util.List;
 
+import javax.validation.ConstraintViolationException;
+
 import org.hibernate.Session;
 
 import gov.epa.databases.dev_qsar.exp_prop.entity.LiteratureSource;
@@ -15,5 +17,9 @@ public interface LiteratureSourceService {
 	public List<LiteratureSource> findAll();
 	
 	public List<LiteratureSource> findAll(Session session);
+	
+	public LiteratureSource create(LiteratureSource ls) throws ConstraintViolationException;
+	
+	public LiteratureSource create(LiteratureSource ls, Session session) throws ConstraintViolationException;
 	
 }

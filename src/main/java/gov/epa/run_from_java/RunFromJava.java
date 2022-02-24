@@ -148,10 +148,10 @@ public class RunFromJava {
 
 
 
-	public static PredictionReport reportAllPredictions(String datasetName,String descriptorSetName,String splittingName) {
+	public static PredictionReport reportAllPredictions(String datasetName,String descriptorSetName,String splittingName,String modelSetName) {
 
 		long t1=System.currentTimeMillis();
-		PredictionReport report=gen.generateForAllPredictions(datasetName, descriptorSetName,splittingName);
+		PredictionReport report=gen.generateForModelSetPredictions(datasetName, descriptorSetName, splittingName, modelSetName);
 		long t2=System.currentTimeMillis();
 
 		double time=(t2-t1)/1000.0;
@@ -162,9 +162,9 @@ public class RunFromJava {
 	}
 
 
-	public void reportAllPredictions(Vector<String> datasetNames,String descriptorSetName,String splittingName) {
+	public void reportAllPredictions(Vector<String> datasetNames,String descriptorSetName,String splittingName,String modelSetName) {
 		for (String datasetName:datasetNames) {
-			reportAllPredictions(datasetName, descriptorSetName,splittingName);
+			reportAllPredictions(datasetName, descriptorSetName,splittingName,modelSetName);
 		}
 	}
 
@@ -215,6 +215,12 @@ public class RunFromJava {
 	}
 
 	void deleteModel(long modelID) {
+		ModelBytesService modelBytesService = new ModelBytesServiceImpl();
+		ModelBytes modelBytes = modelBytesService.findByModelId(modelID);
+		if (modelBytes!=null) {
+			modelBytesService.delete(modelBytes);
+		}
+		
 		ModelService modelService = new ModelServiceImpl();
 		Model model = modelService.findById(modelID);
 		modelService.delete(model);
@@ -292,7 +298,6 @@ public class RunFromJava {
 		//		run.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);
 		//*****************************************************************************************
 
-	*/
 		// generate excel prediction reports //
 		
 		ExcelPredictionReportGenerator per = ExcelPredictionReportGenerator.prepareReportFactory("Water solubility OPERA_T.E.S.T. 5.1_OPERA_PredictionReport.json","data\\ExcelReports");

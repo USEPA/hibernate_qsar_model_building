@@ -28,6 +28,19 @@ public class ModelWebService extends WebService {
 		
 		return response;
 	}
+	
+	public HttpResponse<byte[]> callTrainWithPreselectedDescriptors(String trainingSet, Boolean removeLogDescriptors, 
+			String qsarMethod, String modelId, String embeddingTsv) {
+		HttpResponse<byte[]> response = Unirest.post(server+":"+port+"/models/{qsar_method}/train")
+				.routeParam("qsar_method", qsarMethod)
+				.field("training_tsv", trainingSet)
+				.field("model_id", modelId)
+				.field("embedding_tsv", embeddingTsv)
+				.field("remove_log_p", String.valueOf(removeLogDescriptors))
+				.asBytes();
+		
+		return response;
+	}
 
 	public HttpResponse<String> callDetails(String qsarMethod, String modelId) {
 		HttpResponse<String> response = Unirest.get(server+":"+port+"/models/{qsar_method}/{model_id}")

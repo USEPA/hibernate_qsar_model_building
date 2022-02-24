@@ -64,4 +64,22 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 		return modelBytes;
 	}
 
+	@Override
+	public void delete(ModelBytes modelBytes) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		delete(modelBytes, session);
+	}
+
+	@Override
+	public void delete(ModelBytes modelBytes, Session session) {
+		if (modelBytes.getId()==null) {
+			return;
+		}
+		
+		Transaction t = session.beginTransaction();
+		session.delete(modelBytes);
+		session.flush();
+		t.commit();
+	}
+
 }

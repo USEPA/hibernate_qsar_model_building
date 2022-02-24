@@ -1,6 +1,8 @@
 package gov.epa.endpoints.datasets;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,6 +23,7 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropUnit;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
+import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
 import gov.epa.databases.dev_qsar.exp_prop.service.ExpPropPropertyService;
 import gov.epa.databases.dev_qsar.exp_prop.service.ExpPropPropertyServiceImpl;
 import gov.epa.databases.dev_qsar.exp_prop.service.ExpPropUnitService;
@@ -407,7 +410,6 @@ public class DatasetCreator {
 				// If unit not in exp_prop or qsar_datasets, create and post it
 				// Should just be the final converted -log10 units for certain properties
 				unit = new Unit(finalUnitName, finalUnitName, lanId);
-				
 			}
 			unitService.create(unit);
 		}
@@ -416,8 +418,8 @@ public class DatasetCreator {
 	}
 	
 	private Dataset initializeDataset(Dataset dataset) throws ConstraintViolationException {
-		Dataset findDataset = datasetService.findByName(dataset.getName());
-		if (findDataset!=null) {
+		Dataset dbDataset = datasetService.findByName(dataset.getName());
+		if (dbDataset!=null) {
 			logger.error("Dataset with name " + dataset.getName() + " already exists");
 			dataset = null;
 		} else {
@@ -436,19 +438,6 @@ public class DatasetCreator {
 				finalValue = PropertyValueMerger.mergeBinary(structurePropertyValues);
 			} else {
 				finalValue = PropertyValueMerger.mergeContinuous(structurePropertyValues, dataset.getProperty().getName());
-			}
-			
-			// Print information on unified structures and final QSAR property values for testing
-			if (structurePropertyValues.size() > 1) {
-				System.out.println(structure + "\t" + finalValue + " " + unitName);
-				for (MappedPropertyValue mpv:structurePropertyValues) {
-					System.out.println("\t" + mpv.id + " (" + mpv.dsstoxRecord.preferredName + ")\t" 
-							+ mpv.qsarPropertyValue + " " + unitName);
-				}
-			} else if (structurePropertyValues.size()==1) {
-				MappedPropertyValue mpv = structurePropertyValues.iterator().next();
-				System.out.println(structure + "\t" + mpv.id + " (" + mpv.dsstoxRecord.preferredName + ")\t" 
-						+ mpv.qsarPropertyValue + " " + unitName);
 			}
 			
 			if (finalValue==null) {
@@ -507,15 +496,15 @@ public class DatasetCreator {
 		}
 		
 		Property property = initializeProperty(propertyValues);
-		if (property==null) { return; }
+		if (property.getId()==null) { return; }
 		
 		Unit unit = initializeUnit(params);
-		if (unit==null) { return; }
+		if (unit.getId()==null) { return; }
 		
 		Dataset dataset = new Dataset(params.datasetName, params.datasetDescription, property, unit, 
 				gson.toJson(params.mappingParams), lanId);
 		dataset = initializeDataset(dataset);
-		if (dataset==null) { return; }
+		if (dataset.getId()==null) { return; }
 		
 		System.out.println("Standardizing structures using " + standardizerName + "...");
 		long t1 = System.currentTimeMillis();
@@ -532,6 +521,9 @@ public class DatasetCreator {
 		System.out.println("Unifying structures...");
 		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, true);
 		
+		System.out.println("Saving unification data to examine...");
+		saveUnifiedData(mappedPropertyValues, params.datasetName, unit);
+		
 		System.out.println("Posting final merged values...");
 		long t7 = System.currentTimeMillis();
 		postDataPoints(unifiedPropertyValues, dataset);
@@ -539,45 +531,122 @@ public class DatasetCreator {
 		System.out.println("Time to post: " + (t8 - t7)/1000.0 + " s");
 	}
 	
-	public void mapPropertyDataset(DatasetParams params) {
-		System.out.println("Selecting experimental property data for " + params.propertyName + "...");
-		long t5 = System.currentTimeMillis();
-		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(params.propertyName, true, true);
-		long t6 = System.currentTimeMillis();
-		System.out.println("Selection time = " + (t6 - t5)/1000.0 + " s");
-		
-		if (propertyValues==null || propertyValues.isEmpty()) {
-			logger.error(params.datasetName + ": Experimental property data unavailable");
-			return;
-		}
-		
-		System.out.println("Retrieving DSSTox structure data...");
-		List<MappedPropertyValue> mappedPropertyValues = null;
-		try {
-			mappedPropertyValues = mapPropertyValuesToDsstoxRecords(propertyValues, params);
-		} catch (Exception e) {
-			logger.error("Failed DSSTox query: " + e.getMessage());
-			e.printStackTrace();
-			return;
-		}
-		
-		if (mappedPropertyValues==null || mappedPropertyValues.isEmpty()) {
-			logger.error(params.datasetName + ": DSSTox structure data unavailable");
-			return;
-		}
-		
-		System.out.println("Standardizing structures using " + standardizerName + "...");
-		long t1 = System.currentTimeMillis();
-		standardize(mappedPropertyValues);
-		long t2 = System.currentTimeMillis();
-		System.out.println("Standardization time: " + (t2 - t1)/1000.0 + " s");
-		
-		System.out.println("Unifying structures...");
+	public void saveUnifiedData(List<MappedPropertyValue> mappedPropertyValues, String datasetName, Unit unit) {
 		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, false);
 	
-		String datasetFileName = params.datasetName.replaceAll("[^A-Za-z0-9-_]+","_");
+		String datasetFileName = datasetName.replaceAll("[^A-Za-z0-9-_]+","_");
 		String datasetFolderPath = DevQsarConstants.OUTPUT_FOLDER_PATH + File.separator + datasetFileName;
-		String fileName = "data_point_contributors.tsv";
+		String filePath = datasetFolderPath + "/unified.tsv";
+		
+		try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
+			bw.write("STRUCTURE\tSOURCE_CHEMICAL_NAME\tSOURCE_CASRN\tSOURCE_SMILES\tSOURCE_DTXSID\tSOURCE_DTXCID\tSOURCE_DTXRID"
+					+ "\tLIT_SOURCE_NAME\tPUB_SOURCE_NAME"
+					+ "\tMAPPED_DTXSID\tMAPPED_PREFERRED_NAME\tMAPPED_CASRN\tMAPPED_SMILES\tQSAR_PROPERTY_VALUE\tUNIT\r\n");
+			for (String structure:unifiedPropertyValues.keySet()) {
+				List<MappedPropertyValue> structurePropertyValues = unifiedPropertyValues.get(structure);
+				for (MappedPropertyValue mpv:structurePropertyValues) {
+					PropertyValue pv = mpv.propertyValue;
+					SourceChemical sc = pv.getSourceChemical();
+					String litSourceName = pv.getLiteratureSource()==null ? null : pv.getLiteratureSource().getName();
+					String pubSourceName = pv.getPublicSource()==null ? null : pv.getPublicSource().getName();
+					DsstoxRecord dr = mpv.dsstoxRecord;
+					
+					String line = String.join("\t", structure, sc.getSourceChemicalName(), sc.getSourceCasrn(), sc.getSourceSmiles(),
+							sc.getSourceDtxsid(), sc.getSourceDtxcid(), sc.getSourceDtxrid(), litSourceName, pubSourceName,
+							dr.dsstoxSubstanceId, dr.preferredName, dr.casrn, dr.smiles, String.valueOf(mpv.qsarPropertyValue),
+							unit.getAbbreviation());
+					bw.write(line.replaceAll("null","") + "\r\n");
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void createExternalValidationSets(String datasetName1, String datasetName2) {
+		List<DataPoint> dataPoints1 = dataPointService.findByDatasetName(datasetName1);
+		List<DataPoint> dataPoints2 = dataPointService.findByDatasetName(datasetName2);
+		
+		Set<String> structures1 = dataPoints1.stream().map(dp -> dp.getCanonQsarSmiles()).collect(Collectors.toSet());
+		Set<String> structures2 = dataPoints2.stream().map(dp -> dp.getCanonQsarSmiles()).collect(Collectors.toSet());
+		
+		List<DataPoint> inDataset1NotInDataset2 = new ArrayList<DataPoint>();
+		for (DataPoint dp1:dataPoints1) {
+			if (!structures2.contains(dp1.getCanonQsarSmiles())) {
+				inDataset1NotInDataset2.add(dp1);
+			}
+		}
+		
+		System.out.println(inDataset1NotInDataset2.size());
+		
+		List<DataPoint> inDataset2NotInDataset1 = new ArrayList<DataPoint>();
+		for (DataPoint dp2:dataPoints2) {
+			if (!structures1.contains(dp2.getCanonQsarSmiles())) {
+				inDataset2NotInDataset1.add(dp2);
+			}
+		}
+		
+		System.out.println(inDataset2NotInDataset1.size());
+		
+		Dataset dataset1 = datasetService.findByName(datasetName1);
+		Dataset dataset2 = datasetService.findByName(datasetName2);
+		
+		if (!inDataset1NotInDataset2.isEmpty()) {
+			Dataset dataset1NotInDataset2 = new Dataset("Data from " + datasetName1 + " external to " + datasetName2, 
+					"Data points from " + datasetName1 + " with structures not found in " + datasetName2, 
+					dataset1.getProperty(), 
+					dataset1.getUnit(), 
+					dataset1.getDsstoxMappingStrategy(), 
+					lanId);
+			dataset1NotInDataset2 = initializeDataset(dataset1NotInDataset2);
+			
+			for (DataPoint dp:inDataset1NotInDataset2) {
+				DataPoint dataPoint = new DataPoint(dp.getCanonQsarSmiles(), 
+						dp.getQsarPropertyValue(), dataset1NotInDataset2, false, lanId);
+				try {
+					dataPointService.create(dataPoint);
+					for (DataPointContributor dpc:dp.getDataPointContributors()) {
+						DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, dpc.getExpPropId(), lanId);
+						try {
+							dataPointContributorService.create(dataPointContributor);
+						} catch (ConstraintViolationException e1) {
+							System.out.println(e1.getMessage());
+						}
+					}
+				} catch (ConstraintViolationException e) {
+					System.out.println(e.getMessage());
+				}
+			}
+		}
+		
+		if (!inDataset2NotInDataset1.isEmpty()) {
+			Dataset dataset2NotInDataset1 = new Dataset("Data from " + datasetName2 + " external to " + datasetName1, 
+					"Data points from " + datasetName2 + " with structures not found in " + datasetName1, 
+					dataset2.getProperty(), 
+					dataset2.getUnit(), 
+					dataset2.getDsstoxMappingStrategy(), 
+					lanId);
+			dataset2NotInDataset1 = initializeDataset(dataset2NotInDataset1);
+			
+			for (DataPoint dp:inDataset2NotInDataset1) {
+				DataPoint dataPoint = new DataPoint(dp.getCanonQsarSmiles(), 
+						dp.getQsarPropertyValue(), dataset2NotInDataset1, false, lanId);
+				try {
+					dataPointService.create(dataPoint);
+					for (DataPointContributor dpc:dp.getDataPointContributors()) {
+						DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, dpc.getExpPropId(), lanId);
+						try {
+							dataPointContributorService.create(dataPointContributor);
+						} catch (ConstraintViolationException e1) {
+							System.out.println(e1.getMessage());
+						}
+					}
+				} catch (ConstraintViolationException e) {
+					System.out.println(e.getMessage());
+				}
+			}
+		}
 	}
 	
 	public static void main(String[] args) {
@@ -587,20 +656,39 @@ public class DatasetCreator {
 				"TEST-descriptors/");
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, testDescriptorWebService, "gsincl01");
 		
+//		creator.createExternalValidationSets("Water solubility OPERA", "Standard Water solubility from exp_prop");
+		
+		String propertyName = DevQsarConstants.VAPOR_PRESSURE;
+		String listName = "ExpProp_VP_WithChemProp_022222";
+		
 		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
+		BoundParameterValue pressureBound = new BoundParameterValue("Pressure", 740.0, 780.0, true);
 		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
 		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
 		bounds.add(temperatureBound);
+		bounds.add(pressureBound);
 		bounds.add(phBound);
-		MappingParams mappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, "ExpProp_WaterSolubility_WithChemProp_120121", 
+		
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, 
 				false, true, false, true, true, false, true);
-		DatasetParams params = new DatasetParams("ExpProp_WaterSolubility_WithChemProp_Unfiltered_Hibernate_FixedUnacceptableAtoms", 
-				"Water solubility experimental dataset from exp_prop, with ChemProp data, "
-				+ "without parameter filtering, with Hibernate mapping, fixed unacceptable atom exclusion", 
-				DevQsarConstants.WATER_SOLUBILITY,
-				mappingParams);
-//				bounds);
+		MappingParams casrnMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_CASRN, null,
+				true, false, false, false, false, false, true);
+		String listMappingName = "Standard " + propertyName + " from exp_prop";
+		String casrnMappingName = "CASRN mapping of standard " + propertyName + " from exp_prop";
+		String listMappingDescription = propertyName + " with 20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5";
+		String casrnMappingDescription = propertyName + " with 20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5, mapped by CASRN";
+		DatasetParams casrnMappedParams = new DatasetParams(casrnMappingName, 
+				casrnMappingDescription, 
+				propertyName,
+				casrnMappingParams,
+				bounds);
+		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
+				listMappingDescription, 
+				propertyName,
+				listMappingParams,
+				bounds);
 
-		creator.mapPropertyDataset(params);
+		creator.createPropertyDataset(casrnMappedParams);
+//		creator.createPropertyDataset(listMappedParams);
 	}
 }

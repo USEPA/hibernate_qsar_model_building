@@ -54,6 +54,12 @@ public class ParameterAcceptableUnit {
 	private String updatedBy;
 	
 	public ParameterAcceptableUnit() {}
+	
+	public ParameterAcceptableUnit(Parameter p, ExpPropUnit u, String createdBy) {
+		this.parameter = p;
+		this.unit = u;
+		this.createdBy = createdBy;
+	}
 
 	public Long getId() {
 		return id;

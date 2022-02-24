@@ -48,6 +48,12 @@ public class ExpPropUnit {
 	private String updatedBy;
 	
 	public ExpPropUnit() {}
+	
+	public ExpPropUnit(String name, String abbreviation, String createdBy) {
+		this.name = name;
+		this.abbreviation = abbreviation;
+		this.createdBy = createdBy;
+	}
 
 	public Long getId() {
 		return id;

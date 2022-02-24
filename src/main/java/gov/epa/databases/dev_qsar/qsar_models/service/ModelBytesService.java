@@ -15,5 +15,9 @@ public interface ModelBytesService {
 	public ModelBytes create(ModelBytes modelBytes) throws ConstraintViolationException;
 	
 	public ModelBytes create(ModelBytes modelBytes, Session session) throws ConstraintViolationException;
+	
+	public void delete(ModelBytes modelBytes);
+	
+	public void delete(ModelBytes modelBytes, Session session);
 
 }

@@ -6,12 +6,14 @@ import java.util.List;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -66,7 +68,7 @@ public class Model {
 	@Column(name="created_by")
 	private String createdBy;
 	
-//	@OneToOne(mappedBy="model", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+//	@OneToOne(mappedBy="model", cascade=CascadeType.ALL, fetch=FetchType.LAZY, optional=false)
 //	private ModelBytes modelBytes;
 	
 	@OneToMany(mappedBy="model", cascade=CascadeType.ALL)

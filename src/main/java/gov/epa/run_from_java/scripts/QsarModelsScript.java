@@ -101,9 +101,8 @@ public class QsarModelsScript {
 //		script.removeModelFromSet(6L, 7L);
 		
 		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-		ModelSetTableGenerator gen = new ModelSetTableGenerator();
-		ModelSetTable table = gen.generate(1L);
-		System.out.println(gson.toJson(table));
+		QsarModelsScript script = new QsarModelsScript("gsincl01");
+		Model m = script.modelService.findById(1L);
 	}
 
 }

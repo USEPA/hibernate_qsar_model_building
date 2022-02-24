@@ -11,6 +11,7 @@ import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
