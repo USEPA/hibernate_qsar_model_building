@@ -162,7 +162,7 @@ public class ExcelModelStatisticsOld {
    }
    
    public static void main(String[] args) {
-	   ExcelModelStatisticsOld ems = ExcelModelStatisticsOld.prepareFactory("data/testpath2");
+	   ExcelModelStatisticsOld ems = ExcelModelStatisticsOld.prepareFactory("data/ExcelReports");
 	   ems.generate();
    }
 	   
@@ -195,30 +195,30 @@ public class ExcelModelStatisticsOld {
 			List<ModelStatistic> ms = modelStatisticService.findByModelId(m.getId());
 			
 			for (int j = 0; j < ms.size(); j++) {
-				String s = ms.get(j).getStatistic().getName().toLowerCase();
+				String s = ms.get(j).getStatistic().getName();
 				switch (s) {
-				case "concordance":
+				case "Concordance_Test":
 					modelinfo.Concordance = ms.get(j).getStatisticValue();
 					break;
-				case "r2":
+				case "PearsonRSQ_Test":
 					modelinfo.R2 = ms.get(j).getStatisticValue();
 					break;
-				case "q2":
+				case "Q2_Test":
 					modelinfo.Q2 = ms.get(j).getStatisticValue();
 					break;
-				case "mae":
+				case "MAE_Test":
 					modelinfo.MAE = ms.get(j).getStatisticValue();
 					break;
-				case "ba":
+				case "BA_Test":
 					modelinfo.BA = ms.get(j).getStatisticValue();
 					break;
-				case "sn":
+				case "SN_Test":
 					modelinfo.SN = ms.get(j).getStatisticValue();
 					break;
-				case "sp":
+				case "SP_Test":
 					modelinfo.SP = ms.get(j).getStatisticValue();
 					break;
-				case "coverage":
+				case "Coverage_Test":
 					modelinfo.Coverage= ms.get(j).getStatisticValue();
 					break;
 				case "positive concordance":

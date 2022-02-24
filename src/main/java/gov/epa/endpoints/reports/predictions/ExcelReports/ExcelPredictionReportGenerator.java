@@ -84,15 +84,15 @@ public class ExcelPredictionReportGenerator {
 		
 		// switch statement limited to newer version of java on strings for some reason
 		private void align(String statisticName, Double statisticValue) {
-			if (statisticName.toLowerCase().equals("r2")) {
+			if (statisticName.equals("PearsonRSQ_Test")) {
 				this.R2 = statisticValue;
-			} else if (statisticName.toLowerCase().equals("q2")) {
+			} else if (statisticName.equals("Q2_Test")) {
 				this.Q2 = statisticValue;
-			} else if (statisticName.toLowerCase().equals("rmse")) {
+			} else if (statisticName.equals("RMSE_Test")) {
 				this.RMSE = statisticValue;
-			} else if (statisticName.toLowerCase().equals("mae")) {
+			} else if (statisticName.equals("MAE_Test")) {
 				this.MAE = statisticValue;
-			} else if (statisticName.toLowerCase().equals("coverage")) {
+			} else if (statisticName.equals("Coverage_Test")) {
 				this.Coverage = statisticValue;
 			}
 		
@@ -109,13 +109,13 @@ public class ExcelPredictionReportGenerator {
 		
 		// switch statement limited to newer version of java on strings for some reason
 		private void align(String statisticName, Double statisticValue) {
-			if (statisticName.toLowerCase().equals("ba")) {
+			if (statisticName.equals("BA_Test")) {
 				this.BA = statisticValue;
-			} else if (statisticName.toLowerCase().equals("sn")) {
+			} else if (statisticName.equals("SN_Test")) {
 				this.SN = statisticValue;
-			} else if (statisticName.toLowerCase().equals("sp")) {
+			} else if (statisticName.equals("SP_Test")) {
 				this.SP = statisticValue;
-			} else if (statisticName.toLowerCase().equals("coverage")) {
+			} else if (statisticName.equals("Coverage_Test")) {
 				this.Coverage = statisticValue;
 			}
 		
@@ -136,9 +136,17 @@ public class ExcelPredictionReportGenerator {
 		    System.out.println("key:" + key + " value:" + hashtable.get(key));
 		}
 	}
+	
+	private static void printmap(Map map) {
+        Iterator<Integer> itr = map.keySet().iterator();
+        while (itr.hasNext()) {
+            System.out.println(itr.next());
+        }
+
+	}
 
 	public static void main(String [] args) {
-		ExcelPredictionReportGenerator per = prepareReportFactory("Water solubility OPERA_T.E.S.T. 5.1_OPERA_PredictionReport.json","data\\ExcelReports");
+		ExcelPredictionReportGenerator per = prepareReportFactory("LLNA TEST_T.E.S.T. 5.1_PredictionReport.json","data\\ExcelReports");
 		per.generate(per.wb);
 	}
 	
@@ -199,11 +207,11 @@ public class ExcelPredictionReportGenerator {
 		
 		populateSheet(consensusMap, "Consensus", false);
 		if (isBinary == false) {
-		HashMap<String, Double> StatisticsMap = ModelStatisticCalculator.calculateContinuousStatistics(modelPredictions, findExperimentalAverage(modelPredictions));
+		Map<String, Double> StatisticsMap = ModelStatisticCalculator.calculateContinuousStatistics(modelPredictions, findExperimentalAverage(modelPredictions), DevQsarConstants.TAG_TEST);
 		generateSummarySheet(report, StatisticsMap);
 
 		} else if (isBinary == true) {
-			HashMap<String, Double> StatisticsMap = ModelStatisticCalculator.calculateBinaryStatistics(modelPredictions, 0.5);
+			Map<String, Double> StatisticsMap = ModelStatisticCalculator.calculateBinaryStatistics(modelPredictions, 0.5, DevQsarConstants.TAG_TEST);
 			generateSummarySheet(report, StatisticsMap);
 
 
@@ -295,17 +303,19 @@ public class ExcelPredictionReportGenerator {
 			spreadsheetMap.put("A", prepareCoverSheetRow("Property Name", predictionReport.predictionReportMetadata.datasetProperty));
 			spreadsheetMap.put("B", prepareCoverSheetRow("Property Description", predictionReport.predictionReportMetadata.datasetPropertyDescription));
 			spreadsheetMap.put("C", prepareCoverSheetRow("Dataset Name", predictionReport.predictionReportMetadata.datasetName));
-			spreadsheetMap.put("D", prepareCoverSheetRow("Dataset Description", "TODO"));
+			spreadsheetMap.put("D", prepareCoverSheetRow("Dataset Description", predictionReport.predictionReportMetadata.datasetDescription));
 			spreadsheetMap.put("E", prepareCoverSheetRow("Property Units", predictionReport.predictionReportMetadata.datasetUnit));
 			spreadsheetMap.put("F", prepareCoverSheetRow("Descriptor Set Name", predictionReport.predictionReportMetadata.descriptorSetName));
 			
 			int nTrain = 0;
 			int nPredict = 0;
 			for (int i = 0; i < predictionReport.predictionReportDataPoints.size(); i++) {
+				if (!(predictionReport.predictionReportDataPoints.get(i) == null)) {
 				if (predictionReport.predictionReportDataPoints.get(i).qsarPredictedValues.get(0).splitNum == 0) {
 					nTrain++;
 				} else {
 					nPredict++;
+				}
 				}
 			}
 			
@@ -321,7 +331,7 @@ public class ExcelPredictionReportGenerator {
 			return rowArrayList.toArray(new Object[rowArrayList.size()]);
 		}
 	
-		public void generateSummarySheet(PredictionReport predictionReport, HashMap<String, Double> consensusStatisticsMap) {
+		public void generateSummarySheet(PredictionReport predictionReport, Map<String, Double> consensusStatisticsMap) {
 			Map < String, Object[] > spreadsheetMap = new TreeMap < String, Object[] >();
 		
 		
@@ -397,11 +407,13 @@ public class ExcelPredictionReportGenerator {
 	        if (isBinary == false) {
 	        // adds the consensus row
         	ContinuousStats cs = new ContinuousStats();
-        	cs.R2 = consensusStatisticsMap.get(DevQsarConstants.R2);
-        	cs.MAE = consensusStatisticsMap.get(DevQsarConstants.MAE);
-        	cs.RMSE = consensusStatisticsMap.get(DevQsarConstants.RMSE);
-        	cs.Q2 = consensusStatisticsMap.get(DevQsarConstants.Q2);
-        	cs.Coverage = consensusStatisticsMap.get(DevQsarConstants.COVERAGE);;
+        	// printmap(consensusStatisticsMap);
+        	
+        	cs.R2 = consensusStatisticsMap.get(DevQsarConstants.PEARSON_RSQ + DevQsarConstants.TAG_TEST);
+        	cs.MAE = consensusStatisticsMap.get(DevQsarConstants.MAE +  DevQsarConstants.TAG_TEST);
+        	cs.RMSE = consensusStatisticsMap.get(DevQsarConstants.RMSE + DevQsarConstants.TAG_TEST);
+        	cs.Q2 = consensusStatisticsMap.get(DevQsarConstants.Q2_TEST);
+        	cs.Coverage = consensusStatisticsMap.get(DevQsarConstants.COVERAGE+ DevQsarConstants.TAG_TEST);;
         	
     		Object[] consensusrow = new Object[] { predictionReport.predictionReportMetadata.datasetName,
     				predictionReport.predictionReportMetadata.descriptorSetName,
@@ -416,10 +428,10 @@ public class ExcelPredictionReportGenerator {
 		    populateSheet(spreadsheetMap, "Summary", true);
 	        } else if (isBinary == true) {
 	        	BinaryStats bs = new BinaryStats();
-	        	bs.BA = consensusStatisticsMap.get(DevQsarConstants.BALANCED_ACCURACY);
-	        	bs.SN = consensusStatisticsMap.get(DevQsarConstants.SENSITIVITY);
-	        	bs.SP = consensusStatisticsMap.get(DevQsarConstants.SPECIFICITY);
-	        	bs.Coverage = consensusStatisticsMap.get(DevQsarConstants.COVERAGE);
+	        	bs.BA = consensusStatisticsMap.get(DevQsarConstants.BALANCED_ACCURACY  + DevQsarConstants.TAG_TEST);
+	        	bs.SN = consensusStatisticsMap.get(DevQsarConstants.SENSITIVITY+  DevQsarConstants.TAG_TEST);
+	        	bs.SP = consensusStatisticsMap.get(DevQsarConstants.SPECIFICITY + DevQsarConstants.TAG_TEST);
+	        	bs.Coverage = consensusStatisticsMap.get(DevQsarConstants.COVERAGE + DevQsarConstants.TAG_TEST);
 	        	
 	    		Object[] consensusrow = new Object[] { predictionReport.predictionReportMetadata.datasetName,
 	    				predictionReport.predictionReportMetadata.descriptorSetName,
@@ -499,10 +511,7 @@ public class ExcelPredictionReportGenerator {
 			Map < String, Object[] > spreadsheetMap = new TreeMap < String, Object[] >();
 			   spreadsheetMap.put( "AAA", new Object[] { "ID","Exp", "Pred", "Error" });
 		    for(String key: presentInAllModelKeys){
-		    	ModelPrediction modelPrediction = new ModelPrediction();
-		    	modelPrediction.ID = key;
-		    	modelPrediction.exp = expConsensusHash.get(key);
-		    	modelPrediction.pred = predConsensusHash.get(key);
+		    	ModelPrediction modelPrediction = new ModelPrediction(key, expConsensusHash.get(key), predConsensusHash.get(key));
 		    	modelPredictions.add(modelPrediction);
 		        spreadsheetMap.put(key, new Object[] { key, expConsensusHash.get(key) , predConsensusHash.get(key), Math.abs(expConsensusHash.get(key) - predConsensusHash.get(key)) });
 		        }
@@ -569,6 +578,10 @@ public class ExcelPredictionReportGenerator {
 	
 	private void populateSheet(Map < String, Object[] > spreadsheetMap, String methodName, boolean summary) {
 		
+		
+			if (wb.getSheet(methodName) != null) {
+				return;
+			}
 		   XSSFSheet sheet = (XSSFSheet) wb.createSheet(methodName);
 		   CellStyle cellStyle = wb.createCellStyle();
 		   cellStyle.setDataFormat(wb.createDataFormat().getFormat("0.000"));
