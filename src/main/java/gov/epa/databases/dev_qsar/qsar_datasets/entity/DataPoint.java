@@ -148,4 +148,12 @@ public class DataPoint {
 	public void setOutlier(Boolean outlier) {
 		this.outlier = outlier;
 	}
+
+	public List<DataPointContributor> getDataPointContributors() {
+		return dataPointContributors;
+	}
+
+	public void setDataPointContributors(List<DataPointContributor> dataPointContributors) {
+		this.dataPointContributors = dataPointContributors;
+	}
 }

@@ -64,4 +64,19 @@ public class DatasetServiceImpl implements DatasetService {
 		return dataset;
 	}
 
+	@Override
+	public Dataset findById(Long datasetId) {
+		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
+		return findById(datasetId, session);
+	}
+
+	@Override
+	public Dataset findById(Long datasetId, Session session) {
+		Transaction t = session.beginTransaction();
+		DatasetDao datasetDao = new DatasetDaoImpl();
+		Dataset dataset = datasetDao.findById(datasetId, session);
+		t.rollback();
+		return dataset;
+	}
+
 }

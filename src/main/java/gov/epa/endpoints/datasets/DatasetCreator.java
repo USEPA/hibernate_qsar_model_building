@@ -564,6 +564,91 @@ public class DatasetCreator {
 		}
 	}
 	
+	public void createExternalValidationSets(String datasetName1, String datasetName2) {
+		List<DataPoint> dataPoints1 = dataPointService.findByDatasetName(datasetName1);
+		List<DataPoint> dataPoints2 = dataPointService.findByDatasetName(datasetName2);
+		
+		Set<String> structures1 = dataPoints1.stream().map(dp -> dp.getCanonQsarSmiles()).collect(Collectors.toSet());
+		Set<String> structures2 = dataPoints2.stream().map(dp -> dp.getCanonQsarSmiles()).collect(Collectors.toSet());
+		
+		List<DataPoint> inDataset1NotInDataset2 = new ArrayList<DataPoint>();
+		for (DataPoint dp1:dataPoints1) {
+			if (!structures2.contains(dp1.getCanonQsarSmiles())) {
+				inDataset1NotInDataset2.add(dp1);
+			}
+		}
+		
+		System.out.println(inDataset1NotInDataset2.size());
+		
+		List<DataPoint> inDataset2NotInDataset1 = new ArrayList<DataPoint>();
+		for (DataPoint dp2:dataPoints2) {
+			if (!structures1.contains(dp2.getCanonQsarSmiles())) {
+				inDataset2NotInDataset1.add(dp2);
+			}
+		}
+		
+		System.out.println(inDataset2NotInDataset1.size());
+		
+		Dataset dataset1 = datasetService.findByName(datasetName1);
+		Dataset dataset2 = datasetService.findByName(datasetName2);
+		
+		if (!inDataset1NotInDataset2.isEmpty()) {
+			Dataset dataset1NotInDataset2 = new Dataset("Data from " + datasetName1 + " external to " + datasetName2, 
+					"Data points from " + datasetName1 + " with structures not found in " + datasetName2, 
+					dataset1.getProperty(), 
+					dataset1.getUnit(), 
+					dataset1.getDsstoxMappingStrategy(), 
+					lanId);
+			dataset1NotInDataset2 = initializeDataset(dataset1NotInDataset2);
+			
+			for (DataPoint dp:inDataset1NotInDataset2) {
+				DataPoint dataPoint = new DataPoint(dp.getCanonQsarSmiles(), 
+						dp.getQsarPropertyValue(), dataset1NotInDataset2, false, lanId);
+				try {
+					dataPointService.create(dataPoint);
+					for (DataPointContributor dpc:dp.getDataPointContributors()) {
+						DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, dpc.getExpPropId(), lanId);
+						try {
+							dataPointContributorService.create(dataPointContributor);
+						} catch (ConstraintViolationException e1) {
+							System.out.println(e1.getMessage());
+						}
+					}
+				} catch (ConstraintViolationException e) {
+					System.out.println(e.getMessage());
+				}
+			}
+		}
+		
+		if (!inDataset2NotInDataset1.isEmpty()) {
+			Dataset dataset2NotInDataset1 = new Dataset("Data from " + datasetName2 + " external to " + datasetName1, 
+					"Data points from " + datasetName2 + " with structures not found in " + datasetName1, 
+					dataset2.getProperty(), 
+					dataset2.getUnit(), 
+					dataset2.getDsstoxMappingStrategy(), 
+					lanId);
+			dataset2NotInDataset1 = initializeDataset(dataset2NotInDataset1);
+			
+			for (DataPoint dp:inDataset2NotInDataset1) {
+				DataPoint dataPoint = new DataPoint(dp.getCanonQsarSmiles(), 
+						dp.getQsarPropertyValue(), dataset2NotInDataset1, false, lanId);
+				try {
+					dataPointService.create(dataPoint);
+					for (DataPointContributor dpc:dp.getDataPointContributors()) {
+						DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, dpc.getExpPropId(), lanId);
+						try {
+							dataPointContributorService.create(dataPointContributor);
+						} catch (ConstraintViolationException e1) {
+							System.out.println(e1.getMessage());
+						}
+					}
+				} catch (ConstraintViolationException e) {
+					System.out.println(e.getMessage());
+				}
+			}
+		}
+	}
+	
 	public static void main(String[] args) {
 		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DescriptorWebService testDescriptorWebService = new DescriptorWebService(DevQsarConstants.SERVER_819,
@@ -571,8 +656,10 @@ public class DatasetCreator {
 				"TEST-descriptors/");
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, testDescriptorWebService, "gsincl01");
 		
-		String propertyName = DevQsarConstants.WATER_SOLUBILITY;
-		String listName = "ExpProp_WaterSolubility_WithChemProp_120121";
+//		creator.createExternalValidationSets("Water solubility OPERA", "Standard Water solubility from exp_prop");
+		
+		String propertyName = DevQsarConstants.VAPOR_PRESSURE;
+		String listName = "ExpProp_VP_WithChemProp_022222";
 		
 		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
 		BoundParameterValue pressureBound = new BoundParameterValue("Pressure", 740.0, 780.0, true);
@@ -586,12 +673,22 @@ public class DatasetCreator {
 				false, true, false, true, true, false, true);
 		MappingParams casrnMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_CASRN, null,
 				true, false, false, false, false, false, true);
-		DatasetParams params = new DatasetParams("CASRN mapping of standard " + propertyName + " from exp_prop", 
-				propertyName + " with 20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5, mapped by CASRN", 
+		String listMappingName = "Standard " + propertyName + " from exp_prop";
+		String casrnMappingName = "CASRN mapping of standard " + propertyName + " from exp_prop";
+		String listMappingDescription = propertyName + " with 20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5";
+		String casrnMappingDescription = propertyName + " with 20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5, mapped by CASRN";
+		DatasetParams casrnMappedParams = new DatasetParams(casrnMappingName, 
+				casrnMappingDescription, 
 				propertyName,
 				casrnMappingParams,
 				bounds);
+		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
+				listMappingDescription, 
+				propertyName,
+				listMappingParams,
+				bounds);
 
-		creator.createPropertyDataset(params);
+		creator.createPropertyDataset(casrnMappedParams);
+//		creator.createPropertyDataset(listMappedParams);
 	}
 }
