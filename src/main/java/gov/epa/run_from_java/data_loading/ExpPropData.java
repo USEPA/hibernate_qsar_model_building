@@ -140,7 +140,7 @@ public class ExpPropData {
 			}
 		}
 		
-		static void parseStringColumn(String columnContents, ParameterValue value) {
+		static boolean parseStringColumn(String columnContents, ParameterValue value) {
 			Matcher matcher = ExperimentalRecordLoader.STRING_COLUMN_PATTERN.matcher(columnContents);
 			
 			if (matcher.find()) {
@@ -149,15 +149,22 @@ public class ExpPropData {
 				String isRange = matcher.group(3);
 				String double2 = matcher.group(4);
 				
-				value.setValueQualifier(qualifier);
-				if (isRange!=null) {
-					value.setValueMin(Double.parseDouble(double1));
-					value.setValueMax(Double.parseDouble(double2));
-				} else {
-					value.setValuePointEstimate(Double.parseDouble(double1));
+				try {
+					value.setValueQualifier(qualifier);
+					if (isRange!=null) {
+						value.setValueMin(Double.parseDouble(double1));
+						value.setValueMax(Double.parseDouble(double2));
+					} else {
+						value.setValuePointEstimate(Double.parseDouble(double1));
+					}
+				} catch (Exception e) {
+					return false;
 				}
+				
+				return true;
 			} else {
 				System.out.println("Warning: Failed to parse parameter value from: " + columnContents);
+				return false;
 			}
 		}
 

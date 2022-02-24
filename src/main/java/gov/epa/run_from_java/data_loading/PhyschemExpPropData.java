@@ -65,8 +65,11 @@ public class PhyschemExpPropData extends ExpPropData {
 		if (rec.pressure_mmHg!=null) {
 			ParameterValue pressureValue = new ParameterValue();
 			pressureValue.setCreatedBy(loader.lanId);
-			parseStringColumn(rec.pressure_mmHg, pressureValue);
-			return pressureValue;
+			if (ExpPropData.parseStringColumn(rec.pressure_mmHg, pressureValue)) {
+				return pressureValue;
+			} else {
+				return null;
+			}
 		} else {
 			return null;
 		}
@@ -87,8 +90,11 @@ public class PhyschemExpPropData extends ExpPropData {
 		if (rec.pH!=null) {
 			ParameterValue phValue = new ParameterValue();
 			phValue.setCreatedBy(loader.lanId);
-			ExpPropData.parseStringColumn(rec.pH, phValue);
-			return phValue;
+			if (ExpPropData.parseStringColumn(rec.pH, phValue)) {
+				return phValue;
+			} else {
+				return null;
+			}
 		} else {
 			return null;
 		}

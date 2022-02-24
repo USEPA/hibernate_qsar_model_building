@@ -184,7 +184,7 @@ public class ExperimentalRecordLoader {
 	}
 	
 	public static void main(String[] args) {
-		String sourceName = "CFSAN";
+		String sourceName = "Bagley";
 		String type = "tox";
 		
 		System.out.println("Retrieving records...");

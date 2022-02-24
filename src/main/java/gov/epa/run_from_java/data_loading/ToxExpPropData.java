@@ -11,11 +11,13 @@ public class ToxExpPropData extends ExpPropData {
 	
 	public ParameterValue speciesValue;
 	public ParameterValue adminRouteValue;
+	public ParameterValue purityValue;
 	
 	public void getValues(ExperimentalRecord rec) {
 		super.getValues(rec);
 		speciesValue = getSpeciesValue(rec);
 		adminRouteValue = getAdminRouteValue(rec);
+		purityValue = getPurityValue(rec);
 	}
 	
 	public void constructPropertyValue() {
@@ -36,6 +38,14 @@ public class ToxExpPropData extends ExpPropData {
 			adminRouteValue.setParameter(loader.parametersMap.get("Route of administration"));
 			adminRouteValue.setUnit(loader.unitsMap.get("Text"));
 			propertyValue.addParameterValue(adminRouteValue);
+		}
+		
+		if (purityValue!=null) {
+			purityValue.setPropertyValue(propertyValue);
+			purityValue.setParameter(loader.parametersMap.get("Purity"));
+			purityValue.setUnit(loader.unitsMap.get("%"));
+			propertyValue.addParameterValue(purityValue);
+			System.out.println(purityValue.generateConciseValueString());
 		}
 	}
 	
@@ -76,6 +86,20 @@ public class ToxExpPropData extends ExpPropData {
 				return null;
 			}
 			return adminRouteValue;
+		} else {
+			return null;
+		}
+	}
+	
+	private ParameterValue getPurityValue(ExperimentalRecord rec) {
+		if (rec.note!=null && rec.note.startsWith("Purity: ")) {
+			ParameterValue purityValue = new ParameterValue();
+			purityValue.setCreatedBy(loader.lanId);
+			if (ExpPropData.parseStringColumn(rec.note, purityValue)) {
+				return purityValue;
+			} else {
+				return null;
+			}
 		} else {
 			return null;
 		}
