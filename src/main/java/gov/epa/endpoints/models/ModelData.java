@@ -107,6 +107,10 @@ public class ModelData {
 			return null;
 		}
 		
+		if (valuesTsv.toLowerCase().contains("∞")) {
+			return null;
+		}
+		
 		if (valuesTsv.toLowerCase().contains("error")) {
 			return null;
 		}

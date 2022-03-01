@@ -56,10 +56,20 @@ public class ExpPropData {
 			}
 			
 			publicSourceName = rec.source_name;
-			literatureSourceName = rec.original_source_name;
+			if (publicSourceName.equals("OECD Toolbox Skin Irritation")) {
+				publicSourceName = "OECD Toolbox";
+			}
+			
+			if (publicSourceName.equals("Kodithala")) {
+				literatureSourceName = "Kodithala et al. 2002";
+			} else if (publicSourceName.equals("Verheyen")) {
+				literatureSourceName = "Verheyen et al. 2016";
+			} else {
+				literatureSourceName = rec.original_source_name;
+			}
 			
 			propertyUnitName = rec.property_value_units_final;
-			if (propertyUnitName.equals("binary")) {
+			if (propertyUnitName!=null && propertyUnitName.equals("binary")) {
 				propertyUnitName = "Binary";
 			} else if (propertyName!=null && propertyUnitName==null) {
 				switch (rec.property_name) {
@@ -96,11 +106,18 @@ public class ExpPropData {
 			reliabilityValue = getReliabilityValue(rec);
 		}
 		
-		public void constructPropertyValue() {
+		public void constructPropertyValue(boolean createLiteratureSources) {
 			PublicSource ps = loader.publicSourcesMap.get(publicSourceName);
 			LiteratureSource ls = loader.literatureSourcesMap.get(literatureSourceName);
 			
 			sourceChemical.setPublicSource(ps);
+			
+			if (createLiteratureSources && ls==null && literatureSourceName!=null && !literatureSourceName.isBlank()) {
+				String lsName = literatureSourceName.length() > 255 ? literatureSourceName.substring(0, 255) : literatureSourceName;
+				LiteratureSource lsNew = new LiteratureSource(lsName, literatureSourceName, loader.lanId);
+				ls = loader.literatureSourceService.create(lsNew);
+				loader.literatureSourcesMap.put(literatureSourceName, ls);
+			}
 			sourceChemical.setLiteratureSource(ls);
 			
 			SourceChemical dbSourceChemical = sourceChemicalService.findMatch(sourceChemical);

@@ -74,6 +74,12 @@ public class LiteratureSource {
 	private transient List<PropertyValue> propertyValues;
 	
 	public LiteratureSource() {}
+	
+	public LiteratureSource(String name, String description, String createdBy) {
+		this.name = name;
+		this.description = description;
+		this.createdBy = createdBy;
+	}
 
 	public Long getId() {
 		return id;

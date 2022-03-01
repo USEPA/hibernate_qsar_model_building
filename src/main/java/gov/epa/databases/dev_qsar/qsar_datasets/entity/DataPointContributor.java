@@ -15,7 +15,6 @@ import javax.persistence.TemporalType;
 import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -26,9 +25,9 @@ public class DataPointContributor {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 	
-	@ManyToOne
 	@NotNull(message="Data point required")
 	@JoinColumn(name="fk_data_point_id")
+	@ManyToOne
 	private DataPoint dataPoint;
 	
 	@NotBlank(message="Experimental property ID required")
