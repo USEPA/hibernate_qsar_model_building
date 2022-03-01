@@ -1,4 +1,4 @@
-package gov.epa.endpounts.reports.Outliers;
+package gov.epa.endpoints.reports.Outliers;
 
 public class Analog extends ModelPrediction {
 

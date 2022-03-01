@@ -1,4 +1,4 @@
-package gov.epa.endpounts.reports.Outliers;
+package gov.epa.endpoints.reports.Outliers;
 
 import java.io.File;
 import java.io.FileWriter;
