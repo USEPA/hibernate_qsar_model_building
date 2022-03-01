@@ -1,4 +1,4 @@
-package gov.epa.run_from_java.scripts.outliers;
+package gov.epa.endpounts.reports.Outliers;
 
 import java.util.List;
 
