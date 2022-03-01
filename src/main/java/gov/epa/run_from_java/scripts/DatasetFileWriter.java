@@ -23,7 +23,7 @@ public class DatasetFileWriter {
 	private DataPointService dataPointService = new DataPointServiceImpl();
 	private DescriptorValuesService descriptorValuesService = new DescriptorValuesServiceImpl();
 	
-	public String writeWithoutSplitting(String datasetName, String descriptorSetName, String outputFolderPath) {
+	public String writeWithoutSplitting(String datasetName, String descriptorSetName, String outputFolderPath, boolean fetchDtxcids) {
 		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
 		List<DescriptorValues> descriptorValues = descriptorValuesService.findByDescriptorSetName(descriptorSetName);
 		
@@ -32,7 +32,7 @@ public class DatasetFileWriter {
 		File outputFile = new File(outputFilePath);
 		outputFile.getParentFile().mkdirs();
 		
-		String instances = ModelData.generateInstancesWithoutSplitting(dataPoints, descriptorValues);
+		String instances = ModelData.generateInstancesWithoutSplitting(dataPoints, descriptorValues, fetchDtxcids);
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(outputFilePath))) {
 			bw.write(instances);
 		} catch (IOException e) {
@@ -42,13 +42,13 @@ public class DatasetFileWriter {
 		return instances;
 	}
 	
-	public String writeWithoutSplitting(Long datasetId, String descriptorSetName, String outputFolderPath) {
+	public String writeWithoutSplitting(Long datasetId, String descriptorSetName, String outputFolderPath, boolean fetchDtxcids) {
 		Dataset dataset = datasetService.findById(datasetId);
 		if (dataset==null) {
 			return datasetId+" not found";
 		}
 		
-		return writeWithoutSplitting(dataset.getName(), descriptorSetName, outputFolderPath);
+		return writeWithoutSplitting(dataset.getName(), descriptorSetName, outputFolderPath, fetchDtxcids);
 	}
 	
 	public static void main(String[] args) {
@@ -56,7 +56,7 @@ public class DatasetFileWriter {
 //		writer.writeWithoutSplitting(38L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");
 //		writer.writeWithoutSplitting(36L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");
 //		writer.writeWithoutSplitting(42L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");
-		writer.writeWithoutSplitting(31L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");
+		writer.writeWithoutSplitting(43L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/", true);
 	}
 
 }

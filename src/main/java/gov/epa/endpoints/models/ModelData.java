@@ -2,13 +2,17 @@ package gov.epa.endpoints.models;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
+import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorSet;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorValues;
+import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundService;
+import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundServiceImpl;
 
 /**
  * Class defining the data to be used for a particular model
@@ -72,10 +76,13 @@ public class ModelData {
 		this.meanExpTraining /= (double) countTraining;
 	}
 	
-	public static String generateInstancesWithoutSplitting(List<DataPoint> dataPoints, List<DescriptorValues> descriptorValues) {
+	public static String generateInstancesWithoutSplitting(List<DataPoint> dataPoints, List<DescriptorValues> descriptorValues,
+			boolean fetchDtxcids) {
 		Map<String, DataPoint> dataPointsMap = dataPoints.stream().collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp));
 		Map<String, DescriptorValues> descriptorValuesMap = descriptorValues.stream()
 				.collect(Collectors.toMap(dv -> dv.getCanonQsarSmiles(), dv -> dv));
+		
+		CompoundService compoundService = new CompoundServiceImpl();
 		
 		DescriptorSet descriptorSet = descriptorValues.iterator().next().getDescriptorSet();
 		String instanceHeader = "ID\tProperty\t" + descriptorSet.getHeadersTsv() + "\r\n";
@@ -85,7 +92,22 @@ public class ModelData {
 			DescriptorValues dv = descriptorValuesMap.get(smiles);
 			
 			if (dp!=null && dv!=null && !dp.getOutlier()) {
-				String instance = generateInstance(smiles, dp, dv);
+				String id = smiles;
+				if (fetchDtxcids) {
+					List<Compound> compounds = compoundService.findByCanonQsarSmiles(smiles);
+					if (compounds!=null) {
+						List<String> dtxcids = compounds.stream()
+								.map(c -> c.getDtxcid())
+								.distinct()
+								.sorted()
+								.collect(Collectors.toList());
+						if (!dtxcids.isEmpty()) {
+							id = dtxcids.get(0);
+						}
+					}
+				}
+				
+				String instance = generateInstance(id, dp, dv);
 				if (instance!=null) {
 					sbOverall.append(instance);
 				}
