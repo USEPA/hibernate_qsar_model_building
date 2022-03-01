@@ -23,7 +23,7 @@ public class DatasetFileWriter {
 	private DataPointService dataPointService = new DataPointServiceImpl();
 	private DescriptorValuesService descriptorValuesService = new DescriptorValuesServiceImpl();
 	
-	public void writeWithoutSplitting(String datasetName, String descriptorSetName, String outputFolderPath) {
+	public String writeWithoutSplitting(String datasetName, String descriptorSetName, String outputFolderPath) {
 		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
 		List<DescriptorValues> descriptorValues = descriptorValuesService.findByDescriptorSetName(descriptorSetName);
 		
@@ -39,20 +39,24 @@ public class DatasetFileWriter {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		return instances;
 	}
 	
-	public void writeWithoutSplitting(Long datasetId, String descriptorSetName, String outputFolderPath) {
+	public String writeWithoutSplitting(Long datasetId, String descriptorSetName, String outputFolderPath) {
 		Dataset dataset = datasetService.findById(datasetId);
 		if (dataset==null) {
-			return;
+			return datasetId+" not found";
 		}
 		
-		writeWithoutSplitting(dataset.getName(), descriptorSetName, outputFolderPath);
+		return writeWithoutSplitting(dataset.getName(), descriptorSetName, outputFolderPath);
 	}
 	
 	public static void main(String[] args) {
 		DatasetFileWriter writer = new DatasetFileWriter();
-		writer.writeWithoutSplitting(38L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");
+//		writer.writeWithoutSplitting(38L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");
+//		writer.writeWithoutSplitting(36L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");
+//		writer.writeWithoutSplitting(42L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");
+		writer.writeWithoutSplitting(31L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");
 	}
 
 }
