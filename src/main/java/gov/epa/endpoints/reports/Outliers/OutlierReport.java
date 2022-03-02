@@ -28,6 +28,7 @@ import javax.imageio.ImageIO;
 
 import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.DefaultChemObjectBuilder;
+import org.openscience.cdk.depict.Depiction;
 import org.openscience.cdk.depict.DepictionGenerator;
 import org.openscience.cdk.exception.CDKException;
 import org.openscience.cdk.smiles.SmilesParser;
@@ -40,18 +41,18 @@ import com.google.gson.Gson;
 
 
 import gov.epa.run_from_java.scripts.DatasetFileWriter;
+import gov.epa.util.StructureImageUtil;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
 public class OutlierReport {
 
-	private static final SmilesParser parser = new SmilesParser(DefaultChemObjectBuilder.getInstance());
 
 	
 	public static void main(String[] args) throws IOException {
 
-		String dataset = "Standard Water solubility from exp_prop";
-//		String dataset = "Standard Henry's law constant from exp_prop";
+//		String dataset = "Standard Water solubility from exp_prop";
+		String dataset = "Standard Henry's law constant from exp_prop";
 		String folderOutput="Reports/Outlier testing";
 		String jsonFilePath=folderOutput+"/"+dataset+".json";
 		String descriptorSetName="T.E.S.T. 5.1";
@@ -60,8 +61,8 @@ public class OutlierReport {
 		File f=new File(folderOutput);
 		f.mkdirs();
 				
-		boolean genOverallSetTSV=true;
-		boolean genOutliersJSON=true;
+		boolean genOverallSetTSV=true;//if false saves time by not having to create overall tsv
+		boolean genOutliersJSON=true;//if false saves time by not having to find the outliers using web service
 
 		String tsv=null;
 		
@@ -77,8 +78,9 @@ public class OutlierReport {
 		String json=null;
 		
 		if (genOutliersJSON) {
-			String server="http://localhost";
-//			String server="http://v2626umcth819.rtord.epa.gov";
+//			String server="http://localhost";
+			String server="http://v2626umcth819.rtord.epa.gov";//TODO 819 not working...
+						              		
 			json=QueryOutlierDetectionAPI.callPythonOutlierDetection(tsv, false, server);		
 			FileWriter fw=new FileWriter(jsonFilePath);
 			fw.write(json);
@@ -156,7 +158,7 @@ public class OutlierReport {
 				if (rec.ID.contains("DTXCID")) {
 					fw.write("<img src=\""+imgURL+rec.ID+"\" height="+imageWidth+">");	
 				} else {
-					fw.write("<img src=\""+generateImgSrc(rec.ID)+"\" width="+imageWidth+">");
+					fw.write("<img src=\""+StructureImageUtil.generateImgSrc(rec.ID)+"\" width="+imageWidth+">");
 				}
 				
 				fw.write("<figcaption>"+rec.ID+"<br>exp="+df.format(rec.exp)+"<br>predRF="+df.format(rec.pred)+"</figcaption>");
@@ -187,7 +189,7 @@ public class OutlierReport {
 					if (analog.ID.contains("DTXCID")) {
 						fw.write("<img src=\""+imgURL+analog.ID+"\" height="+imageWidth+">");	
 					} else {
-						fw.write("<img src=\""+generateImgSrc(analog.ID)+"\" width="+imageWidth+">");
+						fw.write("<img src=\""+StructureImageUtil.generateImgSrc(analog.ID)+"\" width="+imageWidth+">");
 					}
 					
 					
@@ -210,36 +212,6 @@ public class OutlierReport {
 			ex.printStackTrace();
 		}
 		
-	}
-	
-	public static String indigoInchikeyFromSmiles(String smiles) throws IndigoException {
-		Indigo indigo = new Indigo();
-		indigo.setOption("ignore-stereochemistry-errors", true);
-		IndigoInchi indigoInchi = new IndigoInchi(indigo);
-
-		IndigoObject molecule = indigo.loadMolecule(smiles);
-		String inchi = indigoInchi.getInchi(molecule);
-		String inchikey = indigoInchi.getInchiKey(inchi);
-		
-		return inchikey;
-	}
-	
-	public static String generateImgSrc(String smiles) throws IOException, CDKException, IndigoException {
-		String inchikey = indigoInchikeyFromSmiles(smiles);
-		
-		AtomContainer ac = (AtomContainer) parser.parseSmiles(smiles);
-		String filepath="image.png";
-		
-		writeImageFile(ac, inchikey,filepath);//write temp image file
-						
-		byte[] bytes = Files.readAllBytes(Path.of(filepath));//read back in as bytes
-        String base64 = Base64.getEncoder().encodeToString(bytes);//convert to base 64
-   		String imgURL="data:image/png;base64, "+base64;
-   		return imgURL;
-	}
-
-	public static void writeImageFile(AtomContainer ac, String inchikey,String filepath) throws IOException, CDKException {
-		new DepictionGenerator().withAtomColors().withZoom(1.5).depict(ac).writeTo(filepath);
 	}
 	
 	static void writeHeader(FileWriter fw, int count,String searchDescription) throws Exception {
