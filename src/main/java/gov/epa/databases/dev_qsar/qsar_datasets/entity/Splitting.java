@@ -58,7 +58,7 @@ public class Splitting {
 	private String createdBy;
 	
 	@OneToMany(mappedBy="splitting", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
-	private List<DataPointInSplitting> dataPointInSplitting;
+	private List<DataPointInSplitting> dataPointsInSplitting;
 	
 	public Splitting() {}
 	

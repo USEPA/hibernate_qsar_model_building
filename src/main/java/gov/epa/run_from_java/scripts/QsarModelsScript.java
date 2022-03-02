@@ -7,6 +7,9 @@ import javax.validation.ConstraintViolationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingService;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
@@ -100,9 +103,17 @@ public class QsarModelsScript {
 //		QsarModelsScript script = new QsarModelsScript("gsincl01");
 //		script.removeModelFromSet(6L, 7L);
 		
-		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-		QsarModelsScript script = new QsarModelsScript("gsincl01");
-		Model m = script.modelService.findById(1L);
+//		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+//		QsarModelsScript script = new QsarModelsScript("gsincl01");
+//		Model m = script.modelService.findById(1L);
+		
+		SplittingService sServ = new SplittingServiceImpl();
+		Splitting s = sServ.findByDatasetNameAndSplittingName("Water solubility OPERA", "Fake splitting!");
+		if (s==null) {
+			System.out.println("Dataset has not been split");
+		} else {
+			System.out.println(s.getName());
+		}
 	}
 
 }
