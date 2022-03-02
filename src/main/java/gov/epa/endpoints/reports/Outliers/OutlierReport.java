@@ -1,5 +1,8 @@
 package gov.epa.endpoints.reports.Outliers;
 
+import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -11,6 +14,7 @@ import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
@@ -20,42 +24,76 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.Vector;
 
+import javax.imageio.ImageIO;
 
+import org.openscience.cdk.AtomContainer;
+import org.openscience.cdk.DefaultChemObjectBuilder;
+import org.openscience.cdk.depict.DepictionGenerator;
+import org.openscience.cdk.exception.CDKException;
+import org.openscience.cdk.smiles.SmilesParser;
 
+import com.epam.indigo.Indigo;
+import com.epam.indigo.IndigoException;
+import com.epam.indigo.IndigoInchi;
+import com.epam.indigo.IndigoObject;
 import com.google.gson.Gson;
+
+
 import gov.epa.run_from_java.scripts.DatasetFileWriter;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
 public class OutlierReport {
 
+	private static final SmilesParser parser = new SmilesParser(DefaultChemObjectBuilder.getInstance());
+
 	
 	public static void main(String[] args) throws IOException {
-		
-		String dataset = "Standard Water solubility from exp_prop";//TODO would be nice if  writer.writeWithoutSplitting used dataset name instead of modelID
-		DatasetFileWriter writer = new DatasetFileWriter();
-		String tsv=writer.writeWithoutSplitting(31L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");		
-		
-		
-//		System.out.println("Tsv creation done");
+
+		String dataset = "Standard Water solubility from exp_prop";
+//		String dataset = "Standard Henry's law constant from exp_prop";
+		String folderOutput="Reports/Outlier testing";
+		String jsonFilePath=folderOutput+"/"+dataset+".json";
+		String descriptorSetName="T.E.S.T. 5.1";
+		String folderTSV="data/dev_qsar/dataset_files/";
+		String tsvFilePath=folderTSV+ dataset + "_" + descriptorSetName + "_full.tsv";	
+		File f=new File(folderOutput);
+		f.mkdirs();
 				
-//		String filePath="data\\dev_qsar\\dataset_files\\Standard Water solubility from exp_prop_T.E.S.T. 5.1_full.tsv";		
-//		Path path = Path.of(filePath);
-//	    String tsv = Files.readString(path);
-//	    System.out.println("Tsv loaded");
-//		System.out.println(tsv);
-	    	    
+		boolean genOverallSetTSV=true;
+		boolean genOutliersJSON=true;
+
+		String tsv=null;
 		
-		String server="http://localhost";
-//		String server="http://v2626umcth819.rtord.epa.gov";
+		if (genOverallSetTSV) {
+			DatasetFileWriter writer = new DatasetFileWriter();
+			tsv=writer.writeWithoutSplitting(dataset, descriptorSetName, folderTSV,true);		
+			System.out.println("Tsv creation done");
+		} else {
+		    tsv = Files.readString(Path.of(tsvFilePath));
+		    System.out.println("Tsv loaded");
+		}
 		
+		String json=null;
+		
+		if (genOutliersJSON) {
+			String server="http://localhost";
+//			String server="http://v2626umcth819.rtord.epa.gov";
+			json=QueryOutlierDetectionAPI.callPythonOutlierDetection(tsv, false, server);		
+			FileWriter fw=new FileWriter(jsonFilePath);
+			fw.write(json);
+			System.out.println(json);
+			fw.flush();
+			fw.close();
 			
-		String json=QueryOutlierDetectionAPI.callPythonOutlierDetection(tsv, false, server);
-		
+		} else {
+			json = Files.readString(Path.of(jsonFilePath));
+			System.out.println(json);
+		}
+	    	    		
 		Outlier[] recordsOutliers= new Gson().fromJson(json, Outlier[].class);		
 		
 		findAnalogs(tsv, recordsOutliers);
-		String folderOutput="Outlier testing";
 		String outputFileName="outlier report "+dataset+".html";
 		createReport(recordsOutliers, folderOutput,outputFileName,outputFileName);	
 	}
@@ -77,6 +115,7 @@ public class OutlierReport {
 	public static void createReport(Outlier[] recs, String outputFolder, String outputFileName, 
 			String searchDescription) {
 		
+		int imageWidth= (int)Toolkit.getDefaultToolkit().getScreenSize().getWidth()/4;
 		
 		File folder=new File(outputFolder);
 		folder.mkdirs();
@@ -100,7 +139,6 @@ public class OutlierReport {
 			
 			
 			
-			
 			for (Outlier rec:recl) {
 				
 				
@@ -113,8 +151,15 @@ public class OutlierReport {
 
 				fw.write("<figure>"); // https://comptox.epa.gov/dashboard-api/ccdapp1/chemical-files/image/by-dtxcid/DTXCID501881
 				// fw.write(HtmlUtil.generateImgSrc(rec.ID, outputFolder + "/img"));
-				fw.write("<img src=\""+imgURL+rec.ID+"\" height=150>");
-				fw.write("<figcaption>"+rec.ID+"<br>exp="+rec.exp+"<br>predRF="+rec.pred+"</figcaption>");
+//				fw.write("<img src=\""+imgURL+rec.ID+"\" height="+imageWidth+">");
+				
+				if (rec.ID.contains("DTXCID")) {
+					fw.write("<img src=\""+imgURL+rec.ID+"\" height="+imageWidth+">");	
+				} else {
+					fw.write("<img src=\""+generateImgSrc(rec.ID)+"\" width="+imageWidth+">");
+				}
+				
+				fw.write("<figcaption>"+rec.ID+"<br>exp="+df.format(rec.exp)+"<br>predRF="+df.format(rec.pred)+"</figcaption>");
 				fw.write("</figure>");
 				
 //				System.out.println(gsid);
@@ -137,9 +182,16 @@ public class OutlierReport {
 					
 					fw.write("<td>");
 					fw.write("<figure>");
-					// fw.write(HtmlUtil.generateImgSrc(analog.ID, outputFolder + "/img"));
-					fw.write("<img src=\""+imgURL+analog.ID+"\" height=150>");
-					fw.write("<figcaption>"+analog.ID+"("+df.format(analog.sim)+")"+"<br>exp="+analog.exp+"</figcaption>");
+//					 fw.write(HtmlUtil.generateImgSrc(analog.ID, outputFolder + "/img"));
+					
+					if (analog.ID.contains("DTXCID")) {
+						fw.write("<img src=\""+imgURL+analog.ID+"\" height="+imageWidth+">");	
+					} else {
+						fw.write("<img src=\""+generateImgSrc(analog.ID)+"\" width="+imageWidth+">");
+					}
+					
+					
+					fw.write("<figcaption>"+analog.ID+"("+df.format(analog.sim)+")"+"<br>exp="+df.format(analog.exp)+"<br></figcaption>");
 					fw.write("</figure></td>");
 					
 				}		
@@ -160,18 +212,52 @@ public class OutlierReport {
 		
 	}
 	
+	public static String indigoInchikeyFromSmiles(String smiles) throws IndigoException {
+		Indigo indigo = new Indigo();
+		indigo.setOption("ignore-stereochemistry-errors", true);
+		IndigoInchi indigoInchi = new IndigoInchi(indigo);
+
+		IndigoObject molecule = indigo.loadMolecule(smiles);
+		String inchi = indigoInchi.getInchi(molecule);
+		String inchikey = indigoInchi.getInchiKey(inchi);
+		
+		return inchikey;
+	}
+	
+	public static String generateImgSrc(String smiles) throws IOException, CDKException, IndigoException {
+		String inchikey = indigoInchikeyFromSmiles(smiles);
+		
+		AtomContainer ac = (AtomContainer) parser.parseSmiles(smiles);
+		String filepath="image.png";
+		
+		writeImageFile(ac, inchikey,filepath);//write temp image file
+						
+		byte[] bytes = Files.readAllBytes(Path.of(filepath));//read back in as bytes
+        String base64 = Base64.getEncoder().encodeToString(bytes);//convert to base 64
+   		String imgURL="data:image/png;base64, "+base64;
+   		return imgURL;
+	}
+
+	public static void writeImageFile(AtomContainer ac, String inchikey,String filepath) throws IOException, CDKException {
+		new DepictionGenerator().withAtomColors().withZoom(1.5).depict(ac).writeTo(filepath);
+	}
+	
 	static void writeHeader(FileWriter fw, int count,String searchDescription) throws Exception {
 		
 		fw.write("<html>\r\n");
 		
+		
+		
+		
 		fw.write("<head><title>"+searchDescription+"</title></head>\r\n");
+
 		
 		fw.write("<table border=\"1\" cellpadding=\"3\" cellspacing=\"0\">\r\n");
 		fw.write("<caption>Structure comparisons for "+searchDescription+"</caption>\r\n");
 		fw.write("<tr bgcolor=\"#D3D3D3\">");
 		
-		fw.write("\t<th>Target</th>\r\n");
-		fw.write("\t<th>Search Analogs</th>\r\n");
+		fw.write("\t<th>Outlier</th>\r\n");
+		fw.write("\t<th>Dataset Analogs</th>\r\n");
 		
 		
 		fw.write("</tr>");
