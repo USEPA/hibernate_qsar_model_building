@@ -22,8 +22,8 @@ public class PhyschemExpPropData extends ExpPropData {
 		measurementMethodValue = getMeasurementMethodValue(rec);
 	}
 	
-	public void constructPropertyValue() {
-		super.constructPropertyValue();
+	public void constructPropertyValue(boolean createLiteratureSources) {
+		super.constructPropertyValue(createLiteratureSources);
 		addPhyschemParameterValues();
 	}
 	

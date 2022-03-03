@@ -50,6 +50,9 @@ public class DataPoint {
 	@OneToMany(mappedBy="dataPoint", cascade=CascadeType.ALL, fetch=FetchType.EAGER)
 	private List<DataPointContributor> dataPointContributors;
 	
+	@OneToMany(mappedBy="dataPoint", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	private List<DataPointInSplitting> dataPointInSplitting;
+	
 	@Column(name="updated_at")
 	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)

@@ -181,6 +181,7 @@ public class DevQsarConstants {
 		map.put(HENRYS_LAW_CONSTANT, NEG_LOG_ATM_M3_MOL);
 		map.put(VAPOR_PRESSURE, NEG_LOG_MMHG);
 		map.put(DENSITY, G_CM3);
+		map.put(LLNA, BINARY);
 		return map;
 	}
 }

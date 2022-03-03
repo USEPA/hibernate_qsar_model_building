@@ -656,39 +656,41 @@ public class DatasetCreator {
 				"TEST-descriptors/");
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, testDescriptorWebService, "gsincl01");
 		
-//		creator.createExternalValidationSets("Water solubility OPERA", "Standard Water solubility from exp_prop");
+		creator.createExternalValidationSets("LLNA TEST", "LLNA from exp_prop, without eChemPortal");
 		
-		String propertyName = DevQsarConstants.VAPOR_PRESSURE;
-		String listName = "ExpProp_VP_WithChemProp_022222";
-		
-		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
-		BoundParameterValue pressureBound = new BoundParameterValue("Pressure", 740.0, 780.0, true);
-		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
-		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
-		bounds.add(temperatureBound);
-		bounds.add(pressureBound);
-		bounds.add(phBound);
-		
-		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, 
-				false, true, false, true, true, false, true);
-		MappingParams casrnMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_CASRN, null,
-				true, false, false, false, false, false, true);
-		String listMappingName = "Standard " + propertyName + " from exp_prop";
-		String casrnMappingName = "CASRN mapping of standard " + propertyName + " from exp_prop";
-		String listMappingDescription = propertyName + " with 20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5";
-		String casrnMappingDescription = propertyName + " with 20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5, mapped by CASRN";
-		DatasetParams casrnMappedParams = new DatasetParams(casrnMappingName, 
-				casrnMappingDescription, 
-				propertyName,
-				casrnMappingParams,
-				bounds);
-		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
-				listMappingDescription, 
-				propertyName,
-				listMappingParams,
-				bounds);
-
-		creator.createPropertyDataset(casrnMappedParams);
+//		String propertyName = DevQsarConstants.LLNA;
+//		String listName = "ExpProp_LLNA_NoEChemPortal_022522";
+//		
+////		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
+////		BoundParameterValue pressureBound = new BoundParameterValue("Pressure", 740.0, 780.0, true);
+////		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
+//		BoundParameterValue speciesBound = new BoundParameterValue("Species", "Mouse", false);
+//		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+////		bounds.add(temperatureBound);
+////		bounds.add(pressureBound);
+////		bounds.add(phBound);
+//		bounds.add(speciesBound);
+//		
+//		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, 
+//				false, true, false, true, true, false, true);
+//		MappingParams casrnMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_CASRN, null,
+//				true, false, false, false, false, false, true);
+//		String listMappingName = propertyName + " from exp_prop, without eChemPortal";
+//		String casrnMappingName = "CASRN mapping of " + propertyName + " from exp_prop, without eChemPortal";
+//		String listMappingDescription = propertyName + " with species = Mouse";
+//		String casrnMappingDescription = propertyName + " with species = Mouse, mapped by CASRN";
+//		DatasetParams casrnMappedParams = new DatasetParams(casrnMappingName, 
+//				casrnMappingDescription, 
+//				propertyName,
+//				casrnMappingParams,
+//				bounds);
+//		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
+//				listMappingDescription, 
+//				propertyName,
+//				listMappingParams,
+//				bounds);
+//
+////		creator.createPropertyDataset(casrnMappedParams);
 //		creator.createPropertyDataset(listMappedParams);
 	}
 }

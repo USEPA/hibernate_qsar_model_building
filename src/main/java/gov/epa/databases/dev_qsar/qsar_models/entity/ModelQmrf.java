@@ -1,17 +1,15 @@
-package gov.epa.databases.dev_qsar.qsar_datasets.entity;
+package gov.epa.databases.dev_qsar.qsar_models.entity;
 
 import java.util.Date;
-import java.util.List;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.OneToMany;
+import javax.persistence.JoinColumn;
+import javax.persistence.Lob;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -22,23 +20,21 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
-@Table(name="splittings", indexes={@Index(name="split_name_idx", columnList="name", unique=true)})
-public class Splitting {
+@Table(name="model_qmrfs")
+public class ModelQmrf {
+	
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
-
-	@NotBlank(message="Name required")
-	@Column(name="name", unique=true)
-	private String name;
 	
-	@NotBlank(message="Description required")
-	@Column(name="description")
-	private String description;
+	@NotNull(message="Model required")
+	@OneToOne
+	@JoinColumn(name="fk_model_id")
+	private Model model;
 	
-	@NotNull(message="Number of splits required")
-	@Column(name="num_splits")
-	private Integer numSplits;
+	@Lob
+	@Column(name="file", length=32767)
+	private byte[] file;
 	
 	@Column(name="updated_at")
 	@UpdateTimestamp
@@ -57,15 +53,11 @@ public class Splitting {
 	@Column(name="created_by")
 	private String createdBy;
 	
-	@OneToMany(mappedBy="splitting", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
-	private List<DataPointInSplitting> dataPointsInSplitting;
+	public ModelQmrf() {}
 	
-	public Splitting() {}
-	
-	public Splitting(String name, String description, Integer numSplits, String createdBy) {
-		this.setName(name);
-		this.setDescription(description);
-		this.setNumSplits(numSplits);
+	public ModelQmrf(Model model, byte[] bytes, String createdBy) {
+		this.setModel(model);
+		this.setFile(bytes);
 		this.setCreatedBy(createdBy);
 	}
 
@@ -77,28 +69,20 @@ public class Splitting {
 		this.id = id;
 	}
 
-	public String getName() {
-		return name;
+	public Model getModel() {
+		return model;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setModel(Model model) {
+		this.model = model;
 	}
 
-	public String getDescription() {
-		return description;
+	public byte[] getFile() {
+		return file;
 	}
 
-	public void setDescription(String description) {
-		this.description = description;
-	}
-
-	public Integer getNumSplits() {
-		return numSplits;
-	}
-
-	public void setNumSplits(Integer numSplits) {
-		this.numSplits = numSplits;
+	public void setFile(byte[] file) {
+		this.file = file;
 	}
 
 	public Date getUpdatedAt() {
@@ -132,4 +116,5 @@ public class Splitting {
 	public void setCreatedBy(String createdBy) {
 		this.createdBy = createdBy;
 	}
+
 }

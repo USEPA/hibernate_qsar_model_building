@@ -40,7 +40,7 @@ public class ExperimentalRecordLoader {
 	private ParameterService parameterService = new ParameterServiceImpl();
 	private ExpPropPropertyService expPropPropertyService = new ExpPropPropertyServiceImpl();
 	private ExpPropUnitService expPropUnitService = new ExpPropUnitServiceImpl();
-	private LiteratureSourceService literatureSourceService = new LiteratureSourceServiceImpl();
+	LiteratureSourceService literatureSourceService = new LiteratureSourceServiceImpl();
 	private PublicSourceService publicSourceService = new PublicSourceServiceImpl();
 	
 	Map<String, LiteratureSource> literatureSourcesMap = new HashMap<String, LiteratureSource>();
@@ -122,7 +122,7 @@ public class ExperimentalRecordLoader {
 		return records;
 	}
 	
-	public void load(List<ExperimentalRecord> records, String type) {
+	public void load(List<ExperimentalRecord> records, String type, boolean createLiteratureSources) {
 		List<ExperimentalRecord> failedRecords = new ArrayList<ExperimentalRecord>();
 		int countSuccess = 0;
 		int countFailure = 0;
@@ -133,12 +133,12 @@ public class ExperimentalRecordLoader {
 				if (type.contains("physchem")) {
 					PhyschemExpPropData expPropData = new PhyschemExpPropData(this);
 					expPropData.getValues(rec);
-					expPropData.constructPropertyValue();
+					expPropData.constructPropertyValue(createLiteratureSources);
 					success = expPropData.post();
 				} else if (type.contains("tox")) {
 					ToxExpPropData expPropData = new ToxExpPropData(this);
 					expPropData.getValues(rec);
-					expPropData.constructPropertyValue();
+					expPropData.constructPropertyValue(createLiteratureSources);
 					success = expPropData.post();
 				}
 				
@@ -184,7 +184,7 @@ public class ExperimentalRecordLoader {
 	}
 	
 	public static void main(String[] args) {
-		String sourceName = "Bagley";
+		String sourceName = "OECD Toolbox";
 		String type = "tox";
 		
 		System.out.println("Retrieving records...");
@@ -194,7 +194,7 @@ public class ExperimentalRecordLoader {
 		System.out.println("Loading " + records.size() + " records...");
 		long t0 = System.currentTimeMillis();
 		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("gsincl01");
-		loader.load(records, type);
+		loader.load(records, type, true);
 		long t = System.currentTimeMillis();
 		System.out.println("Loading completed in " + (t - t0)/1000.0 + " s");
 		

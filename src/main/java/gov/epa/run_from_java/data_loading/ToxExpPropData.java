@@ -20,8 +20,8 @@ public class ToxExpPropData extends ExpPropData {
 		purityValue = getPurityValue(rec);
 	}
 	
-	public void constructPropertyValue() {
-		super.constructPropertyValue();
+	public void constructPropertyValue(boolean createLiteratureSources) {
+		super.constructPropertyValue(createLiteratureSources);
 		addToxParameterValues();
 	}
 	

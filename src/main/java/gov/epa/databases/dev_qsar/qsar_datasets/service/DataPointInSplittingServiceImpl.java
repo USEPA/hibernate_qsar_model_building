@@ -65,5 +65,23 @@ public class DataPointInSplittingServiceImpl implements DataPointInSplittingServ
 		
 		return dpis;
 	}
+	
+	@Override
+	public void delete(DataPointInSplitting dpis) {
+		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
+		delete(dpis, session);
+	}
 
+	@Override
+	public void delete(DataPointInSplitting dpis, Session session) {
+		if (dpis.getId()==null) {
+			return;
+		}
+		
+		Transaction t = session.beginTransaction();
+		session.delete(dpis);
+		session.flush();
+		t.commit();
+	}
+	
 }

@@ -17,5 +17,9 @@ public interface DataPointInSplittingService {
 	public DataPointInSplitting create(DataPointInSplitting dpis) throws ConstraintViolationException;
 	
 	public DataPointInSplitting create(DataPointInSplitting dpis, Session session) throws ConstraintViolationException;
+	
+	public void delete(DataPointInSplitting dpis);
+	
+	public void delete(DataPointInSplitting dpis, Session session);
 
 }

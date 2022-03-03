@@ -175,16 +175,18 @@ public class PropertyValue {
 			value = (min + max) / 2.0;
 		}
 		
-		// Check if binary value is actually binary
 		String unitName = getUnit().getName();
-		if (unitName.equals(DevQsarConstants.BINARY) && !(value==1 || value==0)) {
-			return new ExplainedResponse(false, "Binary value indicated, but property value is not binary");
-		}
-		
-		// Check if property value (in original units) is realistic for property in question
-		Boolean realisticValueCheck = checkRealisticValueForProperty(value, propertyName, unitName);
-		if (realisticValueCheck==null || !realisticValueCheck) {
-			return new ExplainedResponse(false, "Unrealistic value for property");
+		if (unitName.equals(DevQsarConstants.BINARY)) {
+			// Check if binary value is actually binary
+			if (!(value==1 || value==0)) {
+				return new ExplainedResponse(false, "Binary value indicated, but property value is not binary");
+			}
+		} else {
+			// Check if property value (in original units) is realistic for property in question
+			Boolean realisticValueCheck = checkRealisticValueForProperty(value, propertyName, unitName);
+			if (realisticValueCheck==null || !realisticValueCheck) {
+				return new ExplainedResponse(false, "Unrealistic value for property");
+			}
 		}
 		
 		return new ExplainedResponse(true, value, "Convertible QSAR property value available");

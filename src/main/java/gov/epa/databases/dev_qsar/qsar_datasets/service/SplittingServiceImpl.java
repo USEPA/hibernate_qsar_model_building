@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_datasets.service;
 
+import java.util.List;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
@@ -36,6 +37,34 @@ public class SplittingServiceImpl implements SplittingService {
 		return splitting;
 	}
 	
+	public List<Splitting> findByDatasetName(String datasetName) {
+		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
+		return findByDatasetName(datasetName, session);
+	}
+	
+	public List<Splitting> findByDatasetName(String datasetName, Session session) {
+		Transaction t = session.beginTransaction();
+		SplittingDao splittingDao = new SplittingDaoImpl();
+		List<Splitting> splitting = splittingDao.findByDatasetName(datasetName, session);
+		t.rollback();
+		return splitting;
+	}
+	
+	@Override
+	public Splitting findByDatasetNameAndSplittingName(String datasetName, String splittingName) {
+		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
+		return findByDatasetNameAndSplittingName(datasetName, splittingName, session);
+	}
+
+	@Override
+	public Splitting findByDatasetNameAndSplittingName(String datasetName, String splittingName, Session session) {
+		Transaction t = session.beginTransaction();
+		SplittingDao splittingDao = new SplittingDaoImpl();
+		Splitting splitting = splittingDao.findByDatasetNameAndSplittingName(datasetName, splittingName, session);
+		t.rollback();
+		return splitting;
+	}
+
 	@Override
 	public Splitting create(Splitting splitting) throws ConstraintViolationException {
 		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
