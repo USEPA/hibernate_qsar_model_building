@@ -1,17 +1,15 @@
 package gov.epa.databases.dev_qsar.qsar_models.entity;
 
 import java.util.Date;
-import java.util.List;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -22,20 +20,17 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
-@Table(name="models")
-public class Model {
+@Table(name="model_set_reports")
+public class ModelSetReport {
+	
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 	
-	@NotNull(message="Method required")
+	@NotNull(message="Model set required")
 	@ManyToOne
-	@JoinColumn(name="fk_method_id")
-	private Method method;
-	
-	@ManyToOne
-	@JoinColumn(name="fk_descriptor_embedding_id")
-	private DescriptorEmbedding descriptorEmbedding;
+	@JoinColumn(name="fk_model_set_id")
+	private ModelSet modelSet;
 	
 	@NotNull(message="Descriptor set name required")
 	@Column(name="descriptor_set_name")
@@ -48,6 +43,10 @@ public class Model {
 	@NotNull(message="Splitting name required")
 	@Column(name="splitting_name")
 	private String splittingName;
+	
+	@Lob
+	@Column(name="file", length=32767)
+	private byte[] file;
 	
 	@Column(name="updated_at")
 	@UpdateTimestamp
@@ -66,35 +65,14 @@ public class Model {
 	@Column(name="created_by")
 	private String createdBy;
 	
-//	@OneToOne(mappedBy="model", cascade=CascadeType.ALL, fetch=FetchType.LAZY, optional=false)
-//	private ModelBytes modelBytes;
+	public ModelSetReport() {}
 	
-	@OneToMany(mappedBy="model", cascade=CascadeType.ALL)
-	private List<ModelInModelSet> modelInModelSets;
-	
-	@OneToMany(mappedBy="model", cascade=CascadeType.ALL)
-	private List<ModelStatistic> modelStatistics;
-	
-	@OneToMany(mappedBy="model", cascade=CascadeType.ALL)
-	private List<Prediction> predictions;
-	
-	public Model() {}
-	
-	public Model(Method method, String descriptorSetName, String datasetName, String splittingName, String createdBy) {
-		this.setMethod(method);
-		this.setDescriptorSetName(descriptorSetName);
+	public ModelSetReport(ModelSet modelSet, String datasetName, String descriptorSetName, String splittingName, byte[] bytes, String createdBy) {
+		this.setModelSet(modelSet);
 		this.setDatasetName(datasetName);
-		this.setSplittingName(splittingName);
-		this.setCreatedBy(createdBy);
-	}
-	
-	public Model(Method method, DescriptorEmbedding descriptorEmbedding, 
-			String descriptorSetName, String datasetName, String splittingName, String createdBy) {
-		this.setMethod(method);
-		this.setDescriptorEmbedding(descriptorEmbedding);
 		this.setDescriptorSetName(descriptorSetName);
-		this.setDatasetName(datasetName);
 		this.setSplittingName(splittingName);
+		this.setFile(bytes);
 		this.setCreatedBy(createdBy);
 	}
 
@@ -106,12 +84,12 @@ public class Model {
 		this.id = id;
 	}
 
-	public Method getMethod() {
-		return method;
+	public ModelSet getModelSet() {
+		return modelSet;
 	}
 
-	public void setMethod(Method method) {
-		this.method = method;
+	public void setModelSet(ModelSet modelSet) {
+		this.modelSet = modelSet;
 	}
 
 	public String getDescriptorSetName() {
@@ -136,6 +114,14 @@ public class Model {
 
 	public void setSplittingName(String splittingName) {
 		this.splittingName = splittingName;
+	}
+
+	public byte[] getFile() {
+		return file;
+	}
+
+	public void setFile(byte[] file) {
+		this.file = file;
 	}
 
 	public Date getUpdatedAt() {
@@ -168,13 +154,5 @@ public class Model {
 
 	public void setCreatedBy(String createdBy) {
 		this.createdBy = createdBy;
-	}
-
-	public DescriptorEmbedding getDescriptorEmbedding() {
-		return descriptorEmbedding;
-	}
-
-	public void setDescriptorEmbedding(DescriptorEmbedding descriptorEmbedding) {
-		this.descriptorEmbedding = descriptorEmbedding;
 	}
 }
