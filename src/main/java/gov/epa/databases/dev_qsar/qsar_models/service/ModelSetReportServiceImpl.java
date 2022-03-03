@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_models.service;
 
+import java.util.List;
 import java.util.Set;
 
 import org.hibernate.Session;
@@ -7,6 +8,8 @@ import org.hibernate.Transaction;
 
 import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
+import gov.epa.databases.dev_qsar.qsar_models.dao.ModelSetReportDao;
+import gov.epa.databases.dev_qsar.qsar_models.dao.ModelSetReportDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport;
 
 import javax.validation.ConstraintViolation;
@@ -21,6 +24,40 @@ public class ModelSetReportServiceImpl implements ModelSetReportService {
 		this.validator = DevQsarValidator.getValidator();
 	}
 	
+	@Override
+	public ModelSetReport findByModelSetIdAndModelData(Long modelSetId, String datasetName, String descriptorSetName,
+			String splittingName) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return findByModelSetIdAndModelData(modelSetId, datasetName, descriptorSetName, splittingName, session);
+	}
+
+	@Override
+	public ModelSetReport findByModelSetIdAndModelData(Long modelSetId, String datasetName, String descriptorSetName,
+			String splittingName, Session session) {
+		Transaction t = session.beginTransaction();
+		ModelSetReportDao modelSetReportDao = new ModelSetReportDaoImpl();
+		ModelSetReport modelSetReport = modelSetReportDao.findByModelSetIdAndModelData(modelSetId, 
+				datasetName, descriptorSetName, splittingName,
+				session);
+		t.rollback();
+		return modelSetReport;
+	}
+
+	@Override
+	public List<ModelSetReport> findByModelSetId(Long modelSetId) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return findByModelSetId(modelSetId, session);
+	}
+
+	@Override
+	public List<ModelSetReport> findByModelSetId(Long modelSetId, Session session) {
+		Transaction t = session.beginTransaction();
+		ModelSetReportDao modelSetReportDao = new ModelSetReportDaoImpl();
+		List<ModelSetReport> modelSetReports = modelSetReportDao.findByModelSetId(modelSetId, session);
+		t.rollback();
+		return modelSetReports;
+	}
+
 	@Override
 	public ModelSetReport create(ModelSetReport modelSetReport) throws ConstraintViolationException {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();

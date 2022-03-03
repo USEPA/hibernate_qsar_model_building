@@ -89,7 +89,7 @@ public class Splitter {
 		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
 		System.out.println("Found " + dataPoints.size() + " data points");
 		List<DescriptorValues> descriptorValues = descriptorValuesService.findByDescriptorSetName(descriptorSetName);
-		String tsv = ModelData.generateInstancesWithoutSplitting(dataPoints, descriptorValues);
+		String tsv = ModelData.generateInstancesWithoutSplitting(dataPoints, descriptorValues, false);
 		
 	    SplittingCalculationResponse[] splittingResponse = 
 	            splittingWebService.callCalculation(tsv, false).getBody();

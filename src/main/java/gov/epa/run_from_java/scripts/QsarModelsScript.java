@@ -1,7 +1,12 @@
 package gov.epa.run_from_java.scripts;
 
+import java.awt.Desktop;
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
@@ -124,6 +129,22 @@ public class QsarModelsScript {
 		modelQmrfService.create(modelQmrf);
 	}
 	
+	public byte[] downloadModelQmrf(Long modelId, String downloadFolder) {
+		ModelQmrf modelQmrf = modelQmrfService.findByModelId(modelId);
+		Model model = modelQmrf.getModel();
+		byte[] file = modelQmrf.getFile();
+		
+		String saveToFilePath = downloadFolder + File.separator + String.join("_", model.getDatasetName(), 
+				model.getDescriptorSetName(), 
+				model.getSplittingName(),
+				model.getMethod().getName()) 
+				+ ".pdf";
+		
+		safelyWriteBytes(saveToFilePath, file, true);
+		
+		return file;
+	}
+	
 	public void uploadModelSetReport(Long modelSetId, String datasetName, String descriptorSetName, String splittingName, 
 			String reportFilePath) throws IOException {
 		byte[] bytes = Files.readAllBytes(Paths.get(reportFilePath));
@@ -142,28 +163,101 @@ public class QsarModelsScript {
 		modelSetReportService.create(modelSetReport);
 	}
 	
+	public byte[] downloadModelSetReport(Long modelSetId, String datasetName, String descriptorSetName, String splittingName,
+			String downloadFolder) {
+		ModelSetReport modelSetReport = modelSetReportService
+				.findByModelSetIdAndModelData(modelSetId, datasetName, descriptorSetName, splittingName);
+		return writeOneModelSetReport(modelSetReport, downloadFolder);
+	}
+	
+	public byte[] writeOneModelSetReport(ModelSetReport modelSetReport, String downloadFolder) {
+		ModelSet modelSet = modelSetReport.getModelSet();
+		byte[] file = modelSetReport.getFile();
+		
+		String saveToFilePath = downloadFolder + File.separator + String.join("_", modelSet.getName(),
+				modelSetReport.getDatasetName(), 
+				modelSetReport.getDescriptorSetName(), 
+				modelSetReport.getSplittingName())
+				+ ".xlsx";
+		
+		safelyWriteBytes(saveToFilePath, file, true);
+		
+		return file;
+	}
+	
+	public void downloadAllReportsForModelSet(Long modelSetId, String downloadFolder) {
+		List<ModelSetReport> modelSetReports = modelSetReportService.findByModelSetId(modelSetId);
+		for (ModelSetReport msr:modelSetReports) {
+			writeOneModelSetReport(msr, downloadFolder);
+		}
+	}
+	
+	public URI safelyWriteBytes(String pathToFile, byte[] bytes, boolean browse) {
+		File file = new File(pathToFile);
+		file.getParentFile().mkdirs();
+		
+		Path path = null;
+		try {
+			path = Paths.get(pathToFile);
+		} catch (InvalidPathException e) {
+			String safePathToFile = pathToFile.replaceAll("^[A-za-z0-9._-]", "_");
+			
+			if (safePathToFile.length() > 255) {
+				String fileType = safePathToFile.substring(safePathToFile.lastIndexOf("."));
+				safePathToFile = safePathToFile.substring(0, (255 - fileType.length())) + fileType;
+			}
+			
+			path = Paths.get(safePathToFile);
+		}
+		
+		if (path==null) {
+			System.out.println("Something is wrong with this filename: " + pathToFile + " and I can't fix it");
+			return null;
+		}
+		
+		try {
+			Files.write(path, bytes);
+			URI uri = path.toUri();
+			
+			if (browse) {
+				Desktop desktop = Desktop.getDesktop();
+				desktop.browse(uri);
+			}
+			
+			return uri;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
 	public static void main(String[] args) {
 //		QsarModelsScript script = new QsarModelsScript("gsincl01");
 //		script.removeModelFromSet(6L, 7L);
 		
 //		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 		QsarModelsScript script = new QsarModelsScript("gsincl01");
+		
+		script.downloadModelQmrf(1L, "data/dev_qsar/model_qmrfs");
+		script.downloadAllReportsForModelSet(1L, "data/dev_qsar/model_set_reports");
+		
 //		try {
 //			script.uploadModelQmrf(1L, "data/dev_qsar/this_is_a_pdf.pdf");
 //		} catch (IOException e) {
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
-		try {
-			script.uploadModelSetReport(1L, 
-					"Henry's law constant OPERA",
-					"T.E.S.T. 5.1",
-					"OPERA",
-					"data/dev_qsar/this_is_an_xlsx.xlsx");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//		
+//		try {
+//			script.uploadModelSetReport(1L, 
+//					"Henry's law constant OPERA",
+//					"T.E.S.T. 5.1",
+//					"OPERA",
+//					"data/dev_qsar/this_is_an_xlsx.xlsx");
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 		
 //		SplittingService sServ = new SplittingServiceImpl();
 //		Splitting s = sServ.findByDatasetNameAndSplittingName("Water solubility OPERA", "Fake splitting!");
