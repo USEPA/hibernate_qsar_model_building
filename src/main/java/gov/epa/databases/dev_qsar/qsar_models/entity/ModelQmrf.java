@@ -20,8 +20,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
-@Table(name="model_bytes")
-public class ModelBytes {
+@Table(name="model_qmrfs")
+public class ModelQmrf {
 	
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
@@ -33,9 +33,8 @@ public class ModelBytes {
 	private Model model;
 	
 	@Lob
-	@NotNull(message="Model data required")
-	@Column(name="bytes", length=32767)
-	private byte[] bytes;
+	@Column(name="file", length=32767)
+	private byte[] file;
 	
 	@Column(name="updated_at")
 	@UpdateTimestamp
@@ -54,11 +53,11 @@ public class ModelBytes {
 	@Column(name="created_by")
 	private String createdBy;
 	
-	public ModelBytes() {}
+	public ModelQmrf() {}
 	
-	public ModelBytes(Model model, byte[] bytes, String createdBy) {
+	public ModelQmrf(Model model, byte[] bytes, String createdBy) {
 		this.setModel(model);
-		this.setBytes(bytes);
+		this.setFile(bytes);
 		this.setCreatedBy(createdBy);
 	}
 
@@ -78,12 +77,12 @@ public class ModelBytes {
 		this.model = model;
 	}
 
-	public byte[] getBytes() {
-		return bytes;
+	public byte[] getFile() {
+		return file;
 	}
 
-	public void setBytes(byte[] bytes) {
-		this.bytes = bytes;
+	public void setFile(byte[] file) {
+		this.file = file;
 	}
 
 	public Date getUpdatedAt() {

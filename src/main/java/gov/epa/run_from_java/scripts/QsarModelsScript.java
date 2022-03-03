@@ -1,5 +1,8 @@
 package gov.epa.run_from_java.scripts;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 import javax.validation.ConstraintViolationException;
@@ -12,9 +15,12 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelQmrf;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
@@ -25,6 +31,7 @@ import gov.epa.endpoints.reports.model_sets.ModelSetTableGenerator;
 public class QsarModelsScript {
 	
 	private ModelService modelService;
+	private ModelQmrfService modelQmrfService;
 	private ModelSetService modelSetService;
 	private ModelInModelSetService modelInModelSetService;
 	
@@ -32,6 +39,7 @@ public class QsarModelsScript {
 	
 	public QsarModelsScript(String lanId) {
 		this.modelService = new ModelServiceImpl();
+		this.modelQmrfService = new ModelQmrfServiceImpl();
 		this.modelSetService = new ModelSetServiceImpl();
 		this.modelInModelSetService = new ModelInModelSetServiceImpl();
 		this.lanId = lanId;
@@ -99,21 +107,44 @@ public class QsarModelsScript {
 		modelInModelSetService.delete(modelInModelSet);
 	}
 	
+	public void uploadModelQmrf(Long modelId, String qmrfFilePath) throws IOException {
+		byte[] bytes = Files.readAllBytes(Paths.get(qmrfFilePath));
+		Model model = modelService.findById(modelId);
+		
+		if (bytes==null) {
+			System.out.println("No data found at " + qmrfFilePath);
+			return;
+		} else if (model==null) {
+			System.out.println("No model found for ID " + modelId);
+			return;
+		}
+		
+		System.out.println("Uploading QMRF with bytecount " + bytes.length);
+		ModelQmrf modelQmrf = new ModelQmrf(model, bytes, lanId);
+		modelQmrfService.create(modelQmrf);
+	}
+	
 	public static void main(String[] args) {
 //		QsarModelsScript script = new QsarModelsScript("gsincl01");
 //		script.removeModelFromSet(6L, 7L);
 		
-//		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-//		QsarModelsScript script = new QsarModelsScript("gsincl01");
+		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+		QsarModelsScript script = new QsarModelsScript("gsincl01");
+		try {
+			script.uploadModelQmrf(1L, "data/dev_qsar/this_is_a_pdf.pdf");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 //		Model m = script.modelService.findById(1L);
 		
-		SplittingService sServ = new SplittingServiceImpl();
-		Splitting s = sServ.findByDatasetNameAndSplittingName("Water solubility OPERA", "Fake splitting!");
-		if (s==null) {
-			System.out.println("Dataset has not been split");
-		} else {
-			System.out.println(s.getName());
-		}
+//		SplittingService sServ = new SplittingServiceImpl();
+//		Splitting s = sServ.findByDatasetNameAndSplittingName("Water solubility OPERA", "Fake splitting!");
+//		if (s==null) {
+//			System.out.println("Dataset has not been split");
+//		} else {
+//			System.out.println(s.getName());
+//		}
 	}
 
 }
