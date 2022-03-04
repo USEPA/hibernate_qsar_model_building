@@ -19,10 +19,13 @@ import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelQmrf;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfService;
@@ -231,15 +234,61 @@ public class QsarModelsScript {
 		}
 	}
 	
+	void deleteModel(long modelID) {
+				
+		ModelQmrfService modelQmrfServiceImpl=new ModelQmrfServiceImpl();		
+		ModelQmrf modelQmrf=modelQmrfServiceImpl.findByModelId(modelID);		
+		if (modelQmrf!=null) {
+			modelQmrfServiceImpl.delete(modelQmrf);
+		} else {
+			System.out.println("Qmrf for "+modelID+" is null");
+		}
+		
+		ModelBytesService modelBytesService = new ModelBytesServiceImpl();
+		ModelBytes modelBytes = modelBytesService.findByModelId(modelID);
+		if (modelBytes!=null) {
+			modelBytesService.delete(modelBytes);
+		}
+		
+		ModelService modelService = new ModelServiceImpl();
+		Model model = modelService.findById(modelID);
+		modelService.delete(model);
+
+	}
+	
+	void deletePredictionReport() {
+		
+		ModelSetReportService m2=new ModelSetReportServiceImpl();
+		long modelSetID=2L;		
+		String datasetName="Data from LLNA from exp_prop, without eChemPortal external to LLNA TEST";
+		String descriptorSetName="T.E.S.T. 5.1";
+		String splittingName="RND_REPRESENTATIVE";
+		ModelSetReport modelSetReport=m2.findByModelSetIdAndModelData(modelSetID,datasetName,descriptorSetName,splittingName);
+		m2.delete(modelSetReport);
+
+		
+	}
 	public static void main(String[] args) {
 //		QsarModelsScript script = new QsarModelsScript("gsincl01");
 //		script.removeModelFromSet(6L, 7L);
 		
 //		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-		QsarModelsScript script = new QsarModelsScript("gsincl01");
+		QsarModelsScript script = new QsarModelsScript("tmarti02");
 		
-		script.downloadModelQmrf(1L, "data/dev_qsar/model_qmrfs");
-		script.downloadAllReportsForModelSet(1L, "data/dev_qsar/model_set_reports");
+//		script.addModelRangeToSet(145L, 148L, 2L);
+//		script.deletePredictionReport();
+		
+		for (Long num=145L;num<=148L;num++) script.deleteModel(num);
+//		run.deleteModel(128L);
+		
+		
+//		for (Long num=145L;num<=148L;num++) script.removeModelFromSet(num, 2L);
+		
+		
+//		script.downloadModelQmrf(1L, "data/dev_qsar/model_qmrfs");
+//		script.downloadAllReportsForModelSet(1L, "data/dev_qsar/model_set_reports");
+		
+//		script.addModelRangeToSet(151L, 152L, 2L);
 		
 //		try {
 //			script.uploadModelQmrf(1L, "data/dev_qsar/this_is_a_pdf.pdf");

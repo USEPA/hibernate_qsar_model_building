@@ -214,26 +214,14 @@ public class RunFromJava {
 
 	}
 
-	void deleteModel(long modelID) {
-		ModelBytesService modelBytesService = new ModelBytesServiceImpl();
-		ModelBytes modelBytes = modelBytesService.findByModelId(modelID);
-		if (modelBytes!=null) {
-			modelBytesService.delete(modelBytes);
-		}
-		
-		ModelService modelService = new ModelServiceImpl();
-		Model model = modelService.findById(modelID);
-		modelService.delete(model);
-
-	}
+	
 	
 	public static void main(String[] args) {
 
 		String lanId="tmarti02";
 		RunFromJava run=new RunFromJava();
 
-//		run.deleteModel(127L);
-//		if(true) return;
+		if(true) return;
 		
 		
 		//*****************************************************************************************
