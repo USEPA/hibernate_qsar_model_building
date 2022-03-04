@@ -22,6 +22,7 @@ public class ModelWebService extends WebService {
 		HttpResponse<byte[]> response = Unirest.post(server+":"+port+"/models/{qsar_method}/train")
 				.routeParam("qsar_method", qsarMethod)
 				.field("training_tsv", trainingSet)
+				.field("embedding_tsv", "")
 				.field("model_id", modelId)
 				.field("remove_log_p", String.valueOf(removeLogDescriptors))
 				.asBytes();
