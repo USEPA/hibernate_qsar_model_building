@@ -1,5 +1,7 @@
 package gov.epa.endpoints.reports;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -11,6 +13,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundServiceImpl;
@@ -58,7 +61,7 @@ public class ReportGenerator {
 			}
 		}
 		
-		List<DsstoxRecord> dsstoxRecords = dsstoxCompoundService.findAsDsstoxRecordsByDtxcidIn(allDtxcids);
+		List<DsstoxRecord> dsstoxRecords = getDsstoxRecordsFromDtxcids(allDtxcids);
 		Map<String, DsstoxRecord> mapDsstoxRecords = new HashMap<String, DsstoxRecord>();
 		for (DsstoxRecord dr:dsstoxRecords) {
 			if (allDtxcids.remove(dr.dsstoxCompoundId)) {
@@ -77,6 +80,25 @@ public class ReportGenerator {
 				}
 			}
 		}
+	}
+	
+	private List<DsstoxRecord> getDsstoxRecordsFromDtxcids(Collection<String> dtxcids) {
+		List<DsstoxRecord> dsstoxRecords = new ArrayList<DsstoxRecord>();
+		if (dtxcids.size() <= 1000) {
+			dsstoxRecords = dsstoxCompoundService.findAsDsstoxRecordsByDtxcidIn(dtxcids);
+		} else {
+			Set<String> subset = new HashSet<String>();
+			for (String dtxcid:dtxcids) {
+				subset.add(dtxcid);
+				if (subset.size()==1000) {
+					dsstoxRecords.addAll(getDsstoxRecordsFromDtxcids(subset));
+					subset = new HashSet<String>();
+				}
+			}
+			dsstoxRecords.addAll(getDsstoxRecordsFromDtxcids(subset));
+		}
+		
+		return dsstoxRecords;
 	}
 
 }
