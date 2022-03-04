@@ -78,8 +78,8 @@ public class OutlierReport {
 		String json=null;
 		
 		if (genOutliersJSON) {
-//			String server="http://localhost";
-			String server="http://v2626umcth819.rtord.epa.gov";//TODO 819 not working...
+			String server="http://localhost";
+//			String server="http://v2626umcth819.rtord.epa.gov";//TODO 819 not working...
 						              		
 			json=QueryOutlierDetectionAPI.callPythonOutlierDetection(tsv, false, server);		
 			FileWriter fw=new FileWriter(jsonFilePath);

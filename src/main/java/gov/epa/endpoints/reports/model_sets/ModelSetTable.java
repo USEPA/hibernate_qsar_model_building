@@ -10,23 +10,23 @@ import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit;
 import gov.epa.endpoints.reports.ModelMetadata;
 
-public class ModelSetTable {
-	
+public class ModelSetTable {	
+
 	public static class ModelSetTableRow {
 		Long propertyId;
-		String propertyName;
-		String propertyDescription;
+		public String propertyName;
+		public String propertyDescription;
 		String propertyType;
 		
 		Long datasetId;
-		String datasetName;
-		String datasetDescription;
-		String datasetUnitName;
+		public String datasetName;
+		public String datasetDescription;
+		public String datasetUnitName;
 		
-		String descriptorSetName;
-		String splittingName;
+		public String descriptorSetName;
+		public String splittingName;
 		
-		List<ModelMetadata> modelMetadata = new ArrayList<ModelMetadata>();
+		public List<ModelMetadata> modelMetadata = new ArrayList<ModelMetadata>();
 		
 		public ModelSetTableRow(Dataset dataset, String descriptorSetName, String splittingName) {
 			this.datasetId = dataset.getId();
@@ -60,11 +60,13 @@ public class ModelSetTable {
 			this.descriptorSetName = descriptorSetName;
 			this.splittingName = splittingName;
 		}
+
+		
 	}
 	
-	String modelSetName;
-	String modelSetDescription;
-	List<ModelSetTableRow> modelSetTableRows = new ArrayList<ModelSetTableRow>();
+	public String modelSetName;
+	public String modelSetDescription;
+	public List<ModelSetTableRow> modelSetTableRows = new ArrayList<ModelSetTableRow>();
 	
 	public ModelSetTable(String modelSetName, String modelSetDescription) {
 		this.modelSetName = modelSetName;

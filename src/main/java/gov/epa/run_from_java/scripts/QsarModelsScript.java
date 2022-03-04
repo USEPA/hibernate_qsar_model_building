@@ -112,7 +112,7 @@ public class QsarModelsScript {
 		modelInModelSetService.delete(modelInModelSet);
 	}
 	
-	public void uploadModelQmrf(Long modelId, String qmrfFilePath) throws IOException {
+	public void uploadModelQmrf(Long modelId, String qmrfFilePath) throws IOException, ConstraintViolationException {
 		byte[] bytes = Files.readAllBytes(Paths.get(qmrfFilePath));
 		Model model = modelService.findById(modelId);
 		
@@ -146,7 +146,7 @@ public class QsarModelsScript {
 	}
 	
 	public void uploadModelSetReport(Long modelSetId, String datasetName, String descriptorSetName, String splittingName, 
-			String reportFilePath) throws IOException {
+			String reportFilePath) throws IOException, ConstraintViolationException {
 		byte[] bytes = Files.readAllBytes(Paths.get(reportFilePath));
 		ModelSet modelSet = modelSetService.findById(modelSetId);
 		

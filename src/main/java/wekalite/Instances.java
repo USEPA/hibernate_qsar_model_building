@@ -74,7 +74,7 @@ public class Instances {
 			String del=",";
 			if (strTSV.contains("\t")) del="\t";
 
-			InputStream inputStream = new ByteArrayInputStream(strTSV.getFile());
+			InputStream inputStream = new ByteArrayInputStream(strTSV.getBytes());
 
 			CSVLoader atf = new CSVLoader();
 			Instances dataset=atf.getDatasetFromInputStream(inputStream, del);
