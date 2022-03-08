@@ -9,6 +9,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.JoinColumn;
+import javax.persistence.Lob;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -17,7 +18,6 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
@@ -33,7 +33,7 @@ public class ModelBytes {
 	@JoinColumn(name="fk_model_id")
 	private Model model;
 	
-	@Type(type="org.hibernate.type.BinaryType")
+	@Lob
 	@NotNull(message="Model data required")
 	@Column(name="bytes", length=32767)
 	private byte[] bytes;
