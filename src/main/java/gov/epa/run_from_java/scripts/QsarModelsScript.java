@@ -15,6 +15,7 @@ import javax.validation.ConstraintViolationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
@@ -36,8 +37,12 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
+import gov.epa.endpoints.models.ModelBuilder;
+import gov.epa.endpoints.models.ModelData;
+import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable;
 import gov.epa.endpoints.reports.model_sets.ModelSetTableGenerator;
+import gov.epa.web_services.ModelWebService;
 
 public class QsarModelsScript {
 	
@@ -268,6 +273,13 @@ public class QsarModelsScript {
 
 		
 	}
+	
+	public static ModelPrediction[] testExistingModel(Long existingModelId, String server, int port, String lanId) {
+		ModelWebService ws = new ModelWebService(server, port);
+		ModelBuilder mb = new ModelBuilder(ws, lanId);
+		return mb.rerunExistingModelPredictions(existingModelId);
+	}
+	
 	public static void main(String[] args) {
 //		QsarModelsScript script = new QsarModelsScript("gsincl01");
 //		script.removeModelFromSet(6L, 7L);

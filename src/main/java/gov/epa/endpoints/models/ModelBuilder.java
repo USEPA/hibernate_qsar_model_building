@@ -373,6 +373,24 @@ public class ModelBuilder {
 		return modelId;
 	}
 	
+	public ModelPrediction[] rerunExistingModelPredictions(Long modelId) {
+		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
+		Model model = modelBytes.getModel();
+		
+		ModelData data = initModelData(model.getDatasetName(), model.getDescriptorSetName(), model.getSplittingName(), false);
+		
+		byte[] bytes = modelBytes.getBytes();
+		String methodName = model.getMethod().getName();
+		String pythonMethodName = methodName.substring(0, methodName.indexOf("_"));
+		String strModelId = String.valueOf(modelId);
+		
+		modelWebService.callInit(bytes, pythonMethodName, strModelId).getBody();
+		String predictResponse = modelWebService.callPredict(data.predictionSetInstances, pythonMethodName, strModelId).getBody();
+		ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);
+		
+		return modelPredictions;
+	}
+	
 	public void listDescriptors(Long modelId) {
 		if (modelId==null) {
 			logger.error("Model with supplied parameters has not been built");
