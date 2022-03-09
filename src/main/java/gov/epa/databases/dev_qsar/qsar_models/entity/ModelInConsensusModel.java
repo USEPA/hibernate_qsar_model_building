@@ -1,19 +1,18 @@
 package gov.epa.databases.dev_qsar.qsar_models.entity;
 
 import java.util.Date;
-import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.OneToMany;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
@@ -21,27 +20,25 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
-@Table(name="methods", indexes={@Index(name="method_name_idx", columnList="name", unique=true)})
-public class Method {
+@Table(name="models_in_consensus_models", uniqueConstraints={@UniqueConstraint(columnNames = {"fk_consensus_model_id", "fk_model_id"})})
+public class ModelInConsensusModel {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
-
-	@NotBlank(message="Name required")
-	@Column(name="name", unique=true)
-	private String name;
 	
-	@NotBlank(message="Description required")
-	@Column(name="description", length=2047)
-	private String description;
+	@NotNull(message="Consensus model required")
+	@ManyToOne
+	@JoinColumn(name="fk_consensus_model_id")
+	private Model consensusModel;
 	
-	@Column(name="hyperparameters", length=2047)
-	private String hyperparameters;
+	@NotNull(message="Model required")
+	@ManyToOne
+	@JoinColumn(name="fk_model_id")
+	private Model model;
 	
-	@NotNull(message="Method type required")
-	@Column(name="is_binary")
-	private Boolean isBinary;
-
+	@Column(name="model_weight")
+	private Double weight;
+	
 	@Column(name="updated_at")
 	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
@@ -59,14 +56,19 @@ public class Method {
 	@Column(name="created_by")
 	private String createdBy;
 	
-	public Method() {}
+	public ModelInConsensusModel() {}
 	
-	public Method(String name, String description, String hyperparameters, Boolean isBinary, String createdBy) {
-		this.setName(name);
-		this.setDescription(description);
-		this.setHyperparameters(hyperparameters);
-		this.setIsBinary(isBinary);
-		this.setCreatedBy(createdBy);
+	public ModelInConsensusModel(Model model, Model consensusModel, Double weight, String createdBy) {
+		this.model = model;
+		this.consensusModel = consensusModel;
+		this.weight = weight;
+		this.createdBy = createdBy;
+	}
+	
+	public ModelInConsensusModel(Model model, Model consensusModel, String createdBy) {
+		this.model = model;
+		this.consensusModel = consensusModel;
+		this.createdBy = createdBy;
 	}
 
 	public Long getId() {
@@ -77,28 +79,28 @@ public class Method {
 		this.id = id;
 	}
 
-	public String getName() {
-		return name;
+	public Model getConsensusModel() {
+		return consensusModel;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setConsensusModel(Model consensusModel) {
+		this.consensusModel = consensusModel;
 	}
 
-	public String getDescription() {
-		return description;
+	public Model getModel() {
+		return model;
 	}
 
-	public void setDescription(String description) {
-		this.description = description;
+	public void setModel(Model model) {
+		this.model = model;
 	}
 
-	public String getHyperparameters() {
-		return hyperparameters;
+	public Double getWeight() {
+		return weight;
 	}
 
-	public void setHyperparameters(String hyperparameters) {
-		this.hyperparameters = hyperparameters;
+	public void setWeight(Double weight) {
+		this.weight = weight;
 	}
 
 	public Date getUpdatedAt() {
@@ -131,13 +133,5 @@ public class Method {
 
 	public void setCreatedBy(String createdBy) {
 		this.createdBy = createdBy;
-	}
-
-	public Boolean getIsBinary() {
-		return isBinary;
-	}
-
-	public void setIsBinary(Boolean isBinary) {
-		this.isBinary = isBinary;
 	}
 }

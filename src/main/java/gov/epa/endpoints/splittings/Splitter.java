@@ -4,10 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
@@ -41,25 +37,23 @@ public class Splitter {
 	private DataPointService dataPointService = new DataPointServiceImpl();
 	private DataPointInSplittingService dataPointInSplittingService = new DataPointInSplittingServiceImpl();
 	
-	private static Logger logger = LogManager.getLogger(Splitter.class);
-	
 	public Splitter(SplittingWebService splittingWebService, String lanId) {
 		// Set logging providers for Hibernate and MChange
 		System.setProperty("org.jboss.logging.provider", "log4j");
 		System.setProperty("com.mchange.v2.log.MLog", "log4j");
 		
 		// Reduce logging output from Apache, Hibernate, and C3P0
-		String[] loggerNames = {"org.apache.http", "org.hibernate", "com.mchange"};
-		for (String loggerName:loggerNames) {
-			Logger thisLogger = LogManager.getLogger(loggerName);
-			thisLogger.setLevel(Level.ERROR);
-		}
+//		String[] loggerNames = {"org.apache.http", "org.hibernate", "com.mchange"};
+//		for (String loggerName:loggerNames) {
+//			Logger thisLogger = LogManager.getLogger(loggerName);
+//			thisLogger.setLevel(Level.ERROR);
+//		}
 		
 		// Make sure Unirest is configured
 		try {
 			Unirest.config().followRedirects(true).socketTimeout(000).connectTimeout(000);
 		} catch (Exception e) {
-			logger.debug("Unirest already configured, ignoring");
+//			logger.debug("Unirest already configured, ignoring");
 		}
 		
 		this.splittingWebService = splittingWebService;

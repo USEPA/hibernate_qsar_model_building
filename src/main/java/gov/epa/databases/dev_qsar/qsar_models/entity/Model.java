@@ -6,6 +6,7 @@ import java.util.List;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -77,6 +78,9 @@ public class Model {
 	
 	@OneToMany(mappedBy="model", cascade=CascadeType.ALL)
 	private List<Prediction> predictions;
+	
+	@OneToMany(mappedBy="consensusModel", fetch=FetchType.EAGER, cascade=CascadeType.ALL)
+	private List<ModelInConsensusModel> modelsInConsensusModel;
 	
 	public Model() {}
 	
@@ -176,5 +180,9 @@ public class Model {
 
 	public void setDescriptorEmbedding(DescriptorEmbedding descriptorEmbedding) {
 		this.descriptorEmbedding = descriptorEmbedding;
+	}
+
+	public List<ModelInConsensusModel> getModelsInConsensusModel() {
+		return modelsInConsensusModel;
 	}
 }

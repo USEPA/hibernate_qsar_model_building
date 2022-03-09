@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.log4j.BasicConfigurator;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -240,8 +238,6 @@ public class PredictionReportGenerator extends ReportGenerator {
 	
 	
 	public static void main(String[] args) {
-		BasicConfigurator.configure();
-
 		PredictionReportGenerator gen = new PredictionReportGenerator();
 		gen.createAllReports();
 		

@@ -125,7 +125,7 @@ public class ExpPropData {
 				sourceChemical = sourceChemicalService.create(sourceChemical);
 			} else {
 				sourceChemical = dbSourceChemical;
-				ExperimentalRecordLoader.logger.trace("Found source chemical: " + sourceChemical.generateSrcChemId());
+//				ExperimentalRecordLoader.logger.trace("Found source chemical: " + sourceChemical.generateSrcChemId());
 			}
 			
 			propertyValue.setSourceChemical(sourceChemical);

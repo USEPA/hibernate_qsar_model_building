@@ -13,10 +13,6 @@ import java.util.Set;
 
 import javax.validation.ConstraintViolationException;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -95,9 +91,6 @@ public class ChemPropLoader {
 			};
 	
 	public ChemPropLoader() {
-		Logger apacheLogger = LogManager.getLogger("org.apache.http");
-		apacheLogger.setLevel(Level.WARN);
-		
 		init();
 	}
 	

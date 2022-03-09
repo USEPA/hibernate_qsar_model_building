@@ -18,7 +18,7 @@ import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportMetadata;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
-import gov.epa.run_from_java.RunFromJava;
+import gov.epa.run_from_java.scripts.ReportGenerationScript;
 import gov.epa.util.wekalite.Instances;
 
 
@@ -320,7 +320,7 @@ public class GenerateWebTestReport {
 		
 		if (genReport) {
 			//Create report as json file by querying the postgres db: (takes time- should use storeDataSetData to cache it)
-			predictionReport=RunFromJava.reportAllPredictions(datasetName, descriptorSet,splittingName,modelSetName);
+			predictionReport=ReportGenerationScript.reportAllPredictions(datasetName, descriptorSet,splittingName,modelSetName);
 		} else {
 			//Load report from json file:
 			predictionReport=loadDataSetFromJson(filepathReport);	

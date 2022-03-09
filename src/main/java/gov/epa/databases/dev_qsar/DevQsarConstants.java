@@ -144,6 +144,7 @@ public class DevQsarConstants {
 	public static final String SVM = "svm";
 	public static final String RF = "rf";
 	public static final String DNN = "dnn";
+	public static final String CONSENSUS = "consensus";
 	
 	// Statistic names in qsar_models database
 	public static final String Q2_TEST = "Q2_Test";

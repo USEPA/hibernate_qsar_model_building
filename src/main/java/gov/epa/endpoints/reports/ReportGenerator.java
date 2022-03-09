@@ -9,11 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-
-import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundServiceImpl;
@@ -33,10 +28,10 @@ public class ReportGenerator {
 		
 		// Reduce logging output from Apache, Hibernate, and C3P0
 		String[] loggerNames = {"org.apache.http", "org.hibernate", "com.mchange"};
-		for (String loggerName:loggerNames) {
-			Logger thisLogger = LogManager.getLogger(loggerName);
-			thisLogger.setLevel(Level.ERROR);
-		}
+//		for (String loggerName:loggerNames) {
+//			Logger thisLogger = LogManager.getLogger(loggerName);
+//			thisLogger.setLevel(Level.ERROR);
+//		}
 		
 		// Make sure Unirest is configured
 		try {

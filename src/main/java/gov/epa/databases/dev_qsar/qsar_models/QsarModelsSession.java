@@ -24,6 +24,7 @@ public class QsarModelsSession {
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelQmrf.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelInConsensusModel.class);
         	
         	config.setProperty("hibernate.connection.driver_class", "org.postgresql.Driver");
         	

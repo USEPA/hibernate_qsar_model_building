@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_models.service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -37,12 +38,12 @@ public class ModelServiceImpl implements ModelService {
 		return model;
 	}
 	
-	public List<Model> findByIdIn(List<Long> modelIds) {
+	public List<Model> findByIdIn(Collection<Long> modelIds) {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
 		return findByIdIn(modelIds, session);
 	}
 	
-	public List<Model> findByIdIn(List<Long> modelIds, Session session) {
+	public List<Model> findByIdIn(Collection<Long> modelIds, Session session) {
 		Transaction t = session.beginTransaction();
 		ModelDao modelDao = new ModelDaoImpl();
 		List<Model> models = modelDao.findByIdIn(modelIds, session);

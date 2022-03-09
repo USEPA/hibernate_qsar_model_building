@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_models.service;
 
+import java.util.Collection;
 import java.util.List;
 
 import javax.validation.ConstraintViolationException;
@@ -18,9 +19,9 @@ public interface ModelService {
 	
 	public List<Model> getAll(Session session);
 	
-	public List<Model> findByIdIn(List<Long> modelIds);
+	public List<Model> findByIdIn(Collection<Long> modelIds);
 	
-	public List<Model> findByIdIn(List<Long> modelIds, Session session);
+	public List<Model> findByIdIn(Collection<Long> modelIds, Session session);
 	
 	public List<Model> findByIdInRangeInclusive(Long minModelId, Long maxModelId);
 	

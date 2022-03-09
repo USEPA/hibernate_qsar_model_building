@@ -1,9 +1,5 @@
 package gov.epa.util;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-
 import com.epam.indigo.Indigo;
 import com.epam.indigo.IndigoException;
 import com.epam.indigo.IndigoInchi;
@@ -14,7 +10,7 @@ import uk.ac.cam.ch.wwmm.opsin.OpsinResult;
 
 public class StructureUtil {
 	
-	private static final Logger opsinLogger = LogManager.getLogger("uk.ac.cam.ch.wwmm.opsin");
+//	private static final Logger opsinLogger = LogManager.getLogger("uk.ac.cam.ch.wwmm.opsin");
 	
 	public static class SimpleOpsinResult {
 		public String smiles;
@@ -53,7 +49,7 @@ public class StructureUtil {
 			return null;
 		}
 		
-		opsinLogger.setLevel(Level.OFF);
+//		opsinLogger.setLevel(Level.OFF);
 		NameToStructure nts = NameToStructure.getInstance();
 		OpsinResult or = nts.parseChemicalName(chemicalName);
 		return SimpleOpsinResult.fromOpsinResult(or);

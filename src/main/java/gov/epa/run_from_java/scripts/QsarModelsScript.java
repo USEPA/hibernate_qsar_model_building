@@ -32,6 +32,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.models.ModelPrediction;
+import gov.epa.endpoints.models.WebServiceModelBuilder;
 import gov.epa.web_services.ModelWebService;
 import kong.unirest.Unirest;
 
@@ -273,7 +274,7 @@ public class QsarModelsScript {
 	
 	public static ModelPrediction[] testExistingModel(Long existingModelId, String server, int port, String lanId) {
 		ModelWebService ws = new ModelWebService(server, port);
-		ModelBuilder mb = new ModelBuilder(ws, lanId);
+		WebServiceModelBuilder mb = new WebServiceModelBuilder(ws, lanId);
 		return mb.rerunExistingModelPredictions(existingModelId);
 	}
 	

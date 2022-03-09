@@ -10,10 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -57,14 +53,8 @@ public class ExperimentalRecordLoader {
 			.serializeSpecialFloatingPointValues()
 			.create();
 	
-	static final Logger logger = LogManager.getLogger(ExperimentalRecordLoader.class);
-	
 	public ExperimentalRecordLoader(String lanId) {
 		this.lanId = lanId;
-		
-		Logger apacheLogger = LogManager.getLogger("org.apache.http");
-		apacheLogger.setLevel(Level.WARN);
-		
 		mapTables();
 	}
 	
@@ -146,12 +136,12 @@ public class ExperimentalRecordLoader {
 					countSuccess++;
 				} else {
 					failedRecords.add(rec);
-					logger.warn(rec.id_physchem + ": Loading failed");
+//					logger.warn(rec.id_physchem + ": Loading failed");
 					countFailure++;
 				}
 			} catch (Exception e) {
 				failedRecords.add(rec);
-				logger.warn(rec.id_physchem + ": Loading failed with exception: " + e.getMessage());
+//				logger.warn(rec.id_physchem + ": Loading failed with exception: " + e.getMessage());
 				countFailure++;
 			}
 			

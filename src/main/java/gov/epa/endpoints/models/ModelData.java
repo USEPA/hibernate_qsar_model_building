@@ -2,7 +2,6 @@ package gov.epa.endpoints.models;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
@@ -28,7 +27,6 @@ public class ModelData {
 	// Set by querying from qsar_datasets and qsar_descriptors using ModelBuilder.initInstances()
 	String trainingSetInstances;
 	String predictionSetInstances;
-	Double meanExpTraining;
 	
 	public ModelData(String datasetName, String descriptorSetName, String splittingName, boolean removeLogDescriptors) {
 		this.datasetName = datasetName;
@@ -48,8 +46,6 @@ public class ModelData {
 		StringBuilder sbOverall = new StringBuilder(instanceHeader);
 		StringBuilder sbTraining = new StringBuilder(instanceHeader);
 		StringBuilder sbPrediction = new StringBuilder(instanceHeader);
-		int countTraining = 0;
-		this.meanExpTraining = 0.0;
 		for (String smiles:dataPointsInSplittingMap.keySet()) {
 			DataPointInSplitting dpis = dataPointsInSplittingMap.get(smiles);
 			DataPoint dp = dpis.getDataPoint();
@@ -62,8 +58,6 @@ public class ModelData {
 					Integer splitNum = dpis.getSplitNum();
 					if (splitNum==DevQsarConstants.TRAIN_SPLIT_NUM) {
 						sbTraining.append(instance);
-						this.meanExpTraining += dp.getQsarPropertyValue();
-						countTraining++;
 					} else if (splitNum==DevQsarConstants.TEST_SPLIT_NUM) {
 						sbPrediction.append(instance);
 					}
@@ -73,7 +67,6 @@ public class ModelData {
 		
 		this.trainingSetInstances = sbTraining.toString();
 		this.predictionSetInstances = sbPrediction.toString();
-		this.meanExpTraining /= (double) countTraining;
 	}
 	
 	public static String generateInstancesWithoutSplitting(List<DataPoint> dataPoints, List<DescriptorValues> descriptorValues,
