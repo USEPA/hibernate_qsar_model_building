@@ -1,4 +1,4 @@
-package wekalite;
+package gov.epa.util.wekalite;
 
 import java.io.File;
 import java.util.ArrayList;

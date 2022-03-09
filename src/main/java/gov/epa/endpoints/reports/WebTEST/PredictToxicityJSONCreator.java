@@ -15,8 +15,8 @@ import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDa
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportMetadata;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelStatistic;
-import wekalite.Instance;
-import wekalite.Instances;
+import gov.epa.util.wekalite.Instance;
+import gov.epa.util.wekalite.Instances;
 
 import java.text.DecimalFormat;
 //

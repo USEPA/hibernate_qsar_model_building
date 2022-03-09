@@ -15,13 +15,10 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.PredictionReportGenerator;
 import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelModelStatisticsOld;
-import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelPredictionReportGenerator;
 import gov.epa.web_services.ModelWebService;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -57,7 +54,7 @@ public class RunFromJava {
 	 * @param methodName
 	 * @param lanId
 	 */
-	public void buildModel(String server,String port, String modelWsServer,int modelWsPort,String datasetName,String descriptorSetName,
+	public static void buildModel(String server,String port, String modelWsServer,int modelWsPort,String datasetName,String descriptorSetName,
 			String splittingName, boolean removeLogDescriptors,String methodName,String lanId) {
 
 		System.out.println(server+":"+port+"/models/build");
@@ -95,7 +92,7 @@ public class RunFromJava {
 	 * @param methodName
 	 * @param lanId
 	 */
-	public void buildModel(String modelWsServer,int modelWsPort,String datasetName,String descriptorSetName,
+	public static void buildModel(String modelWsServer,int modelWsPort,String datasetName,String descriptorSetName,
 			String splittingName, boolean removeLogDescriptors,String methodName,String lanId) {
 
 		System.out.println("Building "+methodName+" model for "+datasetName);
@@ -114,7 +111,7 @@ public class RunFromJava {
 
 	}
 	
-	public void listDescriptors(String modelWsServer,int modelWsPort,Long modelId,String lanId) {
+	public static void listDescriptors(String modelWsServer,int modelWsPort,Long modelId,String lanId) {
 		
 		if (!modelWsServer.startsWith("http://")) {
 			modelWsServer = "http://" + modelWsServer;
@@ -124,8 +121,6 @@ public class RunFromJava {
 		ModelBuilder mb = new ModelBuilder(modelWs, lanId);
 		mb.listDescriptors(modelId);
 	}
-
-
 
 	private static void writeReport(String datasetName, String descriptorSetName, PredictionReport report) {
 		String filePath = "data/reports/"+ datasetName + "_" + descriptorSetName + "_PredictionReport.json";
@@ -162,7 +157,7 @@ public class RunFromJava {
 	}
 
 
-	public void reportAllPredictions(Vector<String> datasetNames,String descriptorSetName,String splittingName,String modelSetName) {
+	public static void reportAllPredictions(Vector<String> datasetNames,String descriptorSetName,String splittingName,String modelSetName) {
 		for (String datasetName:datasetNames) {
 			reportAllPredictions(datasetName, descriptorSetName,splittingName,modelSetName);
 		}
@@ -199,7 +194,7 @@ public class RunFromJava {
 		return sets;
 	}
 
-	void testInit(String modelWsServer,int modelWsPort,String methodName,long modelID) {
+	static void testInit(String modelWsServer,int modelWsPort,String methodName,long modelID) {
 
 		ModelBytesService modelBytesService = new ModelBytesServiceImpl();
 		
@@ -288,8 +283,8 @@ public class RunFromJava {
 
 		// generate excel prediction reports //
 		
-		ExcelPredictionReportGenerator per = ExcelPredictionReportGenerator.prepareReportFactory("Water solubility OPERA_T.E.S.T. 5.1_OPERA_PredictionReport.json","data\\ExcelReports");
-		per.generate(per.wb);
+//		ExcelPredictionReportGenerator per = ExcelPredictionReportGenerator.prepareReportFactory("Water solubility OPERA_T.E.S.T. 5.1_OPERA_PredictionReport.json","data\\ExcelReports");
+//		per.generate(per.wb);
 		
 		// generate full model database report //
 		ExcelModelStatisticsOld ems = ExcelModelStatisticsOld.prepareFactory("data/ExcelReports");

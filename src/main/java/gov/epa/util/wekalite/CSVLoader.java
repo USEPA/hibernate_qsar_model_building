@@ -1,4 +1,4 @@
-package wekalite;
+package gov.epa.util.wekalite;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;

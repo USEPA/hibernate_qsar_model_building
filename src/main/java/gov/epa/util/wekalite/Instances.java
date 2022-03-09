@@ -1,4 +1,4 @@
-package wekalite;
+package gov.epa.util.wekalite;
 
 
 import java.util.Hashtable;
@@ -69,7 +69,7 @@ public class Instances {
 	 * @return
 	 * @throws IOException
 	 */
-	public static wekalite.Instances instancesFromString(String strTSV)  {
+	public static gov.epa.util.wekalite.Instances instancesFromString(String strTSV)  {
 		try {
 			String del=",";
 			if (strTSV.contains("\t")) del="\t";

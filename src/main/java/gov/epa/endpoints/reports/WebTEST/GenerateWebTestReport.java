@@ -19,7 +19,7 @@ import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDa
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportMetadata;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
 import gov.epa.run_from_java.RunFromJava;
-import wekalite.Instances;
+import gov.epa.util.wekalite.Instances;
 
 
 public class GenerateWebTestReport {

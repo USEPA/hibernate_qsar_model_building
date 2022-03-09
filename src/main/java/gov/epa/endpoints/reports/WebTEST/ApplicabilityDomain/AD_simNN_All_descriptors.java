@@ -6,9 +6,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
 
-
-import wekalite.Instance;
-import wekalite.Instances;
+import gov.epa.util.wekalite.Instance;
+import gov.epa.util.wekalite.Instances;
 
 public class AD_simNN_All_descriptors {
 
@@ -23,7 +22,7 @@ public class AD_simNN_All_descriptors {
 	 * @return
 	 */
 
-	static boolean calculateAD_Fixed_Cutoff_wekalite(wekalite.Instance testInstance,wekalite.Instances instancesTraining,String simMeasure) {
+	static boolean calculateAD_Fixed_Cutoff_wekalite(gov.epa.util.wekalite.Instance testInstance,gov.epa.util.wekalite.Instances instancesTraining,String simMeasure) {
 		List<Analog>analogsTraining=AnalogFinder.findAnalogsWekalite(testInstance, instancesTraining, countNeighbors, 0, true, simMeasure);
 		double avgSim=0;
 		for (Analog analog:analogsTraining) {

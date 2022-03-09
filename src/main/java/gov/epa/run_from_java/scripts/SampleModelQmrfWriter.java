@@ -21,7 +21,7 @@ import gov.epa.endpoints.reports.model_sets.ModelSetTableGenerator;
 import gov.epa.util.FileUtils;
 import gov.epa.util.HtmlUtils;
 
-public class GenerateSampleFiles {
+public class SampleModelQmrfWriter {
 
 	public ModelSetTable getModelsInModelSet(long modelSet) {
 		
@@ -214,7 +214,7 @@ public class GenerateSampleFiles {
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		GenerateSampleFiles g=new GenerateSampleFiles();		
+		SampleModelQmrfWriter g=new SampleModelQmrfWriter();		
 		
 //		g.generateSampleQMRFs(1L);
 		g.generateSamplePredictionReports(2L);

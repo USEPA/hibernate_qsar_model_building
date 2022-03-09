@@ -12,13 +12,6 @@ import java.util.List;
 
 import javax.validation.ConstraintViolationException;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
-import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingService;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
@@ -38,11 +31,9 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.models.ModelBuilder;
-import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.models.ModelPrediction;
-import gov.epa.endpoints.reports.model_sets.ModelSetTable;
-import gov.epa.endpoints.reports.model_sets.ModelSetTableGenerator;
 import gov.epa.web_services.ModelWebService;
+import kong.unirest.Unirest;
 
 public class QsarModelsScript {
 	
@@ -56,6 +47,12 @@ public class QsarModelsScript {
 	
 	public QsarModelsScript(String lanId) {
 		this.lanId = lanId;
+		
+		try {
+			Unirest.config().followRedirects(true).socketTimeout(000).connectTimeout(000);
+		} catch (Exception e) {
+			// Ignore
+		}
 	}
 	
 	public void createModelSet(String name, String description) throws ConstraintViolationException {

@@ -12,7 +12,7 @@ import java.util.Vector;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import wekalite.*;
+import gov.epa.util.wekalite.*;
 
 
 /**
@@ -185,7 +185,7 @@ public class AnalogFinder{
 
 	
 
-	public static List<Analog> findAnalogsWekalite(wekalite.Instance chemical,wekalite.Instances trainingSet, int MaxCount,double SCmin, boolean excludeID, String sim) {
+	public static List<Analog> findAnalogsWekalite(gov.epa.util.wekalite.Instance chemical,gov.epa.util.wekalite.Instances trainingSet, int MaxCount,double SCmin, boolean excludeID, String sim) {
 
 		Hashtable<Double,Vector<Instance>> ht = new Hashtable<>();//Store instances by similarity, can have multiple instances with same similarity
 
@@ -268,7 +268,7 @@ public class AnalogFinder{
 
 	
 
-	private static double CalculateCosineCoefficientWekalite(wekalite.Instance c1,wekalite.Instance c2,double [] Mean,double [] StdDev) {
+	private static double CalculateCosineCoefficientWekalite(gov.epa.util.wekalite.Instance c1,gov.epa.util.wekalite.Instance c2,double [] Mean,double [] StdDev) {
 		
 		double []val1=new double[c1.numAttributes()];
 		double []val2=new double[c1.numAttributes()];
@@ -282,7 +282,7 @@ public class AnalogFinder{
 
 	}
 	
-	private static double CalculateTanimotoCoefficientWekalite(wekalite.Instance c1,wekalite.Instance c2,double [] Mean,double [] StdDev) {
+	private static double CalculateTanimotoCoefficientWekalite(gov.epa.util.wekalite.Instance c1,gov.epa.util.wekalite.Instance c2,double [] Mean,double [] StdDev) {
 		double []val1=new double[c1.numAttributes()];
 		double []val2=new double[c1.numAttributes()];
 
