@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
-import gov.epa.endpoints.models.ModelBuilder;
+import gov.epa.endpoints.models.WebServiceModelBuilder;
 import gov.epa.endpoints.reports.descriptors.DescriptorReport;
 import gov.epa.endpoints.reports.descriptors.DescriptorReportGenerator;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable;
@@ -41,7 +41,7 @@ public class DevQsarController {
 		}
 		
 		ModelWebService modelWs = new ModelWebService(modelWsServer, modelWsPort);
-		ModelBuilder mb = new ModelBuilder(modelWs, lanId);
+		WebServiceModelBuilder mb = new WebServiceModelBuilder(modelWs, lanId);
 		Long modelId = mb.build(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName);
 		
 		PredictionReportGenerator gen = new PredictionReportGenerator();

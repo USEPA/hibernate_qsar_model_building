@@ -13,9 +13,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -171,9 +168,6 @@ public class ExcelModelStatisticsOld {
 		DatasetService datasetService = new DatasetServiceImpl();
 		ModelService modelService = new ModelServiceImpl();
 		ModelStatisticService modelStatisticService = new ModelStatisticServiceImpl();
-
-		Logger apacheLogger = LogManager.getLogger("org.apache.http");
-		apacheLogger.setLevel(Level.WARN);
 
 		List<Model> allModels = modelService.getAll();
 		
