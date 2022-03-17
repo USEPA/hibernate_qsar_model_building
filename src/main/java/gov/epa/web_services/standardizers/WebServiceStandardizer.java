@@ -25,7 +25,7 @@ public class WebServiceStandardizer extends Standardizer {
 
 	@Override
 	public StandardizeResponseWithStatus callStandardize(String smiles) {
-		HttpResponse<StandardizeResponse> response = Unirest.get(ws.server+":"+ws.port+"/standardize")
+		HttpResponse<StandardizeResponse> response = Unirest.get(ws.address+"/standardize")
 				.queryString("smiles", smiles)
 				.asObject(StandardizeResponse.class);
 		
@@ -35,7 +35,7 @@ public class WebServiceStandardizer extends Standardizer {
 	@Override
 	public BatchStandardizeResponseWithStatus callBatchStandardize(List<String> smiles) {
 		String smilesString = String.join(",", smiles);
-		HttpResponse<BatchStandardizeResponse> response = Unirest.get(ws.server+":"+ws.port+"/batch/standardize/")
+		HttpResponse<BatchStandardizeResponse> response = Unirest.get(ws.address+"/batch/standardize/")
 				.queryString("smiles", smilesString)
 				.asObject(BatchStandardizeResponse.class);
 		
@@ -44,7 +44,7 @@ public class WebServiceStandardizer extends Standardizer {
 	
 	@Override
 	public BatchStandardizeResponseWithStatus callBatchStandardize(String filePath) {
-		HttpResponse<BatchStandardizeResponse> response = Unirest.post(ws.server+":"+ws.port+"/batch/standardize/")
+		HttpResponse<BatchStandardizeResponse> response = Unirest.post(ws.address+"/batch/standardize/")
 				.field("file", new File(filePath))
 				.header("Accept", "application/json")
 				.asObject(BatchStandardizeResponse.class);

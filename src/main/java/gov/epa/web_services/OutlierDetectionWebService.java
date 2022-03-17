@@ -21,7 +21,7 @@ public class OutlierDetectionWebService extends WebService {
 	}
 
 	public HttpResponse<OutlierDetectionCalculationResponse[]> callCalculation(String tsv, boolean removeLogP) {
-		HttpResponse<OutlierDetectionCalculationResponse[]> response = Unirest.get(server+":"+port+"/calculation")
+		HttpResponse<OutlierDetectionCalculationResponse[]> response = Unirest.get(address+"/calculation")
 				.queryString("tsv", tsv)
 				.queryString("remove_log_p", removeLogP)
 				.asObject(OutlierDetectionCalculationResponse[].class);
