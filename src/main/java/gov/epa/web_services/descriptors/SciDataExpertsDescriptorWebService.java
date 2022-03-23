@@ -42,14 +42,26 @@ public class SciDataExpertsDescriptorWebService extends WebService {
 		public Integer radius;
 		public String type;
 	}
+	
+	public static class SciDataExpertsDescriptorRequest {
+		public List<String> chemicals;
+		public String type;
+		public Map<String, Object> options;
+		
+		public SciDataExpertsDescriptorRequest(List<String> chemicals, String type, Map<String, Object> options) {
+			this.chemicals = chemicals;
+			this.type = type;
+			this.options = options;
+		}
+	}
 
 	public SciDataExpertsDescriptorWebService(String url) {
 		super(url);
 	}
 	
 	public HttpResponse<SciDataExpertsDescriptorResponse> calculateDescriptors(String smiles, String descriptorName) {
-		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.get(address + "/api/{descriptorName}")
-				.routeParam("descriptorName", descriptorName)
+		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.get(address + "/api/descriptors")
+				.queryString("type", descriptorName)
 				.queryString("smiles", smiles)
 				.asObject(SciDataExpertsDescriptorResponse.class);
 		
@@ -58,10 +70,35 @@ public class SciDataExpertsDescriptorWebService extends WebService {
 	
 	public HttpResponse<SciDataExpertsDescriptorResponse> calculateDescriptorsWithOptions(String smiles, String descriptorName, 
 			Map<String, Object> options) {
-		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.get(address + "/api/{descriptorName}")
-				.routeParam("descriptorName", descriptorName)
+		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.get(address + "/api/descriptors")
+				.queryString("type", descriptorName)
 				.queryString("smiles", smiles)
 				.queryString(options)
+				.asObject(SciDataExpertsDescriptorResponse.class);
+		
+		return response;
+	}
+	
+	public HttpResponse<SciDataExpertsDescriptorResponse> calculateDescriptors(List<String> smiles, String descriptorName) {
+		SciDataExpertsDescriptorRequest request = new SciDataExpertsDescriptorRequest(smiles, descriptorName, null);
+		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.post(address + "/api/descriptors")
+				.header("Content-Type", "application/json")
+				.header("Accept", "*/*")
+				.header("Accept-Encoding", "gzip, deflate, br")
+				.body(request)
+				.asObject(SciDataExpertsDescriptorResponse.class);
+		
+		return response;
+	}
+	
+	public HttpResponse<SciDataExpertsDescriptorResponse> calculateDescriptorsWithOptions(List<String> smiles, String descriptorName, 
+			Map<String, Object> options) {
+		SciDataExpertsDescriptorRequest request = new SciDataExpertsDescriptorRequest(smiles, descriptorName, options);
+		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.post(address + "/api/descriptors")
+				.header("Content-Type", "application/json")
+				.header("Accept", "*/*")
+				.header("Accept-Encoding", "gzip, deflate, br")
+				.body(request)
 				.asObject(SciDataExpertsDescriptorResponse.class);
 		
 		return response;
