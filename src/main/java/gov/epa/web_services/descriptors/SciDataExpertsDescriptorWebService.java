@@ -1,6 +1,7 @@
 package gov.epa.web_services.descriptors;
 
 import java.util.List;
+import java.util.Map;
 
 import gov.epa.web_services.WebService;
 import kong.unirest.HttpResponse;
@@ -16,6 +17,7 @@ public class SciDataExpertsDescriptorWebService extends WebService {
 	}
 	
 	public static class SciDataExpertsChemical {
+		public Integer ordinal;
 		public List<Double> descriptors;
 		public String id;
 		public String inchi;
@@ -29,13 +31,16 @@ public class SciDataExpertsDescriptorWebService extends WebService {
 	}
 	
 	public static class SciDataExpertsDescriptorOptions {
-		public boolean headers;
-		public boolean compute2D;
-		public boolean compute3D;
-		public boolean computeFingerprints;
-		public boolean removeSalt;
-		public boolean standardizeNitro;
-		public boolean standardizeTautomers;
+		public Boolean headers;
+		public Boolean compute2D;
+		public Boolean compute3D;
+		public Boolean computeFingerprints;
+		public Boolean removeSalt;
+		public Boolean standardizeNitro;
+		public Boolean standardizeTautomers;
+		public Integer bits;
+		public Integer radius;
+		public String type;
 	}
 
 	public SciDataExpertsDescriptorWebService(String url) {
@@ -46,6 +51,17 @@ public class SciDataExpertsDescriptorWebService extends WebService {
 		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.get(address + "/api/{descriptorName}")
 				.routeParam("descriptorName", descriptorName)
 				.queryString("smiles", smiles)
+				.asObject(SciDataExpertsDescriptorResponse.class);
+		
+		return response;
+	}
+	
+	public HttpResponse<SciDataExpertsDescriptorResponse> calculateDescriptorsWithOptions(String smiles, String descriptorName, 
+			Map<String, Object> options) {
+		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.get(address + "/api/{descriptorName}")
+				.routeParam("descriptorName", descriptorName)
+				.queryString("smiles", smiles)
+				.queryString(options)
 				.asObject(SciDataExpertsDescriptorResponse.class);
 		
 		return response;

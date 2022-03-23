@@ -16,7 +16,6 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
-import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingService;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
