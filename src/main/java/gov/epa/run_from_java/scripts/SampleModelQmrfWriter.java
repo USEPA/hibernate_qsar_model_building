@@ -148,8 +148,7 @@ public class SampleModelQmrfWriter {
 			for (ModelMetadata modelMetadata:modelSetTableRow.modelMetadata) {
 				
 				
-				String htmlPath = downloadFolder + File.separator + String.join("_", modelSetTableRow.datasetName, 
-						modelSetTableRow.descriptorSetName, 
+				String htmlPath = downloadFolder + File.separator + String.join("_", modelSetTableRow.datasetName,
 						modelSetTableRow.splittingName,
 						modelMetadata.qsarMethodName) 
 						+ ".pdf";
