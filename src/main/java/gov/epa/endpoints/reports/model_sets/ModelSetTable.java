@@ -23,12 +23,11 @@ public class ModelSetTable {
 		public String datasetDescription;
 		public String datasetUnitName;
 		
-		public String descriptorSetName;
 		public String splittingName;
 		
 		public List<ModelMetadata> modelMetadata = new ArrayList<ModelMetadata>();
 		
-		public ModelSetTableRow(Dataset dataset, String descriptorSetName, String splittingName) {
+		public ModelSetTableRow(Dataset dataset, String splittingName) {
 			this.datasetId = dataset.getId();
 			this.datasetName = dataset.getName();
 			this.datasetDescription = dataset.getDescription();
@@ -57,7 +56,6 @@ public class ModelSetTable {
 			Unit unit = dataset.getUnit();
 			this.datasetUnitName = unit.getName();
 			
-			this.descriptorSetName = descriptorSetName;
 			this.splittingName = splittingName;
 		}
 
