@@ -124,7 +124,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 		}
 		
 		PredictionReportModelMetadata modelMetadata = new PredictionReportModelMetadata(model.getId(), model.getMethod().getName(),
-				model.getMethod().getDescription());
+				model.getMethod().getDescription(), model.getDescriptorSetName());
 		List<ModelStatistic> modelStatistics = modelStatisticService.findByModelId(model.getId());
 		modelMetadata.predictionReportModelStatistics = modelStatistics.stream()
 				.map(ms -> new PredictionReportModelStatistic(ms.getStatistic().getName(), ms.getStatisticValue()))

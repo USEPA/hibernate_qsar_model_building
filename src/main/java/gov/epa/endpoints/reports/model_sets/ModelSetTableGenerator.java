@@ -47,7 +47,7 @@ public class ModelSetTableGenerator {
 			}
 			
 			Method method = model.getMethod();
-			row.modelMetadata.add(new ModelMetadata(model.getId(), method.getName(), method.getDescription()));
+			row.modelMetadata.add(new ModelMetadata(model.getId(), method.getName(), method.getDescription(), model.getDescriptorSetName()));
 			rowMap.put(mapId, row);
 		}
 		
