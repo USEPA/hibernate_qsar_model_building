@@ -41,7 +41,6 @@ public class SampleReportWriter {
 			
 			String filepath = downloadFolder + File.separator + String.join("_", modelSetName,
 					modelSetTableRow.datasetName, 
-					modelSetTableRow.descriptorSetName, 
 					modelSetTableRow.splittingName)
 					+ ".xlsx";
 			
@@ -56,8 +55,7 @@ public class SampleReportWriter {
 			
 			try {
 				
-				ModelSetReport msr=m2.findByModelSetIdAndModelData(modelSetID, modelSetTableRow.datasetName, 
-						modelSetTableRow.descriptorSetName,modelSetTableRow.splittingName);
+				ModelSetReport msr=m2.findByModelSetIdAndModelData(modelSetID, modelSetTableRow.datasetName,modelSetTableRow.splittingName);
 				
 				if (msr!=null) {
 					System.out.println(modelSetTableRow.datasetName+" exists skipping!");
@@ -72,11 +70,11 @@ public class SampleReportWriter {
 //				if (modelSetTableRow.datasetName.equals("Standard Water solubility from exp_prop")) continue;
 				
 								
-				PredictionReport predictionReport=p.generateForModelSetPredictions(modelSetTableRow.datasetName,modelSetTableRow.descriptorSetName, modelSetTableRow.splittingName,modelSetName);				
+				PredictionReport predictionReport=p.generateForModelSetPredictions(modelSetTableRow.datasetName,modelSetTableRow.splittingName,modelSetName);				
 								
 				
 				eprg.generate(predictionReport, filepath);
-				script.uploadModelSetReport(modelSetID, modelSetTableRow.datasetName, modelSetTableRow.descriptorSetName, modelSetTableRow.splittingName,filepath);
+				script.uploadModelSetReport(modelSetID, modelSetTableRow.datasetName, modelSetTableRow.splittingName,filepath);
 			} catch (Exception ex) {
 				// TODO Auto-generated catch block
 				ex.printStackTrace();
