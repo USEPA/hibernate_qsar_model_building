@@ -181,71 +181,52 @@ public class ExcelPredictionReportGenerator {
 	}
 
 	public static void main(String [] args) {
-		System.out.println("working32");
 		ExcelPredictionReportGenerator e=new ExcelPredictionReportGenerator();
 		
 		PredictionReportGenerator gen = new PredictionReportGenerator();
 
-		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
-		String datasetName = endpoint+" OPERA";
+		String endpoint=DevQsarConstants.DEV_TOX;
+		String datasetName = endpoint+" TEST";
 		String descriptorSetName="T.E.S.T. 5.1";
-<<<<<<< HEAD
-		String splittingName="OPERA";
+
+		String splittingName="TEST";
 		String modelSetName="Sample models";
-=======
-		String splittingName="RND_REPRESENTATIVE";
-		String modelSetName="WebTEST2.0";
-		PredictionReport predictionReport=p.generateForModelSetPredictions(datasetName,splittingName,modelSetName);
->>>>>>> 4fdfa0bead6f5ac8d96d36af179797f23cceb9c4
-		
-		
-//		PredictionReport predictionReport=gen.generateForModelSetPredictions(datasetName,descriptorSetName, splittingName,modelSetName);
-//		PredictionReport consensusReport = gen.generateForModelSetPredictions(datasetName, "consensus", splittingName, modelSetName);
-		File jsonFile = new File("data/reports/Henry's law constant OPERA_T.E.S.T. 5.1_PredictionReport.json");
-		File jsonFileConsensus = new File("data/reports/Henry's law constant OPERA_consensus_PredictionReport.json");;
+
 		PredictionReport predictionReport = null;
-		PredictionReport predictionReportConsensus = null;
+
+		
+		predictionReport=gen.generateForModelSetPredictions(datasetName, splittingName,modelSetName);
+
+//		File jsonFile = new File("data/reports/Henry's law constant OPERA_PredictionReport.json");
+		
 		try {
-		predictionReport = gson.fromJson(new FileReader(jsonFile), PredictionReport.class);
-		predictionReportConsensus = gson.fromJson(new FileReader(jsonFileConsensus), PredictionReport.class);
+//		predictionReport = gson.fromJson(new FileReader(jsonFile), PredictionReport.class);
 
 		} catch (Exception ex) {
 			
 		}
-		String json=gson.toJson(predictionReport);
-		String jsonConsensus=gson.toJson(predictionReportConsensus);
+//		String json=gson.toJson(predictionReport);
 		
-		
-		try {
-			FileWriter fw=new FileWriter("report.json");
-			fw.write(jsonConsensus);
-			fw.flush();
-			fw.close();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-		
+				
 			
 		File folder=new File("data/reports");
 		folder.mkdirs();		
 //		e.generate( predictionReport,folder.getAbsolutePath()+File.separator+"report.xlsx");
-		e.generate2(predictionReport, predictionReportConsensus, folder.getAbsolutePath()+File.separator+"WITHCONSENSUSreport.xlsx");
+		e.generate(predictionReport, folder.getAbsolutePath()+File.separator+datasetName + "_report.xlsx");
 	}
 
-	public void generate2(PredictionReport report, PredictionReport consensus, String filepathOut) {
+	public void generate(PredictionReport report, String filepathOut) {
 		XSSFWorkbook wb=new XSSFWorkbook();		
 		boolean isBinary = report.predictionReportMetadata.datasetUnit.equalsIgnoreCase("binary") ? true : false;
 		generateCoverSheet2(report,wb, isBinary);
 		
-		generateSummarySheet2(report,consensus, wb, isBinary);
+		generateSummarySheet2(report, wb, isBinary);
 		
 		generateSplitSheet2(report, wb, isBinary);
 		
 		for (int i = 0; i < report.predictionReportDataPoints.get(0).qsarPredictedValues.size(); i++) {
 			generatePredictionSheet2(report.predictionReportDataPoints, i, wb, isBinary);
 		}
-		
-		generatePredictionSheet2(consensus.predictionReportDataPoints, 0, wb, isBinary);
 		
 		columnResizing(wb);
 		
@@ -267,7 +248,7 @@ public class ExcelPredictionReportGenerator {
 	
 
 
-	public void generate(PredictionReport report,String filepathOut) {
+	public void generate3(PredictionReport report,String filepathOut) {
 
 		XSSFWorkbook wb=new XSSFWorkbook();		
 		boolean isBinary = report.predictionReportMetadata.datasetUnit.equalsIgnoreCase("binary") ? true : false;
@@ -454,7 +435,7 @@ public class ExcelPredictionReportGenerator {
 		spreadsheetMap.put(2, prepareCoverSheetRow("Dataset Name", predictionReport.predictionReportMetadata.datasetName));
 		spreadsheetMap.put(3, prepareCoverSheetRow("Dataset Description", predictionReport.predictionReportMetadata.datasetDescription));
 		spreadsheetMap.put(4, prepareCoverSheetRow("Property Units", predictionReport.predictionReportMetadata.datasetUnit));
-		spreadsheetMap.put(5, prepareCoverSheetRow("Descriptor Set Name", predictionReport.predictionReportMetadata.descriptorSetName));
+	//	spreadsheetMap.put(5, prepareCoverSheetRow("Descriptor Set Name", predictionReport.predictionReportMetadata.descriptorSetName));
 
 		int nTrain = 0;
 		int nPredict = 0;
@@ -521,7 +502,7 @@ public class ExcelPredictionReportGenerator {
 
 	
 	
-	private void generateSummarySheet2(PredictionReport report, PredictionReport consensus, XSSFWorkbook wb,
+	private void generateSummarySheet2(PredictionReport report, XSSFWorkbook wb,
 			boolean isBinary) {
 		Map < Integer, Object[] > spreadsheetMap = new TreeMap < Integer, Object[] >();
 		ArrayList<String> headerStats = new ArrayList<String>(Arrays.asList("Dataset Name", "Descriptor Software", "Method Name", "Split"));
@@ -534,8 +515,6 @@ public class ExcelPredictionReportGenerator {
 		Object[] headerStatsObject = headerStatsArray;
 		spreadsheetMap.put(0, headerStatsObject);	        
 		
-		// EZ way of including consensus models
-		report.predictionReportModelMetadata.addAll(consensus.predictionReportModelMetadata);
 		
 		for (int i = 0; i < report.predictionReportModelMetadata.size(); i++) {
 			
@@ -547,7 +526,7 @@ public class ExcelPredictionReportGenerator {
 			
 			ArrayList<Object> modelSplitInfoTrain = new ArrayList<Object>();
 			modelSplitInfoTrain.add(report.predictionReportMetadata.datasetName);
-			modelSplitInfoTrain.add(report.predictionReportMetadata.descriptorSetName);
+			modelSplitInfoTrain.add("STANDINDESCRIPTORS");
 			modelSplitInfoTrain.add(report.predictionReportModelMetadata.get(i).qsarMethodName);
 			
 			ArrayList<Object> modelSplitInfoTest = (ArrayList<Object>) modelSplitInfoTrain.clone();
@@ -1014,6 +993,16 @@ public class ExcelPredictionReportGenerator {
 						sheet.setAutoFilter(CellRangeAddress.valueOf("A1:G1"));
 
 					}
+					
+					if (!(sheetName.equals("Cover sheet") || sheetName.equals("Summary sheet") || sheetName.equals("Training") || sheetName.equals("Test"))) {
+						sheet.setAutoFilter(CellRangeAddress.valueOf("A1:D1"));
+						
+						if (rowid == 1) { 
+							cell.setCellStyle(boldstyle);
+						} 
+
+					}
+
 					
 					
 
