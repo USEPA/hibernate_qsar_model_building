@@ -1,5 +1,6 @@
 package gov.epa.run_from_java.scripts;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -23,7 +24,7 @@ import gov.epa.util.HtmlUtils;
 
 public class SampleModelQmrfWriter {
 
-	public ModelSetTable getModelsInModelSet(long modelSet) {
+	public static ModelSetTable getModelsInModelSet(long modelSet) {
 		
 		ModelSetTableGenerator gen = new ModelSetTableGenerator();
 		ModelSetTable table = gen.generate(modelSet);
@@ -133,15 +134,28 @@ public class SampleModelQmrfWriter {
 		
 //		ModelQmrfServiceImpl m=new ModelQmrfServiceImpl();
 //		m.delete(m.findByModelId(1L)); 
+				
 		
+		String downloadFolder="data/reports/qmrf upload";
 		
-		String htmlPath="dummy qmrf.html";
-		String pdfPath=FileUtils.replaceExtension(htmlPath, ".pdf");
+		File f=new File(downloadFolder);
+		if (!f.exists()) f.mkdirs();
+
 		
 		for (ModelSetTableRow modelSetTableRow:table.modelSetTableRows) {			
 			//create prediction excel
 			
 			for (ModelMetadata modelMetadata:modelSetTableRow.modelMetadata) {
+				
+				
+				String htmlPath = downloadFolder + File.separator + String.join("_", modelSetTableRow.datasetName, 
+						modelSetTableRow.descriptorSetName, 
+						modelSetTableRow.splittingName,
+						modelMetadata.qsarMethodName) 
+						+ ".pdf";
+
+				String pdfPath=FileUtils.replaceExtension(htmlPath, ".pdf");
+								
 				
 				try {
 					generateSampleQMRF(modelSetTableRow, modelMetadata, htmlPath);				
@@ -160,54 +174,7 @@ public class SampleModelQmrfWriter {
 		}		
 	}
 	
-	public void generateSamplePredictionReports(long modelSetID) {
-		ExcelPredictionReportGenerator eprg=new ExcelPredictionReportGenerator();
-		ModelSetTable table=getModelsInModelSet(modelSetID);
-		
-		ModelSetReportServiceImpl m2=new ModelSetReportServiceImpl();
-		
-//		System.out.println(getJson(table));
-		
-		QsarModelsScript script = new QsarModelsScript("tmarti02");
-		PredictionReportGenerator p=new PredictionReportGenerator();
-				
-		ModelSetServiceImpl m=new ModelSetServiceImpl();		
-		String modelSetName=m.findById(modelSetID).getName();
-		
-		for (ModelSetTableRow modelSetTableRow:table.modelSetTableRows) {			
-			
-			String filepath="predictionReport.xlsx";
-				
-			System.out.println(modelSetTableRow.datasetName);
-			
-			try {
-				
-				ModelSetReport msr=m2.findByModelSetIdAndModelData(modelSetID, modelSetTableRow.datasetName, 
-						modelSetTableRow.descriptorSetName,modelSetTableRow.splittingName);
-				
-				if (msr!=null) continue;//skip it we already did it
-				
-
-				//Cant seem to generate prediction reports for large data sets:
-//				if (modelSetTableRow.datasetName.equals("Melting point OPERA")) continue;
-//				if (modelSetTableRow.datasetName.equals("Octanol water partition coefficient OPERA")) continue;
-//				if (modelSetTableRow.datasetName.equals("LD50 TEST")) continue;
-//				if (modelSetTableRow.datasetName.equals("Standard Water solubility from exp_prop")) continue;
-				
-								
-				PredictionReport predictionReport=p.generateForModelSetPredictions(modelSetTableRow.datasetName,modelSetTableRow.descriptorSetName, modelSetTableRow.splittingName,modelSetName);				
-								
-				
-				eprg.generate(predictionReport, filepath);
-				script.uploadModelSetReport(modelSetID, modelSetTableRow.datasetName, modelSetTableRow.descriptorSetName, modelSetTableRow.splittingName,filepath);
-			} catch (Exception ex) {
-				// TODO Auto-generated catch block
-				System.out.println(ex.getMessage());
-			}
-			
-//			if (true) break;
-		}		
-	}
+	
 	
 	
 	
@@ -217,27 +184,11 @@ public class SampleModelQmrfWriter {
 		SampleModelQmrfWriter g=new SampleModelQmrfWriter();		
 		
 //		g.generateSampleQMRFs(1L);
-		g.generateSamplePredictionReports(2L);
-		
+//		g.generateSampleQMRFs(2L);
 
-		//**************************************************************
 //		QsarModelsScript q=new QsarModelsScript("tmarti02");
-//		q.downloadModelQmrf(152L, "data/reports/qmrf");
+//		q.downloadModelQmrf(186L, "data/reports/qmrf download");
 
-		//**************************************************************
-//		QsarModelsScript q=new QsarModelsScript("tmarti02");
-//		String datasetName="LC50DM TEST";
-//		String descriptorSetName="T.E.S.T. 5.1";
-//		String splittingName="TEST";
-//		q.downloadModelSetReport(1L, datasetName, descriptorSetName, splittingName, "data/reports/prediction reports");
-
-		//**************************************************************
-		QsarModelsScript q=new QsarModelsScript("tmarti02");
-//		String datasetName="Standard Henry's law constant from exp_prop";
-		String datasetName="Standard Water solubility from exp_prop";
-		String descriptorSetName="T.E.S.T. 5.1";
-		String splittingName="RND_REPRESENTATIVE";
-		q.downloadModelSetReport(2L, datasetName, descriptorSetName, splittingName, "data/reports/prediction reports");
 
 		
 	}
