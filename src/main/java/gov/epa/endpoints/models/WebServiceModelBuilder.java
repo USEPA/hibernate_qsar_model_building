@@ -76,7 +76,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	 */
 	@SuppressWarnings("deprecation")
 	public Long train(ModelData data, String methodName) throws ConstraintViolationException {
-		if (data.trainingSetInstances==null) {
+		if (data==null || data.trainingSetInstances==null) {
 //			logger.error("Dataset instances were not initialized");
 			return null;
 		}

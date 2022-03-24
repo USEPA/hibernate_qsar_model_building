@@ -16,6 +16,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
 import org.w3c.dom.Document;
+import org.w3c.tidy.Tidy;
+
+import com.openhtmltopdf.extend.FSUriResolver;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import com.openhtmltopdf.swing.NaiveUserAgent;
 
 public class HtmlUtils {
 	private static final Logger logger = LogManager.getLogger(HtmlUtils.class);
