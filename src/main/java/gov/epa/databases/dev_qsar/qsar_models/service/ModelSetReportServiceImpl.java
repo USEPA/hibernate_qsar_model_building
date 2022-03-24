@@ -25,19 +25,19 @@ public class ModelSetReportServiceImpl implements ModelSetReportService {
 	}
 	
 	@Override
-	public ModelSetReport findByModelSetIdAndModelData(Long modelSetId, String datasetName, String descriptorSetName,
+	public ModelSetReport findByModelSetIdAndModelData(Long modelSetId, String datasetName, 
 			String splittingName) {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
-		return findByModelSetIdAndModelData(modelSetId, datasetName, descriptorSetName, splittingName, session);
+		return findByModelSetIdAndModelData(modelSetId, datasetName, splittingName, session);
 	}
 
 	@Override
-	public ModelSetReport findByModelSetIdAndModelData(Long modelSetId, String datasetName, String descriptorSetName,
+	public ModelSetReport findByModelSetIdAndModelData(Long modelSetId, String datasetName, 
 			String splittingName, Session session) {
 		Transaction t = session.beginTransaction();
 		ModelSetReportDao modelSetReportDao = new ModelSetReportDaoImpl();
 		ModelSetReport modelSetReport = modelSetReportDao.findByModelSetIdAndModelData(modelSetId, 
-				datasetName, descriptorSetName, splittingName,
+				datasetName, splittingName,
 				session);
 		t.rollback();
 		return modelSetReport;

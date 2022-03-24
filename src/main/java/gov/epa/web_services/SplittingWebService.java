@@ -27,7 +27,7 @@ public class SplittingWebService extends WebService {
 	}
 
 	public HttpResponse<SplittingCalculationResponse[]> callCalculation(String tsv, boolean removeLogP) {
-		HttpResponse<SplittingCalculationResponse[]> response = Unirest.get(server+":"+port+"/calculation")
+		HttpResponse<SplittingCalculationResponse[]> response = Unirest.get(address+"/calculation")
 				.queryString("tsv", tsv)
 				.queryString("remove_log_p", removeLogP)
 				.asObject(SplittingCalculationResponse[].class);

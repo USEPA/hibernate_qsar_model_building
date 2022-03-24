@@ -33,8 +33,8 @@ public class ReportGenerationScript {
 
 	static PredictionReportGenerator gen = new PredictionReportGenerator();
 
-	private static void writeReport(String datasetName, String descriptorSetName, PredictionReport report) {
-		String filePath = "data/reports/"+ datasetName + "_" + descriptorSetName + "_PredictionReport.json";
+	private static void writeReport(String datasetName, PredictionReport report) {
+		String filePath = "data/reports/"+ datasetName + "_PredictionReport.json";
 
 
 		File file = new File(filePath);
@@ -54,23 +54,23 @@ public class ReportGenerationScript {
 
 
 
-	public static PredictionReport reportAllPredictions(String datasetName,String descriptorSetName,String splittingName,String modelSetName) {
+	public static PredictionReport reportAllPredictions(String datasetName,String splittingName,String modelSetName) {
 
 		long t1=System.currentTimeMillis();
-		PredictionReport report=gen.generateForModelSetPredictions(datasetName, descriptorSetName, splittingName, modelSetName);
+		PredictionReport report=gen.generateForModelSetPredictions(datasetName, splittingName, modelSetName);
 		long t2=System.currentTimeMillis();
 
 		double time=(t2-t1)/1000.0;
 		System.out.println("Time to generate report for "+datasetName+" = "+time+" seconds");
 
-		writeReport(datasetName, descriptorSetName, report);
+		writeReport(datasetName, report);
 		return report;
 	}
 
 
-	public static void reportAllPredictions(Vector<String> datasetNames,String descriptorSetName,String splittingName,String modelSetName) {
+	public static void reportAllPredictions(Vector<String> datasetNames,String splittingName,String modelSetName) {
 		for (String datasetName:datasetNames) {
-			reportAllPredictions(datasetName, descriptorSetName,splittingName,modelSetName);
+			reportAllPredictions(datasetName, splittingName,modelSetName);
 		}
 	}
 
@@ -110,10 +110,10 @@ public class ReportGenerationScript {
 		ReportGenerationScript run=new ReportGenerationScript();
 		
 		//*****************************************************************************************			
-		//		String descriptorSetName = "T.E.S.T. 5.1";
-		//		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
-		//		String datasetName = endpoint+" OPERA";
-//		run.reportAllPredictions(datasetName,descriptorSetName,splittingName);		
+				String descriptorSetName = "T.E.S.T. 5.1";
+				String endpoint=DevQsarConstants.LOG_HALF_LIFE;
+				String datasetName = endpoint+" OPERA";
+		ReportGenerationScript.reportAllPredictions(datasetName,"OPERA", "Sample models");		
 
 		//*****************************************************************************************	
 		//		run.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);
@@ -125,8 +125,8 @@ public class ReportGenerationScript {
 //		per.generate(per.wb);
 		
 		// generate full model database report //
-		ExcelModelStatisticsOld ems = ExcelModelStatisticsOld.prepareFactory("data/ExcelReports");
-		ems.generate();
+//		ExcelModelStatisticsOld ems = ExcelModelStatisticsOld.prepareFactory("data/ExcelReports");
+//		ems.generate();
 
 
 

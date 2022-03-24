@@ -37,6 +37,12 @@ public class DescriptorSet {
 	@NotBlank(message="headers_tsv field required")
 	@Column(length = 32767, name="headers_tsv")
 	private String headersTsv;
+	
+	@Column(name="descriptor_service")
+	private String descriptorService;
+	
+	@Column(length = 1000, name="descriptor_service_options")
+	private String descriptorServiceOptions;
 
 	@Column(name="updated_at")
 	@UpdateTimestamp
@@ -128,6 +134,22 @@ public class DescriptorSet {
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+
+	public String getDescriptorService() {
+		return descriptorService;
+	}
+
+	public void setDescriptorService(String descriptorService) {
+		this.descriptorService = descriptorService;
+	}
+
+	public String getDescriptorServiceOptions() {
+		return descriptorServiceOptions;
+	}
+
+	public void setDescriptorServiceOptions(String descriptorServiceOptions) {
+		this.descriptorServiceOptions = descriptorServiceOptions;
 	}
 	
 

@@ -37,14 +37,13 @@ public class ModelSetTableGenerator {
 		Map<String, ModelSetTableRow> rowMap = new HashMap<String, ModelSetTableRow>();
 		for (Model model:models) {
 			String datasetName = model.getDatasetName();
-			String descriptorSetName = model.getDescriptorSetName();
 			String splittingName = model.getSplittingName();
-			String mapId = String.join("_", datasetName, descriptorSetName, splittingName);
+			String mapId = String.join("_", datasetName, splittingName);
 			ModelSetTableRow row = rowMap.get(mapId);
 			
 			if (row==null) {
 				Dataset dataset = datasetService.findByName(datasetName);
-				row = new ModelSetTableRow(dataset, descriptorSetName, splittingName);
+				row = new ModelSetTableRow(dataset, splittingName);
 			}
 			
 			Method method = model.getMethod();

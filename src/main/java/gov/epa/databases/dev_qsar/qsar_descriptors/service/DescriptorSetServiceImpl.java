@@ -64,5 +64,34 @@ public class DescriptorSetServiceImpl implements DescriptorSetService {
 		
 		return descriptorSet;
 	}
+	
+	@Override
+	public DescriptorSet update(DescriptorSet descriptorSet) throws ConstraintViolationException {
+		Session session = QsarDescriptorsSession.getSessionFactory().getCurrentSession();
+		return update(descriptorSet, session);
+	}
+
+	@Override
+	public DescriptorSet update(DescriptorSet descriptorSet, Session session) throws ConstraintViolationException {
+		Set<ConstraintViolation<DescriptorSet>> violations = validator.validate(descriptorSet);
+		if (!violations.isEmpty()) {
+			throw new ConstraintViolationException(violations);
+		}
+		
+		Transaction t = session.beginTransaction();
+		
+		try {
+			session.clear();
+			session.update(descriptorSet);
+			session.flush();
+			session.refresh(descriptorSet);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return descriptorSet;
+	}
 
 }

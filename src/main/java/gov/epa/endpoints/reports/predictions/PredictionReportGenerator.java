@@ -72,18 +72,15 @@ public class PredictionReportGenerator extends ReportGenerator {
 		modelSetService = new ModelSetServiceImpl();
 	}
 	
-	private void initPredictionReport(String datasetName, String descriptorSetName, String splittingName) {
+	private void initPredictionReport(String datasetName, String splittingName) {
 		this.predictionReport = new PredictionReport();
 		
 		Dataset dataset = datasetService.findByName(datasetName);
-		DescriptorSet descriptorSet = descriptorSetService.findByName(descriptorSetName);
 		this.predictionReport.predictionReportMetadata = new PredictionReportMetadata(datasetName, 
 				dataset.getDescription(),
 				dataset.getProperty().getName(), 
 				dataset.getProperty().getDescription(),
 				dataset.getUnit().getName(),
-				descriptorSetName,
-				descriptorSet.getHeadersTsv(),
 				splittingName);
 		
 		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
@@ -99,20 +96,9 @@ public class PredictionReportGenerator extends ReportGenerator {
 				.collect(Collectors.toMap(dpis -> dpis.getDataPoint().getCanonQsarSmiles(), dpis -> dpis.getSplitNum()));
 	}
 	
-	private void addDescriptorValues() {
-		for (PredictionReportDataPoint data:predictionReport.predictionReportDataPoints) {
-			DescriptorValues dv = descriptorValuesService.findByCanonQsarSmilesAndDescriptorSetName(data.canonQsarSmiles, 
-					predictionReport.predictionReportMetadata.descriptorSetName);
-			if (dv!=null) {
-				data.descriptorValues = dv.getValuesTsv();
-			}
-		}
-	}
-	
 	private void addAllPredictions() {
 		List<Model> models = modelService.findByDatasetName(predictionReport.predictionReportMetadata.datasetName);
 		models = models.stream()
-				.filter(m -> m.getDescriptorSetName().equals(predictionReport.predictionReportMetadata.descriptorSetName))
 				.filter(m -> m.getSplittingName().equals(predictionReport.predictionReportMetadata.splittingName))
 				.collect(Collectors.toList());
 		for (Model model:models) {
@@ -125,7 +111,6 @@ public class PredictionReportGenerator extends ReportGenerator {
 		List<Model> models = modelService.findByModelSetId(modelSet.getId());
 		models = models.stream()
 				.filter(m -> m.getDatasetName().equals(predictionReport.predictionReportMetadata.datasetName))
-				.filter(m -> m.getDescriptorSetName().equals(predictionReport.predictionReportMetadata.descriptorSetName))
 				.filter(m -> m.getSplittingName().equals(predictionReport.predictionReportMetadata.splittingName))
 				.collect(Collectors.toList());
 		for (Model model:models) {
@@ -162,28 +147,25 @@ public class PredictionReportGenerator extends ReportGenerator {
 		}
 	}
 	
-	public PredictionReport generateForAllPredictions(String datasetName, String descriptorSetName, String splittingName) {
-		initPredictionReport(datasetName, descriptorSetName, splittingName);
+	public PredictionReport generateForAllPredictions(String datasetName, String splittingName) {
+		initPredictionReport(datasetName, splittingName);
 		addOriginalCompounds(predictionReport.predictionReportDataPoints);
-		addDescriptorValues();
 		addAllPredictions();
 		return predictionReport;
 	}
 	
-	public PredictionReport generateForModelSetPredictions(String datasetName, String descriptorSetName, String splittingName,
+	public PredictionReport generateForModelSetPredictions(String datasetName, String splittingName,
 			String modelSetName) {
-		initPredictionReport(datasetName, descriptorSetName, splittingName);
+		initPredictionReport(datasetName, splittingName);
 		addOriginalCompounds(predictionReport.predictionReportDataPoints);
-		addDescriptorValues();
 		addModelSetPredictions(modelSetName);
 		return predictionReport;
 	}
 	
 	public PredictionReport generateForModelPredictions(Long modelId) {
 		Model model = modelService.findById(modelId);
-		initPredictionReport(model.getDatasetName(), model.getDescriptorSetName(), model.getSplittingName());
+		initPredictionReport(model.getDatasetName(), model.getSplittingName());
 		addOriginalCompounds(predictionReport.predictionReportDataPoints);
-		addDescriptorValues();
 		addModelPredictionsAndMetadata(model);
 		return predictionReport;
 	}
@@ -217,7 +199,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 			
 			long t1=System.currentTimeMillis();
 			
-			PredictionReport report=generateForAllPredictions(datasetName, descriptorSetName, splittingName);
+			PredictionReport report=generateForAllPredictions(datasetName, splittingName);
 			
 			long t2=System.currentTimeMillis();
 			
@@ -275,7 +257,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 		
 		long t1=System.currentTimeMillis();
 		
-		PredictionReport report=gen.generateForAllPredictions(datasetName, descriptorSetName, splittingName);
+		PredictionReport report=gen.generateForAllPredictions(datasetName, splittingName);
 		
 		long t2=System.currentTimeMillis();
 		

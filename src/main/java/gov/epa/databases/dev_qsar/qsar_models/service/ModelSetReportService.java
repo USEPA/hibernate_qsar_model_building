@@ -10,9 +10,9 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport;
 
 public interface ModelSetReportService {
 	
-	public ModelSetReport findByModelSetIdAndModelData(Long modelSetId, String datasetName, String descriptorSetName, String splittingName);
+	public ModelSetReport findByModelSetIdAndModelData(Long modelSetId, String datasetName, String splittingName);
 	
-	public ModelSetReport findByModelSetIdAndModelData(Long modelSetId, String datasetName, String descriptorSetName, String splittingName,
+	public ModelSetReport findByModelSetIdAndModelData(Long modelSetId, String datasetName, String splittingName,
 			Session session);
 
 	public List<ModelSetReport> findByModelSetId(Long modelSetId);

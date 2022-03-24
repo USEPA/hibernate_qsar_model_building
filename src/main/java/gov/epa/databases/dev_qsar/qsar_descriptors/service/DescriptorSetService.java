@@ -15,5 +15,9 @@ public interface DescriptorSetService {
 	public DescriptorSet create(DescriptorSet descriptorSet) throws ConstraintViolationException;
 	
 	public DescriptorSet create(DescriptorSet descriptorSet, Session session) throws ConstraintViolationException;
+	
+	public DescriptorSet update(DescriptorSet descriptorSet) throws ConstraintViolationException;
+	
+	public DescriptorSet update(DescriptorSet descriptorSet, Session session) throws ConstraintViolationException;
 
 }

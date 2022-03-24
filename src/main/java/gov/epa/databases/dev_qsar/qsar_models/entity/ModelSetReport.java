@@ -8,7 +8,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -22,7 +21,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name="model_set_reports",
-	uniqueConstraints={@UniqueConstraint(columnNames = {"fk_model_set_id", "descriptor_set_name", "dataset_name", "splitting_name"})})
+	uniqueConstraints={@UniqueConstraint(columnNames = {"fk_model_set_id", "dataset_name", "splitting_name"})})
 public class ModelSetReport {
 	
 	@Id
@@ -34,10 +33,6 @@ public class ModelSetReport {
 	@JoinColumn(name="fk_model_set_id")
 	private ModelSet modelSet;
 	
-	@NotNull(message="Descriptor set name required")
-	@Column(name="descriptor_set_name")
-	private String descriptorSetName;
-	
 	@NotNull(message="Dataset name required")
 	@Column(name="dataset_name")
 	private String datasetName;
@@ -46,7 +41,6 @@ public class ModelSetReport {
 	@Column(name="splitting_name")
 	private String splittingName;
 	
-	@Lob
 	@Column(name="file", length=32767)
 	private byte[] file;
 	
@@ -69,10 +63,9 @@ public class ModelSetReport {
 	
 	public ModelSetReport() {}
 	
-	public ModelSetReport(ModelSet modelSet, String datasetName, String descriptorSetName, String splittingName, byte[] bytes, String createdBy) {
+	public ModelSetReport(ModelSet modelSet, String datasetName, String splittingName, byte[] bytes, String createdBy) {
 		this.setModelSet(modelSet);
 		this.setDatasetName(datasetName);
-		this.setDescriptorSetName(descriptorSetName);
 		this.setSplittingName(splittingName);
 		this.setFile(bytes);
 		this.setCreatedBy(createdBy);
@@ -92,14 +85,6 @@ public class ModelSetReport {
 
 	public void setModelSet(ModelSet modelSet) {
 		this.modelSet = modelSet;
-	}
-
-	public String getDescriptorSetName() {
-		return descriptorSetName;
-	}
-
-	public void setDescriptorSetName(String descriptorSetName) {
-		this.descriptorSetName = descriptorSetName;
 	}
 
 	public String getDatasetName() {

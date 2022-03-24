@@ -14,20 +14,18 @@ public class ModelSetReportDaoImpl implements ModelSetReportDao {
 			+ "join msr.modelSet ms "
 			+ "where ms.id = :modelSetId "
 			+ "and msr.datasetName = :datasetName "
-			+ "and msr.descriptorSetName = :descriptorSetName "
 			+ "and msr.splittingName = :splittingName";
 	private static final String HQL_BY_MODEL_SET_ID = "select msr from ModelSetReport msr "
 			+ "join msr.modelSet ms "
 			+ "where ms.id = :modelSetId";
 
 	@Override
-	public ModelSetReport findByModelSetIdAndModelData(Long modelSetId, String datasetName, String descriptorSetName, String splittingName, 
+	public ModelSetReport findByModelSetIdAndModelData(Long modelSetId, String datasetName, String splittingName, 
 			Session session) {
 		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
 		Query query = session.createQuery(HQL_BY_MODEL_SET_ID_AND_MODEL_DATA);
 		query.setParameter("modelSetId", modelSetId);
 		query.setParameter("datasetName", datasetName);
-		query.setParameter("descriptorSetName", descriptorSetName);
 		query.setParameter("splittingName", splittingName);
 		return (ModelSetReport) query.uniqueResult();
 	}

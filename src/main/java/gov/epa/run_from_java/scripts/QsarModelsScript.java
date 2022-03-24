@@ -43,6 +43,7 @@ public class QsarModelsScript {
 	private ModelSetService modelSetService = new ModelSetServiceImpl();
 	private ModelSetReportService modelSetReportService = new ModelSetReportServiceImpl();
 	private ModelInModelSetService modelInModelSetService = new ModelInModelSetServiceImpl();
+	private ModelBytesService modelBytesService = new ModelBytesServiceImpl();
 	
 	private String lanId;
 	
@@ -151,7 +152,7 @@ public class QsarModelsScript {
 		return file;
 	}
 	
-	public void uploadModelSetReport(Long modelSetId, String datasetName, String descriptorSetName, String splittingName, 
+	public void uploadModelSetReport(Long modelSetId, String datasetName, String splittingName, 
 			String reportFilePath) throws IOException, ConstraintViolationException {
 		byte[] bytes = Files.readAllBytes(Paths.get(reportFilePath));
 		ModelSet modelSet = modelSetService.findById(modelSetId);
@@ -165,14 +166,14 @@ public class QsarModelsScript {
 		}
 		
 		System.out.println("Uploading Excel model set report with bytecount " + bytes.length);
-		ModelSetReport modelSetReport = new ModelSetReport(modelSet, datasetName, descriptorSetName, splittingName, bytes, lanId);
+		ModelSetReport modelSetReport = new ModelSetReport(modelSet, datasetName, splittingName, bytes, lanId);
 		modelSetReportService.create(modelSetReport);
 	}
 	
-	public byte[] downloadModelSetReport(Long modelSetId, String datasetName, String descriptorSetName, String splittingName,
+	public byte[] downloadModelSetReport(Long modelSetId, String datasetName, String splittingName,
 			String downloadFolder) {
 		ModelSetReport modelSetReport = modelSetReportService
-				.findByModelSetIdAndModelData(modelSetId, datasetName, descriptorSetName, splittingName);
+				.findByModelSetIdAndModelData(modelSetId, datasetName, splittingName);
 		return writeOneModelSetReport(modelSetReport, downloadFolder);
 	}
 	
@@ -182,7 +183,6 @@ public class QsarModelsScript {
 		
 		String saveToFilePath = downloadFolder + File.separator + String.join("_", modelSet.getName(),
 				modelSetReport.getDatasetName(), 
-				modelSetReport.getDescriptorSetName(), 
 				modelSetReport.getSplittingName())
 				+ ".xlsx";
 		
@@ -266,7 +266,7 @@ public class QsarModelsScript {
 		String datasetName="Data from LLNA from exp_prop, without eChemPortal external to LLNA TEST";
 		String descriptorSetName="T.E.S.T. 5.1";
 		String splittingName="RND_REPRESENTATIVE";
-		ModelSetReport modelSetReport=m2.findByModelSetIdAndModelData(modelSetID,datasetName,descriptorSetName,splittingName);
+		ModelSetReport modelSetReport=m2.findByModelSetIdAndModelData(modelSetID,datasetName,splittingName);
 		m2.delete(modelSetReport);
 
 		
@@ -278,17 +278,106 @@ public class QsarModelsScript {
 		return mb.rerunExistingModelPredictions(existingModelId);
 	}
 	
+	public void downloadAllModelBytes(String folderPath) {
+		File folder = new File(folderPath);
+		folder.mkdirs();
+		
+		List<Model> models = modelService.getAll();
+		for (Model model:models) {
+			Long modelId = model.getId();
+			if (modelId==168L || modelId==169L) {
+				continue;
+			}
+			
+			ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
+			if (modelBytes==null) {
+				continue;
+			}
+			
+			byte[] bytes = modelBytes.getBytes();
+			if (bytes==null) {
+				continue;
+			}
+			
+			String saveToFilePath = folderPath + File.separator + String.join("_", 
+					String.valueOf(modelId),
+					model.getDatasetName(), 
+					model.getDescriptorSetName(), 
+					model.getSplittingName(),
+					model.getMethod().getName()) 
+					+ ".pickle";
+			
+			System.out.println(saveToFilePath + "\t" + bytes.length);
+			safelyWriteBytes(saveToFilePath, bytes, false);
+		}
+	}
+	
+	public void restoreAllModelBytes(String folderPath) {
+		List<Model> models = modelService.getAll();
+		for (Model model:models) {
+			String bytesFilePath = folderPath + File.separator + String.join("_", 
+					String.valueOf(model.getId()),
+					model.getDatasetName(), 
+					model.getDescriptorSetName(), 
+					model.getSplittingName(),
+					model.getMethod().getName()) 
+					+ ".pickle";
+			
+			System.out.println("Restoring from " + bytesFilePath);
+			
+			byte[] bytes = null;
+			try {
+				bytes = Files.readAllBytes(Paths.get(bytesFilePath));
+			} catch (IOException e) {
+				System.out.println("Missing file at " + bytesFilePath);
+				continue;
+			}
+			
+			if (bytes==null) {
+				System.out.println("No data at " + bytesFilePath);
+				continue;
+			}
+			
+			ModelBytes modelBytes = new ModelBytes(model, bytes, lanId);
+			modelBytesService.create(modelBytes);
+		}
+	}
+
+	public void lookAtAllModelBytes() {
+		List<Model> models = modelService.getAll();
+		for (Model model:models) {
+			Long modelId = model.getId();
+			if (modelId==168L || modelId==169L) {
+				continue;
+			}
+			
+			ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
+			if (modelBytes==null) {
+				continue;
+			}
+			
+			byte[] bytes = modelBytes.getBytes();
+			if (bytes==null) {
+				continue;
+			}
+			
+			System.out.println(modelId + "\t" + bytes.length);
+		}
+	}
+	
 	public static void main(String[] args) {
 //		QsarModelsScript script = new QsarModelsScript("gsincl01");
 //		script.removeModelFromSet(6L, 7L);
 		
 //		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-		QsarModelsScript script = new QsarModelsScript("tmarti02");
+		QsarModelsScript script = new QsarModelsScript("gsincl01");
+		script.restoreAllModelBytes("data/dev_qsar/qsar_models/model_bytes");
+		script.lookAtAllModelBytes();
 		
 //		script.addModelRangeToSet(145L, 148L, 2L);
 //		script.deletePredictionReport();
 		
-		for (Long num=145L;num<=148L;num++) script.deleteModel(num);
+//		for (Long num=145L;num<=148L;num++) script.deleteModel(num);
 //		run.deleteModel(128L);
 		
 		

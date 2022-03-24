@@ -19,7 +19,7 @@ public class ModelWebService extends WebService {
 	}
 
 	public HttpResponse<byte[]> callTrain(String trainingSet, Boolean removeLogDescriptors, String qsarMethod, String modelId) {
-		HttpResponse<byte[]> response = Unirest.post(server+":"+port+"/models/{qsar_method}/train")
+		HttpResponse<byte[]> response = Unirest.post(address+"/models/{qsar_method}/train")
 				.routeParam("qsar_method", qsarMethod)
 				.field("training_tsv", trainingSet)
 				.field("embedding_tsv", "")
@@ -32,7 +32,7 @@ public class ModelWebService extends WebService {
 	
 	public HttpResponse<byte[]> callTrainWithPreselectedDescriptors(String trainingSet, Boolean removeLogDescriptors, 
 			String qsarMethod, String modelId, String embeddingTsv) {
-		HttpResponse<byte[]> response = Unirest.post(server+":"+port+"/models/{qsar_method}/train")
+		HttpResponse<byte[]> response = Unirest.post(address+"/models/{qsar_method}/train")
 				.routeParam("qsar_method", qsarMethod)
 				.field("training_tsv", trainingSet)
 				.field("model_id", modelId)
@@ -44,7 +44,7 @@ public class ModelWebService extends WebService {
 	}
 
 	public HttpResponse<String> callDetails(String qsarMethod, String modelId) {
-		HttpResponse<String> response = Unirest.get(server+":"+port+"/models/{qsar_method}/{model_id}")
+		HttpResponse<String> response = Unirest.get(address+"/models/{qsar_method}/{model_id}")
 				.routeParam("qsar_method", qsarMethod)
 				.routeParam("model_id", modelId)
 				.asString();
@@ -53,7 +53,7 @@ public class ModelWebService extends WebService {
 	}
 
 	public HttpResponse<String> callInfo(String qsarMethod) {
-		HttpResponse<String> response = Unirest.get(server+":"+port+"/models/{qsar_method}/info")
+		HttpResponse<String> response = Unirest.get(address+"/models/{qsar_method}/info")
 				.routeParam("qsar_method", qsarMethod)
 				.asString();
 		
@@ -62,7 +62,7 @@ public class ModelWebService extends WebService {
 
 	public HttpResponse<String> callInit(byte[] modelBytes, String qsarMethod, String modelId) {
 		InputStream model = new BufferedInputStream(new ByteArrayInputStream(modelBytes));
-		HttpResponse<String> response = Unirest.post(server+":"+port+"/models/{qsar_method}/init")
+		HttpResponse<String> response = Unirest.post(address+"/models/{qsar_method}/init")
 				.routeParam("qsar_method", qsarMethod)
 				.field("model_id", modelId)
 				.field("model", model, "model.bin")
@@ -72,7 +72,7 @@ public class ModelWebService extends WebService {
 	}
 
 	public HttpResponse<String> callPredict(String predictionSet, String qsarMethod, String modelId) {
-		HttpResponse<String> response = Unirest.post(server+":"+port+"/models/{qsar_method}/predict")
+		HttpResponse<String> response = Unirest.post(address+"/models/{qsar_method}/predict")
 				.routeParam("qsar_method", qsarMethod)
 				.field("prediction_tsv", predictionSet)
 				.field("model_id", modelId)
@@ -83,7 +83,7 @@ public class ModelWebService extends WebService {
 	
 	public HttpResponse<String> callDescriptors(byte[] modelBytes, String qsarMethod, String modelId) {
 		InputStream model = new BufferedInputStream(new ByteArrayInputStream(modelBytes));
-		HttpResponse<String> response = Unirest.post(server+":"+port+"/models/{qsar_method}/descriptors")
+		HttpResponse<String> response = Unirest.post(address+"/models/{qsar_method}/descriptors")
 				.routeParam("qsar_method", qsarMethod)
 				.field("model_id", modelId)
 				.field("model", model, "model.bin")
