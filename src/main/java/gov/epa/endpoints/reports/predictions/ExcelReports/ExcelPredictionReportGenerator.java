@@ -177,7 +177,7 @@ public class ExcelPredictionReportGenerator {
 		String descriptorSetName="T.E.S.T. 5.1";
 		String splittingName="RND_REPRESENTATIVE";
 		String modelSetName="WebTEST2.0";
-		PredictionReport predictionReport=p.generateForModelSetPredictions(datasetName,descriptorSetName, splittingName,modelSetName);
+		PredictionReport predictionReport=p.generateForModelSetPredictions(datasetName,splittingName,modelSetName);
 		
 		String json=gson.toJson(predictionReport);
 //		System.out.println(json);
@@ -352,7 +352,6 @@ public class ExcelPredictionReportGenerator {
 		spreadsheetMap.put("C", prepareCoverSheetRow("Dataset Name", predictionReport.predictionReportMetadata.datasetName));
 		spreadsheetMap.put("D", prepareCoverSheetRow("Dataset Description", predictionReport.predictionReportMetadata.datasetDescription));
 		spreadsheetMap.put("E", prepareCoverSheetRow("Property Units", predictionReport.predictionReportMetadata.datasetUnit));
-		spreadsheetMap.put("F", prepareCoverSheetRow("Descriptor Set Name", predictionReport.predictionReportMetadata.descriptorSetName));
 
 		int nTrain = 0;
 		int nPredict = 0;
@@ -399,7 +398,6 @@ public class ExcelPredictionReportGenerator {
 		for (int i = 0; i < predictionReport.predictionReportModelMetadata.size(); i++) {
 			ArrayList<Object> rowArrayList = new ArrayList<Object>();
 			rowArrayList.add(predictionReport.predictionReportMetadata.datasetName);
-			rowArrayList.add(predictionReport.predictionReportMetadata.descriptorSetName);
 			rowArrayList.add(predictionReport.predictionReportModelMetadata.get(i).qsarMethodName);
 
 			// "R2", "Q2", "RMSE", "MAE", "Coverage"
@@ -413,7 +411,6 @@ public class ExcelPredictionReportGenerator {
 				}
 
 				Object[] row = new Object[] { predictionReport.predictionReportMetadata.datasetName,
-						predictionReport.predictionReportMetadata.descriptorSetName,
 						predictionReport.predictionReportModelMetadata.get(i).qsarMethodName,
 
 						bs.BA,bs.SN,bs.SP,bs.Coverage};
@@ -438,14 +435,12 @@ public class ExcelPredictionReportGenerator {
 
 
 				Object[] row_test = new Object[] { predictionReport.predictionReportMetadata.datasetName,
-						predictionReport.predictionReportMetadata.descriptorSetName,
 						predictionReport.predictionReportModelMetadata.get(i).qsarMethodName,
 						cs_test.splitting,
 						cs_test.R2,cs_test.Q2,cs_test.RMSE,cs_test.MAE,cs_test.Coverage
 				};
 
 				Object[] row_train = new Object[] { predictionReport.predictionReportMetadata.datasetName,
-						predictionReport.predictionReportMetadata.descriptorSetName,
 						predictionReport.predictionReportModelMetadata.get(i).qsarMethodName,
 						cs_train.splitting,
 						cs_train.R2,cs_train.Q2,cs_train.RMSE,cs_train.MAE,cs_train.Coverage
@@ -472,7 +467,6 @@ public class ExcelPredictionReportGenerator {
 			cs_test.Coverage = consensusStatisticsMap.get(DevQsarConstants.COVERAGE+ DevQsarConstants.TAG_TEST);;
 
 			Object[] consensusrow_test = new Object[] { predictionReport.predictionReportMetadata.datasetName,
-					predictionReport.predictionReportMetadata.descriptorSetName,
 					"Consensus", cs_test.splitting,
 					cs_test.R2,cs_test.Q2,cs_test.RMSE,cs_test.MAE,cs_test.Coverage
 			};
@@ -489,7 +483,6 @@ public class ExcelPredictionReportGenerator {
 			cs_train.Coverage = consensusStatisticsMapTrain.get(DevQsarConstants.COVERAGE+ DevQsarConstants.TAG_TRAINING);
 
 			Object[] consensusrow_train = new Object[] { predictionReport.predictionReportMetadata.datasetName,
-					predictionReport.predictionReportMetadata.descriptorSetName,
 					"Consensus", cs_train.splitting,
 					cs_train.R2,cs_train.Q2,cs_train.RMSE,cs_train.MAE,cs_train.Coverage
 			};
@@ -507,7 +500,6 @@ public class ExcelPredictionReportGenerator {
 			bs.Coverage = consensusStatisticsMap.get(DevQsarConstants.COVERAGE + DevQsarConstants.TAG_TEST);
 
 			Object[] consensusrow = new Object[] { predictionReport.predictionReportMetadata.datasetName,
-					predictionReport.predictionReportMetadata.descriptorSetName,
 					"Consensus",
 					bs.BA,bs.SN,bs.SP,bs.Coverage
 			};

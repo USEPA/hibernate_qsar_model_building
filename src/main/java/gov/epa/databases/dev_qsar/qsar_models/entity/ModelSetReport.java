@@ -21,7 +21,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name="model_set_reports",
-	uniqueConstraints={@UniqueConstraint(columnNames = {"fk_model_set_id", "descriptor_set_name", "dataset_name", "splitting_name"})})
+	uniqueConstraints={@UniqueConstraint(columnNames = {"fk_model_set_id", "dataset_name", "splitting_name"})})
 public class ModelSetReport {
 	
 	@Id
