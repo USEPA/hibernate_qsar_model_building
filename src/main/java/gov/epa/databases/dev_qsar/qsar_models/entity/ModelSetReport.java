@@ -33,10 +33,6 @@ public class ModelSetReport {
 	@JoinColumn(name="fk_model_set_id")
 	private ModelSet modelSet;
 	
-	@NotNull(message="Descriptor set name required")
-	@Column(name="descriptor_set_name")
-	private String descriptorSetName;
-	
 	@NotNull(message="Dataset name required")
 	@Column(name="dataset_name")
 	private String datasetName;
@@ -67,10 +63,9 @@ public class ModelSetReport {
 	
 	public ModelSetReport() {}
 	
-	public ModelSetReport(ModelSet modelSet, String datasetName, String descriptorSetName, String splittingName, byte[] bytes, String createdBy) {
+	public ModelSetReport(ModelSet modelSet, String datasetName, String splittingName, byte[] bytes, String createdBy) {
 		this.setModelSet(modelSet);
 		this.setDatasetName(datasetName);
-		this.setDescriptorSetName(descriptorSetName);
 		this.setSplittingName(splittingName);
 		this.setFile(bytes);
 		this.setCreatedBy(createdBy);
@@ -90,14 +85,6 @@ public class ModelSetReport {
 
 	public void setModelSet(ModelSet modelSet) {
 		this.modelSet = modelSet;
-	}
-
-	public String getDescriptorSetName() {
-		return descriptorSetName;
-	}
-
-	public void setDescriptorSetName(String descriptorSetName) {
-		this.descriptorSetName = descriptorSetName;
 	}
 
 	public String getDatasetName() {

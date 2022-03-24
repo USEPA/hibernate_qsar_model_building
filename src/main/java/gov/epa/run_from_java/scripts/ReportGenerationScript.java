@@ -110,10 +110,10 @@ public class ReportGenerationScript {
 		ReportGenerationScript run=new ReportGenerationScript();
 		
 		//*****************************************************************************************			
-		//		String descriptorSetName = "T.E.S.T. 5.1";
-		//		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
-		//		String datasetName = endpoint+" OPERA";
-//		run.reportAllPredictions(datasetName,descriptorSetName,splittingName);		
+				String descriptorSetName = "T.E.S.T. 5.1";
+				String endpoint=DevQsarConstants.LOG_HALF_LIFE;
+				String datasetName = endpoint+" OPERA";
+		ReportGenerationScript.reportAllPredictions(datasetName,descriptorSetName,"OPERA", "Sample models");		
 
 		//*****************************************************************************************	
 		//		run.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);
@@ -125,8 +125,8 @@ public class ReportGenerationScript {
 //		per.generate(per.wb);
 		
 		// generate full model database report //
-		ExcelModelStatisticsOld ems = ExcelModelStatisticsOld.prepareFactory("data/ExcelReports");
-		ems.generate();
+//		ExcelModelStatisticsOld ems = ExcelModelStatisticsOld.prepareFactory("data/ExcelReports");
+//		ems.generate();
 
 
 

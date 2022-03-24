@@ -152,7 +152,7 @@ public class QsarModelsScript {
 		return file;
 	}
 	
-	public void uploadModelSetReport(Long modelSetId, String datasetName, String descriptorSetName, String splittingName, 
+	public void uploadModelSetReport(Long modelSetId, String datasetName, String splittingName, 
 			String reportFilePath) throws IOException, ConstraintViolationException {
 		byte[] bytes = Files.readAllBytes(Paths.get(reportFilePath));
 		ModelSet modelSet = modelSetService.findById(modelSetId);
@@ -166,14 +166,14 @@ public class QsarModelsScript {
 		}
 		
 		System.out.println("Uploading Excel model set report with bytecount " + bytes.length);
-		ModelSetReport modelSetReport = new ModelSetReport(modelSet, datasetName, descriptorSetName, splittingName, bytes, lanId);
+		ModelSetReport modelSetReport = new ModelSetReport(modelSet, datasetName, splittingName, bytes, lanId);
 		modelSetReportService.create(modelSetReport);
 	}
 	
-	public byte[] downloadModelSetReport(Long modelSetId, String datasetName, String descriptorSetName, String splittingName,
+	public byte[] downloadModelSetReport(Long modelSetId, String datasetName, String splittingName,
 			String downloadFolder) {
 		ModelSetReport modelSetReport = modelSetReportService
-				.findByModelSetIdAndModelData(modelSetId, datasetName, descriptorSetName, splittingName);
+				.findByModelSetIdAndModelData(modelSetId, datasetName, splittingName);
 		return writeOneModelSetReport(modelSetReport, downloadFolder);
 	}
 	
@@ -183,7 +183,6 @@ public class QsarModelsScript {
 		
 		String saveToFilePath = downloadFolder + File.separator + String.join("_", modelSet.getName(),
 				modelSetReport.getDatasetName(), 
-				modelSetReport.getDescriptorSetName(), 
 				modelSetReport.getSplittingName())
 				+ ".xlsx";
 		
@@ -267,7 +266,7 @@ public class QsarModelsScript {
 		String datasetName="Data from LLNA from exp_prop, without eChemPortal external to LLNA TEST";
 		String descriptorSetName="T.E.S.T. 5.1";
 		String splittingName="RND_REPRESENTATIVE";
-		ModelSetReport modelSetReport=m2.findByModelSetIdAndModelData(modelSetID,datasetName,descriptorSetName,splittingName);
+		ModelSetReport modelSetReport=m2.findByModelSetIdAndModelData(modelSetID,datasetName,splittingName);
 		m2.delete(modelSetReport);
 
 		
