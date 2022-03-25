@@ -70,7 +70,7 @@ public class ModelBuildingScript {
 		 * @param lanId
 		 */
 		public static void buildModel(String modelWsServer,int modelWsPort,String datasetName,String descriptorSetName,
-				String splittingName, boolean removeLogDescriptors,String methodName,String lanId) {
+				String splittingName, boolean removeLogDescriptors,String methodName,String lanId, String descriptorEmbeddingName) {
 	
 			System.out.println("Building "+methodName+" model for "+datasetName);
 			
@@ -80,8 +80,11 @@ public class ModelBuildingScript {
 			
 			ModelWebService modelWs = new ModelWebService(modelWsServer, modelWsPort);
 			WebServiceModelBuilder mb = new WebServiceModelBuilder(modelWs, lanId);
+			if (descriptorEmbeddingName == null) {
 			Long modelId = mb.build(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName);
-	
+			} else {
+			Long modelID = mb.buildWithPreselectedDescriptors(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName, descriptorEmbeddingName);
+			}
 	//		PredictionReportGenerator gen = new PredictionReportGenerator();
 	//		PredictionReport report=gen.generateForModelPredictions(modelId);
 	//		writeReport(datasetName, descriptorSetName, report);//dont really need to write report since we probably want report from all models in one json file anyways
@@ -128,8 +131,10 @@ public class ModelBuildingScript {
 		
 		//*****************************************************************************************
 		// Build model:		
-		String modelWsServer="10.140.73.169";
-//		String modelWsServer=DevQsarConstants.SERVER_LOCAL;
+//		String modelWsServer="10.140.73.169";
+		String modelWsServer=DevQsarConstants.SERVER_LOCAL;
+//		String modelWsServer=DevQsarConstants.SERVER_819;
+
 		int modelWsPort=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
 		
 		String sampleSource="OPERA";
@@ -144,8 +149,10 @@ public class ModelBuildingScript {
 		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
 //		String endpoint=DevQsarConstants.DEV_TOX;
 				
-		String datasetName = endpoint +" "+sampleSource;
-		String splittingName=sampleSource;		
+//		String datasetName = endpoint +" "+sampleSource;
+//		String datasetName= "";
+		String datasetName = "Standard Henry's law constant from exp_prop";
+		String splittingName="RND_REPRESENTATIVE";		
 		String descriptorSetName = "T.E.S.T. 5.1";		
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 		
@@ -163,10 +170,16 @@ public class ModelBuildingScript {
 //		String methodName=DevQsarConstants.SVM;
 //		String methodName=DevQsarConstants.DNN;
 //		String methodName=DevQsarConstants.RF;
-//		String methodName=DevQsarConstants.XGB;
+		String methodName=DevQsarConstants.XGB;
+		
+//		String descriptorEmbeddingName="TestEmbeddingHLCexpPrp";
 //
-//		run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-//				splittingName, removeLogDescriptors,methodName,lanId);
+		
+//		String datasetName="LLNA from exp_prop, without eChemPortal";
+		String descriptorEmbeddingName="TestEmbeddingHLCexpPrp";
+		
+		run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
+				splittingName, removeLogDescriptors,methodName,lanId, descriptorEmbeddingName);
 //
 //		run.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
 //				splittingName, removeLogDescriptors,methodName,lanId);
