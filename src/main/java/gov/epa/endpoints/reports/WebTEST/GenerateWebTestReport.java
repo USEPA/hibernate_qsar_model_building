@@ -365,7 +365,7 @@ public class GenerateWebTestReport {
 				
 		DataPoint dp=new DataPoint();
 		
-		//**TODO smiles get from structure drawing interface:		
+		//**TODO smiles get from QSAR ready api:		
 		dp.setCanonQsarSmiles(dataset.instancesPrediction.instance(0).getName());//for testing purposes just use first instance of test set
 		
 		PredictionReportDataPoint prdp=new PredictionReportDataPoint(dp);
