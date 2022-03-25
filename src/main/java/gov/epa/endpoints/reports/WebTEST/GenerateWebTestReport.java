@@ -1,5 +1,6 @@
 package gov.epa.endpoints.reports.WebTEST;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
@@ -308,7 +309,6 @@ public class GenerateWebTestReport {
 	
 	public static void main(String[] args) {
 
-		boolean genReport=true;//whether or not to generate the prediction report json file
 		String modelSetName="Sample models";
 		
 //		String sampleSource="OPERA";
@@ -344,12 +344,13 @@ public class GenerateWebTestReport {
 		String filepathReport="data/reports/"+datasetName+"_PredictionReport.json";		
 
 		
-		if (genReport) {
-			//Create report as json file by querying the postgres db: (takes time- should use storeDataSetData to cache it)
-			predictionReport=ReportGenerationScript.reportAllPredictions(datasetName, splittingName,modelSetName);
-		} else {
+		if (new File(filepathReport).exists()) {
 			//Load report from json file:
-			predictionReport=loadDataSetFromJson(filepathReport);	
+			predictionReport=loadDataSetFromJson(filepathReport);
+		} else {
+			//Create report as json file by querying the postgres db: (takes time- should use storeDataSetData to cache it)
+			predictionReport=ReportGenerationScript.reportAllPredictions(datasetName, splittingName,modelSetName,true);
+
 		}
 		
 			

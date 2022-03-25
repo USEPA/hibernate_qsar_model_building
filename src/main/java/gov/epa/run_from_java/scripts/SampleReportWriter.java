@@ -6,6 +6,7 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.reports.ModelMetadata;
+import gov.epa.endpoints.reports.WebTEST.GenerateWebTestReport;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable.ModelSetTableRow;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
@@ -29,9 +30,9 @@ public class SampleReportWriter {
 		ModelSetServiceImpl m=new ModelSetServiceImpl();		
 		String modelSetName=m.findById(modelSetID).getName();
 		
-		String downloadFolder="data/reports/prediction reports upload";
+		String outputFolder="data/reports/prediction reports upload";
 		
-		File f=new File(downloadFolder);
+		File f=new File(outputFolder);
 		if (!f.exists()) f.mkdirs();
 		
 		
@@ -39,15 +40,15 @@ public class SampleReportWriter {
 			
 //			String filepath="predictionReport.xlsx";
 			
-			String filepath = downloadFolder + File.separator + String.join("_", modelSetName,
+			String filepath = outputFolder + File.separator + String.join("_", modelSetName,
 					modelSetTableRow.datasetName, 
 					modelSetTableRow.splittingName)
 					+ ".xlsx";
 			
 			
-			for (ModelMetadata mmd: modelSetTableRow.modelMetadata) {
-				System.out.println(mmd.qsarMethodName);
-			}
+//			for (ModelMetadata mmd: modelSetTableRow.modelMetadata) {
+//				System.out.println(mmd.qsarMethodName);
+//			}
 			
 				
 //			System.out.println(modelSetTableRow.datasetName);
@@ -69,9 +70,24 @@ public class SampleReportWriter {
 //				if (modelSetTableRow.datasetName.equals("LD50 TEST")) continue;
 //				if (modelSetTableRow.datasetName.equals("Standard Water solubility from exp_prop")) continue;
 				
+
+//				PredictionReport predictionReport=p.generateForModelSetPredictions(modelSetTableRow.datasetName,modelSetTableRow.splittingName,modelSetName);				
+				
+				PredictionReport predictionReport=null;
+				
+				String filepathReport="data/reports/"+modelSetTableRow.datasetName+"_PredictionReport.json";		
+
+				File reportFile=new File(filepathReport);
+				
+				System.out.println(filepathReport);
+				
+				if (reportFile.exists()) {
+					predictionReport=GenerateWebTestReport.loadDataSetFromJson(filepathReport);
+				} else {
+					predictionReport=ReportGenerationScript.reportAllPredictions(modelSetTableRow.datasetName, modelSetTableRow.splittingName,modelSetName,true);					
+				}
 								
-				PredictionReport predictionReport=p.generateForModelSetPredictions(modelSetTableRow.datasetName,modelSetTableRow.splittingName,modelSetName);				
-								
+										
 				
 				eprg.generate(predictionReport, filepath);
 				script.uploadModelSetReport(modelSetID, modelSetTableRow.datasetName, modelSetTableRow.splittingName,filepath);

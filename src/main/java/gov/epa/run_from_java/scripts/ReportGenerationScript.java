@@ -14,6 +14,7 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.models.WebServiceModelBuilder;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
+import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
 import gov.epa.endpoints.reports.predictions.PredictionReportGenerator;
 import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelModelStatisticsOld;
 import kong.unirest.Unirest;
@@ -54,12 +55,22 @@ public class ReportGenerationScript {
 
 
 
-	public static PredictionReport reportAllPredictions(String datasetName,String splittingName,String modelSetName) {
+	public static PredictionReport reportAllPredictions(String datasetName,String splittingName,String modelSetName,boolean deleteMissingSplitting) {
 
 		long t1=System.currentTimeMillis();
 		PredictionReport report=gen.generateForModelSetPredictions(datasetName, splittingName, modelSetName);
 		long t2=System.currentTimeMillis();
 
+		if (deleteMissingSplitting) {
+			for(int i=0;i<report.predictionReportDataPoints.size();i++) {
+				PredictionReportDataPoint dp=report.predictionReportDataPoints.get(i);
+				if(dp.qsarPredictedValues.get(0).splitNum==null) {
+					report.predictionReportDataPoints.remove(i--);
+				}
+			}			
+		}
+		
+		
 		double time=(t2-t1)/1000.0;
 		System.out.println("Time to generate report for "+datasetName+" = "+time+" seconds");
 
@@ -70,7 +81,7 @@ public class ReportGenerationScript {
 
 	public static void reportAllPredictions(Vector<String> datasetNames,String splittingName,String modelSetName) {
 		for (String datasetName:datasetNames) {
-			reportAllPredictions(datasetName, splittingName,modelSetName);
+			reportAllPredictions(datasetName, splittingName,modelSetName,true);
 		}
 	}
 
@@ -113,7 +124,7 @@ public class ReportGenerationScript {
 				String descriptorSetName = "T.E.S.T. 5.1";
 				String endpoint=DevQsarConstants.LOG_HALF_LIFE;
 				String datasetName = endpoint+" OPERA";
-		ReportGenerationScript.reportAllPredictions(datasetName,"OPERA", "Sample models");		
+		ReportGenerationScript.reportAllPredictions(datasetName,"OPERA", "Sample models",true);		
 
 		//*****************************************************************************************	
 		//		run.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);
