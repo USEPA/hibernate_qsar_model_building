@@ -231,6 +231,7 @@ public class PredictToxicityJSONCreator {
 			String method="Consensus";
 
 			pr.setCAS(testDataPoint.originalCompounds.get(0).casrn);
+			pr.setDtxcid(testDataPoint.originalCompounds.get(0).dtxcid);
 			pr.setEndpoint(dataset.metadata.datasetProperty);
 			pr.setEndpointDescription(dataset.metadata.datasetPropertyDescription);
 			
@@ -384,6 +385,32 @@ public class PredictToxicityJSONCreator {
 		int predcount = 0;
 		double minPredCount=2;
 
+		
+		int consensusCount=0;
+		
+		for (int i = 0; i < qsarPredictedValues.size(); i++) {
+			//If already have a consensus value, use it:
+			if (qsarPredictedValues.get(i).qsarMethodName.toLowerCase().contains("consensus")) {
+				if (qsarPredictedValues.get(i).qsarPredictedValue !=null) {
+					consensusCount++;
+				}
+			}
+		}
+
+		if (consensusCount==1) {//if prediction report only has a single consensus prediction use that
+			for (int i = 0; i < qsarPredictedValues.size(); i++) {
+			//If already have a consensus value, use it:
+				if (qsarPredictedValues.get(i).qsarMethodName.toLowerCase().contains("consensus")) {
+					if (qsarPredictedValues.get(i).qsarPredictedValue !=null) {
+//						System.out.println("using "+qsarPredictedValues.get(i).qsarMethodName);
+						return qsarPredictedValues.get(i).qsarPredictedValue;
+					}
+				}
+			}
+		}
+		
+		//If we didnt store consensus method in database, generate on the fly:
+		
 		for (int i = 0; i < qsarPredictedValues.size(); i++) {
 			if (qsarPredictedValues.get(i).qsarPredictedValue !=null) {
 				predcount++;

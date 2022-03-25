@@ -8,7 +8,17 @@ public class PredictionResults {
 
 	private String reportBase;
 	
-    private String CAS;//test chemical CAS (chemical being predicted)
+	private String dtxcid;
+	
+    public String getDtxcid() {
+		return dtxcid;
+	}
+
+	public void setDtxcid(String dtxcid) {
+		this.dtxcid = dtxcid;
+	}
+
+	private String CAS;//test chemical CAS (chemical being predicted)
 
     private String endpoint; //endpoint being calculated
     private String endpointDescription;

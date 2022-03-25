@@ -1,5 +1,6 @@
 package gov.epa.endpoints.reports.WebTEST;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -97,7 +98,7 @@ public class GenerateWebTestReport {
      * 
      * @param predictionReport
      */
-    public static void storeDataSetInCache(PredictionReport predictionReport,String modelSetName) {
+    public static boolean storeDataSetInCache(PredictionReport predictionReport,String modelSetName,ModelData md) {
     	
     	String dataSetName=predictionReport.predictionReportMetadata.datasetName;
 //    	String descriptorHeader=predictionReport.predictionReportMetadata.descriptorSetHeader;
@@ -107,22 +108,11 @@ public class GenerateWebTestReport {
     	
     	if (htDatasets.get(dataSetName)!=null) {
     		System.out.println("Already loaded data for "+dataSetName);
-    		return;
+    		return true;
     	}
     	    	
     	Dataset dataset=new Dataset();    	
     	htDatasets.put(dataSetName, dataset);
-    	
-    	ModelBuilder mb=new ModelBuilder("tmarti02");
-    	
-    	//Use TEST descriptors to find analogs from training and test sets:
-    	String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_TEST;    	
-    	if (!modelSetName.equals("Sample models") && !modelSetName.equals("WebTEST2.0")) {
-    		descriptorSetName="WebTEST-default";
-    	}
-    	
-    	//Get training and test set instances as strings using TEST descriptors:
-    	ModelData md=mb.initModelData(dataSetName, descriptorSetName,predictionReport.predictionReportMetadata.splittingName, false);
     	
 //    	System.out.println(md.predictionSetInstances);
     	
@@ -151,7 +141,7 @@ public class GenerateWebTestReport {
 		dataset.fracTrainingForAD=0.95;
     	dataset.scFracTraining=AD_simNN_All_descriptors.calculateAvgSC_trainingSet(3, dataset.instancesTraining,dataset.simMeasure,dataset.fracTrainingForAD);
 //    	System.out.println("scFracTraining="+dataset.scFracTraining);
-    	
+    	return true;
     }
 //
 //	private static Double calculatePredConsensus(PredictionReportDataPoint dataPoint) {
@@ -225,7 +215,7 @@ public class GenerateWebTestReport {
 		
 		try {
 			Dataset dataset=htDatasets.get(dataSetName);
-			PredictionReportMetadata datasetMetadata=dataset.metadata;
+//			PredictionReportMetadata datasetMetadata=dataset.metadata;
 //			System.out.println(datasetMetadata==null);
 			
 //			String descriptorHeader=datasetMetadata.descriptorSetHeader;
@@ -241,21 +231,16 @@ public class GenerateWebTestReport {
 		
 			//TODO where should look up of experimental value occur???  Is this ok?
 			ExpRecord er=LookupExpValBySmiles(canonQSARsmiles, dataset.ht_datapoints);
-									
 //			System.out.println(er.expCAS+"\t"+er.expSet+"\t"+er.expToxValue);
 			
-			// following MW is calculated from QSAR ready smiles-need the MW from the original smiles if was desalted structure...
-//			double MW=evalInstance2d.value("MW");
-//			double MW_Frag=evalInstance2d.value("MW_Frag");
-
+			if (er.expToxValue!=null) {
+				testDataPoint.experimentalPropertyValue=er.expToxValue;//just in case store it
+//				System.out.println(testDataPoint.experimentalPropertyValue);
+			}
 
 			//Create results as object:
 			PredictToxicityJSONCreator jsonCreator=new PredictToxicityJSONCreator();			
 			PredictionResults predictionResults = jsonCreator.generatePredictionResultsConsensus(er,testDataPoint, dataset);
-
-//			Gson gson = new GsonBuilder().setPrettyPrinting().create();
-//	        String json = gson.toJson(predictionResults);
-//	        System.out.println(json);
 			
 	        //Create webpage from results object:
 	        PredictToxicityWebPageCreatorFromJSON htmlCreator=new PredictToxicityWebPageCreatorFromJSON();
@@ -307,6 +292,24 @@ public class GenerateWebTestReport {
 		return null;
 	}
 	
+	
+	public static ModelData loadModelDataFromJson(String jsonfilepath) {
+
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+		try {
+			Reader reader = Files.newBufferedReader(Paths.get(jsonfilepath));
+			ModelData md=gson.fromJson(reader, ModelData.class);
+			return md;
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
+	
 	public static void main(String[] args) {
 
 		String modelSetName="Sample models";
@@ -328,8 +331,8 @@ public class GenerateWebTestReport {
 
 		
 		String sampleSource="TEST";
-		String endpoint=DevQsarConstants.LC50;//done
-//		String endpoint=DevQsarConstants.LC50DM;//done;
+//		String endpoint=DevQsarConstants.LC50;//done
+		String endpoint=DevQsarConstants.LC50DM;//done;
 //		String endpoint=DevQsarConstants.LD50;//done
 //		String endpoint=DevQsarConstants.IGC50;//done
 //		String endpoint=DevQsarConstants.DEV_TOX;//done
@@ -338,67 +341,171 @@ public class GenerateWebTestReport {
 
 		String splittingName=sampleSource;
 		String datasetName = endpoint +" "+sampleSource;
-		System.out.println("Generating report for "+datasetName);
 		
+		//***************************************************************
+//		datasetName="LLNA from exp_prop, without eChemPortal";
+		datasetName="Standard Henry's law constant from exp_prop";
+		modelSetName="WebTEST2.0";
+		splittingName="RND_REPRESENTATIVE";
+		//***************************************************************
+		
+		generateWebPageReport(modelSetName, splittingName, datasetName);
+
+	}
+
+	/**
+	 * Generate webpage report for test chemical
+	 * 
+	 * @param modelSetName
+	 * @param splittingName
+	 * @param datasetName
+	 */
+	private static void generateWebPageReport(String modelSetName, String splittingName, String datasetName) {
+
+		//Get prediction report from database:
+		PredictionReport predictionReport = getPredictionReport(modelSetName, splittingName, datasetName);
+		if(predictionReport==null) return;
+		
+		//Get training and test set instances as strings from database:
+		ModelData md = getModelData(modelSetName, splittingName, datasetName);
+		if(md==null) return;
+		
+		System.out.println("Start storing report data in cache...");
+		boolean cached=storeDataSetInCache(predictionReport,modelSetName,md);//store dataset info in cache
+//		System.out.println("number of data points in json file="+data.predictionReportDataPoints.size());
+		
+		if (!cached) {
+			System.out.println("Couldnt cache data");
+			return;
+		}
+		
+		System.out.println("Done storing report data in cache");	
+		Dataset dataset=htDatasets.get(datasetName);		
+//		dataset.instancesTraining.writeToCSVFile("bob.txt");
+				
+		DataPoint dp=new DataPoint();
+		PredictionReportDataPoint prdp=new PredictionReportDataPoint(dp);
+		
+		storeTestChemicalQSARReadySmiles(dataset, prdp);
+		storeTestChemicalDescriptors(dataset, prdp);		
+		storeTestChemicalInfo(predictionReport,prdp);
+		storeTestChemicalPredictions(predictionReport, prdp);
+				
+		String outputPath="data/reports/"+predictionReport.predictionReportMetadata.datasetName+".html";
+		generateReport(datasetName, prdp,outputPath);
+	}
+
+	private static void storeTestChemicalQSARReadySmiles(Dataset dataset, PredictionReportDataPoint dp) {
+		//**TODO smiles get from QSAR ready api rather than from dataset object:		
+		dp.canonQsarSmiles=dataset.instancesPrediction.instance(0).getName();//for testing purposes just use first instance of test set
+	}
+
+	private static void storeTestChemicalDescriptors(Dataset dataset, PredictionReportDataPoint prdp) {
+		//***TODO descriptorValues needs to come from descriptors API instead:
+		prdp.descriptorValues=dataset.instancesPrediction.instance(0).getDescriptorsValues();
+	}
+
+	private static void storeTestChemicalPredictions(PredictionReport predictionReport, 
+			PredictionReportDataPoint prdp) {
+		//***TODO predictions should come from webservices:
+//		QsarPredictedValue qpv=new QsarPredictedValue("svm_regressor_1.1",2.21,1);		
+//		prdp.qsarPredictedValues.add(qpv);
+//		qpv=new QsarPredictedValue("rf_regressor_1.1",2.05,1);
+//		prdp.qsarPredictedValues.add(qpv);
+//		qpv=new QsarPredictedValue("xgb_regressor_1.0",1.81,1);
+//		prdp.qsarPredictedValues.add(qpv);
+//		qpv=new QsarPredictedValue("consensus",2,1);
+//		prdp.qsarPredictedValues.add(qpv);
+
+		//For now just use old predictions stored in prediction report:
+		for (PredictionReportDataPoint predictionReportDataPoint:predictionReport.predictionReportDataPoints) {
+			if (predictionReportDataPoint.canonQsarSmiles.equals(prdp.canonQsarSmiles)) {
+				OriginalCompound oc=predictionReportDataPoint.originalCompounds.get(0);
+				prdp.qsarPredictedValues=predictionReportDataPoint.qsarPredictedValues;		
+			}
+		}
+	}
+
+	private static void storeTestChemicalInfo(PredictionReport predictionReport, PredictionReportDataPoint prdp) {
+		//***TODO retrieve from user interface (need to store dtxcid, casrn, referredName,smiles,molWeight in oc:
+
+//		String dtxcid="DTXCID401735";//need for structure image
+//		String casrn="67-68-5";//cas is displayed in report
+//		String referredName="Dimethyl sulfoxide";//not used in report yet
+//		String smiles=dp.getCanonQsarSmiles();//not used in report yet
+//		double molWeight=78.11;//needed to convert units in report		
+//		OriginalCompound oc=new OriginalCompound(dtxcid, casrn, referredName, smiles, molWeight);
+//		prdp.originalCompounds.add(oc);		
+
+		//For now use values stored in the prediction report for oc 
+		for (PredictionReportDataPoint predictionReportDataPoint:predictionReport.predictionReportDataPoints) {
+			if (predictionReportDataPoint.canonQsarSmiles.equals(prdp.canonQsarSmiles)) {
+				OriginalCompound oc=predictionReportDataPoint.originalCompounds.get(0);
+				prdp.originalCompounds.add(oc);		
+			}
+		}
+	}
+
+	private static ModelData getModelData(String modelSetName, String splittingName, String datasetName) {
+		String filepathModelData="data/reports/"+datasetName+"_ModelData.json";
+		ModelData md=null;//Has instances using training and test sets using TEST descriptors
+		if (new File(filepathModelData).exists()) {
+			//Load report from json file:
+			md=loadModelDataFromJson(filepathModelData);
+		} else {			
+	    	md=getModelData(modelSetName, datasetName, splittingName,filepathModelData);
+		}
+		return md;
+	}
+
+	private static PredictionReport getPredictionReport(String modelSetName, String splittingName, String datasetName) {
 		PredictionReport predictionReport=null;
 		String filepathReport="data/reports/"+datasetName+"_PredictionReport.json";		
-
-		
 		if (new File(filepathReport).exists()) {
 			//Load report from json file:
 			predictionReport=loadDataSetFromJson(filepathReport);
 		} else {
 			//Create report as json file by querying the postgres db: (takes time- should use storeDataSetData to cache it)
 			predictionReport=ReportGenerationScript.reportAllPredictions(datasetName, splittingName,modelSetName,true);
-
 		}
 		
-			
-		System.out.print("Storing report data in cache...");
-		storeDataSetInCache(predictionReport,modelSetName);//store dataset info in cache
-//		System.out.println("number of data points in json file="+data.predictionReportDataPoints.size());
-		System.out.print("done\n");
-	
-		Dataset dataset=htDatasets.get(datasetName);
+		if(predictionReport==null) {
+			System.out.println("Couldnt load prediction report");
+		}
 		
-//		dataset.instancesTraining.writeToCSVFile("bob.txt");
-				
-		DataPoint dp=new DataPoint();
-		
-		//**TODO smiles get from QSAR ready api:		
-		dp.setCanonQsarSmiles(dataset.instancesPrediction.instance(0).getName());//for testing purposes just use first instance of test set
-		
-		PredictionReportDataPoint prdp=new PredictionReportDataPoint(dp);
-		
-		//***TODO descriptorValues needs to come from descriptors API instead:
-		prdp.descriptorValues=dataset.instancesPrediction.instance(0).getDescriptorsValues();
-		
-		//***TODO retrieve from user interface:
-		String dtxcid="DTXCID401735";
-		String casrn="67-68-5";
-		String referredName="Dimethyl sulfoxide";
-		String smiles="CS(C)=O";
-		double molWeight=78.11;
-		
-		OriginalCompound oc=new OriginalCompound(dtxcid, casrn, referredName, smiles, molWeight);
-		prdp.originalCompounds.add(oc);
+		return predictionReport;
+	}
 
+	private static ModelData getModelData(String modelSetName, String datasetName,String splittingName,String filePathJson) {
+		ModelData md;
+		ModelBuilder mb=new ModelBuilder("tmarti02");
 		
-		//***TODO predictions should come from webservices:
-		QsarPredictedValue qpv=new QsarPredictedValue("svm_regressor_1.1",2.21,1);		
-		prdp.qsarPredictedValues.add(qpv);
-				
-		qpv=new QsarPredictedValue("rf_regressor_1.1",2.05,1);
-		prdp.qsarPredictedValues.add(qpv);
+		//Use TEST descriptors to find analogs from training and test sets:
+		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_TEST;    	
+		if (!modelSetName.equals("Sample models") && !modelSetName.equals("WebTEST2.0")) {
+			descriptorSetName="WebTEST-default";
+		}
 		
-		qpv=new QsarPredictedValue("xgb_regressor_1.0",1.81,1);
-		prdp.qsarPredictedValues.add(qpv);
+		//Get training and test set instances as strings using TEST descriptors:
+		md=mb.initModelData(datasetName, descriptorSetName,splittingName, false);
 		
-		//Note: consensus prediction calculated in the report code
-				
-		String outputPath="data/reports/"+predictionReport.predictionReportMetadata.datasetName+".html";
-		generateReport(datasetName, prdp,outputPath);
-
+		if (md==null) {
+    		System.out.println("couldnt load training and test set for ");
+        	System.out.println("dataSetName="+datasetName);
+        	System.out.println("descriptorSetName="+descriptorSetName);
+        	System.out.println("splittingName="+splittingName);    	    		
+    		return null;
+    	}
+		
+		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+		
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePathJson))) {
+			writer.write(gson.toJson(md));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return md;
 	}
 
 }

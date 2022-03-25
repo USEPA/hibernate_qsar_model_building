@@ -656,7 +656,17 @@ public class PredictToxicityWebPageCreatorFromJSON {
 //		fw.write(" for <font color=\"blue\">" + pr.getCAS() + "</font> from " + pr.getMethod() + " method</h2>\n");
 				
 		fw.write("<h2>Predicted ");
-		fw.write(pr.getEndpointDescription()+" for <font color=\"blue\">" + pr.getCAS() + "</font> from " + pr.getMethod() + " method</h2>\n");
+		
+		if (pr.getDtxcid()!=null) {
+			fw.write(pr.getEndpointDescription()+
+					" for <a href=\"" +  pr.getWebPathDetails() + pr.getDtxcid()+
+					"\" target=\"_blank\">" + pr.getCAS() + "</a>"+
+					" from " + pr.getMethod() + " method</h2>\n");
+			
+		} else {
+			fw.write(pr.getEndpointDescription()+" for <font color=\"blue\">" + pr.getCAS() + "</font> from " + pr.getMethod() + " method</h2>\n");			
+		}
+		
 		
 		
 		if (pr.isBinaryEndpoint()) {
@@ -885,7 +895,15 @@ public class PredictToxicityWebPageCreatorFromJSON {
 		
 		fw.write("<tr>\n");
 		// String CAS = chemical.stringValue(chemicalNameIndex);
-		fw.write("<td><font color=\"blue\">" + pr.getCAS() + "<br>(test chemical)</font></td>\n");
+		
+		
+		if (pr.getDtxcid() != null) {
+			fw.write("<td><a href=\"" +  pr.getWebPathDetails() + pr.getDtxcid()+
+					"\" target=\"_blank\">" + pr.getCAS()+"<br>(test chemical)</a></td>\n");			
+		} else {
+			fw.write("<td><font color=\"blue\">" + pr.getCAS() + "<br>(test chemical)</font></td>\n");			
+		}
+		
 		fw.write("<td><a href=\""+pr.getImageURL()+"\">"+
 				"<img src=\"" +pr.getImageURL() 
 				+ "\" width=" + pr.getImgSize()+ " border=0></a></td>\n");
@@ -902,7 +920,7 @@ public class PredictToxicityWebPageCreatorFromJSON {
 			fw.write("<tr>\n");
 			
 			if (simChem.getDtxcid() != null) {
-				fw.write("<td><a href=\"" +  pr.getWebPathDetails() + simChem.getDtxcid() + "\" target=\"_blank\">" + simChem.getCAS() + "</td>\n");// TODD				
+				fw.write("<td><a href=\"" +  pr.getWebPathDetails() + simChem.getDtxcid() + "\" target=\"_blank\">" + simChem.getCAS() + "</a></td>\n");// TODD				
 //			} else if (simChem.getDSSTOXSID() == null) {
 //				fw.write("<td><a href=\"" + pr.getWebPath2() + simChem.getDSSTOXSID() + "\" target=\"_blank\">" + simChem.getCAS() + "</td>\n");// TODD
 			} else {
@@ -1000,7 +1018,7 @@ public class PredictToxicityWebPageCreatorFromJSON {
 			String pred=predictionIndividualMethod.getPrediction();
 			
 			
-			if (method.equals("Consensus"))	continue;
+			if (method.toLowerCase().contains("consensus"))	continue;
 			
 			fw.write("<tr>\n");
 
