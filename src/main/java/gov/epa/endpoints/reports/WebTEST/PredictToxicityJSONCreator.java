@@ -271,9 +271,13 @@ public class PredictToxicityJSONCreator {
 			if (testDataPoint.errorMessage==null) {
 				predToxVal=calculateConsensusToxicityValue(testDataPoint.qsarPredictedValues);
 			}
+				    	
+	    	if (er.expToxValue!=null) testDataPoint.experimentalPropertyValue=er.expToxValue;
+			Instance evalInstance2d = createInstance(testDataPoint,dataset.instancesTraining.getDescriptorNames(),"\t");					
 			
-	    	String descriptorHeader=dataset.metadata.descriptorSetHeader;
-			Instance evalInstance2d = createInstance(testDataPoint,descriptorHeader,"\t");			
+//			System.out.println(evalInstance2d.numValues());
+//			System.out.println(dataset.instancesTraining.numValues());			
+			
 			List<Analog>analogsTraining=AnalogFinder.findAnalogsWekalite(evalInstance2d, dataset.instancesTraining, 10, 0.5, true, dataset.simMeasure);
 			List<Analog>analogsPrediction=AnalogFinder.findAnalogsWekalite(evalInstance2d, dataset.instancesPrediction, 10, 0.5, true, dataset.simMeasure);
 			addPredictionsToAnalogs(analogsTraining, dataset.ht_datapoints);
@@ -316,8 +320,16 @@ public class PredictToxicityJSONCreator {
 
 	
 	public static Instance createInstance(PredictionReportDataPoint dataPoint, String descriptorHeader, String del) {
-		String strInstances="ID"+del+"Property"+del+descriptorHeader+"\r\n";    		
+		String strInstances="ID"+del+"Property"+del+descriptorHeader+"\r\n";    
+//		System.out.println(strInstances);
+		
+		double propVal=-9999.0;
+		
+		if (dataPoint.experimentalPropertyValue!=null) propVal=dataPoint.experimentalPropertyValue;
 		strInstances+=dataPoint.canonQsarSmiles+"\t"+dataPoint.experimentalPropertyValue+"\t"+dataPoint.descriptorValues+"\r\n";
+		
+//		System.out.println(strInstances);
+		
 		Instances instances = Instances.instancesFromString(strInstances);		
 		return instances.firstInstance();
 	}
@@ -921,6 +933,8 @@ private static void createQSARUnitsRow(String units, Double predToxVal, Double p
 		if (!description.contains("http")) {
 			return description;
 		} else {			
+			//TODO later we might want to add a url field in the database for the qsar method
+			
 			String link=description.substring(description.indexOf("(")+1,description.indexOf(")"));
 			String text = description.substring(0, description.indexOf("("));
 			String result= "<a href=\""+link+"\" target=\"_blank\">"+text+"</a>";

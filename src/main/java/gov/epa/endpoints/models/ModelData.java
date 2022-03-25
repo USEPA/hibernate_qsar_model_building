@@ -25,8 +25,8 @@ public class ModelData {
 	boolean removeLogDescriptors;
 	
 	// Set by querying from qsar_datasets and qsar_descriptors using ModelBuilder.initInstances()
-	String trainingSetInstances;
-	String predictionSetInstances;
+	 public String trainingSetInstances;
+	 public String predictionSetInstances;
 	
 	public ModelData(String datasetName, String descriptorSetName, String splittingName, boolean removeLogDescriptors) {
 		this.datasetName = datasetName;
