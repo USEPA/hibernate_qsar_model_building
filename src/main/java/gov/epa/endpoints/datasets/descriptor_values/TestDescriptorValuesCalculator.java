@@ -21,9 +21,7 @@ public class TestDescriptorValuesCalculator extends DescriptorValuesCalculator {
 	}
 	
 	@Override
-	public String calculateDescriptors(String datasetName, String descriptorSetName, boolean saveToDatabase) {
-		StringBuilder sbOverall = new StringBuilder();
-		
+	public void calculateDescriptors(String datasetName, String descriptorSetName) {
 		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
 		DescriptorSet descriptorSet = descriptorSetService.findByName(DevQsarConstants.DESCRIPTOR_SET_TEST);
 		for (DataPoint dp:dataPoints) {
@@ -33,36 +31,24 @@ public class TestDescriptorValuesCalculator extends DescriptorValuesCalculator {
 				continue;
 			} 
 			
-//			System.out.println(canonQsarSmiles);
-			
 			DescriptorValues descriptorValues = descriptorValuesService
 					.findByCanonQsarSmilesAndDescriptorSetName(canonQsarSmiles, descriptorSetName);
 			if (descriptorValues==null) {
 				TestDescriptorCalculationResponse response = descriptorWebService.callCalculation(canonQsarSmiles).getBody();
 				
-				String valuesTsv = response.valuesTsv;			
-//				System.out.println(valuesTsv);				
-				sbOverall.append(valuesTsv+"\r\n");
-				
+				String valuesTsv = response.valuesTsv;
 				// If descriptor calculation failed, set null so we can check easily when we try to use them later
 				if (valuesTsv.contains("Error")) {
 					valuesTsv = null;
 				}
 				
-				if (saveToDatabase) {
-					DescriptorValues newDescriptorValues = new DescriptorValues(canonQsarSmiles, descriptorSet, valuesTsv, lanId);
-					try {
-						descriptorValuesService.create(newDescriptorValues);
-					} catch (ConstraintViolationException e) {
-						System.out.println(e.getMessage());
-					}
+				DescriptorValues newDescriptorValues = new DescriptorValues(canonQsarSmiles, descriptorSet, valuesTsv, lanId);
+				try {
+					descriptorValuesService.create(newDescriptorValues);
+				} catch (ConstraintViolationException e) {
+					System.out.println(e.getMessage());
 				}
-			} else {				
-				String valuesTsv = descriptorValues.getValuesTsv();			
-//				System.out.println(valuesTsv);				
-				sbOverall.append(valuesTsv+"\r\n");
 			}
 		}
-		return sbOverall.toString();
 	}
 }

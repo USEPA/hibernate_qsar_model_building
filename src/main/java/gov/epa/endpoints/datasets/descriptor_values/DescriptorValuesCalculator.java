@@ -19,9 +19,8 @@ public class DescriptorValuesCalculator {
 		this.lanId = lanId;
 	}
 	
-	public String calculateDescriptors(String datasetName, String descriptorSetName, boolean writeToDatabase) {
+	public void calculateDescriptors(String datasetName, String descriptorSetName) {
 		System.out.println("Override calculateDescriptors()!");
-		return "tsv";
 	}
 
 }
