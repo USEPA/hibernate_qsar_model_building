@@ -31,8 +31,17 @@ public class TestDescriptorWebService extends WebService {
 		this.urlTail = urlTail;
 	}
 	
+	public TestDescriptorWebService(String url, String urlTail) {
+		super(url);
+		this.urlTail = urlTail;
+	}
+	
 	public TestDescriptorWebService(String server, int port) {
 		this(server, port, "");
+	}
+	
+	public TestDescriptorWebService(String url) {
+		this(url, "");
 	}
 
 	public HttpResponse<TestDescriptorInfoResponse> callInfo() {

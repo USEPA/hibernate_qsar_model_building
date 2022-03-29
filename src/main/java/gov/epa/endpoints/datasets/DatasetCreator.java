@@ -13,10 +13,6 @@ import java.util.stream.Collectors;
 
 import javax.validation.ConstraintViolationException;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-
 import com.google.gson.Gson;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
@@ -46,21 +42,12 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.PropertyServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.UnitService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.UnitServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
-import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorSet;
-import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorValues;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetService;
-import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesService;
-import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServiceImpl;
 import gov.epa.databases.dsstox.DsstoxRecord;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
 import gov.epa.endpoints.datasets.dsstox_mapping.DsstoxMapper;
 import gov.epa.util.MathUtil;
-import gov.epa.web_services.DescriptorWebService;
-import gov.epa.web_services.DescriptorWebService.DescriptorCalculationResponse;
-import gov.epa.web_services.DescriptorWebService.DescriptorInfoResponse;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 import gov.epa.web_services.standardizers.Standardizer;
 import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponse;
@@ -73,8 +60,6 @@ import kong.unirest.Unirest;
 public class DatasetCreator {
 	
 	private CompoundService compoundService;
-	private DescriptorSetService descriptorSetService;
-	private DescriptorValuesService descriptorValuesService;
 	
 	private UnitService unitService;
 	private PropertyService propertyService;
@@ -88,22 +73,16 @@ public class DatasetCreator {
 
 	private String lanId;
 	private Standardizer standardizer;
-	private DescriptorWebService descriptorWebService;
 	
 	private String standardizerName;
-	private DescriptorSet descriptorSet;
 	
 	private Map<String, String> finalUnits;
 	private Set<String> physchemPropertyNames;
 	private Set<String> acceptableAtoms;
 	
-	private static final Logger logger = LogManager.getLogger(DatasetCreator.class);
-	
-	public DatasetCreator(Standardizer standardizer, DescriptorWebService descriptorWebService, String lanId) 
+	public DatasetCreator(Standardizer standardizer, String lanId) 
 			throws ConstraintViolationException {
 		this.compoundService = new CompoundServiceImpl();
-		this.descriptorSetService = new DescriptorSetServiceImpl();
-		this.descriptorValuesService = new DescriptorValuesServiceImpl();
 		
 		this.unitService = new UnitServiceImpl();
 		this.propertyService = new PropertyServiceImpl();
@@ -117,7 +96,6 @@ public class DatasetCreator {
 		
 		this.lanId = lanId;
 		this.standardizer = standardizer;
-		this.descriptorWebService = descriptorWebService;
 		
 		this.standardizerName = this.standardizer==null ? 
 				DevQsarConstants.STANDARDIZER_NONE : this.standardizer.standardizerName;
@@ -125,28 +103,16 @@ public class DatasetCreator {
 		try {
 			Unirest.config().followRedirects(true).socketTimeout(000).connectTimeout(000);
 		} catch (Exception e) {
-			logger.warn("Unirest configuration failed: " + e.getMessage());
+//			logger.warn("Unirest configuration failed: " + e.getMessage());
 		}
 
-		Logger apacheLogger = LogManager.getLogger("org.apache.http");
-		apacheLogger.setLevel(Level.WARN);
-		Logger mapperLogger = LogManager.getLogger(DsstoxMapper.class);
-		mapperLogger.setLevel(Level.WARN);
-		Logger mpvLogger = LogManager.getLogger(MappedPropertyValue.class);
-		mpvLogger.setLevel(Level.WARN);
-		logger.setLevel(Level.WARN);
-		
-		DescriptorInfoResponse descriptorInfoResponse = descriptorWebService.callInfo().getBody();
-		String descriptorSetName = descriptorInfoResponse.name + " " + descriptorInfoResponse.version;
-		
-		descriptorSet = descriptorSetService.findByName(descriptorSetName);
-		if (descriptorSet==null) {
-			descriptorSet = new DescriptorSet(descriptorSetName, 
-					descriptorInfoResponse.description, 
-					descriptorInfoResponse.headersTsv,
-					lanId);
-			descriptorSetService.create(descriptorSet);
-		}
+//		Logger apacheLogger = LogManager.getLogger("org.apache.http");
+//		apacheLogger.setLevel(Level.WARN);
+//		Logger mapperLogger = LogManager.getLogger(DsstoxMapper.class);
+//		mapperLogger.setLevel(Level.WARN);
+//		Logger mpvLogger = LogManager.getLogger(MappedPropertyValue.class);
+//		mpvLogger.setLevel(Level.WARN);
+//		logger.setLevel(Level.WARN);
 		
 //		this.gson = new GsonBuilder().disableHtmlEscaping().create();
 		this.acceptableAtoms = DevQsarConstants.getAcceptableAtomsSet();
@@ -157,8 +123,8 @@ public class DatasetCreator {
 				.collect(Collectors.toSet());
 	}
 	
-	public DatasetCreator(DescriptorWebService descriptorWebService, String lanId) {
-		this(null, descriptorWebService, lanId); // If initialized without a standardizer web service, uses DSSTox QSAR-ready SMILES
+	public DatasetCreator(String lanId) {
+		this(null, lanId); // If initialized without a standardizer web service, uses DSSTox QSAR-ready SMILES
 	}
 	
 	private List<MappedPropertyValue> mapPropertyValuesToDsstoxRecords(List<PropertyValue> propertyValues, DatasetParams params) {
@@ -179,7 +145,7 @@ public class DatasetCreator {
 			} else {
 				// TODO implementation of:
 				// Mapping by provided DTXRID?
-				logger.error("Mapping strategy " + params.mappingParams.dsstoxMappingId + " not implemented");
+//				logger.error("Mapping strategy " + params.mappingParams.dsstoxMappingId + " not implemented");
 				return null;
 			}
 		} catch (IOException e) {
@@ -205,12 +171,12 @@ public class DatasetCreator {
 				mpv.compound = compound;
 				mpv.standardizedSmiles = compound.getCanonQsarSmiles();
 				mpv.isStandardized = true;
-				logger.trace(mpv.id + ": Found existing standardization: " + dr.smiles + " -> " + mpv.standardizedSmiles);
+//				logger.trace(mpv.id + ": Found existing standardization: " + dr.smiles + " -> " + mpv.standardizedSmiles);
 			} else if (standardizer==null) {
 				// If using DSSTox QSAR-ready SMILES, just set it and mark standardized
 				mpv.standardizedSmiles = dr.qsarReadySmiles;
 				mpv.isStandardized = true;
-				logger.debug(mpv.id + ": Found DSSTox standardization: " + dr.smiles + " -> " + mpv.standardizedSmiles);
+//				logger.debug(mpv.id + ": Found DSSTox standardization: " + dr.smiles + " -> " + mpv.standardizedSmiles);
 			} else {
 				if (standardizer.useBatchStandardize) {
 					// Add SMILES to list for batch standardization
@@ -223,13 +189,13 @@ public class DatasetCreator {
 						if (standardizeResponseData.success) {
 							mpv.standardizedSmiles = standardizeResponseData.qsarStandardizedSmiles;
 							mpv.isStandardized = true;
-							logger.debug(mpv.id + ": Standardized: " + dr.smiles + " -> " + mpv.standardizedSmiles);
+//							logger.debug(mpv.id + ": Standardized: " + dr.smiles + " -> " + mpv.standardizedSmiles);
 						} else {
-							logger.warn(mpv.id + ": Standardization failed for SMILES: " + dr.smiles);
+//							logger.warn(mpv.id + ": Standardization failed for SMILES: " + dr.smiles);
 						}
 					} else {
-						logger.warn(mpv.id + ": Standardizer HTTP response failed for SMILES: " 
-								+ dr.smiles + " with code " + standardizeResponse.status);
+//						logger.warn(mpv.id + ": Standardizer HTTP response failed for SMILES: " 
+//								+ dr.smiles + " with code " + standardizeResponse.status);
 					}
 				}
 			}
@@ -255,6 +221,18 @@ public class DatasetCreator {
 			// Get standardization from map
 			mpv.standardizedSmiles = standardizedSmilesMap.get(dr.smiles);
 			mpv.isStandardized = true;
+			
+			if (mpv.standardizedSmiles!=null && mpv.standardizedSmiles.isBlank()) {
+				mpv.standardizedSmiles = null;
+			}
+			
+			Compound compound = new Compound(dr.dsstoxCompoundId, mpv.standardizedSmiles, standardizerName, lanId);
+			
+			try {
+				mpv.compound = compoundService.create(compound);
+			} catch (ConstraintViolationException e) {
+				System.out.println(e.getMessage());
+			}
 		}
 	}
 
@@ -270,82 +248,16 @@ public class DatasetCreator {
 					standardizedSmilesMap.put(standardization.smiles, standardization.standardizedSmiles);
 				}
 			} else {
-				logger.error("Batch standardization failed");
+//				logger.error("Batch standardization failed");
 			}
 		} else {
-			logger.error("Batch standardizer HTTP response failed with code " + batchStandardizeResponse.status);
+//			logger.error("Batch standardizer HTTP response failed with code " + batchStandardizeResponse.status);
 		}
 		
 		return standardizedSmilesMap;
 	}
 	
-	// TODO logging
-	private void calculateDescriptors(List<MappedPropertyValue> mappedPropertyValues) {
-		for (MappedPropertyValue mpv:mappedPropertyValues) {
-			DsstoxRecord dr = mpv.dsstoxRecord;
-			
-			// Upload all new compounds, even the ones with a null standardization
-			// That way we don't end up retrying the standardization every time
-			if (mpv.isStandardized && mpv.compound==null) {
-				// Convert blank standardizations to null for consistency
-				// TODO Check for valid SMILES with Indigo or CDK instead? (In case of error strings)
-				if (mpv.standardizedSmiles!=null && mpv.standardizedSmiles.isBlank()) {
-					mpv.standardizedSmiles = null;
-				}
-				
-				Compound compound = new Compound(dr.dsstoxCompoundId, mpv.standardizedSmiles, standardizerName, lanId);
-				
-				try {
-					mpv.compound = compoundService.create(compound);
-				} catch (ConstraintViolationException e) {
-					System.out.println(e.getMessage());
-				}
-			} else if (!mpv.isStandardized) {
-				logger.info(mpv.id + ": Skipped compound upload due to missing standardization");
-			} else if (mpv.compound!=null) {
-				logger.trace(mpv.id + ": Found existing compound");
-			}
-			
-			if (mpv.standardizedSmiles==null) {
-				// Don't calculate descriptors on compounds without standardization
-				logger.info(mpv.id + ": Skipped descriptor calculation due to null standardization");
-				continue;
-			} 
-			
-			DescriptorValues descriptorValues = descriptorValuesService
-					.findByCanonQsarSmilesAndDescriptorSetName(mpv.standardizedSmiles, descriptorSet.getName());
-			if (descriptorValues!=null) {
-				// Should this store descriptors for calculation later? Probably not
-				// Do nothing
-				logger.trace(mpv.id + ": Found existing descriptor values");
-			} else {
-				// Calculate descriptors
-				DescriptorCalculationResponse descriptorCalculationResponse = 
-						descriptorWebService.callCalculation(mpv.standardizedSmiles).getBody();
-				
-				// Store descriptors
-				// Again, store null or failed descriptors so we don't keep trying to calculate them every time
-				if (mpv.compound!=null && descriptorCalculationResponse!=null) {
-					String valuesTsv = descriptorCalculationResponse.valuesTsv;
-					// If descriptor calculation failed, set null so we can check easily when we try to use them later
-					if (valuesTsv.contains("Error")) {
-						logger.info(mpv.id + ": Error calculating descriptors: " + valuesTsv);
-						valuesTsv = null;
-					} else {
-						logger.debug(mpv.id + ": Calculated descriptors: " + valuesTsv.substring(0,255));
-					}
-					
-					descriptorValues = new DescriptorValues(mpv.standardizedSmiles, descriptorSet, valuesTsv, lanId);
-					
-					try {
-						descriptorValuesService.create(descriptorValues);
-					} catch (ConstraintViolationException e) {
-						System.out.println(e.getMessage());
-					}
-				}
-			}
-		}
-	}
+	
 	
 	private Map<String, List<MappedPropertyValue>> unifyPropertyValuesByStructure(List<MappedPropertyValue> mappedPropertyValues,
 			boolean useStdevFilter) {
@@ -361,7 +273,7 @@ public class DatasetCreator {
 //			structure = structure==null ? null : structure.substring(0, 14);
 			
 			if (structure==null) {
-				logger.info(mpv.id + ": Skipped unification due to missing structure");
+//				logger.info(mpv.id + ": Skipped unification due to missing structure");
 				continue;
 			}
 			
@@ -376,8 +288,8 @@ public class DatasetCreator {
 				List<MappedPropertyValue> structurePropertyValues = unifiedPropertyValues.get(structure);
 				Double stdev = MathUtil.stdevS(structurePropertyValues.stream().map(mpv -> mpv.qsarPropertyValue).collect(Collectors.toList()));
 				if (stdev > DevQsarConstants.STDEV_WIDTH_TOLERANCE * datasetStdev) {
-					logger.info(structure + ": Removed data point due to high stdev: " 
-							+ stdev + " > " + DevQsarConstants.STDEV_WIDTH_TOLERANCE + "*" + datasetStdev);
+//					logger.info(structure + ": Removed data point due to high stdev: " 
+//							+ stdev + " > " + DevQsarConstants.STDEV_WIDTH_TOLERANCE + "*" + datasetStdev);
 					unifiedPropertyValues.remove(structure);
 				}
 			}
@@ -420,7 +332,7 @@ public class DatasetCreator {
 	private Dataset initializeDataset(Dataset dataset) throws ConstraintViolationException {
 		Dataset dbDataset = datasetService.findByName(dataset.getName());
 		if (dbDataset!=null) {
-			logger.error("Dataset with name " + dataset.getName() + " already exists");
+//			logger.error("Dataset with name " + dataset.getName() + " already exists");
 			dataset = null;
 		} else {
 			datasetService.create(dataset);
@@ -441,7 +353,7 @@ public class DatasetCreator {
 			}
 			
 			if (finalValue==null) {
-				logger.info(structure + ": Skipped posting data point due to invalid consensus value");
+//				logger.info(structure + ": Skipped posting data point due to invalid consensus value");
 				continue;
 			}
 			
@@ -466,7 +378,7 @@ public class DatasetCreator {
 		}
 	}
 
-	public void createPropertyDataset(DatasetParams params) {
+	public void createPropertyDataset(DatasetParams params, boolean useStdevFilter) {
 		Gson gson = new Gson();
 		
 		System.out.println("Selecting experimental property data for " + params.propertyName + "...");
@@ -476,7 +388,7 @@ public class DatasetCreator {
 		System.out.println("Selection time = " + (t6 - t5)/1000.0 + " s");
 		
 		if (propertyValues==null || propertyValues.isEmpty()) {
-			logger.error(params.datasetName + ": Experimental property data unavailable");
+//			logger.error(params.datasetName + ": Experimental property data unavailable");
 			return;
 		}
 		
@@ -485,13 +397,13 @@ public class DatasetCreator {
 		try {
 			mappedPropertyValues = mapPropertyValuesToDsstoxRecords(propertyValues, params);
 		} catch (Exception e) {
-			logger.error("Failed DSSTox query: " + e.getMessage());
+//			logger.error("Failed DSSTox query: " + e.getMessage());
 			e.printStackTrace();
 			return;
 		}
 		
 		if (mappedPropertyValues==null || mappedPropertyValues.isEmpty()) {
-			logger.error(params.datasetName + ": DSSTox structure data unavailable");
+//			logger.error(params.datasetName + ": DSSTox structure data unavailable");
 			return;
 		}
 		
@@ -512,14 +424,8 @@ public class DatasetCreator {
 		long t2 = System.currentTimeMillis();
 		System.out.println("Standardization time: " + (t2 - t1)/1000.0 + " s");
 		
-		System.out.println("Calculating descriptors using " + descriptorSet.getName() + "...");
-		long t3 = System.currentTimeMillis();
-		calculateDescriptors(mappedPropertyValues);
-		long t4 = System.currentTimeMillis();
-		System.out.println("Calculation time: " + (t4 - t3)/1000.0 + " s");
-		
 		System.out.println("Unifying structures...");
-		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, true);
+		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, useStdevFilter);
 		
 		System.out.println("Saving unification data to examine...");
 		saveUnifiedData(mappedPropertyValues, params.datasetName, unit);
@@ -651,46 +557,41 @@ public class DatasetCreator {
 	
 	public static void main(String[] args) {
 		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
-		DescriptorWebService testDescriptorWebService = new DescriptorWebService(DevQsarConstants.SERVER_819,
-				DevQsarConstants.PORT_TEST_DESCRIPTORS,
-				"TEST-descriptors/");
-		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, testDescriptorWebService, "gsincl01");
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "gsincl01");
 		
-		creator.createExternalValidationSets("LLNA TEST", "LLNA from exp_prop, without eChemPortal");
+//		creator.createExternalValidationSets("LLNA TEST", "LLNA from exp_prop, without eChemPortal");
 		
-//		String propertyName = DevQsarConstants.LLNA;
-//		String listName = "ExpProp_LLNA_NoEChemPortal_022522";
-//		
-////		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
-////		BoundParameterValue pressureBound = new BoundParameterValue("Pressure", 740.0, 780.0, true);
-////		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
+		String propertyName = DevQsarConstants.WATER_SOLUBILITY;
+		String listName = "ExpProp_WaterSolubility_WithChemProp_120121";
+		
+		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
+		BoundParameterValue phBound = new BoundParameterValue("pH", 6.0, 8.0, true);
 //		BoundParameterValue speciesBound = new BoundParameterValue("Species", "Mouse", false);
-//		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
-////		bounds.add(temperatureBound);
-////		bounds.add(pressureBound);
-////		bounds.add(phBound);
+		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+		bounds.add(temperatureBound);
+		bounds.add(phBound);
 //		bounds.add(speciesBound);
-//		
-//		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, 
-//				false, true, false, true, true, false, true);
-//		MappingParams casrnMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_CASRN, null,
-//				true, false, false, false, false, false, true);
-//		String listMappingName = propertyName + " from exp_prop, without eChemPortal";
-//		String casrnMappingName = "CASRN mapping of " + propertyName + " from exp_prop, without eChemPortal";
-//		String listMappingDescription = propertyName + " with species = Mouse";
-//		String casrnMappingDescription = propertyName + " with species = Mouse, mapped by CASRN";
-//		DatasetParams casrnMappedParams = new DatasetParams(casrnMappingName, 
-//				casrnMappingDescription, 
-//				propertyName,
-//				casrnMappingParams,
-//				bounds);
-//		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
-//				listMappingDescription, 
-//				propertyName,
-//				listMappingParams,
-//				bounds);
-//
-////		creator.createPropertyDataset(casrnMappedParams);
-//		creator.createPropertyDataset(listMappedParams);
+		
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, 
+				false, true, false, true, true, false, true);
+		MappingParams casrnMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_CASRN, null,
+				true, false, false, false, false, false, true);
+		String listMappingName = "Water solubility for comparison with Meng et al. 2022 (lenient)";
+		String casrnMappingName = "CASRN mapping of " + propertyName + " from exp_prop, without eChemPortal";
+		String listMappingDescription = "Water solubility for comparison with Meng et al. 2022, 6 < pH < 8, 20 < T (C) < 30 (lenient)";
+		String casrnMappingDescription = propertyName + " with species = Mouse, mapped by CASRN";
+		DatasetParams casrnMappedParams = new DatasetParams(casrnMappingName, 
+				casrnMappingDescription, 
+				propertyName,
+				casrnMappingParams,
+				bounds);
+		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
+				listMappingDescription, 
+				propertyName,
+				listMappingParams,
+				bounds);
+
+//		creator.createPropertyDataset(casrnMappedParams);
+		creator.createPropertyDataset(listMappedParams, false);
 	}
 }
