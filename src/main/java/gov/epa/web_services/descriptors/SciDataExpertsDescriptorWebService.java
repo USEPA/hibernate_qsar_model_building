@@ -60,8 +60,8 @@ public class SciDataExpertsDescriptorWebService extends WebService {
 	}
 	
 	public HttpResponse<SciDataExpertsDescriptorResponse> calculateDescriptors(String smiles, String descriptorName) {
-		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.get(address + "/api/{descriptorName}")
-				.routeParam("descriptorName", descriptorName)
+		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.get(address + "/api/descriptors")
+				.queryString("type", descriptorName)
 				.queryString("smiles", smiles)
 				.asObject(SciDataExpertsDescriptorResponse.class);
 		
@@ -70,8 +70,8 @@ public class SciDataExpertsDescriptorWebService extends WebService {
 	
 	public HttpResponse<SciDataExpertsDescriptorResponse> calculateDescriptorsWithOptions(String smiles, String descriptorName, 
 			Map<String, Object> options) {
-		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.get(address + "/api/{descriptorName}")
-				.routeParam("descriptorName", descriptorName)
+		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.get(address + "/api/descriptors")
+				.queryString("type", descriptorName)
 				.queryString("smiles", smiles)
 				.queryString(options)
 				.asObject(SciDataExpertsDescriptorResponse.class);

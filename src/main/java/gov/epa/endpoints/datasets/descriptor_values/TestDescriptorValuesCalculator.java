@@ -2,8 +2,6 @@ package gov.epa.endpoints.datasets.descriptor_values;
 
 import java.util.List;
 
-import javax.validation.ConstraintViolationException;
-
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorSet;
@@ -21,9 +19,10 @@ public class TestDescriptorValuesCalculator extends DescriptorValuesCalculator {
 	}
 	
 	@Override
-	public void calculateDescriptors(String datasetName, String descriptorSetName) {
+	public String calculateDescriptors(String datasetName, String descriptorSetName, boolean writeToDatabase) {
 		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
 		DescriptorSet descriptorSet = descriptorSetService.findByName(DevQsarConstants.DESCRIPTOR_SET_TEST);
+		StringBuilder sb = new StringBuilder(START_HEADER + descriptorSet.getHeadersTsv() + LINE_BREAK);
 		for (DataPoint dp:dataPoints) {
 			String canonQsarSmiles = dp.getCanonQsarSmiles();
 			if (dp.getCanonQsarSmiles()==null) {
@@ -31,24 +30,30 @@ public class TestDescriptorValuesCalculator extends DescriptorValuesCalculator {
 				continue;
 			} 
 			
+			String valuesTsv = null;
 			DescriptorValues descriptorValues = descriptorValuesService
 					.findByCanonQsarSmilesAndDescriptorSetName(canonQsarSmiles, descriptorSetName);
 			if (descriptorValues==null) {
 				TestDescriptorCalculationResponse response = descriptorWebService.callCalculation(canonQsarSmiles).getBody();
-				
-				String valuesTsv = response.valuesTsv;
+				valuesTsv = response.valuesTsv;
 				// If descriptor calculation failed, set null so we can check easily when we try to use them later
 				if (valuesTsv.contains("Error")) {
 					valuesTsv = null;
 				}
 				
-				DescriptorValues newDescriptorValues = new DescriptorValues(canonQsarSmiles, descriptorSet, valuesTsv, lanId);
-				try {
-					descriptorValuesService.create(newDescriptorValues);
-				} catch (ConstraintViolationException e) {
-					System.out.println(e.getMessage());
+				if (writeToDatabase) {
+					writeDescriptorValuesToDatabase(canonQsarSmiles, descriptorSet, valuesTsv);
 				}
+			} else {
+				valuesTsv = descriptorValues.getValuesTsv();
+			}
+			
+			String instance = generateInstance(dp, valuesTsv);
+			if (instance!=null) {
+				sb.append(instance);
 			}
 		}
+		
+		return sb.toString();
 	}
 }
