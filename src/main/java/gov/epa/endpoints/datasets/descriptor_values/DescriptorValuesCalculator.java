@@ -30,6 +30,22 @@ public class DescriptorValuesCalculator {
 		this.lanId = lanId;
 	}
 	
+	public void deleteDescriptorSetValuesForDataset(String datasetName, String descriptorSetName) {
+		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
+		for (DataPoint dp:dataPoints) {
+			String canonQsarSmiles = dp.getCanonQsarSmiles();
+			if (dp.getCanonQsarSmiles()==null) {
+				continue;
+			} 
+			
+			DescriptorValues descriptorValues = descriptorValuesService
+					.findByCanonQsarSmilesAndDescriptorSetName(canonQsarSmiles, descriptorSetName);
+			if (descriptorValues!=null) {
+				descriptorValuesService.delete(descriptorValues);
+			}
+		}
+	}
+	
 	public String calculateDescriptors(String datasetName, String descriptorSetName, boolean writeToDatabase) {
 		System.out.println("Override calculateDescriptors()!");
 		return null;

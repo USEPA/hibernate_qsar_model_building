@@ -25,5 +25,9 @@ public interface DescriptorValuesService {
 	public DescriptorValues create(DescriptorValues descriptorValues) throws ConstraintViolationException;
 	
 	public DescriptorValues create(DescriptorValues descriptorValues, Session session) throws ConstraintViolationException;
+	
+	public void delete(DescriptorValues descriptorValues);
+	
+	public void delete(DescriptorValues descriptorValues, Session session);
 
 }

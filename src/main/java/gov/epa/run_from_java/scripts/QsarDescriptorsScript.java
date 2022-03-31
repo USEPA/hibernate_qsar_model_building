@@ -4,6 +4,7 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.endpoints.datasets.descriptor_values.DescriptorValuesCalculator;
 import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValuesCalculator;
 import gov.epa.endpoints.datasets.descriptor_values.TestDescriptorValuesCalculator;
+import kong.unirest.Unirest;
 
 public class QsarDescriptorsScript {
 	
@@ -22,14 +23,30 @@ public class QsarDescriptorsScript {
 		return calc.calculateDescriptors(datasetName, descriptorSetName, writeToDatabase);
 	}
 	
-	public void deleteDescriptorsForDataset(String datasetName, String descriptorSetName) {
-		
+	public static void deleteDescriptorSetValuesForDataset(String datasetName, String descriptorSetName, String lanId) {
+		DescriptorValuesCalculator calc = new DescriptorValuesCalculator(lanId);
+		calc.deleteDescriptorSetValuesForDataset(datasetName, descriptorSetName);
 	}
 	
 	public static void main(String[] args) {
-		String testDescriptorWebServiceUrl = DevQsarConstants.SERVER_819 + ":" + DevQsarConstants.PORT_TEST_DESCRIPTORS;
-		String tsv = calculateDescriptorsForDataset("LogHalfLife OPERA", "RDKit-default", ML_SCI_DATA_EXPERTS_URL, false, "gsincl01");
-		System.out.println(tsv.substring(0, tsv.indexOf("\r")));
+//		String testDescriptorWebServiceUrl = DevQsarConstants.SERVER_819 + ":" + DevQsarConstants.PORT_TEST_DESCRIPTORS;
+		
+		Unirest.config().connectTimeout(0).socketTimeout(0);
+		
+		String datasetName = "Standard Henry's law constant from exp_prop";
+		String[] sciDataExpertsDescriptorSetNames = {
+				"ToxPrints-default", 
+				"Mordred-default", 
+				"WebTEST-default", 
+				"PaDEL-default", 
+				"RDKit-default"
+				};
+		
+		for (String descriptorSetName:sciDataExpertsDescriptorSetNames) {
+			String tsv = calculateDescriptorsForDataset(datasetName, descriptorSetName, ML_SCI_DATA_EXPERTS_URL, true, "gsincl01");
+			System.out.println(descriptorSetName + "\t" + tsv.split("\r\n").length);
+			System.out.println(tsv.substring(0, tsv.indexOf("\r")));
+		}
 	}
 
 }
