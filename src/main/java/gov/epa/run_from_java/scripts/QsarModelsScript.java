@@ -12,12 +12,15 @@ import java.util.List;
 
 import javax.validation.ConstraintViolationException;
 
+import gov.epa.databases.dev_qsar.qsar_models.entity.Config;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelQmrf;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport;
+import gov.epa.databases.dev_qsar.qsar_models.service.ConfigService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ConfigServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetService;
@@ -365,14 +368,27 @@ public class QsarModelsScript {
 		}
 	}
 	
+	public static String getComptoxImgUrl(String dsstoxIdType) {
+		ConfigService configService = new ConfigServiceImpl();
+		String dsstoxIdTypeCaps = dsstoxIdType.toUpperCase();
+		if (dsstoxIdTypeCaps.equals("DTXSID") || dsstoxIdTypeCaps.equals("DTXCID")) {
+			Config config = configService.findByKey("COMPTOX_" + dsstoxIdTypeCaps + "_IMG_URL");
+			if (config!=null) {
+				return config.getValueText();
+			}
+		}
+		return null;
+	}
+	
 	public static void main(String[] args) {
+		System.out.println(getComptoxImgUrl("dtxcid"));
+		
 //		QsarModelsScript script = new QsarModelsScript("gsincl01");
 //		script.removeModelFromSet(6L, 7L);
 		
 //		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-		QsarModelsScript script = new QsarModelsScript("gsincl01");
-		script.restoreAllModelBytes("data/dev_qsar/qsar_models/model_bytes");
-		script.lookAtAllModelBytes();
+//		QsarModelsScript script = new QsarModelsScript("gsincl01");
+//		script.lookAtAllModelBytes();
 		
 //		script.addModelRangeToSet(145L, 148L, 2L);
 //		script.deletePredictionReport();
