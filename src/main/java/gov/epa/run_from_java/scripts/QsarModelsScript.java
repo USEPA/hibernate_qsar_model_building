@@ -144,7 +144,7 @@ public class QsarModelsScript {
 		Model model = modelQmrf.getModel();
 		byte[] file = modelQmrf.getFile();
 		
-		String saveToFilePath = downloadFolder + File.separator + String.join("_", model.getDatasetName(), 
+		String saveToFilePath = downloadFolder + File.separator + String.join("_", "model"+modelId, model.getDatasetName(), 
 				model.getDescriptorSetName(), 
 				model.getSplittingName(),
 				model.getMethod().getName()) 
