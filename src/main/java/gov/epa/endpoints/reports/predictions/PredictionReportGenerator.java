@@ -89,7 +89,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 				.map(dp -> new PredictionReportDataPoint(dp))
 				.collect(Collectors.toList());
 		this.predictionReport.predictionReportDataPoints = predictionReportData;
-		System.out.println(predictionReportData.size());
+//		System.out.println(predictionReportData.size());
 		
 		List<DataPointInSplitting> dataPointsInSplitting = 
 				dataPointInSplittingService.findByDatasetNameAndSplittingName(datasetName, splittingName);

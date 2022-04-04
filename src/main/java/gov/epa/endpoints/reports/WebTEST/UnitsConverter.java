@@ -10,7 +10,9 @@ public class UnitsConverter {
 			return Math.pow(10, -toxValMolar) * MW * 1000.0;// mg/L units
 		} else if (unitsLog.equals(DevQsarConstants.LOG_M)) {
 			return Math.pow(10, toxValMolar) * MW * 1000.0;// mg/L units
-		} else if (unitsLog.equals(DevQsarConstants.LOG_L_KG) || unitsLog.equals(DevQsarConstants.LOG_DAYS)
+		} else if (unitsLog.equals(DevQsarConstants.LOG_L_KG) 
+				|| unitsLog.equals(DevQsarConstants.LOG_DAYS)
+				|| unitsLog.equals(DevQsarConstants.LOG_HR)
 				|| unitsLog.equals(DevQsarConstants.LOG_MMHG)
 				|| unitsLog.equals(DevQsarConstants.LOG_ATM_M3_MOL)
 				|| unitsLog.equals(DevQsarConstants.LOG_CM3_MOLECULE_SEC)) {
@@ -34,6 +36,8 @@ public class UnitsConverter {
 			return DevQsarConstants.MG_KG;
 		} else if (qsarUnits.equals(DevQsarConstants.LOG_L_KG)) {
 			return DevQsarConstants.L_KG;
+		} else if (qsarUnits.equals(DevQsarConstants.LOG_HR)) {
+			return DevQsarConstants.HOUR;
 		} else if (qsarUnits.equals(DevQsarConstants.LOG_DAYS)) {
 			return DevQsarConstants.DAYS;
 		} else if (qsarUnits.equals(DevQsarConstants.NEG_LOG_ATM_M3_MOL) || qsarUnits.equals(DevQsarConstants.LOG_ATM_M3_MOL)) {

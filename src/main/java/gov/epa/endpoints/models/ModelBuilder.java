@@ -71,6 +71,8 @@ public class ModelBuilder {
 		List<DataPointInSplitting> dataPointsInSplitting = 
 				dataPointInSplittingService.findByDatasetNameAndSplittingName(datasetName, splittingName);
 
+//		System.out.println("dataPointsInSplitting.size()="+dataPointsInSplitting.size());
+		
 		if (dataPointsInSplitting.size()==0) {
 //			logger.error("Splitting " + splittingName + " not available for dataset " + datasetName);
 			System.out.println("Splitting " + splittingName + " not available for dataset " + datasetName);

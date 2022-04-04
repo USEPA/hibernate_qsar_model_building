@@ -15,7 +15,7 @@ import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelPredictionReportG
 
 public class SampleReportWriter {
 
-	public void generateSamplePredictionReports(long modelSetID, boolean upload) {
+	public void generateSamplePredictionReports(long modelSetID, boolean upload, boolean deleteExistingReportInDatabase) {
 		ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
 		ModelSetTable table = SampleModelQmrfWriter.getModelsInModelSet(modelSetID);
 
@@ -56,8 +56,13 @@ public class SampleReportWriter {
 						modelSetTableRow.splittingName);
 
 				if (msr != null) {
-					System.out.println(modelSetTableRow.datasetName + " exists skipping!");
-					continue;// skip it we already did it
+					
+					if (deleteExistingReportInDatabase) {
+						m2.delete(msr);
+					} else {
+						System.out.println(modelSetTableRow.datasetName + " exists skipping!");
+						continue;// skip it we already did it						
+					}
 				}
 
 				// Cant seem to generate prediction reports for large data sets:
@@ -177,8 +182,10 @@ public class SampleReportWriter {
 
 		SampleReportWriter g = new SampleReportWriter();
 		
-//		g.generateSamplePredictionReports(1L,true);
-		g.generateSamplePredictionReports(2L,true);
+//		g.generateSamplePredictionReports(1L,false,true);
+//		g.generateSamplePredictionReports(1L,true,true);
+//		g.generateSamplePredictionReports(2L,true,true);
+		g.generateSamplePredictionReports(4L,true,true);
 		
 		// **************************************************************
 //		g.generateSamplePredictionReport(1L, "LC50 TEST", "TEST", false);		

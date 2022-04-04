@@ -114,6 +114,7 @@ public class DevQsarConstants {
 	public static final String LOG_HR = "log10(hr)";
 	public static final String LOG_DAYS = "log10(days)";
 	public static final String DAYS = "days";
+	public static final String HOUR = "hr";
 	public static final String LOG_CM3_MOLECULE_SEC="log10(cm3/molecule-sec)";
 	public static final String CM3_MOLECULE_SEC="cm3/molecule-sec";
 	
