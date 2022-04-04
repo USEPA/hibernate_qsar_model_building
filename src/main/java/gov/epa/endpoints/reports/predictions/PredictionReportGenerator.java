@@ -26,6 +26,7 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
@@ -123,8 +124,16 @@ public class PredictionReportGenerator extends ReportGenerator {
 			return;
 		}
 		
+		DescriptorEmbedding descriptorEmbedding = model.getDescriptorEmbedding();
+		String descriptorEmbeddingName = null;
+		String descriptorEmbeddingTsv = null;
+		if (descriptorEmbedding!=null) {
+			descriptorEmbeddingName = descriptorEmbedding.getName();
+			descriptorEmbeddingTsv = descriptorEmbedding.getEmbeddingTsv();
+		}
+		
 		PredictionReportModelMetadata modelMetadata = new PredictionReportModelMetadata(model.getId(), model.getMethod().getName(),
-				model.getMethod().getDescription(), model.getDescriptorSetName());
+				model.getMethod().getDescription(), model.getDescriptorSetName(), descriptorEmbeddingName, descriptorEmbeddingTsv);
 		List<ModelStatistic> modelStatistics = modelStatisticService.findByModelId(model.getId());
 		modelMetadata.predictionReportModelStatistics = modelStatistics.stream()
 				.map(ms -> new PredictionReportModelStatistic(ms.getStatistic().getName(), ms.getStatisticValue()))

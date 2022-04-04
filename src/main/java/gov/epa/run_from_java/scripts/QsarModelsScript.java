@@ -287,32 +287,40 @@ public class QsarModelsScript {
 		
 		List<Model> models = modelService.getAll();
 		for (Model model:models) {
-			Long modelId = model.getId();
-			if (modelId==168L || modelId==169L) {
-				continue;
-			}
-			
-			ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
-			if (modelBytes==null) {
-				continue;
-			}
-			
-			byte[] bytes = modelBytes.getBytes();
-			if (bytes==null) {
-				continue;
-			}
-			
-			String saveToFilePath = folderPath + File.separator + String.join("_", 
-					String.valueOf(modelId),
-					model.getDatasetName(), 
-					model.getDescriptorSetName(), 
-					model.getSplittingName(),
-					model.getMethod().getName()) 
-					+ ".pickle";
-			
-			System.out.println(saveToFilePath + "\t" + bytes.length);
-			safelyWriteBytes(saveToFilePath, bytes, false);
+			downloadModelBytes(model, folderPath);
 		}
+	}
+	
+	public void downloadModelBytes(Long modelId, String folderPath) {
+		File folder = new File(folderPath);
+		folder.mkdirs();
+		
+		Model model = modelService.findById(modelId);
+		downloadModelBytes(model, folderPath);
+	}
+	
+	public void downloadModelBytes(Model model, String folderPath) {
+		Long modelId = model.getId();
+		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
+		if (modelBytes==null) {
+			return;
+		}
+		
+		byte[] bytes = modelBytes.getBytes();
+		if (bytes==null) {
+			return;
+		}
+		
+		String saveToFilePath = folderPath + File.separator + String.join("_", 
+				String.valueOf(modelId),
+				model.getDatasetName(), 
+				model.getDescriptorSetName(), 
+				model.getSplittingName(),
+				model.getMethod().getName()) 
+				+ ".pickle";
+		
+		System.out.println(saveToFilePath + "\t" + bytes.length);
+		safelyWriteBytes(saveToFilePath, bytes, false);
 	}
 	
 	public void restoreAllModelBytes(String folderPath) {
@@ -381,9 +389,14 @@ public class QsarModelsScript {
 	}
 	
 	public static void main(String[] args) {
-		System.out.println(getComptoxImgUrl("dtxcid"));
+//		System.out.println(getComptoxImgUrl("dtxcid"));
 		
-//		QsarModelsScript script = new QsarModelsScript("gsincl01");
+		QsarModelsScript script = new QsarModelsScript("gsincl01");
+		long[] modelIds = { 43, 45, 46, 137, 139, 140, 218, 219, 225, 226, 227, 232 };
+		for (long l:modelIds) {
+			script.downloadModelBytes(l, "data/dev_qsar/qsar_models/test_models");
+		}
+		
 //		script.removeModelFromSet(6L, 7L);
 		
 //		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();

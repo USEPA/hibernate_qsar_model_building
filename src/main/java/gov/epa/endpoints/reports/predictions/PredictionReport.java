@@ -31,8 +31,9 @@ public class PredictionReport {
 	public static class PredictionReportModelMetadata extends ModelMetadata {
 		public List<PredictionReportModelStatistic> predictionReportModelStatistics = new ArrayList<PredictionReportModelStatistic>();
 		
-		public PredictionReportModelMetadata(Long modelId, String qsarMethodName, String qsarMethodDescription, String descriptorSetName) {
-			super(modelId, qsarMethodName, qsarMethodDescription, descriptorSetName);
+		public PredictionReportModelMetadata(Long modelId, String qsarMethodName, String qsarMethodDescription, String descriptorSetName,
+				String descriptorEmbeddingName, String descriptorEmbeddingTsv) {
+			super(modelId, qsarMethodName, qsarMethodDescription, descriptorSetName, descriptorEmbeddingName, descriptorEmbeddingTsv);
 		}
 	}
 	
