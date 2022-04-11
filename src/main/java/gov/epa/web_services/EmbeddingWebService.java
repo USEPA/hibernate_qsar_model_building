@@ -52,24 +52,27 @@ public class EmbeddingWebService extends WebService {
 	
 	public void gatherdata(EmbeddingWebService ews) {
 //		String datasetName = endpoint+" OPERA";
-		String datasetName = "LLNA from exp_prop, without eChemPortal";
+		String datasetName = "Vapor pressure OPERA";
 		String lanId = "cramslan";
-		String descriptorSetName="T.E.S.T. 5.1";
-		String splittingName="RND_REPRESENTATIVE";
-		String modelSetName="";
+		String descriptorSetName="Padelpy_batch";
+		String splittingName="OPERA";
 		Boolean removeLogDescriptors=false;
 		int numDesc = 12;
 		
 		WebServiceModelBuilder wsmb = new WebServiceModelBuilder(null, "cramslan");
 		ModelData data = wsmb.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
-				
+		/*
 		try {
-			FileUtils.writeStringToFile(new File("LLNA.tsv"), data.trainingSetInstances);
+			FileUtils.writeStringToFile(new File("Data/VPPadelpy_batch.tsv"), data.trainingSetInstances);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
+		*/
+		
+		
+		
+		
 		HttpResponse<String> doesthiswork = ews.findEmbedding(data.trainingSetInstances, numDesc);
 		
 		EmbeddingCalculationResponse obj = gson.fromJson(doesthiswork.getBody(), EmbeddingCalculationResponse.class);
@@ -81,7 +84,7 @@ public class EmbeddingWebService extends WebService {
 		String embeddingDescription = "Ward collinearity filtering/permutative importance";
 		DescriptorEmbedding desE = new DescriptorEmbedding();
 		
-		String embeddingName = "TestEmbeddingLLNAexpPrpWOeCP" + Integer.valueOf(numDesc).toString();
+		String embeddingName = "PadelEmbeddingVaporPressureOPERA" + Integer.valueOf(numDesc).toString();
 		
 		desE.setDatasetName(datasetName);
 		desE.setCreatedBy(lanId);
@@ -100,9 +103,7 @@ public class EmbeddingWebService extends WebService {
 		desE.setCreatedAt(timestamp2);
 		desE.setUpdatedAt(timestamp2);
 		
-		
-		DescriptorEmbedding desE2 = new DescriptorEmbedding();
-		
+				
 		DescriptorEmbeddingService deSer = new DescriptorEmbeddingServiceImpl();
 		deSer.create(desE);
 		
