@@ -38,7 +38,7 @@ public class ModelBuildingScriptTodd {
 
 
 		ModelBuildingScript.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-				splittingName, removeLogDescriptors,methodName,lanId);
+				splittingName, removeLogDescriptors,methodName,lanId, null);
 		
 		
 //		Long[] sourceArray = { 182L,183L,184L,185L };
