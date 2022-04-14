@@ -36,17 +36,18 @@ public class QsarDescriptorsScript {
 		java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.OFF);
 		Unirest.config().connectTimeout(0).socketTimeout(0);
 		
-		String datasetName = "LogHalfLife OPERA";
+		String datasetName = "Henry's law constant OPERA";
 		String[] sciDataExpertsDescriptorSetNames = {
-				"WebTEST-default"
+				"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
 				};
 		
 		for (String descriptorSetName:sciDataExpertsDescriptorSetNames) {
-			String tsv = calculateDescriptorsForDataset(datasetName, descriptorSetName, HCD_SCI_DATA_EXPERTS_URL, true, "gsincl01");
+			String tsv = calculateDescriptorsForDataset(datasetName, descriptorSetName, HCD_SCI_DATA_EXPERTS_URL, true, "cramslan");
 			System.out.println(descriptorSetName + "\t" + tsv.split("\r\n").length);
 			String header = tsv.substring(0, tsv.indexOf("\r"));
 			System.out.println(header.split("\t").length);
 			System.out.println(header);
+			System.out.println();
 		}
 	}
 

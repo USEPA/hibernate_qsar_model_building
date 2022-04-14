@@ -80,6 +80,7 @@ public class ModelBuildingScript {
 			
 			ModelWebService modelWs = new ModelWebService(modelWsServer, modelWsPort);
 			WebServiceModelBuilder mb = new WebServiceModelBuilder(modelWs, lanId);
+			String embedding = "TestEmbeddingVP";
 			Long modelId = mb.build(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName);
 	
 	//		PredictionReportGenerator gen = new PredictionReportGenerator();
@@ -141,28 +142,36 @@ public class ModelBuildingScript {
 //		String endpoint=DevQsarConstants.BOILING_POINT;
 //		String endpoint=DevQsarConstants.LLNA;
 //		String endpoint=DevQsarConstants.LOG_KOW;
-		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
+//		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
 //		String endpoint=DevQsarConstants.DEV_TOX;
+		String endpoint=DevQsarConstants.VAPOR_PRESSURE;
 				
 		String datasetName = endpoint +" "+sampleSource;
 		String splittingName=sampleSource;		
-		String descriptorSetName = "T.E.S.T. 5.1";		
+//		String descriptorSetName = "PaDEL-default";		
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 		
-//		String methods[]= {DevQsarConstants.SVM,DevQsarConstants.DNN,DevQsarConstants.RF,DevQsarConstants.XGB};
-//		for (String method:methods) {
-//			System.out.println(method);
+		String[] sciDataExpertsDescriptorSetNames = {
+				"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default",
+				};
+// "PaDEL-default"
+		
+		
+		String methods[]= {DevQsarConstants.SVM,DevQsarConstants.RF,DevQsarConstants.XGB};
+		for (String desc:sciDataExpertsDescriptorSetNames) {
+		for (String method:methods) {
+			System.out.println(method);
 //			run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
 //			splittingName, removeLogDescriptors,method,lanId);
-////			run.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
-////			splittingName, removeLogDescriptors,method,lanId);
-//
-//		}
+			run.buildModel(modelWsServer,modelWsPort, datasetName,desc,
+			splittingName, removeLogDescriptors,method,lanId);
+
+		}
+		}
 		
 		//*****************************************************************************************
 //		String methodName=DevQsarConstants.SVM;
-//		String methodName=DevQsarConstants.DNN;
-//		String methodName=DevQsarConstants.RF;
+		String methodName=DevQsarConstants.RF;
 //		String methodName=DevQsarConstants.XGB;
 //
 //		run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
