@@ -885,7 +885,7 @@ public class ExcelPredictionReportGenerator {
 		}
 
 		Map < Integer, Object[] > spreadsheetMap = new TreeMap < Integer, Object[] >();
-		spreadsheetMap.put( 0, new Object[] { "Canonical QSAR Ready Smiles","Observed" + "(" + units + ")", "Predicted " + "(" + units + ")", "Error" });
+		spreadsheetMap.put( 0, new Object[] { "Canonical QSAR Ready Smiles","Observed " + "(" + units + ")", "Predicted " + "(" + units + ")", "Error" });
 
 
 		Set<String> keys = predictionHash.keySet();
