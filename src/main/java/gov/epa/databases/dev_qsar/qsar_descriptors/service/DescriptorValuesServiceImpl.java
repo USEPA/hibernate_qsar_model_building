@@ -99,5 +99,23 @@ public class DescriptorValuesServiceImpl implements DescriptorValuesService {
 		
 		return descriptorValues;
 	}
+	
+	@Override
+	public void delete(DescriptorValues descriptorValues) {
+		Session session = QsarDescriptorsSession.getSessionFactory().getCurrentSession();
+		delete(descriptorValues, session);
+	}
+
+	@Override
+	public void delete(DescriptorValues descriptorValues, Session session) {
+		if (descriptorValues.getId()==null) {
+			return;
+		}
+		
+		Transaction t = session.beginTransaction();
+		session.delete(descriptorValues);
+		session.flush();
+		t.commit();
+	}
 
 }

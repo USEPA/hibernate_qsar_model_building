@@ -2,22 +2,17 @@ package gov.epa.run_from_java.scripts;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.lang.reflect.Field;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelQmrf;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.reports.ModelMetadata;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable.ModelSetTableRow;
-import gov.epa.endpoints.reports.predictions.PredictionReport;
-import gov.epa.endpoints.reports.predictions.PredictionReportGenerator;
-import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelPredictionReportGenerator;
 import gov.epa.endpoints.reports.model_sets.ModelSetTableGenerator;
 import gov.epa.util.FileUtils;
 import gov.epa.util.HtmlUtils;
@@ -37,14 +32,14 @@ public class SampleModelQmrfWriter {
 	}
 	
 	String getModelRowMetadata(ModelSetTableRow row) {
-		String [] names={"propertyName","propertyDescription","datasetName","datasetDescription","datasetUnitName", "descriptorSetName"};		
+		String [] names={"propertyName","propertyDescription","datasetName","datasetDescription","datasetUnitName"};		
 		String m = getFieldValuesHTML(row, names);		
 		return m;
 	}
 	
 	
 	String getMethodMetadata(ModelMetadata row) {
-		String [] names={"qsarMethodName","qsarMethodDescription"};		
+		String [] names={"modelId","qsarMethodName","qsarMethodDescription","descriptorSetName"};		
 		String m = getFieldValuesHTML(row, names);		
 		return m;
 	}
@@ -126,19 +121,21 @@ public class SampleModelQmrfWriter {
 		
 	}
 	
-	public void generateSampleQMRFs(long modelSetID) {
+	public void generateSampleQMRFs(long modelSetID,boolean upload, boolean deleteExistingReportInDatabase) {
 				
 		QsarModelsScript script = new QsarModelsScript("tmarti02");
 				
 		ModelSetTable table=getModelsInModelSet(modelSetID);		
 		
-//		ModelQmrfServiceImpl m=new ModelQmrfServiceImpl();
+		
+		
+		ModelQmrfServiceImpl mqs=new ModelQmrfServiceImpl();
 //		m.delete(m.findByModelId(1L)); 
 				
 		
-		String downloadFolder="data/reports/qmrf upload";
+		String outputFolder="data/reports/qmrf upload";
 		
-		File f=new File(downloadFolder);
+		File f=new File(outputFolder);
 		if (!f.exists()) f.mkdirs();
 
 		
@@ -147,8 +144,20 @@ public class SampleModelQmrfWriter {
 			
 			for (ModelMetadata modelMetadata:modelSetTableRow.modelMetadata) {
 				
+				ModelQmrf mq=mqs.findByModelId(modelMetadata.modelId);
 				
-				String htmlPath = downloadFolder + File.separator + String.join("_", modelSetTableRow.datasetName,
+				if (mq != null) {
+					
+					if (deleteExistingReportInDatabase) {
+						mqs.delete(mq);
+					} else {
+						System.out.println("QMRF for model "+modelMetadata.modelId+" exists skipping!");
+						continue;// skip it we already did it						
+					}
+				}
+				
+							
+				String htmlPath = outputFolder + File.separator + String.join("_", "model"+modelMetadata.modelId, modelSetTableRow.datasetName,
 						modelSetTableRow.splittingName,
 						modelMetadata.qsarMethodName) 
 						+ ".pdf";
@@ -159,7 +168,7 @@ public class SampleModelQmrfWriter {
 				try {
 					generateSampleQMRF(modelSetTableRow, modelMetadata, htmlPath);				
 					HtmlUtils.HtmlToPdf(htmlPath, pdfPath);
-					script.uploadModelQmrf(modelMetadata.modelId, pdfPath);
+					if (upload) script.uploadModelQmrf(modelMetadata.modelId, pdfPath);
 					
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
@@ -175,18 +184,42 @@ public class SampleModelQmrfWriter {
 	
 	
 	
-	
+	void deleteOldQMRFs() {
+		
+		//alternatively run this in DBeaver:
+		
+		//delete from qsar_models.model_qmrfs ;
+		ModelQmrfService service=new ModelQmrfServiceImpl();
+		
+		for (Long modelID=63L;modelID<=103L;modelID++) {
+			
+			try {
+				ModelQmrf mq=service.findByModelId(modelID);
+				service.delete(mq);
+			} catch (Exception ex) {
+				System.out.println(ex);
+			}
+		}
+		
+		
+		
+		
+	}
 	
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		SampleModelQmrfWriter g=new SampleModelQmrfWriter();		
+		SampleModelQmrfWriter g=new SampleModelQmrfWriter();
 		
-//		g.generateSampleQMRFs(1L);
-//		g.generateSampleQMRFs(2L);
+//		g.deleteOldQMRFs();
+		
+//		g.generateSampleQMRFs(1L,true,true);
+//		g.generateSampleQMRFs(2L,true,true);
+//		g.generateSampleQMRFs(4L,true,true);
+//		g.generateSampleQMRFs(2L,true);
 
-//		QsarModelsScript q=new QsarModelsScript("tmarti02");
-//		q.downloadModelQmrf(186L, "data/reports/qmrf download");
+		QsarModelsScript q=new QsarModelsScript("tmarti02");
+		q.downloadModelQmrf(256L, "data/reports/qmrf download");
 
 
 		

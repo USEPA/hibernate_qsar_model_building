@@ -1,4 +1,4 @@
-package gov.epa.endpoints.datasets;
+package gov.epa.endpoints.datasets.descriptor_values;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -6,44 +6,41 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.validation.ConstraintViolationException;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointService;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorSet;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorValues;
-import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetService;
-import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesService;
-import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServiceImpl;
 import gov.epa.web_services.descriptors.SciDataExpertsDescriptorWebService;
 import gov.epa.web_services.descriptors.SciDataExpertsDescriptorWebService.SciDataExpertsChemical;
 import gov.epa.web_services.descriptors.SciDataExpertsDescriptorWebService.SciDataExpertsDescriptorResponse;
 
-public class SciDataExpertsDescriptorValuesCalculator {
-	
-	private DescriptorSetService descriptorSetService = new DescriptorSetServiceImpl();
-	private DescriptorValuesService descriptorValuesService = new DescriptorValuesServiceImpl();
-	private DataPointService dataPointService = new DataPointServiceImpl();
+public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCalculator {
 	
 	private SciDataExpertsDescriptorWebService descriptorWebService;
-	private String lanId;
-	
 	private Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 	
 	public SciDataExpertsDescriptorValuesCalculator(String sciDataExpertsUrl, String lanId) {
+		super(lanId);
 		this.descriptorWebService = new SciDataExpertsDescriptorWebService(sciDataExpertsUrl);
-		this.lanId = lanId;
 	}
 	
-	public void calculateDescriptors(String datasetName, String descriptorSetName) {
+	@Override
+	public String calculateDescriptors(String datasetName, String descriptorSetName, boolean writeToDatabase) {
+		DescriptorSet descriptorSet = descriptorSetService.findByName(descriptorSetName);
+		if (descriptorSet==null) {
+			System.out.println("No such descriptor set: " + descriptorSetName);
+		}
+		
 		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
+		if (dataPoints==null || dataPoints.size()==0) {
+			System.out.println("No data points for set: " + datasetName);
+		}
+		
 		List<String> canonQsarSmilesToCalculate = new ArrayList<String>();
+		Map<String, String> descriptorsMap = new HashMap<String, String>();
 		for (DataPoint dp:dataPoints) {
 			String canonQsarSmiles = dp.getCanonQsarSmiles();
 			if (dp.getCanonQsarSmiles()==null) {
@@ -55,18 +52,18 @@ public class SciDataExpertsDescriptorValuesCalculator {
 					.findByCanonQsarSmilesAndDescriptorSetName(canonQsarSmiles, descriptorSetName);
 			if (descriptorValues==null) {
 				canonQsarSmilesToCalculate.add(canonQsarSmiles);
+			} else {
+				descriptorsMap.put(canonQsarSmiles, descriptorValues.getValuesTsv());
 			}
 		}
 		
-		calculateDescriptors(canonQsarSmilesToCalculate, descriptorSetName);
+		calculateDescriptors(canonQsarSmilesToCalculate, descriptorSet, descriptorsMap, writeToDatabase);
+		
+		return buildTsv(dataPoints, descriptorsMap, descriptorSet);
 	}
 	
-	public void calculateDescriptors(List<String> canonQsarSmilesToCalculate, String descriptorSetName) {
-		DescriptorSet descriptorSet = descriptorSetService.findByName(descriptorSetName);
-		if (descriptorSet==null) {
-			System.out.println("No such descriptor set: " + descriptorSetName);
-		}
-		
+	private void calculateDescriptors(List<String> canonQsarSmilesToCalculate, DescriptorSet descriptorSet, 
+			Map<String, String> descriptorsMap, boolean writeToDatabase) {
 		String descriptorService = descriptorSet.getDescriptorService();
 		String descriptorServiceOptionsStr = descriptorSet.getDescriptorServiceOptions();
 		Map<String, Object> descriptorServiceOptions = new HashMap<String, Object>();
@@ -91,7 +88,7 @@ public class SciDataExpertsDescriptorValuesCalculator {
 								descriptorServiceOptionsWithHeaders).getBody();
 				
 				if (response.headers!=null) {
-					String headersTsv = String.join("\t", response.headers);
+					String headersTsv = String.join(TAB_DEL, response.headers);
 //					System.out.println(headersTsv);
 					descriptorSet.setHeadersTsv(headersTsv);
 					descriptorSet = descriptorSetService.update(descriptorSet);
@@ -105,14 +102,13 @@ public class SciDataExpertsDescriptorValuesCalculator {
 //		System.out.println(gson.toJson(response));
 		
 		// Store descriptors
-		// Store null or failed descriptors so we don't keep trying to calculate them every time
 		if (response!=null) {
 			List<SciDataExpertsChemical> chemicals = response.chemicals;
 			if (chemicals!=null) {
 				for (SciDataExpertsChemical chemical:chemicals) {
 					String valuesTsv = null;
 					if (chemical.descriptors!=null) {
-						valuesTsv = String.join("\t", chemical.descriptors.stream()
+						valuesTsv = String.join(TAB_DEL, chemical.descriptors.stream()
 								.map(d -> String.valueOf(d))
 								.collect(Collectors.toList()));
 					}
@@ -122,11 +118,10 @@ public class SciDataExpertsDescriptorValuesCalculator {
 						valuesTsv = null;
 					}
 					
-					DescriptorValues descriptorValues = new DescriptorValues(chemical.smiles, descriptorSet, valuesTsv, lanId);
-					try {
-						descriptorValuesService.create(descriptorValues);
-					} catch (ConstraintViolationException e) {
-						System.out.println(e.getMessage());
+					descriptorsMap.put(chemical.smiles, valuesTsv);
+					
+					if (writeToDatabase) {
+						writeDescriptorValuesToDatabase(chemical.smiles, descriptorSet, valuesTsv);
 					}
 				}
 			}

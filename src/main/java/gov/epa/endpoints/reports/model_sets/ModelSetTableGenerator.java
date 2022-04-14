@@ -7,6 +7,7 @@ import java.util.Map;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
@@ -47,7 +48,15 @@ public class ModelSetTableGenerator {
 			}
 			
 			Method method = model.getMethod();
-			row.modelMetadata.add(new ModelMetadata(model.getId(), method.getName(), method.getDescription(), model.getDescriptorSetName()));
+			DescriptorEmbedding descriptorEmbedding = model.getDescriptorEmbedding();
+			String descriptorEmbeddingName = null;
+			String descriptorEmbeddingTsv = null;
+			if (descriptorEmbedding!=null) {
+				descriptorEmbeddingName = descriptorEmbedding.getName();
+				descriptorEmbeddingTsv = descriptorEmbedding.getEmbeddingTsv();
+			}
+			row.modelMetadata.add(new ModelMetadata(model.getId(), method.getName(), method.getDescription(), model.getDescriptorSetName(),
+					descriptorEmbeddingName, descriptorEmbeddingTsv));
 			rowMap.put(mapId, row);
 		}
 		

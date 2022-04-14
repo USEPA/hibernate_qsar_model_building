@@ -146,33 +146,53 @@ public class ModelBuildingScript {
 //		String endpoint=DevQsarConstants.BOILING_POINT;
 //		String endpoint=DevQsarConstants.LLNA;
 //		String endpoint=DevQsarConstants.LOG_KOW;
-		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
+//		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
 //		String endpoint=DevQsarConstants.DEV_TOX;
+		String endpoint=DevQsarConstants.VAPOR_PRESSURE;
 				
+<<<<<<< HEAD
 //		String datasetName = endpoint +" "+sampleSource;
 //		String datasetName= "";
 		String datasetName = "Standard Henry's law constant from exp_prop";
 		String splittingName="RND_REPRESENTATIVE";		
 		String descriptorSetName = "T.E.S.T. 5.1";		
+=======
+		String datasetName = endpoint +" "+sampleSource;
+		String splittingName=sampleSource;		
+//		String descriptorSetName = "PaDEL-default";		
+>>>>>>> 8c5f57623363b24793f8a0871f558303bf090276
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 		
-//		String methods[]= {DevQsarConstants.SVM,DevQsarConstants.DNN,DevQsarConstants.RF,DevQsarConstants.XGB};
-//		for (String method:methods) {
-//			System.out.println(method);
+		String[] sciDataExpertsDescriptorSetNames = {
+				"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default",
+				};
+// "PaDEL-default"
+		
+		
+		String methods[]= {DevQsarConstants.SVM,DevQsarConstants.RF,DevQsarConstants.XGB};
+		for (String desc:sciDataExpertsDescriptorSetNames) {
+		for (String method:methods) {
+			System.out.println(method);
 //			run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
 //			splittingName, removeLogDescriptors,method,lanId);
-////			run.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
-////			splittingName, removeLogDescriptors,method,lanId);
-//
-//		}
+			run.buildModel(modelWsServer,modelWsPort, datasetName,desc,
+			splittingName, removeLogDescriptors,method,lanId);
+
+		}
+		}
 		
 		//*****************************************************************************************
 //		String methodName=DevQsarConstants.SVM;
+<<<<<<< HEAD
 //		String methodName=DevQsarConstants.DNN;
 //		String methodName=DevQsarConstants.RF;
 		String methodName=DevQsarConstants.XGB;
 		
 //		String descriptorEmbeddingName="TestEmbeddingHLCexpPrp";
+=======
+		String methodName=DevQsarConstants.RF;
+//		String methodName=DevQsarConstants.XGB;
+>>>>>>> 8c5f57623363b24793f8a0871f558303bf090276
 //
 		
 //		String datasetName="LLNA from exp_prop, without eChemPortal";

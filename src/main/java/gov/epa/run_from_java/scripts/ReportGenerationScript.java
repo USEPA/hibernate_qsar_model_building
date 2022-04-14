@@ -41,7 +41,7 @@ public class ReportGenerationScript {
 		File file = new File(filePath);
 		if (file.getParentFile()!=null) {
 			file.getParentFile().mkdirs();
-			System.out.println(file.getAbsolutePath());
+//			System.out.println(file.getAbsolutePath());
 		}
 
 		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -64,7 +64,8 @@ public class ReportGenerationScript {
 		if (deleteMissingSplitting) {
 			for(int i=0;i<report.predictionReportDataPoints.size();i++) {
 				PredictionReportDataPoint dp=report.predictionReportDataPoints.get(i);
-				if(dp.qsarPredictedValues.get(0).splitNum==null) {
+				if(dp.qsarPredictedValues.get(0).splitNum==null) {					
+					System.out.println(datasetName+"\t"+dp.canonQsarSmiles+"\tfirst predicted value has null splitNum");					
 					report.predictionReportDataPoints.remove(i--);
 				}
 			}			

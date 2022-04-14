@@ -9,12 +9,11 @@ import gov.epa.endpoints.reports.WebTEST.fraChart.JLabelChart;
 import gov.epa.endpoints.reports.WebTEST.ApplicabilityDomain.Analog;
 import gov.epa.endpoints.reports.WebTEST.ApplicabilityDomain.AnalogFinder;
 import gov.epa.endpoints.reports.WebTEST.ReportClasses.*;
-import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.QsarPredictedValue;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportMetadata;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
-import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelStatistic;
+import gov.epa.run_from_java.scripts.QsarModelsScript;
 import gov.epa.util.wekalite.Instance;
 import gov.epa.util.wekalite.Instances;
 
@@ -45,8 +44,10 @@ public class PredictToxicityJSONCreator {
 
 //	public static String webPathImage = "https://ccte-api-ccd.epa.gov/ccdapp1/chemical-files/image/by-dtxcid/";
 //	public static String webPath2 = "https://comptox.epa.gov/dashboard/dsstoxdb/results?search=";
-	public static String webPathImage = "https://comptox.epa.gov/dashboard-api/ccdapp1/chemical-files/image/by-dtxcid/";
-		
+//	public static String webPathImage = "https://comptox.epa.gov/dashboard-api/ccdapp1/chemical-files/image/by-dtxcid/";
+	
+	public static String webPathImage=QsarModelsScript.getComptoxImgUrl("dtxcid");
+	
 	public static String webpathDetails="https://comptox.epa.gov/dashboard/chemical/details/";
 	
 	static DecimalFormat d2 = new DecimalFormat("0.00");

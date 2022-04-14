@@ -15,7 +15,7 @@ import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelPredictionReportG
 
 public class SampleReportWriter {
 
-	public void generateSamplePredictionReports(long modelSetID) {
+	public void generateSamplePredictionReports(long modelSetID, boolean upload, boolean deleteExistingReportInDatabase) {
 		ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
 		ModelSetTable table = SampleModelQmrfWriter.getModelsInModelSet(modelSetID);
 
@@ -39,7 +39,7 @@ public class SampleReportWriter {
 
 			// String filepath="predictionReport.xlsx";
 
-			String filepath = outputFolder + File.separator
+			String filepathExcelUpload = outputFolder + File.separator
 					+ String.join("_", modelSetName, modelSetTableRow.datasetName, modelSetTableRow.splittingName)
 					+ ".xlsx";
 
@@ -48,7 +48,7 @@ public class SampleReportWriter {
 			// }
 
 			// System.out.println(modelSetTableRow.datasetName);
-			System.out.println(filepath);
+			System.out.println(filepathExcelUpload);
 
 			try {
 
@@ -56,8 +56,13 @@ public class SampleReportWriter {
 						modelSetTableRow.splittingName);
 
 				if (msr != null) {
-					System.out.println(modelSetTableRow.datasetName + " exists skipping!");
-					continue;// skip it we already did it
+					
+					if (deleteExistingReportInDatabase) {
+						m2.delete(msr);
+					} else {
+						System.out.println(modelSetTableRow.datasetName + " exists skipping!");
+						continue;// skip it we already did it						
+					}
 				}
 
 				// Cant seem to generate prediction reports for large data sets:
@@ -76,6 +81,7 @@ public class SampleReportWriter {
 				String filepathReport = "data/reports/" + modelSetTableRow.datasetName + "_PredictionReport.json";
 
 				File reportFile = new File(filepathReport);
+				File excelFile=new File(filepathExcelUpload);
 
 				System.out.println(filepathReport);
 
@@ -86,9 +92,12 @@ public class SampleReportWriter {
 							modelSetTableRow.splittingName, modelSetName, true);
 				}
 
-				eprg.generate(predictionReport, filepath);
-				script.uploadModelSetReport(modelSetID, modelSetTableRow.datasetName, modelSetTableRow.splittingName,
-						filepath);
+				if (!excelFile.exists()) 
+					eprg.generate(predictionReport, filepathExcelUpload);
+				
+				if (upload)
+					script.uploadModelSetReport(modelSetID, modelSetTableRow.datasetName, modelSetTableRow.splittingName,
+						filepathExcelUpload);
 			} catch (Exception ex) {
 				// TODO Auto-generated catch block
 				ex.printStackTrace();
@@ -172,27 +181,31 @@ public class SampleReportWriter {
 	public static void main(String[] args) {
 
 		SampleReportWriter g = new SampleReportWriter();
-//		g.generateSamplePredictionReports(2L);
 		
-		g.generateSamplePredictionReport(1L, "LC50 TEST", "TEST", false);
+//		g.generateSamplePredictionReports(1L,false,true);
+//		g.generateSamplePredictionReports(1L,true,true);
+//		g.generateSamplePredictionReports(2L,true,true);
+		g.generateSamplePredictionReports(4L,true,true);
 		
+		// **************************************************************
+//		g.generateSamplePredictionReport(1L, "LC50 TEST", "TEST", false);		
+//		g.generateSamplePredictionReport(2L, "Standard Henry's law constant from exp_prop", "RND_REPRESENTATIVE", false);
+//		g.generateSamplePredictionReport(2L, "LLNA from exp_prop, without eChemPortal", "RND_REPRESENTATIVE", false);
+		
+		// **************************************************************
+//		 QsarModelsScript q=new QsarModelsScript("tmarti02");
+//		 String datasetName="LC50DM TEST";
+//		 String splittingName="TEST";
+//		 q.downloadModelSetReport(1L, datasetName, splittingName,
+//		 "data/reports/prediction reports download");
 
 		// **************************************************************
-		// QsarModelsScript q=new QsarModelsScript("tmarti02");
-		// String datasetName="LC50DM TEST";
-		// String descriptorSetName="T.E.S.T. 5.1";
-		// String splittingName="TEST";
-		// q.downloadModelSetReport(1L, datasetName, descriptorSetName, splittingName,
-		// "data/reports/prediction reports");
-
-		// **************************************************************
-		// QsarModelsScript q=new QsarModelsScript("tmarti02");
-		//// String datasetName="Standard Henry's law constant from exp_prop";
-		// String datasetName="Standard Water solubility from exp_prop";
-		// String descriptorSetName="T.E.S.T. 5.1";
-		// String splittingName="RND_REPRESENTATIVE";
-		// q.downloadModelSetReport(2L, datasetName, descriptorSetName, splittingName,
-		// "data/reports/prediction reports");
+//		 QsarModelsScript q=new QsarModelsScript("tmarti02");
+//		// String datasetName="Standard Henry's law constant from exp_prop";
+//		 String datasetName="Standard Water solubility from exp_prop";
+//		 String splittingName="RND_REPRESENTATIVE";
+//		 q.downloadModelSetReport(2L, datasetName, splittingName,
+//		 "data/reports/prediction reports download");
 
 	}
 

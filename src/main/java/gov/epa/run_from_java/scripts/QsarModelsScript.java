@@ -12,13 +12,19 @@ import java.util.List;
 
 import javax.validation.ConstraintViolationException;
 
+<<<<<<< HEAD
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+=======
+import gov.epa.databases.dev_qsar.qsar_models.entity.Config;
+>>>>>>> 8c5f57623363b24793f8a0871f558303bf090276
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelQmrf;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport;
+import gov.epa.databases.dev_qsar.qsar_models.service.ConfigService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ConfigServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetService;
@@ -143,7 +149,7 @@ public class QsarModelsScript {
 		Model model = modelQmrf.getModel();
 		byte[] file = modelQmrf.getFile();
 		
-		String saveToFilePath = downloadFolder + File.separator + String.join("_", model.getDatasetName(), 
+		String saveToFilePath = downloadFolder + File.separator + String.join("_", "model"+modelId, model.getDatasetName(), 
 				model.getDescriptorSetName(), 
 				model.getSplittingName(),
 				model.getMethod().getName()) 
@@ -286,32 +292,40 @@ public class QsarModelsScript {
 		
 		List<Model> models = modelService.getAll();
 		for (Model model:models) {
-			Long modelId = model.getId();
-			if (modelId==168L || modelId==169L) {
-				continue;
-			}
-			
-			ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
-			if (modelBytes==null) {
-				continue;
-			}
-			
-			byte[] bytes = modelBytes.getBytes();
-			if (bytes==null) {
-				continue;
-			}
-			
-			String saveToFilePath = folderPath + File.separator + String.join("_", 
-					String.valueOf(modelId),
-					model.getDatasetName(), 
-					model.getDescriptorSetName(), 
-					model.getSplittingName(),
-					model.getMethod().getName()) 
-					+ ".pickle";
-			
-			System.out.println(saveToFilePath + "\t" + bytes.length);
-			safelyWriteBytes(saveToFilePath, bytes, false);
+			downloadModelBytes(model, folderPath);
 		}
+	}
+	
+	public void downloadModelBytes(Long modelId, String folderPath) {
+		File folder = new File(folderPath);
+		folder.mkdirs();
+		
+		Model model = modelService.findById(modelId);
+		downloadModelBytes(model, folderPath);
+	}
+	
+	public void downloadModelBytes(Model model, String folderPath) {
+		Long modelId = model.getId();
+		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
+		if (modelBytes==null) {
+			return;
+		}
+		
+		byte[] bytes = modelBytes.getBytes();
+		if (bytes==null) {
+			return;
+		}
+		
+		String saveToFilePath = folderPath + File.separator + String.join("_", 
+				String.valueOf(modelId),
+				model.getDatasetName(), 
+				model.getDescriptorSetName(), 
+				model.getSplittingName(),
+				model.getMethod().getName()) 
+				+ ".pickle";
+		
+		System.out.println(saveToFilePath + "\t" + bytes.length);
+		safelyWriteBytes(saveToFilePath, bytes, false);
 	}
 	
 	public void restoreAllModelBytes(String folderPath) {
@@ -367,14 +381,32 @@ public class QsarModelsScript {
 		}
 	}
 	
+	public static String getComptoxImgUrl(String dsstoxIdType) {
+		ConfigService configService = new ConfigServiceImpl();
+		String dsstoxIdTypeCaps = dsstoxIdType.toUpperCase();
+		if (dsstoxIdTypeCaps.equals("DTXSID") || dsstoxIdTypeCaps.equals("DTXCID")) {
+			Config config = configService.findByKey("COMPTOX_" + dsstoxIdTypeCaps + "_IMG_URL");
+			if (config!=null) {
+				return config.getValueText();
+			}
+		}
+		return null;
+	}
+	
 	public static void main(String[] args) {
-//		QsarModelsScript script = new QsarModelsScript("gsincl01");
+//		System.out.println(getComptoxImgUrl("dtxcid"));
+		
+		QsarModelsScript script = new QsarModelsScript("gsincl01");
+		long[] modelIds = { 43, 45, 46, 137, 139, 140, 218, 219, 225, 226, 227, 232 };
+		for (long l:modelIds) {
+			script.downloadModelBytes(l, "data/dev_qsar/qsar_models/test_models");
+		}
+		
 //		script.removeModelFromSet(6L, 7L);
 		
 //		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-		QsarModelsScript script = new QsarModelsScript("gsincl01");
-		script.restoreAllModelBytes("data/dev_qsar/qsar_models/model_bytes");
-		script.lookAtAllModelBytes();
+//		QsarModelsScript script = new QsarModelsScript("gsincl01");
+//		script.lookAtAllModelBytes();
 		
 //		script.addModelRangeToSet(145L, 148L, 2L);
 //		script.deletePredictionReport();
