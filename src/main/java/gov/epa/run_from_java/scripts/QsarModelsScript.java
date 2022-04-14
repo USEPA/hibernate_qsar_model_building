@@ -372,9 +372,9 @@ public class QsarModelsScript {
 //		script.removeModelFromSet(6L, 7L);
 		
 //		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-//		QsarModelsScript script = new QsarModelsScript("gsincl01");
-//		script.restoreAllModelBytes("data/dev_qsar/qsar_models/model_bytes");
-//		script.lookAtAllModelBytes();
+		QsarModelsScript script = new QsarModelsScript("gsincl01");
+		script.restoreAllModelBytes("data/dev_qsar/qsar_models/model_bytes");
+		script.lookAtAllModelBytes();
 		
 //		script.addModelRangeToSet(145L, 148L, 2L);
 //		script.deletePredictionReport();
@@ -416,6 +416,22 @@ public class QsarModelsScript {
 //		} else {
 //			System.out.println(s.getName());
 //		}
+		
+		/*
+		 * 		EmbeddingWebService ews = new EmbeddingWebService(DevQsarConstants.SERVER_LOCAL, 9092);
+		String datasetName = DevQsarConstants.LOG_HALF_LIFE + " OPERA";
+		String lanId = "cramslan";
+		String descriptorSetName="T.E.S.T. 5.1";
+		String splittingName="OPERA";
+		Boolean removeLogDescriptors=false;
+		int numDesc = 12;
+		String embeddingName = "WebTESTEmbeddingHLCOPERA";
+		String embeddingDescription = "Ward collinearity filtering/permutative importance";
+		
+		ews.createEmbedding(datasetName, lanId, descriptorSetName, splittingName, false, numDesc,
+				embeddingName, embeddingDescription, false);
+
+		 */
 	}
 
 }
