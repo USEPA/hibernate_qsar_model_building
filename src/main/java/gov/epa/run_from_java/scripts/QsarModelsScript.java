@@ -11,12 +11,8 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import javax.validation.ConstraintViolationException;
-
-<<<<<<< HEAD
-import gov.epa.databases.dev_qsar.DevQsarConstants;
-=======
 import gov.epa.databases.dev_qsar.qsar_models.entity.Config;
->>>>>>> 8c5f57623363b24793f8a0871f558303bf090276
+
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;

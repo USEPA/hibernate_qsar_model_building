@@ -127,11 +127,7 @@ public class SampleModelQmrfWriter {
 				
 		ModelSetTable table=getModelsInModelSet(modelSetID);		
 		
-		
-		
 		ModelQmrfServiceImpl mqs=new ModelQmrfServiceImpl();
-//		m.delete(m.findByModelId(1L)); 
-				
 		
 		String outputFolder="data/reports/qmrf upload";
 		
@@ -184,43 +180,17 @@ public class SampleModelQmrfWriter {
 	
 	
 	
-	void deleteOldQMRFs() {
-		
-		//alternatively run this in DBeaver:
-		
-		//delete from qsar_models.model_qmrfs ;
-		ModelQmrfService service=new ModelQmrfServiceImpl();
-		
-		for (Long modelID=63L;modelID<=103L;modelID++) {
-			
-			try {
-				ModelQmrf mq=service.findByModelId(modelID);
-				service.delete(mq);
-			} catch (Exception ex) {
-				System.out.println(ex);
-			}
-		}
-		
-		
-		
-		
-	}
-	
-	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		SampleModelQmrfWriter g=new SampleModelQmrfWriter();
 		
-//		g.deleteOldQMRFs();
-		
-//		g.generateSampleQMRFs(1L,true,true);
+		g.generateSampleQMRFs(1L,true,true);
 //		g.generateSampleQMRFs(2L,true,true);
 //		g.generateSampleQMRFs(4L,true,true);
-//		g.generateSampleQMRFs(2L,true);
 
-		QsarModelsScript q=new QsarModelsScript("tmarti02");
-		q.downloadModelQmrf(256L, "data/reports/qmrf download");
 
+//		QsarModelsScript q=new QsarModelsScript("tmarti02");
+//		q.downloadModelQmrf(256L, "data/reports/qmrf download");
 
 		
 	}
