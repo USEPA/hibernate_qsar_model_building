@@ -33,10 +33,8 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
-import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.WebServiceModelBuilder;
-import gov.epa.web_services.EmbeddingWebService;
 import gov.epa.web_services.ModelWebService;
 import kong.unirest.Unirest;
 

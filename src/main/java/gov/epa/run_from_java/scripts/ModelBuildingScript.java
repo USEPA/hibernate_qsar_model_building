@@ -148,15 +148,15 @@ public class ModelBuildingScript {
 //		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
 //		String endpoint=DevQsarConstants.DEV_TOX;
 		String endpoint=DevQsarConstants.VAPOR_PRESSURE;
-		String datasetName = endpoint +" "+sampleSource;
-		String splittingName=sampleSource;		
 
+		String datasetName = endpoint +" "+sampleSource;
+		String splittingName=sampleSource;
 		
 //		String datasetName = "Standard Henry's law constant from exp_prop";
 //		String splittingName="RND_REPRESENTATIVE";
-		
-		
 		String descriptorSetName = "T.E.S.T. 5.1";		
+
+
 //		String descriptorSetName = "PaDEL-default";		
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 		
@@ -169,12 +169,10 @@ public class ModelBuildingScript {
 		for (String desc:sciDataExpertsDescriptorSetNames) {
 			for (String method:methods) {
 				System.out.println(method);
-				//			run.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-				//			splittingName, removeLogDescriptors,method,lanId);
 				ModelBuildingScript.buildModel(modelWsServer,modelWsPort, datasetName,desc,
 						splittingName, removeLogDescriptors,method,lanId,null);
-
 			}
+
 		}
 		
 		//*****************************************************************************************
