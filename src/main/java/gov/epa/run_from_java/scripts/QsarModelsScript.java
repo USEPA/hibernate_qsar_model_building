@@ -12,7 +12,11 @@ import java.util.List;
 
 import javax.validation.ConstraintViolationException;
 
+<<<<<<< HEAD
+import gov.epa.databases.dev_qsar.DevQsarConstants;
+=======
 import gov.epa.databases.dev_qsar.qsar_models.entity.Config;
+>>>>>>> 8c5f57623363b24793f8a0871f558303bf090276
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
@@ -36,6 +40,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.WebServiceModelBuilder;
+import gov.epa.web_services.EmbeddingWebService;
 import gov.epa.web_services.ModelWebService;
 import kong.unirest.Unirest;
 
@@ -443,6 +448,22 @@ public class QsarModelsScript {
 //		} else {
 //			System.out.println(s.getName());
 //		}
+		
+		/*
+		 * 		EmbeddingWebService ews = new EmbeddingWebService(DevQsarConstants.SERVER_LOCAL, 9092);
+		String datasetName = DevQsarConstants.LOG_HALF_LIFE + " OPERA";
+		String lanId = "cramslan";
+		String descriptorSetName="T.E.S.T. 5.1";
+		String splittingName="OPERA";
+		Boolean removeLogDescriptors=false;
+		int numDesc = 12;
+		String embeddingName = "WebTESTEmbeddingHLCOPERA";
+		String embeddingDescription = "Ward collinearity filtering/permutative importance";
+		
+		ews.createEmbedding(datasetName, lanId, descriptorSetName, splittingName, false, numDesc,
+				embeddingName, embeddingDescription, false);
+
+		 */
 	}
 
 }
