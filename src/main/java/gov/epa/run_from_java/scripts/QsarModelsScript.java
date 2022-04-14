@@ -12,6 +12,7 @@ import java.util.List;
 
 import javax.validation.ConstraintViolationException;
 
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
@@ -33,6 +34,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.WebServiceModelBuilder;
+import gov.epa.web_services.EmbeddingWebService;
 import gov.epa.web_services.ModelWebService;
 import kong.unirest.Unirest;
 
@@ -370,9 +372,9 @@ public class QsarModelsScript {
 //		script.removeModelFromSet(6L, 7L);
 		
 //		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-		QsarModelsScript script = new QsarModelsScript("gsincl01");
-		script.restoreAllModelBytes("data/dev_qsar/qsar_models/model_bytes");
-		script.lookAtAllModelBytes();
+//		QsarModelsScript script = new QsarModelsScript("gsincl01");
+//		script.restoreAllModelBytes("data/dev_qsar/qsar_models/model_bytes");
+//		script.lookAtAllModelBytes();
 		
 //		script.addModelRangeToSet(145L, 148L, 2L);
 //		script.deletePredictionReport();

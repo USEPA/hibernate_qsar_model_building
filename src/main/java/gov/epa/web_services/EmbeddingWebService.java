@@ -33,7 +33,7 @@ public class EmbeddingWebService extends WebService {
 		public String importances;
 	}
 	
-	public HttpResponse<String> findEmbedding(String tsv, int numDesc) {
+	public static HttpResponse<String> findEmbedding(String tsv, int numDesc) {
 		HttpResponse<String> response = Unirest.get(DevQsarConstants.SERVER_819+":9092/findembedding/")
 				.queryString("tsv", tsv)
 				.asString();
@@ -50,69 +50,58 @@ public class EmbeddingWebService extends WebService {
 	*/
 
 	
-	public void gatherdata(EmbeddingWebService ews) {
-//		String datasetName = endpoint+" OPERA";
-		String datasetName = "Vapor pressure OPERA";
-		String lanId = "cramslan";
-		String descriptorSetName="Padelpy_batch";
-		String splittingName="OPERA";
-		Boolean removeLogDescriptors=false;
-		int numDesc = 12;
-		
-		WebServiceModelBuilder wsmb = new WebServiceModelBuilder(null, "cramslan");
+	public void createEmbedding(String datasetName, String lanId, String descriptorSetName,
+			String splittingName, Boolean removeLogDescriptors, int numDescriptors,
+			String embeddingName, String embeddingDescription, Boolean writeToDatabase) {
+		WebServiceModelBuilder wsmb = new WebServiceModelBuilder(null, lanId);
 		ModelData data = wsmb.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
-		/*
-		try {
-			FileUtils.writeStringToFile(new File("Data/VPPadelpy_batch.tsv"), data.trainingSetInstances);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		*/
-		
-		
-		
-		
-		HttpResponse<String> doesthiswork = ews.findEmbedding(data.trainingSetInstances, numDesc);
-		
-		EmbeddingCalculationResponse obj = gson.fromJson(doesthiswork.getBody(), EmbeddingCalculationResponse.class);
 
-		System.out.println(obj.embedding);
-		System.out.println(obj.importances);
 		
+		HttpResponse<String> response = findEmbedding(data.trainingSetInstances, numDescriptors);
+
 		
-		String embeddingDescription = "Ward collinearity filtering/permutative importance";
+		EmbeddingCalculationResponse obj = gson.fromJson(response.getBody(), EmbeddingCalculationResponse.class);
+
+		System.out.println("embedding=" + obj.embedding);
+		System.out.println("importances=" + obj.importances);
+		
 		DescriptorEmbedding desE = new DescriptorEmbedding();
-		
-		String embeddingName = "PadelEmbeddingVaporPressureOPERA" + Integer.valueOf(numDesc).toString();
-		
+				
 		desE.setDatasetName(datasetName);
 		desE.setCreatedBy(lanId);
 		desE.setDescription(embeddingDescription);
 		desE.setDescriptorSetName(descriptorSetName);
 		desE.setEmbeddingTsv(obj.embedding);
-		desE.setName(embeddingName);
+		desE.setName(embeddingName + Integer.valueOf(numDescriptors).toString());
 		desE.setDatasetName(datasetName);
 		desE.setImportanceTsv(obj.importances);
 		
 		Date date = new Date();
 		Timestamp timestamp2 = new Timestamp(date.getTime());
-
-
-		
 		desE.setCreatedAt(timestamp2);
 		desE.setUpdatedAt(timestamp2);
 		
-				
+		if (writeToDatabase) {
 		DescriptorEmbeddingService deSer = new DescriptorEmbeddingServiceImpl();
 		deSer.create(desE);
-		
-		
+
+		}
+
 	}
 	
 	public static void main(String[] args) {
 		EmbeddingWebService ews = new EmbeddingWebService(DevQsarConstants.SERVER_LOCAL, 9092);
-		ews.gatherdata(ews);
+		String datasetName = DevQsarConstants.LOG_HALF_LIFE + " OPERA";
+		String lanId = "cramslan";
+		String descriptorSetName="T.E.S.T. 5.1";
+		String splittingName="OPERA";
+		Boolean removeLogDescriptors=false;
+		int numDesc = 12;
+		String embeddingName = "WebTESTEmbeddingHLCOPERA";
+		String embeddingDescription = "Ward collinearity filtering/permutative importance";
+		
+		ews.createEmbedding(datasetName, lanId, descriptorSetName, splittingName, false, numDesc,
+				embeddingName, embeddingDescription, false);
 	}
 
 
