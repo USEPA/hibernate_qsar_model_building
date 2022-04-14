@@ -190,22 +190,22 @@ public class ExcelPredictionReportGenerator {
 		String datasetName = endpoint+" TEST";
 		String descriptorSetName="T.E.S.T. 5.1";
 		*/
-		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
+		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
 		String datasetName= endpoint + " OPERA";
 		String descriptorSetName="T.E.S.T. 5.1";
 		
-		String splittingName="TEST";
+		String splittingName="OPERA";
 		String modelSetName="Sample models";
 
 		PredictionReport predictionReport = null;
 
 
-//		predictionReport=gen.generateForModelSetPredictions(datasetName, splittingName,modelSetName);
+		predictionReport=gen.generateForModelSetPredictions(datasetName, splittingName,modelSetName);
 
-		File jsonFile = new File("data/reports/Henry's law constant OPERA_PredictionReport.json");
+		File jsonFile = new File("data/reports/LogHalfLife OPERA_PredictionReport.json");
 
 		try {
-			predictionReport = gson.fromJson(new FileReader(jsonFile), PredictionReport.class);
+//			predictionReport = gson.fromJson(new FileReader(jsonFile), PredictionReport.class);
 
 		} catch (Exception ex) {
 
