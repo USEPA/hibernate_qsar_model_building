@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.poi.hssf.util.CellReference;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -184,12 +185,16 @@ public class ExcelPredictionReportGenerator {
 		ExcelPredictionReportGenerator e=new ExcelPredictionReportGenerator();
 
 		PredictionReportGenerator gen = new PredictionReportGenerator();
-
+		/*
 		String endpoint=DevQsarConstants.DEV_TOX;
 		String datasetName = endpoint+" TEST";
 		String descriptorSetName="T.E.S.T. 5.1";
-
-		String splittingName="TEST";
+		*/
+		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
+		String datasetName= endpoint + " OPERA";
+		String descriptorSetName="T.E.S.T. 5.1";
+		
+		String splittingName="OPERA";
 		String modelSetName="Sample models";
 
 		PredictionReport predictionReport = null;
@@ -197,16 +202,22 @@ public class ExcelPredictionReportGenerator {
 
 		predictionReport=gen.generateForModelSetPredictions(datasetName, splittingName,modelSetName);
 
-		//		File jsonFile = new File("data/reports/Henry's law constant OPERA_PredictionReport.json");
+		File jsonFile = new File("data/reports/LogHalfLife OPERA_PredictionReport.json");
 
 		try {
-			//		predictionReport = gson.fromJson(new FileReader(jsonFile), PredictionReport.class);
+//			predictionReport = gson.fromJson(new FileReader(jsonFile), PredictionReport.class);
 
 		} catch (Exception ex) {
 
 		}
-		//		String json=gson.toJson(predictionReport);
-
+		/*
+		try {
+			FileUtils.writeStringToFile(new File("data/report.json"), gson.toJson(predictionReport));
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		*/
 
 
 		File folder=new File("data/reports");
@@ -225,7 +236,7 @@ public class ExcelPredictionReportGenerator {
 		generateSplitSheet2(report, wb, isBinary);
 
 		for (int i = 0; i < report.predictionReportDataPoints.get(0).qsarPredictedValues.size(); i++) {
-			generatePredictionSheet2(report.predictionReportDataPoints, i, wb, isBinary);
+			generatePredictionSheet2(report.predictionReportDataPoints, i, wb, isBinary, report.predictionReportMetadata.datasetProperty,report.predictionReportMetadata.datasetUnit);
 		}
 
 		columnResizing(wb);
@@ -321,6 +332,8 @@ public class ExcelPredictionReportGenerator {
 			XSSFSheet sheet = (XSSFSheet) wb.getSheet(s);
 			sheet.setColumnWidth(0, 50 * 256);
 		}
+		
+
 
 		try {
 
@@ -453,7 +466,7 @@ public class ExcelPredictionReportGenerator {
 		spreadsheetMap.put(6, prepareCoverSheetRow("nTraining", String.valueOf(nTrain)));
 		spreadsheetMap.put(7, prepareCoverSheetRow("nTEST", String.valueOf(nPredict)));
 
-		populateSheet2(spreadsheetMap, wb, isBinary, "Cover sheet");
+		populateSheet2(spreadsheetMap, wb, isBinary, "Cover sheet", null, null);
 
 	}
 
@@ -497,8 +510,8 @@ public class ExcelPredictionReportGenerator {
 			}
 		}
 
-		populateSheet2(trainMap,  wb, isBinary, "Training");
-		populateSheet2(testMap, wb, isBinary, "Test");
+		populateSheet2(trainMap,  wb, isBinary, "Training", null, null);
+		populateSheet2(testMap, wb, isBinary, "Test", null, null);
 
 
 	}
@@ -561,7 +574,7 @@ public class ExcelPredictionReportGenerator {
 
 		}
 
-		populateSheet2(spreadsheetMap, wb, isBinary, "Summary sheet");
+		populateSheet2(spreadsheetMap, wb, isBinary, "Summary sheet", null, null);
 
 	}
 
@@ -850,7 +863,7 @@ public class ExcelPredictionReportGenerator {
 	}
 
 
-	private void generatePredictionSheet2(List<PredictionReportDataPoint> predictionReportDataPoints, int methodID, Workbook wb, Boolean isBinary) {
+	private void generatePredictionSheet2(List<PredictionReportDataPoint> predictionReportDataPoints, int methodID, Workbook wb, Boolean isBinary, String propertyName, String units) {
 
 		final Hashtable<String,Double> expHash = new Hashtable<String,Double>();
 		final Hashtable<String,Double> predictionHash = new Hashtable<String,Double>();
@@ -872,7 +885,7 @@ public class ExcelPredictionReportGenerator {
 		}
 
 		Map < Integer, Object[] > spreadsheetMap = new TreeMap < Integer, Object[] >();
-		spreadsheetMap.put( 0, new Object[] { "Canonical QSAR Ready Smiles","Exp", "Pred", "Error" });
+		spreadsheetMap.put( 0, new Object[] { "Canonical QSAR Ready Smiles","Observed " + "(" + units + ")", "Predicted " + "(" + units + ")", "Error" });
 
 
 		Set<String> keys = predictionHash.keySet();
@@ -885,7 +898,7 @@ public class ExcelPredictionReportGenerator {
 			spreadsheetMap.put(i + 1, new Object[] { keyList.get(i), expHash.get(keyList.get(i)) , predictionHash.get(keyList.get(i)), Math.abs(expHash.get(keyList.get(i)) - predictionHash.get(keyList.get(i))) });
 		}
 
-		populateSheet2(spreadsheetMap, wb, isBinary, methodName);
+		populateSheet2(spreadsheetMap, wb, isBinary, methodName, propertyName, units);
 
 
 
@@ -913,12 +926,20 @@ public class ExcelPredictionReportGenerator {
 			sheet.setColumnWidth(5, 50 * 256);
 		}
 
+		// fixes column width for plot sheets
+        for (int i = 0; i < wb.getNumberOfSheets(); i++) {
+        	XSSFSheet sheet = (XSSFSheet) wb.getSheetAt(i);
+        	String sheetName = sheet.getSheetName();
+        	if (!(sheetName.equals("Cover sheet") || sheetName.equals("Summary sheet") || sheetName.equals("Training") || sheetName.equals("Test"))) {
+        		sheet.setColumnWidth(0, 30 * 256);
+        	}
+        }
 
 
 
 	}
 
-	private void populateSheet2(Map < Integer, Object[] > sheetMap, Workbook wb, boolean isBinary, String sheetName) {
+	private void populateSheet2(Map < Integer, Object[] > sheetMap, Workbook wb, boolean isBinary, String sheetName, String propertyName, String units) {
 		ExcelUtilities eu = new ExcelUtilities();
 //		System.out.println(sheetName);
 		if (wb.getSheet(sheetName) != null) {
@@ -1017,7 +1038,7 @@ public class ExcelPredictionReportGenerator {
 		}
 		if (!(isBinary)) {
 			if (!(sheetName.equals("Cover sheet") || sheetName.equals("Summary sheet") || sheetName.equals("Training") || sheetName.equals("Test"))) {
-				eu.GenerateChart(sheet,"Exp","Pred",sheetName,"");
+				eu.GenerateChart(sheet,"Experimental" + propertyName,"Predicted" + propertyName,sheetName,propertyName,units);
 			}
 		}
 
@@ -1138,7 +1159,7 @@ public class ExcelPredictionReportGenerator {
 
 			if (isBinary == false) {
 				ExcelUtilities eu = new ExcelUtilities();
-				eu.GenerateChart(sheet,"Exp","Pred",methodName,"");
+				eu.GenerateChart(sheet,"Exp","Pred",methodName,"",null);
 
 				sheet.setAutoFilter(CellRangeAddress.valueOf("A1:D1"));
 			} else if (isBinary == true) {
@@ -1190,13 +1211,13 @@ public class ExcelPredictionReportGenerator {
 
 	class ExcelUtilities {
 
-		public void GenerateChart(XSSFSheet sheet,String source1,String source2,String property,String units) {
+		public void GenerateChart(XSSFSheet sheet,String source1,String source2,String methodName, String propertyName,String units) {
 			XSSFDrawing drawing = sheet.createDrawingPatriarch();
 			XSSFClientAnchor anchor = drawing.createAnchor(0, 0, 0, 0, 5, 0, 16, 24);
 
 			XSSFChart chart = drawing.createChart(anchor);
 
-			if (chart instanceof XSSFChart) ((XSSFChart)chart).setTitleText(property+": "+source1+" vs. "+source2);
+			if (chart instanceof XSSFChart) ((XSSFChart)chart).setTitleText(methodName);
 
 
 			XSSFValueAxis bottomAxis = chart.createValueAxis(AxisPosition.BOTTOM);
@@ -1225,8 +1246,8 @@ public class ExcelPredictionReportGenerator {
 			//Set axis titles:
 			CTValAx valAx = chart.getCTChart().getPlotArea().getValAxArray(0);
 			CTValAx valAy = chart.getCTChart().getPlotArea().getValAxArray(1);
-			setAxisTitle(source1+" "+units, valAx);
-			setAxisTitle(source2+" "+units, valAy);
+			setAxisTitle("Observed " + propertyName, valAx);
+			setAxisTitle("Predicted "+ propertyName, valAy);
 			// *******
 
 			//set properties of first scatter chart data series to not smooth the line:
