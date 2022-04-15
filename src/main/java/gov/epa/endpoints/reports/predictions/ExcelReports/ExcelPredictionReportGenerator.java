@@ -158,13 +158,6 @@ public class ExcelPredictionReportGenerator {
 	}
 
 
-
-
-
-
-
-
-
 	private static void printHT(Hashtable hashtable) {
 		Enumeration<String> keys = hashtable.keys();
 		while(keys.hasMoreElements()){
@@ -233,7 +226,7 @@ public class ExcelPredictionReportGenerator {
 
 		generateSummarySheet2(report, wb, isBinary);
 
-		generateSplitSheet2(report, wb, isBinary);
+		generateSplitSheet2(report, wb, isBinary, report.predictionReportMetadata.datasetUnit);
 
 		for (int i = 0; i < report.predictionReportDataPoints.get(0).qsarPredictedValues.size(); i++) {
 			generatePredictionSheet2(report.predictionReportDataPoints, i, wb, isBinary, report.predictionReportMetadata.datasetProperty,report.predictionReportMetadata.datasetUnit);
@@ -258,101 +251,6 @@ public class ExcelPredictionReportGenerator {
 	}
 
 
-
-	public void generate3(PredictionReport report,String filepathOut) {
-
-		XSSFWorkbook wb=new XSSFWorkbook();		
-		boolean isBinary = report.predictionReportMetadata.datasetUnit.equalsIgnoreCase("binary") ? true : false;
-
-		generateCoverSheet(report,wb, isBinary);
-
-
-		//		System.out.println("number of data points="+report.predictionReportDataPoints.size());
-
-		generateCoverSheet(report,wb, isBinary);
-		generateSplitSheet(report,wb, isBinary);
-
-		ArrayList<modelHashTables> manyModelHashTables = new ArrayList<modelHashTables>();
-		// purely for resizing later on
-		ArrayList<String> modelNames = new ArrayList<String>();
-		for (int i = 0; i < report.predictionReportDataPoints.get(0).qsarPredictedValues.size(); i++) {
-
-			// this is like the second return type for generatePredictionSheet, added to w/ side effects
-			modelHashTables modelHashTables = new modelHashTables();
-			Map < String, Object[] > map = generatePredictionSheet(report.predictionReportDataPoints,i,modelHashTables);
-
-			populateSheet(map, modelHashTables.modelName, false,wb, isBinary);
-			manyModelHashTables.add(modelHashTables);
-
-			modelNames.add(modelHashTables.modelName);
-		}
-		List<ModelPrediction> modelPredictionsTest = new ArrayList<ModelPrediction>();
-		List<ModelPrediction> modelPredictionsTraining = new ArrayList<ModelPrediction>();
-		modelHashTables consensusHashTables = new modelHashTables(); //
-
-		Map < String, Object[] > consensusMap = generateConsensusSheet(manyModelHashTables, consensusHashTables, modelPredictionsTest, modelPredictionsTraining);
-
-
-		populateSheet(consensusMap, "Consensus", false,wb, isBinary);
-
-		if (isBinary) {
-			Map<String, Double> StatisticsMap = ModelStatisticCalculator.calculateBinaryStatistics(modelPredictionsTest, 0.5, DevQsarConstants.TAG_TEST);
-			// pulling the same thing twice to avoid errors			
-			// generateSummarySheet(report, StatisticsMap, StatisticsMap, wb, isBinary);
-
-		} else {
-			//TODO This is wrong- needs to only look at experimental values for training compounds:
-			double avgExpTraining=findExperimentalAverage(modelPredictionsTraining);
-			System.out.println("avgExpTraining="+avgExpTraining);//doesnt match spreadsheet
-
-			//TODO- This is wrong- needs to just use chemicals appearing in the test set:
-			Map<String, Double> StatisticsMapTest = ModelStatisticCalculator.calculateContinuousStatistics(modelPredictionsTest, avgExpTraining, DevQsarConstants.TAG_TEST);
-
-
-			for (int i =0 ; i < modelPredictionsTraining.size(); i++) {
-				System.out.println(modelPredictionsTraining.get(i).exp);
-			}
-			//			TODO This is wrong- needs to just use chemicals appearing in the training set
-			Map<String, Double> StatisticsMapTrain = ModelStatisticCalculator.calculateContinuousStatistics(modelPredictionsTraining, avgExpTraining, DevQsarConstants.TAG_TRAINING);
-			// generateSummarySheet(report, StatisticsMapTest, StatisticsMapTrain, wb, isBinary);
-		}
-
-		wb.setSheetOrder("Summary", 1);
-
-		String[] trainTest = {"Training", "Test"};
-		for (String s:trainTest) {
-			XSSFSheet sheet = (XSSFSheet) wb.getSheet(s);
-			sheet.setColumnWidth(2, 50 * 256);
-			sheet.setColumnWidth(3, 50 * 256);
-			sheet.setColumnWidth(5, 50 * 256);
-		}
-
-		modelNames.add("Consensus");
-		for (String s:modelNames) {
-			XSSFSheet sheet = (XSSFSheet) wb.getSheet(s);
-			sheet.setColumnWidth(0, 50 * 256);
-		}
-		
-
-
-		try {
-
-			FileOutputStream out = new FileOutputStream(filepathOut);
-			wb.write(out);
-			wb.close();			
-			out.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		System.out.println("Spreadsheet written successfully" );
-	}
-
-
-
 	public void generate(String inputFilePath,String outputFilePath) {
 
 		PredictionReport report = null;
@@ -370,74 +268,6 @@ public class ExcelPredictionReportGenerator {
 			e.printStackTrace();
 		}
 		generate(report,outputFilePath);
-	}
-
-
-
-
-	public void generateSplitSheet(PredictionReport predictionReport, Workbook wb,boolean isBinary) {
-		Map < String, Object[] > trainMap = new TreeMap < String, Object[] >();
-		trainMap.put( "AAA", new Object[] { "DTXCID","CASRN", "Preferred Name", "Smiles", "MolecularWeight", "Canonical QSAR Ready Smiles", "Experimental Value" });
-
-		Map < String, Object[] > testMap = new TreeMap < String, Object[] >();
-		testMap.put( "AAA", new Object[] { "DTXCID","CASRN", "Preferred Name", "Smiles", "MolecularWeight", "Canonical QSAR Ready Smiles", "Experimental Value" });
-
-		for (int i = 0; i < predictionReport.predictionReportDataPoints.size(); i++) {
-
-			OriginalCompound oc = null;
-			// need to sort for consistency
-			try {
-				oc = predictionReport.predictionReportDataPoints.get(i).originalCompounds.get(0);
-			} catch (IndexOutOfBoundsException ex) {
-				// ex.printStackTrace();
-				continue;
-			}
-			String canonQsarSmiles = predictionReport.predictionReportDataPoints.get(i).canonQsarSmiles;
-			boolean train = predictionReport.predictionReportDataPoints.get(i).qsarPredictedValues.get(0).splitNum == 0 ? true : false;
-			if (oc != null) {
-				Object[] row = new Object[] { oc.dtxcid, oc.casrn, oc.preferredName, oc.smiles, oc.molWeight, canonQsarSmiles, predictionReport.predictionReportDataPoints.get(i).experimentalPropertyValue 
-				};
-
-				if (train == true) {
-					trainMap.put("BBB" + String.valueOf(i), row);
-				} else {
-					testMap.put("BBB" + String.valueOf(i), row);
-				}
-			}
-		}
-
-		populateSheet(trainMap, "Training", true, wb, isBinary);
-		populateSheet(testMap, "Test", true, wb, isBinary);
-
-
-	}
-
-	public void generateCoverSheet(PredictionReport predictionReport, Workbook wb, boolean isBinary) {
-		Map < String, Object[] > spreadsheetMap = new TreeMap < String, Object[] >();
-
-		spreadsheetMap.put("A", prepareCoverSheetRow("Property Name", predictionReport.predictionReportMetadata.datasetProperty));
-		spreadsheetMap.put("B", prepareCoverSheetRow("Property Description", predictionReport.predictionReportMetadata.datasetPropertyDescription));
-		spreadsheetMap.put("C", prepareCoverSheetRow("Dataset Name", predictionReport.predictionReportMetadata.datasetName));
-		spreadsheetMap.put("D", prepareCoverSheetRow("Dataset Description", predictionReport.predictionReportMetadata.datasetDescription));
-		spreadsheetMap.put("E", prepareCoverSheetRow("Property Units", predictionReport.predictionReportMetadata.datasetUnit));
-
-		int nTrain = 0;
-		int nPredict = 0;
-		for (int i = 0; i < predictionReport.predictionReportDataPoints.size(); i++) {
-			if (!(predictionReport.predictionReportDataPoints.get(i) == null)) {
-				if (predictionReport.predictionReportDataPoints.get(i).qsarPredictedValues.get(0).splitNum == 0) {
-					nTrain++;
-				} else {
-					nPredict++;
-				}
-			}
-		}
-
-		spreadsheetMap.put("G", prepareCoverSheetRow("nTraining", String.valueOf(nTrain)));
-		spreadsheetMap.put("H", prepareCoverSheetRow("nTEST", String.valueOf(nPredict)));
-
-		populateSheet(spreadsheetMap, "Cover sheet", true, wb, isBinary);
-
 	}
 
 	public void generateCoverSheet2(PredictionReport predictionReport, Workbook wb, boolean isBinary) {
@@ -477,12 +307,12 @@ public class ExcelPredictionReportGenerator {
 		return rowArrayList.toArray(new Object[rowArrayList.size()]);
 	}
 
-	public void generateSplitSheet2(PredictionReport predictionReport, Workbook wb,boolean isBinary) {
+	public void generateSplitSheet2(PredictionReport predictionReport, Workbook wb,boolean isBinary, String unit) {
 		Map < Integer, Object[] > trainMap = new TreeMap < Integer, Object[] >();
-		trainMap.put( 0, new Object[] { "DTXCID","CASRN", "Preferred Name", "Smiles", "MolecularWeight", "Canonical QSAR Ready Smiles", "Experimental Value" });
+		trainMap.put( 0, new Object[] { "DTXCID","CASRN", "Preferred Name", "Smiles", "MolecularWeight", "Canonical QSAR Ready Smiles", "Experimental Value" + " " + "(" + unit + ")"});
 
 		Map < Integer, Object[] > testMap = new TreeMap < Integer, Object[] >();
-		testMap.put( 0, new Object[] { "DTXCID","CASRN", "Preferred Name", "Smiles", "MolecularWeight", "Canonical QSAR Ready Smiles", "Experimental Value" });
+		testMap.put( 0, new Object[] { "DTXCID","CASRN", "Preferred Name", "Smiles", "MolecularWeight", "Canonical QSAR Ready Smiles", "Experimental Value" + " " + "(" + unit + ")"});
 
 		for (int i = 0; i < predictionReport.predictionReportDataPoints.size(); i++) {
 
@@ -510,8 +340,8 @@ public class ExcelPredictionReportGenerator {
 			}
 		}
 
-		populateSheet2(trainMap,  wb, isBinary, "Training", null, null);
-		populateSheet2(testMap, wb, isBinary, "Test", null, null);
+		populateSheet2(trainMap,  wb, isBinary, "Training set", null, null);
+		populateSheet2(testMap, wb, isBinary, "Test set", null, null);
 
 
 	}
@@ -577,170 +407,6 @@ public class ExcelPredictionReportGenerator {
 		populateSheet2(spreadsheetMap, wb, isBinary, "Summary sheet", null, null);
 
 	}
-
-	/*
-	public void generateSummarySheet(PredictionReport predictionReport, Map<String, Double> consensusStatisticsMap, Map<String, Double> consensusStatisticsMapTrain,Workbook wb, boolean isBinary) {
-		Map < String, Object[] > spreadsheetMap = new TreeMap < String, Object[] >();
-
-
-		// String[] headers = new String[] { "modelid","datasetname", "descriptorsoftware", "splittingname", "methodname"};
-		ArrayList<String> headerStats = new ArrayList<String>(Arrays.asList("Dataset Name", "Descriptor Software", "Method Name", "Split"));
-
-
-		if (isBinary) headerStats.addAll(new BinaryStats().binaryStats);
-		else headerStats.addAll(new ContinuousStats().continuousStats);
-
-
-		String[] headerStatsArray = new String[headerStats.size()];
-		headerStatsArray = headerStats.toArray(headerStatsArray);
-		Object[] headerStatsObject = headerStatsArray;
-		spreadsheetMap.put("AAA", headerStatsObject);	        
-
-
-		for (int i = 0; i < predictionReport.predictionReportModelMetadata.size(); i++) {
-			ArrayList<Object> rowArrayList = new ArrayList<Object>();
-			rowArrayList.add(predictionReport.predictionReportMetadata.datasetName);
-			rowArrayList.add(predictionReport.predictionReportModelMetadata.get(i).qsarMethodName);
-
-			// "R2", "Q2", "RMSE", "MAE", "Coverage"
-
-			if (isBinary) {
-				rowArrayList.add(predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics);
-				BinaryStats bs = new BinaryStats();
-				bs.splitting = "Test";
-
-				for (int j = 0; j < predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.size(); j++) {
-					bs.align_Test(predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticName, predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticValue);	
-				}
-
-				Object[] row = new Object[] { predictionReport.predictionReportMetadata.datasetName,
-						predictionReport.predictionReportModelMetadata.get(i).qsarMethodName,
-						bs.splitting,
-						bs.BA,bs.SN,bs.SP,bs.Coverage};
-
-				BinaryStats bs_train = new BinaryStats();
-				bs_train.splitting = "Training";
-
-				for (int j = 0; j < predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.size(); j++) {
-					bs_train.align_Test(predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticName, predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticValue);	
-				}
-
-
-
-				Object[] row_train = new Object[] { predictionReport.predictionReportMetadata.datasetName,
-						predictionReport.predictionReportMetadata.descriptorSetName,
-						predictionReport.predictionReportModelMetadata.get(i).qsarMethodName,
-						bs_train.splitting,
-						bs_train.BA,bs_train.SN,bs_train.SP,bs_train.Coverage
-				};
-
-
-
-				spreadsheetMap.put("BBB" + String.valueOf(i), row);
-				spreadsheetMap.put("BBB" + String.valueOf(i) + "Z", row_train);
-
-
-
-			} else {
-				rowArrayList.add(predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics);
-
-				ContinuousStats cs_test = new ContinuousStats();
-				cs_test.splitting = "Test";
-				for (int j = 0; j < predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.size(); j++) {
-					cs_test.alignTest(predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticName, predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticValue);	
-				}
-
-				ContinuousStats cs_train = new ContinuousStats();
-				cs_train.splitting = "Training";
-				for (int j = 0; j < predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.size(); j++) {
-					cs_train.alignTrain(predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticName, predictionReport.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticValue);	
-				}        		
-
-
-				Object[] row_test = new Object[] { predictionReport.predictionReportMetadata.datasetName,
-						predictionReport.predictionReportModelMetadata.get(i).qsarMethodName,
-						cs_test.splitting,
-						cs_test.R2,cs_test.Q2,cs_test.RMSE,cs_test.MAE,cs_test.Coverage
-				};
-
-				Object[] row_train = new Object[] { predictionReport.predictionReportMetadata.datasetName,
-						predictionReport.predictionReportModelMetadata.get(i).qsarMethodName,
-						cs_train.splitting,
-						cs_train.R2,cs_train.Q2,cs_train.RMSE,cs_train.MAE,cs_train.Coverage
-				};
-
-
-				spreadsheetMap.put("BBB" + String.valueOf(i), row_test);
-				spreadsheetMap.put("BBB" + String.valueOf(i) + "Z", row_train);
-
-
-
-			}
-		}
-
-		if (isBinary == false) {
-			// adds the consensus row
-			ContinuousStats cs_test = new ContinuousStats();
-			// printmap(consensusStatisticsMap);
-			cs_test.splitting = "Test";
-			cs_test.R2 = consensusStatisticsMap.get(DevQsarConstants.PEARSON_RSQ + DevQsarConstants.TAG_TEST);
-			cs_test.MAE = consensusStatisticsMap.get(DevQsarConstants.MAE +  DevQsarConstants.TAG_TEST);
-			cs_test.RMSE = consensusStatisticsMap.get(DevQsarConstants.RMSE + DevQsarConstants.TAG_TEST);
-			cs_test.Q2 = consensusStatisticsMap.get(DevQsarConstants.Q2_TEST);
-			cs_test.Coverage = consensusStatisticsMap.get(DevQsarConstants.COVERAGE+ DevQsarConstants.TAG_TEST);;
-
-			Object[] consensusrow_test = new Object[] { predictionReport.predictionReportMetadata.datasetName,
-					"Consensus", cs_test.splitting,
-					cs_test.R2,cs_test.Q2,cs_test.RMSE,cs_test.MAE,cs_test.Coverage
-			};
-			spreadsheetMap.put("CCC", consensusrow_test);
-
-			ContinuousStats cs_train = new ContinuousStats();
-			cs_train.splitting = "Training";
-			// printmap(consensusStatisticsMap);
-
-			cs_train.R2 = consensusStatisticsMapTrain.get(DevQsarConstants.PEARSON_RSQ + DevQsarConstants.TAG_TRAINING);
-			cs_train.MAE = consensusStatisticsMapTrain.get(DevQsarConstants.MAE +  DevQsarConstants.TAG_TRAINING);
-			cs_train.RMSE = consensusStatisticsMapTrain.get(DevQsarConstants.RMSE + DevQsarConstants.TAG_TRAINING);
-			cs_train.Q2 = null;
-			cs_train.Coverage = consensusStatisticsMapTrain.get(DevQsarConstants.COVERAGE+ DevQsarConstants.TAG_TRAINING);
-
-			Object[] consensusrow_train = new Object[] { predictionReport.predictionReportMetadata.datasetName,
-					"Consensus", cs_train.splitting,
-					cs_train.R2,cs_train.Q2,cs_train.RMSE,cs_train.MAE,cs_train.Coverage
-			};
-			spreadsheetMap.put("CCB", consensusrow_train);
-
-			/*
-	        this should be for adding consensus stats
-	 */
-
-	/*
-			populateSheet(spreadsheetMap, "Summary", true, wb, isBinary);
-		} else if (isBinary) {
-			BinaryStats bs = new BinaryStats();
-			bs.BA = consensusStatisticsMap.get(DevQsarConstants.BALANCED_ACCURACY  + DevQsarConstants.TAG_TEST);
-			bs.SN = consensusStatisticsMap.get(DevQsarConstants.SENSITIVITY+  DevQsarConstants.TAG_TEST);
-			bs.SP = consensusStatisticsMap.get(DevQsarConstants.SPECIFICITY + DevQsarConstants.TAG_TEST);
-			bs.Coverage = consensusStatisticsMap.get(DevQsarConstants.COVERAGE + DevQsarConstants.TAG_TEST);
-
-			Object[] consensusrow = new Object[] { predictionReport.predictionReportMetadata.datasetName,
-					"Consensus",
-					bs.BA,bs.SN,bs.SP,bs.Coverage
-			};
-			spreadsheetMap.put("CCC", consensusrow);
-
-
-
-
-
-			populateSheet(spreadsheetMap, "Summary", true, wb, isBinary);
-
-		}
-
-
-	}	
-	 */
 
 	private static double findExperimentalAverage(List<ModelPrediction> modelPredictions) {
 		Double sum = 0.0;
@@ -918,7 +584,7 @@ public class ExcelPredictionReportGenerator {
 
 	private void columnResizing(Workbook wb) {
 
-		String[] trainTest = {"Training", "Test"};
+		String[] trainTest = {"Training set", "Test set"};
 		for (String s:trainTest) {
 			XSSFSheet sheet = (XSSFSheet) wb.getSheet(s);
 			sheet.setColumnWidth(2, 50 * 256);
@@ -930,7 +596,7 @@ public class ExcelPredictionReportGenerator {
         for (int i = 0; i < wb.getNumberOfSheets(); i++) {
         	XSSFSheet sheet = (XSSFSheet) wb.getSheetAt(i);
         	String sheetName = sheet.getSheetName();
-        	if (!(sheetName.equals("Cover sheet") || sheetName.equals("Summary sheet") || sheetName.equals("Training") || sheetName.equals("Test"))) {
+        	if (!(sheetName.equals("Cover sheet") || sheetName.equals("Summary sheet") || sheetName.equals("Training set") || sheetName.equals("Test set"))) {
         		sheet.setColumnWidth(0, 30 * 256);
         	}
         }
@@ -1008,7 +674,7 @@ public class ExcelPredictionReportGenerator {
 					}
 
 
-					if (sheetName.equals("Test") || sheetName.equals("Training")) {
+					if (sheetName.equals("Test set") || sheetName.equals("Training set")) {
 
 						if (rowid == 1) { 
 							cell.setCellStyle(boldstyle);
@@ -1018,7 +684,7 @@ public class ExcelPredictionReportGenerator {
 
 					}
 
-					if (!(sheetName.equals("Cover sheet") || sheetName.equals("Summary sheet") || sheetName.equals("Training") || sheetName.equals("Test"))) {
+					if (!(sheetName.equals("Cover sheet") || sheetName.equals("Summary sheet") || sheetName.equals("Training set") || sheetName.equals("Test set"))) {
 						sheet.setAutoFilter(CellRangeAddress.valueOf("A1:D1"));
 
 						if (rowid == 1) { 
@@ -1037,7 +703,7 @@ public class ExcelPredictionReportGenerator {
 			}
 		}
 		if (!(isBinary)) {
-			if (!(sheetName.equals("Cover sheet") || sheetName.equals("Summary sheet") || sheetName.equals("Training") || sheetName.equals("Test"))) {
+			if (!(sheetName.equals("Cover sheet") || sheetName.equals("Summary sheet") || sheetName.equals("Training set") || sheetName.equals("Test set"))) {
 				eu.GenerateChart(sheet,"Experimental" + propertyName,"Predicted" + propertyName,sheetName,propertyName,units);
 			}
 		}
@@ -1049,130 +715,6 @@ public class ExcelPredictionReportGenerator {
 
 	}
 
-
-	private void populateSheet(Map < String, Object[] > spreadsheetMap, String methodName, boolean summary,Workbook wb, boolean isBinary) {
-
-
-		if (wb.getSheet(methodName) != null) {
-			return;
-		}
-		XSSFSheet sheet = (XSSFSheet) wb.createSheet(methodName);
-		CellStyle cellStyle = wb.createCellStyle();
-		cellStyle.setDataFormat(wb.createDataFormat().getFormat("0.00"));
-		cellStyle.setAlignment(CellStyle.ALIGN_CENTER);
-		CellStyle cellStyle2 = wb.createCellStyle();
-		cellStyle2.setDataFormat(wb.createDataFormat().getFormat("0"));
-		cellStyle2.setAlignment(CellStyle.ALIGN_CENTER);
-
-		XSSFRow row;
-		Set < String > keyid = spreadsheetMap.keySet();
-
-
-		CellStyle boldstyle = wb.createCellStyle();//Create style
-		Font font = wb.createFont();;//Create font
-		font.setBold(true);//Make font bold
-		boldstyle.setFont(font);//set it to bold
-
-
-		int rowid = 0;
-		for (String key : keyid)
-		{
-			row = sheet.createRow(rowid++);
-			Object [] objectArr = spreadsheetMap.get(key);
-			int cellid = 0;
-			for (Object obj : objectArr)
-			{
-				Cell cell = row.createCell(cellid++);
-
-				if (obj instanceof Number) {
-					cell.setCellValue((Double)obj);
-
-
-
-					if (!(methodName.equals("Cover sheet")) && (cellid != 1)) {
-						cell.setCellStyle(cellStyle);
-					}
-
-
-					if (isBinary==true) {
-						// sheet.setAutoFilter(CellRangeAddress.valueOf("A1:J1"));
-						// autoSizeColumns(wb);
-
-					} else if (isBinary == false) {
-						sheet.setAutoFilter(CellRangeAddress.valueOf("A1:I1"));
-					} else if (methodName.equals("Test") || methodName.equals("Training")) {
-						sheet.setAutoFilter(CellRangeAddress.valueOf("A1:G1"));
-
-
-					} 
-
-
-				} else if (obj instanceof String) {
-					cell.setCellValue((String)obj);
-
-
-					// logic that handles bolding
-					if (!methodName.equals("Cover sheet")) {
-						if (rowid == 1) {
-							cell.setCellStyle(boldstyle);
-						}
-					} else {
-						if (cellid == 1) {
-							cell.setCellStyle(boldstyle);
-						}
-					}
-
-
-
-
-					//
-					/*
-		            // gives non-ID columns 3 decimal places
-		            if ((cellid != 1) && summary == true) {cell.setCellStyle(cellStyle);}
-		            else { cell.setCellStyle(cellStyle);}
-
-		            } else {
-		            cell.setCellValue((String)obj);
-
-					 */
-
-				}
-			}
-		}
-
-		if (methodName.equals("Summary")) {
-			if (isBinary==true) {
-				sheet.setAutoFilter(CellRangeAddress.valueOf("A1:G1"));
-				// autoSizeColumns(wb);
-
-			} else if (isBinary == false) {
-				sheet.setAutoFilter(CellRangeAddress.valueOf("A1:H1"));
-			} 
-
-		} else if (methodName.equals("Test") || methodName.equals("Training")) {
-			sheet.setAutoFilter(CellRangeAddress.valueOf("A1:G1"));
-
-
-
-		} else if (methodName.equals("Cover sheet")) {
-		} else {
-
-			if (isBinary == false) {
-				ExcelUtilities eu = new ExcelUtilities();
-				eu.GenerateChart(sheet,"Exp","Pred",methodName,"",null);
-
-				sheet.setAutoFilter(CellRangeAddress.valueOf("A1:D1"));
-			} else if (isBinary == true) {
-
-				sheet.setAutoFilter(CellRangeAddress.valueOf("A1:D1"));
-
-			}
-		}
-		autoSizeColumns(wb);
-
-
-
-	}
 
 
 
@@ -1246,8 +788,8 @@ public class ExcelPredictionReportGenerator {
 			//Set axis titles:
 			CTValAx valAx = chart.getCTChart().getPlotArea().getValAxArray(0);
 			CTValAx valAy = chart.getCTChart().getPlotArea().getValAxArray(1);
-			setAxisTitle("Observed " + propertyName, valAx);
-			setAxisTitle("Predicted "+ propertyName, valAy);
+			setAxisTitle("Observed " + propertyName + " " + "(" + units + ")", valAx);
+			setAxisTitle("Predicted "+ propertyName + " " + "(" + units + ")", valAy);
 			// *******
 
 			//set properties of first scatter chart data series to not smooth the line:
