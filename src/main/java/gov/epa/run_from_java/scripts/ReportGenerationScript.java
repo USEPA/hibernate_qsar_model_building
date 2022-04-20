@@ -34,9 +34,8 @@ public class ReportGenerationScript {
 
 	static PredictionReportGenerator gen = new PredictionReportGenerator();
 
-	private static void writeReport(String datasetName, PredictionReport report) {
-		String filePath = "data/reports/"+ datasetName + "_PredictionReport.json";
-
+	private static void writeReport(String datasetName, String modelSetName, PredictionReport report) {
+		String filePath = "data/reports/" + modelSetName+"_"+datasetName + "_PredictionReport.json";
 
 		File file = new File(filePath);
 		if (file.getParentFile()!=null) {
@@ -75,7 +74,7 @@ public class ReportGenerationScript {
 		double time=(t2-t1)/1000.0;
 		System.out.println("Time to generate report for "+datasetName+" = "+time+" seconds");
 
-		writeReport(datasetName, report);
+		writeReport(datasetName, modelSetName,report);
 		return report;
 	}
 
