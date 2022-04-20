@@ -72,6 +72,10 @@ public class ExcelPredictionReportGenerator {
 	//	public FileOutputStream out;
 
 
+	int countTest;
+	int countTestXgb;
+	String dataSetName;
+	
 
 	private static class Stats {
 		Double R2;
@@ -245,8 +249,10 @@ public class ExcelPredictionReportGenerator {
 			e.printStackTrace();
 		}
 		System.out.println("Spreadsheet written successfully" );
+		
+		this.dataSetName=report.predictionReportMetadata.datasetName;
 
-
+		System.out.println("***\t"+dataSetName+"\t"+countTest+"\t"+countTestXgb);
 
 	}
 
@@ -711,7 +717,8 @@ public class ExcelPredictionReportGenerator {
 
 		autoSizeColumns(wb);
 
-
+		if (sheetName.equals("Test set")) countTest=rowid-1;
+		if (sheetName.contains("xgb")) countTestXgb=rowid-1;
 
 	}
 
