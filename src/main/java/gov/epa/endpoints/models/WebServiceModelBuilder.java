@@ -226,7 +226,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		List<ModelPrediction> modelTrainingPredictions = predictTraining(model, data, methodName, strModelId);
 		postPredictions(modelTrainingPredictions, model);
 		
-		calculateAndPostModelStatistics(Arrays.asList(modelPredictions), modelTrainingPredictions, model);
+		calculateAndPostModelStatistics(modelTrainingPredictions, Arrays.asList(modelPredictions), model);
 	}
 
 	private List<ModelPrediction> predictTraining(Model model, ModelData data, String methodName, String strModelId) {
