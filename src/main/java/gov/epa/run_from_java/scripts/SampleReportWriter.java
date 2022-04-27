@@ -60,8 +60,10 @@ public class SampleReportWriter {
 					if (deleteExistingReportInDatabase) {
 						m2.delete(msr);
 					} else {
-						System.out.println(modelSetTableRow.datasetName + " exists skipping!");
-						continue;// skip it we already did it						
+						if (upload) {
+							System.out.println(modelSetTableRow.datasetName + " exists skipping!");
+							continue;// skip it we already did it						
+						}
 					}
 				}
 
@@ -92,7 +94,7 @@ public class SampleReportWriter {
 							modelSetTableRow.splittingName, modelSetName, true);
 				}
 
-				if (!excelFile.exists()) 
+				if (!excelFile.exists() || !upload) 
 					eprg.generate(predictionReport, filepathExcelUpload);
 				
 				if (upload)
@@ -155,12 +157,13 @@ public class SampleReportWriter {
 
 			PredictionReport predictionReport = null;
 
-			String filepathReport = "data/reports/" + datasetName + "_PredictionReport.json";
+			String filepathReport = "data/reports/" + modelSetName+"_"+datasetName + "_PredictionReport.json";
 
 			File reportFile = new File(filepathReport);
 
 			System.out.println(filepathReport);
-
+			System.out.println(filepathReport);
+			
 			if (reportFile.exists()) {
 				predictionReport = GenerateWebTestReport.loadDataSetFromJson(filepathReport);
 			} else {
@@ -182,13 +185,16 @@ public class SampleReportWriter {
 
 		SampleReportWriter g = new SampleReportWriter();
 		
-//		g.generateSamplePredictionReports(1L,false,true);
+		g.generateSamplePredictionReports(4L,false,false);
 //		g.generateSamplePredictionReports(1L,true,true);
 //		g.generateSamplePredictionReports(2L,true,true);
-		g.generateSamplePredictionReports(4L,true,true);
+//		g.generateSamplePredictionReports(4L,true,true);
 		
 		// **************************************************************
 //		g.generateSamplePredictionReport(1L, "LC50 TEST", "TEST", false);		
+//		g.generateSamplePredictionReport(5L, "Boiling point OPERA", "OPERA", false);
+//		g.generateSamplePredictionReport(5L, "Henry's law constant OPERA", "OPERA", false);
+//		g.generateSamplePredictionReport(6L, "Henry's law constant OPERA", "OPERA", false);
 //		g.generateSamplePredictionReport(2L, "Standard Henry's law constant from exp_prop", "RND_REPRESENTATIVE", false);
 //		g.generateSamplePredictionReport(2L, "LLNA from exp_prop, without eChemPortal", "RND_REPRESENTATIVE", false);
 		
