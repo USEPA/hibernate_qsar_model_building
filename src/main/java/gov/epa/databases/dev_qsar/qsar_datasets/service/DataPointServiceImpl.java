@@ -37,6 +37,19 @@ public class DataPointServiceImpl implements DataPointService {
 		return dataPoints;
 	}
 	
+	public List<DataPoint> findByDatasetId(Long datasetId) {
+		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
+		return findByDatasetId(datasetId, session);
+	}
+	
+	public List<DataPoint> findByDatasetId(Long datasetId, Session session) {
+		Transaction t = session.beginTransaction();
+		DataPointDao dataPointDao = new DataPointDaoImpl();
+		List<DataPoint> dataPoints = dataPointDao.findByDatasetId(datasetId, session);
+		t.rollback();
+		return dataPoints;
+	}
+	
 	@Override
 	public DataPoint create(DataPoint dataPoint) throws ConstraintViolationException {
 		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();

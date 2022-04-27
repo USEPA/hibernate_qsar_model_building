@@ -16,10 +16,23 @@ public class DataPointDaoImpl implements DataPointDao {
 			+ "left join fetch dp.dataPointContributors dpc "
 			+ "where d.name = :datasetName";
 	
+	private static final String HQL_BY_DATASET_ID = 
+			"select distinct dp from DataPoint dp "
+			+ "join dp.dataset d "
+			+ "left join fetch dp.dataPointContributors dpc "
+			+ "where d.id = :datasetId";
+	
 	public List<DataPoint> findByDatasetName(String datasetName, Session session) {
 		if (session==null) { session = QsarDatasetsSession.getSessionFactory().getCurrentSession(); }
 		Query query = session.createQuery(HQL_BY_DATASET_NAME);
 		query.setParameter("datasetName", datasetName);
+		return (List<DataPoint>) query.list();
+	}
+	
+	public List<DataPoint> findByDatasetId(Long datasetId, Session session) {
+		if (session==null) { session = QsarDatasetsSession.getSessionFactory().getCurrentSession(); }
+		Query query = session.createQuery(HQL_BY_DATASET_ID);
+		query.setParameter("datasetId", datasetId);
 		return (List<DataPoint>) query.list();
 	}
 

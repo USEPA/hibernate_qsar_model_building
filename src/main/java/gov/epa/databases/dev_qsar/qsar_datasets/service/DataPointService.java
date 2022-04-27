@@ -14,6 +14,10 @@ public interface DataPointService {
 	
 	public List<DataPoint> findByDatasetName(String datasetName, Session session);
 	
+	public List<DataPoint> findByDatasetId(Long datasetId);
+	
+	public List<DataPoint> findByDatasetId(Long datasetId, Session session);
+	
 	public DataPoint create(DataPoint dataPoint) throws ConstraintViolationException;
 	
 	public DataPoint create(DataPoint dataPoint, Session session) throws ConstraintViolationException;

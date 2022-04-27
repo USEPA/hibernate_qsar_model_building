@@ -131,8 +131,9 @@ public class DatasetCreator {
 		List<MappedPropertyValue> mappedPropertyValues = new ArrayList<MappedPropertyValue>();
 		
 		String finalUnitName = finalUnits.get(params.propertyName);
-		params.mappingParams.omitSalts = physchemPropertyNames.contains(params.propertyName); // Omit salts for physchem properties
-
+//		params.mappingParams.omitSalts = physchemPropertyNames.contains(params.propertyName); // Omit salts for physchem properties
+		params.mappingParams.omitSalts = false;
+		
 		try {
 			DsstoxMapper dsstoxMapper = new DsstoxMapper(params, standardizer, finalUnitName, params.mappingParams.omitSalts, 
 					acceptableAtoms, lanId);
@@ -573,12 +574,12 @@ public class DatasetCreator {
 //		bounds.add(speciesBound);
 		
 		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, 
-				false, true, false, true, true, false, true);
+				false, true, false, true, true, false, false);
 		MappingParams casrnMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_CASRN, null,
 				true, false, false, false, false, false, true);
-		String listMappingName = "Water solubility for comparison with Meng et al. 2022 (lenient)";
+		String listMappingName = "Water solubility unfiltered";
 		String casrnMappingName = "CASRN mapping of " + propertyName + " from exp_prop, without eChemPortal";
-		String listMappingDescription = "Water solubility for comparison with Meng et al. 2022, 6 < pH < 8, 20 < T (C) < 30 (lenient)";
+		String listMappingDescription = "Water solubility unfiltered to retrieve PFAS experimental values";
 		String casrnMappingDescription = propertyName + " with species = Mouse, mapped by CASRN";
 		DatasetParams casrnMappedParams = new DatasetParams(casrnMappingName, 
 				casrnMappingDescription, 
@@ -588,8 +589,7 @@ public class DatasetCreator {
 		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
 				listMappingDescription, 
 				propertyName,
-				listMappingParams,
-				bounds);
+				listMappingParams);
 
 //		creator.createPropertyDataset(casrnMappedParams);
 		creator.createPropertyDataset(listMappedParams, false);
