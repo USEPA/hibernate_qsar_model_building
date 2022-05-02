@@ -129,11 +129,7 @@ public class PredictorComparisonScript {
 		Dataset dataset = datasetService.findByName(datasetName);
 		PredictorDataset predictorDataset = new PredictorDataset(dataset.getId());
 		predictorDataset.addMethod(new PredictorMethod(modelId, "pred"));
-				
-		int sampleSize = Math.min(SAMPLE_MAX, (int) Math.round(SAMPLE_FRACTION * predictorChemicals.size()));
-		Collections.shuffle(predictorChemicals);
-		predictorChemicals = predictorChemicals.subList(0, sampleSize);
-		
+						
 		PredictorRequest request = new PredictorRequest();
 		request.addDataset(predictorDataset);
 		request.chemicals = predictorChemicals;
@@ -193,7 +189,7 @@ public class PredictorComparisonScript {
 	
 	public static void main(String[] args) {
 		
-		PredictorComparisonScript.SAMPLE_MAX=100;
+		PredictorComparisonScript.SAMPLE_MAX=200;
 		Unirest.config().connectTimeout(0).socketTimeout(0);
 //		PredictorComparisonScript.SAMPLE_FRACTION=0.1;
 		comparePredictions(151L,2L);
