@@ -27,6 +27,7 @@ public class PredictorComparisonScript {
 	public static class PredictorRequest {
 		public List<PredictorChemical> chemicals = new ArrayList<PredictorChemical>();
 		public List<PredictorDataset> datasets = new ArrayList<PredictorDataset>();
+		public Long modelset_id;
 		
 		public void addDataset(PredictorDataset dataset) {
 			this.datasets.add(dataset);
@@ -35,7 +36,7 @@ public class PredictorComparisonScript {
 
 	
 	public static class PredictorResponse {
-		public List<PredictorChemicalValues> chemicals;
+		public List<PredictorChemicalValues> predictions;
 		public PredictorDataset dataset;
 	}
 
@@ -80,8 +81,8 @@ public class PredictorComparisonScript {
 	}
 	
 	private static final String PREDICT_API_URL = "https://hazard-dev.sciencedataexperts.com/api/predictor/predict";
-	private static final double SAMPLE_FRACTION = 0.1; // Percent of dataset to sample
-	private static final int SAMPLE_MAX = 100; // Cap on dataset sample size
+	private static double SAMPLE_FRACTION = 0.1; // Percent of dataset to sample
+	private static int SAMPLE_MAX = 100; // Cap on dataset sample size
 	public static final double COMPARISON_TOLERANCE = 0.000001;
 	
 	public static Map<String, Prediction> getDatabasePredictions(Long modelId) {
@@ -90,7 +91,8 @@ public class PredictorComparisonScript {
 		return predictions.stream().collect(Collectors.toMap(p -> p.getCanonQsarSmiles(), p -> p));
 	}
 	
-	public static List<PredictorChemicalValues> getPredictorPredictionsSample(Long modelId) {
+	
+	public static List<PredictorChemical> getSample(Long modelId, Long modelSetID) {
 		ModelService modelService = new ModelServiceImpl();
 		Model model = modelService.findById(modelId);
 		String datasetName = model.getDatasetName();
@@ -104,6 +106,30 @@ public class PredictorComparisonScript {
 				.map(s -> new PredictorChemical(s))
 				.collect(Collectors.toList());
 		
+//		System.out.println("predictorChemicals:");
+//		for (int i=0;i<predictorChemicals.size();i++) {
+//			System.out.println(i+"\t"+predictorChemicals.get(i).smiles);
+//		}
+		
+		
+		int sampleSize = Math.min(SAMPLE_MAX, (int) Math.round(SAMPLE_FRACTION * predictorChemicals.size()));
+		Collections.shuffle(predictorChemicals);
+		predictorChemicals = predictorChemicals.subList(0, sampleSize);
+		return predictorChemicals;
+		
+		
+	}
+	
+	public static List<PredictorChemicalValues> getPredictorPredictionsSample(List<PredictorChemical>predictorChemicals,Long modelId, Long modelSetID) {
+		ModelService modelService = new ModelServiceImpl();
+		Model model = modelService.findById(modelId);
+		String datasetName = model.getDatasetName();
+		
+		DatasetService datasetService = new DatasetServiceImpl();
+		Dataset dataset = datasetService.findByName(datasetName);
+		PredictorDataset predictorDataset = new PredictorDataset(dataset.getId());
+		predictorDataset.addMethod(new PredictorMethod(modelId, "pred"));
+				
 		int sampleSize = Math.min(SAMPLE_MAX, (int) Math.round(SAMPLE_FRACTION * predictorChemicals.size()));
 		Collections.shuffle(predictorChemicals);
 		predictorChemicals = predictorChemicals.subList(0, sampleSize);
@@ -111,7 +137,14 @@ public class PredictorComparisonScript {
 		PredictorRequest request = new PredictorRequest();
 		request.addDataset(predictorDataset);
 		request.chemicals = predictorChemicals;
+		request.modelset_id=modelSetID;
 		
+		System.out.println(new Gson().toJson(request));
+		
+		Unirest.config()
+        .socketTimeout(0)
+        .connectTimeout(0);
+        
 		String body = Unirest.post(PREDICT_API_URL)
 				.header("Content-Type", "application/json")
 				.header("Accept", "*/*")
@@ -120,20 +153,35 @@ public class PredictorComparisonScript {
 				.asString()
 				.getBody();
 		
+//		System.out.println(body);
+		
 		PredictorResponse[] response = new Gson().fromJson(body, PredictorResponse[].class);
-		return response[0].chemicals;
+		return response[0].predictions;
 	}
 	
-	public static void comparePredictions(Long modelId) {
-		List<PredictorChemicalValues> predictorPredictions = getPredictorPredictionsSample(modelId);
-		Map<String, Prediction> databasePredictions = getDatabasePredictions(modelId);
+	public static void comparePredictions(Long modelId,Long modelSetID) {
+				
+		List<PredictorChemical>sampleChemicals=getSample(modelId, modelSetID);		
+		List<PredictorChemicalValues> predictorPredictions = getPredictorPredictionsSample(sampleChemicals,modelId,modelSetID);
 		
-		for (PredictorChemicalValues predictorPrediction:predictorPredictions) {
-			String smiles = predictorPrediction.chemical.smiles;
-			Double predictorPred = predictorPrediction.values.get("pred");
-			Double databasePred = databasePredictions.get(smiles).getQsarPredictedValue();
+		Map<String, Prediction> databasePredictions = getDatabasePredictions(modelId);
+		double tol=1e-5;
+		
+		for (int i=0;i<predictorPredictions.size();i++) {
 			
-			System.out.println(String.join("\t", smiles, String.valueOf(databasePred), String.valueOf(predictorPred)));
+			PredictorChemicalValues pcv=predictorPredictions.get(i);
+			String smiles = pcv.chemical.smiles;
+			
+			String smilesOriginal=sampleChemicals.get(i).smiles;
+			
+			//TODO need to set prediction abbrev based on modelID
+			Double predictorPred = pcv.values.get("rf");//for now hardcoded to get it working
+			
+//			System.out.println(smiles+"\t"+smilesOriginal+"\t"+predictorPred);
+			
+			Double databasePred = databasePredictions.get(smilesOriginal).getQsarPredictedValue();
+			if (Math.abs(predictorPred-databasePred)>tol)
+				System.out.println(String.join("\t", smilesOriginal, smiles, String.valueOf(databasePred), String.valueOf(predictorPred)));
 		}
 	}
 	
@@ -144,8 +192,11 @@ public class PredictorComparisonScript {
 	}
 	
 	public static void main(String[] args) {
+		
+		PredictorComparisonScript.SAMPLE_MAX=100;
 		Unirest.config().connectTimeout(0).socketTimeout(0);
-		comparePredictions(151L);
+//		PredictorComparisonScript.SAMPLE_FRACTION=0.1;
+		comparePredictions(151L,2L);
 	}
 
 }
