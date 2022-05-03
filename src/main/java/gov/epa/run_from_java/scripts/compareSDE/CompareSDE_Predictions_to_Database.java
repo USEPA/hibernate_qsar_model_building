@@ -50,6 +50,11 @@ public class CompareSDE_Predictions_to_Database {
 		 
 		            String key = e.nextElement();
 		            
+		            String model=key.replace("smi-", "");
+		            
+		            if (!model.contains("T.E.S.T. 5.1")) continue;
+		            
+		            
 		            int colSmi=htSmiles.get(key);
 		            
 		            
@@ -72,7 +77,7 @@ public class CompareSDE_Predictions_to_Database {
 		            if (Math.abs(Double.parseDouble(sto)-Double.parseDouble(pre))>1e-5) {		            	
 		            	if (!badSmiles.contains(smi)) badSmiles.add(smi);	
 		            	
-		            	String model=key.replace("smi-", "");
+		            	
 		            	
 		            	System.out.println(model+"\t"+smi+"\t"+sto+"\t"+pre);	
 		            }

@@ -262,7 +262,7 @@ public class RunRequest {
 			if (standardize) {
 				JsonObject jo=gson.fromJson(jsonInString, JsonObject.class);			
 				JsonObject options=jo.getAsJsonObject("options");
-				options.addProperty("standardizer-workflow", "qsar-ready");
+				options.addProperty("stdizer-workflow", "qsar-ready");
 				jsonInString=gson.toJson(jo);
 			}
 			
