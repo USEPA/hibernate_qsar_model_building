@@ -14,25 +14,25 @@ public class CompareSDE_Predictions_to_Database {
 		
 		try {
 			
-			boolean standardize=true;//We need this to work so can explain differences
+			boolean standardize=false;//We need this to work so can explain differences
 			
-			BufferedReader br=new BufferedReader(new FileReader("predictions.csv"));
+			BufferedReader br=new BufferedReader(new FileReader("diffs.csv"));
 						
 			String strHeader=br.readLine();
 						
 			String [] headers=strHeader.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 			
-			
-			Hashtable<String,Integer>htSmiles=new Hashtable<String,Integer>();
 			Hashtable<String,Integer>htSto=new Hashtable<String,Integer>();
 			Hashtable<String,Integer>htPre=new Hashtable<String,Integer>();
 			
 			
+			int colSmi=0;
+			
 			for (int i=0;i<headers.length;i++) {
 				headers[i]=headers[i].replace("\"","");				
-				if (headers[i].contains("smi-")) htSmiles.put(headers[i], i);
-				if (headers[i].contains("sto-")) htSto.put(headers[i], i);
-				if (headers[i].contains("pre-")) htPre.put(headers[i], i);				
+				
+				if (headers[i].contains("sto-")) htSto.put(headers[i].replace("sto-",""), i);
+				if (headers[i].contains("pre-")) htPre.put(headers[i].replace("pre-",""), i);				
 //				System.out.println(headers[i]);
 			}
 			
@@ -45,23 +45,19 @@ public class CompareSDE_Predictions_to_Database {
 				String [] vals=Line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 //				System.out.println(vals.length);			
 
-				Enumeration<String> e = htSmiles.keys();
+				Enumeration<String> e = htSto.keys();
 		        while (e.hasMoreElements()) {
 		 
 		            String key = e.nextElement();
 		            
-		            String model=key.replace("smi-", "");
-		            
 //		            if (!model.contains("T.E.S.T. 5.1")) continue;
 		            		            
-		            int colSmi=htSmiles.get(key);		            
-		            
-		            if (htPre.get(key.replace("smi-", "pre-"))==null) {//Dont have pre column
+		            if (htPre.get(key)==null) {//Dont have pre column
 		            	continue;
 		            }
 		            
-		            int colPre=htPre.get(key.replace("smi-", "pre-"));
-		            int colSto=htSto.get(key.replace("smi-", "sto-"));
+		            int colPre=htPre.get(key);
+		            int colSto=htSto.get(key);
 		            
 		            String smi=vals[colSmi];
 		            String sto=vals[colSto];
@@ -75,7 +71,7 @@ public class CompareSDE_Predictions_to_Database {
 		            if (Math.abs(Double.parseDouble(sto)-Double.parseDouble(pre))>1e-5) {		            	
 		            	if (!badSmiles.contains(smi)) badSmiles.add(smi);	
 		            	
-		            	System.out.println(model+"\t"+smi+"\t"+sto+"\t"+pre);	
+		            	System.out.println(key+"\t"+smi+"\t"+sto+"\t"+pre);	
 		            }
 		        }
 					
