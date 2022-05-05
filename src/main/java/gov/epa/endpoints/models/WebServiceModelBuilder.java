@@ -126,6 +126,81 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	}
 
 	/**
+	 * Builds a Python and uses SQLalchemy to store
+	 * @param data
+	 * @param params
+	 */
+	@SuppressWarnings("deprecation")
+	public Long trainWithPythonStorage(ModelData data, String methodName, String descriptorEmbeddingName) 
+			throws ConstraintViolationException {
+		if (data.trainingSetInstances==null) {
+//			logger.error("Dataset instances were not initialized");
+			return null;
+		}
+		
+//		logger.debug("Building Python model with dataset = " + data.datasetName + ", descriptors = " + data.descriptorSetName
+//				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName);
+		DescriptorEmbedding descriptorEmbedding = null;
+		if (descriptorEmbeddingName!= null) {
+			descriptorEmbedding = descriptorEmbeddingService.findByName(descriptorEmbeddingName);
+			if (descriptorEmbedding==null) {
+//			logger.error("No such descriptor embedding");
+			return null;
+			} else if (!descriptorEmbedding.getDescriptorSetName().equals(data.descriptorSetName)) {
+//			logger.error("Descriptor embedding for wrong descriptor set");
+			return null;
+			} else if (!descriptorEmbedding.getDatasetName().equals(data.datasetName)) {
+//			logger.error("Descriptor embedding for wrong dataset");
+			return null;
+			}
+		}
+		
+		
+		Method genericMethod = methodService.findByName(methodName);
+		if (genericMethod==null) {
+			genericMethod = new Method(methodName, methodName, null, false, lanId);
+			methodService.create(genericMethod);
+		}
+		
+		Model model = new Model(genericMethod, descriptorEmbedding, data.descriptorSetName, data.datasetName, data.splittingName, lanId);
+		modelService.create(model);
+		String hyperparameters = null;
+		String strModelId = String.valueOf(model.getId());
+		if (descriptorEmbedding != null) {
+			modelWebService.callTrainWithPreselectedDescriptorsPythonStorage(data.trainingSetInstances, 
+				data.removeLogDescriptors, methodName, strModelId, descriptorEmbedding.getEmbeddingTsv()).getBody();
+			hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
+		} else {
+			modelWebService.callTrainPythonStorage(data.trainingSetInstances, 
+				data.removeLogDescriptors, methodName, strModelId);
+			hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
+		}
+		String description = modelWebService.callInfo(methodName).getBody();
+		
+		JsonObject jo = gson.fromJson(hyperparameters, JsonObject.class);
+		String version = jo.get("version").getAsString();
+		Boolean isBinary = jo.get("is_binary").getAsBoolean();
+		String classOrRegr = isBinary ? "classifier" : "regressor";
+		String fullMethodName = methodName + "_" + classOrRegr + "_" + version;
+		
+		Method method = methodService.findByName(fullMethodName);
+		if (method==null) {
+			method = new Method(fullMethodName, description, hyperparameters, isBinary, lanId);
+			methodService.create(method);
+		} else {
+			JsonParser parser = new JsonParser();
+			if (!parser.parse(hyperparameters).equals(parser.parse(method.getHyperparameters()))) {
+//				logger.warn("Hyperparameters for " + fullMethodName + " have changed");
+			}
+		}
+		
+		model.setMethod(method);
+		modelService.update(model);
+		
+		return model.getId();
+	}
+
+	/**
 	 * Builds a Python model with the given data and parameters
 	 * @param data
 	 * @param params
@@ -193,6 +268,47 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		return model.getId();
 	}
+	/**
+	 * Validates a Python model with the given data and parameters
+	 * @param data
+	 * @param params
+	 */
+	public void predictPythonStorage(ModelData data, String methodName, Long modelId) throws ConstraintViolationException {
+		if (modelId==null) {
+//			logger.error("Model with supplied parameters has not been built");
+			return;
+		} else if (data.predictionSetInstances==null) {
+//			logger.error("Dataset instances were not initialized");
+			return;
+		}
+		
+//		logger.debug("Validating Python model with dataset = " + data.datasetName + ", descriptors = " + data.descriptorSetName
+//				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName 
+//				+ " (qsar_models ID = " + modelId + ")");
+		
+		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
+		Model model = modelBytes.getModel();
+		
+		String strModelId = String.valueOf(modelId);
+		
+		String predictResponse = modelWebService.callPredictSQLAlchemy(data.predictionSetInstances, methodName, strModelId).getBody();
+		ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);
+		postPredictions(Arrays.asList(modelPredictions), model);
+		
+		if (data.trainingSetInstances==null) {
+			System.out.println("Dataset instances were not initialized");
+		}
+		
+		String predictTrainingResponse = modelWebService.callPredictSQLAlchemy(data.trainingSetInstances, methodName, strModelId).getBody();
+		ModelPrediction[] modelTrainingPredictionsArray = gson.fromJson(predictTrainingResponse, ModelPrediction[].class);
+
+		List<ModelPrediction> modelTrainingPredictions = Arrays.asList(modelTrainingPredictionsArray);
+		
+		
+		postPredictions(modelTrainingPredictions, model);
+		
+		calculateAndPostModelStatistics(modelTrainingPredictions, Arrays.asList(modelPredictions), model);
+	}
 
 	/**
 	 * Validates a Python model with the given data and parameters
@@ -250,6 +366,17 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		return modelId;
 	}
+	
+	public Long buildWithPythonStorage(String datasetName, String descriptorSetName, String splittingName, 
+			boolean removeLogDescriptors, String methodName, String descriptorEmbeddingName) throws ConstraintViolationException {
+		ModelData data = initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
+		
+		Long modelId = trainWithPythonStorage(data, methodName, descriptorEmbeddingName);
+		predictPythonStorage(data, methodName, modelId);
+		
+		return modelId;
+	}
+
 
 	public Long buildWithPreselectedDescriptors(String datasetName, String descriptorSetName, String splittingName, 
 			boolean removeLogDescriptors, String methodName, String descriptorEmbeddingName) throws ConstraintViolationException {

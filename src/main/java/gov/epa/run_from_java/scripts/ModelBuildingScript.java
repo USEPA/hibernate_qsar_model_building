@@ -70,9 +70,10 @@ public class ModelBuildingScript {
 		 * @param lanId
 		 */
 		public static void buildModel(String modelWsServer,int modelWsPort,String datasetName,String descriptorSetName,
-				String splittingName, boolean removeLogDescriptors,String methodName,String lanId, String descriptorEmbeddingName) {
+				String splittingName, boolean removeLogDescriptors,String methodName,String lanId, String descriptorEmbeddingName,
+				boolean pythonStorage) {
 	
-			System.out.println("Building "+methodName+" model for "+datasetName);
+			System.out.println("Building "+methodName+" model for "+datasetName + "with" + descriptorSetName + "descriptors");
 			
 			if (!modelWsServer.startsWith("http://")) {
 				modelWsServer = "http://" + modelWsServer;
@@ -80,11 +81,18 @@ public class ModelBuildingScript {
 			
 			ModelWebService modelWs = new ModelWebService(modelWsServer, modelWsPort);
 			WebServiceModelBuilder mb = new WebServiceModelBuilder(modelWs, lanId);
+			if (pythonStorage) {
+					Long modelId = mb.buildWithPythonStorage(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName, descriptorEmbeddingName);
+				}
+			else {
 			if (descriptorEmbeddingName == null) {
 			Long modelId = mb.build(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName);
 			} else {
 			Long modelID = mb.buildWithPreselectedDescriptors(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName, descriptorEmbeddingName);
 			}
+			}
+			
+			
 	//		PredictionReportGenerator gen = new PredictionReportGenerator();
 	//		PredictionReport report=gen.generateForModelPredictions(modelId);
 	//		writeReport(datasetName, descriptorSetName, report);//dont really need to write report since we probably want report from all models in one json file anyways
@@ -126,7 +134,8 @@ public class ModelBuildingScript {
 	}
 	
 	public static void main(String[] args) {
-		String lanId="tmarti02";
+		System.out.println("eclipse recognizes");
+		String lanId="cramslan";
 				
 		//*****************************************************************************************
 		// Build model:		
@@ -141,13 +150,19 @@ public class ModelBuildingScript {
 		
 //		String endpoint=DevQsarConstants.LOG_OH;
 //		String endpoint=DevQsarConstants.LOG_KOW;
-//		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
-//		String endpoint=DevQsarConstants.BOILING_POINT;
-//		String endpoint=DevQsarConstants.LLNA;
+//		String endpoint=DevQsarConstants.LOG_BCF;
+//		String endpoint=DevQsarConstants.MELTING_POINT;
+		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
+//		String endpoint=DevQsarConstants.LOG_KOC;
+//		String endpoint=DevQsarConstants.MUTAGENICITY;
 //		String endpoint=DevQsarConstants.LOG_KOW;
-//		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
+//		String endpoint=DevQsarConstants.LLNA;
 //		String endpoint=DevQsarConstants.DEV_TOX;
-		String endpoint=DevQsarConstants.VAPOR_PRESSURE;
+//		String endpoint=DevQsarConstants.VAPOR_PRESSURE;
+//		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
+//		String endpoint=DevQsarConstants.LC50;
+//		String endpoint=DevQsarConstants.MUTAGENICITY;
+//		String endpoint=DevQsarConstants.LOG_KOW;
 
 		String datasetName = endpoint +" "+sampleSource;
 		String splittingName=sampleSource;
@@ -157,39 +172,40 @@ public class ModelBuildingScript {
 		String descriptorSetName = "T.E.S.T. 5.1";		
 
 
-//		String descriptorSetName = "PaDEL-default";		
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
-		
+		// 	"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default",
+/*
 		String[] sciDataExpertsDescriptorSetNames = {
-				"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default",
+				"PaDEL-default"
 				};
+	
 		
-		
-		String methods[]= {DevQsarConstants.SVM,DevQsarConstants.RF,DevQsarConstants.XGB};
+		String methods[]= {DevQsarConstants.RF};
 		for (String desc:sciDataExpertsDescriptorSetNames) {
 			for (String method:methods) {
-				System.out.println(method);
+				System.out.println(method + "descriptor" + desc);
 				ModelBuildingScript.buildModel(modelWsServer,modelWsPort, datasetName,desc,
 						splittingName, removeLogDescriptors,method,lanId,null);
 			}
 
 		}
+*/	
 		
 		//*****************************************************************************************
 //		String methodName=DevQsarConstants.SVM;
 //		String methodName=DevQsarConstants.DNN;
-//		String methodName=DevQsarConstants.RF;
-		String methodName=DevQsarConstants.XGB;
+		String methodName=DevQsarConstants.RF;
+//		String methodName=DevQsarConstants.XGB;
 		
 //		String descriptorEmbeddingName="TestEmbeddingHLCexpPrp";
 //		String methodName=DevQsarConstants.XGB;
 //
 		
 //		String datasetName="LLNA from exp_prop, without eChemPortal";
-		String descriptorEmbeddingName="TestEmbeddingHLCexpPrp";
+//		String descriptorEmbeddingName="TestEmbeddingHLCexpPrp";
 		
 		ModelBuildingScript.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-				splittingName, removeLogDescriptors,methodName,lanId, descriptorEmbeddingName);
+				splittingName, removeLogDescriptors,methodName,lanId, null, false);
 //
 //		run.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
 //				splittingName, removeLogDescriptors,methodName,lanId);

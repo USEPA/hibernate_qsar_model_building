@@ -30,6 +30,34 @@ public class ModelWebService extends WebService {
 		return response;
 	}
 	
+	public HttpResponse<String> callTrainPythonStorage(String trainingSet, Boolean removeLogPDescriptors, String qsarMethod, String modelId) {
+		HttpResponse<String> response = Unirest.post(address + "/models/{qsar_method}/trainsa")
+				.routeParam("qsar_method", qsarMethod)
+				.field("training_tsv", trainingSet)
+				.field("embedding_tsv", "")
+				.field("model_id", modelId)
+				.field("remove_log_p", String.valueOf(removeLogPDescriptors))
+				.asString();
+		
+		System.out.println("status= " + response.getStatus());
+		System.out.println(response.getBody());
+		return response;
+	}
+	
+	public HttpResponse<String> callTrainWithPreselectedDescriptorsPythonStorage(String trainingSet, Boolean removeLogPDescriptors, 
+			String qsarMethod, String modelId, String embeddingTsv) {
+			HttpResponse<String> response = Unirest.post(address + "/models/{qsar_method}/trainsa")
+				.routeParam("qsar_method", qsarMethod)
+				.field("training_tsv", trainingSet)
+				.field("embedding_tsv", embeddingTsv)
+				.field("model_id", modelId)
+				.field("remove_log_p", String.valueOf(removeLogPDescriptors))
+				.asString();
+			System.out.println("status= " + response.getStatus());
+			System.out.println(response.getBody());
+		return response;
+	}
+	
 	public HttpResponse<byte[]> callTrainWithPreselectedDescriptors(String trainingSet, Boolean removeLogDescriptors, 
 			String qsarMethod, String modelId, String embeddingTsv) {
 		HttpResponse<byte[]> response = Unirest.post(address+"/models/{qsar_method}/train")
@@ -44,6 +72,7 @@ public class ModelWebService extends WebService {
 	}
 
 	public HttpResponse<String> callDetails(String qsarMethod, String modelId) {
+		System.out.println(address+"/models/" + qsarMethod + "/" + modelId);
 		HttpResponse<String> response = Unirest.get(address+"/models/{qsar_method}/{model_id}")
 				.routeParam("qsar_method", qsarMethod)
 				.routeParam("model_id", modelId)
@@ -80,6 +109,17 @@ public class ModelWebService extends WebService {
 		
 		return response;
 	}
+	
+	public HttpResponse<String> callPredictSQLAlchemy(String predictionSet, String qsarMethod, String modelId) {
+		HttpResponse<String> response = Unirest.post(address+"/models/{qsar_method}/predictsa")
+				.routeParam("qsar_method", qsarMethod)
+				.field("prediction_tsv", predictionSet)
+				.field("model_id", modelId)
+				.asString();
+		System.out.println(response.getStatus());
+		return response;
+	}
+
 	
 	public HttpResponse<String> callDescriptors(byte[] modelBytes, String qsarMethod, String modelId) {
 		InputStream model = new BufferedInputStream(new ByteArrayInputStream(modelBytes));
