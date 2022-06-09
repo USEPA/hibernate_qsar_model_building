@@ -1,7 +1,5 @@
 package gov.epa.run_from_java.scripts;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -25,20 +23,27 @@ public class ModelBuildingScriptTodd {
 
 
 //		String datasetName="LLNA from exp_prop, without eChemPortal";
-//		String datasetName="Standard Water solubility from exp_prop";
-		String datasetName="Standard Henry's law constant from exp_prop";
+		String datasetName="Standard Water solubility from exp_prop";
+//		String datasetName="Standard Henry's law constant from exp_prop";
 				
 		String descriptorSetName = "T.E.S.T. 5.1";		
-		String splittingName="RND_REPRESENTATIVE";
+//		String splittingName="RND_REPRESENTATIVE";
+		String splittingName=PFAS_SplittingGenerator.splittingPFASOnly;
+//		String splittingName=PFAS_SplittingGenerator.splittingAll;
+//		String splittingName=PFAS_SplittingGenerator.splittingAllButPFAS;
+		
 		boolean removeLogDescriptors=false;
 		
-//		String modelWsServer=DevQsarConstants.SERVER_LOCAL;
-			String modelWsServer=DevQsarConstants.SERVER_819;
+		
+		String modelWsServer=DevQsarConstants.SERVER_LOCAL;
+//			String modelWsServer=DevQsarConstants.SERVER_819;
 		int modelWsPort=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
 
-
+		boolean usePythonStorage=true;
+		String embeddingName=null;
+		
 		ModelBuildingScript.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-				splittingName, removeLogDescriptors,methodName,lanId,null);
+				splittingName, removeLogDescriptors,methodName,lanId,embeddingName,usePythonStorage);
 		
 		
 //		Long[] sourceArray = { 182L,183L,184L,185L };
@@ -49,7 +54,7 @@ public class ModelBuildingScriptTodd {
 		//			splittingName, removeLogDescriptors,methodName,lanId);
 
 		
-		long modelSetID=2L;
+//		long modelSetID=2L;
 		
 //		autoCreateConsensusModel(lanId, datasetName, modelSetID);
 
@@ -58,26 +63,28 @@ public class ModelBuildingScriptTodd {
 
 	void buildSampleSetModel() {
 		String lanId="tmarti02";
-//		String sampleSource="OPERA";
-		String sampleSource="TEST";
+		String sampleSource="OPERA";
+//		String sampleSource="TEST";
 
 //		String endpoint=DevQsarConstants.LOG_BCF;
 		//		String endpoint=DevQsarConstants.LOG_OH;
 //				String endpoint=DevQsarConstants.LOG_KOW;
 //				String endpoint=DevQsarConstants.LOG_HALF_LIFE;
 //				String endpoint=DevQsarConstants.BOILING_POINT;
+				String endpoint=DevQsarConstants.WATER_SOLUBILITY;
 //				String endpoint=DevQsarConstants.LLNA;
 //		String endpoint=DevQsarConstants.MUTAGENICITY;
 		//		String endpoint=DevQsarConstants.LOG_KOW;
 		//		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
 //				String endpoint=DevQsarConstants.DEV_TOX;
-		String endpoint=DevQsarConstants.LD50;
+//		String endpoint=DevQsarConstants.LD50;
 
 		String datasetName = endpoint +" "+sampleSource;
 		String splittingName=sampleSource;		
 
 //		String descriptorSetName = "T.E.S.T. 5.1";		
-		String descriptorSetName = "WebTEST-default";
+//		String descriptorSetName = "WebTEST-default";
+		String descriptorSetName = "Mordred-default";
 		
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 
@@ -85,17 +92,21 @@ public class ModelBuildingScriptTodd {
 		//			run.listDescriptors(modelWsServer, modelWsPort, l, "gsincl01");
 		//		}
 
-		String modelWsServer=DevQsarConstants.SERVER_LOCAL;
-		//	String modelWsServer=DevQsarConstants.SERVER_819;
+//		String modelWsServer=DevQsarConstants.SERVER_LOCAL;
+	String modelWsServer=DevQsarConstants.SERVER_819;
 		int modelWsPort=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
 
-		//		String methodName=DevQsarConstants.SVM;
+//		String methodName=DevQsarConstants.SVM;
 		String methodName=DevQsarConstants.RF;		
 		////		String methodName=DevQsarConstants.DNN;
 		////		String methodName=DevQsarConstants.XGB;
+		
+		boolean usePythonStorage=true;
+		String embeddingName=null;
+
 		//	
-//		ModelBuildingScript.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-//				splittingName, removeLogDescriptors,methodName,lanId);
+		ModelBuildingScript.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
+				splittingName, removeLogDescriptors,methodName,lanId,embeddingName,usePythonStorage);
 		
 		long modelSetID=1L;
 		
