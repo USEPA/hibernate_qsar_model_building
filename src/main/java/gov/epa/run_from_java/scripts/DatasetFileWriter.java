@@ -109,8 +109,8 @@ public class DatasetFileWriter {
 		DatasetFileWriter writer = new DatasetFileWriter();
 		
 		String outputFolderPath="data/dev_qsar/dataset_files/";
-		String descriptorSetName="T.E.S.T. 5.1";
-		
+//		String descriptorSetName="T.E.S.T. 5.1";
+//		
 //		writer.writeWithoutSplitting(38L, descriptorSetName, outputFolderPath);
 //		writer.writeWithoutSplitting(36L, descriptorSetName, outputFolderPath");
 //		writer.writeWithoutSplitting(42L, descriptorSetName, outputFolderPath);
@@ -121,8 +121,29 @@ public class DatasetFileWriter {
 		//TODO need to compile list of sources used in compiling a dataset
 //		writer.writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE","Standard Water solubility from exp_prop",outputFolderPath);
 //		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingPFASOnly,"Standard Water solubility from exp_prop",outputFolderPath);
-		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingAll,"Standard Water solubility from exp_prop",outputFolderPath);
-		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingAllButPFAS,"Standard Water solubility from exp_prop",outputFolderPath);
+//		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingAll,"Standard Water solubility from exp_prop",outputFolderPath);
+//		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingAllButPFAS,"Standard Water solubility from exp_prop",outputFolderPath);
+
+		
+//		writer.writeWithSplitting("T.E.S.T. 5.1","TEST","LC50 TEST",outputFolderPath);
+		
+//		String dataset="LC50 TEST";		
+//		String dataset="LD50 TEST";
+//		String dataset="Mutagenicity TEST";
+//		String splitting="TEST";
+		
+		String dataset="LogBCF OPERA";
+		String splitting="OPERA";
+		
+		String[] sciDataExpertsDescriptorSetNames = {
+				"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
+		};
+
+		for (String descriptorSetName:sciDataExpertsDescriptorSetNames) {
+			System.out.println(descriptorSetName);
+			writer.writeWithSplitting(descriptorSetName,splitting,dataset,outputFolderPath);	
+		}
+
 		
 	}
 
