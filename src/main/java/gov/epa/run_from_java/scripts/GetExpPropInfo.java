@@ -172,11 +172,22 @@ public class GetExpPropInfo {
 		
 		Connection conn=getConnection();
 		String folder="data\\dev_qsar\\dataset_files\\";
-		String tsvFilePath=folder+"Standard Water solubility from exp_prop_T.E.S.T. 5.1_T=PFAS only, P=PFAS_prediction.tsv";
 		
+		
+//		String inputFileName="Standard Water solubility from exp_prop_T.E.S.T. 5.1_T=PFAS only, P=PFAS_prediction.tsv";
+//		String outputFileName="Water solubility PFAS prediction records.json";
+		
+		String inputFileName="Standard Water solubility from exp_prop_T.E.S.T. 5.1_T=PFAS only, P=PFAS_training.tsv";
+		String outputFileName="Water solubility PFAS training records.json";
+		
+		
+		getRecords(conn, folder, inputFileName,outputFileName);
+	}
+
+	private static void getRecords(Connection conn, String folder, String inputFileName,String outputFileName) {
 		CSVLoader c=new CSVLoader();
 		try {
-			Instances instances=c.getDataSetFromFile(tsvFilePath,"\t");
+			Instances instances=c.getDataSetFromFile(folder+inputFileName,"\t");
 			JsonArray ja=new JsonArray();
 			
 			int id_dataset=31;
@@ -187,7 +198,7 @@ public class GetExpPropInfo {
 				
 			}
 			
-			FileWriter fw=new FileWriter(folder+"Water solubility PFAS prediction records.json");			
+			FileWriter fw=new FileWriter(folder+outputFileName);			
 			fw.write(gson.toJson(ja));
 			fw.flush();
 			fw.close();
