@@ -1217,7 +1217,7 @@ public class DsstoxMapper {
 			row.createCell(col++).setCellValue(sc.getSourceCasrn());
 			row.createCell(col++).setCellValue(sc.getSourceSmiles());
 			row.createCell(col++).setCellValue(pv.generateConciseValueString());
-			row.createCell(col++).setCellValue(generateParameterValuesString(pv));
+//			row.createCell(col++).setCellValue(generateParameterValuesString(pv));
 			row.createCell(col++).setCellValue(dr==null ? null : dr.dsstoxSubstanceId);
 			row.createCell(col++).setCellValue(dr==null ? null : dr.preferredName);
 			row.createCell(col++).setCellValue(dr==null ? null : dr.casrn);
@@ -1232,7 +1232,7 @@ public class DsstoxMapper {
 			ex.printStackTrace();
 		}
 	}
-			
+/*
 	private String generateParameterValuesString(PropertyValue pv) {
 		StringBuffer sb = new StringBuffer();
 		if (pv.getParameterValues()!=null) {
@@ -1244,5 +1244,6 @@ public class DsstoxMapper {
 		
 		return sb.toString();
 	}
+*/
 
 }
