@@ -167,7 +167,7 @@
           <transformers>
             <!-- add Main-Class to manifest file -->
                             <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                <mainClass>gov.epa.endpoints.datasets.DatasetCreatorScript</mainClass>
+                <mainClass>${start-class}</mainClass>
             </transformer>
           </transformers>
         </configuration>
@@ -196,7 +196,7 @@
             <archive>
             <manifest>
                 <addClasspath>true</addClasspath>
-                <mainClass>gov.epa.endpoints.datasets.DatasetCreatorScript</mainClass>
+                <mainClass>${start-class}</mainClass>
             </manifest>
             </archive>
             </configuration>
@@ -224,6 +224,13 @@
 
     </plugins>
   </build>
+
+<properties>
+    <maven.compiler.source>16</maven.compiler.source>
+    <maven.compiler.target>16</maven.compiler.target>
+    <poi.version>3.16</poi.version>
+	<start-class>gov.epa.endpoints.datasets.DatasetCreatorScript</start-class>
+</properties>
 
 
 
