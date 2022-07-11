@@ -234,12 +234,25 @@ public class DsstoxMapper {
 			dsstoxRecords = getDsstoxRecords(propertyValuesMap.keySet(), datasetParams.mappingParams.dsstoxMappingId);
 		} else {
 			String checkChemicalList = null;
+			ArrayList<String> checkChemicalListArray = null;
 			if (datasetParams.mappingParams.chemicalListName!=null) {
 				checkChemicalList = datasetParams.mappingParams.chemicalListName;
+			} else if (datasetParams.mappingParams.chemRegListNameList!=null) {
+				dsstoxRecords = new ArrayList<DsstoxRecord>();
+				for (int i = 0; i < datasetParams.mappingParams.chemRegListNameList.size(); i++) {
+					checkChemicalList = datasetParams.mappingParams.chemRegListNameList.get(i);
+					ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
+					List<DsstoxRecord> records = null;
+					if (chemicalList!=null) {
+						// If chemical list already added to DSSTox, queries all records from it
+						records = sourceSubstanceService.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
+					}
+					dsstoxRecords.addAll(records);
+				}
 			} else {
 				checkChemicalList = datasetParams.datasetName;
 			}
-			
+	
 			ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
 			if (chemicalList!=null) {
 				// If chemical list already added to DSSTox, queries all records from it
@@ -355,7 +368,7 @@ public class DsstoxMapper {
 		}
 	}
 	
-	private List<MappedPropertyValue> mapPropertyValuesToDsstoxRecords() {
+	public List<MappedPropertyValue> mapPropertyValuesToDsstoxRecords() {
 		// Associates property values with DSSTox records using ID
 		List<MappedPropertyValue> mappedPropertyValues = new ArrayList<MappedPropertyValue>();
 		Map<String, List<PropertyValue>> unmappedPropertyValuesMap = new HashMap<String, List<PropertyValue>>();
@@ -371,6 +384,7 @@ public class DsstoxMapper {
 			
 			SourceChemical sourceChemical = propertyValues.iterator().next().getSourceChemical();
 			if (!datasetParams.mappingParams.isNaive) {
+				System.out.println(dsstoxRecord.casrn);
 				ExplainedResponse acceptMapping = acceptMapping(dsstoxRecord, sourceChemical);
 				if (!acceptMapping.response) {
 					discardPropertyValues(propertyValues, dsstoxRecord, acceptMapping.reason);

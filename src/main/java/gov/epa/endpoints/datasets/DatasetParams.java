@@ -1,5 +1,6 @@
 package gov.epa.endpoints.datasets;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -12,6 +13,7 @@ public class DatasetParams {
 	public static class MappingParams {
 		public String dsstoxMappingId;
 		public String chemicalListName;
+		public ArrayList<String> chemRegListNameList;
 		public boolean isNaive;
 		public boolean useCuratorValidation;
 		public boolean requireCuratorValidation;
@@ -23,7 +25,8 @@ public class DatasetParams {
 		
 		public MappingParams(String dsstoxMappingId, String chemicalListName, boolean isNaive, boolean useValidation, 
 				boolean requireValidation, boolean resolveConflicts,
-				boolean validateConflictsTogether, boolean omitOpsinAmbiguousNames, boolean omitUvcbNames) {
+				boolean validateConflictsTogether, boolean omitOpsinAmbiguousNames, boolean omitUvcbNames,
+				ArrayList<String> chemRegListNameList) {
 			this.dsstoxMappingId = dsstoxMappingId;
 			this.isNaive = isNaive;
 			this.useCuratorValidation = useValidation;
@@ -33,12 +36,13 @@ public class DatasetParams {
 			this.omitOpsinAmbiguousNames = omitOpsinAmbiguousNames;
 			this.omitUvcbKeywords = omitUvcbNames;
 			this.chemicalListName = chemicalListName;
+			this.chemRegListNameList = chemRegListNameList;
 		}
 		
 		public MappingParams(String dsstoxMappingId, boolean isNaive, boolean useValidation, boolean requireValidation, boolean resolveConflicts,
-				boolean validateConflictsTogether, boolean omitOpsinAmbiguousNames, boolean omitUvcbKeywords) {
+				boolean validateConflictsTogether, boolean omitOpsinAmbiguousNames, boolean omitUvcbKeywords, ArrayList<String> chemRegListNameList) {
 			this(dsstoxMappingId, null, isNaive, useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
-					omitOpsinAmbiguousNames, omitUvcbKeywords);
+					omitOpsinAmbiguousNames, omitUvcbKeywords, chemRegListNameList);
 		}
 	}
 	
