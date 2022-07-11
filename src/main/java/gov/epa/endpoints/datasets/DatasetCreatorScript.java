@@ -16,6 +16,7 @@ public class DatasetCreatorScript {
 
 	// methods like these 
 	public static void createVP() {
+		// comment for diff
 		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 		
