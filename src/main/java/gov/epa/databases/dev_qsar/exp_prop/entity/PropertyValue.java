@@ -234,6 +234,8 @@ public class PropertyValue {
 			}
 		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
 			return candidateValue > 0.0;
+		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
+			return candidateValue > 0.0;
 		} else {
 			// TBD
 			return true;
