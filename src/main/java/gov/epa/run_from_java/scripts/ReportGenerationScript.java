@@ -132,11 +132,11 @@ public class ReportGenerationScript {
 		//*****************************************************************************************
 
 		// generate excel prediction reports //
-		
+		/*
 		ExcelPredictionReportGenerator e = ExcelPredictionReportGenerator.prepareReportFactory("Water solubility OPERA_T.E.S.T. 5.1_OPERA_PredictionReport.json","data\\ExcelReports");
 		per.generate(per.wb);
 		e.generate(predictionReport, folder.getAbsolutePath()+File.separator+datasetName + "_report.xlsx");
-
+		*/
 		// generate full model database report //
 //		ExcelModelStatisticsOld ems = ExcelModelStatisticsOld.prepareFactory("data/ExcelReports");
 //		ems.generate();
