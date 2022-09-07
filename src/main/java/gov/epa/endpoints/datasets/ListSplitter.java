@@ -14,12 +14,12 @@ public class ListSplitter {
 
 	
 	public static void main(String[] args) {
-		String datasetFileName = "ExpProp_HLC_WithChemProp_073022_ChemRegImport";
+		String datasetFileName = "ExpProp_MP_ChemRegImport";
 		String listNameExtension = ".txt";
 		String datasetFullFileName = datasetFileName + listNameExtension;
-		String datasetName = "Data_for_HLC";
+		String datasetName = "ExpProp_MP_WithChemProp_063022";
 		String datasetFolderPath = DevQsarConstants.OUTPUT_FOLDER_PATH + File.separator + datasetName + File.separator + datasetFullFileName;
-		int splitsize = 2000;
+		int splitsize = 40000;
 
 		
 		

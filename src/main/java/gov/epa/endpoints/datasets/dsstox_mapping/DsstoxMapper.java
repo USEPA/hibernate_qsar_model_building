@@ -233,38 +233,61 @@ public class DsstoxMapper {
 			// For naive mapping strategies (CASRN, DTXSID, DTXCID), pull the DSSTox records and map them directly
 			dsstoxRecords = getDsstoxRecords(propertyValuesMap.keySet(), datasetParams.mappingParams.dsstoxMappingId);
 		} else {
+			
 			String checkChemicalList = null;
 			ArrayList<String> checkChemicalListArray = null;
 			if (datasetParams.mappingParams.chemicalListName!=null) {
 				checkChemicalList = datasetParams.mappingParams.chemicalListName;
-			} else if (datasetParams.mappingParams.chemRegListNameList!=null) {
+			
+			 /*
+			
+			else if (datasetParams.mappingParams.chemRegListNameList!=null) {
+				
+				for (int i = 0; i < datasetParams.mappingParams.chemRegListNameList.size(); i++) {
+					checkChemicalList = datasetParams.mappingParams.chemRegListNameList.get(i);
+					ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
+				}
+				
+				
+				
 				dsstoxRecords = new ArrayList<DsstoxRecord>();
 				for (int i = 0; i < datasetParams.mappingParams.chemRegListNameList.size(); i++) {
 					checkChemicalList = datasetParams.mappingParams.chemRegListNameList.get(i);
 					ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
 					List<DsstoxRecord> records = null;
+					ArrayList<DsstoxRecord> recordsAR = null; 
 					if (chemicalList!=null) {
 						// If chemical list already added to DSSTox, queries all records from it
 						records = sourceSubstanceService.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
+						recordsAR = new ArrayList<DsstoxRecord>(records);
 					}
-					dsstoxRecords.addAll(records);
+					dsstoxRecords.addAll(recordsAR);
+					System.out.println("dsstox records collected =" + dsstoxRecords.size());
 				}
+			*/
 			} else {
 				checkChemicalList = datasetParams.datasetName;
 			}
-	
-			ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
-			if (chemicalList!=null) {
-				// If chemical list already added to DSSTox, queries all records from it
-				dsstoxRecords = sourceSubstanceService.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
-			} else {
-				// If chemical list not in DSSTox, write the import file for the user to add
-				writeChemRegImportFile(propertyValuesMap);
-				return null;
+
+				ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
+				if (chemicalList != null) {
+					// If chemical list already added to DSSTox, queries all records from it
+					dsstoxRecords = sourceSubstanceService
+							.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
+				} else {
+					// If chemical list not in DSSTox, write the import file for the user to add
+					writeChemRegImportFile(propertyValuesMap);
+					return null;
+				}
 			}
-		}
+		
 		
 		initDsstoxRecordsMap(dsstoxRecords);
+				 
+		System.out.println("map entries:" +dsstoxRecordsMap.size());
+
+		
+		//
 		
 		List<MappedPropertyValue> mappedPropertyValues = mapPropertyValuesToDsstoxRecords();
 		if (mappedPropertyValues!=null) {

@@ -185,15 +185,15 @@ public class SampleReportWriter {
 
 		SampleReportWriter g = new SampleReportWriter();
 		
-		g.generateSamplePredictionReports(4L,false,false);
+//		g.generateSamplePredictionReports(4L,false,false);
 //		g.generateSamplePredictionReports(1L,true,true);
 //		g.generateSamplePredictionReports(2L,true,true);
-//		g.generateSamplePredictionReports(4L,true,true);
+		g.generateSamplePredictionReports(14L,false,false);
 		
 		// **************************************************************
 //		g.generateSamplePredictionReport(1L, "LC50 TEST", "TEST", false);		
 //		g.generateSamplePredictionReport(5L, "Boiling point OPERA", "OPERA", false);
-//		g.generateSamplePredictionReport(5L, "Henry's law constant OPERA", "OPERA", false);
+//		g.generateSamplePredictionReport(9L, "Henry's law constant OPERA", "OPERA", true);
 //		g.generateSamplePredictionReport(6L, "Henry's law constant OPERA", "OPERA", false);
 //		g.generateSamplePredictionReport(2L, "Standard Henry's law constant from exp_prop", "RND_REPRESENTATIVE", false);
 //		g.generateSamplePredictionReport(2L, "LLNA from exp_prop, without eChemPortal", "RND_REPRESENTATIVE", false);

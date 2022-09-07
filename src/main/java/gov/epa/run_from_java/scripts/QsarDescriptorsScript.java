@@ -36,7 +36,7 @@ public class QsarDescriptorsScript {
 		java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.OFF);
 		Unirest.config().connectTimeout(0).socketTimeout(0);
 		
-		String datasetName = "Henry's law constant OPERA";
+		String datasetName = "ExpProp BCF Fish WholeBody";
 		String[] sciDataExpertsDescriptorSetNames = {
 				"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
 				};

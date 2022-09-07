@@ -105,6 +105,7 @@ public class PhyschemExpPropData extends ExpPropData {
 			ParameterValue measurementMethodValue = new ParameterValue();
 			measurementMethodValue.setCreatedBy(loader.lanId);
 			measurementMethodValue.setValueText(rec.measurement_method);
+			System.out.println(measurementMethodValue.getValueText());
 			return measurementMethodValue;
 		} else {
 			return null;

@@ -442,6 +442,7 @@ public class DatasetCreator {
 		
 		if (propertyValues==null || propertyValues.isEmpty()) {
 //			logger.error(params.datasetName + ": Experimental property data unavailable");
+			System.out.println(params.datasetName + ": Experimental property data unavailable");
 			return;
 		}
 		
@@ -456,7 +457,7 @@ public class DatasetCreator {
 		}
 		
 		if (mappedPropertyValues==null || mappedPropertyValues.isEmpty()) {
-//			logger.error(params.datasetName + ": DSSTox structure data unavailable");
+				System.out.println(params.datasetName + ": DSSTox structure data unavailable");
 			return;
 		}
 		
