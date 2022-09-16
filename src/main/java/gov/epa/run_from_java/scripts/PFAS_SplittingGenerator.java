@@ -16,10 +16,13 @@ import org.hibernate.Transaction;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.qsar_datasets.QsarDatasetsSession;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointService;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
@@ -251,7 +254,16 @@ public class PFAS_SplittingGenerator {
 		}
 	}
 	
-	
+	void getPFASChemicalCountForDataSet(String datasetName,ArrayList<String>smilesArray) {
+		
+		DataPointService dataPointService = new DataPointServiceImpl();
+		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);		
+		int count=0;		
+		for (DataPoint dp:dataPoints) {
+			if (smilesArray.contains(dp.getCanonQsarSmiles()))count++;
+		}		
+		System.out.println(datasetName+"\t"+count);
+	}
 	
 	public static void main(String[] args) {
 		PFAS_SplittingGenerator p=new PFAS_SplittingGenerator();
@@ -264,8 +276,12 @@ public class PFAS_SplittingGenerator {
 		
 //		String splittingName=splittingPFASOnly;
 //		String splittingName=splittingAll;		
-		String splittingName=splittingAllButPFAS;		
-		p.createSplitting(splittingName,smilesArray);
+//		String splittingName=splittingAllButPFAS;		
+//		p.createSplitting(splittingName,smilesArray);
+		
+		String datasetName="CASRN mapping of standard Water solubility from exp_prop";
+		p.getPFASChemicalCountForDataSet(datasetName, smilesArray);
+		
 	}
 
 }
