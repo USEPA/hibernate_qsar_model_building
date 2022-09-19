@@ -11,7 +11,7 @@ import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 public class DatasetCreatorScript {
 
 	public static void main(String[] args) {
-		createLogPRegisteredCAS();
+		createBPRegisteredCAS();
 	}
 	
 
@@ -103,6 +103,34 @@ public class DatasetCreatorScript {
 
 		creator.createPropertyDataset(casrnMappedParams, false);
 	}
+	
+	public static void createBPRegisteredCAS() {
+		// comment for diff
+		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
+		
+		String propertyName = DevQsarConstants.BOILING_POINT;
+
+		BoundParameterValue PressureBound = new BoundParameterValue("Pressure", 740.0, 780.0, true);
+		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+		bounds.add(PressureBound);
+
+
+		
+		MappingParams casrnMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_CASRN, null,
+				true, false, false, false, false, false, true, null);
+		
+		String casrnMappingName = "ExpProp_BP_CASRN";
+		String casrnMappingDescription = "Exprop BP with 740 < P (mmHg) < 780";
+		DatasetParams casrnMappedParams = new DatasetParams(casrnMappingName, 
+				casrnMappingDescription, 
+				propertyName,
+				casrnMappingParams,
+				bounds);
+
+		creator.createPropertyDataset(casrnMappedParams, false);
+	}
+
 	
 	
 	public static void createLogPRegisteredCAS() {
