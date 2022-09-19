@@ -11,8 +11,9 @@ import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 public class DatasetCreatorScript {
 
 	public static void main(String[] args) {
-		createMPRegisteredCAS();
+		createLogPRegisteredCAS();
 	}
+	
 
 	// methods like these 
 	public static void createVP() {
@@ -102,6 +103,35 @@ public class DatasetCreatorScript {
 
 		creator.createPropertyDataset(casrnMappedParams, false);
 	}
+	
+	
+	public static void createLogPRegisteredCAS() {
+		// comment for diff
+		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
+		
+		String propertyName = DevQsarConstants.LOG_KOW;
+
+		BoundParameterValue PressureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
+		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+		bounds.add(PressureBound);
+
+
+		
+		MappingParams casrnMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_CASRN, null,
+				true, false, false, false, false, false, true, null);
+		
+		String casrnMappingName = "ExpProp_LogKOW_CASRN";
+		String casrnMappingDescription = "Exprop LogKOW with  20 < T (C) < 30";
+		DatasetParams casrnMappedParams = new DatasetParams(casrnMappingName, 
+				casrnMappingDescription, 
+				propertyName,
+				casrnMappingParams,
+				bounds);
+
+		creator.createPropertyDataset(casrnMappedParams, false);
+	}
+
 
 	
 	
