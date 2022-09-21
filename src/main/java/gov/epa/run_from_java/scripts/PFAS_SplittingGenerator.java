@@ -4,7 +4,9 @@ import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
@@ -53,15 +55,15 @@ public class PFAS_SplittingGenerator {
 	Validator validator = DevQsarValidator.getValidator();
 	
 	public PFAS_SplittingGenerator() {
-		System.setProperty("org.jboss.logging.provider", "log4j");
-		System.setProperty("com.mchange.v2.log.MLog", "log4j");
-		
-		// Make sure Unirest is configured
-		try {
-			Unirest.config().followRedirects(true).socketTimeout(000).connectTimeout(000);
-		} catch (Exception e) {
-//			logger.debug("Unirest already configured, ignoring");
-		}
+//		System.setProperty("org.jboss.logging.provider", "log4j");
+//		System.setProperty("com.mchange.v2.log.MLog", "log4j");
+//		
+//		// Make sure Unirest is configured
+//		try {
+//			Unirest.config().followRedirects(true).socketTimeout(000).connectTimeout(000);
+//		} catch (Exception e) {
+////			logger.debug("Unirest already configured, ignoring");
+//		}
 	}
 	void generateQSAR_ReadyPFAS_STRUCT (String listName,String filepathOutput) {
 		
@@ -113,7 +115,8 @@ public class PFAS_SplittingGenerator {
 		
 		try {
 			session.save(dpis);
-			session.flush();
+			
+//			session.flush();
 //			session.refresh(dpis);//need to turn this off or it hangs!
 			t.commit();
 		} catch (org.hibernate.exception.ConstraintViolationException e) {
@@ -173,10 +176,9 @@ public class PFAS_SplittingGenerator {
 		}
 	}
 	
-	 void createSplitting(String splittingName, ArrayList<String>smilesArray) {
+	 void createSplitting(String datasetName, String splittingName, ArrayList<String>smilesArray) {
 		String lanid="tmarti02";
 		
-		String datasetName="Standard Water solubility from exp_prop";
 		
 		List<DataPointInSplitting> dataPointsInSplitting = 
 				dataPointInSplittingService.findByDatasetNameAndSplittingName(datasetName, "RND_REPRESENTATIVE");
@@ -187,40 +189,59 @@ public class PFAS_SplittingGenerator {
 		
 		System.out.println(splitting.getId()+"\t"+splitting.getDescription());
 		
+		int counter=0;
+		
 		for (DataPointInSplitting dpis:dataPointsInSplitting) {
 			DataPointInSplitting dpisNew = new DataPointInSplitting(dpis.getDataPoint(), splitting, dpis.getSplitNum(), lanid);
 						
 			if (dpis.getSplitNum()==DevQsarConstants.TRAIN_SPLIT_NUM) {
 				if (splittingName.equals(splittingAll)) {
-					createDataPointInSplitting(dpisNew);
+					counter=createDataPointInSplitting(dpisNew,counter);
 				} else if (splittingName.equals(splittingPFASOnly)) {					
-					if (isPFAS(smilesArray,dpis)) {
+					if (isPFAS(smilesArray,dpis)) {						
 						System.out.println(dpis.getDataPoint().getId()+"\t"+dpis.getDataPoint().getCanonQsarSmiles()+"\t"+dpis.getSplitNum()+"\t"+dpis.getSplitting().getName());
-						createDataPointInSplitting(dpisNew);		
+						counter=createDataPointInSplitting(dpisNew,counter);					
+					} else {						
+						dpisNew.setSplitNum(2);
+						counter=createDataPointInSplitting(dpisNew,counter);		
 					}
 				} else if (splittingName.equals(splittingAllButPFAS)) {
-					if (!isPFAS(smilesArray,dpis)) {
-						createDataPointInSplitting(dpisNew);
+					if (!isPFAS(smilesArray,dpis)) {						
 //						System.out.println(dpis.getDataPoint().getCanonQsarSmiles()+"\t"+dpis.getSplitNum()+"\t"+dpis.getSplitting().getName());
-					}					
+						counter=createDataPointInSplitting(dpisNew,counter);		
+					} else {
+						dpisNew.setSplitNum(2);
+						counter=createDataPointInSplitting(dpisNew,counter);		
+					}
+				} else {
+					dpisNew.setSplitNum(2);
+					counter=createDataPointInSplitting(dpisNew,counter);
 				}
 			}else if (dpis.getSplitNum()==DevQsarConstants.TEST_SPLIT_NUM) {
 				if (isPFAS(smilesArray,dpis)) {
 					System.out.println(dpis.getDataPoint().getCanonQsarSmiles()+"\t"+dpis.getSplitNum()+"\t"+dpis.getSplitting().getName());
-					createDataPointInSplitting(dpisNew);
+					counter=createDataPointInSplitting(dpisNew,counter);
+				} else {
+					dpisNew.setSplitNum(2);//dont use
+					counter=createDataPointInSplitting(dpisNew,counter);					
 				}
 			}
+			
+			System.out.println(counter);
+			
 		}
 //		session.close();
 	}
 	
 	
-	 void createDataPointInSplitting (DataPointInSplitting dpisNew) {
+	 int createDataPointInSplitting (DataPointInSplitting dpisNew, int counter) {
 		try {
 //			dataPointInSplittingService.create(dpisNew);
 			create(dpisNew);
+			return counter+1;
 		} catch (org.hibernate.exception.ConstraintViolationException e) {
 			System.out.println(e.getMessage());
+			return counter;
 		}		
 	}
 	
@@ -251,21 +272,130 @@ public class PFAS_SplittingGenerator {
 		}
 	}
 	
-	
+	void createFiveFoldExternalSplittings(String folder,String datasetName,String descriptorSet, ArrayList<String>smilesArrayPFAS) {
+		
+		try {
+			String filepath=folder+datasetName+"_"+descriptorSet+".tsv";
+			
+			List<String> Lines = Files.readAllLines(Paths.get(filepath));
+		
+			String header=Lines.remove(0);
+			
+			ArrayList<String>linesPFAS=new ArrayList<>();
+			ArrayList<String>linesNonPFAS=new ArrayList<>();
+			
+			for (String Line:Lines) {
+				String smiles=Line.substring(0,Line.indexOf("\t"));
+				if (smilesArrayPFAS.contains(smiles)) linesPFAS.add(Line);
+				else linesNonPFAS.add(Line);
+//				System.out.println(smiles);
+			}
+			
+			Random r=new Random();
+			r.setSeed(42L);
+			
+			Collections.shuffle(linesNonPFAS,r);
+
+			ArrayList<String>[] alPFAS=get5FoldArray(linesPFAS, r);
+			ArrayList<String>[] alNonPFAS=get5FoldArray(linesNonPFAS, r);
+			
+			for (int i=0;i<=4;i++) {
+				FileWriter fwPred=new FileWriter(folder+datasetName+"_"+descriptorSet+"_prediction_PFAS"+(i+1)+".tsv");
+				FileWriter fwTrainPFASOnly=new FileWriter(folder+datasetName+"_"+descriptorSet+"_training_PFAS"+(i+1)+".tsv");
+				FileWriter fwTrainAll=new FileWriter(folder+datasetName+"_"+descriptorSet+"_training_All"+(i+1)+".tsv");
+				FileWriter fwTrainAllButPFAS=new FileWriter(folder+datasetName+"_"+descriptorSet+"_training_All_but_PFAS"+(i+1)+".tsv");
+
+				fwPred.write(header+"\r\n");
+				fwTrainAll.write(header+"\r\n");
+				fwTrainAllButPFAS.write(header+"\r\n");
+				fwTrainPFASOnly.write(header+"\r\n");
+
+				
+				for (int j=0;j<alPFAS[i].size();j++) {
+					fwPred.write(alPFAS[i].get(j)+"\r\n");
+				}				
+				
+				for (int k=0;k<=4;k++) {
+					if (k==i) continue;
+					
+					for (int j=0;j<alPFAS[k].size();j++) {
+						fwTrainPFASOnly.write(alPFAS[k].get(j)+"\r\n");
+						fwTrainAll.write(alPFAS[k].get(j)+"\r\n");
+					}
+					
+					for (int j=0;j<alNonPFAS[k].size();j++) {
+						fwTrainAll.write(alNonPFAS[k].get(j)+"\r\n");
+						fwTrainAllButPFAS.write(alNonPFAS[k].get(j)+"\r\n");
+					}					
+				}
+
+			
+				fwTrainAll.flush();
+				fwTrainAll.close();
+
+				fwTrainAllButPFAS.flush();
+				fwTrainAllButPFAS.close();
+
+				fwTrainPFASOnly.flush();
+				fwTrainPFASOnly.close();
+				
+				fwPred.flush();
+				fwPred.close();
+
+			}
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();			
+		}
+		
+		
+		
+	}
+	private ArrayList<String>[] get5FoldArray(ArrayList<String> lines, Random r) {
+		ArrayList<String>[] al = new ArrayList[5];
+
+		Collections.shuffle(lines,r);
+		int countFold=(int)Math.ceil((double)lines.size()/5.0);
+		int fold=0;
+		
+		while (true) {
+			if (al[fold]==null) al[fold]=new ArrayList<String>();
+			al[fold].add(lines.remove(0));				
+			if (al[fold].size()==countFold && fold!=4) {
+				fold++;
+			}
+			
+			if (lines.size()==0) break;
+		}
+		
+		for (int i=0;i<=4;i++) {
+			System.out.println(al[i].size());
+		}
+		return al;
+	}
 	
 	public static void main(String[] args) {
 		PFAS_SplittingGenerator p=new PFAS_SplittingGenerator();
-			
+		
+		
+		String folder="data/dev_qsar/dataset_files/";
+		
 		String listName="PFASSTRUCTV4";
-		String filePath="data/dev_qsar/dataset_files/"+listName+"_qsar_ready_smiles.txt";
-//		generateQSAR_ReadyPFAS_STRUCT(listName,filePath);
+		String filePath=folder+listName+"_qsar_ready_smiles.txt";
+//		p.generateQSAR_ReadyPFAS_STRUCT(listName,filePath);
 		
 		ArrayList<String>smilesArray=p.getPFASSmiles(filePath);
 		
 //		String splittingName=splittingPFASOnly;
 //		String splittingName=splittingAll;		
 		String splittingName=splittingAllButPFAS;		
-		p.createSplitting(splittingName,smilesArray);
+		String datasetName="Standard Water solubility from exp_prop";
+		p.createSplitting(datasetName,splittingName,smilesArray);
+		
+//		String datasetName="Standard Water solubility from exp_prop";		
+//		p.createFiveFoldExternalSplittings(folder, datasetName,"T.E.S.T. 5.1", smilesArray);
+		
+		
 	}
 
 }
