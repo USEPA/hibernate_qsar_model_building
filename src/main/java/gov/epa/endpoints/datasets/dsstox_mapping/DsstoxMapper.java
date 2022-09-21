@@ -233,25 +233,61 @@ public class DsstoxMapper {
 			// For naive mapping strategies (CASRN, DTXSID, DTXCID), pull the DSSTox records and map them directly
 			dsstoxRecords = getDsstoxRecords(propertyValuesMap.keySet(), datasetParams.mappingParams.dsstoxMappingId);
 		} else {
+			
 			String checkChemicalList = null;
+			ArrayList<String> checkChemicalListArray = null;
 			if (datasetParams.mappingParams.chemicalListName!=null) {
 				checkChemicalList = datasetParams.mappingParams.chemicalListName;
+			
+			 /*
+			
+			else if (datasetParams.mappingParams.chemRegListNameList!=null) {
+				
+				for (int i = 0; i < datasetParams.mappingParams.chemRegListNameList.size(); i++) {
+					checkChemicalList = datasetParams.mappingParams.chemRegListNameList.get(i);
+					ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
+				}
+				
+				
+				
+				dsstoxRecords = new ArrayList<DsstoxRecord>();
+				for (int i = 0; i < datasetParams.mappingParams.chemRegListNameList.size(); i++) {
+					checkChemicalList = datasetParams.mappingParams.chemRegListNameList.get(i);
+					ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
+					List<DsstoxRecord> records = null;
+					ArrayList<DsstoxRecord> recordsAR = null; 
+					if (chemicalList!=null) {
+						// If chemical list already added to DSSTox, queries all records from it
+						records = sourceSubstanceService.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
+						recordsAR = new ArrayList<DsstoxRecord>(records);
+					}
+					dsstoxRecords.addAll(recordsAR);
+					System.out.println("dsstox records collected =" + dsstoxRecords.size());
+				}
+			*/
 			} else {
 				checkChemicalList = datasetParams.datasetName;
 			}
-			
-			ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
-			if (chemicalList!=null) {
-				// If chemical list already added to DSSTox, queries all records from it
-				dsstoxRecords = sourceSubstanceService.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
-			} else {
-				// If chemical list not in DSSTox, write the import file for the user to add
-				writeChemRegImportFile(propertyValuesMap);
-				return null;
+
+				ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
+				if (chemicalList != null) {
+					// If chemical list already added to DSSTox, queries all records from it
+					dsstoxRecords = sourceSubstanceService
+							.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
+				} else {
+					// If chemical list not in DSSTox, write the import file for the user to add
+					writeChemRegImportFile(propertyValuesMap);
+					return null;
+				}
 			}
-		}
+		
 		
 		initDsstoxRecordsMap(dsstoxRecords);
+				 
+		System.out.println("map entries:" +dsstoxRecordsMap.size());
+
+		
+		//
 		
 		List<MappedPropertyValue> mappedPropertyValues = mapPropertyValuesToDsstoxRecords();
 		if (mappedPropertyValues!=null) {
@@ -355,7 +391,7 @@ public class DsstoxMapper {
 		}
 	}
 	
-	private List<MappedPropertyValue> mapPropertyValuesToDsstoxRecords() {
+	public List<MappedPropertyValue> mapPropertyValuesToDsstoxRecords() {
 		// Associates property values with DSSTox records using ID
 		List<MappedPropertyValue> mappedPropertyValues = new ArrayList<MappedPropertyValue>();
 		Map<String, List<PropertyValue>> unmappedPropertyValuesMap = new HashMap<String, List<PropertyValue>>();
@@ -371,6 +407,7 @@ public class DsstoxMapper {
 			
 			SourceChemical sourceChemical = propertyValues.iterator().next().getSourceChemical();
 			if (!datasetParams.mappingParams.isNaive) {
+				System.out.println(dsstoxRecord.casrn);
 				ExplainedResponse acceptMapping = acceptMapping(dsstoxRecord, sourceChemical);
 				if (!acceptMapping.response) {
 					discardPropertyValues(propertyValues, dsstoxRecord, acceptMapping.reason);
@@ -1203,7 +1240,7 @@ public class DsstoxMapper {
 			row.createCell(col++).setCellValue(sc.getSourceCasrn());
 			row.createCell(col++).setCellValue(sc.getSourceSmiles());
 			row.createCell(col++).setCellValue(pv.generateConciseValueString());
-			row.createCell(col++).setCellValue(generateParameterValuesString(pv));
+//			row.createCell(col++).setCellValue(generateParameterValuesString(pv));
 			row.createCell(col++).setCellValue(dr==null ? null : dr.dsstoxSubstanceId);
 			row.createCell(col++).setCellValue(dr==null ? null : dr.preferredName);
 			row.createCell(col++).setCellValue(dr==null ? null : dr.casrn);
@@ -1218,7 +1255,7 @@ public class DsstoxMapper {
 			ex.printStackTrace();
 		}
 	}
-			
+/*
 	private String generateParameterValuesString(PropertyValue pv) {
 		StringBuffer sb = new StringBuffer();
 		if (pv.getParameterValues()!=null) {
@@ -1230,5 +1267,6 @@ public class DsstoxMapper {
 		
 		return sb.toString();
 	}
+*/
 
 }

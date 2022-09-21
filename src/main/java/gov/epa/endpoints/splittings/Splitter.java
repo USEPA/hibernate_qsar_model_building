@@ -131,14 +131,17 @@ public class Splitter {
 	}
 	
 	public static void main(String[] args) {
-		String lanId = "gsincl01";
-		String descriptorSetName = DevQsarConstants.DESCRIPTOR_SET_TEST;
+		String lanId = "cramslan";
+		String descriptorSetName = "WebTEST-default";
+		String datasetName = "ExpProp BCF Fish WholeBody zeros omitted";
 		
 		SplittingWebService splittingWebService = new SplittingWebService(DevQsarConstants.SERVER_LOCAL, 4999, 
 				DevQsarConstants.SPLITTING_RND_REPRESENTATIVE, 2);
 		Splitter splitter = new Splitter(splittingWebService, lanId);
-		for (Long l = 39L; l <= 42L; l++) {
-			splitter.unsplit(l);
+		
+		splitter.split(datasetName, descriptorSetName);
+		for (Long l = 62L; l <= 62L; l++) {
+//			splitter.unsplit(l);
 		}
 	}
 

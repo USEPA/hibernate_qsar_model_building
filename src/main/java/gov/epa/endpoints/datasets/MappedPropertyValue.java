@@ -67,7 +67,10 @@ public class MappedPropertyValue {
 				logger.debug(propertyValue.generateExpPropId() + ": Undefined property value conversion for unit: " + unitName);
 				return;
 			}
+		} else if (propertyName.equals("LogBCF_Fish_WholeBody")) {
+				qsarPropertyValue = value;
 		} else {
+			
 			logger.debug(propertyValue.generateExpPropId() + ": Undefined property value conversion for property: " + propertyName);
 		}
 	}

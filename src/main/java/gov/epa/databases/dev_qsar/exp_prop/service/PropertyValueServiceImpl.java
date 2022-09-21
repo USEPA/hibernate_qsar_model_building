@@ -89,6 +89,7 @@ public class PropertyValueServiceImpl implements PropertyValueService {
 			session.refresh(propertyValue);
 			t.commit();
 		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			System.out.println(e);
 			t.rollback();
 			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
 		} catch (Exception e) {
