@@ -48,6 +48,16 @@ public class EmbeddingWebService extends WebService {
 		
 	}
 	*/
+	public static void printdatatsv(String datasetName, String lanId, String descriptorSetName, String splittingName,boolean removeLogDescriptors, String fileName) {
+		WebServiceModelBuilder wsmb = new WebServiceModelBuilder(null, lanId);
+		ModelData data = wsmb.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
+		try {
+			FileUtils.writeStringToFile(new File(fileName), data.trainingSetInstances);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
 	
 	public void createEmbedding(String datasetName, String lanId, String descriptorSetName,
@@ -91,17 +101,19 @@ public class EmbeddingWebService extends WebService {
 	
 	public static void main(String[] args) {
 		EmbeddingWebService ews = new EmbeddingWebService(DevQsarConstants.SERVER_LOCAL, 9092);
-		String datasetName = DevQsarConstants.LOG_HALF_LIFE + " OPERA";
+		String datasetName = DevQsarConstants.HENRYS_LAW_CONSTANT + " OPERA";
 		String lanId = "cramslan";
-		String descriptorSetName="T.E.S.T. 5.1";
+		String descriptorSetName="WebTEST-default";
 		String splittingName="OPERA";
 		Boolean removeLogDescriptors=false;
 		int numDesc = 12;
-		String embeddingName = "WebTESTEmbeddingHLCOPERA";
+		String embeddingName = descriptorSetName + "_embedding_" + datasetName + "_split_" + splittingName + numDesc;
 		String embeddingDescription = "Ward collinearity filtering/permutative importance";
-		
+		printdatatsv(datasetName, lanId, descriptorSetName, splittingName, false, "webtestHLC.tsv");
+		/*
 		ews.createEmbedding(datasetName, lanId, descriptorSetName, splittingName, false, numDesc,
 				embeddingName, embeddingDescription, false);
+		*/
 	}
 
 

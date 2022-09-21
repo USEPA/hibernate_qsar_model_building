@@ -18,10 +18,13 @@ import org.hibernate.Transaction;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.qsar_datasets.QsarDatasetsSession;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointService;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
@@ -272,6 +275,7 @@ public class PFAS_SplittingGenerator {
 		}
 	}
 	
+
 	void createFiveFoldExternalSplittings(String folder,String datasetName,String descriptorSet, ArrayList<String>smilesArrayPFAS) {
 		
 		try {
@@ -373,6 +377,18 @@ public class PFAS_SplittingGenerator {
 		}
 		return al;
 	}
+
+	void getPFASChemicalCountForDataSet(String datasetName,ArrayList<String>smilesArray) {
+		
+		DataPointService dataPointService = new DataPointServiceImpl();
+		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);		
+		int count=0;		
+		for (DataPoint dp:dataPoints) {
+			if (smilesArray.contains(dp.getCanonQsarSmiles()))count++;
+		}		
+		System.out.println(datasetName+"\t"+count);
+
+	}
 	
 	public static void main(String[] args) {
 		PFAS_SplittingGenerator p=new PFAS_SplittingGenerator();
@@ -388,6 +404,7 @@ public class PFAS_SplittingGenerator {
 		
 //		String splittingName=splittingPFASOnly;
 //		String splittingName=splittingAll;		
+
 		String splittingName=splittingAllButPFAS;		
 		String datasetName="Standard Water solubility from exp_prop";
 		p.createSplitting(datasetName,splittingName,smilesArray);
@@ -395,6 +412,12 @@ public class PFAS_SplittingGenerator {
 //		String datasetName="Standard Water solubility from exp_prop";		
 //		p.createFiveFoldExternalSplittings(folder, datasetName,"T.E.S.T. 5.1", smilesArray);
 		
+
+//		String splittingName=splittingAllButPFAS;		
+//		p.createSplitting(splittingName,smilesArray);
+		
+//		String datasetName="CASRN mapping of standard Water solubility from exp_prop";
+//		p.getPFASChemicalCountForDataSet(datasetName, smilesArray);
 		
 	}
 

@@ -82,6 +82,7 @@ public class DevQsarConstants {
 	public static final String LOG_HALF_LIFE = "LogHalfLife";
 	public static final String LOG_KM_HL = "LogKmHL";
 	public static final String LOG_KOA = "LogKOA";
+	public static final String LOG_BCF_FISH_WHOLEBODY = "LogBCF_Fish_WholeBody";
 	
 	public static final String DEV_TOX ="DevTox";
 	public static final String IGC50 ="IGC50";
@@ -179,6 +180,7 @@ public class DevQsarConstants {
 		map.put(PKA, LOG_UNITS);
 		map.put(PKA_A, LOG_UNITS);
 		map.put(PKA_B, LOG_UNITS);
+		map.put(LOG_BCF_FISH_WHOLEBODY, LOG_UNITS);
 		map.put(WATER_SOLUBILITY, NEG_LOG_M);
 		map.put(HENRYS_LAW_CONSTANT, NEG_LOG_ATM_M3_MOL);
 		map.put(VAPOR_PRESSURE, NEG_LOG_MMHG);

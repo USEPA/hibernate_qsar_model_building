@@ -68,7 +68,7 @@ public class DataPointServiceImpl implements DataPointService {
 		try {
 			session.save(dataPoint);
 			session.flush();
-			session.refresh(dataPoint);
+//			session.refresh(dataPoint);
 			t.commit();
 		} catch (org.hibernate.exception.ConstraintViolationException e) {
 			t.rollback();

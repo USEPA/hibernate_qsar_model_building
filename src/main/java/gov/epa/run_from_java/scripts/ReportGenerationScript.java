@@ -17,6 +17,7 @@ import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
 import gov.epa.endpoints.reports.predictions.PredictionReportGenerator;
 import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelModelStatisticsOld;
+import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelPredictionReportGenerator;
 import kong.unirest.Unirest;
 
 public class ReportGenerationScript {
@@ -121,20 +122,21 @@ public class ReportGenerationScript {
 		ReportGenerationScript run=new ReportGenerationScript();
 		
 		//*****************************************************************************************			
-				String descriptorSetName = "T.E.S.T. 5.1";
-				String endpoint=DevQsarConstants.LOG_HALF_LIFE;
+				String descriptorSetName = "Mordred-default";
+				String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
 				String datasetName = endpoint+" OPERA";
-		ReportGenerationScript.reportAllPredictions(datasetName,"OPERA", "Sample models",true);		
+		ReportGenerationScript.reportAllPredictions(datasetName,"OPERA", "Sample models Mordred descriptors",false);		
 
 		//*****************************************************************************************	
 		//		run.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);
 		//*****************************************************************************************
 
 		// generate excel prediction reports //
-		
-//		ExcelPredictionReportGenerator per = ExcelPredictionReportGenerator.prepareReportFactory("Water solubility OPERA_T.E.S.T. 5.1_OPERA_PredictionReport.json","data\\ExcelReports");
-//		per.generate(per.wb);
-		
+		/*
+		ExcelPredictionReportGenerator e = ExcelPredictionReportGenerator.prepareReportFactory("Water solubility OPERA_T.E.S.T. 5.1_OPERA_PredictionReport.json","data\\ExcelReports");
+		per.generate(per.wb);
+		e.generate(predictionReport, folder.getAbsolutePath()+File.separator+datasetName + "_report.xlsx");
+		*/
 		// generate full model database report //
 //		ExcelModelStatisticsOld ems = ExcelModelStatisticsOld.prepareFactory("data/ExcelReports");
 //		ems.generate();

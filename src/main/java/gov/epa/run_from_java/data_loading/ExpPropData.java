@@ -69,6 +69,10 @@ public class ExpPropData {
 			}
 			
 			propertyUnitName = rec.property_value_units_final;
+			if (rec.source_name.equals("Burkhard_BCF")) {
+				propertyUnitName = "Log units";
+			}
+			
 			if (propertyUnitName!=null && propertyUnitName.equals("binary")) {
 				propertyUnitName = "Binary";
 			} else if (propertyName!=null && propertyUnitName==null) {
@@ -93,6 +97,7 @@ public class ExpPropData {
 				case "LogKOA":
 				case "LogHalfLife":
 				case "LogKmHL":
+				case "LogBCF_Fish_WholeBody":
 					propertyUnitName = "Log units";
 					break;
 				default:
@@ -111,6 +116,7 @@ public class ExpPropData {
 			LiteratureSource ls = loader.literatureSourcesMap.get(literatureSourceName);
 			
 			sourceChemical.setPublicSource(ps);
+			
 			
 			if (createLiteratureSources && ls==null && literatureSourceName!=null && !literatureSourceName.isBlank()) {
 				String lsName = literatureSourceName.length() > 255 ? literatureSourceName.substring(0, 255) : literatureSourceName;
@@ -133,6 +139,8 @@ public class ExpPropData {
 			propertyValue.setUnit(loader.unitsMap.get(propertyUnitName));
 			propertyValue.setPublicSource(ps);
 			propertyValue.setLiteratureSource(ls);
+			
+		
 			
 			if (url==null || url.isBlank() || (ps!=null && url.equals(ps.getUrl())) || (ls!=null && url.equals(ls.getUrl()))) {
 				// No individual page URL, do nothing
