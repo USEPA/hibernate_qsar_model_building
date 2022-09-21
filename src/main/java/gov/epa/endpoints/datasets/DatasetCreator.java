@@ -190,6 +190,19 @@ public class DatasetCreator {
 						if (standardizeResponseData.success) {
 							mpv.standardizedSmiles = standardizeResponseData.qsarStandardizedSmiles;
 							mpv.isStandardized = true;
+							
+							//**************************************************************
+							//TMM 6/8/22 store in database:
+							compound = new Compound(dr.dsstoxCompoundId, mpv.standardizedSmiles, standardizerName, lanId);
+							//TODO check if this addition causes duplication error message...
+							try {
+								mpv.compound = compoundService.create(compound);
+							} catch (ConstraintViolationException e) {
+								System.out.println(e.getMessage());
+							}
+							//**************************************************************
+							
+							
 //							logger.debug(mpv.id + ": Standardized: " + dr.smiles + " -> " + mpv.standardizedSmiles);
 						} else {
 //							logger.warn(mpv.id + ": Standardization failed for SMILES: " + dr.smiles);

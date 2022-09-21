@@ -103,7 +103,15 @@ public class SciDataExpertsStandardizer extends Standardizer {
 			standardizeResponse.success = false;
 		} else {
 			List<SciDataExpertsStandardization> standardizations = Arrays.asList(response.getBody());
-			standardizeResponse.qsarStandardizedSmiles = standardizations.get(0).canonicalSmiles;
+			
+			//TMM: Added if block 9/21/22 so that mixtures don't have QSAR ready smiles
+			if (standardizations.size()>1 || standardizations.size()==0) {
+				standardizeResponse.qsarStandardizedSmiles = null;
+			} else if (standardizations.size()==1) {
+				standardizeResponse.qsarStandardizedSmiles = standardizations.get(0).canonicalSmiles;
+			} 
+			
+			
 			standardizeResponse.success = standardizeResponse.qsarStandardizedSmiles!=null 
 					&& !standardizeResponse.qsarStandardizedSmiles.isBlank();
 		}
