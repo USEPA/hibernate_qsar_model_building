@@ -11,6 +11,8 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import javax.validation.ConstraintViolationException;
+
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Config;
 
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
@@ -35,6 +37,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.WebServiceModelBuilder;
+import gov.epa.web_services.EmbeddingWebService;
 import gov.epa.web_services.ModelWebService;
 import kong.unirest.Unirest;
 
@@ -443,8 +446,8 @@ public class QsarModelsScript {
 //			System.out.println(s.getName());
 //		}
 		
-		/*
-		 * 		EmbeddingWebService ews = new EmbeddingWebService(DevQsarConstants.SERVER_LOCAL, 9092);
+		
+		EmbeddingWebService ews = new EmbeddingWebService(DevQsarConstants.SERVER_LOCAL, 9092);
 		String datasetName = DevQsarConstants.LOG_HALF_LIFE + " OPERA";
 		String lanId = "cramslan";
 		String descriptorSetName="T.E.S.T. 5.1";
@@ -457,7 +460,7 @@ public class QsarModelsScript {
 		ews.createEmbedding(datasetName, lanId, descriptorSetName, splittingName, false, numDesc,
 				embeddingName, embeddingDescription, false);
 
-		 */
+		
 	}
 
 }
