@@ -3,6 +3,9 @@ package gov.epa.web_services.descriptors;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import gov.epa.web_services.WebService;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -81,26 +84,51 @@ public class SciDataExpertsDescriptorWebService extends WebService {
 	
 	public HttpResponse<SciDataExpertsDescriptorResponse> calculateDescriptors(List<String> smiles, String descriptorName) {
 		SciDataExpertsDescriptorRequest request = new SciDataExpertsDescriptorRequest(smiles, descriptorName, null);
+
+//		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+//		System.out.println(gson.toJson(request));
+
+		
 		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.post(address + "/api/descriptors")
 				.header("Content-Type", "application/json")
 				.header("Accept", "*/*")
 				.header("Accept-Encoding", "gzip, deflate, br")
 				.body(request)
 				.asObject(SciDataExpertsDescriptorResponse.class);
+		
+//		System.out.println(gson.toJson(response.getBody()));
 		
 		return response;
 	}
 	
 	public HttpResponse<SciDataExpertsDescriptorResponse> calculateDescriptorsWithOptions(List<String> smiles, String descriptorName, 
 			Map<String, Object> options) {
+		
+		
 		SciDataExpertsDescriptorRequest request = new SciDataExpertsDescriptorRequest(smiles, descriptorName, options);
+		
 		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.post(address + "/api/descriptors")
 				.header("Content-Type", "application/json")
 				.header("Accept", "*/*")
 				.header("Accept-Encoding", "gzip, deflate, br")
-				.body(request)
+				.body(request)				
 				.asObject(SciDataExpertsDescriptorResponse.class);
+	
+		return response;
+	}
+	
+	public HttpResponse<String> calculateDescriptorsWithOptions2(List<String> smiles, String descriptorName, 
+			Map<String, Object> options) {
+		SciDataExpertsDescriptorRequest request = new SciDataExpertsDescriptorRequest(smiles, descriptorName, options);
 		
+		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+		HttpResponse<String> response = Unirest.post(address + "/api/descriptors")
+				.header("Content-Type", "application/json")
+				.header("Accept", "*/*")
+				.header("Accept-Encoding", "gzip, deflate, br")
+				.body(request)				
+				.asString();
+				
 		return response;
 	}
 
