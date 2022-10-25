@@ -118,6 +118,13 @@ public class DevQsarConstants {
 	public static final String LOG_CM3_MOLECULE_SEC="log10(cm3/molecule-sec)";
 	public static final String CM3_MOLECULE_SEC="cm3/molecule-sec";
 	
+	public static final String MW_MK="mW/mK";
+	public static final String DYN_CM="dyn/cm";
+	
+	public static final String LOG_CP = "log10(cP)";
+	public static final String CP = "log10(cP)";
+	
+	
 	// Integer codes for train/test splitting
 	public static final Integer TRAIN_SPLIT_NUM = 0;
 	public static final Integer TEST_SPLIT_NUM = 1;
