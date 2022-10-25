@@ -35,8 +35,8 @@ public class ModelBuildingScriptTodd {
 		boolean removeLogDescriptors=false;
 		
 		
-		String modelWsServer=DevQsarConstants.SERVER_LOCAL;
-//			String modelWsServer=DevQsarConstants.SERVER_819;
+//		String modelWsServer=DevQsarConstants.SERVER_LOCAL;
+			String modelWsServer=DevQsarConstants.SERVER_819;
 		int modelWsPort=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
 
 		boolean usePythonStorage=true;
