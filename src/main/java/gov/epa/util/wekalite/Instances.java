@@ -386,6 +386,26 @@ public class Instances {
 		
 	}
 	
+	public void writeToTSVFile(String filePath) {
+		
+		try {
+			FileWriter fw=new FileWriter(filePath);
+			
+			fw.write("ID\tProperty\t"+getDescriptorNames()+"\r\n");
+			
+			for (int i=0;i<numInstances();i++) {
+				fw.write(instance(i).getInstanceValues()+"\r\n");
+				fw.flush();
+			}
+			
+			fw.close();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+	}
+
+	
 //	public void writeToExcel(String outputFilePath,boolean includeClassValue) {
 //		
 //		try {
