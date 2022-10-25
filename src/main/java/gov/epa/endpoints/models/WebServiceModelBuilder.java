@@ -135,24 +135,29 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			throws ConstraintViolationException {
 		if (data.trainingSetInstances==null) {
 //			logger.error("Dataset instances were not initialized");
+			System.out.println("Dataset instances were not initialized");
 			return null;
 		}
 		
-//		logger.debug("Building Python model with dataset = " + data.datasetName + ", descriptors = " + data.descriptorSetName
-//				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName);
+		System.out.println("Building Python model with dataset = " + data.datasetName + ", descriptors = " + data.descriptorSetName
+				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName);
 		DescriptorEmbedding descriptorEmbedding = null;
 		if (descriptorEmbeddingName!= null) {
 			descriptorEmbedding = descriptorEmbeddingService.findByName(descriptorEmbeddingName);
 			if (descriptorEmbedding==null) {
-//			logger.error("No such descriptor embedding");
+			System.out.println("No such descriptor embedding");
 			return null;
-			} else if (!descriptorEmbedding.getDescriptorSetName().equals(data.descriptorSetName)) {
-//			logger.error("Descriptor embedding for wrong descriptor set");
-			return null;
-			} else if (!descriptorEmbedding.getDatasetName().equals(data.datasetName)) {
-//			logger.error("Descriptor embedding for wrong dataset");
+			} 
+			else if (!descriptorEmbedding.getDescriptorSetName().equals(data.descriptorSetName)) {
+			System.out.println("Descriptor embedding for wrong descriptor set");
 			return null;
 			}
+			// CR: why impose this? if it's the right property I don't see a problem 
+			/*
+			else if (!descriptorEmbedding.getDatasetName().equals(data.datasetName)) {
+			System.out.println("Descriptor embedding for wrong dataset");
+			return null;
+			} */
 		}
 		
 		
@@ -166,6 +171,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		modelService.create(model);
 		String hyperparameters = null;
 		String strModelId = String.valueOf(model.getId());
+		System.out.println("the model id is:" + strModelId);
 		if (descriptorEmbedding != null) {
 			modelWebService.callTrainWithPreselectedDescriptorsPythonStorage(data.trainingSetInstances, 
 				data.removeLogDescriptors, methodName, strModelId, descriptorEmbedding.getEmbeddingTsv()).getBody();
@@ -210,11 +216,13 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			throws ConstraintViolationException {
 		if (data.trainingSetInstances==null) {
 //			logger.error("Dataset instances were not initialized");
+			System.out.println("Dataset instances were not initialized");
+
 			return null;
 		}
 		
-//		logger.debug("Building Python model with dataset = " + data.datasetName + ", descriptors = " + data.descriptorSetName
-//				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName);
+		System.out.println("Building Python model with dataset = " + data.datasetName + ", descriptors = " + data.descriptorSetName
+				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName);
 		
 		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByName(descriptorEmbeddingName);
 		if (descriptorEmbedding==null) {
@@ -276,9 +284,11 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	public void predictPythonStorage(ModelData data, String methodName, Long modelId) throws ConstraintViolationException {
 		if (modelId==null) {
 //			logger.error("Model with supplied parameters has not been built");
+			System.out.println("Model with supplied parameters has not been built");
 			return;
 		} else if (data.predictionSetInstances==null) {
 //			logger.error("Dataset instances were not initialized");
+			System.out.println("Dataset instances were not initialized");
 			return;
 		}
 		

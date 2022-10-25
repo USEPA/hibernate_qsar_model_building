@@ -39,7 +39,7 @@ public class DataPointContributorServiceImpl implements DataPointContributorServ
 		try {
 			session.save(dataPointContributor);
 			session.flush();
-			session.refresh(dataPointContributor);
+//			session.refresh(dataPointContributor);
 			t.commit();
 		} catch (org.hibernate.exception.ConstraintViolationException e) {
 			t.rollback();

@@ -56,7 +56,7 @@ public class DataPointInSplittingServiceImpl implements DataPointInSplittingServ
 		try {
 			session.save(dpis);
 			session.flush();
-			session.refresh(dpis);
+//			session.refresh(dpis);
 			t.commit();
 		} catch (org.hibernate.exception.ConstraintViolationException e) {
 			t.rollback();

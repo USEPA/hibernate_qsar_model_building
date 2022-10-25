@@ -87,7 +87,7 @@ public class ExperimentalRecordLoader {
 	
 	private static ExperimentalRecords getPublicSourceRecords(String publicSourceName, String type) {
 		ExperimentalRecords records = new ExperimentalRecords();
-		String publicSourceFolderPath = "data/dev_qsar/exp_prop/" + type + "/" + publicSourceName;
+		String publicSourceFolderPath = "C:\\Users\\CRAMSLAN\\OneDrive - Environmental Protection Agency (EPA)\\VDI_Repo\\java\\github\\ghs-data-gathering\\data\\experimental" + "/" + publicSourceName;
 		File publicSourceFolder = new File(publicSourceFolderPath);
 		File[] publicSourceFiles = publicSourceFolder.listFiles();
 		
@@ -174,8 +174,9 @@ public class ExperimentalRecordLoader {
 	}
 	
 	public static void main(String[] args) {
-		String sourceName = "OECD Toolbox";
-		String type = "tox";
+		System.out.println("eclipse recognizes new code4");
+		String sourceName = "Burkhard_BCF";
+		String type = "physchem";
 		
 		System.out.println("Retrieving records...");
 		ExperimentalRecords records = getPublicSourceRecords(sourceName, type);
@@ -183,7 +184,7 @@ public class ExperimentalRecordLoader {
 		
 		System.out.println("Loading " + records.size() + " records...");
 		long t0 = System.currentTimeMillis();
-		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("gsincl01");
+		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("cramslan");
 		loader.load(records, type, true);
 		long t = System.currentTimeMillis();
 		System.out.println("Loading completed in " + (t - t0)/1000.0 + " s");
