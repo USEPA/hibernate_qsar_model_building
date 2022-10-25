@@ -34,6 +34,17 @@ public class DataPointContributor {
 	@Column(name="exp_prop_id")
 	private String expPropId;
 	
+	
+	private String DTXCID;
+	
+	public String getDTXCID() {
+		return DTXCID;
+	}
+
+	public void setDTXCID(String dTXCID) {
+		DTXCID = dTXCID;
+	}
+
 	@Column(name="updated_at")
 	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
@@ -53,10 +64,11 @@ public class DataPointContributor {
 	
 	public DataPointContributor() {}
 	
-	public DataPointContributor(DataPoint dataPoint, String expPropId, String createdBy) {
+	public DataPointContributor(DataPoint dataPoint, String expPropId, String DTXCID, String createdBy) {
 		this.setDataPoint(dataPoint);
 		this.setExpPropId(expPropId);
 		this.setCreatedBy(createdBy);
+		this.setDTXCID(DTXCID);
 	}
 
 	public Long getId() {

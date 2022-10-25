@@ -425,12 +425,14 @@ public class DatasetCreator {
 			
 			DataPoint dataPoint = new DataPoint(structure, finalValue, dataset, false, lanId);
 			
+			if (dataPoint.getCanonQsarSmiles()==null) continue;
+			
 			try {
 				dataPointService.create(dataPoint);
 					
 				for (MappedPropertyValue mpv:structurePropertyValues) {
 					String expPropId = mpv.propertyValue.generateExpPropId();
-					DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, expPropId, lanId);
+					DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, expPropId, mpv.compound.getDtxcid(), lanId);
 					
 					try {
 						dataPointContributorService.create(dataPointContributor);
@@ -580,7 +582,9 @@ public class DatasetCreator {
 				try {
 					dataPointService.create(dataPoint);
 					for (DataPointContributor dpc:dp.getDataPointContributors()) {
-						DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, dpc.getExpPropId(), lanId);
+//						DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, dpc.getExpPropId(), lanId);						
+						DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, dpc.getExpPropId(), dpc.getDTXCID(), lanId);
+						
 						try {
 							dataPointContributorService.create(dataPointContributor);
 						} catch (ConstraintViolationException e1) {
@@ -608,7 +612,8 @@ public class DatasetCreator {
 				try {
 					dataPointService.create(dataPoint);
 					for (DataPointContributor dpc:dp.getDataPointContributors()) {
-						DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, dpc.getExpPropId(), lanId);
+						DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, dpc.getExpPropId(), dpc.getDTXCID(), lanId);
+
 						try {
 							dataPointContributorService.create(dataPointContributor);
 						} catch (ConstraintViolationException e1) {
