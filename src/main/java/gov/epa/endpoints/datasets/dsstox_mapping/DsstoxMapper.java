@@ -229,42 +229,59 @@ public class DsstoxMapper {
 	public List<MappedPropertyValue> map(List<PropertyValue> propertyValues) {
 		initPropertyValuesMap(propertyValues);
 		List<DsstoxRecord> dsstoxRecords = null;
+		String checkChemicalList = null;
 		if (datasetParams.mappingParams.isNaive) {	
 			// For naive mapping strategies (CASRN, DTXSID, DTXCID), pull the DSSTox records and map them directly
 			dsstoxRecords = getDsstoxRecords(propertyValuesMap.keySet(), datasetParams.mappingParams.dsstoxMappingId);
-		} else {
+		} else if (datasetParams.mappingParams.chemicalListName!=null && datasetParams.mappingParams.chemRegListNameList==null) {
+			checkChemicalList = datasetParams.mappingParams.chemicalListName;
 			
-			String checkChemicalList = null;
+			ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
+			if (chemicalList != null) {
+				// If chemical list already added to DSSTox, queries all records from it
+				dsstoxRecords = sourceSubstanceService
+						.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
+			} else {
+				// If chemical list not in DSSTox, write the import file for the user to add
+				writeChemRegImportFile(propertyValuesMap);
+				return null;
+			}
+
+		} else if (datasetParams.mappingParams.chemRegListNameList!=null) {
+			// here's where multiple lists are handled
 			ArrayList<String> checkChemicalListArray = null;
+			for (int i = 0; i < datasetParams.mappingParams.chemRegListNameList.size(); i++) {
+				checkChemicalList = datasetParams.mappingParams.chemRegListNameList.get(i);
+				ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
+			}
+			dsstoxRecords = new ArrayList<DsstoxRecord>();
+			for (int i = 0; i < datasetParams.mappingParams.chemRegListNameList.size(); i++) {
+				checkChemicalList = datasetParams.mappingParams.chemRegListNameList.get(i);
+				ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
+				List<DsstoxRecord> records = null;
+				ArrayList<DsstoxRecord> recordsAR = null; 
+				if (chemicalList!=null) {
+					// If chemical list already added to DSSTox, queries all records from it
+					records = sourceSubstanceService.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
+					recordsAR = new ArrayList<DsstoxRecord>(records);
+				}
+				dsstoxRecords.addAll(recordsAR);
+				System.out.println("dsstox records collected =" + dsstoxRecords.size());
+			}
+
+		
+		}
+		/*
 			if (datasetParams.mappingParams.chemicalListName!=null) {
-				checkChemicalList = datasetParams.mappingParams.chemicalListName;
 			
-			 /*
+			 
 			
-			else if (datasetParams.mappingParams.chemRegListNameList!=null) {
-				
-				for (int i = 0; i < datasetParams.mappingParams.chemRegListNameList.size(); i++) {
-					checkChemicalList = datasetParams.mappingParams.chemRegListNameList.get(i);
-					ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
-				}
+			// else if (datasetParams.mappingParams.chemRegListNameList!=null) {
 				
 				
 				
-				dsstoxRecords = new ArrayList<DsstoxRecord>();
-				for (int i = 0; i < datasetParams.mappingParams.chemRegListNameList.size(); i++) {
-					checkChemicalList = datasetParams.mappingParams.chemRegListNameList.get(i);
-					ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
-					List<DsstoxRecord> records = null;
-					ArrayList<DsstoxRecord> recordsAR = null; 
-					if (chemicalList!=null) {
-						// If chemical list already added to DSSTox, queries all records from it
-						records = sourceSubstanceService.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
-						recordsAR = new ArrayList<DsstoxRecord>(records);
-					}
-					dsstoxRecords.addAll(recordsAR);
-					System.out.println("dsstox records collected =" + dsstoxRecords.size());
-				}
-			*/
+				
+			
 			} else {
 				checkChemicalList = datasetParams.datasetName;
 			}
@@ -280,7 +297,7 @@ public class DsstoxMapper {
 					return null;
 				}
 			}
-		
+		*/
 		
 		initDsstoxRecordsMap(dsstoxRecords);
 				 

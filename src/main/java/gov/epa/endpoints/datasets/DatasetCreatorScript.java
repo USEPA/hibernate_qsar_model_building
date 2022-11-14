@@ -11,7 +11,7 @@ import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 public class DatasetCreatorScript {
 
 	public static void main(String[] args) {
-		createBPRegisteredCAS();
+		createLogP();
 	}
 	
 
@@ -42,6 +42,43 @@ public class DatasetCreatorScript {
 
 	}
 	
+	public static void createLogP() {
+		// comment for diff
+		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
+		
+		String propertyName = DevQsarConstants.LOG_KOW;
+		// String listName = "ExpProp_HLC_WithChemProp_121421";
+		
+		ArrayList<String> listNameArray = new ArrayList<String>();
+		listNameArray.add("ExpProp_LogP_import_1_to_20000");
+		listNameArray.add("ExpProp_LogP_import_20001_to_40000");
+		listNameArray.add("ExpProp_LogP_import_40001_to_60000");
+		listNameArray.add("ExpProp_LogP_import_60001_to_80000");
+		listNameArray.add("ExpProp_LogP_import_80001_to_100000");
+		listNameArray.add("ExpProp_LogP_import_100001_to_100850");
+
+		BoundParameterValue PressureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
+		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+		bounds.add(PressureBound);
+
+		
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, 
+				false, true, false, true, true, false, false, listNameArray);
+		
+		
+		String listMappingName = "ExpProp_LogP_WithChemProp_MULTIPLE";
+		String listMappingDescription = "MULTIPLE LIST Exprop LogP with 20.0 < T (C) < 30.0";
+		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
+				listMappingDescription, 
+				propertyName,
+				listMappingParams,
+				bounds);
+		creator.createPropertyDataset(listMappedParams, false);
+		
+
+	}
+	
 	
 	// methods like these 
 	public static void createHLC() {
@@ -50,7 +87,7 @@ public class DatasetCreatorScript {
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 		
 		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
-		String listName = "ExpProp_HLC_WithChemProp_121421";
+		// String listName = "ExpProp_HLC_WithChemProp_121421";
 		
 		ArrayList<String> listNameArray = new ArrayList<String>();
 		listNameArray.add("ExpProp_hlc_WithChemProp_071922_ml_1_to_2000");
@@ -65,8 +102,8 @@ public class DatasetCreatorScript {
 		
 		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, 
 				false, true, false, true, true, false, false, listNameArray);
-		String listMappingName = "ATTEMPT7 ExpProp_HLC_WithChemProp_071922_MULTIPLE";
-		String listMappingDescription = "ATTEMPT7 MULTIPLE LIST Exprop HLC with 20 < T (C) < 30 and 6 < pH < 8";
+		String listMappingName = "ATTEMPT8 ExpProp_HLC_WithChemProp_071922_MULTIPLE";
+		String listMappingDescription = "ATTEMPT8 MULTIPLE LIST Exprop HLC with 20 < T (C) < 30 and 6 < pH < 8";
 		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
 				listMappingDescription, 
 				propertyName,
