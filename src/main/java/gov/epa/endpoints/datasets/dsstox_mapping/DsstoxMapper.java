@@ -412,7 +412,15 @@ public class DsstoxMapper {
 		// Associates property values with DSSTox records using ID
 		List<MappedPropertyValue> mappedPropertyValues = new ArrayList<MappedPropertyValue>();
 		Map<String, List<PropertyValue>> unmappedPropertyValuesMap = new HashMap<String, List<PropertyValue>>();
+		
+		int counter=0;
+		
 		for (String id:propertyValuesMap.keySet()) {
+			
+			counter++;
+			
+			if (counter%100==0) System.out.println(counter);
+			
 			List<PropertyValue> propertyValues = propertyValuesMap.get(id);
 			DsstoxRecord dsstoxRecord = dsstoxRecordsMap.get(id);
 			
@@ -424,7 +432,7 @@ public class DsstoxMapper {
 			
 			SourceChemical sourceChemical = propertyValues.iterator().next().getSourceChemical();
 			if (!datasetParams.mappingParams.isNaive) {
-				System.out.println(dsstoxRecord.casrn);
+//				System.out.println(dsstoxRecord.casrn);
 				ExplainedResponse acceptMapping = acceptMapping(dsstoxRecord, sourceChemical);
 				if (!acceptMapping.response) {
 					discardPropertyValues(propertyValues, dsstoxRecord, acceptMapping.reason);
