@@ -34,7 +34,7 @@ public class Compound {
 
 	@NotBlank(message="Smiles required to create compound")
 	@Column(name="smiles")
-	private String smiles;
+	private String smiles;//TODO size of smiles in Compounds table should be varchar(510)
 
 	
 	public String getSmiles() {
@@ -46,7 +46,7 @@ public class Compound {
 	}
 
 	@Column(name="canon_qsar_smiles")
-	private String canonQsarSmiles;
+	private String canonQsarSmiles;//TODO size of canonQsarSmiles in Compounds table should be varchar(510) just in case
 	
 	@NotBlank(message="Standardizer required to create compound")
 	@Column(name="standardizer")

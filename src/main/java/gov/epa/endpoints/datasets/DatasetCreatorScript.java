@@ -13,25 +13,56 @@ import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 public class DatasetCreatorScript {
 
 	//Default settings:
+	static String dsstoxMappingId=DevQsarConstants.MAPPING_BY_LIST;
 	static boolean isNaive = false;
 	static boolean useValidation=true;
 	static boolean requireValidation=false;
 	static boolean resolveConflicts=true;
 	static boolean validateConflictsTogether=true;
 	static boolean omitOpsinAmbiguousNames=false;
-	static boolean omitUvcbNames=false;
+	static boolean omitUvcbNames=true;
 	static boolean omitSalts=true;
 
 
 	public static void main(String[] args) {
-		//		createLogP();
-		createHLC_Todd();
+		//createLogP();
+		//createHLC_Todd();		
+		createWS_tmm();
 		
 //		DatasetServiceImpl ds=new DatasetServiceImpl();
-//		ds.delete(75);
+//		ds.delete(77);
 		
 	}
 
+	public static void createWS_tmm() {
+		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+
+		String propertyName = DevQsarConstants.WATER_SOLUBILITY;
+		String listName = "ExpProp_WaterSolubility_WithChemProp_120121";
+		
+		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
+		BoundParameterValue pressureBound = new BoundParameterValue("Pressure", 740.0, 780.0, true);
+		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
+		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+		bounds.add(temperatureBound);
+		bounds.add(pressureBound);
+		bounds.add(phBound);
+
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
+				omitOpsinAmbiguousNames, omitUvcbNames, null, omitSalts);
+		
+		String listMappingName = listName+"_TMM";
+		String listMappingDescription = "Water solubility with 20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5";
+		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
+				listMappingDescription, 
+				propertyName,
+				listMappingParams,
+				bounds);
+		creator.createPropertyDataset(listMappedParams, false);
+		
+	}
 
 	// methods like these 
 	public static void createVP() {
@@ -46,8 +77,11 @@ public class DatasetCreatorScript {
 		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
 		bounds.add(temperatureBound);
 
-		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, 
-				false, true, false, true, true, false, false, null, true);
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
+				omitOpsinAmbiguousNames, omitUvcbNames, null, omitSalts);
+
+		
 		String listMappingName = "ExpProp_VP_WithChemProp_070822";
 		String listMappingDescription = "Vapor Pressure with 20 < T (C) < 30";
 		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
@@ -135,7 +169,7 @@ public class DatasetCreatorScript {
 
 	public static void createHLC_Todd() {
 		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
-		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
 		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
 		// String listName = "ExpProp_HLC_WithChemProp_121421";
