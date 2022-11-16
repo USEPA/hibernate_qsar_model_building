@@ -24,18 +24,19 @@ public class CompoundServiceImpl implements CompoundService {
 		this.validator = DevQsarValidator.getValidator();
 	}
 	
-	public Compound findByDtxcidAndStandardizer(String dtxcid, String standardizer) {
+	public Compound findByDtxcidSmilesAndStandardizer(String dtxcid, String smiles, String standardizer) {
 		Session session = QsarDescriptorsSession.getSessionFactory().getCurrentSession();
-		return findByDtxcidAndStandardizer(dtxcid, standardizer, session);
+		return findByDtxcidSmilesAndStandardizer(dtxcid, smiles, standardizer, session);
 	}
 	
-	public Compound findByDtxcidAndStandardizer(String dtxcid, String standardizer, Session session) {
+	public Compound findByDtxcidSmilesAndStandardizer(String dtxcid, String smiles, String standardizer, Session session) {
 		Transaction t = session.beginTransaction();
 		CompoundDao compoundDao = new CompoundDaoImpl();
-		Compound compound = compoundDao.findByDtxcidAndStandardizer(dtxcid, standardizer, session);
+		Compound compound = compoundDao.findByDtxcidSmilesAndStandardizer(dtxcid, smiles, standardizer, session);
 		t.rollback();
 		return compound;
 	}
+	
 	
 	public List<Compound> findByCanonQsarSmiles(String canonQsarSmiles) {
 		Session session = QsarDescriptorsSession.getSessionFactory().getCurrentSession();

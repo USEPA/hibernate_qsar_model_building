@@ -37,7 +37,11 @@ public class DataPoint {
 	@NotNull(message="QSAR property value required")
 	@Column(name="qsar_property_value")
 	private Double qsarPropertyValue;
+
+	@Column(name="dtxcid")
+	private String dtxcid;
 	
+
 	@NotNull(message="Outlier boolean required")
 	@Column(name="outlier")
 	private Boolean outlier;
@@ -79,6 +83,16 @@ public class DataPoint {
 		this.setOutlier(outlier);
 		this.setCreatedBy(createdBy);
 	}
+	
+	public DataPoint(String canonQsarSmiles, String DTXCID, Double qsarPropertyValue, Dataset dataset, Boolean outlier, String createdBy) {
+		this.setCanonQsarSmiles(canonQsarSmiles);
+		this.setDtxcid(DTXCID);
+		this.setQsarPropertyValue(qsarPropertyValue);
+		this.setDataset(dataset);
+		this.setOutlier(outlier);
+		this.setCreatedBy(createdBy);
+	}
+
 
 	public Long getId() {
 		return id;
@@ -159,4 +173,13 @@ public class DataPoint {
 	public void setDataPointContributors(List<DataPointContributor> dataPointContributors) {
 		this.dataPointContributors = dataPointContributors;
 	}
+	
+	public String getDtxcid() {
+		return dtxcid;
+	}
+
+	public void setDtxcid(String dtxcid) {
+		this.dtxcid = dtxcid;
+	}
+
 }

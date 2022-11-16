@@ -106,9 +106,9 @@ public class DatasetCreator {
 //		bounds.add(speciesBound);
 		
 		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, 
-				false, true, false, true, true, false, false, null);
+				false, true, false, true, true, false, false, null,true);
 		MappingParams casrnMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_CASRN, null,
-				true, false, false, false, false, false, true, null);
+				true, false, false, false, false, false, true, null,true);
 		String listMappingName = "TESTING2_ExpProp_VP_WithChemProp_070822";
 		String casrnMappingName = "CASRN mapping of " + propertyName + " from exp_prop, without eChemPortal";
 		String listMappingDescription = "TESTRUN2 Vapor Pressure with 20 < T (C) < 30";
@@ -184,7 +184,7 @@ public class DatasetCreator {
 		
 		String finalUnitName = finalUnits.get(params.propertyName);
 //		params.mappingParams.omitSalts = physchemPropertyNames.contains(params.propertyName); // Omit salts for physchem properties
-		params.mappingParams.omitSalts = false;
+//		params.mappingParams.omitSalts = false;
 		
 		try {
 			DsstoxMapper dsstoxMapper = new DsstoxMapper(params, standardizer, finalUnitName, params.mappingParams.omitSalts, 
@@ -216,9 +216,11 @@ public class DatasetCreator {
 			DsstoxRecord dr = mpv.dsstoxRecord;
 
 			// Check (by DTXCID) if compound already has a standardization
-			Compound compound = compoundService.findByDtxcidAndStandardizer(dr.dsstoxCompoundId, standardizerName);
+			Compound compound = compoundService.findByDtxcidSmilesAndStandardizer(dr.dsstoxCompoundId, dr.smiles,standardizerName);
 
 			if (compound!=null) {
+				System.out.println("Standardization in db:"+compound.getDtxcid()+"\t"+compound.getSmiles()+"\t"+compound.getCanonQsarSmiles());
+				
 				// If already standardized, set standardization and mark record as standardized
 				// Additionally store mapped compound so we don't have to query it later
 				mpv.compound = compound;
@@ -245,7 +247,10 @@ public class DatasetCreator {
 							
 							//**************************************************************
 							//TMM 6/8/22 store in database:
-							compound = new Compound(dr.dsstoxCompoundId, mpv.standardizedSmiles, standardizerName, lanId);
+							compound = new Compound(dr.dsstoxCompoundId,dr.smiles, mpv.standardizedSmiles, standardizerName, lanId);
+							
+							System.out.println("standardized:"+dr.dsstoxCompoundId+"\t"+dr.smiles+"\t"+mpv.standardizedSmiles);
+							
 							//TODO check if this addition causes duplication error message...
 							try {
 								mpv.compound = compoundService.create(compound);
@@ -292,7 +297,7 @@ public class DatasetCreator {
 				mpv.standardizedSmiles = null;
 			}
 			
-			Compound compound = new Compound(dr.dsstoxCompoundId, mpv.standardizedSmiles, standardizerName, lanId);
+			Compound compound = new Compound(dr.dsstoxCompoundId, dr.smiles, mpv.standardizedSmiles, standardizerName, lanId);
 			
 			try {
 				mpv.compound = compoundService.create(compound);
@@ -445,6 +450,52 @@ public class DatasetCreator {
 			}
 		}
 	}
+	
+	private void postDataPointsWithCIDs(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, Dataset dataset) {
+		
+		for (String structure:unifiedPropertyValues.keySet()) {
+			List<MappedPropertyValue> structurePropertyValues = unifiedPropertyValues.get(structure);
+			String unitName = dataset.getUnit().getName();
+			
+			
+			String [] values=null;
+			
+			if (unitName.equals(DevQsarConstants.BINARY)) {
+				values = PropertyValueMerger.mergeBinaryIncludeFinalCIDs(structurePropertyValues);
+			} else {
+				values = PropertyValueMerger.mergeContinuousIncludeFinalCIDs(structurePropertyValues, dataset.getProperty().getName());
+			}
+			
+			if (values==null) {
+//				logger.info(structure + ": Skipped posting data point due to invalid consensus value");
+				continue;
+			}
+
+			Double finalValue = Double.parseDouble(values[0]);
+			String finalCIDs = values[1];
+			
+			DataPoint dataPoint = new DataPoint(structure, finalCIDs,finalValue, dataset, false, lanId);
+			
+			if (dataPoint.getCanonQsarSmiles()==null) continue;
+			
+			try {
+				dataPointService.create(dataPoint);
+					
+				for (MappedPropertyValue mpv:structurePropertyValues) {
+					String expPropId = mpv.propertyValue.generateExpPropId();
+					DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, expPropId, mpv.compound.getDtxcid(), lanId);
+					
+					try {
+						dataPointContributorService.create(dataPointContributor);
+					} catch (ConstraintViolationException e1) {
+						System.out.println(e1.getMessage());
+					}
+				}
+			} catch (ConstraintViolationException e) {
+				System.out.println(e.getMessage());
+			}
+		}
+	}
 
 	public void createPropertyDataset(DatasetParams params, boolean useStdevFilter) {
 		Gson gson = new Gson();
@@ -501,7 +552,8 @@ public class DatasetCreator {
 		
 		System.out.println("Posting final merged values...");
 		long t7 = System.currentTimeMillis();
-		postDataPoints(unifiedPropertyValues, dataset);
+//		postDataPoints(unifiedPropertyValues, dataset);
+		postDataPointsWithCIDs(unifiedPropertyValues, dataset);
 		long t8 = System.currentTimeMillis();
 		System.out.println("Time to post: " + (t8 - t7)/1000.0 + " s");
 	}

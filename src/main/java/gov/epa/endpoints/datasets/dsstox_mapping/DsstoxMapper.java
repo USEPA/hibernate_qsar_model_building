@@ -1059,7 +1059,7 @@ public class DsstoxMapper {
 	
 	private String standardizeSmiles(String srcChemId, DsstoxRecord dr) {
 		// Check (by DTXCID) if compound already has a standardization
-		Compound compound = compoundService.findByDtxcidAndStandardizer(dr.dsstoxCompoundId, standardizerName);
+		Compound compound = compoundService.findByDtxcidSmilesAndStandardizer(dr.dsstoxCompoundId, dr.smiles,standardizerName);
 		
 		if (compound==null) {
 			StandardizeResponseWithStatus standardizeResponse = standardizer.callStandardize(dr.smiles);
@@ -1072,7 +1072,7 @@ public class DsstoxMapper {
 					logger.warn(srcChemId + ": Standardization failed for SMILES: " + dr.smiles);
 				}
 				
-				compound = new Compound(dr.dsstoxCompoundId, standardizedSmiles, standardizerName, lanId);
+				compound = new Compound(dr.dsstoxCompoundId, dr.smiles, standardizedSmiles, standardizerName, lanId);
 				
 				try {
 					compoundService.create(compound);

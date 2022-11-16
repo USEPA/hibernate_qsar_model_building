@@ -26,7 +26,7 @@ public class DatasetParams {
 		public MappingParams(String dsstoxMappingId, String chemicalListName, boolean isNaive, boolean useValidation, 
 				boolean requireValidation, boolean resolveConflicts,
 				boolean validateConflictsTogether, boolean omitOpsinAmbiguousNames, boolean omitUvcbNames,
-				ArrayList<String> chemRegListNameList) {
+				ArrayList<String> chemRegListNameList,boolean omitSalts) {
 			this.dsstoxMappingId = dsstoxMappingId;
 			this.isNaive = isNaive;
 			this.useCuratorValidation = useValidation;
@@ -37,12 +37,13 @@ public class DatasetParams {
 			this.omitUvcbKeywords = omitUvcbNames;
 			this.chemicalListName = chemicalListName;
 			this.chemRegListNameList = chemRegListNameList;
+			this.omitSalts=omitSalts;
 		}
 		
 		public MappingParams(String dsstoxMappingId, boolean isNaive, boolean useValidation, boolean requireValidation, boolean resolveConflicts,
-				boolean validateConflictsTogether, boolean omitOpsinAmbiguousNames, boolean omitUvcbKeywords, ArrayList<String> chemRegListNameList) {
+				boolean validateConflictsTogether, boolean omitOpsinAmbiguousNames, boolean omitUvcbKeywords, ArrayList<String> chemRegListNameList,boolean omitSalts) {
 			this(dsstoxMappingId, null, isNaive, useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
-					omitOpsinAmbiguousNames, omitUvcbKeywords, chemRegListNameList);
+					omitOpsinAmbiguousNames, omitUvcbKeywords, chemRegListNameList,omitSalts);
 		}
 	}
 	

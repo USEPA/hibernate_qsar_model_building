@@ -17,7 +17,11 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
-@Table(name="compounds", uniqueConstraints={@UniqueConstraint(columnNames = {"dtxcid", "standardizer"})})
+@Table(name="compounds", uniqueConstraints={@UniqueConstraint(columnNames = {"dtxcid", "smiles", "standardizer"})})
+
+//TODO need to make sure that the constraint in DBeaver for compounds table is as follows:
+//ALTER TABLE qsar_descriptors.compounds ADD CONSTRAINT unique_cmpd_dtxcid_smiles_and_stdizer UNIQUE (dtxcid, smiles, standardizer)
+
 public class Compound {
 	
 	@Id
@@ -27,7 +31,20 @@ public class Compound {
 	@NotBlank(message="DTXCID required to create compound")
 	@Column(name="dtxcid")
 	private String dtxcid;
+
+	@NotBlank(message="Smiles required to create compound")
+	@Column(name="smiles")
+	private String smiles;
+
 	
+	public String getSmiles() {
+		return smiles;
+	}
+
+	public void setSmiles(String smiles) {
+		this.smiles = smiles;
+	}
+
 	@Column(name="canon_qsar_smiles")
 	private String canonQsarSmiles;
 	
@@ -54,8 +71,9 @@ public class Compound {
 	
 	public Compound() {}
 	
-	public Compound(String dtxcid, String canonQsarSmiles, String standardizer, String createdBy) {
+	public Compound(String dtxcid, String smiles, String canonQsarSmiles, String standardizer, String createdBy) {
 		this.setDtxcid(dtxcid);
+		this.setSmiles(smiles);
 		this.setCanonQsarSmiles(canonQsarSmiles);
 		this.setStandardizer(standardizer);
 		this.setCreatedBy(createdBy);

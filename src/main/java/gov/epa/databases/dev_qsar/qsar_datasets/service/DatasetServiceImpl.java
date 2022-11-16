@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_datasets.service;
 
+import java.util.List;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
@@ -13,6 +14,8 @@ import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.qsar_datasets.QsarDatasetsSession;
 import gov.epa.databases.dev_qsar.qsar_datasets.dao.DatasetDao;
 import gov.epa.databases.dev_qsar.qsar_datasets.dao.DatasetDaoImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointContributor;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 
 public class DatasetServiceImpl implements DatasetService {
@@ -63,6 +66,36 @@ public class DatasetServiceImpl implements DatasetService {
 		
 		return dataset;
 	}
+	
+	
+	
+	public void delete(long id) {
+				
+		Dataset dataset=findById(id);
+		
+		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
+		System.out.println(dataset.getName());
+		
+		try {
+			Transaction t = session.beginTransaction();
+			System.out.print("Deleting dataset...");
+			session.delete(dataset);
+			System.out.print("done\n");
+			
+			System.out.print("Flushing...");
+			session.flush();
+			System.out.print("done\n");
+			
+			System.out.print("Committing...");
+			t.commit();
+			System.out.print("done\n");
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+
 
 	@Override
 	public Dataset findById(Long datasetId) {

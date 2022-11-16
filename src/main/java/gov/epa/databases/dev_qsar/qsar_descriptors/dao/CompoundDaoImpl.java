@@ -10,18 +10,30 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
 
 public class CompoundDaoImpl implements CompoundDao {
 	
-	private static final String HQL_BY_DTXCID_AND_STANDARDIZER = "from Compound c where c.dtxcid = :dtxcid and c.standardizer = :standardizer";
+	private static final String HQL_BY_DTXCID_SMILES_AND_STANDARDIZER = "from Compound c where c.dtxcid = :dtxcid and c.smiles = :smiles and c.standardizer = :standardizer";
 	private static final String HQL_BY_CANON_QSAR_SMILES = 
 			"from Compound c where c.canonQsarSmiles = :canonQsarSmiles";
 	
+//	@Override
+//	public Compound findByDtxcidAndStandardizer(String dtxcid, String standardizer, Session session) {
+//		if (session==null) { session = QsarDescriptorsSession.getSessionFactory().getCurrentSession(); }
+//		Query query = session.createQuery(HQL_BY_DTXCID_AND_STANDARDIZER);
+//		query.setParameter("dtxcid", dtxcid);
+//		query.setParameter("standardizer", standardizer);
+//		return (Compound) query.uniqueResult();
+//	}
+	
+	
 	@Override
-	public Compound findByDtxcidAndStandardizer(String dtxcid, String standardizer, Session session) {
+	public Compound findByDtxcidSmilesAndStandardizer(String dtxcid, String smiles, String standardizer, Session session) {
 		if (session==null) { session = QsarDescriptorsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_BY_DTXCID_AND_STANDARDIZER);
+		Query query = session.createQuery(HQL_BY_DTXCID_SMILES_AND_STANDARDIZER);
 		query.setParameter("dtxcid", dtxcid);
+		query.setParameter("smiles", smiles);
 		query.setParameter("standardizer", standardizer);
 		return (Compound) query.uniqueResult();
 	}
+
 	
 	@Override
 	public List<Compound> findByCanonQsarSmiles(String canonQsarSmiles, Session session) {
