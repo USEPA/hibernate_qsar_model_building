@@ -29,6 +29,8 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
@@ -49,9 +51,11 @@ import gov.epa.databases.dsstox.service.GenericSubstanceService;
 import gov.epa.databases.dsstox.service.GenericSubstanceServiceImpl;
 import gov.epa.databases.dsstox.service.SourceSubstanceService;
 import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
+import gov.epa.endpoints.datasets.DatasetCreator;
 import gov.epa.endpoints.datasets.DatasetParams;
 import gov.epa.endpoints.datasets.ExplainedResponse;
 import gov.epa.endpoints.datasets.MappedPropertyValue;
+import gov.epa.run_from_java.scripts.GetExpPropInfo;
 import gov.epa.util.StructureUtil;
 import gov.epa.util.StructureUtil.SimpleOpsinResult;
 import gov.epa.web_services.standardizers.Standardizer;
@@ -271,42 +275,13 @@ public class DsstoxMapper {
 
 		
 		}
-		/*
-			if (datasetParams.mappingParams.chemicalListName!=null) {
-			
-			 
-			
-			// else if (datasetParams.mappingParams.chemRegListNameList!=null) {
-				
-				
-				
-				
-			
-			} else {
-				checkChemicalList = datasetParams.datasetName;
-			}
-
-				ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
-				if (chemicalList != null) {
-					// If chemical list already added to DSSTox, queries all records from it
-					dsstoxRecords = sourceSubstanceService
-							.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
-				} else {
-					// If chemical list not in DSSTox, write the import file for the user to add
-					writeChemRegImportFile(propertyValuesMap);
-					return null;
-				}
-			}
-		*/
 		
 		initDsstoxRecordsMap(dsstoxRecords);
-				 
 		System.out.println("map entries:" +dsstoxRecordsMap.size());
-
 		
-		//
-		
+		//Map the records to DSSTOX- where the magic happens:
 		List<MappedPropertyValue> mappedPropertyValues = mapPropertyValuesToDsstoxRecords();
+
 		if (mappedPropertyValues!=null) {
 			if (!checkYourWork(mappedPropertyValues, propertyValues.size())) {
 				logger.warn(datasetParams.datasetName + ": Number of property values or DSSTox records mapped and discarded do not add up");
@@ -315,6 +290,7 @@ public class DsstoxMapper {
 //			writeMappingFile(mappedPropertyValues);
 			writeConflictFile();
 			writeDiscardedPropertyValuesFile();
+			writeDetailedDiscardedPropertyValuesFile();
 		}
 		
 		return mappedPropertyValues;
@@ -1256,7 +1232,7 @@ public class DsstoxMapper {
 			
 			Row row = sheet.createRow(i + 1);
 			int col = 0;
-			row.createCell(col++).setCellValue(pv.generateExpPropId());
+			row.createCell(col++).setCellValue(pv.getId());
 			row.createCell(col++).setCellValue(sc.generateSrcChemId());
 			row.createCell(col++).setCellValue(sc.getSourceDtxsid());
 			row.createCell(col++).setCellValue(sc.getSourceDtxcid());
@@ -1265,7 +1241,7 @@ public class DsstoxMapper {
 			row.createCell(col++).setCellValue(sc.getSourceCasrn());
 			row.createCell(col++).setCellValue(sc.getSourceSmiles());
 			row.createCell(col++).setCellValue(pv.generateConciseValueString());
-//			row.createCell(col++).setCellValue(generateParameterValuesString(pv));
+			row.createCell(col++).setCellValue(pv.generateParameterValuesString());
 			row.createCell(col++).setCellValue(dr==null ? null : dr.dsstoxSubstanceId);
 			row.createCell(col++).setCellValue(dr==null ? null : dr.preferredName);
 			row.createCell(col++).setCellValue(dr==null ? null : dr.casrn);
@@ -1279,6 +1255,33 @@ public class DsstoxMapper {
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
+	}
+	
+	
+	private void writeDetailedDiscardedPropertyValuesFile() {
+		
+		JsonArray ja=new JsonArray();
+		
+		for (int i = 0; i < discardedPropertyValues.size(); i++) {
+			DiscardedPropertyValue dpv = discardedPropertyValues.get(i);
+			PropertyValue pv = dpv.propertyValue;
+			DsstoxRecord dr = dpv.dsstoxRecord;
+			SourceChemical sc = pv.getSourceChemical();
+			JsonObject jo=DatasetCreator.getDatapointAsJsonObject(null, pv, sc, dr);
+			jo.addProperty("reason_discarded", dpv.reason);
+			ja.add(jo);			
+		}
+				
+		String[] fields = { "reason_discarded", "exp_prop_id", "source_dtxrid", "source_dtxrid",
+				"source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",				
+				"source_name", "source_description", "source_authors", "source_title", "source_doi", "source_url",
+				"source_type", "page_url", "notes", "qc_flag", "temperature_c", "pressure_mmHg", "pH",
+				"value_qualifier", "value_original", "value_max", "value_min", "value_point_estimate",
+				"value_units" };
+		
+		String filePath = datasetFolderPath + File.separator + datasetFileName+"_Discarded_Records.xlsx";
+		GetExpPropInfo.createExcel2(ja, filePath, fields);
+
 	}
 /*
 	private String generateParameterValuesString(PropertyValue pv) {

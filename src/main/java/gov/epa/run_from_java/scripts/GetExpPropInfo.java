@@ -1,5 +1,6 @@
 package gov.epa.run_from_java.scripts;
 
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -13,20 +14,30 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.*;
-
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.openscience.cdk.AtomContainer;
+import org.openscience.cdk.DefaultChemObjectBuilder;
+import org.openscience.cdk.io.iterator.IteratingSDFReader;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
+import gov.epa.databases.dsstox.entity.DsstoxCompound;
+import gov.epa.databases.dsstox.service.DsstoxCompoundService;
+import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
 import gov.epa.util.wekalite.CSVLoader;
 import gov.epa.util.wekalite.Instances;
 
@@ -34,6 +45,14 @@ import gov.epa.util.wekalite.Instances;
 public class GetExpPropInfo {
 	
 	static Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+	
+	static String[]  fieldsFinal= {"id_data_points","canon_qsar_smiles","dtxcid_final","qsar_property_value","qsar_property_units",
+			"exp_prop_id", "fk_public_source_id", "fk_literature_source_id",
+			"fk_source_chemical_id",  "name","description", "type","url", "page_url",  "source_dtxrid",
+			"source_dtxsid", "source_casrn", "source_chemical_name", "source_smiles", "notes", "authors", "doi",
+			"title", "value_qualifier","value_original","value_max", "value_min", 
+			"qc_flag","dtxcid_mapped","dtxsid_mapped","smiles_mapped","mol_weight_mapped","value_point_estimate","units","Temperature_C","Pressure_mmHg","pH" };
+
 
 	static String createQuery1(String smiles, int fk_dataset_id) {
 		String sql="select dp.canon_qsar_smiles,dp.qsar_property_value, dpc.exp_prop_id\n"; 
@@ -41,6 +60,42 @@ public class GetExpPropInfo {
 		sql+="inner join qsar_datasets.data_point_contributors dpc\n";
 		sql+="on dp.id =dpc.fk_data_point_id\n";
 		sql+="where dp.canon_qsar_smiles ='"+smiles+"' and dp.fk_dataset_id ="+fk_dataset_id;
+		return sql;
+	}
+	
+	
+	static String createDatapointsQuery(long fk_dataset_id) {
+		String sql="select * from qsar_datasets.data_points\n";  
+		sql+="where fk_dataset_id="+fk_dataset_id;		
+		return sql;
+	}
+	
+	static String createDatapointsQuery2(long fk_dataset_id) {
+
+		String sql="select dp.id, dp.canon_qsar_smiles, dp.dtxcid, dp.qsar_property_value, dpc.exp_prop_id, dpc.dtxcid\r\n"
+				+ "	from qsar_datasets.data_points dp\r\n"
+				+ "	inner join qsar_datasets.data_point_contributors dpc \r\n"
+				+ "	on dpc.fk_data_point_id =dp.id \r\n"
+				+ "	where fk_dataset_id="+fk_dataset_id+"\r\n";
+		
+		return sql;
+	}
+
+	static String getDataSetName(long id,Connection conn) {
+
+		String sql="select d.\"name\" \r\n"
+				+ "from qsar_datasets.datasets d \r\n"
+				+ "where id="+id;
+		
+		return runSQL(conn, sql);
+		
+	}
+	
+	
+	static String createQueryRID(String RID) {
+		String sql = "select ss.dsstox_record_id ,ssi.identifier_type ,ssi.identifier\n"
+				+ "from prod_dsstox.source_substances ss join prod_dsstox.source_substance_identifiers ssi\n"
+				+ "on ss.id =ssi.fk_source_substance_id\n" + "where ss.dsstox_record_id =\"" + RID + "\"";
 		return sql;
 	}
 
@@ -56,13 +111,68 @@ public class GetExpPropInfo {
 		return runSQL(conn, sql);
 	}
 	
+	@Deprecated
+	/**
+	 * This shouldnt be used anymore because have no way of being sure if correct CID is retrieved for our final flat record
+	 * 
+	 * @param smiles
+	 * @param conn
+	 * @return
+	 */
 	static String lookupDTXCID(String smiles, Connection conn) {
 		String sql="select dtxcid from qsar_descriptors.compounds t \r\n"
 				+ "where t.canon_qsar_smiles='"+smiles+"';";
 		return runSQL(conn, sql);
 	}
+	
+	static void lookupParameters(long fk_property_value_id, Connection conn,JsonObject jo) {
+		//TODO is there a simple hibernate way to do this???
+	
+		String sql="select p.\"name\" as \"parameter\", pv.value_point_estimate as \"value\", u.\"name\" as \"units\"\n"
+				+ "from exp_prop.parameter_values pv\n"
+				+"inner join exp_prop.units u\n"
+				+"on u.id =pv.fk_unit_id\n"
+				+"inner join exp_prop.parameters p\n" 
+				+"on p.id=pv.fk_parameter_id\n" 
+				+"where pv.fk_property_value_id="+fk_property_value_id;
+		
+//		System.out.println(sql);
+		
+		try {
+			Statement st = conn.createStatement();			
+			ResultSet rs = st.executeQuery(sql);
+			
+			while (rs.next()) {
+				String parameter=rs.getString(1);
+				String parameterValue=rs.getString(2);
+				String parameterUnits=rs.getString(3);//Gabriel used consistent units for parameters
+//				System.out.println(parameter+"\t"+parameterValue+"\t"+parameterUnits);
+				
+				if (parameter.equals("Temperature") || parameter.equals("Pressure") || parameter.equals("pH")) {					
+					if (parameter.equals("Temperature")) parameter+="_C";
+					if (parameter.equals("Pressure")) parameter+="_mmHg";					
+					jo.addProperty(parameter, parameterValue);
+				} 
+				
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
-	static String lookupQSAR_units(int id, Connection conn) {
+		
+	}
+
+	
+//	static String lookupDTXCID_DatapointContributor(String fk_datapoint_id, Connection conn) {
+//		String sql="select dtxcid from qsar_datasets.data_points_contributors dpc \r\n"
+//				+ "where dpc.fk_datapoint_id='"+fk_datapoint_id+"';";
+//		return runSQL(conn, sql);
+//	}
+
+	
+
+	static String lookupQSAR_units(long id, Connection conn) {
 		//TODO change to inner join instead of 2 queries		
 		String sql="select fk_unit_id from qsar_datasets.datasets t \r\n"
 				+ "where t.id='"+id+"';";
@@ -250,27 +360,330 @@ public class GetExpPropInfo {
 		}
 	}
 
-	public static void main(String[] args) {
+	static void lookupIdentifierFromRIDs(Connection conn) {
+
+
+		try {
+			List<String> RIDS= Files.readAllLines(Paths.get("data/WS check DSSTIXRIDS.txt"));
+
+			
+			Statement st = conn.createStatement();
+
+			
+			System.out.println("RID\tCAS\tName");
+			
+			for (String RID:RIDS) {
+				String sql = createQueryRID(RID);
+				ResultSet rs = st.executeQuery(sql);
+				
+				String Name="";
+				String CAS="";
+				
+
+				while (rs.next()) {
+					String strRID=rs.getString(1);
+					String Type=rs.getString(2);
+					String Value=rs.getString(3);
+					if (Type.equals("NAME")) Name=Value;
+					if (Type.equals("CASRN")) CAS=Value;
+				}
+				
+				System.out.println(RID+"\t"+CAS+"\t"+Name);
+
+			}
+
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	
+
+	/**
+	 * Creates excel file for a dataset (not flattened)
+	 * 
+	 * @param id_dataset
+	 * @param conn
+	 * @param connDSSTOX
+	 * @param folder
+	 */
+	public static void getDataSetDataFlat(long id_dataset,Connection conn,Connection connDSSTOX,String folder) {
 		
-		Connection conn=getConnection();
-		Connection connDSSTOX=getConnectionDSSTOX();
+		
+		try {
+			
+			Statement st = conn.createStatement();
+			
+			String sql=createDatapointsQuery(id_dataset);
+			
+			ResultSet rs = st.executeQuery(sql);
+			JsonArray jaRecords=new JsonArray();
+			String qsar_units=lookupQSAR_units(id_dataset, conn);
+			
+			
+//			System.out.println(qsar_units);
+			
+			int counter=1;
+			
+			Hashtable<String,String>htMW=new Hashtable<>();
+			
+			while (rs.next()) {
+				
+				JsonObject jo=new JsonObject();
+				
+				jo.addProperty("id_data_points",rs.getString(1));
+				jo.addProperty("canon_qsar_smiles",rs.getString(2));
+				jo.addProperty("qsar_property_value",rs.getString(5));
+				
+				String dtxcid=rs.getString(10);
+				jo.addProperty("dtxcid",dtxcid);
+				jo.addProperty("qsar_property_units", qsar_units);
+				
+				if (htMW.get(dtxcid)==null) {					
+					
+					if (dtxcid.contains("|")) {
+						dtxcid=dtxcid.substring(0,dtxcid.indexOf("|")-1);
+//						System.out.println(dtxcid+"\t"+lookupMolWt(dtxcid, connDSSTOX));
+					}
+					
+					String mol_weight=lookupMolWt(dtxcid, connDSSTOX);
+					jo.addProperty("mol_weight",mol_weight);
+					htMW.put(dtxcid, mol_weight);
+				} else {
+					jo.addProperty("mol_weight",htMW.get(dtxcid));
+				}
+				
+												
+				if (counter%10==0) System.out.println(counter);
+//				System.out.println(gson.toJson(jo));
+				jaRecords.add(jo);
+				counter++;
+			
+//				if (counter==101) break;
+				
+			}
+			
+			String dataSetName=getDataSetName(id_dataset, conn);
+//			System.out.println(dataSetName);
+			
+			FileWriter fw=new FileWriter(folder+dataSetName+"//"+dataSetName+"_flat.json");			
+			fw.write(gson.toJson(jaRecords));
+			fw.flush();
+			fw.close();
+			
+			String [] fields= {"id_data_points","canon_qsar_smiles","qsar_property_value","qsar_property_units",
+					"dtxcid","mol_weight"};
+
+			createExcel2(jaRecords, folder+dataSetName+"//"+dataSetName+"_flat.xlsx",fields);
+
+		} catch (Exception ex) {
+			System.out.println(ex.getMessage());
+		}
+		
+		
+		
+	}
+	/**
+	 * Creates excel file for a dataset (not flattened)
+	 * 
+	 * @param id_dataset
+	 * @param conn
+	 * @param connDSSTOX
+	 * @param folder
+	 */
+	public static void getDataSetData(long id_dataset,Connection conn,Connection connDSSTOX,String folder) {
+		
+		try {
+			
+			Statement st = conn.createStatement();
+			String sql=createDatapointsQuery2(id_dataset);
+			
+			System.out.println(sql);
+			
+			ResultSet rs = st.executeQuery(sql);
+			JsonArray jaRecords=new JsonArray();
+						
+			String qsar_units=lookupQSAR_units(id_dataset, conn);
+//			System.out.println(qsar_units);
+			int counter=1;
+			Hashtable<String,String>htMW=new Hashtable<>();
+			int max=1000;
+						
+			DsstoxCompoundService d=new DsstoxCompoundServiceImpl();
+						
+			while (rs.next()) {
+				JsonObject jo=new JsonObject();				
+				
+				jo.addProperty("id_data_points",rs.getString(1));
+				jo.addProperty("canon_qsar_smiles",rs.getString(2));
+				
+				String dtxcid_final=rs.getString(3);
+				jo.addProperty("dtxcid_final",dtxcid_final);
+								
+				jo.addProperty("qsar_property_value",rs.getString(4));				
+				
+				String str_exp_prop_id=rs.getString(5);
+				Integer exp_prop_id=Integer.parseInt(str_exp_prop_id.replace("EXP", ""));
+
+//				if (exp_prop_id!=460913) continue;
+				
+				String dtxcid_mapped=rs.getString(6);
+				
+//				if (!dtxcid_final.equals(dtxcid_mapped)) {
+//					System.out.println("Final CID doesnt match CID for current original record:\t"+dtxcid_final+"\t"+dtxcid_mapped);
+//				}
+				
+				jo.addProperty("dtxcid_mapped",dtxcid_mapped);
+				
+				DsstoxCompound dc=d.findByDtxcid(dtxcid_mapped);
+				jo.addProperty("smiles_mapped",dc.getSmiles());
+				jo.addProperty("dtxsid_mapped",dc.getGenericSubstanceCompound().getGenericSubstance().getDsstoxSubstanceId());
+				jo.addProperty("qsar_property_units", qsar_units);
+								
+				if (htMW.get(dtxcid_mapped)==null) {
+					String mol_weight=lookupMolWt(dtxcid_mapped, connDSSTOX);
+					jo.addProperty("mol_weight_mapped",mol_weight);
+					htMW.put(dtxcid_mapped, mol_weight);
+				} else {
+					jo.addProperty("mol_weight_mapped",htMW.get(dtxcid_mapped));
+				}
+																
+				jo.addProperty("exp_prop_id",exp_prop_id);
+				getAllValues(exp_prop_id, "exp_prop.property_values",conn, jo);
+				
+				lookupParameters(exp_prop_id, conn,jo);
+								
+				jo.addProperty("units",lookupUnits(jo.get("fk_unit_id").getAsInt(), conn));
+
+				if (!jo.get("fk_literature_source_id").isJsonNull()) {
+					int id=jo.get("fk_literature_source_id").getAsInt();
+					getAllValues(id,"exp_prop.literature_sources", conn, jo);
+				}
+					
+				if (!jo.get("fk_public_source_id").isJsonNull()) {
+					int id=jo.get("fk_public_source_id").getAsInt();
+					getAllValues(id,"exp_prop.public_sources", conn, jo);
+				}
+					
+				int id=jo.get("fk_source_chemical_id").getAsInt();
+				getAllValues(id,"exp_prop.source_chemicals", conn, jo);
+				
+				jo.remove("access_date");
+				jo.remove("created_at");
+				jo.remove("updated_at");
+				jo.remove("created_by");
+				jo.remove("keep");
+//				
+				jo.remove("id");
+				jo.remove("fk_unit_id");				
+				jo.remove("fk_property_id");
+				
+				if (counter%10==0) System.out.println(counter);
+				
+//				System.out.println(gson.toJson(jo));
+				jaRecords.add(jo);
+				counter++;
+			
+//				if (counter==max) break;
+				
+			}
+			
+			String dataSetName=getDataSetName(id_dataset, conn);
+//			System.out.println(dataSetName);
+						
+			FileWriter fw=new FileWriter(folder+dataSetName+"//"+dataSetName+".json");			
+			fw.write(gson.toJson(jaRecords));
+			fw.flush();
+			fw.close();
+			
+			
+			createExcel2(jaRecords, folder+dataSetName+"//"+dataSetName+".xlsx",fieldsFinal);
+						
+//			System.out.println(gson.toJson(jaRecords));
+
+		} catch (Exception ex) {
+			System.out.println(ex.getMessage());
+		}
+		
+		
+		
+	}
+	
+	
+	static void getDataSetDataPFAS(long dataset_id,Connection conn,String folder,ArrayList<String>arrayPFAS_CIDs) {
+		String dataSetName=getDataSetName(dataset_id, conn);
+		
+		String jsonPath=folder+dataSetName+".json";
+		
+		JsonArray ja=getRecordsFromFile(jsonPath);
+		JsonArray ja2=new JsonArray();
+		
+		
+		ArrayList<String>arrayQSARSmiles=new ArrayList<>();
+		
+		for (int i=0;i<ja.size();i++) {
+			JsonObject jo=ja.get(i).getAsJsonObject();
+			String dtxcid_original=jo.get("dtxcid_mapped").getAsString();
+			String canon_qsar_smiles=jo.get("canon_qsar_smiles").getAsString();
+			
+			if (arrayPFAS_CIDs.contains(dtxcid_original)) {
+//				System.out.println(dtxcid_original+"\t"+arrayPFAS_CIDs.contains(dtxcid_original));
+				ja2.add(jo);				
+				if (!arrayQSARSmiles.contains(canon_qsar_smiles)) arrayQSARSmiles.add(canon_qsar_smiles);
+
+			}
+		}
+		
+		System.out.println("Number of PFAS records="+ja2.size());
+		System.out.println("Number of unique PFAS records="+arrayQSARSmiles.size());
+		
+		String pathout=folder+dataSetName+"_PFAS.xlsx";
+		createExcel2(ja2, pathout,fieldsFinal);
+		
+		System.out.println("Excel file created:\t"+pathout);
+		
+	}
+	
+	
+	static ArrayList<String> getPFAS_CIDs(String filepath) {
+		try {
+			
+			List<String> Lines = Files.readAllLines(Paths.get(filepath));
+		
+			ArrayList<String>arrayCIDs=new ArrayList<>();
+			
+			for (String Line:Lines) {
+				String [] values=Line.split("\t");
+				arrayCIDs.add(values[0]);
+			}
+			return arrayCIDs;
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
+	
+	/**
+	 * Old flawed way of getting records- which assumes you can get CID based on the qsar ready smiles in the compounds table (instead of new value stored in data_points table
+	 */
+	static void oldGetRecords() {
+
 		String folder="data\\dev_qsar\\dataset_files\\";
+		Connection conn=getConnection();
+		Connection connDSSTOX=getConnectionDSSTOX();					
 		
-//		int id_dataset=31;
-//		String inputFileName="Standard Water solubility from exp_prop_T.E.S.T. 5.1_T=PFAS only, P=PFAS_prediction.tsv";
+		int id_dataset=31;
+		String inputFileName="Standard Water solubility from exp_prop_T.E.S.T. 5.1_T=PFAS only, P=PFAS_prediction.tsv";
 		String outputFileName="Water solubility PFAS prediction records.json";
+		getRecords(id_dataset,conn, connDSSTOX, folder, inputFileName,outputFileName);
+				
+		inputFileName="Standard Water solubility from exp_prop_T.E.S.T. 5.1_T=PFAS only, P=PFAS_training.tsv";
+		outputFileName="Water solubility PFAS training records.json";
+		getRecords(id_dataset,conn, connDSSTOX, folder, inputFileName,outputFileName);
 
-		
-		
-//		String inputFileName="Standard Water solubility from exp_prop_T.E.S.T. 5.1_T=PFAS only, P=PFAS_training.tsv";
-//		String outputFileName="Water solubility PFAS training records.json";
 
-//		int id_dataset=62;
-//		String inputFileName="ExpProp BCF Fish WholeBody_WebTEST-default_RND_REPRESENTATIVE_prediction.tsv";
-//		String outputFileName="ExpProp BCF Fish WholeBody_WebTEST-default_RND_REPRESENTATIVE_prediction records.json";
-
-//		getRecords(id_dataset,conn, connDSSTOX, folder, inputFileName,outputFileName);
-		
 		
 		JsonArray jaTraining=getRecordsFromFile(folder+"Water solubility PFAS training records.json");
 		JsonArray jaPrediction=getRecordsFromFile(folder+"Water solubility PFAS prediction records.json");
@@ -278,16 +691,117 @@ public class GetExpPropInfo {
 		jaOverall.addAll(jaTraining);
 		jaOverall.addAll(jaPrediction);
 		System.out.println(jaOverall.size());
-		
-//		Vector<String>recordFields=getListOfFields(jaOverall);
-		
-				
+
 		String excelFilePath=folder+"Water solubility PFAS records.xlsx";
 		createExcel(jaOverall, excelFilePath);
 		
+	}
+	
+	
+	public static void main(String[] args) {
 		
+		String folder="data\\dev_qsar\\output\\";
+		Connection conn=getConnection();
+		Connection connDSSTOX=getConnectionDSSTOX();					
+		
+		long dataset_id=78L;
+		getDataSetData(dataset_id,conn,connDSSTOX,folder);
+//		getDataSetDataFlat(dataset_id,conn,connDSSTOX,folder);
+//				
+//		ArrayList<String>arrayPFAS_CIDs=getPFAS_CIDs("data\\dev_qsar\\dataset_files\\PFASSTRUCTV4_qsar_ready_smiles.txt");
+//		getDataSetDataPFAS(dataset_id,conn,folder,arrayPFAS_CIDs);
+
+//		oldGetRecords();
+//		lookupIdentifierFromRIDs(connDSSTOX);
+//		lookupOperaReferences();
+//		lookupEPISUITE_Isis_References();
 		
 	}
+	
+	/**
+	 * Get OPERA WS references (probably all from epiphys)
+	 * 
+	 */
+	static void lookupOperaReferences() {
+		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\ghs-data-gathering\\data\\experimental\\OPERA\\OPERA_SDFS\\";
+		String filepath=folder+"WS_QR.sdf";
+		
+		
+		try {
+			IteratingSDFReader mr = new IteratingSDFReader(new FileInputStream(filepath),DefaultChemObjectBuilder.getInstance());
+
+			while (mr.hasNext()) {
+				
+				AtomContainer m=null;
+				try {
+					m = (AtomContainer)mr.next();
+				} catch (Exception e) {
+					e.printStackTrace();
+					break;
+				}
+//				if (m==null || m.getAtomCount()==0) break;
+				if (m==null) break;
+				
+				String DTXSID=m.getProperty("dsstox_substance_id");
+				String CAS=m.getProperty("CAS");
+				String WS_Reference=m.getProperty("WS Reference");
+				String LogMolar=m.getProperty("LogMolar");
+				
+				System.out.println(DTXSID+"~"+CAS+"~"+WS_Reference+"~"+LogMolar);
+				
+				
+			}
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			
+		}
+		
+	}
+	
+	/**
+	 * Get OPERA WS references (probably all from epiphys)
+	 * 
+	 */
+	static void lookupEPISUITE_Isis_References() {
+		
+		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\ghs-data-gathering\\data\\experimental\\EpisuiteISIS\\EPI_SDF_Data\\";
+		String filepath=folder+"EPI_Wskowwin_Data_SDF.sdf";
+				
+		try {
+			IteratingSDFReader mr = new IteratingSDFReader(new FileInputStream(filepath),DefaultChemObjectBuilder.getInstance());
+
+			while (mr.hasNext()) {
+				
+				AtomContainer m=null;
+				try {
+					m = (AtomContainer)mr.next();
+				} catch (Exception e) {
+					e.printStackTrace();
+					break;
+				}
+//				if (m==null || m.getAtomCount()==0) break;
+				if (m==null) break;
+				
+//				String DTXSID=m.getProperty("dsstox_substance_id");
+				String CAS=m.getProperty("CAS");
+				String WS_Reference=m.getProperty("WS Reference");
+				String WS_Data_Type=m.getProperty("WS Data Type");
+				String LogMolar=m.getProperty("LogMolar");
+				
+							
+				System.out.println(CAS+"|"+WS_Reference+"|"+WS_Data_Type+"|"+LogMolar);
+				
+				
+			}
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			
+		}
+		
+	}
+	
 
 	
 	static CellStyle createStyleURL(Workbook workbook) {
@@ -383,13 +897,101 @@ public class GetExpPropInfo {
 				}
 			}
 			
-//			writeSheet(headers, "Records",true,wb,styleURL);
-//			writeSheet(headers, "Records_Bad",false,wb,styleURL);
 			
 			OutputStream fos = new FileOutputStream(excelFilePath);
 			wb.write(fos);
 			wb.close();
 			
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	
+
+	/**
+	 *	TODO- this might run out of memory
+	 *
+	 * Create excel file using data in JsonArray with fields in specified order
+	 * 
+	 * @param ja
+	 * @param excelFilePath
+	 * @param fields
+	 */
+	public static void createExcel2(JsonArray ja,String excelFilePath,String []fields) {
+		try {
+			
+			Workbook wb = new XSSFWorkbook();
+			
+			CellStyle styleURL=createStyleURL(wb);			
+			
+			Sheet sheet = wb.createSheet("records");
+								
+			
+			Row row0=sheet.createRow(0);
+			
+			for (int i=0;i<fields.length;i++) {
+				Cell cell=row0.createCell(i);
+				cell.setCellValue(fields[i]);
+			}
+			
+			sheet.setAutoFilter(new CellRangeAddress(0, 0, 0, row0.getLastCellNum()-1));
+			sheet.createFreezePane(0, 1);
+
+			for (int i=0;i<fields.length;i++) {
+				sheet.autoSizeColumn(i);
+			}
+
+			
+			int rowNum=1;
+			
+			for (int i=0;i<ja.size();i++) {
+				JsonObject jo=ja.get(i).getAsJsonObject();
+				
+				Row row=sheet.createRow(rowNum++);	
+				
+				for (int k=0;k<fields.length;k++) {
+					Cell cell=row.createCell(k);
+										
+					if (jo.get(fields[k])==null) continue;
+					if (jo.get(fields[k]).isJsonNull()) continue;
+					if (jo.get(fields[k]).getAsString().isBlank()) continue;
+					
+					
+					String value=jo.get(fields[k]).getAsString();
+					
+					try {
+						if (fields[k].equals("qsar_property_value") || fields[k].contains("mol_weight")
+								|| fields[k].contains("value_m") || fields[k].contains("value_point_estimate") 
+								|| fields[k].toLowerCase().contains("temperature") || fields[k].toLowerCase().contains("pressure") || fields[k].equals("pH")) {
+							cell.setCellValue(Double.parseDouble(value));								
+						} else if ((fields[k].contains("_id") || fields[k].contains("id_")) && !fields[k].toLowerCase().contains("dtx")) {
+							cell.setCellValue(Integer.parseInt(value));
+						} else {
+							cell.setCellValue(value);	
+						}
+					} catch (Exception ex) {
+						System.out.println("Error setting cell value = "+value+" for "+fields[k]);
+					}
+
+					if (fields[k].contains("url")) {
+						try {
+							Hyperlink link = wb.getCreationHelper().createHyperlink(HyperlinkType.URL);
+							link.setAddress(value);
+							cell.setHyperlink(link);
+							cell.setCellStyle(styleURL);
+						} catch (Exception ex) {
+//							System.out.println(ex.getMessage());
+						}
+					}
+						
+				}
+			}
+					
+			OutputStream fos = new FileOutputStream(excelFilePath);
+			wb.write(fos);
+			wb.close();
 			
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -445,14 +1047,11 @@ public class GetExpPropInfo {
 		try {
 			Instances instances=c.getDataSetFromFile(folder+inputFileName,"\t");
 			JsonArray ja=new JsonArray();
-			
-			
-			
+								
 			for (int i=0;i<instances.numInstances();i++) {
 				System.out.println(i);
 				String smiles=instances.instance(i).getName();
-				getDataForSmiles(conn, connDSSTOX, smiles,id_dataset,ja);
-				
+				getDataForSmiles(conn, connDSSTOX, smiles,id_dataset,ja);				
 			}
 			
 			FileWriter fw=new FileWriter(folder+outputFileName);			
