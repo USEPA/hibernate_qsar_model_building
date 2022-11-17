@@ -689,7 +689,7 @@ public class DatasetCreator {
 				}
 			}
 			
-			String[] fields = { "canon_qsar_smiles", "exp_prop_id", "source_dtxrid", "source_dtxrid",
+			String[] fields = { "canon_qsar_smiles","qsar_property_value","qsar_property_units","exp_prop_id", "source_dtxrid", "source_dtxrid",
 					"source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",
 					"mapped_dtxcid", "mapped_dtxsid", "mapped_name", "mapped_cas", "mapped_smiles", "mapped_molweight",
 					"source_name", "source_description", "source_authors", "source_title", "source_doi", "source_url",
@@ -701,6 +701,8 @@ public class DatasetCreator {
 			String datasetFolderPath = DevQsarConstants.OUTPUT_FOLDER_PATH + File.separator + datasetFileName;
 			String filePath = datasetFolderPath + "/"+datasetFileName+"_Mapped_Records.xlsx";
 			GetExpPropInfo.createExcel2(ja, filePath, fields);
+			
+			GetExpPropInfo.saveJson(ja, filePath.replace(".xlsx", ".json"));//Save to json so we can limit to PFAS records later
 			
 			
 		} catch (Exception ex) {
@@ -716,7 +718,7 @@ public class DatasetCreator {
 
 		jo.addProperty("canon_qsar_smiles", structure);
 		jo.addProperty("exp_prop_id", String.valueOf(pv.getId()));
-							
+		
 		jo.addProperty("source_dtxrid", sc.getSourceDtxrid());
 		jo.addProperty("source_dtxsid", sc.getSourceDtxsid());
 		jo.addProperty("source_dtxcid", sc.getSourceDtxcid());

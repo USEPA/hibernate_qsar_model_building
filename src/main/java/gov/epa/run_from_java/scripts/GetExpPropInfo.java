@@ -592,10 +592,9 @@ public class GetExpPropInfo {
 			String dataSetName=getDataSetName(id_dataset, conn);
 //			System.out.println(dataSetName);
 						
-			FileWriter fw=new FileWriter(folder+dataSetName+"//"+dataSetName+".json");			
-			fw.write(gson.toJson(jaRecords));
-			fw.flush();
-			fw.close();
+			String filepath=folder+dataSetName+"//"+dataSetName+".json";
+			
+			saveJson(jaRecords, filepath);
 			
 			
 			createExcel2(jaRecords, folder+dataSetName+"//"+dataSetName+".xlsx",fieldsFinal);
@@ -608,6 +607,20 @@ public class GetExpPropInfo {
 		
 		
 		
+	}
+
+
+	public static void saveJson(Object jaRecords, String filepath)  {
+		try {
+			
+			FileWriter fw=new FileWriter(filepath);			
+			fw.write(gson.toJson(jaRecords));
+			fw.flush();
+			fw.close();
+		
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
 	}
 	
 	
@@ -962,6 +975,8 @@ public class GetExpPropInfo {
 					String value=jo.get(fields[k]).getAsString();
 					
 					try {
+						//TODO have better way to decide if integer, double, or string...
+						
 						if (fields[k].equals("qsar_property_value") || fields[k].contains("mol_weight")
 								|| fields[k].contains("value_m") || fields[k].contains("value_point_estimate") 
 								|| fields[k].toLowerCase().contains("temperature") || fields[k].toLowerCase().contains("pressure") || fields[k].equals("pH")) {

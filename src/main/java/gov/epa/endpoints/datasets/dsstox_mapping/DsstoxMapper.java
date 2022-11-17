@@ -1281,6 +1281,8 @@ public class DsstoxMapper {
 		
 		String filePath = datasetFolderPath + File.separator + datasetFileName+"_Discarded_Records.xlsx";
 		GetExpPropInfo.createExcel2(ja, filePath, fields);
+	
+		GetExpPropInfo.saveJson(ja, filePath.replace(".xlsx", ".json"));//Save to json so we can limit to PFAS records later
 
 	}
 /*
