@@ -954,6 +954,7 @@ public class GetExpPropInfo {
 
 			for (int i=0;i<fields.length;i++) {
 				sheet.autoSizeColumn(i);
+//				sheet.setColumnWidth(i, sheet.getColumnWidth(i)+20);
 			}
 
 			
@@ -974,20 +975,28 @@ public class GetExpPropInfo {
 					
 					String value=jo.get(fields[k]).getAsString();
 					
+//					try {
+//						//TODO have better way to decide if integer, double, or string...
+//						
+//						if (fields[k].equals("qsar_property_value") || fields[k].contains("mol_weight")
+//								|| fields[k].contains("value_m") || fields[k].contains("value_point_estimate") 
+//								|| fields[k].toLowerCase().contains("temperature") || fields[k].toLowerCase().contains("pressure") || fields[k].equals("pH")) {
+//							cell.setCellValue( Double.parseDouble(value));								
+//						} else if ((fields[k].contains("_id") || fields[k].contains("id_")) && !fields[k].toLowerCase().contains("dtx")) {
+//							cell.setCellValue(Integer.parseInt(value));
+//						} else {
+//							cell.setCellValue(value);	
+//						}
+//						
+//					} catch (Exception ex) {
+//						System.out.println("Error setting cell value = "+value+" for "+fields[k]);
+//					}
+					
 					try {
-						//TODO have better way to decide if integer, double, or string...
-						
-						if (fields[k].equals("qsar_property_value") || fields[k].contains("mol_weight")
-								|| fields[k].contains("value_m") || fields[k].contains("value_point_estimate") 
-								|| fields[k].toLowerCase().contains("temperature") || fields[k].toLowerCase().contains("pressure") || fields[k].equals("pH")) {
-							cell.setCellValue(Double.parseDouble(value));								
-						} else if ((fields[k].contains("_id") || fields[k].contains("id_")) && !fields[k].toLowerCase().contains("dtx")) {
-							cell.setCellValue(Integer.parseInt(value));
-						} else {
-							cell.setCellValue(value);	
-						}
+						cell.setCellValue(Double.parseDouble(value));	
 					} catch (Exception ex) {
-						System.out.println("Error setting cell value = "+value+" for "+fields[k]);
+//						System.out.println("Error setting cell value = "+value+" for "+fields[k]);
+						cell.setCellValue(value);	
 					}
 
 					if (fields[k].contains("url")) {

@@ -476,9 +476,9 @@ public class DatasetCreator {
 			String [] values=null;
 			
 			if (unitName.equals(DevQsarConstants.BINARY)) {
-				values = PropertyValueMerger.mergeBinaryIncludeFinalCIDs(structurePropertyValues);
+				values = PropertyValueMerger.mergeBinaryIncludeFinalCIDsExpPropIDs(structurePropertyValues);
 			} else {
-				values = PropertyValueMerger.mergeContinuousIncludeFinalCIDs(structurePropertyValues, dataset.getProperty().getName());
+				values = PropertyValueMerger.mergeContinuousIncludeFinalCIDsExpPropIDs(structurePropertyValues, dataset.getProperty().getName());
 			}
 			
 			if (values==null) {
@@ -488,8 +488,9 @@ public class DatasetCreator {
 
 			Double finalValue = Double.parseDouble(values[0]);
 			String finalCIDs = values[1];
+			String finalExpPropIDs = values[2];
 			
-			DataPoint dataPoint = new DataPoint(structure, finalCIDs,finalValue, dataset, false, lanId);
+			DataPoint dataPoint = new DataPoint(structure, finalCIDs, finalExpPropIDs, finalValue, dataset, false, lanId);
 			
 			if (dataPoint.getCanonQsarSmiles()==null) continue;
 			
@@ -498,6 +499,7 @@ public class DatasetCreator {
 				
 				for (MappedPropertyValue mpv:structurePropertyValues) {
 					String expPropId = mpv.propertyValue.generateExpPropId();
+//					String expPropId = mpv.propertyValue.getId()+"";//change to make things easier
 					DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, expPropId, mpv.compound.getDtxcid(), lanId);
 				
 					try {
@@ -525,9 +527,9 @@ public class DatasetCreator {
 			String [] values=null;
 			
 			if (unitName.equals(DevQsarConstants.BINARY)) {
-				values = PropertyValueMerger.mergeBinaryIncludeFinalCIDs(structurePropertyValues);
+				values = PropertyValueMerger.mergeBinaryIncludeFinalCIDsExpPropIDs(structurePropertyValues);
 			} else {
-				values = PropertyValueMerger.mergeContinuousIncludeFinalCIDs(structurePropertyValues, dataset.getProperty().getName());
+				values = PropertyValueMerger.mergeContinuousIncludeFinalCIDsExpPropIDs(structurePropertyValues, dataset.getProperty().getName());
 			}
 			
 			if (values==null) {
@@ -537,8 +539,9 @@ public class DatasetCreator {
 
 			Double finalValue = Double.parseDouble(values[0]);
 			String finalCIDs = values[1];
+			String finalExpPropIDs = values[2];
 			
-			DataPoint dataPoint = new DataPoint(structure, finalCIDs,finalValue, dataset, false, lanId);
+			DataPoint dataPoint = new DataPoint(structure, finalCIDs,finalExpPropIDs,finalValue, dataset, false, lanId);
 			
 			if (dataPoint.getCanonQsarSmiles()==null) continue;
 			
@@ -685,17 +688,21 @@ public class DatasetCreator {
 					SourceChemical sc = pv.getSourceChemical();
 					DsstoxRecord dr = mpv.dsstoxRecord;
 					JsonObject jo = getDatapointAsJsonObject(structure, pv, sc, dr);
+					
+					jo.addProperty("qsar_property_value", mpv.qsarPropertyValue);
+					jo.addProperty("qsar_property_units", unit.getAbbreviation());
+					
 					ja.add(jo);
 				}
 			}
 			
-			String[] fields = { "canon_qsar_smiles","qsar_property_value","qsar_property_units","exp_prop_id", "source_dtxrid", "source_dtxrid",
+			String[] fields = { "canon_qsar_smiles","exp_prop_id", "source_dtxrid", 
 					"source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",
-					"mapped_dtxcid", "mapped_dtxsid", "mapped_name", "mapped_cas", "mapped_smiles", "mapped_molweight",
+					"mapped_dtxcid", "mapped_dtxsid", "mapped_chemical_name", "mapped_cas", "mapped_smiles", "mapped_molweight",
 					"source_name", "source_description", "source_authors", "source_title", "source_doi", "source_url",
 					"source_type", "page_url", "notes", "qc_flag", "temperature_c", "pressure_mmHg", "pH",
 					"value_qualifier", "value_original", "value_max", "value_min", "value_point_estimate",
-					"value_units" };
+					"value_units","qsar_property_value","qsar_property_units" };
 			
 			String datasetFileName = datasetName.replaceAll("[^A-Za-z0-9-_]+","_");
 			String datasetFolderPath = DevQsarConstants.OUTPUT_FOLDER_PATH + File.separator + datasetFileName;
@@ -729,7 +736,7 @@ public class DatasetCreator {
 		if (dr!=null) {
 			jo.addProperty("mapped_dtxcid", dr.getDsstoxCompoundId());
 			jo.addProperty("mapped_dtxsid", dr.getDsstoxSubstanceId());
-			jo.addProperty("mapped_name", dr.getPreferredName());
+			jo.addProperty("mapped_chemical_name", dr.getPreferredName());
 			jo.addProperty("mapped_cas", dr.getCasrn());
 			jo.addProperty("mapped_smiles", dr.getSmiles());
 			jo.addProperty("mapped_molweight", dr.getMolWeight());

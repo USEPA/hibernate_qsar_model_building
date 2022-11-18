@@ -40,7 +40,18 @@ public class DataPoint {
 
 	@Column(name="dtxcid")
 	private String dtxcid;
-	
+
+	@Column(name="exp_prop_id")
+	private String exp_prop_id;
+
+
+	public String getExp_prop_id() {
+		return exp_prop_id;
+	}
+
+	public void setExp_prop_id(String exp_prop_id) {
+		this.exp_prop_id = exp_prop_id;
+	}
 
 	@NotNull(message="Outlier boolean required")
 	@Column(name="outlier")
@@ -84,9 +95,10 @@ public class DataPoint {
 		this.setCreatedBy(createdBy);
 	}
 	
-	public DataPoint(String canonQsarSmiles, String DTXCID, Double qsarPropertyValue, Dataset dataset, Boolean outlier, String createdBy) {
+	public DataPoint(String canonQsarSmiles, String DTXCID, String exp_prop_id, Double qsarPropertyValue, Dataset dataset, Boolean outlier, String createdBy) {
 		this.setCanonQsarSmiles(canonQsarSmiles);
 		this.setDtxcid(DTXCID);
+		this.setExp_prop_id(exp_prop_id);
 		this.setQsarPropertyValue(qsarPropertyValue);
 		this.setDataset(dataset);
 		this.setOutlier(outlier);
