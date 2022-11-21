@@ -25,13 +25,15 @@ public class DatasetCreatorScript {
 
 
 	public static void main(String[] args) {
+
+		DatasetServiceImpl ds=new DatasetServiceImpl();
+		ds.delete(85);
+
 		//createLogP();
-		//createHLC_Todd();		
+		createHLC_tmm();		
 		// createWS_tmm();
-		createMP();
+//		createMP();
 		
-//		DatasetServiceImpl ds=new DatasetServiceImpl();
-//		ds.delete(80);
 		
 	}
 
@@ -179,7 +181,7 @@ public class DatasetCreatorScript {
 		listNameArray.add("ExpProp_hlc_WithChemProp_071922_ml_4001_to_4849");
 
 		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
-		BoundParameterValue phBound = new BoundParameterValue("pH", 6.0, 8.0, true);
+		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
 		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
 		bounds.add(temperatureBound);
 		bounds.add(phBound);
@@ -190,7 +192,7 @@ public class DatasetCreatorScript {
 
 		String listMappingName = "ExpProp_HLC_TMM";
 		
-		String listMappingDescription = listMappingName+" with 20 < T (C) < 30 and 6 < pH < 8";
+		String listMappingDescription = listMappingName+" with 20 < T (C) < 30 and 6.5 < pH < 7.5";
 
 		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
 				listMappingDescription, 
