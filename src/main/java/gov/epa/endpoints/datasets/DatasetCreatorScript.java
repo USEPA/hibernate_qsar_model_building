@@ -115,10 +115,9 @@ public class DatasetCreatorScript {
 		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
 		bounds.add(PressureBound);
 
-
-		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, 
-				false, true, false, true, true, false, false, listNameArray,true);
-
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
+				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
 		String listMappingName = "ExpProp_LogP_WithChemProp_MULTIPLE";
 		String listMappingDescription = "MULTIPLE LIST Exprop LogP with 20.0 < T (C) < 30.0";
@@ -457,6 +456,7 @@ public class DatasetCreatorScript {
 				false, true, false, true, true, false, false, null,true);
 		MappingParams casrnMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_CASRN, null,
 				true, false, false, false, false, false, true, null,true);
+		
 		String listMappingName = "ExpProp_BCFWHOLEBODYFISH_070822";
 		String casrnMappingName = "CASRN mapping of " + propertyName + " from exp_prop, without eChemPortal";
 		String listMappingDescription = "ExpProp_BCFWHOLEBODYFISH_070822 for fish whole body";
