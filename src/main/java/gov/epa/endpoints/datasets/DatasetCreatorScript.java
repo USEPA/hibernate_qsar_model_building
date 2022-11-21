@@ -31,7 +31,7 @@ public class DatasetCreatorScript {
 		createMP();
 		
 //		DatasetServiceImpl ds=new DatasetServiceImpl();
-//		ds.delete(77);
+//		ds.delete(80);
 		
 	}
 
@@ -167,7 +167,7 @@ public class DatasetCreatorScript {
 	}
 
 
-	public static void createHLC_Todd() {
+	public static void createHLC_tmm() {
 		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
@@ -189,7 +189,7 @@ public class DatasetCreatorScript {
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
-		String listMappingName = "ExpProp_HLC_Todd_OmitDuplicateCIDs3";
+		String listMappingName = "ExpProp_HLC_TMM";
 		
 		String listMappingDescription = listMappingName+" with 20 < T (C) < 30 and 6 < pH < 8";
 

@@ -133,7 +133,7 @@ public class PFAS_SplittingGenerator {
 	private String standardize(DsstoxRecord dr,Standardizer standardizer) {
 
 		//		System.out.println(dr.dsstoxCompoundId+"\t"+standardizer.standardizerName);
-		Compound compound = compoundService.findByDtxcidAndStandardizer(dr.dsstoxCompoundId, standardizer.standardizerName);
+		Compound compound = compoundService.findByDtxcidSmilesAndStandardizer(dr.dsstoxCompoundId, dr.smiles,standardizer.standardizerName);
 
 		if (compound!=null) {
 			// If already standardized, set standardization and mark record as standardized
@@ -154,7 +154,7 @@ public class PFAS_SplittingGenerator {
 						return "error: smiles too long to store in db";
 					}
 					
-					compound = new Compound(dr.dsstoxCompoundId, standardizeResponseData.qsarStandardizedSmiles, standardizer.standardizerName, "tmarti02");
+					compound = new Compound(dr.dsstoxCompoundId, dr.smiles, standardizeResponseData.qsarStandardizedSmiles, standardizer.standardizerName, "tmarti02");
 					System.out.println(dr.dsstoxCompoundId+"\tSDE qsar ready smiles="+compound.getCanonQsarSmiles());
 
 					try {

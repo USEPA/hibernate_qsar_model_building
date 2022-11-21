@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.exp_prop.entity;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -125,6 +126,48 @@ public class PropertyValue {
 	private String updatedBy;
 	
 	public PropertyValue() {}
+	
+	public String generateParameterValuesString() {
+		
+		
+		ArrayList<String>vals=new ArrayList<>();
+		DecimalFormat df1=new DecimalFormat("0.0");
+		
+		if (getParameterValue("Temperature")!=null) {
+			try {
+				vals.add("T = "+df1.format(getParameterValue("Temperature").getValuePointEstimate())+" C");
+			} catch (Exception ex) {
+				vals.add("T = "+getParameterValue("Temperature").getValuePointEstimate()+" C");
+			}
+		}
+					
+		if (getParameterValue("Pressure")!=null) {		
+			try {
+				vals.add("P = "+df1.format(getParameterValue("Pressure").getValuePointEstimate())+" mmHg");
+			} catch (Exception ex) {
+				vals.add("P = "+getParameterValue("Pressure").getValuePointEstimate()+" mmHg");
+			}
+		}
+		
+		if (getParameterValue("pH")!=null) {			
+			try {
+				vals.add("pH = "+df1.format(getParameterValue("pH").getValuePointEstimate())+"");
+			} catch (Exception ex) {
+				vals.add("pH = "+getParameterValue("pH").getValuePointEstimate());
+			}
+		}
+	
+		
+		String result="";
+		
+		for (int i=0;i<vals.size();i++) {
+			result+=vals.get(i);
+			if (i<vals.size()-1) result+="; ";
+		}
+		
+		return result;
+	}
+	
 	
 	public String generateConciseValueString() {
 		if (valueText!=null) {
@@ -256,6 +299,7 @@ public class PropertyValue {
 		
 		return null;
 	}
+	
 	
 	@AssertTrue(message = "Public or literature source is required")
 	private boolean isPublicSourceOrLiteratureSourceExists() {

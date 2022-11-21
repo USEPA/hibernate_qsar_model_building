@@ -30,7 +30,7 @@ public class PropertyValueMerger {
 		}
 	}
 	
-	public static String [] mergeBinaryIncludeFinalCIDs(List<MappedPropertyValue> mappedPropertyValues) {
+	public static String [] mergeBinaryIncludeFinalCIDsExpPropIDs(List<MappedPropertyValue> mappedPropertyValues) {
 		Double consensusValue = 0.0;
 		for (MappedPropertyValue mpv:mappedPropertyValues) {
 			consensusValue += mpv.qsarPropertyValue;
@@ -44,11 +44,15 @@ public class PropertyValueMerger {
 			
 			Double finalValue=consensusValue > DevQsarConstants.BINARY_CUTOFF ? 1.0 : 0.0;
 			Vector<String> vecFinalCIDs=new Vector<>();
+			Vector<String> vecFinalExpPropIds=new Vector<>();
 			
 			for (MappedPropertyValue mpv:mappedPropertyValues) {
 				if (mpv.qsarPropertyValue==finalValue) {
-					if (!vecFinalCIDs.contains(mpv.compound.getDtxcid()))
-						vecFinalCIDs.add(mpv.compound.getDtxcid());
+//					if (!vecFinalCIDs.contains(mpv.compound.getDtxcid()))
+//						vecFinalCIDs.add(mpv.compound.getDtxcid());					
+
+					vecFinalCIDs.add(mpv.compound.getDtxcid());					
+					vecFinalExpPropIds.add(mpv.propertyValue.generateExpPropId());
 				}
 			}			
 
@@ -59,9 +63,17 @@ public class PropertyValueMerger {
 				if (i<vecFinalCIDs.size()-1) finalCIDs+="|";
 			}
 			
-			String [] result= new String[2];
+			String finalExpPropIDs="";
+			
+			for (int i=0;i<vecFinalExpPropIds.size();i++) {
+				finalExpPropIDs+=vecFinalExpPropIds.get(i);
+				if (i<vecFinalExpPropIds.size()-1) finalExpPropIDs+="|";
+			}
+			
+			String [] result= new String[3];
 			result[0]=finalValue+"";
-			result[1]=finalCIDs;		
+			result[1]=finalCIDs;
+			result[2]=finalExpPropIDs;		
 			return result;			
 		}
 	}
@@ -94,7 +106,7 @@ public class PropertyValueMerger {
 	}
 	
 	
-	public static String [] mergeContinuousIncludeFinalCIDs(List<MappedPropertyValue> mappedPropertyValues, String propertyName) {
+	public static String [] mergeContinuousIncludeFinalCIDsExpPropIDs(List<MappedPropertyValue> mappedPropertyValues, String propertyName) {
 		Collections.sort(mappedPropertyValues, new Comparator<MappedPropertyValue>() {
 			@Override
 			public int compare(MappedPropertyValue mpv1, MappedPropertyValue mpv2) {
@@ -106,6 +118,8 @@ public class PropertyValueMerger {
 		
 		Double finalValue=null;
 		String finalCIDs=null;
+		String final_exp_prop_ids=null;
+		
 		
 		if (size % 2 == 0) {//even number of records, need to determine average of middle 2 values
 			MappedPropertyValue mpv1 = mappedPropertyValues.get(size / 2 - 1);
@@ -115,11 +129,14 @@ public class PropertyValueMerger {
 			if (PropertyValue.checkRangeForProperty(v1, v2, propertyName)) {
 				finalValue= (v1 + v2) / 2.0;
 
-				if (mpv1.compound.getDtxcid().equals(mpv2.compound.getDtxcid())) {
-					finalCIDs=mpv1.compound.getDtxcid();
-				} else {
-					finalCIDs=mpv1.compound.getDtxcid()+"|"+mpv2.compound.getDtxcid();	
-				}
+//				if (mpv1.compound.getDtxcid().equals(mpv2.compound.getDtxcid())) {
+//					finalCIDs=mpv1.compound.getDtxcid();
+//				} else {
+//					finalCIDs=mpv1.compound.getDtxcid()+"|"+mpv2.compound.getDtxcid();	
+//				}
+				
+				finalCIDs=mpv1.compound.getDtxcid()+"|"+mpv2.compound.getDtxcid();//Need both so can line up with CIDs
+				final_exp_prop_ids=mpv1.propertyValue.generateExpPropId()+"|"+mpv2.propertyValue.generateExpPropId();	
 								
 			} else {
 				logger.debug(mappedPropertyValues.iterator().next().standardizedSmiles + ": Range too wide to calculate consensus value");
@@ -128,13 +145,17 @@ public class PropertyValueMerger {
 		} else if (size==1) {//only 1 record
 			finalValue = mappedPropertyValues.get(0).qsarPropertyValue;
 			finalCIDs= mappedPropertyValues.get(0).compound.getDtxcid();
+			final_exp_prop_ids=mappedPropertyValues.get(0).propertyValue.generateExpPropId();
+			
 		} else {//odd number of records, use middle one
 			finalValue = mappedPropertyValues.get(size/2).qsarPropertyValue;
 			finalCIDs= mappedPropertyValues.get(size/2).compound.getDtxcid();
+			final_exp_prop_ids=mappedPropertyValues.get(size/2).propertyValue.generateExpPropId();
 		}		
-		String [] result= new String[2];
+		String [] result= new String[3];
 		result[0]=finalValue+"";
 		result[1]=finalCIDs;		
+		result[2]=final_exp_prop_ids;
 		return result;
 	}
 
