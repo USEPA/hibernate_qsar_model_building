@@ -26,13 +26,19 @@ public class DatasetCreatorScript {
 
 	public static void main(String[] args) {
 
-		DatasetServiceImpl ds=new DatasetServiceImpl();
-		ds.delete(85);
+//		DatasetServiceImpl ds=new DatasetServiceImpl();
+//		ds.delete(79);
 
 		//createLogP();
-		createHLC_tmm();		
+//		createHLC_tmm();		
 		// createWS_tmm();
 //		createMP();
+//		createWS_tmm();
+//		createBP();
+//		createLogP();
+//		createVP();
+		createBCF();
+		
 		
 		
 	}
@@ -85,7 +91,7 @@ public class DatasetCreatorScript {
 				omitOpsinAmbiguousNames, omitUvcbNames, null, omitSalts);
 
 		
-		String listMappingName = "ExpProp_VP_WithChemProp_070822";
+		String listMappingName = "ExpProp_VP_WithChemProp_070822_TMM";
 		String listMappingDescription = "Vapor Pressure with 20 < T (C) < 30";
 		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
 				listMappingDescription, 
@@ -121,7 +127,8 @@ public class DatasetCreatorScript {
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
-		String listMappingName = "ExpProp_LogP_WithChemProp_MULTIPLE";
+//		String listMappingName = "ExpProp_LogP_WithChemProp_MULTIPLE";
+		String listMappingName = "ExpProp_LogP_WithChemProp_TMM";
 		String listMappingDescription = "MULTIPLE LIST Exprop LogP with 20.0 < T (C) < 30.0";
 		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
 				listMappingDescription, 
@@ -261,7 +268,7 @@ public class DatasetCreatorScript {
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
-		String listMappingName = "Standard Melting Point from exp_prop";
+		String listMappingName = "Standard Melting Point from exp_prop_TMM";
 		String listMappingDescription = "Melting Point 740 < P (mmHg) < 780";
 		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
 				listMappingDescription, 
@@ -374,8 +381,8 @@ public class DatasetCreatorScript {
 
 		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, 
 				false, true, false, true, true, false, false, null,true);
-		String listMappingName = "ExpProp BCF Fish WholeBody zeros omitted";
-		String listMappingDescription = "BCF values for fish with whole body tissue measured ZEROS OMITTED";
+		String listMappingName = "ExpProp BCF Fish_TMM";
+		String listMappingDescription = "BCF values for fish with whole body tissue (measured ZEROS OMITTED)";
 		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
 				listMappingDescription, 
 				propertyName,
@@ -426,7 +433,7 @@ public class DatasetCreatorScript {
 
 
 
-		String listMappingName = "Standard Boiling Point from exp_prop";
+		String listMappingName = "Standard Boiling Point from exp_prop_TMM";
 		String listMappingDescription = "Boiling Point 740 < P (mmHg) < 780";
 		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
 				listMappingDescription, 
@@ -436,51 +443,6 @@ public class DatasetCreatorScript {
 		creator.createPropertyDataset(listMappedParams, false);
 
 	}
-
-
-	public static void createbcf2() {
-		System.out.println("eclipse recognizes new code2");
-
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
-		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
-
-		String propertyName = "LogBCF_Fish_WholeBody";
-		String listName = "bcf_list";
-
-		/*
-		ArrayList<String> chemicalsLists = new ArrayList<String>();
-		chemicalsLists.add("ExpProp_HLC_WithChemProp_073022_4001_to_4849");
-		chemicalsLists.add("ExpProp_HLC_WithChemProp_073022_2001_to_4000");
-		chemicalsLists.add("ExpProp_HLC_WithChemProp_073022_1_to_2000");
-		 */
-
-		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, 
-				false, true, false, true, true, false, false, null,true);
-		MappingParams casrnMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_CASRN, null,
-				true, false, false, false, false, false, true, null,true);
-		
-		String listMappingName = "ExpProp_BCFWHOLEBODYFISH_070822";
-		String casrnMappingName = "CASRN mapping of " + propertyName + " from exp_prop, without eChemPortal";
-		String listMappingDescription = "ExpProp_BCFWHOLEBODYFISH_070822 for fish whole body";
-		String casrnMappingDescription = propertyName + " with species = Mouse, mapped by CASRN";
-		DatasetParams casrnMappedParams = new DatasetParams(casrnMappingName, 
-				casrnMappingDescription, 
-				propertyName,
-				casrnMappingParams,
-				null);
-		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
-				listMappingDescription, 
-				propertyName,
-				listMappingParams,
-				null);
-
-		//		creator.createPropertyDataset(casrnMappedParams);
-		creator.createPropertyDataset(listMappedParams, false);
-
-
-	}
-
-
 
 
 
