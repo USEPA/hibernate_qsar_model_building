@@ -280,6 +280,8 @@ public class PropertyValue {
 			return candidateValue > 0.0;
 		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
 			return candidateValue > 0.0;
+		} else if (propertyName.equals(DevQsarConstants.LOG_BCF_FISH_WHOLEBODY)) {
+			return candidateValue != 0.0;
 		} else {
 			// TBD
 			return true;
