@@ -508,7 +508,7 @@ public class DsstoxMapper {
 			return new ExplainedResponse(false, "Curator validation required");
 		}
 		
-		if (bin.contains(DTXSID_MATCH) || bin.contains(DTXCID_MATCH) || bin.equals(DTXRID_MATCH)) {//[TMM] 11/23/22 added or for RID match
+		if (bin.contains(DTXSID_MATCH) || bin.contains(DTXCID_MATCH) || bin.contains(DTXRID_MATCH)) {//[TMM] 11/23/22 added or for RID match
 			// Accept DTXSID, DTXCID, DTXRID matches
 //			if (bin.equals(DTXRID_MATCH)) {
 //				System.out.println(gson.toJson(sc));
