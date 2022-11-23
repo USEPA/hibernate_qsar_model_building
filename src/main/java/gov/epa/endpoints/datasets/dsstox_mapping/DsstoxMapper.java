@@ -477,18 +477,26 @@ public class DsstoxMapper {
 			return new ExplainedResponse(false, "No hit");
 		}
 		
+		Gson gson=new Gson();
+		
 		if (bin.contains(DTXRID_MATCH)) {
 			// If source chemical is identified by DTXRID only, fetch the source substance identifiers associated
-			// with that DTXRID, and then go through mapping with those as usual using the bin string from that source substance mapping
-			bin = fillInSourceSubstanceIdentifiers(sc).replaceAll("</?b>", "").replaceAll("<br/>", ", ");
-			bin = bin.replaceAll("(CAS-RN matched (other record:  )?)[^,]+", "$1" + SOURCE_CASRN_HEADER);
-			bin = bin.replaceAll("(Preferred Name matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
-			bin = bin.replaceAll("(Valid Synonym matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
-			bin = bin.replaceAll("(Unique Synonym matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
-			bin = bin.replaceAll("(Ambiguous Synonym matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
-			bin = bin.replaceAll("(Name2Structure matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
-			bin = bin.replaceAll("(Mapped Identifier matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
-			bin = bin.replaceAll("(?<!2)(Structure matched (other record:  )?)[^,]+", "$1" + SOURCE_SMILES_HEADER);
+			// with that DTXRID, and then go through mapping with those as usual using the bin string from that source substance mapping			
+			
+			if (!bin.equals("DTXRID matched SOURCE_DTXRID")) {//[TMM] 11/23/22: added if statement because fillInSourceSubstanceIdentifiers wont get connection reason from database
+				bin=fillInSourceSubstanceIdentifiers(sc);
+				bin = bin.replaceAll("</?b>", "").replaceAll("<br/>", ", ");
+				bin = bin.replaceAll("(CAS-RN matched (other record:  )?)[^,]+", "$1" + SOURCE_CASRN_HEADER);
+				bin = bin.replaceAll("(Preferred Name matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
+				bin = bin.replaceAll("(Valid Synonym matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
+				bin = bin.replaceAll("(Unique Synonym matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
+				bin = bin.replaceAll("(Ambiguous Synonym matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
+				bin = bin.replaceAll("(Name2Structure matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
+				bin = bin.replaceAll("(Mapped Identifier matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
+				bin = bin.replaceAll("(?<!2)(Structure matched (other record:  )?)[^,]+", "$1" + SOURCE_SMILES_HEADER);
+//				System.out.println("here2\t"+bin);
+//				System.out.println(gson.toJson(sc));
+			}
 		}
 		
 		if (datasetParams.mappingParams.useCuratorValidation && dr.curatorValidated) {
@@ -500,9 +508,12 @@ public class DsstoxMapper {
 			return new ExplainedResponse(false, "Curator validation required");
 		}
 		
-		if (bin.contains(DTXSID_MATCH) || bin.contains(DTXCID_MATCH)) {
-			// Accept DTXSID or DTXCID matches
-			return new ExplainedResponse(true, "Matched source DTXSID or DTXCID");
+		if (bin.contains(DTXSID_MATCH) || bin.contains(DTXCID_MATCH) || bin.equals(DTXRID_MATCH)) {//[TMM] 11/23/22 added or for RID match
+			// Accept DTXSID, DTXCID, DTXRID matches
+//			if (bin.equals(DTXRID_MATCH)) {
+//				System.out.println(gson.toJson(sc));
+//			}
+			return new ExplainedResponse(true, "Matched source DTXSID, DTXCID, or DTXRID");
 		}
 		
 		if (bin.contains(DTXSID_CONFLICT)) {
