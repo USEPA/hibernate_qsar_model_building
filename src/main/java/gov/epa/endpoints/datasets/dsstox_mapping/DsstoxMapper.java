@@ -496,6 +496,8 @@ public class DsstoxMapper {
 				bin = bin.replaceAll("(?<!2)(Structure matched (other record:  )?)[^,]+", "$1" + SOURCE_SMILES_HEADER);
 //				System.out.println("here2\t"+bin);
 //				System.out.println(gson.toJson(sc));
+			} else {
+				fillInSourceSubstanceIdentifiers2(sc);//just in case it might have other source identifiers- probably wont
 			}
 		}
 		
@@ -1050,6 +1052,33 @@ public class DsstoxMapper {
 		}
 		
 		return sourceSubstance.getSourceGenericSubstanceMapping().getConnectionReason();
+	}
+	
+	private void fillInSourceSubstanceIdentifiers2(SourceChemical sc) {
+		
+		SourceSubstance sourceSubstance = sourceSubstanceService.findByDtxrid(sc.getSourceDtxrid());
+		for (SourceSubstanceIdentifier ssi:sourceSubstance.getSourceSubstanceIdentifiers()) {
+			String identifier = ssi.getIdentifier();
+			
+//			System.out.println(sc.getSourceDtxrid()+"\t"+identifier);
+			
+			switch (ssi.getIdentifierType()) {
+			case "DTXSID":
+				sc.setSourceDtxsid(identifier);
+				break;
+			case "NAME":
+				sc.setSourceChemicalName(identifier);
+				break;
+			case "CASRN":
+				sc.setSourceCasrn(identifier);
+				break;
+			case "SMILES":
+			case "STRUCTURE":
+				sc.setSourceSmiles(identifier);
+				break;
+			}
+		}
+		
 	}
 	
 	private String standardizeSmiles(String srcChemId, DsstoxRecord dr) {
