@@ -44,6 +44,9 @@ public class DescriptorEmbedding {
 	@Column(name="embedding_tsv", length=2047)
 	private String embeddingTsv;
 	
+	@Column(name="qsar_method")
+	private String qsarMethod;
+	
 	@NotNull
 	@Column(name="importance_tsv", length=2047)
 	private String importanceTsv;
@@ -65,9 +68,12 @@ public class DescriptorEmbedding {
 	@Column(name="created_by")
 	private String createdBy;
 	
+	
+	
 	public DescriptorEmbedding() {}
 	
-	public DescriptorEmbedding(String name, String description, String embeddingTsv, String createdBy) {
+	public DescriptorEmbedding(String name, String description, String embeddingTsv, String createdBy,
+			String descriptorSetName) {
 		this.setName(name);
 		this.setDescription(description);
 		this.setEmbeddingTsv(embeddingTsv);
@@ -104,6 +110,14 @@ public class DescriptorEmbedding {
 
 	public void setEmbeddingTsv(String embeddingTsv) {
 		this.embeddingTsv = embeddingTsv;
+	}
+	
+	public String getQsarMethod() {
+		return qsarMethod;
+	}
+	
+	public void setQsarMethod(String qsarMethod) {
+		this.qsarMethod = qsarMethod;
 	}
 
 	public Date getUpdatedAt() {
