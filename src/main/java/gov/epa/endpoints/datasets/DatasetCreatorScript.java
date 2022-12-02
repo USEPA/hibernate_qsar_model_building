@@ -34,12 +34,11 @@ public class DatasetCreatorScript {
 		// createWS_tmm();
 //		createMP();
 //		createWS_tmm();
-//		createBP();
+		createBP();
 //		createLogP();
 //		createVP();
 //		createBCF();
-		create_pKA();
-		
+//		create_pKA();
 		
 		
 	}
@@ -474,7 +473,5 @@ public class DatasetCreatorScript {
 		creator.createPropertyDataset(listMappedParams, false);
 
 	}
-
-
 
 }
