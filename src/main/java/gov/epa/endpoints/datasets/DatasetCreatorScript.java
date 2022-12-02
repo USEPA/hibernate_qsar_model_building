@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
+//import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
@@ -27,7 +27,7 @@ public class DatasetCreatorScript {
 	public static void main(String[] args) {
 
 //		DatasetServiceImpl ds=new DatasetServiceImpl();
-//		ds.delete(79);
+//		ds.delete(96);
 
 		//createLogP();
 //		createHLC_tmm();		
@@ -37,7 +37,8 @@ public class DatasetCreatorScript {
 //		createBP();
 //		createLogP();
 //		createVP();
-		createBCF();
+//		createBCF();
+		create_pKA();
 		
 		
 		
@@ -102,6 +103,36 @@ public class DatasetCreatorScript {
 
 
 	}
+	
+	public static void create_pKA() {
+		// comment for diff
+		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
+
+		String propertyName = DevQsarConstants.PKA;//pKA, pkAa, pkAb- TODO determine which sources use which
+		String listName = "ExpProp_"+propertyName+"_1130822";
+
+		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
+		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+		bounds.add(temperatureBound);
+
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
+				omitOpsinAmbiguousNames, omitUvcbNames, null, omitSalts);
+
+		
+		String listMappingName = listName+"_TMM";
+		String listMappingDescription = "pKA with 20 < T (C) < 30";
+		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
+				listMappingDescription, 
+				propertyName,
+				listMappingParams,
+				bounds);
+		creator.createPropertyDataset(listMappedParams, false);
+
+
+	}
+
 
 	public static void createLogP() {
 		// comment for diff
@@ -404,9 +435,9 @@ public class DatasetCreatorScript {
 		listNameArray.add("ExpProp_BP_072522_Import_20001_to_40000");
 		listNameArray.add("ExpProp_BP_072522_Import_40001_to_60000");
 		listNameArray.add("ExpProp_BP_072522_Import_60001_to_80000");
-		listNameArray.add("ExpProp_BP_072522_Import_80001_to_100000");
+		listNameArray.add("ExpProp_BP_072522_Import_80001_to_100000_2");
 		listNameArray.add("ExpProp_BP_072522_Import_100001_to_120000");
-		listNameArray.add("ExpProp_BP_072522_Import_140001_to_160000");
+		listNameArray.add("ExpProp_BP_072522_Import_140001_to_160000_2");
 		listNameArray.add("ExpProp_BP_072522_Import_160001_to_180000");
 		listNameArray.add("ExpProp_BP_072522_Import_180001_to_200000");
 		listNameArray.add("ExpProp_BP_072522_Import_200001_to_220000");
@@ -416,7 +447,7 @@ public class DatasetCreatorScript {
 		listNameArray.add("ExpProp_BP_072522_Import_300001_to_320000");
 		listNameArray.add("ExpProp_BP_072522_Import_340001_to_360000");
 		listNameArray.add("ExpProp_BP_072522_Import_360001_to_363160");
-
+		
 		
 		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
