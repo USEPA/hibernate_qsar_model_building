@@ -23,7 +23,7 @@ public class EmbeddingWebService2 extends WebService {
 	}
 
 	public static void main(String[] args) {
-		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_819, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
+		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
 		
 		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
 		String datasetName = propertyName + " OPERA";
@@ -90,15 +90,20 @@ public class EmbeddingWebService2 extends WebService {
 	
 	public HttpResponse<String> findEmbedding(CalculationInfo calculationInfo) {
 		System.out.println(this.address+ "/models/" + calculationInfo.qsarMethod +"/embedding");
+//		System.out.println(calculationInfo.tsv);
+				
 		HttpResponse<String> response = Unirest.post(this.address+ "/models/{qsar_method}/embedding")
 				.routeParam("qsar_method", calculationInfo.qsarMethod)
-				.queryString("training_tsv",calculationInfo.tsv)
-				.queryString("save_to_database",calculationInfo.save_to_database)
-				.queryString("remove_log_p",calculationInfo.remove_log_p)
-				.queryString("num_optimizers",calculationInfo.num_optimizers)
-				.queryString("num_jobs",calculationInfo.num_jobs)
-				.queryString("num_generations",calculationInfo.num_generations)
+				.field("training_tsv",calculationInfo.tsv)
+//				.field("save_to_database",calculationInfo.save_to_database)
+				.field("remove_log_p",String.valueOf(calculationInfo.remove_log_p))
+				.field("num_optimizers",String.valueOf(calculationInfo.num_optimizers))
+				.field("num_jobs",String.valueOf(calculationInfo.num_jobs))
+				.field("num_generations",String.valueOf(calculationInfo.num_generations))
+				.field("max_length",String.valueOf(calculationInfo.max_length))
+				.field("descriptor_coefficient",String.valueOf(calculationInfo.descriptor_coefficient))
 				.asString();
+		
 		return response;
 	}
 

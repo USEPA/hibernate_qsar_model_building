@@ -4,9 +4,16 @@ public class CalculationInfo {
 	public Boolean save_to_database;
 	public String tsv;
 	public String qsarMethod;
-	public boolean remove_log_p;
-	public Integer num_generations;
-	public Integer num_optimizers;
-	public Integer num_jobs;
-	public Integer n_threads;
+	
+	
+	public Boolean remove_log_p;
+	
+	//Default GA params:
+	public Integer num_generations=100;
+	public Integer num_optimizers=10;
+	public Integer num_jobs=4;
+	public Integer n_threads=20;
+	public Integer max_length=24;
+	public Double descriptor_coefficient=0.002;
+	
 }
