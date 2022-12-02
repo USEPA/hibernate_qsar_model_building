@@ -37,7 +37,8 @@ public class DatasetCreatorScript {
 //		createBP();
 //		createLogP();
 //		createVP();
-		createBCF();
+//		createBCF();
+		createBP_2();
 		
 		
 		
@@ -443,6 +444,54 @@ public class DatasetCreatorScript {
 		creator.createPropertyDataset(listMappedParams, false);
 
 	}
+	
+	public static void createBP_2() {
+		
+		ArrayList<String> listNameArray = new ArrayList<String>();
+		listNameArray.add("ExpProp_BP_072522_Import_1_to_20000");
+		listNameArray.add("ExpProp_BP_072522_Import_20001_to_40000");
+		listNameArray.add("ExpProp_BP_072522_Import_40001_to_60000");
+		listNameArray.add("ExpProp_BP_072522_Import_60001_to_80000");
+		listNameArray.add("ExpProp_BP_072522_Import_80001_to_100000_2");
+		listNameArray.add("ExpProp_BP_072522_Import_100001_to_120000");
+		listNameArray.add("ExpProp_BP_072522_Import_140001_to_160000_2");
+		listNameArray.add("ExpProp_BP_072522_Import_160001_to_180000");
+		listNameArray.add("ExpProp_BP_072522_Import_180001_to_200000");
+		listNameArray.add("ExpProp_BP_072522_Import_200001_to_220000");
+		listNameArray.add("ExpProp_BP_072522_Import_240001_to_260000");
+		listNameArray.add("ExpProp_BP_072522_Import_260001_to_280000");
+		listNameArray.add("ExpProp_BP_072522_Import_280001_to_300000");
+		listNameArray.add("ExpProp_BP_072522_Import_300001_to_320000");
+		listNameArray.add("ExpProp_BP_072522_Import_340001_to_360000");
+		listNameArray.add("ExpProp_BP_072522_Import_360001_to_363160");
+
+		
+		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
+
+		String propertyName = DevQsarConstants.BOILING_POINT;
+
+		BoundParameterValue PressureBound = new BoundParameterValue("Pressure", 740.0, 780.0, true);
+		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+		bounds.add(PressureBound);
+		
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
+				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
+
+
+
+		String listMappingName = "Standard Boiling Point from exp_prop_CR";
+		String listMappingDescription = "Boiling Point 740 < P (mmHg) < 780";
+		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
+				listMappingDescription, 
+				propertyName,
+				listMappingParams,
+				bounds);
+		creator.createPropertyDataset(listMappedParams, false);
+
+	}
+
 
 
 
