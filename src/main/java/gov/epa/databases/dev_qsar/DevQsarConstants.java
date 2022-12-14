@@ -6,7 +6,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+import gov.epa.web_services.embedding_service.CalculationInfo;
+
+
 public class DevQsarConstants {
+	
+	public Gson gson;
 	
 	// Numerical constants for processing and modeling
 	// Fraction agreement required to map a DSSTox conflict
@@ -171,6 +179,7 @@ public class DevQsarConstants {
 	public static final String TAG_TEST = "_Test";
 	public static final String TAG_TRAINING = "_Training";
 	
+	
 	// Acceptable atoms in structures for modeling
 	public static HashSet<String> getAcceptableAtomsSet() {
 		List<String> list = Arrays.asList("C", "H", "O", "N", "F", "Cl", "Br", "I", "S", "P", "Si", "As", "Hg", "Sn");
@@ -195,4 +204,7 @@ public class DevQsarConstants {
 		map.put(LLNA, BINARY);
 		return map;
 	}
+	
+	
+	public final String GeneticAlgorithmDefaults = gson.toJson(CalculationInfo.createDefault());
 }
