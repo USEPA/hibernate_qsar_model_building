@@ -2,6 +2,9 @@ package gov.epa.web_services.embedding_service;
 
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.stream.Collectors;
+
+import com.google.gson.Gson;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.dao.DescriptorEmbeddingDaoImpl;
@@ -28,7 +31,7 @@ public class EmbeddingWebService2 extends WebService {
 		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
 		String datasetName = propertyName + " OPERA";
 		String lanId = "cramslan";
-		String descriptorSetName="WebTEST-default";
+		String descriptorSetName="T.E.S.T. 5.1";
 		String splittingName="OPERA";
 		Boolean removeLogDescriptors=false;		
 		String tsv = null;
@@ -43,18 +46,31 @@ public class EmbeddingWebService2 extends WebService {
 		ci.tsv = tsv;
 		ci.remove_log_p = propertyName.equals(DevQsarConstants.LOG_KOW);
 		ci.qsarMethod = DevQsarConstants.KNN;
+		ci.num_generations = 10;
 		
 		HttpResponse<String> response = ews2.findEmbedding(ci);
 		System.out.println(response.getStatus());
 		
+		String data = response.getBody();
+		System.out.println(data);
+		
+		Gson gson = new Gson();
+		CalculationResponse cr = gson.fromJson(data, CalculationResponse.class);
+		String embedding = cr.embedding.stream().map(Object::toString).collect(Collectors.joining("\t"));
+		
 		DescriptorEmbedding desE = new DescriptorEmbedding();
 		desE.setDatasetName(datasetName);
 		desE.setCreatedBy(lanId);
-		desE.setDescription("description");
+		desE.setDescription("num_generations=" + String.valueOf(ci.num_generations)
+				+ " num_optimizers=" + String.valueOf(ci.num_optimizers)
+				+ " num_jobs=" + String.valueOf(ci.num_jobs)
+				+ " n_threads=" + String.valueOf(ci.n_threads)
+				+ " max_length=" + String.valueOf(ci.max_length)
+				+ " descriptor_coefficient=" + String.valueOf(ci.descriptor_coefficient));
 		desE.setDescriptorSetName(descriptorSetName);
-		desE.setEmbeddingTsv("z y z");
+		desE.setEmbeddingTsv(embedding);
 		desE.setQsarMethod(ci.qsarMethod);
-		desE.setName("determine consistent naming convention");
+		desE.setName("hlc-testing4");
 		desE.setDatasetName(datasetName);
 		desE.setImportanceTsv("not null importances");
 		
@@ -64,7 +80,7 @@ public class EmbeddingWebService2 extends WebService {
 		desE.setUpdatedAt(timestamp2);
 
 		
-		if (false) {
+		if (true) {
 		DescriptorEmbeddingService deSer = new DescriptorEmbeddingServiceImpl();
 		deSer.create(desE);
 		}

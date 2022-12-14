@@ -214,6 +214,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	@SuppressWarnings("deprecation")
 	public Long trainWithPreselectedDescriptors(ModelData data, String methodName, String descriptorEmbeddingName) 
 			throws ConstraintViolationException {
+		System.out.println("descriptor embedding name = " + descriptorEmbeddingName);
 		if (data.trainingSetInstances==null) {
 //			logger.error("Dataset instances were not initialized");
 			System.out.println("Dataset instances were not initialized");
@@ -226,7 +227,6 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByName(descriptorEmbeddingName);
 		if (descriptorEmbedding==null) {
-//			logger.error("No such descriptor embedding");
 			return null;
 		} else if (!descriptorEmbedding.getDescriptorSetName().equals(data.descriptorSetName)) {
 //			logger.error("Descriptor embedding for wrong descriptor set");
@@ -235,7 +235,8 @@ public class WebServiceModelBuilder extends ModelBuilder {
 //			logger.error("Descriptor embedding for wrong dataset");
 			return null;
 		}
-		
+		System.out.println("embedding tsv =" + descriptorEmbedding.getEmbeddingTsv());
+
 		Method genericMethod = methodService.findByName(methodName);
 		if (genericMethod==null) {
 			genericMethod = new Method(methodName, methodName, null, false, lanId);

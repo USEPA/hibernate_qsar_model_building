@@ -1,7 +1,8 @@
 package gov.epa.web_services.embedding_service;
 
+import java.util.List;
+
 public class CalculationResponse {
-		public String embedding;
-		public String importances;
+		public List<String> embedding;
 		public String timeMin;
 }
