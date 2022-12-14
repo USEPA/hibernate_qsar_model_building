@@ -86,7 +86,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		Method genericMethod = methodService.findByName(methodName);
 		if (genericMethod==null) {
-			genericMethod = new Method(methodName, methodName, null, false, lanId);
+			genericMethod = new Method(methodName, methodName, null, null, false, lanId);
 			methodService.create(genericMethod);
 		}
 		
@@ -98,6 +98,8 @@ public class WebServiceModelBuilder extends ModelBuilder {
 				data.removeLogDescriptors, methodName, strModelId).getBody();
 		String hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
 		String description = modelWebService.callInfo(methodName).getBody();
+		String description_url=null;//TODO
+		
 		
 		JsonObject jo = gson.fromJson(hyperparameters, JsonObject.class);
 		String version = jo.get("version").getAsString();
@@ -107,7 +109,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		Method method = methodService.findByName(fullMethodName);
 		if (method==null) {
-			method = new Method(fullMethodName, description, hyperparameters, isBinary, lanId);
+			method = new Method(fullMethodName, description, description_url, hyperparameters, isBinary, lanId);
 			methodService.create(method);
 		} else {
 			JsonParser parser = new JsonParser();
@@ -163,7 +165,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		Method genericMethod = methodService.findByName(methodName);
 		if (genericMethod==null) {
-			genericMethod = new Method(methodName, methodName, null, false, lanId);
+			genericMethod = new Method(methodName, methodName, null,null, false, lanId);
 			methodService.create(genericMethod);
 		}
 		
@@ -182,6 +184,8 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
 		}
 		String description = modelWebService.callInfo(methodName).getBody();
+		//TODO get description_url
+		String description_url=null;
 		
 		JsonObject jo = gson.fromJson(hyperparameters, JsonObject.class);
 		String version = jo.get("version").getAsString();
@@ -191,7 +195,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		Method method = methodService.findByName(fullMethodName);
 		if (method==null) {
-			method = new Method(fullMethodName, description, hyperparameters, isBinary, lanId);
+			method = new Method(fullMethodName, description, description_url,hyperparameters, isBinary, lanId);
 			methodService.create(method);
 		} else {
 			JsonParser parser = new JsonParser();
@@ -238,7 +242,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		Method genericMethod = methodService.findByName(methodName);
 		if (genericMethod==null) {
-			genericMethod = new Method(methodName, methodName, null, false, lanId);
+			genericMethod = new Method(methodName, methodName, null,null, false, lanId);
 			methodService.create(genericMethod);
 		}
 		
@@ -250,6 +254,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 				data.removeLogDescriptors, methodName, strModelId, descriptorEmbedding.getEmbeddingTsv()).getBody();
 		String hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
 		String description = modelWebService.callInfo(methodName).getBody();
+		String description_url=null;//TODO
 		
 		JsonObject jo = gson.fromJson(hyperparameters, JsonObject.class);
 		String version = jo.get("version").getAsString();
@@ -259,7 +264,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		Method method = methodService.findByName(fullMethodName);
 		if (method==null) {
-			method = new Method(fullMethodName, description, hyperparameters, isBinary, lanId);
+			method = new Method(fullMethodName, description, description_url,hyperparameters, isBinary, lanId);
 			methodService.create(method);
 		} else {
 			JsonParser parser = new JsonParser();

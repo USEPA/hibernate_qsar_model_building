@@ -34,6 +34,17 @@ public class Method {
 	@NotBlank(message="Description required")
 	@Column(name="description", length=2047)
 	private String description;
+
+	public String getDescription_url() {
+		return description_url;
+	}
+
+	public void setDescription_url(String description_url) {
+		this.description_url = description_url;
+	}
+
+	@Column(name="description_url", length=2047)
+	private String description_url;
 	
 	@Column(name="hyperparameters", length=2047)
 	private String hyperparameters;
@@ -61,12 +72,14 @@ public class Method {
 	
 	public Method() {}
 	
-	public Method(String name, String description, String hyperparameters, Boolean isBinary, String createdBy) {
+	public Method(String name, String description,String description_url, String hyperparameters, Boolean isBinary, String createdBy) {
 		this.setName(name);
 		this.setDescription(description);
+		this.setDescription_url(description_url);
 		this.setHyperparameters(hyperparameters);
 		this.setIsBinary(isBinary);
 		this.setCreatedBy(createdBy);
+		
 	}
 
 	public Long getId() {
