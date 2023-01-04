@@ -12,6 +12,12 @@ public interface DescriptorEmbeddingService {
 	
 	public DescriptorEmbedding findByName(String descriptorEmbeddingName, Session session);
 	
+	public DescriptorEmbedding findByGASettings(String qsar_method, String dataset_name, String descriptor_set_name, 
+			String descriptionJson);
+	
+	public DescriptorEmbedding findByGASettings(String qsar_method, String dataset_name, String descriptor_set_name, 
+			String descriptionJson, Session session);
+	
 	public DescriptorEmbedding create(DescriptorEmbedding descriptorEmbedding) throws ConstraintViolationException;
 	
 	public DescriptorEmbedding create(DescriptorEmbedding descriptorEmbedding, Session session) throws ConstraintViolationException;

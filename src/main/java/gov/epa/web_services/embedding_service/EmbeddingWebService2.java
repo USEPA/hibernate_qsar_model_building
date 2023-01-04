@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.dao.DescriptorEmbeddingDaoImpl;
@@ -24,16 +25,26 @@ public class EmbeddingWebService2 extends WebService {
 	public EmbeddingWebService2(String server, int port) {
 		super(server, port);
 	}
-
+	
 	public static void main(String[] args) {
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
 		
-		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
-		String datasetName = propertyName + " OPERA";
 		String lanId = "cramslan";
 		String descriptorSetName="T.E.S.T. 5.1";
 		String splittingName="OPERA";
-		Boolean removeLogDescriptors=false;		
+		Boolean removeLogDescriptors=false;
+		String propertyName = DevQsarConstants.LOG_HALF_LIFE;
+		int num_generations = 10;
+
+		ews2.main2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING,
+				propertyName, lanId, descriptorSetName, splittingName,
+				removeLogDescriptors, num_generations);
+	}
+
+	public static void main2(String server, int port, String propertyName, String lanId, String descriptorSetName,
+			String splittingName, Boolean removeLogDescriptors, int num_generations) {
+		EmbeddingWebService2 ews2 = new EmbeddingWebService2(server, port);
+		String datasetName = propertyName + " OPERA";
 		String tsv = null;
 		try {
 			tsv = retrieveTrainingData(datasetName, descriptorSetName, splittingName, removeLogDescriptors, lanId);
@@ -46,31 +57,26 @@ public class EmbeddingWebService2 extends WebService {
 		ci.tsv = tsv;
 		ci.remove_log_p = propertyName.equals(DevQsarConstants.LOG_KOW);
 		ci.qsarMethod = DevQsarConstants.KNN;
-		ci.num_generations = 10;
+		ci.num_generations = num_generations;
 		
 		HttpResponse<String> response = ews2.findEmbedding(ci);
-		System.out.println(response.getStatus());
+		System.out.println("calculation response status=" + response.getStatus());
 		
 		String data = response.getBody();
-		System.out.println(data);
-		
+		System.out.println("calculation response data=" + data);
 		Gson gson = new Gson();
+		Gson gson2 = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setPrettyPrinting().create();
 		CalculationResponse cr = gson.fromJson(data, CalculationResponse.class);
 		String embedding = cr.embedding.stream().map(Object::toString).collect(Collectors.joining("\t"));
 		
 		DescriptorEmbedding desE = new DescriptorEmbedding();
 		desE.setDatasetName(datasetName);
 		desE.setCreatedBy(lanId);
-		desE.setDescription("num_generations=" + String.valueOf(ci.num_generations)
-				+ " num_optimizers=" + String.valueOf(ci.num_optimizers)
-				+ " num_jobs=" + String.valueOf(ci.num_jobs)
-				+ " n_threads=" + String.valueOf(ci.n_threads)
-				+ " max_length=" + String.valueOf(ci.max_length)
-				+ " descriptor_coefficient=" + String.valueOf(ci.descriptor_coefficient));
+		desE.setDescription(gson2.toJson(ci));
 		desE.setDescriptorSetName(descriptorSetName);
 		desE.setEmbeddingTsv(embedding);
 		desE.setQsarMethod(ci.qsarMethod);
-		desE.setName("hlc-testing4");
+		desE.setName(propertyName + "_" + descriptorSetName + "_" + System.currentTimeMillis());
 		desE.setDatasetName(datasetName);
 		desE.setImportanceTsv("not null importances");
 		

@@ -1,5 +1,7 @@
 package gov.epa.web_services.embedding_service;
 
+import com.google.gson.annotations.Expose;
+
 /**
  * @author CRAMSLAN
  * TODO: add json object to devqsarconstants with these presets
@@ -20,11 +22,17 @@ public class CalculationInfo {
 	public Boolean remove_log_p;
 	
 	//Default GA params:
+	@Expose
 	public Integer num_generations=100;
+	@Expose
 	public Integer num_optimizers=10;
+	@Expose
 	public Integer num_jobs=4;
+	@Expose
 	public Integer n_threads=20;
+	@Expose
 	public Integer max_length=24;
+	@Expose
 	public Double descriptor_coefficient=0.002;
 	
 	public static CalculationInfo createDefault() {
