@@ -73,6 +73,11 @@ public class DatasetServiceImpl implements DatasetService {
 				
 		Dataset dataset=findById(id);
 		
+		if (dataset==null) {
+			System.out.println("dataset id="+id+" is not in database");
+			return;
+		}
+		
 		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
 		System.out.println(dataset.getName());
 		

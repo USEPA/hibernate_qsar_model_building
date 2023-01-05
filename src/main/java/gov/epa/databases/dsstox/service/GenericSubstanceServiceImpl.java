@@ -2,6 +2,7 @@ package gov.epa.databases.dsstox.service;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Vector;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -88,6 +89,23 @@ public class GenericSubstanceServiceImpl implements GenericSubstanceService {
 		t.rollback();
 		return GenericSubstances;
 	}
+	
+	
+//	@Override
+//	public List<DsstoxRecord> findAsDsstoxRecordsByInChiKeyIn(Collection<String> inChiKeys) {
+//		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+//		return findAsDsstoxRecordsByInChiKeyIn(inChiKeys, session);
+//	}
+//
+//	@Override
+//	public List<DsstoxRecord> findAsDsstoxRecordsByInChiKeyIn(Collection<String> inChiKeys, Session session) {
+//		Transaction t = session.beginTransaction();
+//		GenericSubstanceDao GenericSubstanceDao = new GenericSubstanceDaoImpl();
+//		List<DsstoxRecord> GenericSubstances = GenericSubstanceDao.findAsDsstoxRecordsByInChiKeyIn(inChiKeys, session);
+//		t.rollback();
+//		return GenericSubstances;
+//	}
+	
 
 	@Override
 	public List<DsstoxRecord> findAsDsstoxRecordsByCasrnIn(Collection<String> casrns) {
@@ -104,6 +122,24 @@ public class GenericSubstanceServiceImpl implements GenericSubstanceService {
 		return GenericSubstances;
 	}
 
+	
+	public List<DsstoxRecord> findAsDsstoxRecordsByOtherCasrnIn(Collection<String> casrns, Session session) {
+		
+		Transaction t = session.beginTransaction();
+		GenericSubstanceDao GenericSubstanceDao = new GenericSubstanceDaoImpl();
+		List<DsstoxRecord> GenericSubstances = GenericSubstanceDao.findAsDsstoxRecordsByOtherCasrnIn(casrns, session);
+		t.rollback();
+		return GenericSubstances;
+	}
+
+	
+	public List<DsstoxRecord> findAsDsstoxRecordsByOtherCasrnIn(Collection<String> CAS2) {
+		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+		return findAsDsstoxRecordsByOtherCasrnIn(CAS2,session);
+		
+	}
+
+	
 	@Override
 	public List<DsstoxRecord> findAsDsstoxRecordsByDtxsid(String dtxsid) {
 		Session session = DsstoxSession.getSessionFactory().getCurrentSession();

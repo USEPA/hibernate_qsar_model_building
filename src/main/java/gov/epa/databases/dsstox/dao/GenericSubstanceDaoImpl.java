@@ -32,13 +32,40 @@ public class GenericSubstanceDaoImpl implements GenericSubstanceDao {
 			+ "left join gsc.compound c "
 			+ "left join c.successorRelationships cr with cr.compoundRelationshipType.id = 1 "
 			+ "left join DsstoxCompound c2 on cr.successorCompound = c2 ";
+	
+	
+	private static final String HQL_SELECT_AS_DSSTOX_RECORDS_WITH_OTHER_CAS = "select distinct gs.dsstoxSubstanceId as dsstoxSubstanceId, "
+			+ "c.dsstoxCompoundId as dsstoxCompoundId, "
+			+ "gs.casrn as casrn, "
+			+ "oc.casrn as casrnOther, "
+			+ "gs.preferredName as preferredName, "
+			+ "gs.substanceType as substanceType, "
+			+ "c.smiles as smiles, "
+			+ "c.molWeight as molWeight, "
+			+ "c2.smiles as qsarReadySmiles "
+			+ "from GenericSubstance gs "
+			+ "left join gs.genericSubstanceCompound gsc "
+			+ "left join gsc.compound c "
+			+ "left join c.successorRelationships cr with cr.compoundRelationshipType.id = 1 "
+			+ "left join DsstoxCompound c2 on cr.successorCompound = c2 ";
+
 	private static final String HQL_WHERE_BY_DTXSID_LIST = "where gs.dsstoxSubstanceId in (:dtxsids)";
+	
+	private static final String HQL_WHERE_BY_InChiKey_LIST = "where gs.dsstoxSubstanceId in (:inChiKeys)";
+
+	
 	private static final String HQL_WHERE_BY_CASRN_LIST = "where gs.casrn in (:casrns)";
+	
+	
 	private static final String HQL_WHERE_BY_DTXSID = "where gs.dsstoxSubstanceId = :dtxsid";
 	private static final String HQL_WHERE_BY_CASRN = "where gs.casrn = :casrn";
 	private static final String HQL_WHERE_BY_PREFERRED_NAME = "where gs.preferredName = :preferredName";
 	private static final String HQL_WHERE_BY_OTHER_CASRN = "join OtherCasrn oc on oc.genericSubstance = gs "
 			+ "where oc.casrn = :otherCasrn";
+
+	private static final String HQL_WHERE_BY_OTHERCASRN_LIST = "join OtherCasrn oc on oc.genericSubstance = gs "
+			+ "where oc.casrn in (:casrns)";
+
 	private static final String HQL_AS_DSSTOX_RECORDS_WITH_SYNONYM_QUALITY_BY_SYNONYM = 
 			"select distinct gs.dsstoxSubstanceId as dsstoxSubstanceId, "
 			+ "c.dsstoxCompoundId as dsstoxCompoundId, "
@@ -56,6 +83,7 @@ public class GenericSubstanceDaoImpl implements GenericSubstanceDao {
 			+ "left join DsstoxCompound c2 on cr.successorCompound = c2 "
 			+ "join Synonym s on s.genericSubstance = gs "
 			+ "where s.identifier = :synonym";
+
 
 	@Override
 	public GenericSubstance findById(Long id, Session session) {
@@ -127,7 +155,7 @@ public class GenericSubstanceDaoImpl implements GenericSubstanceDao {
 	@Override
 	public List<DsstoxRecord> findAsDsstoxRecordsByOtherCasrn(String otherCasrn, Session session) {
 		if (session==null) { session = DsstoxSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_SELECT_AS_DSSTOX_RECORDS + HQL_WHERE_BY_OTHER_CASRN);
+		Query query = session.createQuery(HQL_SELECT_AS_DSSTOX_RECORDS_WITH_OTHER_CAS + HQL_WHERE_BY_OTHER_CASRN);
 		query.setParameter("otherCasrn", otherCasrn);		
 		query.setResultTransformer(new AliasToBeanResultTransformer(DsstoxRecord.class));
 		return (List<DsstoxRecord>) query.list();
@@ -150,6 +178,16 @@ public class GenericSubstanceDaoImpl implements GenericSubstanceDao {
 		query.setResultTransformer(new AliasToBeanResultTransformer(DsstoxRecord.class));
 		return (List<DsstoxRecord>) query.list();
 	}
+	
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByOtherCasrnIn(Collection<String> casrns, Session session) {
+		if (session==null) { session = DsstoxSession.getSessionFactory().getCurrentSession(); }
+		Query query = session.createQuery(HQL_SELECT_AS_DSSTOX_RECORDS_WITH_OTHER_CAS + HQL_WHERE_BY_OTHERCASRN_LIST);
+		query.setParameterList("casrns", casrns);		
+		query.setResultTransformer(new AliasToBeanResultTransformer(DsstoxRecord.class));
+		return (List<DsstoxRecord>) query.list();
+	}
+
 
 	@Override
 	public List<DsstoxRecord> findAsDsstoxRecordsWithSynonymQualityBySynonym(String synonym, Session session) {
@@ -159,5 +197,6 @@ public class GenericSubstanceDaoImpl implements GenericSubstanceDao {
 		query.setResultTransformer(new AliasToBeanResultTransformer(DsstoxRecord.class));
 		return (List<DsstoxRecord>) query.list();
 	}
-	
+
+
 }

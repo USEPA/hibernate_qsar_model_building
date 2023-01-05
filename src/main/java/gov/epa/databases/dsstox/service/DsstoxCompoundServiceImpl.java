@@ -1,7 +1,9 @@
 package gov.epa.databases.dsstox.service;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Vector;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -120,6 +122,21 @@ public class DsstoxCompoundServiceImpl implements DsstoxCompoundService {
 	}
 
 	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByInChiKeyIn(Collection<String> inChiKeys) {
+		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+		return findAsDsstoxRecordsByInChiKeyIn(inChiKeys, session);
+	}
+
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByInChiKeyIn(Collection<String> inChiKeys, Session session) {
+		Transaction t = session.beginTransaction();
+		DsstoxCompoundDao compoundDao = new DsstoxCompoundDaoImpl();
+		List<DsstoxRecord> compounds = compoundDao.findAsDsstoxRecordsByInChiKeyIn(inChiKeys, session);
+		t.rollback();
+		return compounds;
+	}
+
+	@Override
 	public List<DsstoxRecord> findAsDsstoxRecordsByDtxcid(String dtxcid) {
 		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
 		return findAsDsstoxRecordsByDtxcid(dtxcid, session);
@@ -148,4 +165,32 @@ public class DsstoxCompoundServiceImpl implements DsstoxCompoundService {
 		t.rollback();
 		return compounds;
 	}
+	
+	public static void main(String[] args) {
+		DsstoxCompoundServiceImpl d=new DsstoxCompoundServiceImpl();
+		List<String> dtxcids=new ArrayList<>();
+		
+		dtxcids.add("DTXCID501515091");
+		dtxcids.add("DTXCID301515095");
+		dtxcids.add("DTXCID201323318");
+		dtxcids.add("DTXCID901475302");
+		dtxcids.add("DTXCID701508652");
+		dtxcids.add("DTXCID701508769");
+		dtxcids.add("DTXCID101509002");
+		dtxcids.add("DTXCID001508651");
+		dtxcids.add("DTXCID201508807");
+		dtxcids.add("DTXCID801766110");
+		dtxcids.add("DTXCID501506236");
+		dtxcids.add("DTXCID401513880");
+		dtxcids.add("DTXCID30509096");//not markush
+		
+		
+		List<DsstoxRecord>recs=d.findAsDsstoxRecordsByDtxcidIn(dtxcids);
+		
+		for (DsstoxRecord rec:recs) {
+			System.out.println(rec.dsstoxCompoundId+"\t"+rec.qsarReadySmiles);
+			
+		}
+	}
+
 }

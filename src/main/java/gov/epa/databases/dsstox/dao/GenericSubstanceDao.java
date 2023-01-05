@@ -33,5 +33,8 @@ public interface GenericSubstanceDao {
 	public List<DsstoxRecord> findAsDsstoxRecordsByDtxsidIn(Collection<String> dtxsids, Session session);
 	
 	public List<DsstoxRecord> findAsDsstoxRecordsByCasrnIn(Collection<String> casrns, Session session);
+
+	public List<DsstoxRecord> findAsDsstoxRecordsByOtherCasrnIn(Collection<String> casrns, Session session);
+
 	
 }

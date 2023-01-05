@@ -37,6 +37,9 @@ public class DsstoxCompoundDaoImpl implements DsstoxCompoundDao {
 	private static final String HQL_WHERE_BY_DTXCID_LIST = "where c.dsstoxCompoundId in (:dtxcids) ";
 	private static final String HQL_WHERE_BY_INCHIKEY = "where c.jchemInchikey = :inchikey or c.indigoInchikey = :inchikey";
 
+	private static final String HQL_WHERE_BY_INCHIKEY_LIST = "where c.jchemInchikey in (:inChiKeys) or c.indigoInchikey in (:inChiKeys)";
+	
+	
 	@Override
 	public DsstoxCompound findById(Long id, Session session) {
 		if (session==null) { session = DsstoxSession.getSessionFactory().getCurrentSession(); }
@@ -94,6 +97,17 @@ public class DsstoxCompoundDaoImpl implements DsstoxCompoundDao {
 		return (List<DsstoxRecord>) query.list();
 	}
 	
+	
+	@Override
+	public List<DsstoxRecord> findAsDsstoxRecordsByInChiKeyIn(Collection<String> inChiKeys, Session session) {
+		if (session==null) { session = DsstoxSession.getSessionFactory().getCurrentSession(); }
+		Query query = session.createQuery(HQL_SELECT_AS_DSSTOX_RECORDS + HQL_WHERE_BY_INCHIKEY_LIST);
+		query.setParameterList("inChiKeys", inChiKeys);		
+		query.setResultTransformer(new AliasToBeanResultTransformer(DsstoxRecord.class));
+		return (List<DsstoxRecord>) query.list();
+	}
+
+	
 	@Override
 	public List<DsstoxRecord> findAsDsstoxRecordsByDtxcid(String dtxcid, Session session) {
 		if (session==null) { session = DsstoxSession.getSessionFactory().getCurrentSession(); }
@@ -111,5 +125,6 @@ public class DsstoxCompoundDaoImpl implements DsstoxCompoundDao {
 		query.setResultTransformer(new AliasToBeanResultTransformer(DsstoxRecord.class));
 		return (List<DsstoxRecord>) query.list();
 	}
+
 
 }
