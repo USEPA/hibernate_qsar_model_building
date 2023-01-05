@@ -33,8 +33,8 @@ public class Compound {
 	private String dtxcid;
 
 	@NotBlank(message="Smiles required to create compound")
-	@Column(name="smiles")
-	private String smiles;//TODO size of smiles in Compounds table should be varchar(510)
+	@Column(name="smiles", length=1000) //TMM
+	private String smiles;
 
 	
 	public String getSmiles() {
@@ -45,8 +45,8 @@ public class Compound {
 		this.smiles = smiles;
 	}
 
-	@Column(name="canon_qsar_smiles")
-	private String canonQsarSmiles;//TODO size of canonQsarSmiles in Compounds table should be varchar(510) just in case
+	@Column(name="canon_qsar_smiles", length=1000) //TMM
+	private String canonQsarSmiles;
 	
 	@NotBlank(message="Standardizer required to create compound")
 	@Column(name="standardizer")

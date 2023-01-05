@@ -65,7 +65,7 @@ public class CreateGAEmbeddings {
 		CalculationInfo ci = new CalculationInfo();
 		ci.tsv = tsv;
 		ci.remove_log_p = propertyName.equals(DevQsarConstants.LOG_KOW);
-		ci.qsarMethod = DevQsarConstants.KNN;
+		ci.qsarMethodGA = DevQsarConstants.KNN;
 		ci.num_generations = 10;
 		
 		HttpResponse<String> response = ews2.findEmbedding(ci);
@@ -81,15 +81,11 @@ public class CreateGAEmbeddings {
 		DescriptorEmbedding desE = new DescriptorEmbedding();
 		desE.setDatasetName(datasetName);
 		desE.setCreatedBy(lanId);
-		desE.setDescription("num_generations=" + String.valueOf(ci.num_generations)
-				+ " num_optimizers=" + String.valueOf(ci.num_optimizers)
-				+ " num_jobs=" + String.valueOf(ci.num_jobs)
-				+ " n_threads=" + String.valueOf(ci.n_threads)
-				+ " max_length=" + String.valueOf(ci.max_length)
-				+ " descriptor_coefficient=" + String.valueOf(ci.descriptor_coefficient));
+		desE.setDescription(ci.toString());
+		
 		desE.setDescriptorSetName(descriptorSetName);
 		desE.setEmbeddingTsv(embedding);
-		desE.setQsarMethod(ci.qsarMethod);
+		desE.setQsarMethod(ci.qsarMethodGA);
 		desE.setName(name);
 		desE.setDatasetName(datasetName);
 		desE.setImportanceTsv("not null importances");

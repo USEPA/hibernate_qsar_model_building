@@ -1,6 +1,10 @@
 package gov.epa.web_services.embedding_service;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
+
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 
 /**
  * @author CRAMSLAN
@@ -17,10 +21,14 @@ import com.google.gson.annotations.Expose;
 public class CalculationInfo {
 	public Boolean save_to_database;
 	public String tsv;
-	public String qsarMethod;
-	
+
+	//added additional non exposed params for convenience (TMM):
+	public String datasetName;
+	public String descriptorSetName;
+	public String splittingName;
 	public Boolean remove_log_p;
-	
+	public String qsarMethodGA;
+
 	//Default GA params:
 	@Expose
 	public Integer num_generations=100;
@@ -35,8 +43,15 @@ public class CalculationInfo {
 	@Expose
 	public Double descriptor_coefficient=0.002;
 	
+	
 	public static CalculationInfo createDefault() {
 		return new CalculationInfo();
+	}
+	
+	
+	public String toString() {
+		Gson gson2 = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setPrettyPrinting().create();		
+		return gson2.toJson(this);
 	}
 	
 }

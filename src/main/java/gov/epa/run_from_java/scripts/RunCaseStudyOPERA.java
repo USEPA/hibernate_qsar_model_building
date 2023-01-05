@@ -63,8 +63,8 @@ public class RunCaseStudyOPERA {
 		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(qsar_method, datasetName, descriptorSetName, embeddingDescription);
 		if (descriptorEmbedding == null) {
 			EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
-			ews2.main2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING,
-					endpoint, lanId, descriptorSetName, splittingName,
+			ews2.generateEmbedding(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING,
+					datasetName, lanId, descriptorSetName, splittingName,
 					removeLogDescriptors, ci.num_generations);
 			descriptorEmbedding = descriptorEmbeddingService.findByGASettings(qsar_method, datasetName, descriptorSetName, embeddingDescription);
 		}

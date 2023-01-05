@@ -72,6 +72,7 @@ public class ConsensusModelBuilder extends ModelBuilder {
 			consensusMethod = new Method(consensusMethodName, 
 					"Consensus, see individual models for descriptions, hyperparameters, and weights",
 					null,
+					null,
 					isBinary,
 					lanId);
 			consensusMethod = methodService.create(consensusMethod);

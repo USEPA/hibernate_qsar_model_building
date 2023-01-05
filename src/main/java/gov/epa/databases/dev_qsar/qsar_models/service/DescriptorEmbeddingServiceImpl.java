@@ -10,6 +10,7 @@ import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
 import gov.epa.databases.dev_qsar.qsar_models.dao.DescriptorEmbeddingDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.DescriptorEmbeddingDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
+import gov.epa.web_services.embedding_service.CalculationInfo;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -35,6 +36,24 @@ public class DescriptorEmbeddingServiceImpl implements DescriptorEmbeddingServic
 		t.rollback();
 		return descriptorEmbedding;
 	}
+	
+	public DescriptorEmbedding findByGASettings(CalculationInfo ci) {
+			Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+			return findByGASettings(ci,session);
+	}
+	
+	public DescriptorEmbedding findByGASettings(CalculationInfo ci, Session session) {
+		
+		Transaction t = session.beginTransaction();
+		DescriptorEmbeddingDao descriptorEmbeddingDao = new DescriptorEmbeddingDaoImpl();
+		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingDao.findByGASettings(ci.qsarMethodGA, 
+				ci.datasetName, ci.descriptorSetName,ci.toString(), session);
+		
+		t.rollback();
+		return descriptorEmbedding;
+	}
+	
+	
 	
 	public DescriptorEmbedding findByGASettings(String qsar_method, String dataset_name, String descriptor_set_name,
 			String descriptionJson) {
@@ -79,6 +98,24 @@ public class DescriptorEmbeddingServiceImpl implements DescriptorEmbeddingServic
 		}
 		
 		return descriptorEmbedding;
+	}
+
+	@Override
+	public void delete(DescriptorEmbedding de) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		delete(de,session);
+	}
+
+	@Override
+	public void delete(DescriptorEmbedding de, Session session) {
+		if (de.getId()==null) {
+			return;
+		}
+		
+		Transaction t = session.beginTransaction();
+		session.delete(de);
+		session.flush();
+		t.commit();
 	}
 
 }

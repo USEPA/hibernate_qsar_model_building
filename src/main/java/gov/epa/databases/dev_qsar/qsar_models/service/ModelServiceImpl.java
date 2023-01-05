@@ -179,5 +179,12 @@ public class ModelServiceImpl implements ModelService {
 		t.rollback();
 		return models;
 	}
+	
+	public static void main(String[] args) {
+		ModelServiceImpl m=new ModelServiceImpl();
+		Model model=m.findById(566L);
+		m.delete(model);
+
+	}
 
 }

@@ -21,6 +21,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingService
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
 import gov.epa.web_services.ModelWebService;
+import gov.epa.web_services.embedding_service.CalculationInfo;
 
 public class WebServiceModelBuilder extends ModelBuilder {
 	
@@ -218,7 +219,35 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	@SuppressWarnings("deprecation")
 	public Long trainWithPreselectedDescriptors(ModelData data, String methodName, String descriptorEmbeddingName) 
 			throws ConstraintViolationException {
-		System.out.println("descriptor embedding name = " + descriptorEmbeddingName);
+		
+		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByName(descriptorEmbeddingName);
+		
+		if (descriptorEmbedding==null) {
+			System.out.println("Embedding is null for "+descriptorEmbeddingName);
+			return null;
+		} else if (!descriptorEmbedding.getDescriptorSetName().equals(data.descriptorSetName)) {
+			System.out.println("Descriptor embedding for wrong descriptor set");
+			return null;
+		} else if (!descriptorEmbedding.getDatasetName().equals(data.datasetName)) {
+			System.out.println("Descriptor embedding for wrong dataset");
+			return null;
+		}
+				
+		return trainWithPreselectedDescriptors(data, methodName, descriptorEmbedding);
+	}
+	
+	
+	/**
+	 * Builds a Python model with the given data and parameters
+	 * @param data
+	 * @param params
+	 */
+	@SuppressWarnings("deprecation")
+	public Long trainWithPreselectedDescriptors(ModelData data, String methodName, DescriptorEmbedding descriptorEmbedding) 
+			throws ConstraintViolationException {
+
+		System.out.println("descriptor embedding name = " + descriptorEmbedding.getName());
+		
 		if (data.trainingSetInstances==null) {
 //			logger.error("Dataset instances were not initialized");
 			System.out.println("Dataset instances were not initialized");
@@ -229,16 +258,6 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		System.out.println("Building Python model with dataset = " + data.datasetName + ", descriptors = " + data.descriptorSetName
 				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName);
 		
-		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByName(descriptorEmbeddingName);
-		if (descriptorEmbedding==null) {
-			return null;
-		} else if (!descriptorEmbedding.getDescriptorSetName().equals(data.descriptorSetName)) {
-//			logger.error("Descriptor embedding for wrong descriptor set");
-			return null;
-		} else if (!descriptorEmbedding.getDatasetName().equals(data.datasetName)) {
-//			logger.error("Descriptor embedding for wrong dataset");
-			return null;
-		}
 		System.out.println("embedding tsv =" + descriptorEmbedding.getEmbeddingTsv());
 
 		Method genericMethod = methodService.findByName(methodName);
@@ -251,6 +270,9 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		modelService.create(model);
 		
 		String strModelId = String.valueOf(model.getId());
+		
+		System.out.println("strModelID="+strModelId);
+		
 		byte[] bytes = modelWebService.callTrainWithPreselectedDescriptors(data.trainingSetInstances, 
 				data.removeLogDescriptors, methodName, strModelId, descriptorEmbedding.getEmbeddingTsv()).getBody();
 		String hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
@@ -403,6 +425,17 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		return modelId;
 	}
+	
+	
+	public Long buildWithPreselectedDescriptors(String methodName,CalculationInfo ci, DescriptorEmbedding descriptorEmbedding) throws ConstraintViolationException {
+		ModelData data = initModelData(ci.datasetName, ci.descriptorSetName, ci.splittingName, ci.remove_log_p);
+		
+		Long modelId = trainWithPreselectedDescriptors(data, methodName, descriptorEmbedding);
+		predict(data, methodName, modelId);
+		
+		return modelId;
+	}
+
 
 	public ModelPrediction[] rerunExistingModelPredictions(Long modelId) {
 		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
