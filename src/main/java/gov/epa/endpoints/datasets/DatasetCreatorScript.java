@@ -26,15 +26,15 @@ public class DatasetCreatorScript {
 
 	public static void main(String[] args) {
 
-//		DatasetServiceImpl ds=new DatasetServiceImpl();
-//		ds.delete(96);
+		DatasetServiceImpl ds=new DatasetServiceImpl();
+		ds.delete(98);
 
 		//createLogP();
 //		createHLC_tmm();		
 		// createWS_tmm();
 //		createMP();
 //		createWS_tmm();
-		createBP();
+//		createBP();
 //		createLogP();
 //		createVP();
 //		createBCF();
@@ -436,20 +436,23 @@ public class DatasetCreatorScript {
 		listNameArray.add("ExpProp_BP_072522_Import_60001_to_80000");
 		listNameArray.add("ExpProp_BP_072522_Import_80001_to_100000_2");
 		listNameArray.add("ExpProp_BP_072522_Import_100001_to_120000");
+		listNameArray.add("ExpProp_BP_072522_Import_120001_to_140000");
 		listNameArray.add("ExpProp_BP_072522_Import_140001_to_160000_2");
 		listNameArray.add("ExpProp_BP_072522_Import_160001_to_180000");
 		listNameArray.add("ExpProp_BP_072522_Import_180001_to_200000");
 		listNameArray.add("ExpProp_BP_072522_Import_200001_to_220000");
+		listNameArray.add("ExpProp_BP_072522_Import_220001_to_240000");
 		listNameArray.add("ExpProp_BP_072522_Import_240001_to_260000");
 		listNameArray.add("ExpProp_BP_072522_Import_260001_to_280000");
 		listNameArray.add("ExpProp_BP_072522_Import_280001_to_300000");
 		listNameArray.add("ExpProp_BP_072522_Import_300001_to_320000");
+		listNameArray.add("ExpProp_BP_072522_Import_320001_to_340000");
 		listNameArray.add("ExpProp_BP_072522_Import_340001_to_360000");
 		listNameArray.add("ExpProp_BP_072522_Import_360001_to_363160");
 		
 		
 		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
-		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
 		String propertyName = DevQsarConstants.BOILING_POINT;
 

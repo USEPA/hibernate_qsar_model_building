@@ -36,11 +36,13 @@ public class RunCaseStudies {
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
 
 		String sampleSource="OPERA";
+		String endpoint=DevQsarConstants.LOG_KOA;
+		
 //		String endpoint=DevQsarConstants.LOG_OH;
 //		String endpoint=DevQsarConstants.LOG_KOW;
 //		String endpoint=DevQsarConstants.LOG_BCF;
 //		String endpoint=DevQsarConstants.MELTING_POINT;
-		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
+//		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
 //		String endpoint=DevQsarConstants.LOG_KOC;
 //		String endpoint=DevQsarConstants.MUTAGENICITY;
 //		String endpoint=DevQsarConstants.LOG_KOW;
@@ -56,7 +58,7 @@ public class RunCaseStudies {
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 		
 		CalculationInfo ci = new CalculationInfo();
-		ci.num_generations = 1;
+		ci.num_generations = 100;
 		ci.remove_log_p = removeLogDescriptors;
 		ci.qsarMethodGA = qsarMethodGA;
 		ci.datasetName=datasetName;
@@ -78,7 +80,7 @@ public class RunCaseStudies {
 			System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
 		}
 		
-//		if(true) return;
+		if(true) return;//skip model building
 
 		String methods[]= {DevQsarConstants.KNN, DevQsarConstants.RF, DevQsarConstants.XGB, DevQsarConstants.SVM};
 
@@ -88,6 +90,63 @@ public class RunCaseStudies {
 		}
 		
 		buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName);
+
+	}
+	
+	public static void runCaseStudyOPERA_All_Endpoints() {
+		
+		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
+		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
+
+		String sampleSource="OPERA";
+		
+		
+//		String [] endpoints= {DevQsarConstants.LOG_KOA,DevQsarConstants.LOG_KM_HL,DevQsarConstants.HENRYS_LAW_CONSTANT,
+//				DevQsarConstants.LOG_BCF,DevQsarConstants.LOG_OH,DevQsarConstants.LOG_KOC,DevQsarConstants.VAPOR_PRESSURE,
+//				DevQsarConstants.WATER_SOLUBILITY, DevQsarConstants.BOILING_POINT, DevQsarConstants.MELTING_POINT,
+//				DevQsarConstants.LOG_KOW};
+
+		//For now skip logkow:
+		String [] endpoints= {DevQsarConstants.LOG_KOA,DevQsarConstants.LOG_KM_HL,DevQsarConstants.HENRYS_LAW_CONSTANT,
+				DevQsarConstants.LOG_BCF,DevQsarConstants.LOG_OH,DevQsarConstants.LOG_KOC,DevQsarConstants.VAPOR_PRESSURE,
+				DevQsarConstants.WATER_SOLUBILITY, DevQsarConstants.BOILING_POINT, DevQsarConstants.MELTING_POINT};
+
+		
+		for (String endpoint:endpoints) {
+			System.out.println(endpoint);
+
+			String datasetName = endpoint +" "+sampleSource;
+			boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
+
+			CalculationInfo ci = new CalculationInfo();
+			ci.num_generations = 100;
+			ci.remove_log_p = removeLogDescriptors;
+			ci.qsarMethodGA = qsarMethodGA;
+			ci.datasetName=datasetName;
+			ci.descriptorSetName=descriptorSetName;
+			ci.splittingName=sampleSource;
+
+			DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);
+
+			if (descriptorEmbedding == null) {
+				descriptorEmbedding = ews2.generateEmbedding(serverModelBuilding, portModelBuilding, lanId,ci);
+				System.out.println("New embedding from web service:"+descriptorEmbedding.getEmbeddingTsv());
+			} else {
+				System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
+			}
+
+//			if (true) continue;//skip model building
+
+			String methods[]= {DevQsarConstants.KNN, DevQsarConstants.RF, DevQsarConstants.XGB, DevQsarConstants.SVM};
+
+			for (String method:methods) {
+				System.out.println(method + "descriptor" + descriptorSetName);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
+			}
+
+			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName);
+
+		}
 
 	}
 	private static void buildConsensusModelForEmbeddedModels(DescriptorEmbedding descriptorEmbedding,String datasetName) {
@@ -106,7 +165,8 @@ public class RunCaseStudies {
 	}
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		runCaseStudyOPERA();
+//		runCaseStudyOPERA();
+		runCaseStudyOPERA_All_Endpoints();
 		
 	}
 
