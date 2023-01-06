@@ -247,17 +247,13 @@ public class DsstoxMapper {
 						.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
 			} else {
 				// If chemical list not in DSSTox, write the import file for the user to add
+				
 				writeChemRegImportFile(propertyValuesMap);
 				return null;
 			}
 
 		} else if (datasetParams.mappingParams.chemRegListNameList!=null) {
 			// here's where multiple lists are handled
-			ArrayList<String> checkChemicalListArray = null;
-			for (int i = 0; i < datasetParams.mappingParams.chemRegListNameList.size(); i++) {
-				checkChemicalList = datasetParams.mappingParams.chemRegListNameList.get(i);
-				ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
-			}
 			dsstoxRecords = new ArrayList<DsstoxRecord>();
 			for (int i = 0; i < datasetParams.mappingParams.chemRegListNameList.size(); i++) {
 				checkChemicalList = datasetParams.mappingParams.chemRegListNameList.get(i);

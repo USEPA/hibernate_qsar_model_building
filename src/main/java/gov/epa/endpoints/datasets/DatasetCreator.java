@@ -356,9 +356,16 @@ public class DatasetCreator {
 //			structure = structure==null ? null : structure.substring(0, 14);
 			
 			if (structure==null) {
+				System.out.println(mpv.id+": Skipped unification since QSAR Ready smiles was null");
 //				logger.info(mpv.id + ": Skipped unification due to missing structure");
 				continue;
 			}
+			
+			if (structure.contains(".")) {
+				System.out.println(mpv.id+": Skipped unification since QSAR Ready smiles was still a mixture (i.e. it contained a period)");
+				continue;
+			}
+
 			
 			List<MappedPropertyValue> structurePropertyValues = unifiedPropertyValues.get(structure);
 			if (structurePropertyValues==null) { structurePropertyValues = new ArrayList<MappedPropertyValue>(); }

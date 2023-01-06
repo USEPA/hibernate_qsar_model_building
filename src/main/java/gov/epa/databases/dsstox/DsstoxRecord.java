@@ -19,6 +19,7 @@ public class DsstoxRecord {
 	public String dsstoxSubstanceId;
 	public String dsstoxCompoundId;
 	public String casrn;
+	public String casrnOther;//TMM
 	public String preferredName;
 	public String substanceType;
 	public String smiles;

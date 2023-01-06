@@ -5,15 +5,15 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Vector;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+//import org.apache.log4j.LogManager;
+//import org.apache.log4j.Logger;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 
 public class PropertyValueMerger {
 	
-	private static final Logger logger = LogManager.getLogger(PropertyValueMerger.class);
+//	private static final Logger logger = LogManager.getLogger(PropertyValueMerger.class);
 	
 	public static Double mergeBinary(List<MappedPropertyValue> mappedPropertyValues) {
 		Double consensusValue = 0.0;
@@ -23,7 +23,7 @@ public class PropertyValueMerger {
 		consensusValue /= mappedPropertyValues.size();
 		
 		if (consensusValue < DevQsarConstants.BINARY_FRAC_AGREE && consensusValue > (1-DevQsarConstants.BINARY_FRAC_AGREE)) {
-			logger.debug(mappedPropertyValues.iterator().next().standardizedSmiles + ": Ambiguous binary consensus value: " + consensusValue);
+			System.out.println(mappedPropertyValues.iterator().next().standardizedSmiles + ": Ambiguous binary consensus value: " + consensusValue);
 			return null;
 		} else {
 			return consensusValue > DevQsarConstants.BINARY_CUTOFF ? 1.0 : 0.0;
@@ -38,7 +38,7 @@ public class PropertyValueMerger {
 		consensusValue /= mappedPropertyValues.size();
 		
 		if (consensusValue < DevQsarConstants.BINARY_FRAC_AGREE && consensusValue > (1-DevQsarConstants.BINARY_FRAC_AGREE)) {
-			logger.debug(mappedPropertyValues.iterator().next().standardizedSmiles + ": Ambiguous binary consensus value: " + consensusValue);
+			System.out.println(mappedPropertyValues.iterator().next().standardizedSmiles + ": Ambiguous binary consensus value: " + consensusValue);
 			return null;
 		} else {
 			
@@ -95,7 +95,7 @@ public class PropertyValueMerger {
 			if (PropertyValue.checkRangeForProperty(v1, v2, propertyName)) {
 				return (v1 + v2) / 2.0;
 			} else {
-				logger.debug(mappedPropertyValues.iterator().next().standardizedSmiles + ": Range too wide to calculate consensus value");
+				System.out.println(mappedPropertyValues.iterator().next().standardizedSmiles + ": Range too wide to calculate consensus value");
 				return null;
 			}
 		} else if (size==1) {
@@ -139,7 +139,7 @@ public class PropertyValueMerger {
 				final_exp_prop_ids=mpv1.propertyValue.generateExpPropId()+"|"+mpv2.propertyValue.generateExpPropId();	
 								
 			} else {
-				logger.debug(mappedPropertyValues.iterator().next().standardizedSmiles + ": Range too wide to calculate consensus value");
+				System.out.println(mappedPropertyValues.iterator().next().standardizedSmiles + ": Range too wide to calculate consensus value");
 				return null;
 			}
 		} else if (size==1) {//only 1 record

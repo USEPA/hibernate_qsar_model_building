@@ -83,16 +83,21 @@ public class ChemRegCheckTodd {
 		listNameArray.add("ExpProp_BP_072522_Import_60001_to_80000");
 		listNameArray.add("ExpProp_BP_072522_Import_80001_to_100000_2");
 		listNameArray.add("ExpProp_BP_072522_Import_100001_to_120000");
-		listNameArray.add("ExpProp_BP_072522_Import_140001_to_160000");
+		listNameArray.add("ExpProp_BP_072522_Import_120001_to_140000");
+		listNameArray.add("ExpProp_BP_072522_Import_140001_to_160000_2");
 		listNameArray.add("ExpProp_BP_072522_Import_160001_to_180000");
 		listNameArray.add("ExpProp_BP_072522_Import_180001_to_200000");
 		listNameArray.add("ExpProp_BP_072522_Import_200001_to_220000");
+		listNameArray.add("ExpProp_BP_072522_Import_220001_to_240000");
 		listNameArray.add("ExpProp_BP_072522_Import_240001_to_260000");
 		listNameArray.add("ExpProp_BP_072522_Import_260001_to_280000");
 		listNameArray.add("ExpProp_BP_072522_Import_280001_to_300000");
 		listNameArray.add("ExpProp_BP_072522_Import_300001_to_320000");
+		listNameArray.add("ExpProp_BP_072522_Import_320001_to_340000");
 		listNameArray.add("ExpProp_BP_072522_Import_340001_to_360000");
 		listNameArray.add("ExpProp_BP_072522_Import_360001_to_363160");
+		
+		
 		String folderImportFiles="O:\\Public\\Todd Martin\\CR Chemreg\\OutputNovember232022\\output\\Standard_Boiling_Point_from_exp_prop\\";
 		
 		compare(listNameArray,folderImportFiles);
