@@ -858,10 +858,7 @@ public class GetExpPropInfo {
 		System.out.println("Avg std dev\t"+avgDev);
 		System.out.println("Count std dev\t"+countStddev);
 
-
-
 	}
-
 	
 	/**
 	 * Uses PFAS manual checking spreadsheet to omit bad exp_prop records from property_values table

@@ -56,6 +56,7 @@ public class PredictionReport {
 		public PredictionReportDataPoint(DataPoint dp) {
 			this.canonQsarSmiles = dp.getCanonQsarSmiles();
 			this.experimentalPropertyValue = dp.getQsarPropertyValue();
+			this.dtxcidQsar=dp.getQsar_dtxcid();
 		}
 	}
 	

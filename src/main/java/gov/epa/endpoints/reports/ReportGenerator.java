@@ -1,6 +1,7 @@
 package gov.epa.endpoints.reports;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,12 +48,25 @@ public class ReportGenerator {
 	public void addOriginalCompounds(List<? extends ReportDataPoint> reportDataPoints) {
 		Set<String> allDtxcids = new HashSet<String>();
 		Map<String, Set<String>> mapDtxcidsByCanonQsarSmiles = new HashMap<String, Set<String>>();
+		
 		for (ReportDataPoint dp:reportDataPoints) {
-			List<Compound> compounds = compoundService.findByCanonQsarSmiles(dp.canonQsarSmiles);
-			if (compounds!=null) {
-				Set<String> dtxcids = compounds.stream().map(c -> c.getDtxcid()).collect(Collectors.toSet());
+			
+			if(dp.dtxcidQsar==null) {
+				List<Compound> compounds = compoundService.findByCanonQsarSmiles(dp.canonQsarSmiles);
+				
+				if (compounds!=null) {
+					Set<String> dtxcids = compounds.stream().map(c -> c.getDtxcid()).collect(Collectors.toSet());
+					allDtxcids.addAll(dtxcids);
+					mapDtxcidsByCanonQsarSmiles.put(dp.canonQsarSmiles, dtxcids);
+				}
+			} else {
+
+				String [] dtxCIDArray=dp.dtxcidQsar.split("\\|");
+				
+				Set<String> dtxcids = new HashSet<String>(Arrays.asList(dtxCIDArray));
 				allDtxcids.addAll(dtxcids);
 				mapDtxcidsByCanonQsarSmiles.put(dp.canonQsarSmiles, dtxcids);
+				
 			}
 		}
 		
