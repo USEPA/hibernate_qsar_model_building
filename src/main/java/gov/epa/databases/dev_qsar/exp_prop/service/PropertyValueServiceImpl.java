@@ -17,6 +17,8 @@ import gov.epa.databases.dev_qsar.exp_prop.ExpPropSession;
 import gov.epa.databases.dev_qsar.exp_prop.dao.PropertyValueDao;
 import gov.epa.databases.dev_qsar.exp_prop.dao.PropertyValueDaoImpl;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
+import gov.epa.databases.dev_qsar.qsar_descriptors.QsarDescriptorsSession;
+
 
 public class PropertyValueServiceImpl implements PropertyValueService {
 	
@@ -100,4 +102,34 @@ public class PropertyValueServiceImpl implements PropertyValueService {
 		return propertyValue;
 	}
 
+		
+	@Override
+	public PropertyValue update(PropertyValue propertyValue) throws ConstraintViolationException {
+		Session session = ExpPropSession.getSessionFactory().getCurrentSession();
+		return update(propertyValue, session);
+	}
+
+	@Override
+	public PropertyValue update(PropertyValue propertyValue, Session session) throws ConstraintViolationException {
+		Set<ConstraintViolation<PropertyValue>> violations = validator.validate(propertyValue);
+		if (!violations.isEmpty()) {
+			throw new ConstraintViolationException(violations);
+		}
+		
+		Transaction t=session.getTransaction();
+		if (!t.isActive()) session.beginTransaction();
+		
+		try {
+			session.clear();
+			session.update(propertyValue);
+			session.flush();
+			session.refresh(propertyValue);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return propertyValue;
+	}
 }

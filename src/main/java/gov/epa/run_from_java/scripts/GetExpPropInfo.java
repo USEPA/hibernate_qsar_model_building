@@ -29,6 +29,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.hibernate.Session;
 import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.DefaultChemObjectBuilder;
 import org.openscience.cdk.io.iterator.IteratingSDFReader;
@@ -39,6 +40,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import gov.epa.databases.dev_qsar.exp_prop.ExpPropSession;
+import gov.epa.databases.dev_qsar.exp_prop.dao.PropertyValueDaoImpl;
+import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
+import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueServiceImpl;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.service.DsstoxCompoundService;
 import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
@@ -857,6 +862,74 @@ public class GetExpPropInfo {
 
 	}
 
+	
+	/**
+	 * Uses PFAS manual checking spreadsheet to omit bad exp_prop records from property_values table
+	 * 
+	 * @param filepath
+	 */
+	static void omitBadDataPointsFromExpProp (String filepath) {
+
+		JsonArray ja=convertExcelToJsonArray(filepath,1);
+
+		//		System.out.println(gson.toJson(ja));
+		System.out.println("number of records="+ja.size());
+
+		Hashtable<String,JsonArray>ht=new Hashtable<>();
+
+		boolean omitNo=true;
+		boolean omitMaybe=false;
+		double tol=0.5;
+		
+		PropertyValueDaoImpl pvdi=new PropertyValueDaoImpl (); 
+		PropertyValueServiceImpl pvsi=new PropertyValueServiceImpl();
+		
+//		Session session = ExpPropSession.getSessionFactory().getCurrentSession();
+//		session.getTransaction().begin();
+		
+		int count=0;
+		
+		for (int i=0;i<ja.size();i++) {
+
+			JsonObject jo=ja.get(i).getAsJsonObject();
+
+			String canon_qsar_smiles=jo.get("canon_qsar_smiles").getAsString();
+			String Good=jo.get("Good?").getAsString();
+			
+			if((omitNo && Good.equals("No")) || (omitMaybe) && Good.equals("Maybe")) {
+			
+				String Reasoning=jo.get("Reasoning").getAsString();
+//				System.out.println(Reason);
+				
+				long exp_prop_id=(long)Double.parseDouble(jo.get("exp_prop_id").getAsString());
+
+				String value_point_estimate=jo.get("value_point_estimate").getAsString();
+				
+				PropertyValue pv=pvdi.findById(exp_prop_id);
+
+				System.out.println(exp_prop_id+"\t"+value_point_estimate+"\t"+pv.getValuePointEstimate()+"\t"+Good+"\t"+Reasoning);
+
+//				if(true) continue;
+				
+				//Update the PropertyValue:
+				try {
+					pv.setKeep(false);
+					pv.setKeepReason("Omit from manual literature check: "+Reasoning);
+					pvsi.update(pv);
+					count++;
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+
+			}
+			
+		}
+
+		
+		System.out.println("Count omitted="+count);
+
+
+	}
 
 	private static JsonArray convertExcelToJsonArray(String filepath,int rowNumHeader) {
 
@@ -930,10 +1003,11 @@ public class GetExpPropInfo {
 		//	getDataSetData(dataset_id,conn,connDSSTOX,folder);//pulls data from the database
 		//	getDataSetDataFlat(dataset_id,conn,connDSSTOX,folder);
 				
-		ArrayList<String>arrayPFAS_CIDs=getPFAS_CIDs("data\\dev_qsar\\dataset_files\\PFASSTRUCTV4_qsar_ready_smiles.txt");
-		createCheckingSpreadsheet_PFAS_data(dataset_id,conn,folder,arrayPFAS_CIDs);//create checking spreadsheet using json file for mapped records that was created when dataset was created
+//		ArrayList<String>arrayPFAS_CIDs=getPFAS_CIDs("data\\dev_qsar\\dataset_files\\PFASSTRUCTV4_qsar_ready_smiles.txt");
+//		createCheckingSpreadsheet_PFAS_data(dataset_id,conn,folder,arrayPFAS_CIDs);//create checking spreadsheet using json file for mapped records that was created when dataset was created
 		
-		lookAtPFASChecking("C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\000000 PFAS data checking\\checking Water solubility PFAS records.xlsx");
+//		lookAtPFASChecking("C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\000000 PFAS data checking\\checking Water solubility PFAS records.xlsx");
+		omitBadDataPointsFromExpProp("C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\000000 PFAS data checking\\checking Water solubility PFAS records.xlsx");
 
 		//		oldGetRecords();
 		//		lookupIdentifierFromRIDs(connDSSTOX);

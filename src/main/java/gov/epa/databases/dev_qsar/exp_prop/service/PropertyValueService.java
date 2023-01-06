@@ -21,5 +21,10 @@ public interface PropertyValueService {
 	public PropertyValue create(PropertyValue propertyValue) throws ConstraintViolationException;
 	
 	public PropertyValue create(PropertyValue propertyValue, Session session) throws ConstraintViolationException;
+
+	public PropertyValue update(PropertyValue propertyValue) throws ConstraintViolationException;
+
+	public PropertyValue update(PropertyValue propertyValue, Session session) throws ConstraintViolationException;
+
 	
 }

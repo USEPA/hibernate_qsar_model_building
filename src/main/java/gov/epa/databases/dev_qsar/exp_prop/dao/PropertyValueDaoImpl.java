@@ -27,9 +27,18 @@ public class PropertyValueDaoImpl implements PropertyValueDao {
 			+ "and pv.keep = true "
 			+ "and (pv.valueQualifier is null or pv.valueQualifier = '~')";
 
+
+	@Override
+	public PropertyValue findById(Long id) {
+		return findById(id,null);
+	}
+
+	
 	@Override
 	public PropertyValue findById(Long id, Session session) {
 		if (session==null) { session = ExpPropSession.getSessionFactory().getCurrentSession(); }
+		
+		if(!session.getTransaction().isActive()) session.getTransaction().begin();
 		
 		Query query = session.createQuery(HQL_SELECT_WITH_FETCH + HQL_WHERE_BY_ID);
 		query.setParameter("id", id);
