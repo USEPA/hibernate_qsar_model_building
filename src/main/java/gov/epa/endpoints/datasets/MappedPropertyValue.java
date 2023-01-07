@@ -47,7 +47,7 @@ public class MappedPropertyValue {
 				qsarPropertyValue = -value;
 			} else if (unitName.equals(DevQsarConstants.MOLAR) && value!=0) {
 				qsarPropertyValue = -Math.log10(value);
-			} else if (unitName.equals(DevQsarConstants.G_L) && value!=0 && dsstoxRecord.molWeight!=null) {
+			} else if ((unitName.equals(DevQsarConstants.G_L) || unitName.equals(DevQsarConstants.G_KG_H2O)) && value!=0 && dsstoxRecord.molWeight!=null) {
 				qsarPropertyValue = -Math.log10(value/dsstoxRecord.molWeight);
 			} else {
 				System.out.println(propertyValue.generateExpPropId() + ": Undefined property value conversion for unit: " + unitName);

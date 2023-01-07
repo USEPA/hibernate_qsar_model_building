@@ -103,6 +103,7 @@ public class DevQsarConstants {
 	// Unit names
 	public static final String BINARY = "Binary";
 	public static final String G_L = "g/L";
+	public static final String G_KG_H2O = "g/kg H2O";
 	public static final String MG_L = "mg/L";
 	public static final String MG_KG = "mg/kg";
 	public static final String L_KG = "L/kg";
