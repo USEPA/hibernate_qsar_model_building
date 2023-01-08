@@ -169,16 +169,6 @@ public class SciDataExpertsStandardizer extends Standardizer {
 		standardizeResponse.smiles = smiles;
 		standardizeResponse.time = time;
 		
-		boolean removeExclusions=true;
-		
-		if (removeExclusions) {
-			String exclusionURL="http://v2626umcth819.rtord.epa.gov:443/api/stdizer/groups/qsar-ready-exclusions";
-			
-			
-		}
-		
-		
-		
 		if (responseWithStatus.status!=200 || response.getBody()==null || response.getBody().length==0) {
 			standardizeResponse.success = false;
 			
@@ -187,19 +177,22 @@ public class SciDataExpertsStandardizer extends Standardizer {
 		} else {
 			List<SciDataExpertsStandardization> standardizations = Arrays.asList(response.getBody());
 			
-			//TMM: Added if block 9/21/22 so that mixtures don't have QSAR ready smiles
+			//TMM: 1/7/23, if have multiple structures in response, the qsar smiles is now a "." delimted mixture
+			
 			if (standardizations.size()>1 || standardizations.size()==0) {
-				standardizeResponse.qsarStandardizedSmiles = null;
+				
+//				standardizeResponse.qsarStandardizedSmiles = null;
+				standardizeResponse.qsarStandardizedSmiles = "";
 				
 				for (int i=0;i<standardizations.size();i++) {
-					System.out.println(i+"\t"+standardizations.get(i).canonicalSmiles);
+					standardizeResponse.qsarStandardizedSmiles+=standardizations.get(i).canonicalSmiles;
+//					System.out.println(i+"\t"+standardizations.get(i).canonicalSmiles);
+					if(i<standardizations.size()-1) standardizeResponse.qsarStandardizedSmiles+="."; 
 				}
-				
 				
 			} else if (standardizations.size()==1) {
 				standardizeResponse.qsarStandardizedSmiles = standardizations.get(0).canonicalSmiles;
 			} 
-			
 			
 			standardizeResponse.success = standardizeResponse.qsarStandardizedSmiles!=null 
 					&& !standardizeResponse.qsarStandardizedSmiles.isBlank();
@@ -347,17 +340,28 @@ public class SciDataExpertsStandardizer extends Standardizer {
 	}
 		
 	public static void main(String[] args) {
-		String url="http://v2626umcth819.rtord.epa.gov:443/api/stdizer/";
-		String workflow="QSAR-ready_CNL_edits_TMM_2";
+		String url="https://ccte-cced.epa.gov/api/stdizer/";
+		
+//		String workflow="QSAR-ready_CNL_edits_TMM_2";
+//		String workflow="qsar-ready";
+		String workflow="QSAR-ready_CNL_edits";
+		
 //		String smiles="CI.CCCC";
 //		String smiles="CI.CCCC.Cl.[Ag+].ClCCl";
-		String smiles="[Na+].[OH-][B+3]([C-]=1C=CC=CC1)([C-]=2C=CC=CC2)[C-]=3C=CC=CC3";
+//		String smiles="[Na+].[OH-][B+3]([C-]=1C=CC=CC1)([C-]=2C=CC=CC2)[C-]=3C=CC=CC3";
+		
+		String smiles="CCCCCCCCCCCCOS(O)(=O)=O.OCCN(CCO)CCO";
+
+		
 //		String smiles="CCCC";
 //		String smiles="CI";
 //		String smiles="[Ag+].[C-]#[N+][O-]";
 		
-		Vector<String>inchiKeyExclude=getInchiExclusions("http://v2626umcth819.rtord.epa.gov:443/api/stdizer/groups/qsar-ready-exclusions_TMM");
-		StandardizeResponseWithStatus responseWithStatus=callQsarReadyStandardize(url, workflow, smiles,inchiKeyExclude);
+//		Vector<String>inchiKeyExclude=getInchiExclusions("http://v2626umcth819.rtord.epa.gov:443/api/stdizer/groups/qsar-ready-exclusions_TMM");
+//		StandardizeResponseWithStatus responseWithStatus=callQsarReadyStandardize(url, workflow, smiles,inchiKeyExclude);
+
+		StandardizeResponseWithStatus responseWithStatus=callQsarReadyStandardize(url, workflow, smiles);
+		
 		System.out.println(responseWithStatus.standardizeResponse.qsarStandardizedSmiles);
 	}
 
