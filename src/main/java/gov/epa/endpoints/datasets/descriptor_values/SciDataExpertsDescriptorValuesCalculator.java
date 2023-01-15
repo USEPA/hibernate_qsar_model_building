@@ -58,11 +58,11 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 			}
 		}
 		
-		descriptorServiceOptions.put("radius", 3);
-		descriptorServiceOptions.put("type", "ecfp");
-		descriptorServiceOptions.put("bits", "1024");
-		descriptorServiceOptions.put("headers", true);
-		descriptorServiceOptions.put("stdizer-workflow", null);
+//		descriptorServiceOptions.put("radius", 3);
+//		descriptorServiceOptions.put("type", "ecfp");
+//		descriptorServiceOptions.put("bits", "1024");
+//		descriptorServiceOptions.put("headers", true);
+//		descriptorServiceOptions.put("stdizer-workflow", null);
 		
 		
 //		for (Map.Entry<String,Object> entry : descriptorServiceOptions.entrySet()) { 
@@ -106,11 +106,15 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 			System.out.println("null descriptors for\t"+chemical.smiles);
 		}
 
-//		for (int i=0;i<vals.length;i++) {
-//		double val=Double.parseDouble(vals[i]);
-//		if (val>0)
-//			System.out.println(i+"\t"+vals[i]);
-//	}
+		
+		String [] vals=valuesTsv.split("\t");
+		for (int i=0;i<vals.length;i++) {
+			
+			double val=Double.parseDouble(vals[i]);
+			
+//			if (val>0)
+				System.out.println(i+"\t"+vals[i]);
+		}
 
 //		System.out.println(valuesTsv);
 		return valuesTsv;		
@@ -197,12 +201,16 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 	 * @param descriptorSetName
 	 * @param writeToDatabase
 	 */
-	public void calculateDescriptorsTodd(String datasetName, String descriptorSetName, boolean writeToDatabase) {
+	public void calculateDescriptorsTodd(String datasetName, String descriptorSetName, boolean writeToDatabase, int batchSize) {
+		
+		
 		
 		DescriptorSet descriptorSet = descriptorSetService.findByName(descriptorSetName);
 		if (descriptorSet==null) {
 			System.out.println("No such descriptor set: " + descriptorSetName);
 		}
+		
+		System.out.println("Calculating "+descriptorSetName+" descriptors for "+datasetName);
 		
 		DatasetService datasetService = new DatasetServiceImpl();		
 		Dataset dataset=datasetService.findByName(datasetName);
@@ -251,10 +259,9 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 //			System.out.println(i+"\t"+canonQsarSmilesToCalculate.get(i));
 //		}
 		
-			
 				
 //		//Run in batches(TMM):
-		int count=200;		
+		int count=batchSize;		
 		System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");
 		
 		while (canonQsarSmilesToCalculate.size()>0) {
@@ -266,7 +273,7 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 				canonQsarSmilesToCalculate2.add(canonQsarSmilesToCalculate.remove(0));
 			}
 			
-			System.out.println(canonQsarSmilesToCalculate2.get(0));
+//			System.out.println(canonQsarSmilesToCalculate2.get(0));
 			
 			calculateDescriptors(canonQsarSmilesToCalculate2, descriptorSet, null, writeToDatabase);			
 			System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");			
@@ -278,7 +285,14 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 		
 	}
 
-	
+	/**
+	 * Run SDE descriptor generation. Workflow is null since we standardized the smiles already and dont want to change it during descriptor generation
+	 * 
+	 * @param canonQsarSmilesToCalculate
+	 * @param descriptorSet
+	 * @param descriptorsMap
+	 * @param writeToDatabase
+	 */
 	private void calculateDescriptors(List<String> canonQsarSmilesToCalculate, DescriptorSet descriptorSet, 
 			Map<String, String> descriptorsMap, boolean writeToDatabase) {
 		String descriptorService = descriptorSet.getDescriptorService();
@@ -332,6 +346,11 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 						valuesTsv = String.join(TAB_DEL, chemical.descriptors.stream()
 								.map(d -> String.valueOf(d))
 								.collect(Collectors.toList()));
+						
+//						for(Double descriptor:chemical.descriptors) {
+//							System.out.println(chemical.smiles+"\t"+descriptor);
+//						}
+//						System.out.println("");
 												
 						if (valuesTsv.contains("Error")) {
 							System.out.println("error for\t"+chemical.smiles);
@@ -355,9 +374,12 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 				}
 			} else {
 				System.out.println("chemicals are null for "+canonQsarSmilesToCalculate.size()+" chemicals");
+				System.out.println("first one with null response\t"+canonQsarSmilesToCalculate.get(0));
 			}
 		} else {
 			System.out.println("response is null for "+canonQsarSmilesToCalculate.size()+" chemicals");
+			
+			
 		}
 	}
 }

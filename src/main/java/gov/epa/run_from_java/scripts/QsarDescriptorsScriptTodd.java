@@ -41,22 +41,56 @@ public class QsarDescriptorsScriptTodd {
 		calc.deleteDescriptorSetValuesForDataset(datasetName, descriptorSetName);
 	}
 	
-	
+	void generateDescriptorsForDataset() {
+		
+		String descriptorSetName="WebTEST-default";
+//		String descriptorSetName="ToxPrints-default";
+//		String descriptorSetName="RDKit-default";
+//		String descriptorSetName="PaDEL-default";
+//		
+		String server="https://ccte-cced.epa.gov/";
+		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
+		
+		String [] datasetNames= {"ExpProp_WaterSolubility_WithChemProp_120121_omit_Good=No","ExpProp_VP_WithChemProp_070822_TMM",
+				"Standard Melting Point from exp_prop_TMM","ExpProp_LogP_WithChemProp_TMM","ExpProp_HLC_TMM",
+				"Standard Boiling Point from exp_prop_TMM","ExpProp BCF Fish_TMM"};
+		
+		int batchSize=1;//right now if one chemical in batch fails, the batch run fails, so run 1 at a time
+		for (String datasetName:datasetNames) {
+			calc.calculateDescriptorsTodd(datasetName,  descriptorSetName, true,batchSize);
+		}
+	}
+
+	void calcSingleChemical() {
+		
+//		String descriptorSetName="WebTEST-default";
+//		String descriptorSetName="ToxPrints-default";
+//		String descriptorSetName="RDKit-default";
+		String descriptorSetName="PaDEL-default";
+//		
+		String server="https://ccte-cced.epa.gov/";
+//		String server="https://hazard-dev.sciencedataexperts.com";
+		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
+		
+		calc.runSingleChemical(descriptorSetName, "ClC(Cl)(Cl)Cl");
+				
+		
+	}
 	public static void main(String[] args) {
 		java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.OFF);
 		Unirest.config().connectTimeout(0).socketTimeout(0);
 
+		QsarDescriptorsScriptTodd q=new QsarDescriptorsScriptTodd();
+//		q.generateDescriptorsForDataset();
+		
+		q.calcSingleChemical();
+		if(true) return;
+		
 		
 //		String tsv = calculateDescriptorsForDataset(
 //				"Standard Water solubility from exp_prop", "PaDEL-default",
 //				DevQsarConstants.SERVER_819 + ":443", true, "tmarti02");
 
-		
-//		String property="Standard Water solubility from exp_prop";
-//		String property="Standard Henry's law constant from exp_prop";
-		String property="Henry's law constant OPERA";
-		SciDataExpertsDescriptorValuesCalculator calc = new SciDataExpertsDescriptorValuesCalculator(DevQsarConstants.SERVER_819+":443", "tmarti02");
-		calc.calculateDescriptorsTodd(property,  "PaDEL-default", true);
 		
 //		String tsv = calculateDescriptorsForDataset(
 //				"Water solubility OPERA", "PaDEL-default",
@@ -74,9 +108,9 @@ public class QsarDescriptorsScriptTodd {
 //		String splitting="OPERA";
 
 		
-		String[] sciDataExpertsDescriptorSetNames = {
-				"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
-		};
+//		String[] sciDataExpertsDescriptorSetNames = {
+//				"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
+//		};
 		
 //		String[] sciDataExpertsDescriptorSetNames = {
 //				"RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
@@ -86,7 +120,7 @@ public class QsarDescriptorsScriptTodd {
 //		String[] sciDataExpertsDescriptorSetNames = {"Mordred-default"};
 		
 //		String urlSDE=HCD_SCI_DATA_EXPERTS_URL;
-		String urlSDE = DevQsarConstants.SERVER_819 + ":443";
+//		String urlSDE = DevQsarConstants.SERVER_819 + ":443";
 		
 //		DescriptorValuesCalculator calc = new DescriptorValuesCalculator("tmarti02");
 //		
