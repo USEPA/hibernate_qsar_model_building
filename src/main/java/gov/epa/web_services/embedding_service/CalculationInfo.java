@@ -43,6 +43,8 @@ public class CalculationInfo {
 	@Expose
 	public Double descriptor_coefficient=0.002;
 	
+	@Expose
+	public Integer threshold=1;
 	
 	public static CalculationInfo createDefault() {
 		return new CalculationInfo();

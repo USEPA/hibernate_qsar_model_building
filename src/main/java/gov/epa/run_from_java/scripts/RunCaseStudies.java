@@ -93,6 +93,53 @@ public class RunCaseStudies {
 
 	}
 	
+public static void runCaseStudyExp_Prop() {
+		
+		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
+		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
+
+		
+		String endpoint=DevQsarConstants.WATER_SOLUBILITY;
+		String datasetName = "ExpProp_WaterSolubility_WithChemProp_120121__omit_Good=No";
+		
+		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
+		
+		CalculationInfo ci = new CalculationInfo();
+		ci.num_generations = 100;
+		ci.remove_log_p = removeLogDescriptors;
+		ci.qsarMethodGA = qsarMethodGA;
+		ci.datasetName=datasetName;
+		ci.descriptorSetName=descriptorSetName;
+		ci.splittingName="RND_REPRESENTATIVE";
+					
+		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);
+		
+//		if(descriptorEmbedding!=null) {
+//			descriptorEmbeddingService.delete(descriptorEmbedding);//start fresh
+//			descriptorEmbedding=null;			
+//			System.out.println("embedding deleted!");
+//		}
+		
+		if (descriptorEmbedding == null) {
+			descriptorEmbedding = ews2.generateEmbedding(serverModelBuilding, portModelBuilding, lanId,ci);
+			System.out.println("New embedding from web service:"+descriptorEmbedding.getEmbeddingTsv());
+		} else {
+			System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
+		}
+		
+		if(true) return;//skip model building
+
+		String methods[]= {DevQsarConstants.KNN, DevQsarConstants.RF, DevQsarConstants.XGB, DevQsarConstants.SVM};
+
+		for (String method:methods) {
+			System.out.println(method + "descriptor" + descriptorSetName);
+			ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
+		}
+		
+		buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName);
+
+	}
+	
 	public static void runCaseStudyOPERA_All_Endpoints() {
 		
 		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
