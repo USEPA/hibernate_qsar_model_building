@@ -43,10 +43,10 @@ public class DatasetCreatorScript {
 //		getDatasetStatsForOneDataset();
 		
 //		DatasetServiceImpl ds=new DatasetServiceImpl();
-//		ds.delete(98);
+//		ds.delete(106);
 		
 
-		//createLogP();
+		createLogP();
 //		createHLC_tmm();		
 		// createWS_tmm();
 //		createMP();
@@ -54,7 +54,7 @@ public class DatasetCreatorScript {
 		//TODO recreate WS dataset now that keep was set to false based on manual check
 //		createWS_tmm();
 //		createBP();
-		createLogP();
+//		createLogP();
 //		createVP();
 //		createBCF();
 //		create_pKA();
@@ -388,7 +388,7 @@ public class DatasetCreatorScript {
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
 //		String listMappingName = "ExpProp_LogP_WithChemProp_MULTIPLE";
-		String listMappingName = "ExpProp_LogP_WithChemProp_TMM2";
+		String listMappingName = "ExpProp_LogP_WithChemProp_TMM3";
 		String listMappingDescription = "MULTIPLE LIST Exprop LogP with 20.0 < T (C) < 30.0, LogKow < 15";
 		
 		DatasetParams listMappedParams = new DatasetParams(listMappingName, 

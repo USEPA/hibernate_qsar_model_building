@@ -676,35 +676,35 @@ public class GetExpPropInfo {
 
 		JsonArray ja=getRecordsFromFile(jsonPath);
 		
-		Hashtable<String,JsonArray>htRecsByCID=new Hashtable<>();
+		Hashtable<String,JsonArray>htRecsBySmiles=new Hashtable<>();
 
 		for (int i=0;i<ja.size();i++) {
 			JsonObject jo=ja.get(i).getAsJsonObject();
-			String cid=jo.get("mapped_dtxcid").getAsString();
+//			String cid=jo.get("mapped_dtxcid").getAsString();
 			String canon_qsar_smiles=jo.get("canon_qsar_smiles").getAsString();
 			String source_name=jo.get("source_name").getAsString();
 			
 			if(!source_name.equals("eChemPortalAPI")) continue;
 				
-			if(htRecsByCID.get(cid)==null) {
+			if(htRecsBySmiles.get(canon_qsar_smiles)==null) {
 				JsonArray ja2=new JsonArray();
 				ja2.add(jo);
-				htRecsByCID.put(cid,ja2);
+				htRecsBySmiles.put(canon_qsar_smiles,ja2);
 			} else {
-				JsonArray ja2=htRecsByCID.get(cid);
+				JsonArray ja2=htRecsBySmiles.get(canon_qsar_smiles);
 				ja2.add(jo);
 			}
 		}	
 		
-		Set<String>cids=htRecsByCID.keySet();
+		Set<String>smilesKeys=htRecsBySmiles.keySet();
 		
-		System.out.println(cids.size());
+		System.out.println(smilesKeys.size());
 		
 		int count=0;
 		
-		for (String cid:cids) {
+		for (String smiles:smilesKeys) {
 			
-			JsonArray ja2=htRecsByCID.get(cid);
+			JsonArray ja2=htRecsBySmiles.get(smiles);
 			if(ja2.size()==1) continue;
 
 			double max=-9999999;
@@ -742,14 +742,14 @@ public class GetExpPropInfo {
 //				System.out.println(cid+"\t"+max+"\t"+value_point_estimate+"\t"+diff);
 
 				if (value_point_estimate>15) {
-					System.out.println(++count+"\t"+exp_prop_id+"\t"+cid+"\t"+value_point_estimate+"\t"+min+"\tpoint_estimate>15");					
+					System.out.println(++count+"\t"+exp_prop_id+"\t"+smiles+"\t"+value_point_estimate+"\t"+min+"\tpoint_estimate>15");					
 					//TODO convert
 					
 				} else if(diff<0.001 && Math.abs(max-min)>5) {
 //					System.out.println(gson.toJson(jo));
 					double logdiff=Math.abs(Math.log10(max)-min);
 					DecimalFormat df=new DecimalFormat("0.00");
-					System.out.println(++count+"\t"+exp_prop_id+"\t"+cid+"\t"+value_point_estimate+"\t"+min+"\tis max value && Math.abs(max-min)>5");
+					System.out.println(++count+"\t"+exp_prop_id+"\t"+smiles+"\t"+value_point_estimate+"\t"+min+"\tis max value && Math.abs(max-min)>5");
 				
 				} else {//OK values?
 //					System.out.println(++count+"\t"+exp_prop_id+"\t"+cid+"\t"+value_point_estimate+"\t"+min+"\tRemainder");	
@@ -834,6 +834,41 @@ public class GetExpPropInfo {
 
 	}
 
+	static void createMappedRecordCheckingSpreadsheet(String dataSetName,Connection conn,Connection connDSSTOX,String folder) {
+//		String dataSetName=getDataSetName(dataset_id, conn);
+
+		dataSetName=dataSetName.replace(" ", "_").replace("="," ");
+		
+		String jsonPath=folder+"//"+dataSetName+"//"+dataSetName+"_Mapped_Records.json";
+
+		JsonArray ja=getRecordsFromFile(jsonPath);
+		JsonArray ja2=new JsonArray();
+
+
+		ArrayList<String>arrayQSARSmiles=new ArrayList<>();
+
+		for (int i=0;i<ja.size();i++) {
+			JsonObject jo=ja.get(i).getAsJsonObject();
+			
+//			lookupInfoFromRID(connDSSTOX, jo);//dont need to- look at mapped_cas instead
+			
+			String dtxcid_original=jo.get("mapped_dtxcid").getAsString();
+			String canon_qsar_smiles=jo.get("canon_qsar_smiles").getAsString();
+
+			ja2.add(jo);				
+			if (!arrayQSARSmiles.contains(canon_qsar_smiles)) arrayQSARSmiles.add(canon_qsar_smiles);
+
+		}
+
+		System.out.println("Number of PFAS records="+ja2.size());
+		System.out.println("Number of unique PFAS records="+arrayQSARSmiles.size());
+
+		String pathout=folder+"//"+dataSetName+"//mapped_"+dataSetName+".xlsx";
+		createExcel2(ja2, pathout,fieldsFinal);
+
+		System.out.println("Excel file created:\t"+pathout);
+
+	}
 
 	private static void lookupInfoFromRID(Connection connDSSTOX, JsonObject jo) {
 		if (jo.get("source_dtxrid")!=null) {
@@ -1173,20 +1208,21 @@ public class GetExpPropInfo {
 //		String dataSetName=getDataSetName(dataset_id, conn);
 //		String dataSetName="Standard Boiling Point from exp_prop_TMM";
 //		String dataSetName="ExpProp_VP_WithChemProp_070822_TMM";
-//		ArrayList<String>arrayPFAS_CIDs=getPFAS_CIDs("data\\dev_qsar\\dataset_files\\PFASSTRUCTV5_qsar_ready_smiles.txt");
-//		createCheckingSpreadsheet_PFAS_data(dataSetName,conn,connDSSTOX, folder,arrayPFAS_CIDs);//create checking spreadsheet using json file for mapped records that was created when dataset was created
+		String dataSetName="ExpProp_LogP_WithChemProp_TMM3";
+
+		String version="V4";
+		ArrayList<String>arrayPFAS_CIDs=getPFAS_CIDs("data\\dev_qsar\\dataset_files\\PFASSTRUCT"+version+"_qsar_ready_smiles.txt");
+		createCheckingSpreadsheet_PFAS_data(dataSetName,conn,connDSSTOX, folder,arrayPFAS_CIDs,version);//create checking spreadsheet using json file for mapped records that was created when dataset was created
 
 		
 //		String [] datasetNames= {"ExpProp_WaterSolubility_WithChemProp_120121_omit_Good=No","ExpProp_VP_WithChemProp_070822_TMM",
 //				"Standard Melting Point from exp_prop_TMM","ExpProp_LogP_WithChemProp_TMM","ExpProp_HLC_TMM",
 //				"Standard Boiling Point from exp_prop_TMM","ExpProp BCF Fish_TMM"};
 
-		String [] datasetNames= {"WS_omit_Good_No","ExpProp_VP_WithChemProp_070822_TMM",
-		"Standard Melting Point from exp_prop_TMM","ExpProp_LogP_WithChemProp_TMM","ExpProp_HLC_TMM",
-		"Standard Boiling Point from exp_prop_TMM","ExpProp BCF Fish_TMM"};
+//		String [] datasetNames= {"WS_omit_Good_No","ExpProp_VP_WithChemProp_070822_TMM",
+//		"Standard Melting Point from exp_prop_TMM","ExpProp_LogP_WithChemProp_TMM","ExpProp_HLC_TMM",
+//		"Standard Boiling Point from exp_prop_TMM","ExpProp BCF Fish_TMM"};
 
-//		String version="V4";
-//		ArrayList<String>arrayPFAS_CIDs=getPFAS_CIDs("data\\dev_qsar\\dataset_files\\PFASSTRUCT"+version+"_qsar_ready_smiles.txt");
 //		
 //		for(String dataSetName:datasetNames) {
 //			System.out.println(dataSetName);
@@ -1194,7 +1230,10 @@ public class GetExpPropInfo {
 //			System.out.println("");
 //		}
 		
-		lookatEchemPortalRecordsLogKow("ExpProp_LogP_WithChemProp_TMM", conn, connDSSTOX, folder);
+//		String dataSetName="ExpProp_LogP_WithChemProp_TMM3";
+//		createMappedRecordCheckingSpreadsheet(dataSetName,conn,connDSSTOX, folder);//create checking spreadsheet using json file for mapped records that was created when dataset was created
+		
+//		lookatEchemPortalRecordsLogKow("ExpProp_LogP_WithChemProp_TMM3", conn, connDSSTOX, folder);
 			
 		
 //		lookAtPFASChecking("C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\000000 PFAS data checking\\checking Water solubility PFAS records.xlsx");
