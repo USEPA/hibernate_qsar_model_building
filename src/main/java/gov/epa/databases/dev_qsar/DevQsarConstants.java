@@ -34,6 +34,7 @@ public class DevQsarConstants {
 	
 	// Max realistic water solubility (in g/L)
 	public static final Double MAX_WATER_SOLUBILITY = 990.0;
+	public static final Double MAX_LOG_KOW = 15.0;
 	
 	// Data folder path
 	public static final String OUTPUT_FOLDER_PATH = "data" + File.separator + "dev_qsar" + File.separator + "output";

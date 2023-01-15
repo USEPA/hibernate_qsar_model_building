@@ -276,6 +276,8 @@ public class PropertyValue {
 			} else {
 				return true;
 			}
+		} else if (propertyName.equals(DevQsarConstants.LOG_KOW)) {
+			return(candidateValue<DevQsarConstants.MAX_LOG_KOW);//TODO alternatively could take the log10 of all the large values and update the exp_prop data			
 		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
 			return candidateValue > 0.0;
 		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {

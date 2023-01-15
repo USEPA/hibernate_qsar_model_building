@@ -1,12 +1,25 @@
+
+
 package gov.epa.endpoints.datasets;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Set;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
+import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
 //import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
+import gov.epa.run_from_java.scripts.GetExpPropInfo;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 
 
@@ -26,22 +39,239 @@ public class DatasetCreatorScript {
 
 	public static void main(String[] args) {
 
-		DatasetServiceImpl ds=new DatasetServiceImpl();
-		ds.delete(98);
+//		getDatasetStats();//Get record counts for the papers
+//		getDatasetStatsForOneDataset();
+		
+//		DatasetServiceImpl ds=new DatasetServiceImpl();
+//		ds.delete(98);
+		
 
 		//createLogP();
 //		createHLC_tmm();		
 		// createWS_tmm();
 //		createMP();
+
+		//TODO recreate WS dataset now that keep was set to false based on manual check
 //		createWS_tmm();
 //		createBP();
-//		createLogP();
+		createLogP();
 //		createVP();
 //		createBCF();
 //		create_pKA();
 		
+//		createBP_exclude_LookChem();
 		
 	}
+	
+	static void getDatasetStats() {
+
+		System.out.println("propertyName\tRaw*\tDSSTox Mapped\tDataset");
+
+		List<String>propertyNames=new ArrayList<>();
+		List<String>datasetNames=new ArrayList<>();
+
+		propertyNames.add(DevQsarConstants.MELTING_POINT);
+		datasetNames.add("Standard Melting Point from exp_prop_TMM");
+
+		propertyNames.add(DevQsarConstants.BOILING_POINT);
+		datasetNames.add("Standard Boiling Point from exp_prop_TMM");
+		
+		propertyNames.add(DevQsarConstants.WATER_SOLUBILITY);
+		datasetNames.add("ExpProp_WaterSolubility_WithChemProp_120121_omit_Good=No");
+
+		propertyNames.add(DevQsarConstants.LOG_KOW);
+		datasetNames.add("ExpProp_LogP_WithChemProp_TMM");
+		
+		propertyNames.add(DevQsarConstants.VAPOR_PRESSURE);
+		datasetNames.add("ExpProp_VP_WithChemProp_070822_TMM");
+		
+		propertyNames.add(DevQsarConstants.HENRYS_LAW_CONSTANT);
+		datasetNames.add("ExpProp_HLC_TMM");
+		
+		
+		
+		for (int i=0;i<propertyNames.size();i++) {
+			
+			String propertyName=propertyNames.get(i);
+			String dataSetName=datasetNames.get(i);
+			
+			PropertyValueServiceImpl propertyValueService = new PropertyValueServiceImpl();
+			List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(propertyName, true, true);
+			//		System.out.println("Number of raw records ="+propertyValues.size());
+
+			String folder="data\\dev_qsar\\output\\";
+			folder+=dataSetName+"\\";		
+			String jsonPath=folder+dataSetName+"_Mapped_Records.json";
+			jsonPath=jsonPath.replace(" ", "_").replace("=", "_");
+			JsonArray mappedRecords=GetExpPropInfo.getRecordsFromFile(jsonPath);
+			//		System.out.println("Number of mapped records ="+mappedRecords.size());
+
+
+			DataPointServiceImpl dpsi=new DataPointServiceImpl();
+			List<DataPoint>datapoints=dpsi.findByDatasetName(dataSetName);
+			//		System.out.println("Number of datapoints ="+datapoints.size());
+
+			System.out.println(propertyName+"\t"+propertyValues.size()+"\t"+mappedRecords.size()+"\t"+datapoints.size());
+		}
+	}
+	
+	static void getDatasetStatsForOneDataset() {
+
+		
+//		String propertyName=DevQsarConstants.WATER_SOLUBILITY;
+//		String dataSetName="ExpProp_WaterSolubility_WithChemProp_120121_omit_Good=No";
+//		String dataSetName="ExpProp_WaterSolubility_WithChemProp_120121_TMM";
+		
+		String propertyName=DevQsarConstants.BOILING_POINT;
+		String dataSetName="Standard Boiling Point from exp_prop_TMM";
+		
+		Hashtable<String, Integer>htRaw=getRawRecordCountsBySource(propertyName);
+		getMappedRecordsBySource(dataSetName,htRaw);		
+//		getDiscardedRecordsByReason(dataSetName, "LookChem");
+//		getDiscardedRecordsByReason(dataSetName);
+
+	}
+
+	private static void getMappedRecordsBySource(String dataSetName,Hashtable<String, Integer>htRaw) {
+		
+		Hashtable<String,Integer>htCountsMapped=new Hashtable<>();
+		String folder="data\\dev_qsar\\output\\";
+		folder+=dataSetName+"\\";		
+		String jsonPath=folder+dataSetName+"_Mapped_Records.json";
+		jsonPath=jsonPath.replace(" ", "_").replace("=", "_");
+		JsonArray mappedRecords=GetExpPropInfo.getRecordsFromFile(jsonPath);
+		
+		Set<String>rawSources=htRaw.keySet();
+		
+		for (String source:rawSources) htCountsMapped.put(source, 0);
+		
+		System.out.println(mappedRecords.size());
+		
+		for (int i=0;i<mappedRecords.size();i++) {
+			JsonObject jo=mappedRecords.get(i).getAsJsonObject();
+			String sourceName=jo.get("source_name").getAsString();
+			if(htCountsMapped.get(sourceName)==null) {
+				htCountsMapped.put(sourceName,1);
+			} else {
+				htCountsMapped.put(sourceName,htCountsMapped.get(sourceName)+1);			
+			}
+		}
+		
+		for (String source:rawSources) {
+			System.out.println(source+"\t"+htRaw.get(source)+"\t"+htCountsMapped.get(source));
+		}
+
+	}
+	
+	private static void getDiscardedRecordsByReason(String dataSetName,String sourceName) {
+		
+
+		String folder="data\\dev_qsar\\output\\";
+		folder+=dataSetName+"\\";		
+		String jsonPath=folder+dataSetName+"_Discarded_Records.json";
+		jsonPath=jsonPath.replace(" ", "_").replace("=", "_");
+		JsonArray discardedRecords=GetExpPropInfo.getRecordsFromFile(jsonPath);
+
+		Hashtable<String,Integer>htReasonCounts=new Hashtable<>();
+		
+		System.out.println(discardedRecords.size());
+		
+		for (int i=0;i<discardedRecords.size();i++) {
+			JsonObject jo=discardedRecords.get(i).getAsJsonObject();
+			
+			String sourceNameCurrent=jo.get("source_name").getAsString();
+			
+			if (!sourceName.equals(sourceNameCurrent)) continue;
+			
+			String reason=jo.get("reason_discarded").getAsString();
+			
+			if(htReasonCounts.get(reason)==null) {
+				htReasonCounts.put(reason,1);
+			} else {
+				htReasonCounts.put(reason,htReasonCounts.get(reason)+1);			
+			}
+		}
+		
+		Set<String>reasons=htReasonCounts.keySet();
+		
+		for (String reason:reasons) {
+			System.out.println(reason+"\t"+htReasonCounts.get(reason));
+		}
+
+	}
+	
+
+	private static void getDiscardedRecordsByReason(String dataSetName) {
+		
+
+		String folder="data\\dev_qsar\\output\\";
+		folder+=dataSetName+"\\";		
+		String jsonPath=folder+dataSetName+"_Discarded_Records.json";
+		jsonPath=jsonPath.replace(" ", "_").replace("=", "_");
+		JsonArray discardedRecords=GetExpPropInfo.getRecordsFromFile(jsonPath);
+
+		Hashtable<String,Integer>htReasonCounts=new Hashtable<>();
+		
+		System.out.println(discardedRecords.size());
+		
+		for (int i=0;i<discardedRecords.size();i++) {
+			JsonObject jo=discardedRecords.get(i).getAsJsonObject();
+			
+			String sourceNameCurrent=jo.get("source_name").getAsString();
+						
+			String reason=jo.get("reason_discarded").getAsString();
+			
+			if(htReasonCounts.get(reason)==null) {
+				htReasonCounts.put(reason,1);
+			} else {
+				htReasonCounts.put(reason,htReasonCounts.get(reason)+1);			
+			}
+		}
+		
+		Set<String>reasons=htReasonCounts.keySet();
+		
+		for (String reason:reasons) {
+			System.out.println(reason+"\t"+htReasonCounts.get(reason));
+		}
+
+	}
+
+	private static Hashtable<String, Integer> getRawRecordCountsBySource(String propertyName) {
+		PropertyValueServiceImpl propertyValueService = new PropertyValueServiceImpl();
+		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(propertyName, true, true);
+		
+		Hashtable<String,Integer>htCountsRaw=new Hashtable<>();
+		
+		
+		for (PropertyValue pv:propertyValues) {
+			
+			String sourceName=null;
+			
+			if (pv.getPublicSource()!=null) {
+				sourceName=pv.getPublicSource().getName();
+			} else if (pv.getLiteratureSource()!=null) {
+				sourceName=pv.getLiteratureSource().getName();
+			}
+			
+			if(htCountsRaw.get(sourceName)==null) {
+				htCountsRaw.put(sourceName,1);
+			} else {
+				htCountsRaw.put(sourceName,htCountsRaw.get(sourceName)+1);			
+			}
+			
+		}
+
+		Set<String>sourceNames=htCountsRaw.keySet();
+		List<String> sourceList = new ArrayList<String>(sourceNames) ; 
+		
+		Collections.sort(sourceList);
+		
+//		for (String source:sourceList) {
+//			System.out.println(source+"\t"+htCountsRaw.get(source));
+//		}
+		return htCountsRaw;
+	}
+	
 
 	public static void createWS_tmm() {
 		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
@@ -62,10 +292,10 @@ public class DatasetCreatorScript {
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
 				omitOpsinAmbiguousNames, omitUvcbNames, null, omitSalts);
 		
-		String listMappingName = listName+"_TMM";
-		String listMappingDescription = "Water solubility with 20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5";
-		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
-				listMappingDescription, 
+		String datasetName = listName+"_omit_Good=No";
+		String datasetDescription = "Water solubility with 20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5";
+		DatasetParams listMappedParams = new DatasetParams(datasetName, 
+				datasetDescription, 
 				propertyName,
 				listMappingParams,
 				bounds);
@@ -149,17 +379,18 @@ public class DatasetCreatorScript {
 		listNameArray.add("ExpProp_LogP_import_80001_to_100000");
 		listNameArray.add("ExpProp_LogP_import_100001_to_100850");
 
-		BoundParameterValue PressureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
+		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
 		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
-		bounds.add(PressureBound);
+		bounds.add(temperatureBound);
 
 		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, isNaive,
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
 //		String listMappingName = "ExpProp_LogP_WithChemProp_MULTIPLE";
-		String listMappingName = "ExpProp_LogP_WithChemProp_TMM";
-		String listMappingDescription = "MULTIPLE LIST Exprop LogP with 20.0 < T (C) < 30.0";
+		String listMappingName = "ExpProp_LogP_WithChemProp_TMM2";
+		String listMappingDescription = "MULTIPLE LIST Exprop LogP with 20.0 < T (C) < 30.0, LogKow < 15";
+		
 		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
 				listMappingDescription, 
 				propertyName,
@@ -474,6 +705,62 @@ public class DatasetCreatorScript {
 				listMappingParams,
 				bounds);
 		creator.createPropertyDataset(listMappedParams, false);
+
+	}
+	
+	/**
+	 * create boiling point dataset based on chemreg lists
+	 */
+	public static void createBP_exclude_LookChem() {
+		
+		ArrayList<String> listNameArray = new ArrayList<String>();
+		listNameArray.add("ExpProp_BP_072522_Import_1_to_20000");
+		listNameArray.add("ExpProp_BP_072522_Import_20001_to_40000");
+		listNameArray.add("ExpProp_BP_072522_Import_40001_to_60000");
+		listNameArray.add("ExpProp_BP_072522_Import_60001_to_80000");
+		listNameArray.add("ExpProp_BP_072522_Import_80001_to_100000_2");
+		listNameArray.add("ExpProp_BP_072522_Import_100001_to_120000");
+		listNameArray.add("ExpProp_BP_072522_Import_120001_to_140000");
+		listNameArray.add("ExpProp_BP_072522_Import_140001_to_160000_2");
+		listNameArray.add("ExpProp_BP_072522_Import_160001_to_180000");
+		listNameArray.add("ExpProp_BP_072522_Import_180001_to_200000");
+		listNameArray.add("ExpProp_BP_072522_Import_200001_to_220000");
+		listNameArray.add("ExpProp_BP_072522_Import_220001_to_240000");
+		listNameArray.add("ExpProp_BP_072522_Import_240001_to_260000");
+		listNameArray.add("ExpProp_BP_072522_Import_260001_to_280000");
+		listNameArray.add("ExpProp_BP_072522_Import_280001_to_300000");
+		listNameArray.add("ExpProp_BP_072522_Import_300001_to_320000");
+		listNameArray.add("ExpProp_BP_072522_Import_320001_to_340000");
+		listNameArray.add("ExpProp_BP_072522_Import_340001_to_360000");
+		listNameArray.add("ExpProp_BP_072522_Import_360001_to_363160");
+		
+		
+		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+
+		String propertyName = DevQsarConstants.BOILING_POINT;
+
+		BoundParameterValue PressureBound = new BoundParameterValue("Pressure", 740.0, 780.0, true);
+		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+		bounds.add(PressureBound);
+		
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
+				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
+
+
+		String listMappingName = "Standard Boiling Point from exp_prop_TMM_exclude_LookChem";
+		String listMappingDescription = "Boiling Point 740 < P (mmHg) < 780";
+		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
+				listMappingDescription, 
+				propertyName,
+				listMappingParams,
+				bounds);
+		
+		List<String>excludedSources=new ArrayList<>();
+		excludedSources.add("LookChem");
+		
+		creator.createPropertyDataset(listMappedParams, false, excludedSources);
 
 	}
 

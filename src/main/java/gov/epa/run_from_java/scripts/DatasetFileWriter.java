@@ -4,9 +4,17 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
 
 import com.google.gson.Gson;
 
@@ -25,6 +33,7 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServiceImpl;
+import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValuesCalculator;
 import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.models.ModelData;
 
@@ -101,6 +110,56 @@ public class DatasetFileWriter {
 		
 	}
 	
+	public void writeWithSplitting2(String descriptorSetName,String splittingName,String datasetName,String outputFolderPath,boolean removeNullCols) {
+		ModelBuilder mb=new ModelBuilder("tmarti02");
+				
+		//Get training and test set instances as strings using TEST descriptors:
+		ModelData md=mb.initModelData(datasetName, descriptorSetName,splittingName, false);
+
+		File outputFolder = new File(outputFolderPath);
+		outputFolder.mkdirs();
+
+		String outputFileNameTraining = datasetName + " " + descriptorSetName+" training.tsv";
+		String outputFilePathTraining = outputFolderPath + (outputFolderPath.endsWith("/") ? "" : "/") + outputFileNameTraining;
+		
+		String outputFileNamePrediction = datasetName + " " + descriptorSetName+" prediction.tsv";
+		String outputFilePathPrediction = outputFolderPath + (outputFolderPath.endsWith("/") ? "" : "/") + outputFileNamePrediction;
+
+		try {
+			
+			FileWriter fw=new FileWriter(outputFilePathTraining);
+			
+			if (removeNullCols) {
+				md.trainingSetInstances=removeNulls(md.trainingSetInstances);
+				md.predictionSetInstances=removeNulls(md.predictionSetInstances);
+			}
+			
+			
+			
+			fw.write(md.trainingSetInstances);
+			fw.flush();
+			fw.close();
+			
+			fw=new FileWriter(outputFilePathPrediction);
+			fw.write(md.predictionSetInstances);
+			fw.flush();
+			fw.close();
+
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+
+		
+	}
+	private String removeNulls(String strDataset) {
+		//TODO
+		return strDataset;
+		
+	}
+	
+
 	
 	public String writeWithoutSplitting(Long datasetId, String descriptorSetName, String outputFolderPath, boolean fetchDtxcids) {
 		Dataset dataset = datasetService.findById(datasetId);
@@ -165,9 +224,95 @@ public class DatasetFileWriter {
 		return sbOverall.toString();
 	}
 
+	void writeOPERAFiles() {
+		
+//		String descriptorSetName="ToxPrints-default";
+//		String descriptorSetName="RDKit-default";
+//		String descriptorSetName="WebTEST-default";
+		String descriptorSetName="PaDEL-default";
+//		String descriptorSetName="Padelpy webservice single";
+//		
+		
+//		"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default"
+		
+		String descriptorSetName2="T.E.S.T. 5.1";
+		
+		String splittingName="OPERA";
+		
+		String[] OPERA_ENDPOINTS = { DevQsarConstants.LOG_KOA, DevQsarConstants.LOG_KM_HL,
+				DevQsarConstants.HENRYS_LAW_CONSTANT, DevQsarConstants.LOG_BCF, DevQsarConstants.LOG_OH,
+				DevQsarConstants.LOG_KOC, DevQsarConstants.VAPOR_PRESSURE, DevQsarConstants.WATER_SOLUBILITY,
+				DevQsarConstants.BOILING_POINT, DevQsarConstants.MELTING_POINT, DevQsarConstants.LOG_KOW };
+
+		String server="https://ccte-cced.epa.gov/";
+		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
+		
+		for (String endpoint:OPERA_ENDPOINTS) {			
+			
+			String datasetName=endpoint+" OPERA";
+
+			String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\QSAR_Model_Building\\data\\datasets_benchmark\\"+datasetName+"\\";
+			
+			calc.calculateDescriptorsTodd(datasetName,  descriptorSetName, true,1);
+
+			writeWithSplitting2(descriptorSetName, splittingName, datasetName, folder,true);
+			
+//			if(true)break;
+			
+//			String training_file_name = endpoint + " OPERA " + descriptorSetName + " training.tsv";
+//			String training_file_name2 = endpoint + " OPERA " + descriptorSetName2 + " training.tsv";
+//
+//			try {
+//				List<String> lines= Files.readAllLines(Paths.get(folder+training_file_name));
+//				List<String> lines2= Files.readAllLines(Paths.get(folder+training_file_name2));
+//				System.out.println(endpoint+"\t"+lines.size()+"\t"+lines2.size());
+//				
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+
+			
+		}
+	}
+	
+	void writeTEST_Toxicity_Files() {
+		
+//		String descriptorSetName="WebTEST-default";
+//		String descriptorSetName="ToxPrints-default";
+//		String descriptorSetName="RDKit-default";
+//		String descriptorSetName="Padelpy webservice single";
+		String descriptorSetName="PaDEL-default";
+//		
+//		"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default"
+		
+		String splittingName="TEST";
+		
+		String[] TEST_ENDPOINTS = { DevQsarConstants.LC50DM, DevQsarConstants.LC50, DevQsarConstants.IGC50,
+				DevQsarConstants.LD50, DevQsarConstants.MUTAGENICITY, DevQsarConstants.LLNA};
+
+		
+		String server="https://ccte-cced.epa.gov/";
+		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
+		
+		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\QSAR_Model_Building\\data\\datasets_benchmark_TEST\\";
+		
+		for (String endpoint:TEST_ENDPOINTS) {			
+			
+			String datasetName=endpoint+" TEST";
+			String folder=mainFolder+datasetName+"\\";
+			calc.calculateDescriptorsTodd(datasetName,  descriptorSetName, true,1);
+			writeWithSplitting2(descriptorSetName, splittingName, datasetName, folder,false);
+			
+		}
+	}
+
+	
 	
 	public static void main(String[] args) {
 		DatasetFileWriter writer = new DatasetFileWriter();
+//		writer.writeOPERAFiles();
+		writer.writeTEST_Toxicity_Files();
 
 //		writer.writeWithoutSplitting(38L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");
 //		writer.writeWithoutSplitting(36L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");
@@ -178,7 +323,7 @@ public class DatasetFileWriter {
 //		writer.writeQSARSmilesCID(34L,"data/dev_qsar/dataset_files/");
 
 		
-		String outputFolderPath="data/dev_qsar/dataset_files/";
+//		String outputFolderPath="data/dev_qsar/dataset_files/";
 //		String descriptorSetName="T.E.S.T. 5.1";
 //		
 //		writer.writeWithoutSplitting(38L, descriptorSetName, outputFolderPath);
@@ -203,19 +348,20 @@ public class DatasetFileWriter {
 //		String dataset="Mutagenicity TEST";
 //		String splitting="TEST";
 		
-		String dataset="LogBCF OPERA";
-		String splitting="OPERA";
-		
-		String[] sciDataExpertsDescriptorSetNames = {
-				"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
-		};
-
-		for (String descriptorSetName:sciDataExpertsDescriptorSetNames) {
-			System.out.println(descriptorSetName);
-			writer.writeWithSplitting(descriptorSetName,splitting,dataset,outputFolderPath);	
-		}
+//		String dataset="LogBCF OPERA";
+//		String splitting="OPERA";
+//		
+//		String[] sciDataExpertsDescriptorSetNames = {
+//				"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
+//		};
+//
+//		for (String descriptorSetName:sciDataExpertsDescriptorSetNames) {
+//			System.out.println(descriptorSetName);
+//			writer.writeWithSplitting(descriptorSetName,splitting,dataset,outputFolderPath);	
+//		}
 		
 
 	}
 
 }
+

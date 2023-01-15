@@ -564,6 +564,11 @@ public class DatasetCreator {
 	}
 
 	public void createPropertyDataset(DatasetParams params, boolean useStdevFilter) {
+		List<String>excludedSources=new ArrayList<>();
+		createPropertyDataset(params, useStdevFilter, excludedSources);
+	}
+	
+	public void createPropertyDataset(DatasetParams params, boolean useStdevFilter,List<String>excludedSources) {
 		Gson gson = new Gson();
 		
 		System.out.println("Selecting experimental property data for " + params.propertyName + "...");
@@ -571,6 +576,10 @@ public class DatasetCreator {
 		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(params.propertyName, true, true);
 		long t6 = System.currentTimeMillis();
 		System.out.println("Selection time = " + (t6 - t5)/1000.0 + " s");
+
+		System.out.println("Raw records:"+propertyValues.size());		
+		excludePropertyValues(excludedSources, propertyValues);
+		if (excludedSources.size()>0) System.out.println("Raw records after source exclusion:"+propertyValues.size());
 		
 		if (propertyValues==null || propertyValues.isEmpty()) {
 //			logger.error(params.datasetName + ": Experimental property data unavailable");
@@ -639,6 +648,27 @@ public class DatasetCreator {
 			System.out.println("*** Warning dataset already exists! New dataset not created ***"); 
 		} 
 
+	}
+
+
+
+	private void excludePropertyValues(List<String> excludedSources, List<PropertyValue> propertyValues) {
+	
+		if(excludedSources.size()==0) return;
+		
+		for (int i=0;i<propertyValues.size();i++) {
+			PropertyValue pv=propertyValues.get(i);
+			
+			if(pv.getPublicSource()!=null) {
+				if(excludedSources.contains(pv.getPublicSource().getName())) 
+					propertyValues.remove(i--);				
+			}
+			
+			if(pv.getLiteratureSource()!=null) {
+				if(excludedSources.contains(pv.getLiteratureSource().getName())) 
+					propertyValues.remove(i--);				
+			}
+		}
 	}
 	
 	public void saveUnifiedData(List<MappedPropertyValue> mappedPropertyValues, String datasetName, Unit unit) {
