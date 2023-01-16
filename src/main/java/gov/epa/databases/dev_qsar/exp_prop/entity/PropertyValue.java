@@ -269,21 +269,67 @@ public class PropertyValue {
 	
 	// Check if property value (in original units) is realistic for property in question
 	public static Boolean checkRealisticValueForProperty(Double candidateValue, String propertyName, String unitName) {
+
 		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
-			if (candidateValue <= 0.0
-					|| (unitName.equals(DevQsarConstants.G_L) && candidateValue > DevQsarConstants.MAX_WATER_SOLUBILITY)) {
+			if(unitName.equals(DevQsarConstants.G_L)) {
+				if(candidateValue>DevQsarConstants.MAX_WATER_SOLUBILITY_G_L || 
+						candidateValue<DevQsarConstants.MIN_WATER_SOLUBILITY_G_L) {
+					return false;
+				} else {
+					return true;
+				}	
+			} else if (unitName.equals(DevQsarConstants.MOLAR)){
+				if(candidateValue>DevQsarConstants.MAX_WATER_SOLUBILITY_MOLAR || 
+						candidateValue<DevQsarConstants.MIN_WATER_SOLUBILITY_MOLAR) {
+					return false;
+				} else {
+					return true;
+				}	
+			} else {
+				return false;
+			}
+
+		} else if (propertyName.equals(DevQsarConstants.LOG_KOW)) {
+			//TODO should we try to fix the ones where the value is actually P instead of logP (especially echemportal)?
+			if(candidateValue>DevQsarConstants.MAX_LOG_KOW || 
+				candidateValue<DevQsarConstants.MIN_LOG_KOW) {//Assumes all values are log values
 				return false;
 			} else {
 				return true;
-			}
-		} else if (propertyName.equals(DevQsarConstants.LOG_KOW)) {
-			return(candidateValue<DevQsarConstants.MAX_LOG_KOW);//TODO alternatively could take the log10 of all the large values and update the exp_prop data			
+			}			
 		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
-			return candidateValue > 0.0;
+			if(candidateValue>DevQsarConstants.MAX_HENRYS_LAW_CONSTANT_ATM_M3_MOL || 
+				candidateValue<DevQsarConstants.MIN_HENRYS_LAW_CONSTANT_ATM_M3_MOL) {
+				return false;
+			} else {
+				return true;
+			}	
 		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
-			return candidateValue > 0.0;
+
+			if(candidateValue>DevQsarConstants.MAX_VAPOR_PRESSURE_MMHG ||
+				candidateValue<DevQsarConstants.MIN_VAPOR_PRESSURE_MMHG) {
+				return false;
+			} else {
+				return true;
+			}			
 		} else if (propertyName.equals(DevQsarConstants.LOG_BCF_FISH_WHOLEBODY)) {
-			return candidateValue != 0.0;
+			
+			return candidateValue != 0.0;//Dont use if exactly zero due to toxval storing blanks as zeros TMM. Might lose a handful accidentally
+			
+		} else if (propertyName.equals(DevQsarConstants.MELTING_POINT)) {
+			if(unitName.equals(DevQsarConstants.DEG_C) && (candidateValue>DevQsarConstants.MAX_MELTING_POINT_C) ||
+					candidateValue<DevQsarConstants.MIN_MELTING_POINT_C) {
+				return false;
+			} else {
+				return true;
+			}			
+		} else if (propertyName.equals(DevQsarConstants.BOILING_POINT)) {
+			if(unitName.equals(DevQsarConstants.DEG_C) && (candidateValue>DevQsarConstants.MAX_BOILING_POINT_C) ||
+					candidateValue<DevQsarConstants.MIN_BOILING_POINT_C) {
+				return false;
+			} else {
+				return true;
+			}			
 		} else {
 			// TBD
 			return true;

@@ -62,7 +62,7 @@ public class MappedPropertyValue {
 			}
 		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
 			if (unitName.equals(DevQsarConstants.MMHG)) {
-				qsarPropertyValue = -Math.log10(value);
+				qsarPropertyValue = Math.log10(value);
 			} else {
 				System.out.println(propertyValue.generateExpPropId() + ": Undefined property value conversion for unit: " + unitName);
 				return;

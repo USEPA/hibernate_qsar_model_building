@@ -33,8 +33,28 @@ public class DevQsarConstants {
 	public static final Double ZERO_TOLERANCE = Math.pow(10.0, -6.0);
 	
 	// Max realistic water solubility (in g/L)
-	public static final Double MAX_WATER_SOLUBILITY = 990.0;
-	public static final Double MAX_LOG_KOW = 15.0;
+
+	public static final Double MIN_WATER_SOLUBILITY_MOLAR = 1.0E-14;
+	public static final Double MAX_WATER_SOLUBILITY_MOLAR = 1.0e2;
+	
+	public static final Double MIN_WATER_SOLUBILITY_G_L = 1.0E-11;
+	public static final Double MAX_WATER_SOLUBILITY_G_L = 990.0;
+
+	public static final Double MIN_HENRYS_LAW_CONSTANT_ATM_M3_MOL = 1.0e-13;
+	public static final Double MAX_HENRYS_LAW_CONSTANT_ATM_M3_MOL = 1.0e2;
+	
+	public static final Double MIN_LOG_KOW = -6.0;
+	public static final Double MAX_LOG_KOW = 11.0;
+
+	public static final Double MIN_MELTING_POINT_C = -250.0;
+	public static final Double MAX_MELTING_POINT_C = 550.0;
+
+	public static final Double MIN_BOILING_POINT_C = -150.0;
+	public static final Double MAX_BOILING_POINT_C = 600.0;
+	
+	public static final Double MIN_VAPOR_PRESSURE_MMHG = 1.0e-14;
+	public static final Double MAX_VAPOR_PRESSURE_MMHG = 1.0e6;
+
 	
 	// Data folder path
 	public static final String OUTPUT_FOLDER_PATH = "data" + File.separator + "dev_qsar" + File.separator + "output";
@@ -179,6 +199,7 @@ public class DevQsarConstants {
 	public static final String PEARSON_RSQ = "PearsonRSQ";
 	public static final String TAG_TEST = "_Test";
 	public static final String TAG_TRAINING = "_Training";
+
 	
 	
 	// Acceptable atoms in structures for modeling
@@ -200,7 +221,7 @@ public class DevQsarConstants {
 		map.put(LOG_BCF_FISH_WHOLEBODY, LOG_UNITS);
 		map.put(WATER_SOLUBILITY, NEG_LOG_M);
 		map.put(HENRYS_LAW_CONSTANT, NEG_LOG_ATM_M3_MOL);
-		map.put(VAPOR_PRESSURE, NEG_LOG_MMHG);
+		map.put(VAPOR_PRESSURE, LOG_MMHG);
 		map.put(DENSITY, G_CM3);
 		map.put(LLNA, BINARY);
 		return map;
