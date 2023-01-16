@@ -288,7 +288,7 @@ public class DsstoxMapper {
 			
 //			writeMappingFile(mappedPropertyValues);
 			writeConflictFile();
-			writeDiscardedPropertyValuesFile();
+//			writeDiscardedPropertyValuesFile();
 			writeDetailedDiscardedPropertyValuesFile();
 		}
 		
@@ -1396,12 +1396,6 @@ public class DsstoxMapper {
 			fileNum++;
 			if(values.size()==0) break;
 		}
-		
-
-		
-		
-		
-
 	}
 /*
 	private String generateParameterValuesString(PropertyValue pv) {
