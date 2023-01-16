@@ -636,8 +636,9 @@ public class DatasetCreator {
 		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, useStdevFilter);
 		
 		System.out.println("Saving unification data to examine...");
-		saveUnifiedData(mappedPropertyValues, params.datasetName, unit);
-		saveUnifiedDataSpreadsheet(mappedPropertyValues, params.datasetName, unit);
+//		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit);redundant- we have excel and json
+
+		saveUnifiedDataSpreadsheet(unifiedPropertyValues, params.datasetName, unit);
 		
 		System.out.println("Posting final merged values...");
 		long t7 = System.currentTimeMillis();
@@ -681,9 +682,9 @@ public class DatasetCreator {
 		}
 	}
 	
-	public void saveUnifiedData(List<MappedPropertyValue> mappedPropertyValues, String datasetName, Unit unit) {
-		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, false);
+	public void saveUnifiedData(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, String datasetName, Unit unit) {
 	
+
 		String datasetFileName = datasetName.replaceAll("[^A-Za-z0-9-_]+","_");
 		String datasetFolderPath = DevQsarConstants.OUTPUT_FOLDER_PATH + File.separator + datasetFileName;
 		String filePath = datasetFolderPath + "/unified.tsv";
@@ -719,8 +720,8 @@ public class DatasetCreator {
 	}
 	
 	
-	public void saveUnifiedDataSpreadsheet(List<MappedPropertyValue> mappedPropertyValues, String datasetName, Unit unit) {
-		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, false);
+	public void saveUnifiedDataSpreadsheet(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, String datasetName, Unit unit) {
+//		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, false);
 	
 		
 		try {
@@ -737,7 +738,8 @@ public class DatasetCreator {
 					JsonObject jo = getDatapointAsJsonObject(structure, pv, sc, dr);
 					
 					jo.addProperty("qsar_property_value", mpv.qsarPropertyValue);
-					jo.addProperty("qsar_property_units", unit.getAbbreviation());
+//					jo.addProperty("qsar_property_units", unit.getAbbreviation());
+					jo.addProperty("qsar_property_units", unit.getName());
 					
 					ja.add(jo);
 				}
