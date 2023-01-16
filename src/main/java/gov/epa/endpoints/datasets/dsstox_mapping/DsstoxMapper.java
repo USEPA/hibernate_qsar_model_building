@@ -23,6 +23,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -1242,11 +1243,83 @@ public class DsstoxMapper {
 	}
 	
 	private void writeDiscardedPropertyValuesFile() {
-		Workbook wb = new XSSFWorkbook();
-		XSSFSheet sheet = (XSSFSheet) wb.createSheet("DiscardedPropertyValues");
 		
+		int fileNum=1;
+		
+		List<DiscardedPropertyValue>values=new ArrayList(discardedPropertyValues);
+		
+		int max=100000;
+//		int max=500;
+		
+		while(values.size()>0) {
+
+			Workbook wb = new XSSFWorkbook();
+
+			List<DiscardedPropertyValue>values2=new ArrayList<>();
+			
+			for(int i=1;i<=max;i++) {
+				
+				values2.add(values.remove(0));
+				if(values.size()==0) break;
+			}
+			
+			
+			XSSFSheet sheet = (XSSFSheet) wb.createSheet("DiscardedPropertyValues");
+			createDiscardedRecordHeader(sheet);
+
+			for (int i = 0; i < values2.size(); i++) {
+				DiscardedPropertyValue dpv =values2.get(i);
+				PropertyValue pv = dpv.propertyValue;
+				DsstoxRecord dr = dpv.dsstoxRecord;
+				SourceChemical sc = pv.getSourceChemical();			
+				Row row = sheet.createRow(i + 1);
+				writeDiscardedRecordRow(dpv, pv, dr, sc, row);
+			}
+			
+			try {
+				OutputStream fos=null;
+				if(discardedPropertyValues.size()<max) {
+					fos = new FileOutputStream(datasetFolderPath + File.separator + "DiscardedPropertyValues.xlsx");
+				} else {
+					fos = new FileOutputStream(datasetFolderPath + File.separator + "DiscardedPropertyValues"+fileNum+".xlsx");	
+				}
+				
+				wb.write(fos);
+				wb.close();
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			
+			fileNum++;
+			if(values.size()==0) break;
+		}
+		
+
+	}
+
+	private void writeDiscardedRecordRow(DiscardedPropertyValue dpv, PropertyValue pv, DsstoxRecord dr,
+			SourceChemical sc, Row row) {
+		int col = 0;
+		row.createCell(col++).setCellValue(pv.getId());
+		row.createCell(col++).setCellValue(sc.generateSrcChemId());
+		row.createCell(col++).setCellValue(sc.getSourceDtxsid());
+		row.createCell(col++).setCellValue(sc.getSourceDtxcid());
+		row.createCell(col++).setCellValue(sc.getSourceDtxrid());
+		row.createCell(col++).setCellValue(sc.getSourceChemicalName());
+		row.createCell(col++).setCellValue(sc.getSourceCasrn());
+		row.createCell(col++).setCellValue(sc.getSourceSmiles());
+		row.createCell(col++).setCellValue(pv.generateConciseValueString());
+		row.createCell(col++).setCellValue(pv.generateParameterValuesString());
+		row.createCell(col++).setCellValue(dr==null ? null : dr.dsstoxSubstanceId);
+		row.createCell(col++).setCellValue(dr==null ? null : dr.preferredName);
+		row.createCell(col++).setCellValue(dr==null ? null : dr.casrn);
+		row.createCell(col++).setCellValue(dpv.reason);
+	}
+
+	private void createDiscardedRecordHeader(Sheet sheet) {
 		Row headerRow = sheet.createRow(0);
 		int headerCol = 0;
+
 		headerRow.createCell(headerCol++).setCellValue("EXP_PROP_ID");
 		headerRow.createCell(headerCol++).setCellValue("SRC_CHEM_ID");
 		headerRow.createCell(headerCol++).setCellValue("SOURCE_DTXSID");
@@ -1261,66 +1334,73 @@ public class DsstoxMapper {
 		headerRow.createCell(headerCol++).setCellValue("MAPPED_CHEMICAL_NAME");
 		headerRow.createCell(headerCol++).setCellValue("MAPPED_CASRN");
 		headerRow.createCell(headerCol++).setCellValue("REASON");
-		
-		for (int i = 0; i < discardedPropertyValues.size(); i++) {
-			DiscardedPropertyValue dpv = discardedPropertyValues.get(i);
-			PropertyValue pv = dpv.propertyValue;
-			DsstoxRecord dr = dpv.dsstoxRecord;
-			SourceChemical sc = pv.getSourceChemical();
-			
-			Row row = sheet.createRow(i + 1);
-			int col = 0;
-			row.createCell(col++).setCellValue(pv.getId());
-			row.createCell(col++).setCellValue(sc.generateSrcChemId());
-			row.createCell(col++).setCellValue(sc.getSourceDtxsid());
-			row.createCell(col++).setCellValue(sc.getSourceDtxcid());
-			row.createCell(col++).setCellValue(sc.getSourceDtxrid());
-			row.createCell(col++).setCellValue(sc.getSourceChemicalName());
-			row.createCell(col++).setCellValue(sc.getSourceCasrn());
-			row.createCell(col++).setCellValue(sc.getSourceSmiles());
-			row.createCell(col++).setCellValue(pv.generateConciseValueString());
-			row.createCell(col++).setCellValue(pv.generateParameterValuesString());
-			row.createCell(col++).setCellValue(dr==null ? null : dr.dsstoxSubstanceId);
-			row.createCell(col++).setCellValue(dr==null ? null : dr.preferredName);
-			row.createCell(col++).setCellValue(dr==null ? null : dr.casrn);
-			row.createCell(col++).setCellValue(dpv.reason);
-		}
-		
-		try {
-			OutputStream fos = new FileOutputStream(datasetFolderPath + File.separator + "DiscardedPropertyValues.xlsx");
-			wb.write(fos);
-			wb.close();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
 	}
 	
 	
 	private void writeDetailedDiscardedPropertyValuesFile() {
 		
-		JsonArray ja=new JsonArray();
 		
-		for (int i = 0; i < discardedPropertyValues.size(); i++) {
-			DiscardedPropertyValue dpv = discardedPropertyValues.get(i);
-			PropertyValue pv = dpv.propertyValue;
-			DsstoxRecord dr = dpv.dsstoxRecord;
-			SourceChemical sc = pv.getSourceChemical();
-			JsonObject jo=DatasetCreator.getDatapointAsJsonObject(null, pv, sc, dr);
-			jo.addProperty("reason_discarded", dpv.reason);
-			ja.add(jo);			
+		int fileNum=1;
+		List<DiscardedPropertyValue>values=new ArrayList(discardedPropertyValues);
+		
+		int max=100000;
+//		int max=500;
+		
+		while(values.size()>0) {
+		
+			Workbook wb = new XSSFWorkbook();
+			
+			List<DiscardedPropertyValue>values2=new ArrayList<>();
+			
+			for(int i=1;i<=max;i++) {
+				values2.add(values.remove(0));
+				if(values.size()==0) break;
+			}
+			
+			
+			JsonArray ja=new JsonArray();
+			
+			for (int i = 0; i < values2.size(); i++) {
+				DiscardedPropertyValue dpv = values2.get(i);
+				PropertyValue pv = dpv.propertyValue;
+				DsstoxRecord dr = dpv.dsstoxRecord;
+				SourceChemical sc = pv.getSourceChemical();
+				JsonObject jo=DatasetCreator.getDatapointAsJsonObject(null, pv, sc, dr);
+				jo.addProperty("reason_discarded", dpv.reason);
+				ja.add(jo);			
+			}
+					
+			String[] fields = { "reason_discarded", "exp_prop_id", "source_dtxrid", "source_dtxrid",
+					"source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",				
+					"source_name", "source_description", "source_authors", "source_title", "source_doi", "source_url",
+					"source_type", "page_url", "notes", "qc_flag", "temperature_c", "pressure_mmHg", "pH",
+					"value_qualifier", "value_original", "value_max", "value_min", "value_point_estimate",
+					"value_units" };
+			
+			
+			OutputStream fos=null;
+
+			String filePath=null;
+			
+			if(discardedPropertyValues.size()<max) {
+				filePath = datasetFolderPath + File.separator + datasetFileName+"_Discarded_Records"+".xlsx";
+			} else {
+				filePath = datasetFolderPath + File.separator + datasetFileName+"_Discarded_Records"+fileNum+".xlsx";
+			}
+			
+			ExcelCreator.createExcel2(ja, filePath, fields,null);
+		
+			Utilities.saveJson(ja, filePath.replace(".xlsx", ".json"));//Save to json so we can limit to PFAS records later
+
+			
+			fileNum++;
+			if(values.size()==0) break;
 		}
-				
-		String[] fields = { "reason_discarded", "exp_prop_id", "source_dtxrid", "source_dtxrid",
-				"source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",				
-				"source_name", "source_description", "source_authors", "source_title", "source_doi", "source_url",
-				"source_type", "page_url", "notes", "qc_flag", "temperature_c", "pressure_mmHg", "pH",
-				"value_qualifier", "value_original", "value_max", "value_min", "value_point_estimate",
-				"value_units" };
 		
-		String filePath = datasetFolderPath + File.separator + datasetFileName+"_Discarded_Records.xlsx";
-		ExcelCreator.createExcel2(ja, filePath, fields,null);
-	
-		Utilities.saveJson(ja, filePath.replace(".xlsx", ".json"));//Save to json so we can limit to PFAS records later
+
+		
+		
+		
 
 	}
 /*

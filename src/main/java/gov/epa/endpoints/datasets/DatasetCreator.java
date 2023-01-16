@@ -426,11 +426,12 @@ public class DatasetCreator {
 	
 	private Dataset initializeDataset(Dataset dataset) throws ConstraintViolationException {
 		Dataset dbDataset = datasetService.findByName(dataset.getName());
+		
 		if (dbDataset!=null) {
-//			logger.error("Dataset with name " + dataset.getName() + " already exists");
+			System.out.println("Dataset with name " + dataset.getName() + " already exists");
 			dataset = null;
 		} else {
-			datasetService.create(dataset);
+			dataset=datasetService.create(dataset);
 		}
 		
 		return dataset;
@@ -571,6 +572,13 @@ public class DatasetCreator {
 	}
 	
 	public void createPropertyDataset(DatasetParams params, boolean useStdevFilter,List<String>excludedSources) {
+		
+		Dataset datasetDB = datasetService.findByName(params.datasetName);
+		if(datasetDB!=null) {
+			System.out.println("already have "+params.datasetName+" in db");
+			return;
+		}
+		
 		Gson gson = new Gson();
 		
 		System.out.println("Selecting experimental property data for " + params.propertyName + "...");

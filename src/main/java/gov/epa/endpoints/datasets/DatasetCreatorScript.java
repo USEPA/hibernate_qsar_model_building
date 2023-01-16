@@ -15,6 +15,7 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
 //import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
@@ -44,23 +45,23 @@ public class DatasetCreatorScript {
 //		getDatasetStatsForOneDataset();
 		
 //		DatasetServiceImpl ds=new DatasetServiceImpl();
-//		ds.delete(106);
+//		ds.delete(107);
+
 		
-
-		createLogP();
-//		createHLC_tmm();		
-		// createWS_tmm();
-//		createMP();
-
-		//TODO recreate WS dataset now that keep was set to false based on manual check
-//		createWS_tmm();
+//		createHLC();//done		
+//		createVP();//done
+//		createWS();//done
+//		createLogP();//done
+//		createBCF();//done
+		createMP();//running
 //		createBP();
-//		createLogP();
-//		createVP();
-//		createBCF();
-//		create_pKA();
+//		
+
 		
+		//TODO recreate WS dataset now that keep was set to false based on manual check
+//		create_pKA();
 //		createBP_exclude_LookChem();
+		
 		
 	}
 	
@@ -274,7 +275,7 @@ public class DatasetCreatorScript {
 	}
 	
 
-	public static void createWS_tmm() {
+	public static void createWS() {
 		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
@@ -293,8 +294,10 @@ public class DatasetCreatorScript {
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
 				omitOpsinAmbiguousNames, omitUvcbNames, null, omitSalts);
 		
-		String datasetName = listName+"_omit_Good=No";
-		String datasetDescription = "Water solubility with 20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5";
+		String datasetName = "WS from exp_prop and chemprop";
+		String datasetDescription = "WS from exp_prop and chemprop where 1e-14 < WS(M) < 100, 1e-11 < WS(g/L) < 990, " 
+				+ "20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5";
+				
 		DatasetParams listMappedParams = new DatasetParams(datasetName, 
 				datasetDescription, 
 				propertyName,
@@ -322,10 +325,12 @@ public class DatasetCreatorScript {
 				omitOpsinAmbiguousNames, omitUvcbNames, null, omitSalts);
 
 		
-		String listMappingName = "ExpProp_VP_WithChemProp_070822_TMM";
-		String listMappingDescription = "Vapor Pressure with 20 < T (C) < 30";
-		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
-				listMappingDescription, 
+		String datasetName = "VP from exp_prop and chemprop";
+		String datasetDescription = "VP from exp_prop and chemprop where 1e-14 < VP(mmHg) < 1e6 and 20 < T(C) < 30";
+		
+		
+		DatasetParams listMappedParams = new DatasetParams(datasetName, 
+				datasetDescription, 
 				propertyName,
 				listMappingParams,
 				bounds);
@@ -351,10 +356,10 @@ public class DatasetCreatorScript {
 				omitOpsinAmbiguousNames, omitUvcbNames, null, omitSalts);
 
 		
-		String listMappingName = listName+"_TMM";
-		String listMappingDescription = "pKA with 20 < T (C) < 30";
-		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
-				listMappingDescription, 
+		String datasetName = listName+"_TMM";
+		String datasetDescription = "pKA with 20 < T (C) < 30";
+		DatasetParams listMappedParams = new DatasetParams(datasetName, 
+				datasetDescription, 
 				propertyName,
 				listMappingParams,
 				bounds);
@@ -388,56 +393,55 @@ public class DatasetCreatorScript {
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
-//		String listMappingName = "ExpProp_LogP_WithChemProp_MULTIPLE";
-		String listMappingName = "ExpProp_LogP_WithChemProp_TMM3";
-		String listMappingDescription = "MULTIPLE LIST Exprop LogP with 20.0 < T (C) < 30.0, LogKow < 15";
+//		String datasetName = "ExpProp_LogP_WithChemProp_MULTIPLE";
+		String datasetName = "LogP from exp_prop and chemprop";
+		String datasetDescription = "LogP from exp_prop and chemprop with -6 < LogKow < 11 and 20 < T(C) < 30, ";
 		
-		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
-				listMappingDescription, 
+		DatasetParams listMappedParams = new DatasetParams(datasetName, 
+				datasetDescription, 
 				propertyName,
 				listMappingParams,
 				bounds);
 		creator.createPropertyDataset(listMappedParams, false);
-
-
+		
 	}
 
 	// methods like these 
+//	public static void createHLC() {
+//		// comment for diff
+//		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
+//		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
+//
+//		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
+//		// String listName = "ExpProp_HLC_WithChemProp_121421";
+//
+//		ArrayList<String> listNameArray = new ArrayList<String>();
+//		listNameArray.add("ExpProp_hlc_WithChemProp_071922_ml_1_to_2000");
+//		listNameArray.add("ExpProp_hlc_WithChemProp_071922_ml_2001_to_4000");
+//		listNameArray.add("ExpProp_hlc_WithChemProp_071922_ml_4001_to_4849");
+//
+//		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
+//		BoundParameterValue phBound = new BoundParameterValue("pH", 6.0, 8.0, true);
+//		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+//		bounds.add(temperatureBound);
+//		bounds.add(phBound);
+//
+//		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, 
+//				false, true, false, true, true, false, false, listNameArray,true);
+//		String datasetName = "ATTEMPT8 ExpProp_HLC_WithChemProp_071922_MULTIPLE";
+//		String datasetDescription = "ATTEMPT8 MULTIPLE LIST Exprop HLC with 20 < T (C) < 30 and 6 < pH < 8";
+//		DatasetParams listMappedParams = new DatasetParams(datasetName, 
+//				datasetDescription, 
+//				propertyName,
+//				listMappingParams,
+//				bounds);
+//		creator.createPropertyDataset(listMappedParams, false);
+//
+//
+//	}
+
+
 	public static void createHLC() {
-		// comment for diff
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
-		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
-
-		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
-		// String listName = "ExpProp_HLC_WithChemProp_121421";
-
-		ArrayList<String> listNameArray = new ArrayList<String>();
-		listNameArray.add("ExpProp_hlc_WithChemProp_071922_ml_1_to_2000");
-		listNameArray.add("ExpProp_hlc_WithChemProp_071922_ml_2001_to_4000");
-		listNameArray.add("ExpProp_hlc_WithChemProp_071922_ml_4001_to_4849");
-
-		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
-		BoundParameterValue phBound = new BoundParameterValue("pH", 6.0, 8.0, true);
-		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
-		bounds.add(temperatureBound);
-		bounds.add(phBound);
-
-		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, 
-				false, true, false, true, true, false, false, listNameArray,true);
-		String listMappingName = "ATTEMPT8 ExpProp_HLC_WithChemProp_071922_MULTIPLE";
-		String listMappingDescription = "ATTEMPT8 MULTIPLE LIST Exprop HLC with 20 < T (C) < 30 and 6 < pH < 8";
-		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
-				listMappingDescription, 
-				propertyName,
-				listMappingParams,
-				bounds);
-		creator.createPropertyDataset(listMappedParams, false);
-
-
-	}
-
-
-	public static void createHLC_tmm() {
 		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
@@ -459,12 +463,16 @@ public class DatasetCreatorScript {
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
-		String listMappingName = "ExpProp_HLC_TMM";
 		
-		String listMappingDescription = listMappingName+" with 20 < T (C) < 30 and 6.5 < pH < 7.5";
+		String datasetName = "HLC from exp_prop and chemprop";
+//		String datasetName = "HLC delete later";
+		
+		String datasetDescription = "HLC from exp_prop and chemprop where "
+				+ "1e-13 < HLC (atm m^3/mol) < 1e2 , 20 < T (C) < 30, 6.5 < pH < 7.5";
 
-		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
-				listMappingDescription, 
+
+		DatasetParams listMappedParams = new DatasetParams(datasetName, 
+				datasetDescription, 
 				propertyName,
 				listMappingParams,
 				bounds);
@@ -530,10 +538,13 @@ public class DatasetCreatorScript {
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
-		String listMappingName = "Standard Melting Point from exp_prop_TMM";
-		String listMappingDescription = "Melting Point 740 < P (mmHg) < 780";
-		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
-				listMappingDescription, 
+				
+		String datasetName = "MP from exp_prop and chemprop";
+		String datasetDescription = "MP from exp_prop and chemprop where -250 < MP < 550 and 740 < P < 780";
+
+		
+		DatasetParams listMappedParams = new DatasetParams(datasetName, 
+				datasetDescription, 
 				propertyName,
 				listMappingParams,
 				bounds);
@@ -643,10 +654,10 @@ public class DatasetCreatorScript {
 
 		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, 
 				false, true, false, true, true, false, false, null,true);
-		String listMappingName = "ExpProp BCF Fish_TMM";
-		String listMappingDescription = "BCF values for fish with whole body tissue (measured ZEROS OMITTED)";
-		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
-				listMappingDescription, 
+		String datasetName = "ExpProp BCF Fish_TMM";
+		String datasetDescription = "BCF values for fish with whole body tissue (measured ZEROS OMITTED)";
+		DatasetParams listMappedParams = new DatasetParams(datasetName, 
+				datasetDescription, 
 				propertyName,
 				listMappingParams,
 				null);
@@ -697,11 +708,12 @@ public class DatasetCreatorScript {
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
 
+		String datasetName = "BP from exp_prop and chemprop";
+		String datasetDescription = "BP from exp_prop and chemprop where -150 < BP < 600 and 740 < P < 780";
 
-		String listMappingName = "Standard Boiling Point from exp_prop_TMM";
-		String listMappingDescription = "Boiling Point 740 < P (mmHg) < 780";
-		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
-				listMappingDescription, 
+		
+		DatasetParams listMappedParams = new DatasetParams(datasetName, 
+				datasetDescription, 
 				propertyName,
 				listMappingParams,
 				bounds);
@@ -750,10 +762,10 @@ public class DatasetCreatorScript {
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
 
-		String listMappingName = "Standard Boiling Point from exp_prop_TMM_exclude_LookChem";
-		String listMappingDescription = "Boiling Point 740 < P (mmHg) < 780";
-		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
-				listMappingDescription, 
+		String datasetName = "Standard Boiling Point from exp_prop_TMM_exclude_LookChem";
+		String datasetDescription = "Boiling Point 740 < P (mmHg) < 780";
+		DatasetParams listMappedParams = new DatasetParams(datasetName, 
+				datasetDescription, 
 				propertyName,
 				listMappingParams,
 				bounds);
