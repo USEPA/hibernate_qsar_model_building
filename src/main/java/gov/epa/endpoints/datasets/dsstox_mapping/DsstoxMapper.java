@@ -1243,7 +1243,7 @@ public class DsstoxMapper {
 	}
 	
 	private void writeDiscardedPropertyValuesFile() {
-		
+		System.out.println("Writing discarded property values spreadsheet(s)");
 		int fileNum=1;
 		
 		List<DiscardedPropertyValue>values=new ArrayList(discardedPropertyValues);
@@ -1339,7 +1339,7 @@ public class DsstoxMapper {
 	
 	private void writeDetailedDiscardedPropertyValuesFile() {
 		
-		
+		System.out.println("Writing detailed discarded property values spreadsheet(s)");
 		int fileNum=1;
 		List<DiscardedPropertyValue>values=new ArrayList(discardedPropertyValues);
 		
