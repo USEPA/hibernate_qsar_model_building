@@ -86,9 +86,12 @@ public class PFAS_SplittingGenerator {
 			
 			FileWriter fw=new FileWriter(filepathOutput);
 			fw.write("DTXCID\tstandardizedSmiles\r\n");
+			
+			int counter=0;
 			for (DsstoxRecord dr:dsstoxRecords) {
+				counter++;
 //				System.out.println(dr.dsstoxCompoundId+"\t"+dr.smiles+"\t"+dr.qsarReadySmiles);
-				String standardizedSmiles=standardize(dr,standardizer);
+				String standardizedSmiles=standardize(dr,standardizer,counter);
 				fw.write(dr.getDsstoxCompoundId()+"\t"+standardizedSmiles+"\r\n");
 				fw.flush();				
 			}
@@ -130,7 +133,7 @@ public class PFAS_SplittingGenerator {
 		return dpis;
 	}
 	
-	private String standardize(DsstoxRecord dr,Standardizer standardizer) {
+	private String standardize(DsstoxRecord dr,Standardizer standardizer, int counter) {
 
 		//		System.out.println(dr.dsstoxCompoundId+"\t"+standardizer.standardizerName);
 		Compound compound = compoundService.findByDtxcidSmilesAndStandardizer(dr.dsstoxCompoundId, dr.smiles,standardizer.standardizerName);
@@ -138,7 +141,7 @@ public class PFAS_SplittingGenerator {
 		if (compound!=null) {
 			// If already standardized, set standardization and mark record as standardized
 			// Additionally store mapped compound so we don't have to query it later
-			System.out.println(dr.dsstoxCompoundId+"\tAlready have qsar ready smiles="+compound.getCanonQsarSmiles());
+			System.out.println(counter+"\t"+dr.dsstoxCompoundId+"\tAlready have qsar ready smiles="+compound.getCanonQsarSmiles());
 			return compound.getCanonQsarSmiles();
 		} else {
 			//			System.out.println(dr.dsstoxCompoundId+"\tNeed to standardize="+dr.smiles);
@@ -155,7 +158,7 @@ public class PFAS_SplittingGenerator {
 					}
 					
 					compound = new Compound(dr.dsstoxCompoundId, dr.smiles, standardizeResponseData.qsarStandardizedSmiles, standardizer.standardizerName, "tmarti02");
-					System.out.println(dr.dsstoxCompoundId+"\tSDE qsar ready smiles="+compound.getCanonQsarSmiles());
+					System.out.println(counter+"\t"+dr.dsstoxCompoundId+"\tSDE qsar ready smiles="+compound.getCanonQsarSmiles());
 
 					try {
 						compoundService.create(compound);
@@ -396,18 +399,20 @@ public class PFAS_SplittingGenerator {
 		
 		String folder="data/dev_qsar/dataset_files/";
 		
-		String listName="PFASSTRUCTV4";
+//		String listName="PFASSTRUCTV4";
+		
+		String listName="PFASSTRUCTV5";
 		String filePath=folder+listName+"_qsar_ready_smiles.txt";
-//		p.generateQSAR_ReadyPFAS_STRUCT(listName,filePath);
+		p.generateQSAR_ReadyPFAS_STRUCT(listName,filePath);
 		
 		ArrayList<String>smilesArray=p.getPFASSmiles(filePath);
 		
 //		String splittingName=splittingPFASOnly;
 //		String splittingName=splittingAll;		
 
-		String splittingName=splittingAllButPFAS;		
-		String datasetName="Standard Water solubility from exp_prop";
-		p.createSplitting(datasetName,splittingName,smilesArray);
+//		String splittingName=splittingAllButPFAS;		
+//		String datasetName="Standard Water solubility from exp_prop";
+//		p.createSplitting(datasetName,splittingName,smilesArray);
 		
 //		String datasetName="Standard Water solubility from exp_prop";		
 //		p.createFiveFoldExternalSplittings(folder, datasetName,"T.E.S.T. 5.1", smilesArray);

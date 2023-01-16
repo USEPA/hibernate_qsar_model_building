@@ -51,7 +51,9 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundServiceImpl;
 import gov.epa.databases.dsstox.DsstoxRecord;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
 import gov.epa.endpoints.datasets.dsstox_mapping.DsstoxMapper;
-import gov.epa.run_from_java.scripts.GetExpPropInfo;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.util.MathUtil;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 import gov.epa.web_services.standardizers.Standardizer;
@@ -744,9 +746,9 @@ public class DatasetCreator {
 			String datasetFileName = datasetName.replaceAll("[^A-Za-z0-9-_]+","_");
 			String datasetFolderPath = DevQsarConstants.OUTPUT_FOLDER_PATH + File.separator + datasetFileName;
 			String filePath = datasetFolderPath + "/"+datasetFileName+"_Mapped_Records.xlsx";
-			GetExpPropInfo.createExcel2(ja, filePath, fields);
+			ExcelCreator.createExcel2(ja, filePath, fields,null);
 			
-			GetExpPropInfo.saveJson(ja, filePath.replace(".xlsx", ".json"));//Save to json so we can limit to PFAS records later
+			Utilities.saveJson(ja, filePath.replace(".xlsx", ".json"));//Save to json so we can limit to PFAS records later
 			
 			
 		} catch (Exception ex) {

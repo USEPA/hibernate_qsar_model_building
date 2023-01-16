@@ -55,7 +55,9 @@ import gov.epa.endpoints.datasets.DatasetCreator;
 import gov.epa.endpoints.datasets.DatasetParams;
 import gov.epa.endpoints.datasets.ExplainedResponse;
 import gov.epa.endpoints.datasets.MappedPropertyValue;
-import gov.epa.run_from_java.scripts.GetExpPropInfo;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.util.StructureUtil;
 import gov.epa.util.StructureUtil.SimpleOpsinResult;
 import gov.epa.web_services.standardizers.Standardizer;
@@ -1316,9 +1318,9 @@ public class DsstoxMapper {
 				"value_units" };
 		
 		String filePath = datasetFolderPath + File.separator + datasetFileName+"_Discarded_Records.xlsx";
-		GetExpPropInfo.createExcel2(ja, filePath, fields);
+		ExcelCreator.createExcel2(ja, filePath, fields,null);
 	
-		GetExpPropInfo.saveJson(ja, filePath.replace(".xlsx", ".json"));//Save to json so we can limit to PFAS records later
+		Utilities.saveJson(ja, filePath.replace(".xlsx", ".json"));//Save to json so we can limit to PFAS records later
 
 	}
 /*

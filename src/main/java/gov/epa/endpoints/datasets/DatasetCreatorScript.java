@@ -19,7 +19,8 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
 //import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
-import gov.epa.run_from_java.scripts.GetExpPropInfo;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 
 
@@ -103,7 +104,7 @@ public class DatasetCreatorScript {
 			folder+=dataSetName+"\\";		
 			String jsonPath=folder+dataSetName+"_Mapped_Records.json";
 			jsonPath=jsonPath.replace(" ", "_").replace("=", "_");
-			JsonArray mappedRecords=GetExpPropInfo.getRecordsFromFile(jsonPath);
+			JsonArray mappedRecords=Utilities.getJsonArrayFromJsonFile(jsonPath);
 			//		System.out.println("Number of mapped records ="+mappedRecords.size());
 
 
@@ -139,7 +140,7 @@ public class DatasetCreatorScript {
 		folder+=dataSetName+"\\";		
 		String jsonPath=folder+dataSetName+"_Mapped_Records.json";
 		jsonPath=jsonPath.replace(" ", "_").replace("=", "_");
-		JsonArray mappedRecords=GetExpPropInfo.getRecordsFromFile(jsonPath);
+		JsonArray mappedRecords=Utilities.getJsonArrayFromJsonFile(jsonPath);
 		
 		Set<String>rawSources=htRaw.keySet();
 		
@@ -170,7 +171,7 @@ public class DatasetCreatorScript {
 		folder+=dataSetName+"\\";		
 		String jsonPath=folder+dataSetName+"_Discarded_Records.json";
 		jsonPath=jsonPath.replace(" ", "_").replace("=", "_");
-		JsonArray discardedRecords=GetExpPropInfo.getRecordsFromFile(jsonPath);
+		JsonArray discardedRecords=Utilities.getJsonArrayFromJsonFile(jsonPath);
 
 		Hashtable<String,Integer>htReasonCounts=new Hashtable<>();
 		
@@ -208,7 +209,7 @@ public class DatasetCreatorScript {
 		folder+=dataSetName+"\\";		
 		String jsonPath=folder+dataSetName+"_Discarded_Records.json";
 		jsonPath=jsonPath.replace(" ", "_").replace("=", "_");
-		JsonArray discardedRecords=GetExpPropInfo.getRecordsFromFile(jsonPath);
+		JsonArray discardedRecords=Utilities.getJsonArrayFromJsonFile(jsonPath);
 
 		Hashtable<String,Integer>htReasonCounts=new Hashtable<>();
 		
