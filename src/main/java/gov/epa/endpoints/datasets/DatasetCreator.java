@@ -222,7 +222,14 @@ public class DatasetCreator {
 	private void standardize(List<MappedPropertyValue> mappedPropertyValues) {
 		// Go through all compounds retrieved from DSSTox
 		List<String> smilesToBatchStandardize = new ArrayList<String>();
+		
+		int counter=0;
+		
 		for (MappedPropertyValue mpv:mappedPropertyValues) {
+			counter++;
+			
+			if(counter%1000==0) System.out.println(counter+ " of "+mappedPropertyValues.size());
+			
 			DsstoxRecord dr = mpv.dsstoxRecord;
 
 			// Check (by DTXCID) if compound already has a standardization
@@ -476,6 +483,12 @@ public class DatasetCreator {
 		}
 	}
 	
+	/**
+	 * Flattens the records and posts them to the database. It stores the final property value with associated CIDs and exp_prop_ids
+	 *  
+	 * @param unifiedPropertyValues
+	 * @param dataset
+	 */
 	private void postDataPointsWithCIDs(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, Dataset dataset) {
 		
 		for (String structure:unifiedPropertyValues.keySet()) {
@@ -637,14 +650,13 @@ public class DatasetCreator {
 		
 		System.out.println("Saving unification data to examine...");
 //		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit);redundant- we have excel and json
-
 		saveUnifiedDataSpreadsheet(unifiedPropertyValues, params.datasetName, unit);
 		
 		System.out.println("Posting final merged values...");
 		long t7 = System.currentTimeMillis();
 		
 		if (dataset!=null) {//We can post:
-//			postDataPoints(unifiedPropertyValues, dataset);
+//			postDataPoints(unifiedPropertyValues, dataset);//old method doesnt have CIDs or exp_prop_ids 
 			postDataPointsWithCIDs(unifiedPropertyValues, dataset);
 		
 		} else {//Data set already exists lets look at datapoints:
@@ -725,7 +737,7 @@ public class DatasetCreator {
 	
 		
 		try {
-			
+					
 			JsonArray ja=new JsonArray();
 			
 			for (String structure:unifiedPropertyValues.keySet()) {
@@ -756,10 +768,10 @@ public class DatasetCreator {
 			String datasetFileName = datasetName.replaceAll("[^A-Za-z0-9-_]+","_");
 			String datasetFolderPath = DevQsarConstants.OUTPUT_FOLDER_PATH + File.separator + datasetFileName;
 			String filePath = datasetFolderPath + "/"+datasetFileName+"_Mapped_Records.xlsx";
+
+			Utilities.saveJson(ja, filePath.replace(".xlsx", ".json"));//Save to json first in case excel writing fails
 			ExcelCreator.createExcel2(ja, filePath, fields,null);
-			
-			Utilities.saveJson(ja, filePath.replace(".xlsx", ".json"));//Save to json so we can limit to PFAS records later
-			
+						
 			
 		} catch (Exception ex) {
 			ex.printStackTrace();

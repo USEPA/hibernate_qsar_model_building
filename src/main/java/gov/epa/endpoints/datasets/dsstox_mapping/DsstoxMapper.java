@@ -394,7 +394,7 @@ public class DsstoxMapper {
 			
 			counter++;
 			
-			if (counter%100==0) System.out.println(counter);
+			if (counter%1000==0) System.out.println(counter+" of "+propertyValuesMap.keySet().size());
 			
 			List<PropertyValue> propertyValues = propertyValuesMap.get(id);
 			DsstoxRecord dsstoxRecord = dsstoxRecordsMap.get(id);
