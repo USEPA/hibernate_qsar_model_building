@@ -1341,15 +1341,26 @@ public class DsstoxMapper {
 		
 		System.out.println("Writing detailed discarded property values spreadsheet(s)");
 		int fileNum=1;
-		List<DiscardedPropertyValue>values=new ArrayList(discardedPropertyValues);
+		List<DiscardedPropertyValue>values=new ArrayList<>();
+		values.addAll(discardedPropertyValues);
+				
+		String[] fields = { "reason_discarded", "exp_prop_id", "source_dtxrid", "source_dtxrid",
+				"source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",				
+				"source_name", "source_description", "source_authors", "source_title", "source_doi", "source_url",
+				"source_type", "page_url", "notes", "qc_flag", "temperature_c", "pressure_mmHg", "pH",
+				"value_qualifier", "value_original", "value_max", "value_min", "value_point_estimate",
+				"value_units" };
+
+		
+		JsonArray jaAll=convertDiscardedRecordsToJsonArray(values);
+		String filePathAll=datasetFolderPath + File.separator + datasetFileName+"_Discarded_Records"+".json";
+		Utilities.saveJson(jaAll, filePathAll.replace(".xlsx", ".json"));//Save to json so we can limit to PFAS records later
 		
 		int max=100000;
 //		int max=500;
 		
 		while(values.size()>0) {
 		
-			Workbook wb = new XSSFWorkbook();
-			
 			List<DiscardedPropertyValue>values2=new ArrayList<>();
 			
 			for(int i=1;i<=max;i++) {
@@ -1357,41 +1368,15 @@ public class DsstoxMapper {
 				if(values.size()==0) break;
 			}
 			
-			
-			JsonArray ja=new JsonArray();
-			
-			for (int i = 0; i < values2.size(); i++) {
-				DiscardedPropertyValue dpv = values2.get(i);
-				PropertyValue pv = dpv.propertyValue;
-				DsstoxRecord dr = dpv.dsstoxRecord;
-				SourceChemical sc = pv.getSourceChemical();
-				JsonObject jo=DatasetCreator.getDatapointAsJsonObject(null, pv, sc, dr);
-				jo.addProperty("reason_discarded", dpv.reason);
-				ja.add(jo);			
-			}
-					
-			String[] fields = { "reason_discarded", "exp_prop_id", "source_dtxrid", "source_dtxrid",
-					"source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",				
-					"source_name", "source_description", "source_authors", "source_title", "source_doi", "source_url",
-					"source_type", "page_url", "notes", "qc_flag", "temperature_c", "pressure_mmHg", "pH",
-					"value_qualifier", "value_original", "value_max", "value_min", "value_point_estimate",
-					"value_units" };
-			
-			
-			OutputStream fos=null;
-
+			JsonArray ja=convertDiscardedRecordsToJsonArray(values2);
 			String filePath=null;
-			
 			if(discardedPropertyValues.size()<max) {
 				filePath = datasetFolderPath + File.separator + datasetFileName+"_Discarded_Records"+".xlsx";
 			} else {
 				filePath = datasetFolderPath + File.separator + datasetFileName+"_Discarded_Records"+fileNum+".xlsx";
 			}
-			
-			ExcelCreator.createExcel2(ja, filePath, fields,null);
-		
-			Utilities.saveJson(ja, filePath.replace(".xlsx", ".json"));//Save to json so we can limit to PFAS records later
 
+			ExcelCreator.createExcel2(ja, filePath, fields,null);
 			
 			fileNum++;
 			if(values.size()==0) break;
@@ -1410,5 +1395,26 @@ public class DsstoxMapper {
 		return sb.toString();
 	}
 */
+
+	private JsonArray convertDiscardedRecordsToJsonArray(List<DiscardedPropertyValue> values2) {
+		
+		JsonArray ja=new JsonArray();
+
+		for (int i = 0; i < values2.size(); i++) {
+			DiscardedPropertyValue dpv = values2.get(i);
+			PropertyValue pv = dpv.propertyValue;
+			DsstoxRecord dr = dpv.dsstoxRecord;
+			SourceChemical sc = pv.getSourceChemical();
+			MappedPropertyValue mpv=new MappedPropertyValue();
+			mpv.propertyValue=pv;
+			mpv.dsstoxRecord=dr;
+			pv.setSourceChemical(sc);								
+			JsonObject jo=DatasetCreator.getDatapointAsJsonObject(null, mpv,null);
+			jo.addProperty("reason_discarded", dpv.reason);
+			ja.add(jo);			
+		}
+				
+		return ja;
+	}
 
 }

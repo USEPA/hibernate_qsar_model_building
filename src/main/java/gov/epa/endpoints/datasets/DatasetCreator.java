@@ -4,14 +4,19 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.validation.ConstraintViolationException;
+
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -50,6 +55,7 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundServiceImpl;
 import gov.epa.databases.dsstox.DsstoxRecord;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
+import gov.epa.endpoints.datasets.dsstox_mapping.DiscardedPropertyValue;
 import gov.epa.endpoints.datasets.dsstox_mapping.DsstoxMapper;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
@@ -734,54 +740,84 @@ public class DatasetCreator {
 	
 	public void saveUnifiedDataSpreadsheet(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, String datasetName, Unit unit) {
 //		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, false);
-	
-		
-		try {
-					
-			JsonArray ja=new JsonArray();
-			
-			for (String structure:unifiedPropertyValues.keySet()) {
-				List<MappedPropertyValue> structurePropertyValues = unifiedPropertyValues.get(structure);
-			
-				for (MappedPropertyValue mpv:structurePropertyValues) {
-					PropertyValue pv = mpv.propertyValue;
-					SourceChemical sc = pv.getSourceChemical();
-					DsstoxRecord dr = mpv.dsstoxRecord;
-					JsonObject jo = getDatapointAsJsonObject(structure, pv, sc, dr);
-					
-					jo.addProperty("qsar_property_value", mpv.qsarPropertyValue);
-//					jo.addProperty("qsar_property_units", unit.getAbbreviation());
-					jo.addProperty("qsar_property_units", unit.getName());
-					
-					ja.add(jo);
-				}
-			}
-			
-			String[] fields = { "canon_qsar_smiles","exp_prop_id", "source_dtxrid", 
-					"source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",
-					"mapped_dtxcid", "mapped_dtxsid", "mapped_chemical_name", "mapped_cas", "mapped_smiles", "mapped_molweight",
-					"source_name", "source_description", "source_authors", "source_title", "source_doi", "source_url",
-					"source_type", "page_url", "notes", "qc_flag", "temperature_c", "pressure_mmHg", "pH",
-					"value_qualifier", "value_original", "value_max", "value_min", "value_point_estimate",
-					"value_units","qsar_property_value","qsar_property_units" };
-			
-			String datasetFileName = datasetName.replaceAll("[^A-Za-z0-9-_]+","_");
-			String datasetFolderPath = DevQsarConstants.OUTPUT_FOLDER_PATH + File.separator + datasetFileName;
-			String filePath = datasetFolderPath + "/"+datasetFileName+"_Mapped_Records.xlsx";
 
-			Utilities.saveJson(ja, filePath.replace(".xlsx", ".json"));//Save to json first in case excel writing fails
-			ExcelCreator.createExcel2(ja, filePath, fields,null);
-						
-			
-		} catch (Exception ex) {
-			ex.printStackTrace();
+		String[] fields = { "canon_qsar_smiles","exp_prop_id", "source_dtxrid", 
+				"source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",
+				"mapped_dtxcid", "mapped_dtxsid", "mapped_chemical_name", "mapped_cas", "mapped_smiles", "mapped_molweight",
+				"source_name", "source_description", "source_authors", "source_title", "source_doi", "source_url",
+				"source_type", "page_url", "notes", "qc_flag", "temperature_c", "pressure_mmHg", "pH",
+				"value_qualifier", "value_original", "value_max", "value_min", "value_point_estimate",
+				"value_units","qsar_property_value","qsar_property_units" };
+
+		List<String>keys=new ArrayList<>();
+		
+		for (String key:unifiedPropertyValues.keySet()) {
+			keys.add(key);
 		}
 		
+		String datasetFileName = datasetName.replaceAll("[^A-Za-z0-9-_]+","_");
+		String datasetFolderPath = DevQsarConstants.OUTPUT_FOLDER_PATH + File.separator + datasetFileName;
+		JsonArray jaAll = makeJsonArrayFromUnifiedRecords(unifiedPropertyValues, unit, keys);
+		String filePathJson = datasetFolderPath + "/"+datasetFileName+"_Mapped_Records.json";
+		Utilities.saveJson(jaAll, filePathJson.replace(".xlsx", ".json"));//Save to json first in case excel writing fails
+		
+		keys.addAll(unifiedPropertyValues.keySet());
+				
+		int max=100000;
+		int fileNum=1;
+		
+		while(keys.size()>0) {
+			
+			List<String>keys2=new ArrayList<>();
+			
+			for(int i=1;i<=max;i++) {
+				keys2.add(keys.remove(0));
+				if(keys.size()==0) break;
+			}
+						
+			JsonArray ja = makeJsonArrayFromUnifiedRecords(unifiedPropertyValues, unit, keys2);			
+					
+			try {
+				String filePath=null;
+				if(keys.size()<max) {
+					filePath = datasetFolderPath + "/"+datasetFileName+"_Mapped_Records.xlsx";
+				} else {
+					filePath = datasetFolderPath + "/"+datasetFileName+"_Mapped_Records"+fileNum+".xlsx";
+				}
+				ExcelCreator.createExcel2(ja, filePath, fields,null);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			fileNum++;
+			if(keys.size()==0) break;
+		}
 	}
 
 
 
-	public static JsonObject getDatapointAsJsonObject(String structure, PropertyValue pv, SourceChemical sc, DsstoxRecord dr) {
+	private JsonArray makeJsonArrayFromUnifiedRecords(Map<String, List<MappedPropertyValue>> unifiedPropertyValues,
+			Unit unit, List<String> keys2) {
+		JsonArray ja=new JsonArray();
+		
+		for (int i = 0; i < keys2.size(); i++) {
+			String key=keys2.get(i);
+			List<MappedPropertyValue> structurePropertyValues = unifiedPropertyValues.get(key);			
+			for (MappedPropertyValue mpv:structurePropertyValues) {
+				JsonObject jo = getDatapointAsJsonObject(key, mpv, unit);					
+				ja.add(jo);
+			}
+		}
+		return ja;
+	}
+
+
+
+	public static JsonObject getDatapointAsJsonObject(String structure, MappedPropertyValue mpv,Unit unit) {
+				
+		PropertyValue pv = mpv.propertyValue;
+		SourceChemical sc = pv.getSourceChemical();
+		DsstoxRecord dr = mpv.dsstoxRecord;
+		
 		JsonObject jo=new JsonObject();
 
 		jo.addProperty("canon_qsar_smiles", structure);
@@ -839,6 +875,14 @@ public class DatasetCreator {
 
 		if (pv.getParameterValue("pH")!=null)						
 			jo.addProperty("pH", pv.getParameterValue("pH").getValuePointEstimate());
+		
+		if(mpv.qsarPropertyValue!=null) {
+			jo.addProperty("qsar_property_value", mpv.qsarPropertyValue);
+//			jo.addProperty("qsar_property_units", unit.getAbbreviation());
+			jo.addProperty("qsar_property_units", unit.getName());
+		}
+		
+
 
 		return jo;
 	}
