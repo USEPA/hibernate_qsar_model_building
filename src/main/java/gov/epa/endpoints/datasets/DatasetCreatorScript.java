@@ -2,6 +2,7 @@
 
 package gov.epa.endpoints.datasets;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
@@ -17,9 +18,11 @@ import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 //import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
@@ -42,10 +45,11 @@ public class DatasetCreatorScript {
 	public static void main(String[] args) {
 
 //		getDatasetStats();//Get record counts for the papers
+		getDatasetStatsUsingSql();//Get record counts for the papers
 //		getDatasetStatsForOneDataset();
 		
 //		DatasetServiceImpl ds=new DatasetServiceImpl();
-//		ds.delete(107);
+//		ds.delete(112);
 
 		
 //		createHLC();//done		
@@ -53,7 +57,7 @@ public class DatasetCreatorScript {
 //		createWS();//done
 //		createLogP();//done
 //		createBCF();//done
-		createMP();//running
+//		createMP();//done
 //		createBP();
 //		
 
@@ -72,23 +76,23 @@ public class DatasetCreatorScript {
 		List<String>propertyNames=new ArrayList<>();
 		List<String>datasetNames=new ArrayList<>();
 
-		propertyNames.add(DevQsarConstants.MELTING_POINT);
-		datasetNames.add("Standard Melting Point from exp_prop_TMM");
+//		propertyNames.add(DevQsarConstants.MELTING_POINT);
+//		datasetNames.add("MP_from_exp_prop_and_chemprop");
 
 		propertyNames.add(DevQsarConstants.BOILING_POINT);
-		datasetNames.add("Standard Boiling Point from exp_prop_TMM");
+		datasetNames.add("BP_from_exp_prop_and_chemprop");
 		
-		propertyNames.add(DevQsarConstants.WATER_SOLUBILITY);
-		datasetNames.add("ExpProp_WaterSolubility_WithChemProp_120121_omit_Good=No");
-
-		propertyNames.add(DevQsarConstants.LOG_KOW);
-		datasetNames.add("ExpProp_LogP_WithChemProp_TMM");
-		
-		propertyNames.add(DevQsarConstants.VAPOR_PRESSURE);
-		datasetNames.add("ExpProp_VP_WithChemProp_070822_TMM");
-		
-		propertyNames.add(DevQsarConstants.HENRYS_LAW_CONSTANT);
-		datasetNames.add("ExpProp_HLC_TMM");
+//		propertyNames.add(DevQsarConstants.WATER_SOLUBILITY);
+//		datasetNames.add("WS_from_exp_prop_and_chemprop");
+//
+//		propertyNames.add(DevQsarConstants.LOG_KOW);
+//		datasetNames.add("LogP_from_exp_prop_and_chemprop");
+//		
+//		propertyNames.add(DevQsarConstants.VAPOR_PRESSURE);
+//		datasetNames.add("VP_from_exp_prop_and_chemprop");
+//		
+//		propertyNames.add(DevQsarConstants.HENRYS_LAW_CONSTANT);
+//		datasetNames.add("HLC_from_exp_prop_and_chemprop");
 		
 		
 		
@@ -99,16 +103,18 @@ public class DatasetCreatorScript {
 			
 			PropertyValueServiceImpl propertyValueService = new PropertyValueServiceImpl();
 			List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(propertyName, true, true);
-			//		System.out.println("Number of raw records ="+propertyValues.size());
+				System.out.println("Number of raw records ="+propertyValues.size());
 
 			String folder="data\\dev_qsar\\output\\";
 			folder+=dataSetName+"\\";		
 			String jsonPath=folder+dataSetName+"_Mapped_Records.json";
 			jsonPath=jsonPath.replace(" ", "_").replace("=", "_");
 			JsonArray mappedRecords=Utilities.getJsonArrayFromJsonFile(jsonPath);
-			//		System.out.println("Number of mapped records ="+mappedRecords.size());
+			System.out.println("Number of mapped records ="+mappedRecords.size());
 
 
+//			String sql="select count(id) from qsar_datasets.data_points dp where dp.fk_dataset_id="+90
+			
 			DataPointServiceImpl dpsi=new DataPointServiceImpl();
 			List<DataPoint>datapoints=dpsi.findByDatasetName(dataSetName);
 			//		System.out.println("Number of datapoints ="+datapoints.size());
@@ -117,19 +123,83 @@ public class DatasetCreatorScript {
 		}
 	}
 	
+	
+	static void getDatasetStatsUsingSql() {
+
+		System.out.println("propertyName\tRaw*\tDSSTox Mapped\tDataset");
+
+		Connection conn=DatabaseLookup.getConnection();
+		
+		List<String>datasetNames=new ArrayList<>();
+
+		datasetNames.add("MP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("WS from exp_prop and chemprop");
+		datasetNames.add("LogP from exp_prop and chemprop");
+		datasetNames.add("VP from exp_prop and chemprop");
+		datasetNames.add("HLC from exp_prop and chemprop");
+		
+		for (int i=0;i<datasetNames.size();i++) {
+			
+			String dataSetName=datasetNames.get(i);
+			
+			String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+dataSetName+"'";
+			String datasetId=DatabaseLookup.runSQL(conn, sql);
+
+			sql="select fk_property_id from qsar_datasets.datasets d where d.\"name\" ='"+dataSetName+"'";
+			String propertyId_qsar_datasets=DatabaseLookup.runSQL(conn, sql);
+			
+			sql="select p.\"name\" from qsar_datasets.properties p where p.id="+propertyId_qsar_datasets;
+			String propertyName=DatabaseLookup.runSQL(conn, sql);
+			
+			sql="select id from exp_prop.properties d where d.\"name\" ='"+propertyName.replace("'", "''")+"'";
+			String propertyIdE_exp_prop=DatabaseLookup.runSQL(conn, sql);
+
+//			System.out.println(dataSetName+"\t"+datasetId+"\t"+propertyIdE_exp_prop);
+		
+			sql="select count (pv.id) from exp_prop.property_values pv "+
+					"where fk_property_id="+propertyIdE_exp_prop+" and keep=true and "+
+					"(value_qualifier is null or value_qualifier ='~')";
+
+//			System.out.println(sql);
+			
+			String countRaw=DatabaseLookup.runSQL(conn, sql);
+						
+//			System.out.println("Number of raw records ="+countRaw);
+
+			String folder="data\\dev_qsar\\output\\";
+			folder+=dataSetName+"\\";		
+			String jsonPath=folder+dataSetName+"_Mapped_Records.json";
+			jsonPath=jsonPath.replace(" ", "_").replace("=", "_");
+			JsonArray mappedRecords=Utilities.getJsonArrayFromJsonFile(jsonPath);
+			
+			String countMapped=mappedRecords.size()+"";
+//			System.out.println("Number of mapped records ="+countMapped);
+
+			sql="select count(id) from qsar_datasets.data_points dp where dp.fk_dataset_id="+datasetId;			
+			String countDatapoints=DatabaseLookup.runSQL(conn, sql);
+//			System.out.println("Number of datapoints ="+countDatapoints);
+						
+			System.out.println(propertyName+"\t"+countRaw+"\t"+countMapped+"\t"+countDatapoints);
+		}
+	}
+	
 	static void getDatasetStatsForOneDataset() {
 
-		
-//		String propertyName=DevQsarConstants.WATER_SOLUBILITY;
-//		String dataSetName="ExpProp_WaterSolubility_WithChemProp_120121_omit_Good=No";
 //		String dataSetName="ExpProp_WaterSolubility_WithChemProp_120121_TMM";
+//		String propertyName=DevQsarConstants.WATER_SOLUBILITY;
+//		String dataSetName="WS from exp_prop and chemprop";
 		
 		String propertyName=DevQsarConstants.BOILING_POINT;
-		String dataSetName="Standard Boiling Point from exp_prop_TMM";
+//		String dataSetName="Standard Boiling Point from exp_prop_TMM";
+		String dataSetName="BP from exp_prop and chemprop";
+		
 		
 		Hashtable<String, Integer>htRaw=getRawRecordCountsBySource(propertyName);
 		getMappedRecordsBySource(dataSetName,htRaw);		
 //		getDiscardedRecordsByReason(dataSetName, "LookChem");
+		System.out.println("");
+//		getDiscardedRecordsByReason(dataSetName, "PubChem");
 //		getDiscardedRecordsByReason(dataSetName);
 
 	}
