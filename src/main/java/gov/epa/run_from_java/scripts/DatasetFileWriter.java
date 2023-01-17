@@ -253,7 +253,7 @@ public class DatasetFileWriter {
 
 			String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\QSAR_Model_Building\\data\\datasets_benchmark\\"+datasetName+"\\";
 			
-			calc.calculateDescriptorsTodd(datasetName,  descriptorSetName, true,1);
+			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,1);
 
 			writeWithSplitting2(descriptorSetName, splittingName, datasetName, folder,true);
 			
@@ -301,7 +301,7 @@ public class DatasetFileWriter {
 			
 			String datasetName=endpoint+" TEST";
 			String folder=mainFolder+datasetName+"\\";
-			calc.calculateDescriptorsTodd(datasetName,  descriptorSetName, true,1);
+			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,1);
 			writeWithSplitting2(descriptorSetName, splittingName, datasetName, folder,false);
 			
 		}

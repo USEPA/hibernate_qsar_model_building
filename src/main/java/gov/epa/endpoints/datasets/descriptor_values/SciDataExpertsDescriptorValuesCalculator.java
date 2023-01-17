@@ -202,7 +202,7 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 	 * @param descriptorSetName
 	 * @param writeToDatabase
 	 */
-	public void calculateDescriptorsTodd(String datasetName, String descriptorSetName, boolean writeToDatabase, int batchSize) {
+	public void calculateDescriptors_useSqlToExcludeExisting(String datasetName, String descriptorSetName, boolean writeToDatabase, int batchSize) {
 		
 		
 		

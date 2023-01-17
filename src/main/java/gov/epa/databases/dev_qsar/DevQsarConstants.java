@@ -90,6 +90,7 @@ public class DevQsarConstants {
 	
 	// Descriptor set names
 	public static final String DESCRIPTOR_SET_TEST = "T.E.S.T. 5.1";
+	public static final String DESCRIPTOR_SET_WEBTEST = "WebTEST-fault";
 	public static final String DESCRIPTOR_SET_PADEL_SINGLE = "Padelpy webservice single";
 	public static final String DESCRIPTOR_SET_PADEL_BATCH = "Padelpy_batch";
 	

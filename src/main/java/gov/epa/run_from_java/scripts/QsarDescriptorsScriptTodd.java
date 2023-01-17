@@ -1,6 +1,7 @@
 package gov.epa.run_from_java.scripts;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -51,13 +52,19 @@ public class QsarDescriptorsScriptTodd {
 		String server="https://ccte-cced.epa.gov/";
 		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
 		
-		String [] datasetNames= {"ExpProp_WaterSolubility_WithChemProp_120121_omit_Good=No","ExpProp_VP_WithChemProp_070822_TMM",
-				"Standard Melting Point from exp_prop_TMM","ExpProp_LogP_WithChemProp_TMM","ExpProp_HLC_TMM",
-				"Standard Boiling Point from exp_prop_TMM","ExpProp BCF Fish_TMM"};
+		List<String>datasetNames=new ArrayList<>();
+
+		datasetNames.add("MP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("WS from exp_prop and chemprop");
+		datasetNames.add("LogP from exp_prop and chemprop");
+		datasetNames.add("VP from exp_prop and chemprop");
+		datasetNames.add("HLC from exp_prop and chemprop");
+		datasetNames.add("ExpProp BCF Fish_TMM");
 		
 		int batchSize=1;//right now if one chemical in batch fails, the batch run fails, so run 1 at a time
 		for (String datasetName:datasetNames) {
-			calc.calculateDescriptorsTodd(datasetName,  descriptorSetName, true,batchSize);
+			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,batchSize);
 		}
 	}
 
@@ -81,9 +88,9 @@ public class QsarDescriptorsScriptTodd {
 		Unirest.config().connectTimeout(0).socketTimeout(0);
 
 		QsarDescriptorsScriptTodd q=new QsarDescriptorsScriptTodd();
-//		q.generateDescriptorsForDataset();
+		q.generateDescriptorsForDataset();
 		
-		q.calcSingleChemical();
+//		q.calcSingleChemical();
 		if(true) return;
 		
 		
