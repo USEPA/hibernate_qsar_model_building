@@ -122,26 +122,27 @@ public class ExcelCreator {
 			csLtGreen.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
 		    csLtGreen.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
+			CellStyle csLtGrey=createStyleHeader(wb);
+
+		    
 		    
 			for (int i=0;i<fields.length;i++) {
 				Cell cell=recHeaderRow.createCell(i);
 				cell.setCellValue(fields[i]);
 				
-				if(fields[i].contains("mapped_")) {
+				if (fields[i].contains("ICF")) {
+					cell.setCellStyle(csLtGrey);
+				} else if(fields[i].contains("mapped_")) {
 					cell.setCellStyle(csLtBlue);
 				} else if (fields[i].contains("source_")) {
 					cell.setCellStyle(csLtGreen);
 				}
-
-				
 			}
-
 
 			for (int i=0;i<fields.length;i++) {
 				sheet.autoSizeColumn(i);
 				//				sheet.setColumnWidth(i, sheet.getColumnWidth(i)+20);
 			}
-
 
 			int rowNum=2;
 
@@ -405,6 +406,17 @@ public class ExcelCreator {
 		htDescriptions.put("pH","pH at which the experiment was performed");
 		htDescriptions.put("notes","notes on the record");
 		htDescriptions.put("qc_flag","whether or not a quality control flag has been issued");
+
+		htDescriptions.put("ICF_chemical_matches","Does the chemical in the primary source match the source chemical (see source_casrn, source_chemical_name, and source_smiles) ?  Yes/No/?");
+		htDescriptions.put("ICF_is_experimental","Was the property value experimentally determined? Yes/No/?");
+		htDescriptions.put("ICF_source_url","URL/doi for the source used to validate the record");
+		htDescriptions.put("ICF_source_type","For journal article/reports, Type of literature source used to validate: Primary/Secondary");
+		htDescriptions.put("ICF_citation","For journal article/reports, full citation for the source");
+		htDescriptions.put("ICF_property_value","Property value from the checking source converted to the same units as qsar_property_units field");
+		htDescriptions.put("ICF_units_conversion_error","Was there a unit conversion error in recording the property value+units? E.g. the website says the experimental property is “P” but the record was saved as a “LogP” record with log units in “qsar_property_units”.");
+		htDescriptions.put("ICF_temperature_c","Experimental temperature if it is different from temperature_c field. Especially important for vapor pressure records far away from 25 C");
+		htDescriptions.put("ICF_pressure_mmHg","Experimental pressure if it is different from pressure_mmHg field. Especially important for boiling point records far away from 760 mmHg");
+		htDescriptions.put("ICF_pH","Experimental pH if it is different from pH field. ");
 
 		
 		return htDescriptions;

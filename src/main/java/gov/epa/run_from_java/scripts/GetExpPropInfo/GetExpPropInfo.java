@@ -68,14 +68,14 @@ public class GetExpPropInfo {
 	//			"title", "value_qualifier","value_original","value_max", "value_min", 
 	//			"qc_flag","dtxcid_mapped","dtxsid_mapped","smiles_mapped","mol_weight_mapped","value_point_estimate","units","Temperature_C","Pressure_mmHg","pH" };
 
-	static String[]  fieldsFinal= {"exp_prop_id","canon_qsar_smiles",
-			"page_url","source_url","source_doi",
-			"source_name","source_description", "source_type", "source_authors", "source_title",
-			"source_dtxrid","source_dtxsid", "source_casrn", "source_chemical_name", "source_smiles",
-			"mapped_dtxcid","mapped_dtxsid","mapped_cas","mapped_chemical_name","mapped_smiles","mapped_molweight",
-			"value_original","value_max", "value_min","value_point_estimate","value_units","qsar_property_value","qsar_property_units","temperature_c","pressure_mmHg","pH",
-			"notes","qc_flag"};
-
+	static String[] fieldsFinal = { "exp_prop_id", "canon_qsar_smiles", "page_url", "source_url", "source_doi",
+			"source_name", "source_description", "source_type", "source_authors", "source_title", "source_dtxrid",
+			"source_dtxsid", "source_casrn", "source_chemical_name", "source_smiles", "mapped_dtxcid", "mapped_dtxsid",
+			"mapped_cas", "mapped_chemical_name", "mapped_smiles", "mapped_molweight", "value_original", "value_max",
+			"value_min", "value_point_estimate", "value_units", "qsar_property_value", "qsar_property_units",
+			"temperature_c", "pressure_mmHg", "pH", "notes", "qc_flag",
+			"ICF_chemical_matches", "ICF_is_experimental", "ICF_source_url", "ICF_source_type", "ICF_citation",
+			"ICF_property_value", "ICF_units_conversion_error", "ICF_temperature_c", "ICF_pressure_mmHg", "ICF_pH"};
 
 	static void lookatEchemPortalRecordsLogKow(String dataSetName,Connection conn,Connection connDSSTOX,String folder) {
 //		String dataSetName=getDataSetName(dataset_id, conn);
@@ -318,11 +318,11 @@ public class GetExpPropInfo {
 		String dataSetName2=dataSetName.replace(" ", "_").replace("="," ");		
 		String jsonPath=folder+"//"+dataSetName2+"//"+dataSetName2+"_Mapped_Records.json";
 		
-		if (property.contains("Water solubility")) {//filepath too long
-			jsonPath="data//WS_Mapped_Records.json";
-			File file=new File(jsonPath);
-			System.out.println(file.getAbsolutePath());
-		}
+//		if (property.contains("Water solubility")) {//filepath too long
+//			jsonPath="data//WS_Mapped_Records.json";
+//			File file=new File(jsonPath);
+//			System.out.println(file.getAbsolutePath());
+//		}
 		
 		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
 
@@ -642,21 +642,21 @@ public class GetExpPropInfo {
 //		String dataSetName=getDataSetName(dataset_id, conn);
 //		String dataSetName="Standard Boiling Point from exp_prop_TMM";
 //		String dataSetName="ExpProp_VP_WithChemProp_070822_TMM";
-//		String dataSetName="ExpProp_LogP_WithChemProp_TMM3";
-//
-//		String version="V4";
-//		//From File generated from PFAS_SplittingGenerator.generateQSAR_ReadyPFAS_STRUCT, create list of PFAS cids:
-//		ArrayList<String>arrayPFAS_CIDs=getPFAS_CIDs("data\\dev_qsar\\dataset_files\\PFASSTRUCT"+version+"_qsar_ready_smiles.txt");
-//
-//		Hashtable<String,String> htOperaReferences=Utilities.createOpera_Reference_Lookup("LogP","Kow");
-//		createCheckingSpreadsheet_PFAS_data(dataSetName,conn,connDSSTOX, folder,arrayPFAS_CIDs,version,htOperaReferences);//create checking spreadsheet using json file for mapped records that was created when dataset was created
+		String dataSetName="LogP from exp_prop and chemprop";
+
+		String version="V4";
+		//From File generated from PFAS_SplittingGenerator.generateQSAR_ReadyPFAS_STRUCT, create list of PFAS cids:
+		ArrayList<String>arrayPFAS_CIDs=getPFAS_CIDs("data\\dev_qsar\\dataset_files\\PFASSTRUCT"+version+"_qsar_ready_smiles.txt");
+
+		Hashtable<String,String> htOperaReferences=Utilities.createOpera_Reference_Lookup("LogP","Kow");
+		createCheckingSpreadsheet_PFAS_data(dataSetName,conn,connDSSTOX, folder,arrayPFAS_CIDs,version,htOperaReferences);//create checking spreadsheet using json file for mapped records that was created when dataset was created
 
 		//******************************************************************************************		
 
-		for(String dataSetName:datasetNames) {
-			System.out.println("\n"+dataSetName);
-			getPropertyBoundsForMappedRecords(dataSetName, folder, conn);			
-		}
+//		for(String dataSetName:datasetNames) {
+//			System.out.println("\n"+dataSetName);
+//			getPropertyBoundsForMappedRecords(dataSetName, folder, conn);			
+//		}
 
 		
 		//******************************************************************************************		
