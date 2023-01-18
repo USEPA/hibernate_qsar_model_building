@@ -74,6 +74,10 @@ public class ModelData {
 
 		sql="select id from qsar_descriptors.descriptor_sets d where d.\"name\" ='"+descriptorSetName+"'";
 		String descriptorSetId=DatabaseLookup.runSQL(conn, sql);
+
+		sql="select id from qsar_datasets.splittings s where s.\"name\" ='"+splittingName+"'";
+		String splittingId=DatabaseLookup.runSQL(conn, sql);
+
 		
 		String idField="canon_qsar_smiles";
 		if(useDTXCIDs) idField="qsar_dtxcid";
@@ -88,7 +92,7 @@ public class ModelData {
 		sql="select dp."+idField+", dp.qsar_property_value, dv.values_tsv, dpis.split_num from qsar_datasets.data_points dp\n"+ 
 		"inner join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
 		"inner join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
-		"where dp.fk_dataset_id="+datasetId+" and dv.fk_descriptor_set_id="+descriptorSetId+";";
+		"where dp.fk_dataset_id="+datasetId+" and dv.fk_descriptor_set_id="+descriptorSetId+" and dpis.fk_splitting_id="+splittingId+";";
 
 		System.out.println(sql);
 		
