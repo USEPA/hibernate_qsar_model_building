@@ -116,6 +116,36 @@ public class DatasetFileWriter {
 		
 	}
 	
+	public void writeTrainingSetNotInOperaTestSet(String descriptorSetName,String splittingName,String datasetName,String outputFolderPath) {
+
+		ModelData md=new ModelData(datasetName,descriptorSetName,null,false);
+				
+		//Get training and test set instances as strings using TEST descriptors:
+		md.generateInstancesNotinOperaPredictionSet();
+
+		File outputFolder = new File(outputFolderPath);
+		outputFolder.mkdirs();
+
+		String outputFileNameTraining = datasetName + "_" + descriptorSetName+ "_training_not_in_opera_prediction.tsv";
+		String outputFilePathTraining = outputFolderPath + (outputFolderPath.endsWith("/") ? "" : "/") + outputFileNameTraining;
+
+		String outputFileNamePrediction = datasetName + "_" + descriptorSetName+ "_opera_prediction.tsv";
+		String outputFilePathPrediction = outputFolderPath + (outputFolderPath.endsWith("/") ? "" : "/") + outputFileNamePrediction;
+		
+		try {
+			FileWriter fw=new FileWriter(outputFilePathTraining);
+			fw.write(md.trainingSetInstances);
+			fw.flush();
+			fw.close();
+			fw=new FileWriter(outputFilePathPrediction);
+			fw.write(md.predictionSetInstances);
+			fw.flush();
+			fw.close();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
 //	public void writeWithSplitting2(String descriptorSetName,String splittingName,String datasetName,String outputFolderPath,boolean removeNullCols,String lanId) {
 //		ModelBuilder mb=new ModelBuilder(lanId);
 //				
@@ -321,10 +351,10 @@ public class DatasetFileWriter {
 		
 		List<String>datasetNames=new ArrayList<>();
 		datasetNames.add("HLC from exp_prop and chemprop");
-//		datasetNames.add("ExpProp BCF Fish_TMM");
-//		datasetNames.add("WS from exp_prop and chemprop");
-//		datasetNames.add("VP from exp_prop and chemprop");
-//		datasetNames.add("LogP from exp_prop and chemprop");
+		datasetNames.add("ExpProp BCF Fish_TMM");
+		datasetNames.add("WS from exp_prop and chemprop");
+		datasetNames.add("VP from exp_prop and chemprop");
+		datasetNames.add("LogP from exp_prop and chemprop");
 //		datasetNames.add("MP from exp_prop and chemprop");
 //		datasetNames.add("BP from exp_prop and chemprop");
 		
@@ -332,17 +362,15 @@ public class DatasetFileWriter {
 		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
 
 		String splittingName="RND_REPRESENTATIVE";
-		String folderMain="C:\\Users\\TMARTI02\\Documents\\0 python\\pf_python_modelbuilding\\datasets\\";
+		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\datasets\\";
 
 		for (String datasetName:datasetNames) {
 			System.out.println("writing dataset tsvs for "+datasetName);
 			String folder=folderMain+datasetName+"\\";
-			
 			//Just in case run descriptor generation to make sure have descriptor for each datapoint:
-			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,1);
-			
-			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true);
-
+//			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,1);
+//			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true);
+			writeTrainingSetNotInOperaTestSet(descriptorSetName, splittingName, datasetName, folder);
 		}
 	}
 
