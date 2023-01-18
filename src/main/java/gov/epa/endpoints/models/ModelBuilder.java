@@ -9,12 +9,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorValues;
-import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesService;
-import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServiceImpl;
+
+
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
@@ -33,7 +31,6 @@ import kong.unirest.Unirest;
 
 public class ModelBuilder {
 	protected DataPointInSplittingService dataPointInSplittingService = new DataPointInSplittingServiceImpl();
-	private DescriptorValuesService descriptorValuesService = new DescriptorValuesServiceImpl();
 	private StatisticService statisticService = new StatisticServiceImpl();
 	protected MethodService methodService = new MethodServiceImpl();
 	protected ModelService modelService = new ModelServiceImpl();
@@ -67,28 +64,9 @@ public class ModelBuilder {
 		this.lanId = lanId;
 	}
 	
-	public ModelData initModelData(String datasetName, String descriptorSetName, String splittingName, boolean removeLogDescriptors) {
-		List<DataPointInSplitting> dataPointsInSplitting = 
-				dataPointInSplittingService.findByDatasetNameAndSplittingName(datasetName, splittingName);
-
-//		System.out.println("dataPointsInSplitting.size()="+dataPointsInSplitting.size());
-		
-		if (dataPointsInSplitting.size()==0) {
-//			logger.error("Splitting " + splittingName + " not available for dataset " + datasetName);
-			System.out.println("Splitting " + splittingName + " not available for dataset " + datasetName);
-			return null;
-		}
-		
-		List<DescriptorValues> descriptorValues = descriptorValuesService.findByDescriptorSetName(descriptorSetName);
-		
-		if (descriptorValues.size()==0) {
-//			logger.error("Descriptor set " + descriptorSetName + " not available");
-			return null;
-		}
-		
-		ModelData data = new ModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
-		data.initInstances(dataPointsInSplitting, descriptorValues);
-		
+	public ModelData initModelData(String datasetName, String descriptorSetName, String splittingName, boolean removeLogP) {
+		ModelData data = new ModelData(datasetName, descriptorSetName, splittingName,removeLogP);
+		data.initTrainingPredictionInstances(datasetName,descriptorSetName,splittingName,true);
 		return data;
 	}
 	

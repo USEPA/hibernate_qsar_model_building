@@ -1,5 +1,7 @@
 package gov.epa.endpoints.splittings;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -73,24 +75,45 @@ public class Splitter {
         }
 	}
 	
-	public void split(Long datasetId, String descriptorSetName) {
+	public void split(Long datasetId, String descriptorSetName, int n_threads) {
 		Dataset dataset = datasetService.findById(datasetId);
-		split(dataset.getName(), descriptorSetName);
+		split(dataset.getName(), descriptorSetName,n_threads);
 	}
 	
-	public void split(String datasetName, String descriptorSetName) {
+	public void split(String datasetName, String descriptorSetName, int n_threads) {
 		System.out.println("Splitting " + datasetName);
 		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
-		System.out.println("Found " + dataPoints.size() + " data points");
-		List<DescriptorValues> descriptorValues = descriptorValuesService.findByDescriptorSetName(descriptorSetName);
-		String tsv = ModelData.generateInstancesWithoutSplitting(dataPoints, descriptorValues, false);
 		
+		System.out.println("Found " + dataPoints.size() + " data points");
+		
+		
+		String tsv = ModelData.generateInstancesWithoutSplitting(datasetName,descriptorSetName,true);
+		
+//		System.out.println(tsv);
+		
+//		try {
+//			FileWriter fw = new FileWriter("C:\\Users\\TMARTI02\\Documents\\0 python\\pf_python_modelbuilding\\datasets\\HLC from exp_prop and chemprop\\bob.tsv");
+//			fw.write(tsv);
+//			fw.flush();
+//			fw.close();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+		
+
+//	    String splittingResponse = 
+//	            splittingWebService.callCalculation(tsv, false, n_threads).getBody();
+
 	    SplittingCalculationResponse[] splittingResponse = 
-	            splittingWebService.callCalculation(tsv, false).getBody();
+	            splittingWebService.callCalculation(tsv, false, n_threads).getBody();
 	    
 	    if (splittingResponse==null) {
 	    	System.out.println("Splitting failed");
 	        return;
+	    } else {
+	    	System.out.println(splittingResponse);
+	    	if(true) return;
 	    }
 	    
 	    int countTrain = 0;
@@ -139,7 +162,7 @@ public class Splitter {
 				DevQsarConstants.SPLITTING_RND_REPRESENTATIVE, 2);
 		Splitter splitter = new Splitter(splittingWebService, lanId);
 		
-		splitter.split(datasetName, descriptorSetName);
+		splitter.split(datasetName, descriptorSetName, 4);
 		for (Long l = 62L; l <= 62L; l++) {
 //			splitter.unsplit(l);
 		}

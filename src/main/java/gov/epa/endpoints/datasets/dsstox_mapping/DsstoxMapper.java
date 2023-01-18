@@ -233,7 +233,7 @@ public class DsstoxMapper {
 		return dsstoxRecords;
 	}
 	
-	public List<MappedPropertyValue> map(List<PropertyValue> propertyValues) {
+	public List<MappedPropertyValue> map(List<PropertyValue> propertyValues, boolean createExcelFiles) {
 		initPropertyValuesMap(propertyValues);
 		List<DsstoxRecord> dsstoxRecords = null;
 		String checkChemicalList = null;
@@ -289,7 +289,7 @@ public class DsstoxMapper {
 //			writeMappingFile(mappedPropertyValues);
 			writeConflictFile();
 //			writeDiscardedPropertyValuesFile();
-			writeDetailedDiscardedPropertyValuesFile();
+			writeDetailedDiscardedPropertyValuesFile(createExcelFiles);
 		}
 		
 		return mappedPropertyValues;
@@ -1337,7 +1337,7 @@ public class DsstoxMapper {
 	}
 	
 	
-	private void writeDetailedDiscardedPropertyValuesFile() {
+	private void writeDetailedDiscardedPropertyValuesFile(boolean createExcel) {
 		
 		System.out.println("Writing detailed discarded property values spreadsheet(s)");
 		int fileNum=1;
@@ -1355,6 +1355,9 @@ public class DsstoxMapper {
 		JsonArray jaAll=convertDiscardedRecordsToJsonArray(values);
 		String filePathAll=datasetFolderPath + File.separator + datasetFileName+"_Discarded_Records"+".json";
 		Utilities.saveJson(jaAll, filePathAll.replace(".xlsx", ".json"));//Save to json so we can limit to PFAS records later
+		
+		
+		if(!createExcel)return;
 		
 		int max=100000;
 //		int max=500;

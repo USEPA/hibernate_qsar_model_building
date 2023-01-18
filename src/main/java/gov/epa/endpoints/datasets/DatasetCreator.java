@@ -93,6 +93,7 @@ public class DatasetCreator {
 	private Set<String> physchemPropertyNames;
 	private Set<String> acceptableAtoms;
 	
+	boolean createExcelFiles=false;//whether to create excel files for discarded and mapped records in addition to the json files
 	
 	public static void main(String[] args) {
 		System.out.println("eclipse recognizes new code2");
@@ -209,7 +210,7 @@ public class DatasetCreator {
 					|| params.mappingParams.dsstoxMappingId.equals(DevQsarConstants.MAPPING_BY_LIST)) {
 			
 				//Map the records to DSSTOX:
-				mappedPropertyValues = dsstoxMapper.map(propertyValues);
+				mappedPropertyValues = dsstoxMapper.map(propertyValues,createExcelFiles);
 			
 			} else {
 				// TODO implementation of:
@@ -656,7 +657,7 @@ public class DatasetCreator {
 		
 		System.out.println("Saving unification data to examine...");
 //		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit);redundant- we have excel and json
-		saveUnifiedDataSpreadsheet(unifiedPropertyValues, params.datasetName, unit);
+		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit,createExcelFiles);
 		
 		System.out.println("Posting final merged values...");
 		long t7 = System.currentTimeMillis();
@@ -738,7 +739,7 @@ public class DatasetCreator {
 	}
 	
 	
-	public void saveUnifiedDataSpreadsheet(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, String datasetName, Unit unit) {
+	public void saveUnifiedData(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, String datasetName, Unit unit, boolean createExcel) {
 //		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, false);
 
 		String[] fields = { "canon_qsar_smiles","exp_prop_id", "source_dtxrid", 
@@ -761,9 +762,9 @@ public class DatasetCreator {
 		String filePathJson = datasetFolderPath + "/"+datasetFileName+"_Mapped_Records.json";
 		Utilities.saveJson(jaAll, filePathJson.replace(".xlsx", ".json"));//Save to json first in case excel writing fails
 		
-		keys.addAll(unifiedPropertyValues.keySet());
-				
-		int max=100000;
+		if(!createExcel) return;
+		
+		int max=50000;
 		int fileNum=1;
 		
 		while(keys.size()>0) {
@@ -881,8 +882,6 @@ public class DatasetCreator {
 //			jo.addProperty("qsar_property_units", unit.getAbbreviation());
 			jo.addProperty("qsar_property_units", unit.getName());
 		}
-		
-
 
 		return jo;
 	}

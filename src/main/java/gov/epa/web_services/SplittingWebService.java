@@ -26,12 +26,35 @@ public class SplittingWebService extends WebService {
 		this.numSplits = numSplits;
 	}
 
-	public HttpResponse<SplittingCalculationResponse[]> callCalculation(String tsv, boolean removeLogP) {
-		HttpResponse<SplittingCalculationResponse[]> response = Unirest.get(address+"/calculation")
-				.queryString("tsv", tsv)
-				.queryString("remove_log_p", removeLogP)
-				.asObject(SplittingCalculationResponse[].class);
-		
-		return response;
+	//Following doesnt work for large tsvs:
+//	public HttpResponse<SplittingCalculationResponse[]> callCalculation(String tsv, boolean removeLogP, int n_threads) {
+//		HttpResponse<SplittingCalculationResponse[]> response = Unirest.get(address+"/calculation")
+//				.queryString("tsv", tsv)
+//				.queryString("remove_log_p", removeLogP)
+//				.queryString("n_threads", n_threads)
+//				.asObject(SplittingCalculationResponse[].class);
+//		
+//		return response;
+//	}
+	
+	
+	public HttpResponse<SplittingCalculationResponse[]> callCalculation(String tsv, boolean removeLogP, int n_threads) {
+	HttpResponse<SplittingCalculationResponse[]> response = Unirest.post(address+"/calculation")
+			.field("tsv", tsv)
+			.field("remove_log_p", removeLogP+"")
+			.field("n_threads", n_threads+"")
+			.asObject(SplittingCalculationResponse[].class);	
+	return response;
 	}
+	
+//	public HttpResponse<String> callCalculation(String tsv, boolean removeLogP, int n_threads) {
+//	HttpResponse<String> response = Unirest.post(address+"/calculation")
+//			.field("tsv", tsv)
+//			.field("remove_log_p", removeLogP+"")
+//			.field("n_threads", n_threads+"")
+//			.asString();	
+//	return response;
+//}
+
+
 }

@@ -96,7 +96,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		String strModelId = String.valueOf(model.getId());
 		byte[] bytes = modelWebService.callTrain(data.trainingSetInstances, 
-				data.removeLogDescriptors, methodName, strModelId).getBody();
+				data.removeLogP_Descriptors, methodName, strModelId).getBody();
 		String hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
 		String description = modelWebService.callInfo(methodName).getBody();
 		String description_url=null;//TODO
@@ -177,11 +177,11 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		System.out.println("the model id is:" + strModelId);
 		if (descriptorEmbedding != null) {
 			modelWebService.callTrainWithPreselectedDescriptorsPythonStorage(data.trainingSetInstances, 
-				data.removeLogDescriptors, methodName, strModelId, descriptorEmbedding.getEmbeddingTsv()).getBody();
+				data.removeLogP_Descriptors, methodName, strModelId, descriptorEmbedding.getEmbeddingTsv()).getBody();
 			hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
 		} else {
 			modelWebService.callTrainPythonStorage(data.trainingSetInstances, 
-				data.removeLogDescriptors, methodName, strModelId);
+				data.removeLogP_Descriptors, methodName, strModelId);
 			hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
 		}
 		String description = modelWebService.callInfo(methodName).getBody();
@@ -274,7 +274,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		System.out.println("strModelID="+strModelId);
 		
 		byte[] bytes = modelWebService.callTrainWithPreselectedDescriptors(data.trainingSetInstances, 
-				data.removeLogDescriptors, methodName, strModelId, descriptorEmbedding.getEmbeddingTsv()).getBody();
+				data.removeLogP_Descriptors, methodName, strModelId, descriptorEmbedding.getEmbeddingTsv()).getBody();
 		String hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
 		String description = modelWebService.callInfo(methodName).getBody();
 		String description_url=null;//TODO
@@ -395,9 +395,9 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		return Arrays.asList(modelTrainingPredictions);
 	}
 
-	public Long build(String datasetName, String descriptorSetName, String splittingName, boolean removeLogDescriptors,
+	public Long build(String datasetName, String descriptorSetName, String splittingName, boolean removeLogP_Descriptors,
 			String methodName) throws ConstraintViolationException {
-		ModelData data = initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
+		ModelData data = initModelData(datasetName, descriptorSetName, splittingName, removeLogP_Descriptors);
 		
 		Long modelId = train(data, methodName);
 		predict(data, methodName, modelId);

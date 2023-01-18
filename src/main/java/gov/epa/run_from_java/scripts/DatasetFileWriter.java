@@ -9,6 +9,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,6 +37,8 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServi
 import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValuesCalculator;
 import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.models.ModelData;
+import gov.epa.endpoints.splittings.Splitter;
+import gov.epa.web_services.SplittingWebService;
 
 public class DatasetFileWriter {
 	
@@ -64,7 +67,7 @@ public class DatasetFileWriter {
 //			ex.printStackTrace();
 //		}
 		
-		String instances = ModelData.generateInstancesWithoutSplitting(dataPoints, descriptorValues, fetchDtxcids);
+		String instances = ModelData.generateInstancesWithoutSplitting(datasetName,descriptorSetName,true);
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(outputFilePath))) {
 			bw.write(instances);
 		} catch (IOException e) {
@@ -74,7 +77,10 @@ public class DatasetFileWriter {
 		return instances;
 	}
 	
-	public void writeWithSplitting(String descriptorSetName,String splittingName,String datasetName,String outputFolderPath) {
+	public void writeWithSplitting(String descriptorSetName,String splittingName,String datasetName,String outputFolderPath, boolean omitBadColumns) {
+
+		//TODO need to add code to figure out which columns have bad columns in either set
+		
 		ModelBuilder mb=new ModelBuilder("tmarti02");
 				
 		//Get training and test set instances as strings using TEST descriptors:
@@ -110,49 +116,49 @@ public class DatasetFileWriter {
 		
 	}
 	
-	public void writeWithSplitting2(String descriptorSetName,String splittingName,String datasetName,String outputFolderPath,boolean removeNullCols) {
-		ModelBuilder mb=new ModelBuilder("tmarti02");
-				
-		//Get training and test set instances as strings using TEST descriptors:
-		ModelData md=mb.initModelData(datasetName, descriptorSetName,splittingName, false);
-
-		File outputFolder = new File(outputFolderPath);
-		outputFolder.mkdirs();
-
-		String outputFileNameTraining = datasetName + " " + descriptorSetName+" training.tsv";
-		String outputFilePathTraining = outputFolderPath + (outputFolderPath.endsWith("/") ? "" : "/") + outputFileNameTraining;
-		
-		String outputFileNamePrediction = datasetName + " " + descriptorSetName+" prediction.tsv";
-		String outputFilePathPrediction = outputFolderPath + (outputFolderPath.endsWith("/") ? "" : "/") + outputFileNamePrediction;
-
-		try {
-			
-			FileWriter fw=new FileWriter(outputFilePathTraining);
-			
-			if (removeNullCols) {
-				md.trainingSetInstances=removeNulls(md.trainingSetInstances);
-				md.predictionSetInstances=removeNulls(md.predictionSetInstances);
-			}
-			
-			
-			
-			fw.write(md.trainingSetInstances);
-			fw.flush();
-			fw.close();
-			
-			fw=new FileWriter(outputFilePathPrediction);
-			fw.write(md.predictionSetInstances);
-			fw.flush();
-			fw.close();
-
-			
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-		
-
-		
-	}
+//	public void writeWithSplitting2(String descriptorSetName,String splittingName,String datasetName,String outputFolderPath,boolean removeNullCols,String lanId) {
+//		ModelBuilder mb=new ModelBuilder(lanId);
+//				
+//		//Get training and test set instances as strings using TEST descriptors:
+//		ModelData md=mb.initModelData(datasetName, descriptorSetName,splittingName, false);
+//
+//		File outputFolder = new File(outputFolderPath);
+//		outputFolder.mkdirs();
+//
+//		String outputFileNameTraining = datasetName + " " + descriptorSetName+" training.tsv";
+//		String outputFilePathTraining = outputFolderPath + (outputFolderPath.endsWith("/") ? "" : "/") + outputFileNameTraining;
+//		
+//		String outputFileNamePrediction = datasetName + " " + descriptorSetName+" prediction.tsv";
+//		String outputFilePathPrediction = outputFolderPath + (outputFolderPath.endsWith("/") ? "" : "/") + outputFileNamePrediction;
+//
+//		try {
+//			
+//			FileWriter fw=new FileWriter(outputFilePathTraining);
+//			
+//			if (removeNullCols) {
+//				md.trainingSetInstances=removeNulls(md.trainingSetInstances);
+//				md.predictionSetInstances=removeNulls(md.predictionSetInstances);
+//			}
+//			
+//			
+//			
+//			fw.write(md.trainingSetInstances);
+//			fw.flush();
+//			fw.close();
+//			
+//			fw=new FileWriter(outputFilePathPrediction);
+//			fw.write(md.predictionSetInstances);
+//			fw.flush();
+//			fw.close();
+//
+//			
+//		} catch (Exception ex) {
+//			ex.printStackTrace();
+//		}
+//		
+//
+//		
+//	}
 	private String removeNulls(String strDataset) {
 		//TODO
 		return strDataset;
@@ -225,13 +231,13 @@ public class DatasetFileWriter {
 	}
 
 	void writeOPERAFiles() {
+		String lanId="tmarti02";
 		
 //		String descriptorSetName="ToxPrints-default";
 //		String descriptorSetName="RDKit-default";
 //		String descriptorSetName="WebTEST-default";
 		String descriptorSetName="PaDEL-default";
 //		String descriptorSetName="Padelpy webservice single";
-//		
 		
 //		"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default"
 		
@@ -255,7 +261,7 @@ public class DatasetFileWriter {
 			
 			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,1);
 
-			writeWithSplitting2(descriptorSetName, splittingName, datasetName, folder,true);
+			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true);
 			
 //			if(true)break;
 			
@@ -277,7 +283,8 @@ public class DatasetFileWriter {
 	}
 	
 	void writeTEST_Toxicity_Files() {
-		
+		String lanId="tmarti02";
+
 //		String descriptorSetName="WebTEST-default";
 //		String descriptorSetName="ToxPrints-default";
 //		String descriptorSetName="RDKit-default";
@@ -302,36 +309,57 @@ public class DatasetFileWriter {
 			String datasetName=endpoint+" TEST";
 			String folder=mainFolder+datasetName+"\\";
 			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,1);
-			writeWithSplitting2(descriptorSetName, splittingName, datasetName, folder,false);
-			
+			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true);			
 		}
 	}
 
 	
+	private void write_exp_prop_datasets() {
+		String lanId = "tmarti02";
+		
+		String descriptorSetName = DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		
+		List<String>datasetNames=new ArrayList<>();
+		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("ExpProp BCF Fish_TMM");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop");
+		
+		String server="https://ccte-cced.epa.gov/";
+		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
+
+		String splittingName="RND_REPRESENTATIVE";
+		String folderMain="C:\\Users\\TMARTI02\\Documents\\0 python\\pf_python_modelbuilding\\datasets\\";
+
+		for (String datasetName:datasetNames) {
+			System.out.println("writing dataset tsvs for "+datasetName);
+			String folder=folderMain+datasetName+"\\";
+			
+			//Just in case run descriptor generation to make sure have descriptor for each datapoint:
+			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,1);
+			
+			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true);
+
+		}
+	}
+
 	
 	public static void main(String[] args) {
 		DatasetFileWriter writer = new DatasetFileWriter();
 //		writer.writeOPERAFiles();
-		writer.writeTEST_Toxicity_Files();
+//		writer.writeTEST_Toxicity_Files();
+		writer.write_exp_prop_datasets();
+				
+		//**********************************************************
 
-//		writer.writeWithoutSplitting(38L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");
-//		writer.writeWithoutSplitting(36L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");
-//		writer.writeWithoutSplitting(42L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/");
-//		writer.writeWithoutSplitting(31L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/", true);
-//		writer.writeWithoutSplitting(34L, "T.E.S.T. 5.1", "data/dev_qsar/dataset_files/", true);
-//		writer.writeQSARSmilesCID(31L,"data/dev_qsar/dataset_files/");
-//		writer.writeQSARSmilesCID(34L,"data/dev_qsar/dataset_files/");
-
-		
-//		String outputFolderPath="data/dev_qsar/dataset_files/";
-//		String descriptorSetName="T.E.S.T. 5.1";
+		String outputFolderPath="data/dev_qsar/dataset_files/";
+		String descriptorSetName="T.E.S.T. 5.1";
 //		
-//		writer.writeWithoutSplitting(38L, descriptorSetName, outputFolderPath);
-//		writer.writeWithoutSplitting(36L, descriptorSetName, outputFolderPath");
-//		writer.writeWithoutSplitting(42L, descriptorSetName, outputFolderPath);
-//		writer.writeWithoutSplitting(43L, descriptorSetName, outputFolderPath, true);
-//		writer.writeWithoutSplitting(34L, descriptorSetName, outputFolderPath, true);
-//		writer.writeWithoutSplitting(31L, descriptorSetName, outputFolderPath, true);
+//		writer.writeWithoutSplitting(108L, descriptorSetName, outputFolderPath, true);
+		
 		
 		//TODO need to compile list of sources used in compiling a dataset
 //		writer.writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE","Standard Water solubility from exp_prop",outputFolderPath);
@@ -339,8 +367,6 @@ public class DatasetFileWriter {
 //		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingAll,"Standard Water solubility from exp_prop",outputFolderPath);
 //		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingAllButPFAS,"Standard Water solubility from exp_prop",outputFolderPath);
 
-
-		
 //		writer.writeWithSplitting("T.E.S.T. 5.1","TEST","LC50 TEST",outputFolderPath);
 		
 //		String dataset="LC50 TEST";		

@@ -108,6 +108,19 @@ public class DatabaseLookup {
 		return "";
 	}
 	
+	public static ResultSet runSQL2(Connection conn, String sql) {
+		try {
+			Statement st = conn.createStatement();			
+			ResultSet rs = st.executeQuery(sql);
+			return rs;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}		
+	}
+
+	
 	static String getAllValues(int id, String table, Connection conn,JsonObject jo) {
 		String sql="select * from "+table+" t \r\n"
 				+ "where t.id="+id;
