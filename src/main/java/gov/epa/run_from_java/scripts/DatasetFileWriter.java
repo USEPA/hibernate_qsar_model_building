@@ -9,6 +9,8 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +40,7 @@ import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValu
 import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.splittings.Splitter;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.web_services.SplittingWebService;
 
 public class DatasetFileWriter {
@@ -126,10 +129,10 @@ public class DatasetFileWriter {
 		File outputFolder = new File(outputFolderPath);
 		outputFolder.mkdirs();
 
-		String outputFileNameTraining = datasetName + "_" + descriptorSetName+ "_training_not_in_opera_prediction.tsv";
+		String outputFileNameTraining = datasetName + "_" + descriptorSetName+ "_NOT_IN_OPERA_PREDICTION_SET_training.tsv";
 		String outputFilePathTraining = outputFolderPath + (outputFolderPath.endsWith("/") ? "" : "/") + outputFileNameTraining;
 
-		String outputFileNamePrediction = datasetName + "_" + descriptorSetName+ "_opera_prediction.tsv";
+		String outputFileNamePrediction = datasetName + "_" + descriptorSetName+ "_OPERA_prediction.tsv";
 		String outputFilePathPrediction = outputFolderPath + (outputFolderPath.endsWith("/") ? "" : "/") + outputFileNamePrediction;
 		
 		try {
@@ -350,13 +353,13 @@ public class DatasetFileWriter {
 		String descriptorSetName = DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
 		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("ExpProp BCF Fish_TMM");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("ExpProp BCF Fish_TMM");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
 //		datasetNames.add("MP from exp_prop and chemprop");
-//		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop");
 		
 		String server="https://ccte-cced.epa.gov/";
 		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
@@ -367,14 +370,48 @@ public class DatasetFileWriter {
 		for (String datasetName:datasetNames) {
 			System.out.println("writing dataset tsvs for "+datasetName);
 			String folder=folderMain+datasetName+"\\";
+			
 			//Just in case run descriptor generation to make sure have descriptor for each datapoint:
 //			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,1);
-//			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true);
+			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true);
 			writeTrainingSetNotInOperaTestSet(descriptorSetName, splittingName, datasetName, folder);
+			copyOperaTrainingSet(descriptorSetName, datasetName,folder);
+			
 		}
 	}
 
 	
+	
+	private void copyOperaTrainingSet(String descriptorSetName, String datasetName, String folder) {
+
+		String folderMainOpera="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\datasets_benchmark\\";
+		
+		Connection conn=DatabaseLookup.getConnection();
+		
+		String sql="select p.\"name\" from qsar_datasets.datasets d \r\n"
+				+ "inner join qsar_datasets.properties p on p.id =d.fk_property_id \r\n"
+				+ "where d.\"name\"='"+datasetName+"';";
+//		System.out.println(sql);
+		String propertyName=DatabaseLookup.runSQL(conn, sql);
+		if(propertyName.equals("LogBCF_Fish_WholeBody")) propertyName="LogBCF";
+		
+		String srcPath=folderMainOpera+propertyName+" OPERA\\"+propertyName+" OPERA "+descriptorSetName+" training.tsv";
+		String destPath=folder+datasetName + "_" + descriptorSetName+"_OPERA_training.tsv";	
+		
+		try {
+			Files.copy(Paths.get(srcPath), Paths.get(destPath),StandardCopyOption.REPLACE_EXISTING);
+//			new File(destPath).deleteOnExit();
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.out.println(datasetName+"\t"+propertyName);
+
+		
+		
+	}
+
 	public static void main(String[] args) {
 		DatasetFileWriter writer = new DatasetFileWriter();
 //		writer.writeOPERAFiles();

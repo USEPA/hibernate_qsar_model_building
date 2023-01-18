@@ -1,6 +1,4 @@
-
-
-package gov.epa.endpoints.datasets;
+package gov.epa.run_from_java.scripts;
 
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -16,17 +14,15 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 //import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
+import gov.epa.endpoints.datasets.BoundParameterValue;
+import gov.epa.endpoints.datasets.DatasetCreator;
+import gov.epa.endpoints.datasets.DatasetParams;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
-
 
 public class DatasetCreatorScript {
 
@@ -45,8 +41,8 @@ public class DatasetCreatorScript {
 	public static void main(String[] args) {
 
 //		getDatasetStats();//Get record counts for the papers
-		getDatasetStatsUsingSql();//Get record counts for the papers
-//		getDatasetStatsForOneDataset();
+//		getDatasetStatsUsingSql();//Get record counts for the papers
+		getDatasetStatsForOneDataset();
 		
 //		DatasetServiceImpl ds=new DatasetServiceImpl();
 //		ds.delete(112);
@@ -190,9 +186,12 @@ public class DatasetCreatorScript {
 //		String propertyName=DevQsarConstants.WATER_SOLUBILITY;
 //		String dataSetName="WS from exp_prop and chemprop";
 		
-		String propertyName=DevQsarConstants.BOILING_POINT;
-//		String dataSetName="Standard Boiling Point from exp_prop_TMM";
-		String dataSetName="BP from exp_prop and chemprop";
+		String dataSetName="ExpProp BCF Fish_TMM";
+		String propertyName="LogBCF_Fish_WholeBody";//TODO look up from dataset from database		
+		
+//		String propertyName=DevQsarConstants.BOILING_POINT;
+////		String dataSetName="Standard Boiling Point from exp_prop_TMM";
+//		String dataSetName="BP from exp_prop and chemprop";
 		
 		
 		Hashtable<String, Integer>htRaw=getRawRecordCountsBySource(propertyName);
