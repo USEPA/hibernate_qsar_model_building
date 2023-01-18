@@ -131,6 +131,9 @@ public class Splitter {
 	        if (dp!=null && splitNum!=null) {
 	            DataPointInSplitting dpis = new DataPointInSplitting(dp, splitting, splitNum, lanId);
 	            dataPointInSplittingService.create(dpis);
+	        } else {
+	        	System.out.println("Cant create datapoint for smiles:"+smiles);
+	        	return;
 	        }
 	    }
 	    
