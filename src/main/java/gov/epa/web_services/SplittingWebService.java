@@ -1,6 +1,9 @@
 package gov.epa.web_services;
 
+import java.io.File;
+
 import kong.unirest.HttpResponse;
+import kong.unirest.MultipartBody;
 import kong.unirest.Unirest;
 
 /**
@@ -37,24 +40,37 @@ public class SplittingWebService extends WebService {
 //		return response;
 //	}
 	
-	
+
 	public HttpResponse<SplittingCalculationResponse[]> callCalculation(String tsv, boolean removeLogP, int n_threads) {
-	HttpResponse<SplittingCalculationResponse[]> response = Unirest.post(address+"/calculation")
-			.field("tsv", tsv)
-			.field("remove_log_p", removeLogP+"")
-			.field("n_threads", n_threads+"")
-			.asObject(SplittingCalculationResponse[].class);	
-	return response;
+		HttpResponse<SplittingCalculationResponse[]> response = Unirest.post(address+"/calculation")
+				.field("tsv", tsv)
+				.field("remove_log_p", removeLogP+"")
+				.field("n_threads", n_threads+"")
+				.asObject(SplittingCalculationResponse[].class);		
+		return response;
 	}
+
 	
-//	public HttpResponse<String> callCalculation(String tsv, boolean removeLogP, int n_threads) {
-//	HttpResponse<String> response = Unirest.post(address+"/calculation")
-//			.field("tsv", tsv)
+//	public String callCalculation(String tsv, boolean removeLogP, int n_threads) {
+////	HttpResponse<SplittingCalculationResponse[]> 
+//	
+//	 MultipartBody body= Unirest.post(address+"/calculation")
 //			.field("remove_log_p", removeLogP+"")
 //			.field("n_threads", n_threads+"")
+//			.field("tsv", new File("data/tempOverallSet.tsv"));
+//	 
+//	 	String json=body.asJson().getBody().toPrettyString();
+//	
+//	 	System.out.println(json);
+//	 
+//		return null;
+//	}
+	
+
+//	public HttpResponse<String> callBob() {
+//	HttpResponse<String> response = Unirest.post(address+"/bob")
 //			.asString();	
 //	return response;
 //}
-
 
 }

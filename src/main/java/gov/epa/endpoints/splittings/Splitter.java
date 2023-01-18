@@ -25,6 +25,7 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServi
 import gov.epa.endpoints.models.ModelData;
 import gov.epa.web_services.SplittingWebService;
 import gov.epa.web_services.SplittingWebService.SplittingCalculationResponse;
+import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
 public class Splitter {
@@ -90,9 +91,9 @@ public class Splitter {
 		String tsv = ModelData.generateInstancesWithoutSplitting(datasetName,descriptorSetName,true);
 		
 //		System.out.println(tsv);
-		
+//		
 //		try {
-//			FileWriter fw = new FileWriter("C:\\Users\\TMARTI02\\Documents\\0 python\\pf_python_modelbuilding\\datasets\\HLC from exp_prop and chemprop\\bob.tsv");
+//			FileWriter fw = new FileWriter("data/tempOverallSet.tsv");
 //			fw.write(tsv);
 //			fw.flush();
 //			fw.close();
@@ -100,11 +101,7 @@ public class Splitter {
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
-		
-
-//	    String splittingResponse = 
-//	            splittingWebService.callCalculation(tsv, false, n_threads).getBody();
-
+				
 	    SplittingCalculationResponse[] splittingResponse = 
 	            splittingWebService.callCalculation(tsv, false, n_threads).getBody();
 	    
@@ -112,8 +109,8 @@ public class Splitter {
 	    	System.out.println("Splitting failed");
 	        return;
 	    } else {
-	    	System.out.println(splittingResponse);
-	    	if(true) return;
+	    	System.out.println("Splitting succeeded");
+//	    	if(true) return;
 	    }
 	    
 	    int countTrain = 0;
