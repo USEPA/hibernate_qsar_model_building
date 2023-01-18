@@ -88,7 +88,7 @@ public class Splitter {
 		System.out.println("Found " + dataPoints.size() + " data points");
 		
 		
-		String tsv = ModelData.generateInstancesWithoutSplitting(datasetName,descriptorSetName,true);
+		String tsv = ModelData.generateInstancesWithoutSplitting(datasetName,descriptorSetName);
 		
 //		System.out.println(tsv);
 //		

@@ -90,7 +90,7 @@ public class ModelData {
 		"inner join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
 		"where dp.fk_dataset_id="+datasetId+" and dv.fk_descriptor_set_id="+descriptorSetId+";";
 
-//		System.out.println(sql);
+		System.out.println(sql);
 		
 		try {
 			
@@ -127,6 +127,10 @@ public class ModelData {
 		this.predictionSetInstances = sbPrediction.toString();
 	}
 
+	
+	public static String generateInstancesWithoutSplitting(String datasetName,String descriptorSetName) {
+		return generateInstancesWithoutSplitting(datasetName,descriptorSetName,false);		
+	}
 	
 	public static String generateInstancesWithoutSplitting(String datasetName,String descriptorSetName,boolean useDTXCIDs) {
 			
@@ -227,27 +231,11 @@ public class ModelData {
 //	}
 	
 	private static String generateInstance(String smiles, String qsar_property_value, String valuesTsv) {
-				
-		
-		if (valuesTsv==null) {
-			return null;
-		}
-		
+		if (valuesTsv==null) return null;
 		//TODO need to go through all instances of overall set and remove bad columns instead of rejecting rows
-		
-		
-//		if (valuesTsv.toLowerCase().contains("infinity")) {
-//			return null;
-//		}
-//		
-//		if (valuesTsv.toLowerCase().contains("∞")) {
-//			return null;
-//		}
-		
-		if (valuesTsv.toLowerCase().contains("error")) {
-			return null;
-		}
-		
+//		if (valuesTsv.toLowerCase().contains("infinity")) return null;
+//		if (valuesTsv.toLowerCase().contains("∞")) return null;
+		if (valuesTsv.toLowerCase().contains("error")) return null;
 		return smiles + "\t" + qsar_property_value+ "\t" + valuesTsv + "\r\n";
 	}
 }
