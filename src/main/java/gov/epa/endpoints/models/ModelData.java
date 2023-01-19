@@ -159,7 +159,7 @@ public class ModelData {
 		"on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
 		"where dp.fk_dataset_id="+datasetId+" and dv.fk_descriptor_set_id="+descriptorSetId;
 		
-		System.out.println("\n"+sql+"\n");
+//		System.out.println("\n"+sql+"\n");
 		
 		try {
 			
@@ -329,5 +329,89 @@ public class ModelData {
 //		if (valuesTsv.toLowerCase().contains("∞")) return null;
 		if (valuesTsv.toLowerCase().contains("error")) return null;
 		return smiles + "\t" + qsar_property_value+ "\t" + valuesTsv + "\r\n";
+	}
+
+	public void generateInstancesNotinOperaTrainingSet() {
+		Connection conn=DatabaseLookup.getConnection();
+		String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetName+"'";
+		String datasetId=DatabaseLookup.runSQL(conn, sql);
+
+		sql="select id from qsar_descriptors.descriptor_sets d where d.\"name\" ='"+descriptorSetName+"'";
+		String descriptorSetId=DatabaseLookup.runSQL(conn, sql);
+		
+		String idField="canon_qsar_smiles";
+
+		sql="select headers_tsv from qsar_descriptors.descriptor_sets d where d.id="+descriptorSetId;
+		String instanceHeader="ID\tProperty\t"+DatabaseLookup.runSQL(conn, sql)+"\r\n";
+
+		sql="select p.name from qsar_datasets.datasets d \r\n"
+				+ "inner join qsar_datasets.properties p on p.id =d.fk_property_id \r\n"
+				+ "where d.id="+datasetId+";";
+				
+		String propertyName=DatabaseLookup.runSQL(conn, sql);
+		
+		String propertyNameOpera=propertyName;
+		if(propertyName.equals("LogBCF_Fish_WholeBody")) propertyNameOpera="LogBCF";
+		
+		
+		//*****************************************************************************************
+		String datasetNameOpera=propertyNameOpera+" OPERA";
+		sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetNameOpera.replace("'", "''")+"'";
+//		System.out.println("\n"+sql+"\n");
+		String datasetIdOpera=DatabaseLookup.runSQL(conn, sql);
+		sql="select id from qsar_datasets.splittings s where s.\"name\" ='OPERA'";
+		String splittingIdOpera=DatabaseLookup.runSQL(conn, sql);		
+		String sqlOpera="select dp."+idField+", dp.qsar_property_value, dv.values_tsv, dpis.split_num from qsar_datasets.data_points dp\n"+ 
+		"inner join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
+		"inner join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
+		"where dp.fk_dataset_id="+datasetIdOpera+" and dv.fk_descriptor_set_id="+descriptorSetId+" and "+
+		"dpis.split_num=0"+" and dpis.fk_splitting_id="+splittingIdOpera+";";
+		//*****************************************************************************************
+		
+		
+		sql="select dp."+idField+", dp.qsar_property_value, dv.values_tsv from qsar_datasets.data_points dp\n"+ 
+		"inner join qsar_descriptors.descriptor_values dv\n"+ 
+		"on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
+		"where dp.fk_dataset_id="+datasetId+" and dv.fk_descriptor_set_id="+descriptorSetId;
+//		System.out.println("\n"+sql+"\n");
+
+		
+		StringBuilder sbTraining = new StringBuilder(instanceHeader);
+		StringBuilder sbPrediction = new StringBuilder(instanceHeader);
+
+		try {
+			
+			ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
+
+			//Make look up for Opera pred set instances:
+			ResultSet rsOpera=DatabaseLookup.runSQL2(conn, sqlOpera);
+			Hashtable<String,String>htOperaTrainingSet=new Hashtable<>();
+			while (rsOpera.next()) {
+				String id=rsOpera.getString(1);
+//				System.out.println(id);
+				String qsar_property_value=rsOpera.getString(2);
+				String descriptors=rsOpera.getString(3);
+				String instance=generateInstance(id, qsar_property_value, descriptors);
+				if (instance==null) continue;
+				sbTraining.append(instance);
+				htOperaTrainingSet.put(id,instance);
+			}
+			
+			while (rs.next()) {
+				String id=rs.getString(1);
+				String qsar_property_value=rs.getString(2);
+				String descriptors=rs.getString(3);
+				String instance=generateInstance(id, qsar_property_value, descriptors);
+				if (instance==null) continue;				
+				if(htOperaTrainingSet.get(id)!=null) continue;//If in Opera prediction set dont add to training set
+				sbPrediction.append(instance);
+//				if(counter==100) break; 
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		this.trainingSetInstances = sbTraining.toString();
+		this.predictionSetInstances = sbPrediction.toString();
 	}
 }
