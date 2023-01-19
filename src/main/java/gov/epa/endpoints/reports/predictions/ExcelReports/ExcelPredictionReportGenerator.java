@@ -18,32 +18,44 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.poi.hssf.util.CellReference;
+
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.charts.AxisCrosses;
-import org.apache.poi.ss.usermodel.charts.AxisPosition;
-import org.apache.poi.ss.usermodel.charts.ChartDataSource;
-import org.apache.poi.ss.usermodel.charts.DataSources;
-import org.apache.poi.ss.usermodel.charts.LegendPosition;
-import org.apache.poi.ss.usermodel.charts.ScatterChartSeries;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.xddf.usermodel.PresetColor;
+import org.apache.poi.xddf.usermodel.XDDFColor;
+import org.apache.poi.xddf.usermodel.XDDFLineProperties;
+import org.apache.poi.xddf.usermodel.XDDFNoFillProperties;
+import org.apache.poi.xddf.usermodel.XDDFShapeProperties;
+import org.apache.poi.xddf.usermodel.XDDFSolidFillProperties;
+import org.apache.poi.xddf.usermodel.chart.AxisCrosses;
+import org.apache.poi.xddf.usermodel.chart.AxisPosition;
+import org.apache.poi.xddf.usermodel.chart.ChartTypes;
+import org.apache.poi.xddf.usermodel.chart.LegendPosition;
+import org.apache.poi.xddf.usermodel.chart.MarkerStyle;
+import org.apache.poi.xddf.usermodel.chart.XDDFChartData;
+import org.apache.poi.xddf.usermodel.chart.XDDFChartLegend;
+import org.apache.poi.xddf.usermodel.chart.XDDFDataSource;
+import org.apache.poi.xddf.usermodel.chart.XDDFDataSourcesFactory;
+import org.apache.poi.xddf.usermodel.chart.XDDFNumericalDataSource;
+import org.apache.poi.xddf.usermodel.chart.XDDFScatterChartData;
 import org.apache.poi.xssf.usermodel.XSSFChart;
 import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
 import org.apache.poi.xssf.usermodel.XSSFDrawing;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.poi.xssf.usermodel.charts.XSSFChartLegend;
-import org.apache.poi.xssf.usermodel.charts.XSSFScatterChartData;
-import org.apache.poi.xssf.usermodel.charts.XSSFValueAxis;
 import org.openxmlformats.schemas.drawingml.x2006.chart.CTTitle;
 import org.openxmlformats.schemas.drawingml.x2006.chart.CTValAx;
 import org.openxmlformats.schemas.drawingml.x2006.chart.STMarkerStyle;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTTextBody;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTTextParagraph;
+
+import org.apache.poi.xddf.usermodel.chart.XDDFValueAxis;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -194,18 +206,16 @@ public class ExcelPredictionReportGenerator {
 		String splittingName="OPERA";
 		String modelSetName="Sample models";
 
-		PredictionReport predictionReport = null;
+		PredictionReport predictionReport=null;
+		
+//		predictionReport=gen.generateForModelSetPredictions(datasetName, splittingName,modelSetName);
 
-
-		predictionReport=gen.generateForModelSetPredictions(datasetName, splittingName,modelSetName);
-
-		File jsonFile = new File("data/reports/LogHalfLife OPERA_PredictionReport.json");
+		File jsonFile = new File("data/reports/PFAS mdoels_Standard Water solubility from exp_prop_PredictionReport.json");
 
 		try {
-//			predictionReport = gson.fromJson(new FileReader(jsonFile), PredictionReport.class);
-
+			predictionReport = gson.fromJson(new FileReader(jsonFile), PredictionReport.class);
 		} catch (Exception ex) {
-
+			ex.printStackTrace();
 		}
 		/*
 		try {
@@ -224,7 +234,8 @@ public class ExcelPredictionReportGenerator {
 	}
 
 	public void generate(PredictionReport report, String filepathOut) {
-		XSSFWorkbook wb=new XSSFWorkbook();		
+		Workbook wb = new XSSFWorkbook();
+		
 		boolean isBinary = report.predictionReportMetadata.datasetUnit.equalsIgnoreCase("binary") ? true : false;
 		generateCoverSheet2(report,wb, isBinary);
 
@@ -300,7 +311,7 @@ public class ExcelPredictionReportGenerator {
 		}
 
 		spreadsheetMap.put(6, prepareCoverSheetRow("nTraining", String.valueOf(nTrain)));
-		spreadsheetMap.put(7, prepareCoverSheetRow("nTEST", String.valueOf(nPredict)));
+		spreadsheetMap.put(7, prepareCoverSheetRow("nTest", String.valueOf(nPredict)));
 
 		populateSheet2(spreadsheetMap, wb, isBinary, "Cover sheet", null, null);
 
@@ -308,8 +319,8 @@ public class ExcelPredictionReportGenerator {
 
 
 
-	private static Object[] prepareCoverSheetRow(String name, String value) {
-		List<String> rowArrayList = new ArrayList<String>(Arrays.asList(name, value));
+	private static Object[] prepareCoverSheetRow(String name, Object value) {
+		List<Object> rowArrayList = new ArrayList<Object>(Arrays.asList(name, value));
 		return rowArrayList.toArray(new Object[rowArrayList.size()]);
 	}
 
@@ -354,7 +365,7 @@ public class ExcelPredictionReportGenerator {
 
 
 
-	private void generateSummarySheet2(PredictionReport report, XSSFWorkbook wb,
+	private void generateSummarySheet2(PredictionReport report, Workbook wb,
 			boolean isBinary) {
 		Map < Integer, Object[] > spreadsheetMap = new TreeMap < Integer, Object[] >();
 		ArrayList<String> headerStats = new ArrayList<String>(Arrays.asList("Dataset Name", "Descriptor Software", "Method Name", "Split"));
@@ -620,8 +631,8 @@ public class ExcelPredictionReportGenerator {
 		XSSFSheet sheet = (XSSFSheet) wb.createSheet(sheetName);
 		// 2 decimal center aligned numeric cell style
 		CellStyle cellStyle = wb.createCellStyle();
-		cellStyle.setDataFormat(wb.createDataFormat().getFormat("0.00"));
-		cellStyle.setAlignment(CellStyle.ALIGN_CENTER);
+		cellStyle.setDataFormat(wb.createDataFormat().getFormat("0.00"));//TODO dont use this for nTrain and nTEST
+		cellStyle.setAlignment(HorizontalAlignment.CENTER);
 		// boldstyle
 		CellStyle boldstyle = wb.createCellStyle();//Create style
 		Font font = wb.createFont();;//Create font
@@ -760,6 +771,16 @@ public class ExcelPredictionReportGenerator {
 
 	class ExcelUtilities {
 
+		/**
+		 * Creates prediction plot. Updated to poi version 5.2.3
+		 * 
+		 * @param sheet
+		 * @param source1
+		 * @param source2
+		 * @param methodName
+		 * @param propertyName
+		 * @param units
+		 */
 		public void GenerateChart(XSSFSheet sheet,String source1,String source2,String methodName, String propertyName,String units) {
 			XSSFDrawing drawing = sheet.createDrawingPatriarch();
 			XSSFClientAnchor anchor = drawing.createAnchor(0, 0, 0, 0, 5, 0, 16, 24);
@@ -769,68 +790,90 @@ public class ExcelPredictionReportGenerator {
 			if (chart instanceof XSSFChart) ((XSSFChart)chart).setTitleText(methodName);
 
 
-			XSSFValueAxis bottomAxis = chart.createValueAxis(AxisPosition.BOTTOM);
-			XSSFValueAxis leftAxis = chart.createValueAxis(AxisPosition.LEFT);
+			XDDFValueAxis bottomAxis = chart.createValueAxis(AxisPosition.BOTTOM);
+			XDDFValueAxis leftAxis = chart.createValueAxis(AxisPosition.LEFT);
 			leftAxis.setCrosses(AxisCrosses.MIN);
 			bottomAxis.setCrosses(AxisCrosses.MIN);
 
 
 			CellRangeAddress crXData = new CellRangeAddress(1, sheet.getLastRowNum(), 1, 1);
 			CellRangeAddress crYData = new CellRangeAddress(1, sheet.getLastRowNum(), 2, 2);
-			CellReference crTitle = new CellReference(0,1);
-			//			    Cell cell = sheet.getRow(crTitle.getRow()).getCell(crTitle.getCol());
 
-			ChartDataSource<Number> dsXData = DataSources.fromNumericCellRange(sheet, crXData);
-			ChartDataSource<Number> dsYData = DataSources.fromNumericCellRange(sheet, crYData);
-
-			XSSFScatterChartData data = chart.getChartDataFactory().createScatterChartData();
-
-			ScatterChartSeries series1 = data.addSerie(dsXData, dsYData);
-			ScatterChartSeries series2 = data.addSerie(dsXData, dsXData);
+			XDDFDataSource<Double> dsXData = XDDFDataSourcesFactory.fromNumericCellRange(sheet, crXData);
+			XDDFNumericalDataSource<Double> dsXData2 = XDDFDataSourcesFactory.fromNumericCellRange(sheet, crXData);
+			XDDFNumericalDataSource<Double> dsYData = XDDFDataSourcesFactory.fromNumericCellRange(sheet, crYData);
+			
+			XDDFScatterChartData data = (XDDFScatterChartData) chart.createData(ChartTypes.SCATTER, bottomAxis, leftAxis);
+			
+			XDDFScatterChartData.Series series1 = (XDDFScatterChartData.Series) data.addSeries(dsXData, dsYData);			 
+			XDDFScatterChartData.Series series2 = (XDDFScatterChartData.Series) data.addSeries(dsXData, dsXData2);
 
 			series1.setTitle("Exp. Data");
 			series2.setTitle("Y=X");
-			chart.plot(data, bottomAxis, leftAxis);
+			
+			chart.plot(data);
 
 			//Set axis titles:
 			CTValAx valAx = chart.getCTChart().getPlotArea().getValAxArray(0);
 			CTValAx valAy = chart.getCTChart().getPlotArea().getValAxArray(1);
 			setAxisTitle("Observed " + propertyName + " " + "(" + units + ")", valAx);
 			setAxisTitle("Predicted "+ propertyName + " " + "(" + units + ")", valAy);
-			// *******
 
 			//set properties of first scatter chart data series to not smooth the line:
 			((XSSFChart)chart).getCTChart().getPlotArea().getScatterChartArray(0).getSerArray(0)
 			.addNewSmooth().setVal(false);
 
 			//			    System.out.println(chart.getCTChart().getPlotArea().getScatterChartArray(0).getSerArray(0).getSpPr());
-
-			//Set series line to no fill: 
-			chart.getCTChart().getPlotArea().getScatterChartArray(0).getSerArray(0)
-			.addNewSpPr().addNewLn().addNewNoFill();
-
-			chart.getCTChart().getPlotArea().getScatterChartArray(0).getSerArray(1)
-			.addNewMarker().addNewSymbol().setVal(STMarkerStyle.NONE);
-
-
-
-
-			//Add linear trend line:
-			chart.getCTChart().getPlotArea().getScatterChartArray(0).getSerArray(0).addNewTrendline().addNewTrendlineType().setVal(org.openxmlformats.schemas.drawingml.x2006.chart.STTrendlineType.LINEAR);
+			series1.setMarkerStyle(MarkerStyle.CIRCLE);
+			removeLine(series1);
+			
+			series2.setMarkerStyle(MarkerStyle.NONE);
+			setLineColor(series2,PresetColor.BLACK);
+			
+			//Add linear trend line:  TMM: we dont need regression line- makes chart too busy- Y=X line only is preferred
+//			chart.getCTChart().getPlotArea().getScatterChartArray(0).getSerArray(0).addNewTrendline().addNewTrendlineType().setVal(org.openxmlformats.schemas.drawingml.x2006.chart.STTrendlineType.LINEAR);
 			// *******
 
-			XSSFChartLegend legend = chart.getOrCreateLegend();
+			XDDFChartLegend legend = chart.getOrAddLegend();
 			legend.setPosition(LegendPosition.BOTTOM);
 
-
-
-			//set properties of first scatter chart series to not vary the colors:
-			((XSSFChart)chart).getCTChart().getPlotArea().getScatterChartArray(0)
-			.addNewVaryColors().setVal(false);
-
-
-
 		}
+		
+		/**
+		 * Changes color of line for a series
+		 * 
+		 * @param series
+		 * @param color
+		 */
+		private void setLineColor(XDDFChartData.Series series, PresetColor color) {
+			//https://stackoverflow.com/questions/55188664/setting-the-color-of-an-excel-sheet-scatter-chart-marker-icon-with-apache-poi
+	        XDDFSolidFillProperties fill = new XDDFSolidFillProperties(XDDFColor.from(color));
+	        XDDFLineProperties line = new XDDFLineProperties();
+	        line.setFillProperties(fill);
+	        XDDFShapeProperties properties = series.getShapeProperties();
+	        if (properties == null) {
+	            properties = new XDDFShapeProperties();
+	        }
+	        properties.setLineProperties(line);
+	        series.setShapeProperties(properties);
+	    }
+		
+		
+		/**
+		 * Gets rid of line for a series
+		 * 		
+		 * @param series
+		 */
+	    private void removeLine(XDDFScatterChartData.Series series) {
+	        XDDFNoFillProperties noFillProperties = new XDDFNoFillProperties();
+	        XDDFLineProperties lineProperties = new XDDFLineProperties();
+	        lineProperties.setFillProperties(noFillProperties);
+	        XDDFShapeProperties shapeProperties = series.getShapeProperties();
+	        if (shapeProperties == null) shapeProperties = new XDDFShapeProperties();
+	        shapeProperties.setLineProperties(lineProperties);
+	        series.setShapeProperties(shapeProperties);
+	    }
+
 
 
 		private void setAxisTitle(String source1, CTValAx valAx) {
