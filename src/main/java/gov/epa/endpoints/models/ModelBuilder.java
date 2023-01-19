@@ -64,9 +64,9 @@ public class ModelBuilder {
 		this.lanId = lanId;
 	}
 	
-	public ModelData initModelData(String datasetName, String descriptorSetName, String splittingName, boolean removeLogP) {
-		ModelData data = new ModelData(datasetName, descriptorSetName, splittingName,removeLogP);
-		data.initTrainingPredictionInstances(datasetName,descriptorSetName,splittingName,true);
+	public ModelData initModelData(String datasetName, String descriptorSetName, String splittingName, boolean removeLogP,boolean useDTXCIDs) {
+		ModelData data = new ModelData(datasetName, descriptorSetName, splittingName,removeLogP,useDTXCIDs);
+		data.initTrainingPredictionInstances(datasetName,descriptorSetName,splittingName,useDTXCIDs);
 		return data;
 	}
 	

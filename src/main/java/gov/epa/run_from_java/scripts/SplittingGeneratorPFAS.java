@@ -37,6 +37,7 @@ import gov.epa.databases.dsstox.service.ChemicalListService;
 import gov.epa.databases.dsstox.service.ChemicalListServiceImpl;
 import gov.epa.databases.dsstox.service.SourceSubstanceService;
 import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
+import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValuesCalculator;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 import gov.epa.web_services.standardizers.Standardizer;
@@ -227,7 +228,7 @@ public class SplittingGeneratorPFAS {
 				}
 			}else if (dpis.getSplitNum()==DevQsarConstants.TEST_SPLIT_NUM) {
 				if (isPFAS(smilesArray,dpis)) {
-					System.out.println(dpis.getDataPoint().getCanonQsarSmiles()+"\t"+dpis.getSplitNum()+"\t"+dpis.getSplitting().getName());
+//					System.out.println(dpis.getDataPoint().getCanonQsarSmiles()+"\t"+dpis.getSplitNum()+"\t"+dpis.getSplitting().getName());
 					counter=createDataPointInSplitting(dpisNew,counter);
 				} else {
 					dpisNew.setSplitNum(2);//dont use
@@ -235,7 +236,7 @@ public class SplittingGeneratorPFAS {
 				}
 			}
 			
-			if(counter%100==0)
+			if(counter%1000==0)
 				System.out.println(counter);
 			
 		}
@@ -411,52 +412,84 @@ public class SplittingGeneratorPFAS {
 
 	}
 	
-	public static void main(String[] args) {
-		SplittingGeneratorPFAS p=new SplittingGeneratorPFAS();
+	
+	void createSplittings () {
+		List<String>datasetNames=new ArrayList<>();
+		datasetNames.add("HLC from exp_prop and chemprop");
+		datasetNames.add("WS from exp_prop and chemprop");
+		datasetNames.add("VP from exp_prop and chemprop");
+		datasetNames.add("LogP from exp_prop and chemprop");
+		datasetNames.add("MP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop");
+//		datasetNames.add("ExpProp BCF Fish_TMM");
+
+		Connection conn = DatabaseLookup.getConnection();
 		
-		
-		String folder="data/dev_qsar/dataset_files/";
-		
-		String listName="PFASSTRUCTV4";		
-//		String listName="PFASSTRUCTV5";
-		String filePath=folder+listName+"_qsar_ready_smiles.txt";
-		
-//		p.generateQSAR_ReadyPFAS_STRUCT(listName,filePath);		
-		
-		ArrayList<String>smilesArray=p.getPFASSmiles(filePath);
-		
+//		for (String datasetName : datasetNames) {
+//			p.getPFASChemicalCountForDataSet(datasetName, smilesArray);
+//		}
+
 		List<String>splittingNames=new ArrayList<>();
 		splittingNames.add(splittingPFASOnly);
 		splittingNames.add(splittingAll);
 		splittingNames.add(splittingAllButPFAS);
+
+		String listName="PFASSTRUCTV4";		
+//		String listName="PFASSTRUCTV5";
+		String folder="data/dev_qsar/dataset_files/";
+		String filePath=folder+listName+"_qsar_ready_smiles.txt";
+		
+//		p.generateQSAR_ReadyPFAS_STRUCT(listName,filePath);		
+		
+		ArrayList<String>smilesArray=getPFASSmiles(filePath);
+
+		
+		for (String datasetName : datasetNames) {
+			for (String splittingName : splittingNames) {
+//				p.createSplitting(datasetName,splittingName,smilesArray);	
+				int countTraining = getCount(conn, datasetName, splittingName, 0);
+				int countPrediction = getCount(conn, datasetName, splittingName, 1);
+				System.out.println(datasetName+"\t"+splittingName+"\t"+countTraining + "\t" + countPrediction);
+			}
+		}
+	}
+	
+	private void write_exp_prop_datasets() {
+		String lanId = "tmarti02";
+		
+		String descriptorSetName = DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
 		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add("HLC from exp_prop and chemprop");
-//		datasetNames.add("ExpProp BCF Fish_TMM");
+		datasetNames.add("HLC from exp_prop and chemprop");		
 //		datasetNames.add("WS from exp_prop and chemprop");
 //		datasetNames.add("VP from exp_prop and chemprop");
 //		datasetNames.add("LogP from exp_prop and chemprop");
 //		datasetNames.add("MP from exp_prop and chemprop");
 //		datasetNames.add("BP from exp_prop and chemprop");
-
-		Connection conn = DatabaseLookup.getConnection();
+//		datasetNames.add("ExpProp BCF Fish_TMM");
 		
-//		String descriptorsetName
+		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\datasets\\";
 
+		List<String>splittingNames=new ArrayList<>();
+		splittingNames.add(splittingPFASOnly);
+		splittingNames.add(splittingAll);
+		splittingNames.add(splittingAllButPFAS);
+		
 		for (String datasetName : datasetNames) {
-			for (String splittingName : splittingNames) {
-
-//				p.createSplitting(datasetName,splittingName,smilesArray);	
-//				p.getPFASChemicalCountForDataSet(datasetName, smilesArray);
-				
-				int countTraining = getCount(conn, datasetName, splittingName, 0);
-				int countPrediction = getCount(conn, datasetName, splittingName, 1);
-
-				System.out.println(datasetName+"\t"+splittingName+"\t"+countTraining + "\t" + countPrediction);
+			for (String splittingName : splittingNames) {				
+				String folder=folderMain+datasetName+"\\PFAS\\";
+				DatasetFileWriter.writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true,false);				
 			}
-			// TODO output count in training set and prediction set
 		}
-
+		
+	}
+	
+	
+	public static void main(String[] args) {
+		SplittingGeneratorPFAS p=new SplittingGeneratorPFAS();
+		
+//		p.createSplittings();
+		p.write_exp_prop_datasets();		
 //		p.createFiveFoldExternalSplittings(folder, datasetName,"T.E.S.T. 5.1", smilesArray);
 		
 	}

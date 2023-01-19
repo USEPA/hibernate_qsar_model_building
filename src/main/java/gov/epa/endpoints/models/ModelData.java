@@ -22,12 +22,14 @@ public class ModelData {
 	// Set by querying from qsar_datasets and qsar_descriptors using ModelBuilder.initInstances()
 	 public String trainingSetInstances;
 	 public String predictionSetInstances;
+	public boolean useDTXCIDs;
 	
-	public ModelData(String datasetName, String descriptorSetName, String splittingName,boolean removeLogP_Descriptors) {
+	public ModelData(String datasetName, String descriptorSetName, String splittingName,boolean removeLogP_Descriptors,boolean useDTXCIDs) {
 		this.datasetName = datasetName;
 		this.descriptorSetName = descriptorSetName;
 		this.splittingName = splittingName;
 		this.removeLogP_Descriptors=removeLogP_Descriptors;
+		this.useDTXCIDs=useDTXCIDs;
 	
 	}
 	
