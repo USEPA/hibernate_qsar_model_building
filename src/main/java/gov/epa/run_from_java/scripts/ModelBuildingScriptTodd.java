@@ -28,7 +28,7 @@ public class ModelBuildingScriptTodd {
 				
 		String descriptorSetName = "T.E.S.T. 5.1";		
 //		String splittingName="RND_REPRESENTATIVE";
-		String splittingName=PFAS_SplittingGenerator.splittingPFASOnly;
+		String splittingName=SplittingGeneratorPFAS.splittingPFASOnly;
 //		String splittingName=PFAS_SplittingGenerator.splittingAll;
 //		String splittingName=PFAS_SplittingGenerator.splittingAllButPFAS;
 		

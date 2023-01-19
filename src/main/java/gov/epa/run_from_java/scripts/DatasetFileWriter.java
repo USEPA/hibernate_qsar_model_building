@@ -80,14 +80,14 @@ public class DatasetFileWriter {
 		return instances;
 	}
 	
-	public void writeWithSplitting(String descriptorSetName,String splittingName,String datasetName,String outputFolderPath, boolean omitBadColumns) {
+	public static void writeWithSplitting(String descriptorSetName,String splittingName,String datasetName,String outputFolderPath, boolean omitBadColumns,boolean useDTXCIDs) {
 
 		//TODO need to add code to figure out which columns have bad columns in either set
 		
 		ModelBuilder mb=new ModelBuilder("tmarti02");
 				
 		//Get training and test set instances as strings using TEST descriptors:
-		ModelData md=mb.initModelData(datasetName, descriptorSetName,splittingName, false);
+		ModelData md=mb.initModelData(datasetName, descriptorSetName,splittingName, false,useDTXCIDs);
 
 		File outputFolder = new File(outputFolderPath);
 		outputFolder.mkdirs();
@@ -121,7 +121,7 @@ public class DatasetFileWriter {
 	
 	public void writeTrainingSetNotInOperaTestSet(String descriptorSetName,String splittingName,String datasetName,String outputFolderPath) {
 
-		ModelData md=new ModelData(datasetName,descriptorSetName,null,false);
+		ModelData md=new ModelData(datasetName,descriptorSetName,null,false,false);
 				
 		//Get training and test set instances as strings using TEST descriptors:
 		md.generateInstancesNotinOperaPredictionSet();
@@ -294,7 +294,7 @@ public class DatasetFileWriter {
 			
 			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,1);
 
-			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true);
+			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true ,false);
 			
 //			if(true)break;
 			
@@ -342,7 +342,7 @@ public class DatasetFileWriter {
 			String datasetName=endpoint+" TEST";
 			String folder=mainFolder+datasetName+"\\";
 			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,1);
-			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true);			
+			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true, false);			
 		}
 	}
 
@@ -373,18 +373,24 @@ public class DatasetFileWriter {
 			
 			//Just in case run descriptor generation to make sure have descriptor for each datapoint:
 //			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,1);
+
 //			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true);
 //			writeTrainingSetNotInOperaTestSet(descriptorSetName, splittingName, datasetName, folder);
 			writeTestSetNotInOperaTrainingSet(descriptorSetName, splittingName, datasetName, folder);
+
+			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true,false);
+			writeTrainingSetNotInOperaTestSet(descriptorSetName, splittingName, datasetName, folder);
 			
 		}
 	}
+	
+	
 
 	
 	
 	private void writeTestSetNotInOperaTrainingSet(String descriptorSetName, String splittingName, String datasetName,
 			String outputFolderPath) {
-		ModelData md=new ModelData(datasetName,descriptorSetName,null,false);
+		ModelData md=new ModelData(datasetName,descriptorSetName,null,false,false);
 		
 		//Get training and test set instances as strings using TEST descriptors:
 		md.generateInstancesNotinOperaTrainingSet();
@@ -465,7 +471,8 @@ public class DatasetFileWriter {
 		DatasetFileWriter writer = new DatasetFileWriter();
 //		writer.writeOPERAFiles();
 //		writer.writeTEST_Toxicity_Files();
-		writer.write_exp_prop_datasets();
+//		writer.write_exp_prop_datasets();
+		
 				
 		//**********************************************************
 
