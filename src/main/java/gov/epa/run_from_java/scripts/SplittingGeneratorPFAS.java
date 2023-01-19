@@ -3,6 +3,7 @@ package gov.epa.run_from_java.scripts;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +37,7 @@ import gov.epa.databases.dsstox.service.ChemicalListService;
 import gov.epa.databases.dsstox.service.ChemicalListServiceImpl;
 import gov.epa.databases.dsstox.service.SourceSubstanceService;
 import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 import gov.epa.web_services.standardizers.Standardizer;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponse;
@@ -43,7 +45,7 @@ import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithSt
 import kong.unirest.Unirest;
 import javax.validation.Validator;
 
-public class PFAS_SplittingGenerator {
+public class SplittingGeneratorPFAS {
 
 	public static final String splittingPFASOnly="T=PFAS only, P=PFAS";
 	public static final String splittingAll="T=all, P=PFAS";		
@@ -57,7 +59,7 @@ public class PFAS_SplittingGenerator {
 //	Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
 	Validator validator = DevQsarValidator.getValidator();
 	
-	public PFAS_SplittingGenerator() {
+	public SplittingGeneratorPFAS() {
 //		System.setProperty("org.jboss.logging.provider", "log4j");
 //		System.setProperty("com.mchange.v2.log.MLog", "log4j");
 //		
@@ -205,7 +207,7 @@ public class PFAS_SplittingGenerator {
 					counter=createDataPointInSplitting(dpisNew,counter);
 				} else if (splittingName.equals(splittingPFASOnly)) {					
 					if (isPFAS(smilesArray,dpis)) {						
-						System.out.println(dpis.getDataPoint().getId()+"\t"+dpis.getDataPoint().getCanonQsarSmiles()+"\t"+dpis.getSplitNum()+"\t"+dpis.getSplitting().getName());
+//						System.out.println(dpis.getDataPoint().getId()+"\t"+dpis.getDataPoint().getCanonQsarSmiles()+"\t"+dpis.getSplitNum()+"\t"+dpis.getSplitting().getName());
 						counter=createDataPointInSplitting(dpisNew,counter);					
 					} else {						
 						dpisNew.setSplitNum(2);
@@ -233,7 +235,8 @@ public class PFAS_SplittingGenerator {
 				}
 			}
 			
-			System.out.println(counter);
+			if(counter%100==0)
+				System.out.println(counter);
 			
 		}
 //		session.close();
@@ -393,37 +396,71 @@ public class PFAS_SplittingGenerator {
 
 	}
 	
+	static int getCount(Connection conn, String datasetName,String splitting, int splitNum) {
+		
+		String sql="select count(dp.id) from qsar_datasets.data_points dp\n"+  
+		"inner join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+
+		"join qsar_datasets.datasets d on dp.fk_dataset_id =d.id\n"+
+		"join qsar_datasets.splittings s on s.id = dpis.fk_splitting_id\n"+ 
+		"where d.\"name\"='"+datasetName+"'\n"
+		+ "and s.\"name\"='"+splitting+"' and dpis.split_num = "+splitNum+";";
+		
+//		System.out.println(sql+"\n");
+		
+		return Integer.parseInt(DatabaseLookup.runSQL(conn, sql));
+
+	}
+	
 	public static void main(String[] args) {
-		PFAS_SplittingGenerator p=new PFAS_SplittingGenerator();
+		SplittingGeneratorPFAS p=new SplittingGeneratorPFAS();
 		
 		
 		String folder="data/dev_qsar/dataset_files/";
 		
-//		String listName="PFASSTRUCTV4";
-		
-		String listName="PFASSTRUCTV5";
+		String listName="PFASSTRUCTV4";		
+//		String listName="PFASSTRUCTV5";
 		String filePath=folder+listName+"_qsar_ready_smiles.txt";
-		p.generateQSAR_ReadyPFAS_STRUCT(listName,filePath);
+		
+//		p.generateQSAR_ReadyPFAS_STRUCT(listName,filePath);		
 		
 		ArrayList<String>smilesArray=p.getPFASSmiles(filePath);
 		
-//		String splittingName=splittingPFASOnly;
-//		String splittingName=splittingAll;		
-
-//		String splittingName=splittingAllButPFAS;		
-//		String datasetName="Standard Water solubility from exp_prop";
-//		p.createSplitting(datasetName,splittingName,smilesArray);
+		List<String>splittingNames=new ArrayList<>();
+		splittingNames.add(splittingPFASOnly);
+		splittingNames.add(splittingAll);
+		splittingNames.add(splittingAllButPFAS);
 		
-//		String datasetName="Standard Water solubility from exp_prop";		
+		List<String>datasetNames=new ArrayList<>();
+		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("ExpProp BCF Fish_TMM");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop");
+
+		Connection conn = DatabaseLookup.getConnection();
+		
+//		String descriptorsetName
+
+		for (String datasetName : datasetNames) {
+			for (String splittingName : splittingNames) {
+
+//				p.createSplitting(datasetName,splittingName,smilesArray);	
+//				p.getPFASChemicalCountForDataSet(datasetName, smilesArray);
+				
+				int countTraining = getCount(conn, datasetName, splittingName, 0);
+				int countPrediction = getCount(conn, datasetName, splittingName, 1);
+
+				System.out.println(datasetName+"\t"+splittingName+"\t"+countTraining + "\t" + countPrediction);
+			}
+			// TODO output count in training set and prediction set
+		}
+
 //		p.createFiveFoldExternalSplittings(folder, datasetName,"T.E.S.T. 5.1", smilesArray);
 		
-
-//		String splittingName=splittingAllButPFAS;		
-//		p.createSplitting(splittingName,smilesArray);
-		
-//		String datasetName="CASRN mapping of standard Water solubility from exp_prop";
-//		p.getPFASChemicalCountForDataSet(datasetName, smilesArray);
-		
 	}
+	
+	
 
 }
