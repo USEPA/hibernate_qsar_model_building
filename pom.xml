@@ -253,7 +253,7 @@
 	<properties>
 		<maven.compiler.source>16</maven.compiler.source>
 		<maven.compiler.target>16</maven.compiler.target>
-		<start-class>gov.epa.endpoints.datasets.DatasetCreatorScript</start-class>
+		<start-class>gov.epa.run_from_java.scripts.RunCaseStudies</start-class>
 	</properties>
 
 

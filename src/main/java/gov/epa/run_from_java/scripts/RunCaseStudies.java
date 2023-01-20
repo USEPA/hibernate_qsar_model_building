@@ -24,8 +24,8 @@ public class RunCaseStudies {
 	
 	static int portModelBuilding=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
 
-	static String serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
-//	static String serverModelBuilding=DevQsarConstants.SERVER_819;
+//	static String serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+	static String serverModelBuilding=DevQsarConstants.SERVER_819;
 //	static String serverModelBuilding="10.140.73.169";
 	
 	static String qsarMethodGA = DevQsarConstants.KNN;
@@ -304,12 +304,7 @@ public class RunCaseStudies {
 //		runCaseStudyOPERA_All_Endpoints();
 //		runCaseStudyPFAS_All_Endpoints();
 		runCaseStudyExpProp_All_Endpoints();
-		
 //		deleteModel(623L);
-		
-		
-		
-		
 		
 	}
 
