@@ -15,43 +15,14 @@ import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.web_services.embedding_service.CalculationInfo;
 
 public class CreateDescriptorEmbeddingManual {
 
 	static Gson gson=new GsonBuilder().setPrettyPrinting().create();;
 	
-	/**
-	 * Read a csv into a JsonArray
-	 * 
-	 * @param filepath
-	 * @return
-	 */
-	static JsonArray csvToGson(String filepath) {
-		JsonArray ja=new JsonArray();
-		 try {
-			List<String>lines=Files.readAllLines(Path.of(filepath));
-			
-			String header=lines.get(0);
-			String [] hvals = header.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
-			
-			for (int i=1;i<lines.size();i++) {
-				String line=lines.get(i);
-				if (line.trim().length()==0) break;
-				String [] vals = line.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
-				JsonObject jo=new JsonObject();
-				for (int j=0;j<hvals.length;j++) {
-					jo.addProperty(hvals[j], vals[j].replace("\"", ""));
-				}
-				ja.add(jo);
-			}
-//			System.out.println(gson.toJson(ja));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		 return ja;
-	}
+	
 	
 	static String getEmbedding(JsonArray ja,String set,String Property) {
 		for (int i=0;i<ja.size();i++) {
@@ -88,23 +59,15 @@ public class CreateDescriptorEmbeddingManual {
 		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\embeddings\\";
 		String embeddingPath=folder+descriptorSetName+"_ga_embeddings.csv";
 		
-		JsonArray ja=csvToGson(embeddingPath);
+		JsonArray ja=Utilities.csvToGson(embeddingPath);
 		
 		String embedding=getEmbedding(ja, set, property);//or just paste here
 		
 //		System.out.println(embedding);
 		
 				
-		DescriptorEmbedding desE = new DescriptorEmbedding();
-		desE.setDatasetName(ci.datasetName);
-		desE.setCreatedBy(lanId);
-		desE.setDescription(ci.toString());
-		desE.setDescriptorSetName(ci.descriptorSetName);
-		desE.setEmbeddingTsv(embedding);
-		desE.setQsarMethod(ci.qsarMethodGA);
-		desE.setName(ci.datasetName + "_" + ci.descriptorSetName + "_" + System.currentTimeMillis());
-		desE.setDatasetName(ci.datasetName);
-		desE.setImportanceTsv("not null importances");
+		DescriptorEmbedding desE = new DescriptorEmbedding(ci, embedding,lanId);
+		
 
 		Date date = new Date();
 		Timestamp timestamp2 = new Timestamp(date.getTime());
@@ -124,7 +87,7 @@ public class CreateDescriptorEmbeddingManual {
 		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\embeddings\\";
 		String descriptorSetName="WebTEST-default";
 		String embeddingPath=folder+descriptorSetName+"_ga_embeddings.csv";
-		JsonArray ja=csvToGson(embeddingPath);
+		JsonArray ja=Utilities.csvToGson(embeddingPath);
 
 		for (int i=0;i<ja.size();i++) {
 			JsonObject jo=ja.get(i).getAsJsonObject();
@@ -138,17 +101,10 @@ public class CreateDescriptorEmbeddingManual {
 			ci.num_generations = 100;
 			ci.threshold=1;			
 			ci.qsarMethodGA = "knn";
+			ci.datasetName=datasetName;
+			ci.descriptorSetName=descriptorSetName;
 			
-			DescriptorEmbedding desE = new DescriptorEmbedding();
-			desE.setDatasetName(datasetName);
-			desE.setCreatedBy(lanId);
-			desE.setDescription(ci.toString());
-			desE.setDescriptorSetName(descriptorSetName);
-			desE.setEmbeddingTsv(embedding);
-			desE.setQsarMethod(ci.qsarMethodGA);
-			desE.setName(datasetName + "_" + descriptorSetName + "_" + System.currentTimeMillis());
-			desE.setDatasetName(datasetName);
-			desE.setImportanceTsv("N/A");
+			DescriptorEmbedding desE = new DescriptorEmbedding(ci, embedding, lanId);
 
 			Date date = new Date();
 			Timestamp timestamp2 = new Timestamp(date.getTime());

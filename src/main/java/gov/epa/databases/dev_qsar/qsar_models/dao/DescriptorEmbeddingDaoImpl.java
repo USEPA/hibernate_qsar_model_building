@@ -5,6 +5,7 @@ import org.hibernate.query.Query;
 
 import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
+import gov.epa.web_services.embedding_service.CalculationInfo;
 
 public class DescriptorEmbeddingDaoImpl implements DescriptorEmbeddingDao {
 	
@@ -14,7 +15,7 @@ public class DescriptorEmbeddingDaoImpl implements DescriptorEmbeddingDao {
 	private static final String HQL_BY_FIELDS = 
 			"from DescriptorEmbedding de where de.qsarMethod = :qsar_method"
 			+ " and de.datasetName = :dataset_name and de.descriptorSetName = :descriptor_set_name"
-					+ " and de.description = :description";
+					+ " and de.description = :description and de.splittingName = :splitting_name";
 
 	@Override
 	public DescriptorEmbedding findByName(String descriptorEmbeddingName, Session session) {
@@ -25,17 +26,15 @@ public class DescriptorEmbeddingDaoImpl implements DescriptorEmbeddingDao {
 	}
 
 	@Override
-	public DescriptorEmbedding findByGASettings(String qsar_method, String dataset_name, String descriptor_set_name, 
-			String description, Session session) {
+	public DescriptorEmbedding findByGASettings(CalculationInfo ci, Session session) {
 		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_BY_FIELDS);
-		query.setParameter("qsar_method", qsar_method);
-		query.setParameter("dataset_name", dataset_name);
-		query.setParameter("descriptor_set_name",descriptor_set_name);
-		query.setParameter("description",description);
+		Query query = session.createQuery(HQL_BY_FIELDS);		
+		query.setParameter("qsar_method", ci.qsarMethodGA);
+		query.setParameter("dataset_name", ci.datasetName);
+		query.setParameter("descriptor_set_name",ci.descriptorSetName);
+		query.setParameter("description",ci.toString());
+		query.setParameter("splitting_name",ci.splittingName);		
 		return (DescriptorEmbedding) query.uniqueResult();
-
-
 		
 	}
 

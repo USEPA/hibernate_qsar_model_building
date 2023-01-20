@@ -7,22 +7,23 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingService;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
+import gov.epa.web_services.embedding_service.CalculationInfo;
 
 public class TestLoadEmbeddings {
 
 	public static void main(String[] args) {
 		String endpoint = DevQsarConstants.LOG_HALF_LIFE;
+
 		String sampleSource = "OPERA";
-		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
-		String datasetName = endpoint +" "+sampleSource;
-		String descriptorSetName = "T.E.S.T. 5.1";		
-
-		String qsar_method = DevQsarConstants.KNN;
+		CalculationInfo ci=new CalculationInfo();		
+		ci.datasetName = endpoint +" "+sampleSource;
+		ci.descriptorSetName = "T.E.S.T. 5.1";		
+		ci.qsarMethodGA = DevQsarConstants.KNN;
+		ci.splittingName="OPERA";
 		
-		String embeddingDescription = "num_generations=10 num_optimizers=10 num_jobs=4 n_threads=20 max_length=24 descriptor_coefficient=0.002";
-				
 
-		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(qsar_method, datasetName, descriptorSetName, embeddingDescription);
+		DescriptorEmbeddingServiceImpl descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
+		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);
 		String descriptorEmbeddingName = descriptorEmbedding.getName();
 		System.out.println(descriptorEmbeddingName);
 		

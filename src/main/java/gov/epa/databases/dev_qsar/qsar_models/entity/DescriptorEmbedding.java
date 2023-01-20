@@ -17,6 +17,8 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import gov.epa.web_services.embedding_service.CalculationInfo;
+
 @Entity
 @Table(name="descriptor_embeddings", indexes={@Index(name="embed_name_idx", columnList="name", unique=true)})
 public class DescriptorEmbedding {
@@ -46,6 +48,9 @@ public class DescriptorEmbedding {
 	
 	@Column(name="qsar_method")
 	private String qsarMethod;
+		
+	@Column(name="splitting_name")
+	private String splittingName;
 	
 	@NotNull
 	@Column(name="importance_tsv", length=2047)
@@ -68,16 +73,38 @@ public class DescriptorEmbedding {
 	@Column(name="created_by")
 	private String createdBy;
 	
+//	public DescriptorEmbedding() {}
 	
-	
-	public DescriptorEmbedding() {}
-	
-	public DescriptorEmbedding(String name, String description, String embeddingTsv, String createdBy,
-			String descriptorSetName) {
-		this.setName(name);
-		this.setDescription(description);
+	public DescriptorEmbedding(String createdBy,String description,String descriptorSetName, 
+			String embeddingTsv,String name, String datasetName, String importanceTsv,
+			String qsarMethod,String splittingName) {
+		
 		this.setEmbeddingTsv(embeddingTsv);
+		this.setName(name);
 		this.setCreatedBy(createdBy);
+		this.setImportanceTsv(importanceTsv);
+
+		this.setDescription(description);
+		this.setDescriptorSetName(descriptorSetName);
+		this.setDatasetName(datasetName);
+		this.setQsarMethod(qsarMethod);
+		this.setSplittingName(splittingName);
+
+		
+	}
+
+	public DescriptorEmbedding(CalculationInfo ci,String embedding,String lanId) {
+		setEmbeddingTsv(embedding);
+		setName(ci.datasetName + "_" + ci.descriptorSetName + "_" + System.currentTimeMillis());
+		setCreatedBy(lanId);
+		setImportanceTsv("not null importances");
+
+		setDescription(ci.toString());
+		setDescriptorSetName(ci.descriptorSetName);
+		setDatasetName(ci.datasetName);
+		setQsarMethod(ci.qsarMethodGA);
+		setSplittingName(ci.splittingName);
+
 	}
 
 	public Long getId() {
@@ -175,4 +202,13 @@ public class DescriptorEmbedding {
 	public void setImportanceTsv(String importanceTsv) {
 		this.importanceTsv = importanceTsv;
 	}
+	
+	public String getSplittingName() {
+		return splittingName;
+	}
+
+	public void setSplittingName(String splittingName) {
+		this.splittingName = splittingName;
+	}
+
 }

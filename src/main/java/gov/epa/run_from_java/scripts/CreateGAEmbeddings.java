@@ -67,6 +67,8 @@ public class CreateGAEmbeddings {
 		ci.remove_log_p = propertyName.equals(DevQsarConstants.LOG_KOW);
 		ci.qsarMethodGA = DevQsarConstants.KNN;
 		ci.num_generations = 10;
+		ci.datasetName=datasetName;
+		ci.descriptorSetName=descriptorSetName;		
 		
 		HttpResponse<String> response = ews2.findEmbedding(ci);
 		System.out.println(response.getStatus());
@@ -78,17 +80,7 @@ public class CreateGAEmbeddings {
 		CalculationResponse cr = gson.fromJson(data, CalculationResponse.class);
 		String embedding = cr.embedding.stream().map(Object::toString).collect(Collectors.joining("\t"));
 		
-		DescriptorEmbedding desE = new DescriptorEmbedding();
-		desE.setDatasetName(datasetName);
-		desE.setCreatedBy(lanId);
-		desE.setDescription(ci.toString());
-		
-		desE.setDescriptorSetName(descriptorSetName);
-		desE.setEmbeddingTsv(embedding);
-		desE.setQsarMethod(ci.qsarMethodGA);
-		desE.setName(name);
-		desE.setDatasetName(datasetName);
-		desE.setImportanceTsv("not null importances");
+		DescriptorEmbedding desE = new DescriptorEmbedding(ci,lanId,embedding);
 		
 		Date date = new Date();
 		Timestamp timestamp2 = new Timestamp(date.getTime());

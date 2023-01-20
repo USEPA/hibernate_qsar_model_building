@@ -60,16 +60,7 @@ public class EmbeddingWebService2 extends WebService {
 
 		String embedding = cr.embedding.stream().map(Object::toString).collect(Collectors.joining("\t"));
 
-		DescriptorEmbedding desE = new DescriptorEmbedding();
-		desE.setDatasetName(ci.datasetName);
-		desE.setCreatedBy(lanId);
-		desE.setDescription(ci.toString());
-		desE.setDescriptorSetName(ci.descriptorSetName);
-		desE.setEmbeddingTsv(embedding);
-		desE.setQsarMethod(ci.qsarMethodGA);
-		desE.setName(ci.datasetName + "_" + ci.descriptorSetName + "_" + System.currentTimeMillis());
-		desE.setDatasetName(ci.datasetName);
-		desE.setImportanceTsv("not null importances");
+		DescriptorEmbedding desE = new DescriptorEmbedding(ci,embedding,lanId);
 
 		Date date = new Date();
 		Timestamp timestamp2 = new Timestamp(date.getTime());

@@ -8,11 +8,14 @@ import java.util.Set;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingService;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.web_services.embedding_service.CalculationInfo;
 import gov.epa.web_services.embedding_service.EmbeddingWebService2;
+import kong.unirest.Unirest;
 
 public class RunCaseStudies {
 
@@ -149,37 +152,45 @@ public class RunCaseStudies {
 	
 	
 
-	public static void runCaseStudyPFAS_All_Endpoints() {
+	public static void runCaseStudyExpProp_All_Endpoints() {
 		lanId="tmarti02";
 		boolean buildModels=false;
 		
+//		String server=DevQsarConstants.SERVER_LOCAL;
+		String server=DevQsarConstants.SERVER_819;
+		
 		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
-		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
+		EmbeddingWebService2 ews2 = new EmbeddingWebService2(server, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
 
 		List<String>datasetNames=new ArrayList<>();
 		datasetNames.add("HLC from exp_prop and chemprop");
-//		datasetNames.add("WS from exp_prop and chemprop");
-//		datasetNames.add("VP from exp_prop and chemprop");
-//		datasetNames.add("LogP from exp_prop and chemprop");
-//		datasetNames.add("MP from exp_prop and chemprop");
-//		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("WS from exp_prop and chemprop");
+		datasetNames.add("VP from exp_prop and chemprop");
+		datasetNames.add("LogP from exp_prop and chemprop");
+		datasetNames.add("MP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop");
 		
-		String splitting ="T=PFAS only, P=PFAS";
-//		String splitting = "T=all, P=PFAS";//dont need to make these embeddings because will be created when doing full exp_prop training set		
+		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+//		String splitting ="T=PFAS only, P=PFAS";
+//		String splitting = "T=all, P=PFAS";//dont need to make these embeddings because will be created when splitting=SPLITTING_RND_REPRESENTATIVE		
 //		String splittingAllButPFAS = "T=all but PFAS, P=PFAS";
 
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
 		for (String datasetName:datasetNames) {
+						
 			boolean removeLogDescriptors=false;
 			CalculationInfo ci = new CalculationInfo();
-			ci.num_generations = 1;
+			ci.num_generations = 10;
 			ci.remove_log_p = removeLogDescriptors;
 			ci.qsarMethodGA = qsarMethodGA;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=splitting;
+//			ci.num_jobs=4;
 
+			System.out.println("\n***"+datasetName+"\t"+splitting+"\t"+"num_generations="+ci.num_generations+"***");
+			
 			DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);
 
 			if (descriptorEmbedding == null) {
@@ -191,18 +202,19 @@ public class RunCaseStudies {
 
 			if (!buildModels) continue;
 
-			String methods[]= {DevQsarConstants.KNN, DevQsarConstants.RF, DevQsarConstants.XGB, DevQsarConstants.SVM};
+//			String methods[]= {DevQsarConstants.KNN, DevQsarConstants.RF, DevQsarConstants.XGB, DevQsarConstants.SVM};
+			String methods[]= {DevQsarConstants.KNN};
+//			String methods[]= {DevQsarConstants.KNN, DevQsarConstants.RF};
 
 			for (String method:methods) {
 				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
+				ModelBuildingScript.buildModel(lanId,server,portModelBuilding,method,descriptorEmbedding,ci);
 			}
-			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName);
+//			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName);
 		}
 
 	}
-
-
+	
 	
 	public static void runCaseStudyOPERA_All_Endpoints() {
 		
@@ -270,12 +282,34 @@ public class RunCaseStudies {
 		}
 		ModelBuildingScript.buildUnweightedConsensusModel(consensusModelIDs, lanId);
 	}
+	
+	static void deleteModel(long id) {
+		ModelServiceImpl ms=new ModelServiceImpl();
+
+		Model model=ms.findById(id);
+		
+		ModelBytesServiceImpl mb=new ModelBytesServiceImpl();
+		ModelBytes modelBytes=mb.findByModelId(model.getId());
+		
+		if(modelBytes!=null) mb.delete(modelBytes);		
+		ms.delete(model);
+		
+	}
+	
+	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 //		runCaseStudyOPERA();
 //		runCaseStudyTest_All_Endpoints();
 //		runCaseStudyOPERA_All_Endpoints();
-		runCaseStudyPFAS_All_Endpoints();
+//		runCaseStudyPFAS_All_Endpoints();
+		runCaseStudyExpProp_All_Endpoints();
+		
+//		deleteModel(623L);
+		
+		
+		
+		
 		
 	}
 
