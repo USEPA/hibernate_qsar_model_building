@@ -24,6 +24,13 @@ public class EmbeddingWebService2 extends WebService {
 
 	public EmbeddingWebService2(String server, int port) {
 		super(server, port);
+		
+		try {
+			Unirest.config().followRedirects(true).socketTimeout(000).connectTimeout(000);//TMM
+		} catch (Exception e) {
+			// Ignore
+		}
+
 	}
 
 
@@ -31,18 +38,16 @@ public class EmbeddingWebService2 extends WebService {
 	public DescriptorEmbedding generateEmbedding(String server, int port, String lanId,	CalculationInfo ci) {
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(server, port);
 
-		String tsv = null;
-		String prediction_tsv = null;
-		try {
-			tsv = retrieveTrainingData(ci.datasetName, ci.descriptorSetName, ci.splittingName, ci.remove_log_p, lanId);
-			prediction_tsv = retrievePredictionData(ci.datasetName, ci.descriptorSetName, ci.splittingName, ci.remove_log_p, lanId);
+		try {			
+			ModelData md=ModelData.initModelData(ci, false);//TODO make it store it directly in ci?
+			ci.tsv_training = md.trainingSetInstances;
+			ci.tsv_prediction = md.predictionSetInstances;
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			System.out.println("Cant retrieve tsv for "+ci.datasetName);
 			return null;
 		}
-		ci.tsv = tsv;
-		ci.tsv_prediction = prediction_tsv;
 
 		HttpResponse<String> response = ews2.findEmbedding(ci);
 		System.out.println("calculation response status=" + response.getStatus());
@@ -84,19 +89,19 @@ public class EmbeddingWebService2 extends WebService {
 
 	}
 
-	public static String retrieveTrainingData(String datasetName, String descriptorSetName, 
-			String splittingName, Boolean removeLogDescriptors, String lanId) {
-		WebServiceModelBuilder wsmb = new WebServiceModelBuilder(null, lanId);
-		ModelData data = wsmb.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors, false);
-		return data.trainingSetInstances;
-	}
-	
-	public static String retrievePredictionData(String datasetName, String descriptorSetName, 
-			String splittingName, Boolean removeLogDescriptors, String lanId) {
-		WebServiceModelBuilder wsmb = new WebServiceModelBuilder(null, lanId);
-		ModelData data = wsmb.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors, false);
-		return data.predictionSetInstances;
-	}
+//	public static String retrieveTrainingData(String datasetName, String descriptorSetName, 
+//			String splittingName, Boolean removeLogDescriptors, String lanId) {
+//		WebServiceModelBuilder wsmb = new WebServiceModelBuilder(null, lanId);
+//		ModelData data = wsmb.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors, false);
+//		return data.trainingSetInstances;
+//	}
+//	
+//	public static String retrievePredictionData(String datasetName, String descriptorSetName, 
+//			String splittingName, Boolean removeLogDescriptors, String lanId) {
+//		WebServiceModelBuilder wsmb = new WebServiceModelBuilder(null, lanId);
+//		ModelData data = wsmb.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors, false);
+//		return data.predictionSetInstances;
+//	}
 
 
 	public HttpResponse<String> findEmbedding(CalculationInfo calculationInfo) {
@@ -105,7 +110,7 @@ public class EmbeddingWebService2 extends WebService {
 
 		HttpResponse<String> response = Unirest.post(this.address+ "/models/{qsar_method}/embedding")
 				.routeParam("qsar_method", calculationInfo.qsarMethodGA)
-				.field("training_tsv",calculationInfo.tsv)
+				.field("training_tsv",calculationInfo.tsv_training)
 				//				.field("save_to_database",calculationInfo.save_to_database)
 				.field("remove_log_p",String.valueOf(calculationInfo.remove_log_p))
 				.field("prediction_tsv", calculationInfo.tsv_prediction)

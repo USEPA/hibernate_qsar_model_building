@@ -397,7 +397,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 
 	public Long build(String datasetName, String descriptorSetName, String splittingName, boolean removeLogP_Descriptors,
 			String methodName) throws ConstraintViolationException {
-		ModelData data = initModelData(datasetName, descriptorSetName, splittingName, removeLogP_Descriptors);
+		ModelData data = ModelData.initModelData(datasetName, descriptorSetName, splittingName, removeLogP_Descriptors,false);
 		
 		Long modelId = train(data, methodName);
 		predict(data, methodName, modelId);
@@ -407,7 +407,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	
 	public Long buildWithPythonStorage(String datasetName, String descriptorSetName, String splittingName, 
 			boolean removeLogDescriptors, String methodName, String descriptorEmbeddingName) throws ConstraintViolationException {
-		ModelData data = initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
+		ModelData data = ModelData.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors,false);
 		
 		Long modelId = trainWithPythonStorage(data, methodName, descriptorEmbeddingName);
 		predictPythonStorage(data, methodName, modelId);
@@ -418,7 +418,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 
 	public Long buildWithPreselectedDescriptors(String datasetName, String descriptorSetName, String splittingName, 
 			boolean removeLogDescriptors, String methodName, String descriptorEmbeddingName) throws ConstraintViolationException {
-		ModelData data = initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
+		ModelData data =ModelData.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors,false);
 		
 		Long modelId = trainWithPreselectedDescriptors(data, methodName, descriptorEmbeddingName);
 		predict(data, methodName, modelId);
@@ -428,7 +428,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	
 	
 	public Long buildWithPreselectedDescriptors(String methodName,CalculationInfo ci, DescriptorEmbedding descriptorEmbedding) throws ConstraintViolationException {
-		ModelData data = initModelData(ci.datasetName, ci.descriptorSetName, ci.splittingName, ci.remove_log_p);
+		ModelData data = ModelData.initModelData(ci.datasetName, ci.descriptorSetName, ci.splittingName, ci.remove_log_p,false);
 		
 		Long modelId = trainWithPreselectedDescriptors(data, methodName, descriptorEmbedding);
 		predict(data, methodName, modelId);
@@ -441,7 +441,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
 		Model model = modelBytes.getModel();
 		
-		ModelData data = initModelData(model.getDatasetName(), model.getDescriptorSetName(), model.getSplittingName(), false);
+		ModelData data = ModelData.initModelData(model.getDatasetName(), model.getDescriptorSetName(), model.getSplittingName(), false,false);
 		
 		byte[] bytes = modelBytes.getBytes();
 		String methodName = model.getMethod().getName();

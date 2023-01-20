@@ -20,7 +20,7 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
  */
 public class CalculationInfo {
 	public Boolean save_to_database;
-	public String tsv;
+	public String tsv_training;
 	public String tsv_prediction;
 
 	//added additional non exposed params for convenience (TMM):

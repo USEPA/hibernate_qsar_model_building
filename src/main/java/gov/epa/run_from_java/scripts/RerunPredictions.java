@@ -39,7 +39,7 @@ public class RerunPredictions {
 //		System.out.println(model.getDatasetName());
 		
 		//Get training and test set instances as strings using TEST descriptors:
-		ModelData md=mb.initModelData(model.getDatasetName(), model.getDescriptorSetName(),model.getSplittingName(), false);
+		ModelData md=ModelData.initModelData(model.getDatasetName(), model.getDescriptorSetName(),model.getSplittingName(), false, false);
 //		System.out.print(md.predictionSetInstances);
 		
 		ModelBytesService modelBytesService = new ModelBytesServiceImpl();

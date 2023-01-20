@@ -6,6 +6,7 @@ import java.util.Hashtable;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
+import gov.epa.web_services.embedding_service.CalculationInfo;
 
 /**
  * Class defining the data to be used for a particular model
@@ -20,8 +21,8 @@ public class ModelData {
 	public boolean removeLogP_Descriptors;
 	
 	// Set by querying from qsar_datasets and qsar_descriptors using ModelBuilder.initInstances()
-	 public String trainingSetInstances;
-	 public String predictionSetInstances;
+	public String trainingSetInstances;
+	public String predictionSetInstances;
 	public boolean useDTXCIDs;
 	
 	public ModelData(String datasetName, String descriptorSetName, String splittingName,boolean removeLogP_Descriptors,boolean useDTXCIDs) {
@@ -29,8 +30,27 @@ public class ModelData {
 		this.descriptorSetName = descriptorSetName;
 		this.splittingName = splittingName;
 		this.removeLogP_Descriptors=removeLogP_Descriptors;
-		this.useDTXCIDs=useDTXCIDs;
+		this.useDTXCIDs=useDTXCIDs;	
+	}
+		
+	public ModelData(CalculationInfo ci, boolean useDTXCIDs) {
+		this.datasetName = ci.datasetName;
+		this.descriptorSetName = ci.descriptorSetName;
+		this.splittingName = ci.splittingName;
+		this.removeLogP_Descriptors=ci.remove_log_p;
+		this.useDTXCIDs=useDTXCIDs;	
+	}
 	
+	public static ModelData initModelData(String datasetName, String descriptorSetName, String splittingName, boolean removeLogP,boolean useDTXCIDs) {
+		ModelData data = new ModelData(datasetName, descriptorSetName, splittingName,removeLogP,useDTXCIDs);
+		data.initTrainingPredictionInstances();
+		return data;
+	}
+
+	public static ModelData initModelData(CalculationInfo ci, boolean useDTXCIDs) {
+		ModelData data = new ModelData(ci,useDTXCIDs);
+		data.initTrainingPredictionInstances();
+		return data;
 	}
 	
 //	public void initInstances(List<DataPointInSplitting> dataPointsInSplitting, List<DescriptorValues> descriptorValues) {
@@ -67,33 +87,29 @@ public class ModelData {
 //		this.predictionSetInstances = sbPrediction.toString();
 //	}
 	
-	
-	public void initTrainingPredictionInstances(String datasetName,String descriptorSetName,String splittingName,boolean useDTXCIDs) {
-		
+	/**
+	 * Get training and prediction set tsvs using sql 
+	 */
+	public void initTrainingPredictionInstances() {
 		
 		Connection conn=DatabaseLookup.getConnection();
-		String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetName+"'";
-		String datasetId=DatabaseLookup.runSQL(conn, sql);
-
-		sql="select id from qsar_descriptors.descriptor_sets d where d.\"name\" ='"+descriptorSetName+"'";
-		String descriptorSetId=DatabaseLookup.runSQL(conn, sql);
-
-		sql="select id from qsar_datasets.splittings s where s.\"name\" ='"+splittingName+"'";
-		String splittingId=DatabaseLookup.runSQL(conn, sql);
-		
 		String idField="canon_qsar_smiles";
 		if(useDTXCIDs) idField="qsar_dtxcid";
-
-		sql="select headers_tsv from qsar_descriptors.descriptor_sets d where d.id="+descriptorSetId;
+		
+		String sql="select headers_tsv from qsar_descriptors.descriptor_sets d\n"+					
+					"where d.\"name\"='"+descriptorSetName+"';";
 		String instanceHeader="ID\tProperty\t"+DatabaseLookup.runSQL(conn, sql)+"\r\n";
-
-
+//		System.out.println(instanceHeader+"\n");
+		
 		sql="select dp."+idField+", dp.qsar_property_value, dv.values_tsv, dpis.split_num from qsar_datasets.data_points dp\n"+ 
 		"inner join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
 		"inner join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
-		"where dp.fk_dataset_id="+datasetId+" and dv.fk_descriptor_set_id="+descriptorSetId+" and dpis.fk_splitting_id="+splittingId+";";
-
-		System.out.println(sql);
+		"join qsar_descriptors.descriptor_sets ds on dv.fk_descriptor_set_id =ds.id\n"+
+		"join qsar_datasets.datasets d on d.id =dp.fk_dataset_id\n"+ 
+		"join qsar_datasets.splittings s on s.id=dpis.fk_splitting_id\n"+ 
+		"where d.\"name\"='"+datasetName+"' and ds.\"name\"='"+descriptorSetName+"' and s.\"name\"='"+splittingName+"';";
+		
+//		System.out.println(sql);
 
 		StringBuilder sbTraining = new StringBuilder(instanceHeader);
 		StringBuilder sbPrediction = new StringBuilder(instanceHeader);

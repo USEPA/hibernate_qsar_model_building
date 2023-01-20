@@ -487,7 +487,7 @@ public class GenerateWebTestReport {
 		}
 		
 		//Get training and test set instances as strings using TEST descriptors:
-		md=mb.initModelData(datasetName, descriptorSetName,splittingName, false);
+		md=ModelData.initModelData(datasetName, descriptorSetName,splittingName, false,false);
 		
 		if (md==null) {
     		System.out.println("couldnt load training and test set for ");

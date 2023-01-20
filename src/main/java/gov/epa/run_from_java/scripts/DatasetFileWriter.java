@@ -87,7 +87,7 @@ public class DatasetFileWriter {
 		ModelBuilder mb=new ModelBuilder("tmarti02");
 				
 		//Get training and test set instances as strings using TEST descriptors:
-		ModelData md=mb.initModelData(datasetName, descriptorSetName,splittingName, false,useDTXCIDs);
+		ModelData md=ModelData.initModelData(datasetName, descriptorSetName,splittingName, false,useDTXCIDs);
 
 		File outputFolder = new File(outputFolderPath);
 		outputFolder.mkdirs();

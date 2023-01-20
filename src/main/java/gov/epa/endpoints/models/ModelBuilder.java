@@ -64,11 +64,6 @@ public class ModelBuilder {
 		this.lanId = lanId;
 	}
 	
-	public ModelData initModelData(String datasetName, String descriptorSetName, String splittingName, boolean removeLogP,boolean useDTXCIDs) {
-		ModelData data = new ModelData(datasetName, descriptorSetName, splittingName,removeLogP,useDTXCIDs);
-		data.initTrainingPredictionInstances(datasetName,descriptorSetName,splittingName,useDTXCIDs);
-		return data;
-	}
 	
 	public void postPredictions(List<ModelPrediction> modelPredictions, Model model) {
 		for (ModelPrediction mp:modelPredictions) {

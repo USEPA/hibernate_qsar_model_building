@@ -63,7 +63,7 @@ public class CreateGAEmbeddings {
 		String name = propertyName + "_" + descriptorSetName + "_" + System.currentTimeMillis();
 		
 		CalculationInfo ci = new CalculationInfo();
-		ci.tsv = tsv;
+		ci.tsv_training = tsv;
 		ci.remove_log_p = propertyName.equals(DevQsarConstants.LOG_KOW);
 		ci.qsarMethodGA = DevQsarConstants.KNN;
 		ci.num_generations = 10;
@@ -107,7 +107,7 @@ public class CreateGAEmbeddings {
 	public static String retrieveTrainingData(String datasetName, String descriptorSetName, 
 			String splittingName, Boolean removeLogDescriptors, String lanId) {
 		WebServiceModelBuilder wsmb = new WebServiceModelBuilder(null, lanId);
-		ModelData data = wsmb.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
+		ModelData data = ModelData.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors,false);
 		return data.trainingSetInstances;
 	}
 

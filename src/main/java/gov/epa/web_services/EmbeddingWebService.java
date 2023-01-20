@@ -50,7 +50,7 @@ public class EmbeddingWebService extends WebService {
 	*/
 	public static void printdatatsv(String datasetName, String lanId, String descriptorSetName, String splittingName,boolean removeLogDescriptors, String fileName) {
 		WebServiceModelBuilder wsmb = new WebServiceModelBuilder(null, lanId);
-		ModelData data = wsmb.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
+		ModelData data = ModelData.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors,false);
 		try {
 			FileUtils.writeStringToFile(new File(fileName), data.trainingSetInstances);
 		} catch (IOException e) {
@@ -64,7 +64,7 @@ public class EmbeddingWebService extends WebService {
 			String splittingName, Boolean removeLogDescriptors, int numDescriptors,
 			String embeddingName, String embeddingDescription, Boolean writeToDatabase) {
 		WebServiceModelBuilder wsmb = new WebServiceModelBuilder(null, lanId);
-		ModelData data = wsmb.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors);
+		ModelData data = ModelData.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors,false);
 
 		
 		HttpResponse<String> response = findEmbedding(data.trainingSetInstances, numDescriptors);
