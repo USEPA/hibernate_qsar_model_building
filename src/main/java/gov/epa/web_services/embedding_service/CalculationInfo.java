@@ -21,6 +21,7 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 public class CalculationInfo {
 	public Boolean save_to_database;
 	public String tsv;
+	public String tsv_prediction;
 
 	//added additional non exposed params for convenience (TMM):
 	public String datasetName;
@@ -42,9 +43,9 @@ public class CalculationInfo {
 	public Integer max_length=24;
 	@Expose
 	public Double descriptor_coefficient=0.002;
-	
 	@Expose
-	public Integer threshold=1;
+	public Integer threshold = 1;
+	
 	
 	public static CalculationInfo createDefault() {
 		return new CalculationInfo();
