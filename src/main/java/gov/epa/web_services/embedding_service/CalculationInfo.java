@@ -53,7 +53,8 @@ public class CalculationInfo {
 	
 	
 	public String toString() {
-		Gson gson2 = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setPrettyPrinting().create();		
+//		Gson gson2 = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setPrettyPrinting().create();		
+		Gson gson2 = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
 		return gson2.toJson(this);
 	}
 	

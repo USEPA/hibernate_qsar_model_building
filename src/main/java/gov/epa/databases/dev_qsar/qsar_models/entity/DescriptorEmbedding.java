@@ -48,7 +48,8 @@ public class DescriptorEmbedding {
 	
 	@Column(name="qsar_method")
 	private String qsarMethod;
-		
+	
+	@NotNull
 	@Column(name="splitting_name")
 	private String splittingName;
 	
@@ -73,7 +74,7 @@ public class DescriptorEmbedding {
 	@Column(name="created_by")
 	private String createdBy;
 	
-//	public DescriptorEmbedding() {}
+	public DescriptorEmbedding() {}
 	
 	public DescriptorEmbedding(String createdBy,String description,String descriptorSetName, 
 			String embeddingTsv,String name, String datasetName, String importanceTsv,

@@ -46,31 +46,12 @@ public class DescriptorEmbeddingServiceImpl implements DescriptorEmbeddingServic
 		
 		Transaction t = session.beginTransaction();
 		DescriptorEmbeddingDao descriptorEmbeddingDao = new DescriptorEmbeddingDaoImpl();
-		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingDao.findByGASettings(ci.qsarMethodGA, 
-				ci.datasetName, ci.descriptorSetName,ci.toString(), session);
+		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingDao.findByGASettings(ci, session);
 		
 		t.rollback();
 		return descriptorEmbedding;
 	}
 	
-	
-	
-	public DescriptorEmbedding findByGASettings(String qsar_method, String dataset_name, String descriptor_set_name,
-			String descriptionJson) {
-			Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
-			return findByGASettings(qsar_method, dataset_name, descriptor_set_name, 
-					descriptionJson, session);
-	}
-	
-	public DescriptorEmbedding findByGASettings(String qsar_method, String dataset_name, String descriptor_set_name, 
-			String descriptionJson, Session session) {
-		Transaction t = session.beginTransaction();
-		DescriptorEmbeddingDao descriptorEmbeddingDao = new DescriptorEmbeddingDaoImpl();
-		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingDao.findByGASettings(qsar_method, dataset_name, descriptor_set_name, 
-				descriptionJson, session);
-		t.rollback();
-		return descriptorEmbedding;
-	}
 	
 	@Override
 	public DescriptorEmbedding create(DescriptorEmbedding descriptorEmbedding) throws ConstraintViolationException {
