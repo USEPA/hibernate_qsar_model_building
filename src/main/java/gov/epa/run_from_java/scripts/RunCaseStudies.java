@@ -458,7 +458,7 @@ public class RunCaseStudies {
 //		runCaseStudyExpProp_All_Endpoints();
 //		deleteModel(623L);
 		
-		calcPredictionStatsForPFAS();
+//		calcPredictionStatsForPFAS();
 	}
 	
 	
