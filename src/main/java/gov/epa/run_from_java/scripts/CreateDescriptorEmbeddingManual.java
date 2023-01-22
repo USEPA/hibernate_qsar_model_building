@@ -59,8 +59,9 @@ public class CreateDescriptorEmbeddingManual {
 		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\embeddings\\";
 		String embeddingPath=folder+descriptorSetName+"_ga_embeddings.csv";
 		
-		JsonArray ja=Utilities.csvToGson(embeddingPath);
-		
+		JsonArray ja=null; // Utilities.csvToGson(embeddingPath);
+		// CR: have to have errorless project, this method wasn't pushed or something
+
 		String embedding=getEmbedding(ja, set, property);//or just paste here
 		
 //		System.out.println(embedding);
@@ -87,8 +88,8 @@ public class CreateDescriptorEmbeddingManual {
 		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\embeddings\\";
 		String descriptorSetName="WebTEST-default";
 		String embeddingPath=folder+descriptorSetName+"_ga_embeddings.csv";
-		JsonArray ja=Utilities.csvToGson(embeddingPath);
-
+		JsonArray ja= null; // Utilities.csvToGson(embeddingPath);
+		// CR: have to have errorless project, this method wasn't pushed or something
 		for (int i=0;i<ja.size();i++) {
 			JsonObject jo=ja.get(i).getAsJsonObject();
 		
