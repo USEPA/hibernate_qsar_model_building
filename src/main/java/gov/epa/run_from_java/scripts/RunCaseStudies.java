@@ -143,7 +143,7 @@ public class RunCaseStudies {
 				System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
 			}
 
-			if (true) continue;//skip model building
+//			if (true) continue;//skip model building
 
 			String methods[]= {DevQsarConstants.KNN, DevQsarConstants.RF, DevQsarConstants.XGB, DevQsarConstants.SVM};
 
@@ -452,7 +452,7 @@ public class RunCaseStudies {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 //		runCaseStudyOPERA();
-//		runCaseStudyTest_All_Endpoints();
+		runCaseStudyTest_All_Endpoints();
 //		runCaseStudyOPERA_All_Endpoints();
 //		runCaseStudyPFAS_All_Endpoints();
 //		runCaseStudyExpProp_All_Endpoints();
