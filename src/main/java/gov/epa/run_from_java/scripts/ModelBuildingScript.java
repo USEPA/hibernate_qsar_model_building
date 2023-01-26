@@ -126,7 +126,15 @@ public class ModelBuildingScript {
 		ModelWebService modelWs = new ModelWebService(modelWsServer, modelWsPort);
 		WebServiceModelBuilder mb = new WebServiceModelBuilder(modelWs, lanId);
 			
-		long modelID = mb.buildWithPreselectedDescriptors(methodName, ci, de);
+		long modelID=-1;
+		
+		if (de==null) {
+			modelID = mb.build(methodName, ci);
+		} else {
+			modelID = mb.buildWithPreselectedDescriptors(methodName, ci, de);	
+		}
+//		System.out.println("modelID="+modelID);
+		
 
 		//	PredictionReportGenerator gen = new PredictionReportGenerator();
 		//	PredictionReport report=gen.generateForModelPredictions(modelId);

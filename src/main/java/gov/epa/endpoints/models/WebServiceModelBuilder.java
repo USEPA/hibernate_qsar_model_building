@@ -464,4 +464,14 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		return modelPredictions;
 	}
 
+	public long build(String methodName, CalculationInfo ci){
+		
+		ModelData data = ModelData.initModelData(ci,false);
+		
+		Long modelId = train(data, methodName);
+		predict(data, methodName, modelId);
+		
+		return modelId;
+	}
+
 }
