@@ -164,12 +164,14 @@ public class CreateDescriptorEmbeddingManual {
 		String endpoint = DevQsarConstants.LOG_HALF_LIFE;
 
 		String sampleSource = "OPERA";
-		CalculationInfo ci=new CalculationInfo();		
+
+		CalculationInfo ci=new CalculationInfo();	
+		ci.threshold=null;
+		ci.qsarMethodGA = DevQsarConstants.KNN;
 		ci.datasetName = endpoint +" "+sampleSource;
 		ci.descriptorSetName = "T.E.S.T. 5.1";		
-		ci.qsarMethodGA = DevQsarConstants.KNN;
 		ci.splittingName="OPERA";
-		ci.threshold=null;
+		ci.remove_log_p=false;
 		
 
 		DescriptorEmbeddingServiceImpl descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
@@ -187,8 +189,14 @@ public class CreateDescriptorEmbeddingManual {
 		DescriptorEmbeddingServiceImpl desi=new DescriptorEmbeddingServiceImpl();
 		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\datasets\\GA\\";
 		
-		String filename="PFAS_exp_prop_gen=10_opt=10_threshold=1_1674336604254.json";//T=all but PFAS, P=PFAS
-//		String filename="exp_prop_gen=100_opt=10_threshold=1_1674349423275.json";//RND_REPRESENTATIVE
+//		String filename="PFAS_exp_prop_gen=10_opt=10_threshold=1_1674336604254.json";//T=all but PFAS, P=PFAS
+		String filename="exp_prop_gen=100_opt=10_threshold=1_1674349423275.json";//RND_REPRESENTATIVE
+//		String filename="T=PFAS only, P=PFAS_gen=100_opt=10_threshold=1_1674409204305.json";
+//		String filename="exp_prop_gen=100_opt=10_threshold=1_1674430512598.json";//100 gen RND_REPRESENTATIVE, LogP, remove_log_P=true
+//		String filename="exp_prop_gen=10_opt=10_threshold=1_1674414440056.json";//10 gen RND_REPRESENTATIVE, LogP, remove_log_P=true
+//		String filename="exp_prop_gen=10_opt=10_threshold=1_1674333465552.json";//10 gen RND_REPRESENTATIVE, MP
+		
+		
 		String embeddingPath=folder+filename;
 		
 		Gson gson=new Gson();

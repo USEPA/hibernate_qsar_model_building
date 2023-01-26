@@ -224,8 +224,7 @@ public class RunCaseStudies {
 		
 //		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 		String splitting ="T=PFAS only, P=PFAS";
-//		String splitting = "T=all, P=PFAS";//*** DONT need to make these embeddings & models because will be created when splitting=SPLITTING_RND_REPRESENTATIVE		
-//		String splittingAllButPFAS = "T=all but PFAS, P=PFAS";
+//		String splitting = "T=all but PFAS, P=PFAS";
 
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
@@ -303,7 +302,6 @@ public class RunCaseStudies {
 		
 //		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 		String splitting ="T=PFAS only, P=PFAS";
-//		String splitting = "T=all, P=PFAS";//*** DONT need to make these embeddings & models because will be created when splitting=SPLITTING_RND_REPRESENTATIVE		
 //		String splittingAllButPFAS = "T=all but PFAS, P=PFAS";
 
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
@@ -610,9 +608,11 @@ public class RunCaseStudies {
 		// TODO Auto-generated method stub
 //		runCaseStudyOPERA();
 //		runCaseStudyTest_All_Endpoints();
-		runCaseStudyTest();
+//		runCaseStudyTest();
 //		runCaseStudyOPERA_All_Endpoints();
 //		runCaseStudyExpProp_All_Endpoints();
+		
+		runCaseStudyExpProp_All_Endpoints_No_Embedding();
 		
 //		for (int i=641;i<=649;i++) {
 //			deleteModel(i);
