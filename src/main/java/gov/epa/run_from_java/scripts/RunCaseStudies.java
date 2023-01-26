@@ -606,8 +606,8 @@ public class RunCaseStudies {
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		runCaseStudyOPERA();
-//		runCaseStudyTest_All_Endpoints();
+//		runCaseStudyOPERA();
+		runCaseStudyTest_All_Endpoints();
 //		runCaseStudyTest();
 //		runCaseStudyOPERA_All_Endpoints();
 //		runCaseStudyExpProp_All_Endpoints();
