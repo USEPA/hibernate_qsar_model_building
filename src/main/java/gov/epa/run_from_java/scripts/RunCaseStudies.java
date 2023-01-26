@@ -208,7 +208,8 @@ public class RunCaseStudies {
 		lanId="tmarti02";		
 		boolean buildModels=true;
 		
-		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+		serverModelBuilding=DevQsarConstants.SERVER_819;
+		portModelBuilding=5004;
 		
 		DescriptorEmbeddingServiceImpl descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(serverModelBuilding, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
@@ -235,7 +236,7 @@ public class RunCaseStudies {
 			
 			CalculationInfo ci = new CalculationInfo();
 			ci.num_generations = 100;			
-			if (datasetName.contains("BP")) ci.num_generations=10;//takes too long to do 100			
+			if (datasetName.contains("BP") || splitting.equals("T=all but PFAS, P=PFAS")) ci.num_generations=10;//takes too long to do 100			
 
 			ci.remove_log_p = remove_log_p;
 			ci.qsarMethodGA = qsarMethodGA;
