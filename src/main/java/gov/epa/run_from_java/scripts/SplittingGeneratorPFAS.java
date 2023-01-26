@@ -260,7 +260,7 @@ public class SplittingGeneratorPFAS {
 	}
 	
 	
-	ArrayList<String> getPFASSmiles(String filepath) {
+	static ArrayList<String> getPFASSmiles(String filepath) {
 		try {
 			
 			List<String> Lines = Files.readAllLines(Paths.get(filepath));
@@ -477,6 +477,7 @@ public class SplittingGeneratorPFAS {
 		
 		for (String datasetName : datasetNames) {
 			for (String splittingName : splittingNames) {				
+				System.out.println(datasetName+"\t"+splittingName);
 				String folder=folderMain+datasetName+"\\PFAS\\";
 				DatasetFileWriter.writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true,false);				
 			}
@@ -488,8 +489,8 @@ public class SplittingGeneratorPFAS {
 	public static void main(String[] args) {
 		SplittingGeneratorPFAS p=new SplittingGeneratorPFAS();
 		
-//		p.createSplittings();
-		p.write_exp_prop_datasets();		
+		p.createSplittings();
+//		p.write_exp_prop_datasets();		
 //		p.createFiveFoldExternalSplittings(folder, datasetName,"T.E.S.T. 5.1", smilesArray);
 		
 	}

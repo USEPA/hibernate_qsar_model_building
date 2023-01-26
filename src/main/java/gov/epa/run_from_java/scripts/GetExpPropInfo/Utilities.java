@@ -2,8 +2,10 @@ package gov.epa.run_from_java.scripts.GetExpPropInfo;
 
 import java.io.FileInputStream;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -26,10 +28,40 @@ import com.google.gson.JsonObject;
 
 public class Utilities {
 
-	static Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+	public static Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
 
-	
+	/**
+	 * Read a csv into a JsonArray
+	 * 
+	 * @param filepath
+	 * @return
+	 */
+	public static JsonArray csvToGson(String filepath) {
+		JsonArray ja=new JsonArray();
+		 try {
+			List<String>lines=Files.readAllLines(Path.of(filepath));
+			
+			String header=lines.get(0);
+			String [] hvals = header.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
+			
+			for (int i=1;i<lines.size();i++) {
+				String line=lines.get(i);
+				if (line.trim().length()==0) break;
+				String [] vals = line.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
+				JsonObject jo=new JsonObject();
+				for (int j=0;j<hvals.length;j++) {
+					jo.addProperty(hvals[j], vals[j].replace("\"", ""));
+				}
+				ja.add(jo);
+			}
+//			System.out.println(gson.toJson(ja));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		 return ja;
+	}
 	
 	public static void saveJson(Object obj, String filepath)  {
 		try {
