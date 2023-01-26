@@ -260,7 +260,9 @@ public class SplittingGeneratorPFAS {
 	}
 	
 	
-	static ArrayList<String> getPFASSmiles(String filepath) {
+
+	public static ArrayList<String> getPFASSmiles(String filepath) {
+
 		try {
 			
 			List<String> Lines = Files.readAllLines(Paths.get(filepath));
