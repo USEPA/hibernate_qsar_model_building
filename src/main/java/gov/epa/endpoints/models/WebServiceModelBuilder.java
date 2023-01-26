@@ -9,6 +9,8 @@ import java.util.List;
 
 import javax.validation.ConstraintViolationException;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -275,15 +277,22 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		byte[] bytes = modelWebService.callTrainWithPreselectedDescriptors(data.trainingSetInstances, 
 				data.removeLogP_Descriptors, methodName, strModelId, descriptorEmbedding.getEmbeddingTsv()).getBody();
-		String hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
-		String description = modelWebService.callInfo(methodName).getBody();
-		String description_url=null;//TODO
+
+//		String description = modelWebService.callInfo(methodName).getBody();//can get from details call instead
+
 		
-		JsonObject jo = gson.fromJson(hyperparameters, JsonObject.class);
+		String details = modelWebService.callDetails(methodName, strModelId).getBody();
+		JsonObject jo = gson.fromJson(details, JsonObject.class);
+
 		String version = jo.get("version").getAsString();
 		Boolean isBinary = jo.get("is_binary").getAsBoolean();
 		String classOrRegr = isBinary ? "classifier" : "regressor";
-		String fullMethodName = methodName + "_" + classOrRegr + "_" + version;
+		String fullMethodName = methodName + "_" + classOrRegr + "_" + version;		
+		String description=jo.get("description").getAsString();
+		String description_url=jo.get("description_url").getAsString();
+		
+		Gson gson2 = new Gson();		
+		String hyperparameters=gson2.toJson(jo.get("hyperparameter_grid").getAsJsonObject());
 		
 		Method method = methodService.findByName(fullMethodName);
 		if (method==null) {

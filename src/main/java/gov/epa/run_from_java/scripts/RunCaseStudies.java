@@ -301,11 +301,53 @@ public class RunCaseStudies {
 	static void deleteModel(long id) {
 		ModelServiceImpl ms=new ModelServiceImpl();
 		Model model=ms.findById(id);
+		
+		if(model==null) return;
+		
+		System.out.println("deleting:"+id);		
 		ModelBytesServiceImpl mb=new ModelBytesServiceImpl();
 		ModelBytes modelBytes=mb.findByModelId(model.getId());
 		if(modelBytes!=null) mb.delete(modelBytes);		
 		ms.delete(model);
+	}
+	
+	/**
+	 * Deletes a model by id
+	 * Needs to delete the bytes first or it wont work (doesnt happen automatically like other tables do)
+	 * 
+	 * @param id
+	 */
+	static void deleteModelsNoBytes() {
+		ModelServiceImpl ms=new ModelServiceImpl();
+		ModelBytesServiceImpl mb=new ModelBytesServiceImpl();
 		
+		List<Model>models=ms.getAll();
+		System.out.println("Number of models="+models.size());
+		
+		
+//		for (Model model:models) {
+		for (int i=0;i<models.size();i++) {
+			
+			if(i<500) continue;
+			
+			Model model=models.get(i);
+			
+			System.out.println(i);
+			
+			if (model.getMethod().getName().contains("consensus")) continue;				
+			if (model.getMethod().getName().contains("_")) continue;
+
+			ModelBytes modelBytes=mb.findByModelId(model.getId());
+			
+			if(modelBytes==null) {
+				
+//				System.out.println(model.getId()+"\t"+model.getMethod().getName());
+//				if (model.getId()==571L) continue;//need to delete consensus it's attached to
+				System.out.println("deleting:"+model.getId()+"\t"+model.getMethod().getName());
+				ms.delete(model);
+								
+			}
+		}
 	}
 
 	/**
