@@ -39,8 +39,8 @@ public class RunCaseStudies {
 	
 	static String qsarMethodGA = DevQsarConstants.KNN;
 
-	static String descriptorSetName = "T.E.S.T. 5.1";
-	// 	"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default",
+	static String descriptorSetName = DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+	//  ""T.E.S.T. 5.1",	"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default",
 
 	
 	public static void runCaseStudyOPERA() {
@@ -606,13 +606,13 @@ public class RunCaseStudies {
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-//		runCaseStudyOPERA();
+		runCaseStudyOPERA();
 //		runCaseStudyTest_All_Endpoints();
 //		runCaseStudyTest();
 //		runCaseStudyOPERA_All_Endpoints();
 //		runCaseStudyExpProp_All_Endpoints();
 		
-		runCaseStudyExpProp_All_Endpoints_No_Embedding();
+//		runCaseStudyExpProp_All_Endpoints_No_Embedding();
 		
 //		for (int i=641;i<=649;i++) {
 //			deleteModel(i);
