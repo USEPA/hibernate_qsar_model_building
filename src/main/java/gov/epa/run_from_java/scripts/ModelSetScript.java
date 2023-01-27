@@ -202,11 +202,11 @@ public class ModelSetScript {
 		}
 
 		for (String modelSetName:modelSetNames) {
-			createSummaryTable3(statisticName, modelSetName, methodNames, datasetNames, htVals);
+			createSummaryTableForModelSet(statisticName, modelSetName, methodNames, datasetNames, htVals);
 		}
 
 		for (String methodName:methodNames) {
-			createSummaryTable2(statisticName, methodName, modelSetNames, datasetNames, htVals);
+			createSummaryTableForMethod(statisticName, methodName, modelSetNames, datasetNames, htVals);
 		}
 		
 	}
@@ -224,8 +224,6 @@ public class ModelSetScript {
 	 */
 	private void addHashtableEntry(String statisticName, String methodName, List<String> modelSetNames,
 			List<String> datasetNames,Hashtable<String,Double>htVals) {
-		DecimalFormat df=new DecimalFormat("0.00");
-		
 		
 		for (int i=0;i<datasetNames.size();i++) {
 			String datasetName=datasetNames.get(i);
@@ -324,7 +322,7 @@ public class ModelSetScript {
 	 * @param modelSetNames
 	 * @param datasetNames
 	 */
-	private void createSummaryTable2(String statName, String methodName, List<String> modelSetNames,
+	private void createSummaryTableForMethod(String statName, String methodName, List<String> modelSetNames,
 			List<String> datasetNames, Hashtable<String,Double>htVals) {
 		DecimalFormat df=new DecimalFormat("0.00");
 		
@@ -367,7 +365,7 @@ public class ModelSetScript {
 	
 	
 	/**
-	 * Prints summary of stats to the screen for a given method
+	 * Prints summary of stats for model set
 	 * 
 	 * TODO make it write to file
 	 * 
@@ -377,7 +375,7 @@ public class ModelSetScript {
 	 * @param modelSetNames
 	 * @param datasetNames
 	 */
-	private void createSummaryTable3(String statName, String modelSetName,List<String> methodNames, 
+	private void createSummaryTableForModelSet(String statName, String modelSetName,List<String> methodNames, 
 			List<String> datasetNames, Hashtable<String,Double>htVals) {
 		DecimalFormat df=new DecimalFormat("0.00");
 		
