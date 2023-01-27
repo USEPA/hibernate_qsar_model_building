@@ -29,28 +29,38 @@ public class ModelSetScript {
 	void createModelSets() {
 
 		ModelSet ms=new ModelSet();
-		ms.setName("WebTEST2.0 PFAS");
-		ms.setDescription("Models based on PFAS data in exp_prop database");
+		ms.setName("WebTEST2.1 Sample models");
+		ms.setDescription("Reduced feature set models based on TEST5.1 and OPERA 2.7 data sets using WebTEST-default descriptors");
 		ms.setCreatedBy(lanId);
 		mss.create(ms);
 
-		ms=new ModelSet();
-		ms.setName("WebTEST2.1 PFAS");
-		ms.setDescription("Reduced feature models based on PFAS data in exp_prop database");
-		ms.setCreatedBy(lanId);
-		mss.create(ms);
-
-		ms=new ModelSet();
-		ms.setName("WebTEST2.0 All but PFAS");
-		ms.setDescription("Models based on all chemicals except PFAS in exp_prop database (for comparison purposes)");
-		ms.setCreatedBy(lanId);
-		mss.create(ms);
-
-		ms=new ModelSet();
-		ms.setName("WebTEST2.1 All but PFAS");
-		ms.setDescription("Reduced feature models based on all chemicals except PFAS derived from exp_prop (for comparison purposes)");
-		ms.setCreatedBy(lanId);
-		mss.create(ms);
+		
+//		ModelSet ms=new ModelSet();
+//		ms.setName("WebTEST2.0 PFAS");
+//		ms.setDescription("Models based on PFAS data in exp_prop database");
+//		ms.setCreatedBy(lanId);
+//		mss.create(ms);
+//
+//		ms=new ModelSet();
+//		ms.setName("WebTEST2.1 PFAS");
+//		ms.setDescription("Reduced feature models based on PFAS data in exp_prop database");
+//		ms.setCreatedBy(lanId);
+//		mss.create(ms);
+//
+//		ms=new ModelSet();
+//		ms.setName("WebTEST2.0 All but PFAS");
+//		ms.setDescription("Models based on all chemicals except PFAS in exp_prop database (for comparison purposes)");
+//		ms.setCreatedBy(lanId);
+//		mss.create(ms);
+//
+//		ms=new ModelSet();
+//		ms.setName("WebTEST2.1 All but PFAS");
+//		ms.setDescription("Reduced feature models based on all chemicals except PFAS derived from exp_prop (for comparison purposes)");
+//		ms.setCreatedBy(lanId);
+//		mss.create(ms);
+		
+		
+		
 	}
 	
 	void assignModelsToModelSets() {		
@@ -123,6 +133,96 @@ public class ModelSetScript {
 		}
 	}
 	
+	void assignModelsToModelSetsOPERA() {		
+		
+		String [] datasetNames= {DevQsarConstants.LOG_KOA,DevQsarConstants.LOG_KM_HL,DevQsarConstants.HENRYS_LAW_CONSTANT,
+				DevQsarConstants.LOG_BCF,DevQsarConstants.LOG_OH,DevQsarConstants.LOG_KOC,DevQsarConstants.VAPOR_PRESSURE,
+				DevQsarConstants.WATER_SOLUBILITY, DevQsarConstants.BOILING_POINT, DevQsarConstants.MELTING_POINT,
+				DevQsarConstants.LOG_KOW};
+
+		
+		String splitting ="OPERA";
+		String descriptorsetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		boolean useEmbedding=true;
+		String modelsetName="WebTEST2.1 Sample models";
+
+		ModelSet modelSet=mss.findByName(modelsetName);
+				
+		for (String datasetNameShort:datasetNames) {
+			
+			String datasetName=datasetNameShort+" "+splitting;
+			
+			List<Long>modelIds=getModels(datasetName, splitting, descriptorsetName, useEmbedding);
+
+			Long consensusModelId=getConsensusModelId(modelIds.get(0));
+			
+			if (consensusModelId!=null)
+				modelIds.add(consensusModelId);
+			
+			for (Long modelId:modelIds) {
+				ModelInModelSet m=new ModelInModelSet();				
+				m.setCreatedBy(lanId);
+				m.setModel(ms.findById(modelId));
+				m.setModelSet(modelSet);
+				
+				try {
+					mimss.create(m);
+					System.out.println(modelId+"\t"+modelSet.getId()+"\t"+modelSet.getName()+"\tcreated");
+				} catch (Exception ex) {
+//					System.out.println(ex.getMessage());
+					System.out.println(modelId+"\t"+modelSet.getId()+"\t"+modelSet.getName()+"\tNOT created");
+				}
+			}						
+		}
+	}
+	
+	void assignModelsToModelSetsTEST() {		
+		
+		String [] datasetNames= {DevQsarConstants.MUTAGENICITY, DevQsarConstants.LD50,
+				DevQsarConstants.LC50DM, DevQsarConstants.DEV_TOX, DevQsarConstants.LLNA,
+				DevQsarConstants.LC50, DevQsarConstants.IGC50};
+		
+		String splitting ="TEST";
+		String descriptorsetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		boolean useEmbedding=true;
+		String modelsetName="WebTEST2.1 Sample models";
+
+		ModelSet modelSet=mss.findByName(modelsetName);
+				
+		for (String datasetNameShort:datasetNames) {
+			
+			String datasetName=datasetNameShort+" "+splitting;
+			
+			List<Long>modelIds=getModels(datasetName, splitting, descriptorsetName, useEmbedding);
+
+			if(modelIds.size()==0) {
+				System.out.println("models in dataset = 0");
+				continue;
+			}
+			
+			Long consensusModelId=getConsensusModelId(modelIds.get(0));
+			
+			if (consensusModelId!=null)
+				modelIds.add(consensusModelId);
+			
+			for (Long modelId:modelIds) {
+				ModelInModelSet m=new ModelInModelSet();				
+				m.setCreatedBy(lanId);
+				m.setModel(ms.findById(modelId));
+				m.setModelSet(modelSet);
+				
+				try {
+					mimss.create(m);
+					System.out.println(modelId+"\t"+modelSet.getId()+"\t"+modelSet.getName()+"\tcreated");
+				} catch (Exception ex) {
+//					System.out.println(ex.getMessage());
+					System.out.println(modelId+"\t"+modelSet.getId()+"\t"+modelSet.getName()+"\tNOT created");
+				}
+			}						
+		}
+	}
+	
+	
 	
 	Long getConsensusModelId(long modelId) {
 		
@@ -147,6 +247,8 @@ public class ModelSetScript {
 		"where m.dataset_name='"+datasetName+"' and\n"+ 
 		"m.splitting_name ='"+splittingName+"' and \n"+
 		"m.descriptor_set_name ='"+descriptorsetName+"' and \n";
+		
+//		System.out.println(sql);
 		
 		if (usesEmbedding) 
 			sql+="m.fk_descriptor_embedding_id is not null;";
@@ -196,7 +298,7 @@ public class ModelSetScript {
 		methodNames.add(DevQsarConstants.SVM);
 		methodNames.add(DevQsarConstants.CONSENSUS);
 
-		Hashtable<String,Double>htVals=new Hashtable();
+		Hashtable<String,Double>htVals=new Hashtable<>();
 		for (String methodName:methodNames) {
 			addHashtableEntry(statisticName, methodName, modelSetNames, datasetNames,htVals);
 		}
@@ -205,17 +307,63 @@ public class ModelSetScript {
 			createSummaryTableForModelSet(statisticName, modelSetName, methodNames, datasetNames, htVals);
 		}
 
+//		for (String methodName:methodNames) {
+//			createSummaryTableForMethod(statisticName, methodName, modelSetNames, datasetNames, htVals);
+//		}
+		
+	}
+	
+	void createSummaryTableForMethodTEST() {
+				
+		List<String> modelSetNames=new ArrayList<>();
+		modelSetNames.add("WebTEST2.1 Sample models");
+
+		List<String> methodNames=new ArrayList<>();
+		methodNames.add(DevQsarConstants.KNN);
+		methodNames.add(DevQsarConstants.RF);
+		methodNames.add(DevQsarConstants.XGB);
+		methodNames.add(DevQsarConstants.SVM);
+		methodNames.add(DevQsarConstants.CONSENSUS);
+
+		List<String>datasetNames=new ArrayList<>();
+		datasetNames.add(DevQsarConstants.DEV_TOX+" TEST");
+		datasetNames.add(DevQsarConstants.MUTAGENICITY+" TEST");
+		datasetNames.add(DevQsarConstants.LLNA+" TEST");
+
+		Hashtable<String,Double>htVals=new Hashtable<>();
+
 		for (String methodName:methodNames) {
-			createSummaryTableForMethod(statisticName, methodName, modelSetNames, datasetNames, htVals);
+			addHashtableEntry("BA_Test", methodName, modelSetNames, datasetNames,htVals);
 		}
+
+		for (String modelSetName:modelSetNames) {
+			createSummaryTableForModelSet("BA_Test", modelSetName, methodNames, datasetNames, htVals);
+		}
+
+		
+		List<String>datasetNames2=new ArrayList<>();
+		datasetNames2.add(DevQsarConstants.LD50+" TEST");
+		datasetNames2.add(DevQsarConstants.LC50+" TEST");
+		datasetNames2.add(DevQsarConstants.LC50DM+" TEST");
+		datasetNames2.add(DevQsarConstants.IGC50+" TEST");
+
+		for (String methodName:methodNames) {
+			addHashtableEntry("PearsonRSQ_Test", methodName, modelSetNames, datasetNames2,htVals);
+		}
+
+		for (String modelSetName:modelSetNames) {
+			createSummaryTableForModelSet("PearsonRSQ_Test", modelSetName, methodNames, datasetNames2, htVals);
+		}
+
+//		for (String methodName:methodNames) {
+//			createSummaryTableForMethod(statisticName, methodName, modelSetNames, datasetNames, htVals);
+//		}
 		
 	}
 
 	
 	/**
-	 * Prints summary of stats to the screen
-	 * TODO make it write to file
-	 * 
+	 * Stores stat in hashtable
 	 * 
 	 * @param statisticName
 	 * @param methodName
@@ -236,16 +384,17 @@ public class ModelSetScript {
 				Long modelId=getModelId(modelSetName, datasetName, methodName);
 				
 				if (modelId==null) {
-					htVals.put(key, null);
+					htVals.put(key, Double.NaN);
 					continue;
 				}
-
+				
 				Double stat=getStat(modelId, statisticName);
-				if (stat==null)	htVals.put(key, null);					
-				else {
-//					System.out.println(key+"\t"+stat);
-					htVals.put(key, stat);
-				}
+				
+//				System.out.println(modelId+"\t"+key+"\t"+stat);
+				
+				if (stat!=null)	htVals.put(key, stat);
+				else htVals.put(key, Double.NaN);
+					
 			}
 		}
 	}
@@ -447,13 +596,14 @@ public class ModelSetScript {
 	 * @return
 	 */
 	Double getStat(long modelId,String statisticName) {
-		
+				
 		String sql="select ms.statistic_value  from qsar_models.model_statistics ms\n"+
-				   "join qsar_models.\"statistics\" s  on s.id=ms.fk_statistic_id\n"+
-				   "where s.\"name\"='"+statisticName+"' and \n"+
-				   "ms.fk_model_id="+modelId+";";			
+		"join qsar_models.\"statistics\" s2  on s2.id=ms.fk_statistic_id\n"+
+		"where ms.fk_model_id="+modelId+" and s2.\"name\" ='"+statisticName+"';";
+		
 		
 //		System.out.println(sql+"\n");
+//		System.out.println(modelId);
 		String result=DatabaseLookup.runSQL(conn, sql);
 		if(result==null) return null;
 		else return (Double.parseDouble(result));
@@ -463,7 +613,11 @@ public class ModelSetScript {
 		ModelSetScript ms=new ModelSetScript();
 //		ms.createModelSets();		
 //		ms.assignModelsToModelSets();
-		ms.createSummaryTableForMethod();
+//		ms.assignModelsToModelSetsOPERA();
+//		ms.createSummaryTableForMethod();
+//		
+//		ms.assignModelsToModelSetsTEST();
+		ms.createSummaryTableForMethodTEST();
 
 	}
 
