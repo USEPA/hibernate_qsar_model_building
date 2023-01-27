@@ -206,7 +206,7 @@ public class RunCaseStudies {
 
 	public static void runCaseStudyExpProp_All_Endpoints() {
 		
-		lanId="tmarti02";		
+		lanId="cramslan";		
 		boolean buildModels=true;
 		
 //		serverModelBuilding=DevQsarConstants.SERVER_819;
@@ -219,15 +219,15 @@ public class RunCaseStudies {
 		List<String>datasetNames=new ArrayList<>();
 
 //		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
 		datasetNames.add("LogP from exp_prop and chemprop");
 		datasetNames.add("MP from exp_prop and chemprop");
 		datasetNames.add("BP from exp_prop and chemprop");
 		
 //		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
-		String splitting ="T=PFAS only, P=PFAS";
-//		String splitting = "T=all but PFAS, P=PFAS";
+//		String splitting ="T=PFAS only, P=PFAS";
+		String splitting = "T=all but PFAS, P=PFAS";
 
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
@@ -709,8 +709,8 @@ public class RunCaseStudies {
 //		runCaseStudyTest();
 //		runCaseStudyOPERA_All_Endpoints();
 		
-//		runCaseStudyExpProp_All_Endpoints();		
-		runCaseStudyExpProp_All_Endpoints_No_Embedding();
+		runCaseStudyExpProp_All_Endpoints();		
+//		runCaseStudyExpProp_All_Endpoints_No_Embedding();
 		
 //		for (int i=641;i<=649;i++) {
 //			deleteModel(i);
