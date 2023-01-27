@@ -152,10 +152,7 @@ public class ModelSetScript {
 		else
 			sql+="m.fk_descriptor_embedding_id is null;";
 		
-		
-		
 		ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
-		
 		List<Long> consensusModelIDs = new ArrayList<Long>(); 
 		
 		try {
@@ -212,6 +209,7 @@ public class ModelSetScript {
 			List<String> datasetNames) {
 		DecimalFormat df=new DecimalFormat("0.00");
 		
+		System.out.println("\nResults for "+methodName+" method");
 		System.out.print("DatasetName\t");
 		
 		for (int j=0;j<modelSetNames.size();j++) {
