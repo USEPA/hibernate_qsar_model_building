@@ -302,8 +302,8 @@ public class RunCaseStudies {
 		datasetNames.add("WS from exp_prop and chemprop");
 		datasetNames.add("VP from exp_prop and chemprop");
 		datasetNames.add("LogP from exp_prop and chemprop");
-//		datasetNames.add("MP from exp_prop and chemprop");
-//		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("MP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop");
 		
 //		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 		String splitting ="T=PFAS only, P=PFAS";
@@ -427,6 +427,7 @@ public class RunCaseStudies {
 			}
 			
 			ModelBuildingScript.buildUnweightedConsensusModel(consensusModelIDs, lanId);
+			System.out.println("model built");
 			
 		} catch (Exception ex) {
 			return;
@@ -472,7 +473,10 @@ public class RunCaseStudies {
 		
 		List <Integer>counts=new ArrayList<>();
 		while(iterator.hasNext()) {
-			String sql="select count(id) from qsar_models.predictions p where p.fk_model_id="+iterator.next()+";";
+			Long modelID=iterator.next();
+			
+			System.out.println(modelID);
+			String sql="select count(id) from qsar_models.predictions p where p.fk_model_id="+modelID+";";
 			String result=DatabaseLookup.runSQL(conn, sql);
 			counts.add(Integer.parseInt(result));
 //			System.out.println(result);
@@ -480,7 +484,11 @@ public class RunCaseStudies {
 		
 		int count0=counts.get(0);
 		boolean allMatch=true;
+		
+		System.out.println(count0);
+				
 		for (int i=1;i<counts.size();i++) {
+			System.out.println(counts.get(i));
 			if(counts.get(i)!=count0) {
 				allMatch=false;
 				break;
