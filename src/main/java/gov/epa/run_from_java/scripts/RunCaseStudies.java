@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -102,7 +103,7 @@ public class RunCaseStudies {
 			ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
 		}
 		
-		buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName);
+		buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName, methods.length);
 
 	}
 	
@@ -153,7 +154,7 @@ public class RunCaseStudies {
 				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
 			}
 
-			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName);
+			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methods.length);
 
 		}
 
@@ -208,7 +209,8 @@ public class RunCaseStudies {
 		lanId="tmarti02";		
 		boolean buildModels=true;
 		
-		serverModelBuilding=DevQsarConstants.SERVER_819;
+//		serverModelBuilding=DevQsarConstants.SERVER_819;
+		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
 		portModelBuilding=5004;
 		
 		DescriptorEmbeddingServiceImpl descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
@@ -216,7 +218,7 @@ public class RunCaseStudies {
 
 		List<String>datasetNames=new ArrayList<>();
 
-		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("HLC from exp_prop and chemprop");
 		datasetNames.add("WS from exp_prop and chemprop");
 		datasetNames.add("VP from exp_prop and chemprop");
 		datasetNames.add("LogP from exp_prop and chemprop");
@@ -274,11 +276,11 @@ public class RunCaseStudies {
 //			String methods[]= {DevQsarConstants.XGB, DevQsarConstants.SVM};
 //			String methods[]= {DevQsarConstants.KNN, DevQsarConstants.RF};
 
-			for (String method:methods) {
-				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
-			}
-//			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName);
+//			for (String method:methods) {
+//				System.out.println(method + "descriptor" + descriptorSetName);
+//				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
+//			}
+			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methods.length);
 		}
 
 	}
@@ -288,7 +290,9 @@ public class RunCaseStudies {
 		
 		lanId="tmarti02";		
 		
-		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+		serverModelBuilding=DevQsarConstants.SERVER_819;
+		portModelBuilding=5005;
+		
 		
 //		String server=DevQsarConstants.SERVER_819;
 
@@ -298,8 +302,8 @@ public class RunCaseStudies {
 		datasetNames.add("WS from exp_prop and chemprop");
 		datasetNames.add("VP from exp_prop and chemprop");
 		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop");
 		
 //		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 		String splitting ="T=PFAS only, P=PFAS";
@@ -386,12 +390,12 @@ public class RunCaseStudies {
 				ModelBuildingScript.buildModel(lanId,server,portModelBuilding,method,descriptorEmbedding,ci);
 			}
 
-			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName);
+			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methods.length);
 
 		}
 
 	}
-	private static void buildConsensusModelForEmbeddedModels(DescriptorEmbedding descriptorEmbedding,String datasetName) {
+	private static void buildConsensusModelForEmbeddedModels(DescriptorEmbedding descriptorEmbedding,String datasetName, int countRequired) {
 		ModelServiceImpl modelService=new ModelServiceImpl();
 		List<Model>models=modelService.findByDatasetName(datasetName);
 		
@@ -647,11 +651,11 @@ public class RunCaseStudies {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 //		runCaseStudyOPERA();
-		runCaseStudyTest_All_Endpoints();
+//		runCaseStudyTest_All_Endpoints();
 //		runCaseStudyTest();
 //		runCaseStudyOPERA_All_Endpoints();
-//		runCaseStudyExpProp_All_Endpoints();
 		
+		runCaseStudyExpProp_All_Endpoints();		
 //		runCaseStudyExpProp_All_Endpoints_No_Embedding();
 		
 //		for (int i=641;i<=649;i++) {
