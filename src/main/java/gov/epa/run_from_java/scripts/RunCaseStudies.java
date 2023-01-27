@@ -400,9 +400,48 @@ public class RunCaseStudies {
 		for (Model model:models) {
 			if (model.getDescriptorEmbedding()==null) continue;			
 			if (!model.getDescriptorEmbedding().getId().equals(descriptorEmbedding.getId())) continue;
-			System.out.println(model.getId());
+//			System.out.println(model.getId());
 			consensusModelIDs.add(model.getId());
 		}
+		
+		if(countRequired !=consensusModelIDs.size()) {
+			System.out.println("Mismatch have "+consensusModelIDs.size()+" potential models in consensus");
+			return;
+		}
+		
+		Iterator<Long>iterator=consensusModelIDs.iterator();
+				
+		int count=0;
+		
+		Connection conn=DatabaseLookup.getConnection();
+		
+		List <Integer>counts=new ArrayList<>();
+		
+		while(iterator.hasNext()) {
+			String sql="select count(id) from qsar_models.predictions p where p.fk_model_id="+iterator.next()+";";
+			String result=DatabaseLookup.runSQL(conn, sql);
+			counts.add(Integer.parseInt(result));
+//			System.out.println(result);
+		}
+		
+		
+		int count0=counts.get(0);
+		
+		boolean allMatch=true;
+		for (int i=1;i<counts.size();i++) {
+			if(counts.get(i)!=count0) {
+				allMatch=false;
+				break;
+			}
+		}
+		
+		if(!allMatch) {
+			System.out.println("mismatch in prediction size");
+			return;
+		}
+		
+		System.out.println("ok to build consensus");
+		
 		ModelBuildingScript.buildUnweightedConsensusModel(consensusModelIDs, lanId);
 	}
 
