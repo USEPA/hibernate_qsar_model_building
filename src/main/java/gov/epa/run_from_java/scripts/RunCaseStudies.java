@@ -209,8 +209,8 @@ public class RunCaseStudies {
 		lanId="cramslan";		
 		boolean buildModels=true;
 		
-//		serverModelBuilding=DevQsarConstants.SERVER_819;
-		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+		serverModelBuilding=DevQsarConstants.SERVER_819;
+//		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
 		portModelBuilding=5004;
 		
 		DescriptorEmbeddingServiceImpl descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
