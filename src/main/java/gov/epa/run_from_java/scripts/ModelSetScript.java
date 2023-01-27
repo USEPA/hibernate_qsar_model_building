@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
@@ -167,7 +168,6 @@ public class ModelSetScript {
 	
 	void createSummaryTableForMethod() {
 		String statisticName = "MAE_Test";
-
 		
 		List<String> modelSetNames=new ArrayList<>();
 				
@@ -196,11 +196,63 @@ public class ModelSetScript {
 		methodNames.add(DevQsarConstants.SVM);
 		methodNames.add(DevQsarConstants.CONSENSUS);
 
+		Hashtable<String,Double>htVals=new Hashtable();
 		for (String methodName:methodNames) {
-			createSummaryTable(statisticName, methodName, modelSetNames, datasetNames);
+			addHashtableEntry(statisticName, methodName, modelSetNames, datasetNames,htVals);
 		}
+
+		for (String modelSetName:modelSetNames) {
+			createSummaryTable3(statisticName, modelSetName, methodNames, datasetNames, htVals);
+		}
+
+		for (String methodName:methodNames) {
+			createSummaryTable2(statisticName, methodName, modelSetNames, datasetNames, htVals);
+		}
+		
 	}
 
+	
+	/**
+	 * Prints summary of stats to the screen
+	 * TODO make it write to file
+	 * 
+	 * 
+	 * @param statisticName
+	 * @param methodName
+	 * @param modelSetNames
+	 * @param datasetNames
+	 */
+	private void addHashtableEntry(String statisticName, String methodName, List<String> modelSetNames,
+			List<String> datasetNames,Hashtable<String,Double>htVals) {
+		DecimalFormat df=new DecimalFormat("0.00");
+		
+		
+		for (int i=0;i<datasetNames.size();i++) {
+			String datasetName=datasetNames.get(i);
+						
+			for (int j=0;j<modelSetNames.size();j++) {
+				String modelSetName=modelSetNames.get(j);
+
+				String key=methodName+"\t"+modelSetName+"\t"+datasetName;
+				
+				Long modelId=getModelId(modelSetName, datasetName, methodName);
+				
+				if (modelId==null) {
+					htVals.put(key, null);
+					continue;
+				}
+
+				Double stat=getStat(modelId, statisticName);
+				if (stat==null)	htVals.put(key, null);					
+				else {
+//					System.out.println(key+"\t"+stat);
+					htVals.put(key, stat);
+				}
+			}
+		}
+	}
+	
+	
 	/**
 	 * Prints summary of stats to the screen
 	 * TODO make it write to file
@@ -257,6 +309,110 @@ public class ModelSetScript {
 				else System.out.print("\r\n");
 			}
 			
+		}
+	}
+	
+	
+	/**
+	 * Prints summary of stats to the screen for a given method
+	 * 
+	 * TODO make it write to file
+	 * 
+	 * 
+	 * @param statisticName
+	 * @param methodName
+	 * @param modelSetNames
+	 * @param datasetNames
+	 */
+	private void createSummaryTable2(String statName, String methodName, List<String> modelSetNames,
+			List<String> datasetNames, Hashtable<String,Double>htVals) {
+		DecimalFormat df=new DecimalFormat("0.00");
+		
+		System.out.println("\n"+statName+" results for model set = "+methodName);
+		System.out.print("DatasetName\t");
+		
+		for (int j=0;j<modelSetNames.size();j++) {
+			String modelSetName=modelSetNames.get(j);
+		
+			System.out.print(modelSetName);			
+			if (j<modelSetNames.size()-1) System.out.print("\t");
+			else System.out.print("\r\n");
+		}
+		
+		for (int i=0;i<datasetNames.size();i++) {
+			String datasetName=datasetNames.get(i);
+			
+//			String datasetName2=datasetName.replace(" from exp_prop and chemprop", "");						
+			System.out.print(datasetName+"\t");
+						
+								
+			for (int j=0;j<modelSetNames.size();j++) {
+				String modelSetName=modelSetNames.get(j);
+				
+				String key=methodName+"\t"+modelSetName+"\t"+datasetName;
+				
+//				System.out.println(key);
+				
+				Double modelSetStat=htVals.get(key);
+				
+				if (modelSetName==null) System.out.print("N/A");				
+				else System.out.print(df.format(modelSetStat));
+				
+				if (j<modelSetNames.size()-1) System.out.print("\t");
+				else System.out.print("\r\n");
+			}
+			
+		}
+	}
+	
+	
+	/**
+	 * Prints summary of stats to the screen for a given method
+	 * 
+	 * TODO make it write to file
+	 * 
+	 * 
+	 * @param statisticName
+	 * @param methodName
+	 * @param modelSetNames
+	 * @param datasetNames
+	 */
+	private void createSummaryTable3(String statName, String modelSetName,List<String> methodNames, 
+			List<String> datasetNames, Hashtable<String,Double>htVals) {
+		DecimalFormat df=new DecimalFormat("0.00");
+		
+		System.out.println("\n"+statName+" results for model set = "+modelSetName);
+		System.out.print("DatasetName\t");
+		
+		for (int j=0;j<methodNames.size();j++) {
+			String methodName=methodNames.get(j);
+		
+			System.out.print(methodName);			
+			if (j<methodNames.size()-1) System.out.print("\t");
+			else System.out.print("\r\n");
+		}
+		
+		for (int i=0;i<datasetNames.size();i++) {
+			String datasetName=datasetNames.get(i);
+			
+//			String datasetName2=datasetName.replace(" from exp_prop and chemprop", "");						
+			System.out.print(datasetName+"\t");
+						
+			for (int j=0;j<methodNames.size();j++) {
+				String methodName=methodNames.get(j);
+
+				String key=methodName+"\t"+modelSetName+"\t"+datasetName;
+				
+//				System.out.println(key);
+				
+				Double modelSetStat=htVals.get(key);
+								
+				if (modelSetName==null) System.out.print("N/A");				
+				else System.out.print(df.format(modelSetStat));
+
+				if (j<methodNames.size()-1) System.out.print("\t");
+				else System.out.print("\r\n");
+			}
 		}
 	}
 	
