@@ -333,11 +333,13 @@ public class RunCaseStudies {
 //			String methods[]= {DevQsarConstants.XGB, DevQsarConstants.SVM};
 //			String methods[]= {DevQsarConstants.KNN, DevQsarConstants.RF};
 
-			for (String method:methods) {
-				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci);
-			}
-//			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName);
+//			for (String method:methods) {
+//				System.out.println(method + "descriptor" + descriptorSetName);
+//				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci);
+//			}
+			
+			buildConsensusModel(datasetName,splitting,descriptorSetName,methods.length);
+			
 		}
 
 	}
@@ -395,6 +397,44 @@ public class RunCaseStudies {
 		}
 
 	}
+	
+	
+	private static void buildConsensusModel(String datasetName,String splittingName,String descriptorsetName, int countRequired) {
+		
+		
+		String sql="select id from qsar_models.models m "
+				+ "where m.splitting_name ='"+splittingName+"' and "
+				+ "dataset_name ='"+datasetName+"' and "
+				+ "descriptor_set_name ='"+descriptorsetName+"' and "
+				+ "fk_descriptor_embedding_id is null;";
+		
+		
+		Connection conn=DatabaseLookup.getConnection();
+		ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
+		
+		Set<Long> consensusModelIDs = new HashSet<Long>(); 
+		
+		try {
+			while (rs.next()) {
+				consensusModelIDs.add(Long.parseLong(rs.getString(1)));
+			}
+			boolean OK=areModelsOKForConsensus(countRequired, consensusModelIDs);
+			
+			if (OK) {
+				System.out.println("ok to build consensus");	
+			} else {
+				return;
+			}
+			
+			ModelBuildingScript.buildUnweightedConsensusModel(consensusModelIDs, lanId);
+			
+		} catch (Exception ex) {
+			return;
+		}
+	
+	}
+	
+	
 	private static void buildConsensusModelForEmbeddedModels(DescriptorEmbedding descriptorEmbedding,String datasetName, int countRequired) {
 		ModelServiceImpl modelService=new ModelServiceImpl();
 		List<Model>models=modelService.findByDatasetName(datasetName);
@@ -408,19 +448,29 @@ public class RunCaseStudies {
 			consensusModelIDs.add(model.getId());
 		}
 		
-		if(countRequired !=consensusModelIDs.size()) {
-			System.out.println("Mismatch have "+consensusModelIDs.size()+" potential models in consensus");
+		boolean OK=areModelsOKForConsensus(countRequired, consensusModelIDs);
+		
+		if(OK) {
+			System.out.println("ok to build consensus");	
+		} else {
 			return;
 		}
 		
-		Iterator<Long>iterator=consensusModelIDs.iterator();
-				
-		int count=0;
+		ModelBuildingScript.buildUnweightedConsensusModel(consensusModelIDs, lanId);
+	}
+
+
+	private static boolean areModelsOKForConsensus(int countRequired, Set<Long> consensusModelIDs) {
+
+		if(countRequired !=consensusModelIDs.size()) {
+			System.out.println("Mismatch have "+consensusModelIDs.size()+" potential models in consensus");
+			return false;
+		}
 		
+		Iterator<Long>iterator=consensusModelIDs.iterator();
 		Connection conn=DatabaseLookup.getConnection();
 		
 		List <Integer>counts=new ArrayList<>();
-		
 		while(iterator.hasNext()) {
 			String sql="select count(id) from qsar_models.predictions p where p.fk_model_id="+iterator.next()+";";
 			String result=DatabaseLookup.runSQL(conn, sql);
@@ -428,9 +478,7 @@ public class RunCaseStudies {
 //			System.out.println(result);
 		}
 		
-		
 		int count0=counts.get(0);
-		
 		boolean allMatch=true;
 		for (int i=1;i<counts.size();i++) {
 			if(counts.get(i)!=count0) {
@@ -441,12 +489,10 @@ public class RunCaseStudies {
 		
 		if(!allMatch) {
 			System.out.println("mismatch in prediction size");
-			return;
+			return false;
 		}
 		
-		System.out.println("ok to build consensus");
-		
-		ModelBuildingScript.buildUnweightedConsensusModel(consensusModelIDs, lanId);
+		return true;
 	}
 
 	/**
@@ -655,8 +701,8 @@ public class RunCaseStudies {
 //		runCaseStudyTest();
 //		runCaseStudyOPERA_All_Endpoints();
 		
-		runCaseStudyExpProp_All_Endpoints();		
-//		runCaseStudyExpProp_All_Endpoints_No_Embedding();
+//		runCaseStudyExpProp_All_Endpoints();		
+		runCaseStudyExpProp_All_Endpoints_No_Embedding();
 		
 //		for (int i=641;i<=649;i++) {
 //			deleteModel(i);
