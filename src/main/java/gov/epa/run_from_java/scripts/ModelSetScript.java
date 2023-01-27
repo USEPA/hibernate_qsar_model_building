@@ -168,8 +168,6 @@ public class ModelSetScript {
 	void createSummaryTableForMethod() {
 		String statisticName = "MAE_Test";
 
-//		String methodName=DevQsarConstants.KNN;
-		String methodName=DevQsarConstants.CONSENSUS;
 		
 		List<String> modelSetNames=new ArrayList<>();
 				
@@ -190,9 +188,17 @@ public class ModelSetScript {
 		datasetNames.add("LogP from exp_prop and chemprop");
 		datasetNames.add("MP from exp_prop and chemprop");
 		datasetNames.add("BP from exp_prop and chemprop");
-		
-		createSummaryTable(statisticName, methodName, modelSetNames, datasetNames);
 
+		List<String> methodNames=new ArrayList<>();
+		methodNames.add(DevQsarConstants.KNN);
+		methodNames.add(DevQsarConstants.RF);
+		methodNames.add(DevQsarConstants.XGB);
+		methodNames.add(DevQsarConstants.SVM);
+		methodNames.add(DevQsarConstants.CONSENSUS);
+
+		for (String methodName:methodNames) {
+			createSummaryTable(statisticName, methodName, modelSetNames, datasetNames);
+		}
 	}
 
 	/**
