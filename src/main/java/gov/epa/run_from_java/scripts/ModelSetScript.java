@@ -2,12 +2,15 @@ package gov.epa.run_from_java.scripts;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetService;
@@ -16,7 +19,10 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
+import gov.epa.endpoints.models.ModelPrediction;
+import gov.epa.endpoints.models.ModelStatisticCalculator;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
+import gov.epa.web_services.embedding_service.CalculationInfo;
 
 public class ModelSetScript {
 
@@ -268,356 +274,14 @@ public class ModelSetScript {
 		return consensusModelIDs;
 	}
 	
-	void createSummaryTableForMethod() {
-		String statisticName = "MAE_Test";
-		
-		List<String> modelSetNames=new ArrayList<>();
-				
-		modelSetNames.add("WebTEST2.0 PFAS");
-//		modelSetNames.add("WebTEST2.0");//TODO calc stats just for PFAS
-//		modelSetNames.add("WebTEST2.0 All but PFAS");
-//		modelSetNames.add("WebTEST2.0");
-		
-		modelSetNames.add("WebTEST2.1 PFAS");
-//		modelSetNames.add("WebTEST2.1");//TODO calc stats just for PFAS
-//		modelSetNames.add("WebTEST2.1 All but PFAS");
-//		modelSetNames.add("WebTEST2.1");
-		
-		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
-
-		List<String> methodNames=new ArrayList<>();
-		methodNames.add(DevQsarConstants.KNN);
-		methodNames.add(DevQsarConstants.RF);
-		methodNames.add(DevQsarConstants.XGB);
-		methodNames.add(DevQsarConstants.SVM);
-		methodNames.add(DevQsarConstants.CONSENSUS);
-
-		Hashtable<String,Double>htVals=new Hashtable<>();
-		for (String methodName:methodNames) {
-			addHashtableEntry(statisticName, methodName, modelSetNames, datasetNames,htVals);
-		}
-
-		for (String modelSetName:modelSetNames) {
-			createSummaryTableForModelSet(statisticName, modelSetName, methodNames, datasetNames, htVals);
-		}
-
-//		for (String methodName:methodNames) {
-//			createSummaryTableForMethod(statisticName, methodName, modelSetNames, datasetNames, htVals);
-//		}
-		
-	}
 	
-	void createSummaryTableForMethodTEST() {
-				
-		List<String> modelSetNames=new ArrayList<>();
-		modelSetNames.add("WebTEST2.1 Sample models");
-
-		List<String> methodNames=new ArrayList<>();
-		methodNames.add(DevQsarConstants.KNN);
-		methodNames.add(DevQsarConstants.RF);
-		methodNames.add(DevQsarConstants.XGB);
-		methodNames.add(DevQsarConstants.SVM);
-		methodNames.add(DevQsarConstants.CONSENSUS);
-
-		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add(DevQsarConstants.DEV_TOX+" TEST");
-		datasetNames.add(DevQsarConstants.MUTAGENICITY+" TEST");
-		datasetNames.add(DevQsarConstants.LLNA+" TEST");
-
-		Hashtable<String,Double>htVals=new Hashtable<>();
-
-		for (String methodName:methodNames) {
-			addHashtableEntry("BA_Test", methodName, modelSetNames, datasetNames,htVals);
-		}
-
-		for (String modelSetName:modelSetNames) {
-			createSummaryTableForModelSet("BA_Test", modelSetName, methodNames, datasetNames, htVals);
-		}
-
-		
-		List<String>datasetNames2=new ArrayList<>();
-		datasetNames2.add(DevQsarConstants.LD50+" TEST");
-		datasetNames2.add(DevQsarConstants.LC50+" TEST");
-		datasetNames2.add(DevQsarConstants.LC50DM+" TEST");
-		datasetNames2.add(DevQsarConstants.IGC50+" TEST");
-
-		for (String methodName:methodNames) {
-			addHashtableEntry("PearsonRSQ_Test", methodName, modelSetNames, datasetNames2,htVals);
-		}
-
-		for (String modelSetName:modelSetNames) {
-			createSummaryTableForModelSet("PearsonRSQ_Test", modelSetName, methodNames, datasetNames2, htVals);
-		}
-
-//		for (String methodName:methodNames) {
-//			createSummaryTableForMethod(statisticName, methodName, modelSetNames, datasetNames, htVals);
-//		}
-		
-	}
-
-	
-	/**
-	 * Stores stat in hashtable
-	 * 
-	 * @param statisticName
-	 * @param methodName
-	 * @param modelSetNames
-	 * @param datasetNames
-	 */
-	private void addHashtableEntry(String statisticName, String methodName, List<String> modelSetNames,
-			List<String> datasetNames,Hashtable<String,Double>htVals) {
-		
-		for (int i=0;i<datasetNames.size();i++) {
-			String datasetName=datasetNames.get(i);
-						
-			for (int j=0;j<modelSetNames.size();j++) {
-				String modelSetName=modelSetNames.get(j);
-
-				String key=methodName+"\t"+modelSetName+"\t"+datasetName;
-				
-				Long modelId=getModelId(modelSetName, datasetName, methodName);
-				
-				if (modelId==null) {
-					htVals.put(key, Double.NaN);
-					continue;
-				}
-				
-				Double stat=getStat(modelId, statisticName);
-				
-//				System.out.println(modelId+"\t"+key+"\t"+stat);
-				
-				if (stat!=null)	htVals.put(key, stat);
-				else htVals.put(key, Double.NaN);
-					
-			}
-		}
-	}
-	
-	
-	/**
-	 * Prints summary of stats to the screen
-	 * TODO make it write to file
-	 * 
-	 * 
-	 * @param statisticName
-	 * @param methodName
-	 * @param modelSetNames
-	 * @param datasetNames
-	 */
-	private void createSummaryTable(String statisticName, String methodName, List<String> modelSetNames,
-			List<String> datasetNames) {
-		DecimalFormat df=new DecimalFormat("0.00");
-		
-		System.out.println("\nResults for "+methodName+" method");
-		System.out.print("DatasetName\t");
-		
-		for (int j=0;j<modelSetNames.size();j++) {
-			String modelSetName=modelSetNames.get(j);
-		
-			System.out.print(modelSetName);			
-			if (j<modelSetNames.size()-1) System.out.print("\t");
-			else System.out.print("\r\n");
-		}
-		
-		for (int i=0;i<datasetNames.size();i++) {
-			String datasetName=datasetNames.get(i);
-			
-//			String datasetName2=datasetName.replace(" from exp_prop and chemprop", "");
-						
-			System.out.print(datasetName+"\t");
-			
-			List<String>modelSetStats=new ArrayList<>();
-			
-			for (int j=0;j<modelSetNames.size();j++) {
-				String modelSetName=modelSetNames.get(j);
-				Long modelId=getModelId(modelSetName, datasetName, methodName);
-				
-				if (modelId==null) {
-					modelSetStats.add(null);
-					continue;
-				}
-
-				Double stat=getStat(modelId, statisticName);
-				
-				if (stat==null)	modelSetStats.add(null);					
-				else modelSetStats.add(df.format(stat));
-			}
-			
-			for (int j=0;j<modelSetStats.size();j++) {
-				String modelSetStat=modelSetStats.get(j);
-				System.out.print(modelSetStat);			
-				if (j<modelSetStats.size()-1) System.out.print("\t");
-				else System.out.print("\r\n");
-			}
-			
-		}
-	}
-	
-	
-	/**
-	 * Prints summary of stats to the screen for a given method
-	 * 
-	 * TODO make it write to file
-	 * 
-	 * 
-	 * @param statisticName
-	 * @param methodName
-	 * @param modelSetNames
-	 * @param datasetNames
-	 */
-	private void createSummaryTableForMethod(String statName, String methodName, List<String> modelSetNames,
-			List<String> datasetNames, Hashtable<String,Double>htVals) {
-		DecimalFormat df=new DecimalFormat("0.00");
-		
-		System.out.println("\n"+statName+" results for model set = "+methodName);
-		System.out.print("DatasetName\t");
-		
-		for (int j=0;j<modelSetNames.size();j++) {
-			String modelSetName=modelSetNames.get(j);
-		
-			System.out.print(modelSetName);			
-			if (j<modelSetNames.size()-1) System.out.print("\t");
-			else System.out.print("\r\n");
-		}
-		
-		for (int i=0;i<datasetNames.size();i++) {
-			String datasetName=datasetNames.get(i);
-			
-//			String datasetName2=datasetName.replace(" from exp_prop and chemprop", "");						
-			System.out.print(datasetName+"\t");
-						
-								
-			for (int j=0;j<modelSetNames.size();j++) {
-				String modelSetName=modelSetNames.get(j);
-				
-				String key=methodName+"\t"+modelSetName+"\t"+datasetName;
-				
-//				System.out.println(key);
-				
-				Double modelSetStat=htVals.get(key);
-				
-				if (modelSetName==null) System.out.print("N/A");				
-				else System.out.print(df.format(modelSetStat));
-				
-				if (j<modelSetNames.size()-1) System.out.print("\t");
-				else System.out.print("\r\n");
-			}
-			
-		}
-	}
-	
-	
-	/**
-	 * Prints summary of stats for model set
-	 * 
-	 * TODO make it write to file
-	 * 
-	 * 
-	 * @param statisticName
-	 * @param methodName
-	 * @param modelSetNames
-	 * @param datasetNames
-	 */
-	private void createSummaryTableForModelSet(String statName, String modelSetName,List<String> methodNames, 
-			List<String> datasetNames, Hashtable<String,Double>htVals) {
-		DecimalFormat df=new DecimalFormat("0.00");
-		
-		System.out.println("\n"+statName+" results for model set = "+modelSetName);
-		System.out.print("DatasetName\t");
-		
-		for (int j=0;j<methodNames.size();j++) {
-			String methodName=methodNames.get(j);
-		
-			System.out.print(methodName);			
-			if (j<methodNames.size()-1) System.out.print("\t");
-			else System.out.print("\r\n");
-		}
-		
-		for (int i=0;i<datasetNames.size();i++) {
-			String datasetName=datasetNames.get(i);
-			
-//			String datasetName2=datasetName.replace(" from exp_prop and chemprop", "");						
-			System.out.print(datasetName+"\t");
-						
-			for (int j=0;j<methodNames.size();j++) {
-				String methodName=methodNames.get(j);
-
-				String key=methodName+"\t"+modelSetName+"\t"+datasetName;
-				
-//				System.out.println(key);
-				
-				Double modelSetStat=htVals.get(key);
-								
-				if (modelSetName==null) System.out.print("N/A");				
-				else System.out.print(df.format(modelSetStat));
-
-				if (j<methodNames.size()-1) System.out.print("\t");
-				else System.out.print("\r\n");
-			}
-		}
-	}
-	
-	/**
-	 * Get the modelID for model for given dataset, method, and modelSet
-	 * 
-	 * @param modelId
-	 * @param datasetName
-	 * @param methodName
-	 * @return
-	 */
-	Long getModelId(String modelSetName,String datasetName,String methodName) {
-		
-		String sql="select mims.fk_model_id from qsar_models.models_in_model_sets mims\n"+ 
-		"join qsar_models.models m on m.id=mims.fk_model_id\n"+ 
-		"join qsar_models.methods m2 on m2.id=m.fk_method_id\n"+
-		"join qsar_models.model_sets ms on ms.id=mims.fk_model_set_id\n"+ 
-		"where ms.\"name\"='"+modelSetName+"' and \n"+
-		"m.dataset_name ='"+datasetName+"' and \n"+
-		"m2.\"name\" like '"+methodName+"%';";
-		
-//		System.out.println(sql+"\n");
-		String strId=DatabaseLookup.runSQL(conn, sql);
-		if(strId==null) return null;
-		else return (Long.parseLong(strId));
-	}
-	
-	/**
-	 * Get prediction statistic for model
-	 * 
-	 * @param modelId
-	 * @param datasetName
-	 * @param methodName
-	 * @return
-	 */
-	Double getStat(long modelId,String statisticName) {
-				
-		String sql="select ms.statistic_value  from qsar_models.model_statistics ms\n"+
-		"join qsar_models.\"statistics\" s2  on s2.id=ms.fk_statistic_id\n"+
-		"where ms.fk_model_id="+modelId+" and s2.\"name\" ='"+statisticName+"';";
-		
-		
-//		System.out.println(sql+"\n");
-//		System.out.println(modelId);
-		String result=DatabaseLookup.runSQL(conn, sql);
-		if(result==null) return null;
-		else return (Double.parseDouble(result));
-	}
 	
 	public static void main(String[] args) {
 		ModelSetScript ms=new ModelSetScript();
 //		ms.createModelSets();		
-//		ms.assignModelsToModelSets();
+		ms.assignModelsToModelSets();
 //		ms.assignModelsToModelSetsOPERA();
-//		ms.createSummaryTableForMethod();
-//		
 //		ms.assignModelsToModelSetsTEST();
-		ms.createSummaryTableForMethodTEST();
 
 	}
 

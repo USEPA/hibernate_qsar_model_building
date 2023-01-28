@@ -105,7 +105,7 @@ public class DatabaseLookup {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return "";
+		return null;
 	}
 	
 	public static ResultSet runSQL2(Connection conn, String sql) {
