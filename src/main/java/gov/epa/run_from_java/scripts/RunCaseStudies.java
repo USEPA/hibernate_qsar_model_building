@@ -333,10 +333,10 @@ public class RunCaseStudies {
 //			String methods[]= {DevQsarConstants.XGB, DevQsarConstants.SVM};
 //			String methods[]= {DevQsarConstants.KNN, DevQsarConstants.RF};
 
-//			for (String method:methods) {
-//				System.out.println(method + "descriptor" + descriptorSetName);
-//				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci);
-//			}
+			for (String method:methods) {
+				System.out.println(method + "descriptor" + descriptorSetName);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci);
+			}
 			
 			buildConsensusModel(datasetName,splitting,descriptorSetName,methods.length);
 			
