@@ -288,10 +288,10 @@ public class RunCaseStudies {
 	
 	public static void runCaseStudyExpProp_All_Endpoints_No_Embedding() {
 		
-		lanId="tmarti02";		
+		lanId="cramslan";		
 		
 		serverModelBuilding=DevQsarConstants.SERVER_819;
-		portModelBuilding=5005;
+		portModelBuilding=5004;
 		
 		
 //		String server=DevQsarConstants.SERVER_819;
@@ -302,12 +302,12 @@ public class RunCaseStudies {
 		datasetNames.add("WS from exp_prop and chemprop");
 		datasetNames.add("VP from exp_prop and chemprop");
 		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop");
 		
 //		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
-		String splitting ="T=PFAS only, P=PFAS";
-//		String splittingAllButPFAS = "T=all but PFAS, P=PFAS";
+//		String splitting ="T=PFAS only, P=PFAS";
+		String splitting = "T=all but PFAS, P=PFAS";
 
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
@@ -333,10 +333,10 @@ public class RunCaseStudies {
 //			String methods[]= {DevQsarConstants.XGB, DevQsarConstants.SVM};
 //			String methods[]= {DevQsarConstants.KNN, DevQsarConstants.RF};
 
-//			for (String method:methods) {
-//				System.out.println(method + "descriptor" + descriptorSetName);
-//				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci);
-//			}
+			for (String method:methods) {
+				System.out.println(method + "descriptor" + descriptorSetName);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci);
+			}
 			
 			buildConsensusModel(datasetName,splitting,descriptorSetName,methods.length);
 			
@@ -622,8 +622,8 @@ public class RunCaseStudies {
 //		runCaseStudyTest();
 //		runCaseStudyOPERA_All_Endpoints();
 		
-		runCaseStudyExpProp_All_Endpoints();		
-//		runCaseStudyExpProp_All_Endpoints_No_Embedding();
+//		runCaseStudyExpProp_All_Endpoints();		
+		runCaseStudyExpProp_All_Endpoints_No_Embedding();
 		
 //		for (int i=641;i<=649;i++) {
 //			deleteModel(i);
