@@ -4,64 +4,17 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.poi.common.usermodel.HyperlinkType;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.CreationHelper;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.ss.util.CellReference;
-import org.apache.poi.xddf.usermodel.PresetColor;
-import org.apache.poi.xddf.usermodel.XDDFColor;
-import org.apache.poi.xddf.usermodel.XDDFLineProperties;
-import org.apache.poi.xddf.usermodel.XDDFNoFillProperties;
-import org.apache.poi.xddf.usermodel.XDDFShapeProperties;
-import org.apache.poi.xddf.usermodel.XDDFSolidFillProperties;
-import org.apache.poi.xddf.usermodel.chart.AxisCrosses;
-import org.apache.poi.xddf.usermodel.chart.AxisPosition;
-import org.apache.poi.xddf.usermodel.chart.ChartTypes;
-import org.apache.poi.xddf.usermodel.chart.LegendPosition;
-import org.apache.poi.xddf.usermodel.chart.MarkerStyle;
-import org.apache.poi.xddf.usermodel.chart.XDDFChartData;
-import org.apache.poi.xddf.usermodel.chart.XDDFChartLegend;
-import org.apache.poi.xddf.usermodel.chart.XDDFDataSource;
-import org.apache.poi.xddf.usermodel.chart.XDDFDataSourcesFactory;
-import org.apache.poi.xddf.usermodel.chart.XDDFNumericalDataSource;
-import org.apache.poi.xddf.usermodel.chart.XDDFScatterChartData;
-import org.apache.poi.xssf.usermodel.XSSFChart;
-import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
-import org.apache.poi.xssf.usermodel.XSSFDrawing;
-import org.apache.poi.xssf.usermodel.XSSFHyperlink;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.openxmlformats.schemas.drawingml.x2006.chart.CTTitle;
-import org.openxmlformats.schemas.drawingml.x2006.chart.CTValAx;
-import org.openxmlformats.schemas.drawingml.x2006.chart.STMarkerStyle;
-import org.openxmlformats.schemas.drawingml.x2006.main.CTTextBody;
-import org.openxmlformats.schemas.drawingml.x2006.main.CTTextParagraph;
 
-import org.apache.poi.xddf.usermodel.chart.XDDFValueAxis;
+import org.apache.poi.xddf.usermodel.*;
+import org.apache.poi.xddf.usermodel.chart.*;
+import org.apache.poi.xssf.usermodel.*;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -71,117 +24,66 @@ import com.google.gson.JsonSyntaxException;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.endpoints.models.ModelPrediction;
-import gov.epa.endpoints.models.ModelStatisticCalculator;
 import gov.epa.endpoints.reports.OriginalCompound;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.PredictionReportGenerator;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
+import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelStatistic;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class ExcelPredictionReportGenerator {
 
-
-	//	String outpath;
-	//	String inpath = "data\\reports";
 	public static Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-	//	private PredictionReport report;
-
-	//	public Workbook wb = new XSSFWorkbook();
-	//	private Boolean isBinary;
-	//	String reportName;
-	//	public FileOutputStream out;
-
-
 	int countTest;
 	int countTestXgb;
 	ExcelUtilities eu = new ExcelUtilities();
 	
 	private static class Stats {
-		Double R2;
-		Double Q2;
-		Double RMSE;
-		Double MAE;
-		Double BA;
-		Double SN;
-		Double SP;
-		Double Coverage;
-		String splitting;
-		String type;
-		private ArrayList<String> continuousStats = new ArrayList<String>(Arrays.asList("R2", "Q2", "RMSE", "MAE", "Coverage"));
-		private ArrayList<String> binaryStats = new ArrayList<String>(Arrays.asList("BA", "SN", "SP", "Coverage"));
-
-
+		
+		List<String> continuousStats= new ArrayList<String>(Arrays.asList("Split","R2","Q2", "RMSE", "MAE", "Coverage"));
+		List<String> binaryStats = (Arrays.asList("Split", "BA", "SN", "SP", "Coverage"));
+		
+		//TODO add R2_Inside_AD, BA_inside_AD (store in database...)
+		
+		
+		Hashtable<String,Object>htStatsTraining=new Hashtable<>();
+		Hashtable<String,Object>htStatsTest=new Hashtable<>();
+				
 		// switch statement limited to newer version of java on strings for some reason
-		private void alignContinuous(String statisticName, Double statisticValue) {
-			if (this.splitting.equals("Test")) {
-				if (statisticName.equals("PearsonRSQ_Test")) {
-					this.R2 = statisticValue;
-				} else if (statisticName.equals("Q2_Test")) {
-					this.Q2 = statisticValue;
-				} else if (statisticName.equals("RMSE_Test")) {
-					this.RMSE = statisticValue;
-				} else if (statisticName.equals("MAE_Test")) {
-					this.MAE = statisticValue;
-				} else if (statisticName.equals("Coverage_Test")) {
-					this.Coverage = statisticValue;
-				}
-			} else if (this.splitting.equals("Training")) {
-				if (statisticName.equals("PearsonRSQ_Training")) {
-					this.R2 = statisticValue;
-				} else if (statisticName.equals("RMSE_Training")) {
-					this.RMSE = statisticValue;
-				} else if (statisticName.equals("MAE_Training")) {
-					this.MAE = statisticValue;
-				} else if (statisticName.equals("Coverage_Training")) {
-					this.Coverage = statisticValue;
-				}
-
+		private void storeStats(PredictionReportModelStatistic s) {
+						
+			if (s.statisticName.contains("Test")) {
+				String statisticName=s.statisticName.replace("_Test", "").replace("_Training", "");
+				statisticName=statisticName.replace("PearsonRSQ", "R2");
+				htStatsTest.put(statisticName, s.statisticValue);
+				htStatsTest.put("Split", "Test");
+			} else {
+				String statisticName=s.statisticName.replace("_Test", "").replace("_Training", "");
+				statisticName=statisticName.replace("PearsonRSQ", "R2");
+				htStatsTraining.put(statisticName, s.statisticValue);
+				htStatsTraining.put("Split", "Train");
 			}
-
+			
 		}
 
-		// switch statement limited to newer version of java on strings for some reason
-		private void alignBinary(String statisticName, Double statisticValue) {
-			if (this.splitting.equals("Test")) {
-				if (statisticName.equals("BA_Test")) {
-					this.BA = statisticValue;
-				} else if (statisticName.equals("SN_Test")) {
-					this.SN = statisticValue;
-				} else if (statisticName.equals("SP_Test")) {
-					this.SP = statisticValue;
-				} else if (statisticName.equals("Coverage_Test")) {
-					this.Coverage = statisticValue;
-				}
-			} else if (this.splitting.equals("Training")) {
-				if (statisticName.equals("BA_Training")) {
-					this.BA = statisticValue;
-				} else if (statisticName.equals("SN_Training")) {
-					this.SN = statisticValue;
-				} else if (statisticName.equals("SP_Training")) {
-					this.SP = statisticValue;
-				} else if (statisticName.equals("Coverage_Training")) {
-					this.Coverage = statisticValue;
-				}
+		private List<Object> provideStats(String set, boolean isBinary) {
+			
+			List<String>statNames=null;
+			if (isBinary) statNames=binaryStats;		
+			else statNames=continuousStats;
+			
+			Hashtable<String,Object>htStats=null;
+			if (set.equals("Test")) htStats=htStatsTest;
+			else htStats=htStatsTraining;
 
-			}
-
+			List<Object>statValues=new ArrayList<>();			
+			for (String statname:statNames) statValues.add(htStats.get(statname));
+			return statValues;
 		}
-
-		private ArrayList<Object> provideStats() {
-			if (this.type.equals("Continuous")) {
-				return new ArrayList<Object>(Arrays.asList(this.splitting, this.R2, this.Q2, this.RMSE, this.MAE, this.Coverage));
-			}
-			else {
-				return new ArrayList<Object>(Arrays.asList(this.splitting, this.BA, this.SN, this.SP, this.Coverage));
-			}
-		}
-
-
 
 	}
-
 
 	private static void printHT(Hashtable hashtable) {
 		Enumeration<String> keys = hashtable.keys();
@@ -519,7 +421,7 @@ public class ExcelPredictionReportGenerator {
 	private void generateSummarySheet2(PredictionReport report, Workbook wb,
 			boolean isBinary) {
 		Map < Integer, Object[] > spreadsheetMap = new TreeMap < Integer, Object[] >();
-		ArrayList<String> headerStats = new ArrayList<String>(Arrays.asList("Dataset Name", "Descriptor Software", "Method Name", "Split"));
+		ArrayList<String> headerStats = new ArrayList<String>(Arrays.asList("Dataset Name", "Descriptor Software", "Method Name"));
 
 		if (isBinary) headerStats.addAll(new Stats().binaryStats);
 		else headerStats.addAll(new Stats().continuousStats);
@@ -530,45 +432,33 @@ public class ExcelPredictionReportGenerator {
 		spreadsheetMap.put(0, headerStatsObject);	        
 
 
-		for (int i = 0; i < report.predictionReportModelMetadata.size(); i++) {
+		int i=0;
+		for (PredictionReportModelMetadata mmd:report.predictionReportModelMetadata) {
 
-			Stats testStats = new Stats();
-			testStats.splitting = "Test";
-			Stats trainStats = new Stats();
-			trainStats.splitting = "Training";
-
-
+			Stats stats = new Stats();
+			
+			
 			ArrayList<Object> modelSplitInfoTrain = new ArrayList<Object>();
 			modelSplitInfoTrain.add(report.predictionReportMetadata.datasetName);
-			modelSplitInfoTrain.add(report.predictionReportModelMetadata.get(i).descriptorSetName);
-			modelSplitInfoTrain.add(report.predictionReportModelMetadata.get(i).qsarMethodName);
+			modelSplitInfoTrain.add(mmd.descriptorSetName);
+			modelSplitInfoTrain.add(mmd.qsarMethodName);
 
 			ArrayList<Object> modelSplitInfoTest = (ArrayList<Object>) modelSplitInfoTrain.clone();
 
-			if (isBinary) {
-				trainStats.type = "Binary";
-				testStats.type = "Binary";
-				for (int j = 0; j < report.predictionReportModelMetadata.get(i).predictionReportModelStatistics.size(); j++) {
-					trainStats.alignBinary(report.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticName, report.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticValue);
-					testStats.alignBinary(report.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticName, report.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticValue);
-				}
-			} else {
-				trainStats.type = "Continuous";
-				testStats.type = "Continuous";
-				for (int j = 0; j < report.predictionReportModelMetadata.get(i).predictionReportModelStatistics.size(); j++) {
-					trainStats.alignContinuous(report.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticName, report.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticValue);
-					testStats.alignContinuous(report.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticName, report.predictionReportModelMetadata.get(i).predictionReportModelStatistics.get(j).statisticValue);
-				}
+			
+			for (PredictionReportModelStatistic ms:mmd.predictionReportModelStatistics) {
+				stats.storeStats(ms);
 			}
-
-			modelSplitInfoTrain.addAll(trainStats.provideStats());
-			modelSplitInfoTest.addAll(testStats.provideStats());
+			
+			modelSplitInfoTrain.addAll(stats.provideStats("Train",isBinary));
+			modelSplitInfoTest.addAll(stats.provideStats("Test",isBinary));
 
 			Object[] trainRow = modelSplitInfoTrain.toArray();
 			Object[] testRow = modelSplitInfoTest.toArray();
 
 			spreadsheetMap.put(2*i+1, trainRow);
 			spreadsheetMap.put(2*i + 2, testRow);
+			i++;
 
 		}
 
@@ -730,6 +620,8 @@ public class ExcelPredictionReportGenerator {
 			String exp_prop_id=idHash.get(key);
 			Double exp=expHash.get(key);
 			Double pred=predictionHash.get(key);
+			//TODO add AD here
+			
 			spreadsheetMap.put(i++, new Object[] {exp_prop_id, key, exp , pred, Math.abs(exp-pred) });
 		}
 
@@ -895,9 +787,10 @@ public class ExcelPredictionReportGenerator {
 
 
 			XDDFValueAxis bottomAxis = chart.createValueAxis(AxisPosition.BOTTOM);
+			bottomAxis.setTitle("Observed " + propertyName + " " + "(" + units + ")"); // https://stackoverflow.com/questions/32010765
+						
 			XDDFValueAxis leftAxis = chart.createValueAxis(AxisPosition.LEFT);
-			leftAxis.setCrosses(AxisCrosses.MIN);
-			bottomAxis.setCrosses(AxisCrosses.MIN);
+            leftAxis.setTitle("Predicted "+ propertyName + " " + "(" + units + ")");
 
 
 			CellRangeAddress crXData = new CellRangeAddress(1, sheet.getLastRowNum(), 2, 2);
@@ -917,12 +810,6 @@ public class ExcelPredictionReportGenerator {
 			
 			chart.plot(data);
 
-			//Set axis titles:
-			CTValAx valAx = chart.getCTChart().getPlotArea().getValAxArray(0);
-			CTValAx valAy = chart.getCTChart().getPlotArea().getValAxArray(1);
-			setAxisTitle("Observed " + propertyName + " " + "(" + units + ")", valAx);
-			setAxisTitle("Predicted "+ propertyName + " " + "(" + units + ")", valAy);
-
 			//set properties of first scatter chart data series to not smooth the line:
 			((XSSFChart)chart).getCTChart().getPlotArea().getScatterChartArray(0).getSerArray(0)
 			.addNewSmooth().setVal(false);
@@ -940,6 +827,10 @@ public class ExcelPredictionReportGenerator {
 
 			XDDFChartLegend legend = chart.getOrAddLegend();
 			legend.setPosition(LegendPosition.BOTTOM);
+			
+			bottomAxis.setCrosses(AxisCrosses.MIN);
+            leftAxis.setCrosses(AxisCrosses.MIN);
+
 
 		}
 		
@@ -1010,18 +901,18 @@ public class ExcelPredictionReportGenerator {
 
 
 
-		private void setAxisTitle(String source1, CTValAx valAx) {
-			CTTitle ctTitle = valAx.addNewTitle();
-			ctTitle.addNewLayout();
-			ctTitle.addNewOverlay().setVal(false);
-			CTTextBody rich = ctTitle.addNewTx().addNewRich();
-			rich.addNewBodyPr();
-			rich.addNewLstStyle();
-			CTTextParagraph p = rich.addNewP();
-			p.addNewPPr().addNewDefRPr();
-			p.addNewR().setT(source1);
-			p.addNewEndParaRPr();
-		}
+//		private void setAxisTitle(String source1, CTValAx valAx) {
+//			CTTitle ctTitle = valAx.addNewTitle();
+//			ctTitle.addNewLayout();
+//			ctTitle.addNewOverlay().setVal(false);
+//			CTTextBody rich = ctTitle.addNewTx().addNewRich();
+//			rich.addNewBodyPr();
+//			rich.addNewLstStyle();
+//			CTTextParagraph p = rich.addNewP();
+//			p.addNewPPr().addNewDefRPr();
+//			p.addNewR().setT(source1);
+//			p.addNewEndParaRPr();
+//		}
 
 	}
 
