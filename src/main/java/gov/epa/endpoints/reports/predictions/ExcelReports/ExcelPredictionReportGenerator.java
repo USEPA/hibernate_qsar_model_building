@@ -825,17 +825,17 @@ public class ExcelPredictionReportGenerator {
 					if (sheetName.equals("Summary sheet")) {
 						if (rowid == 1) cell.setCellStyle(boldstyle);
 						if (isBinary) sheet.setAutoFilter(CellRangeAddress.valueOf("A1:H1"));
-						else sheet.setAutoFilter(CellRangeAddress.valueOf("A1:I1"));
+						else sheet.setAutoFilter(CellRangeAddress.valueOf("A1:I1"));//TODO shouldnt be hardcoded
 					}
 
 
 					if (sheetName.equals("Test set") || sheetName.equals("Training set")) {
 						if (rowid == 1) cell.setCellStyle(boldstyle);
-						sheet.setAutoFilter(CellRangeAddress.valueOf("A1:G1"));
+						sheet.setAutoFilter(CellRangeAddress.valueOf("A1:H1"));//TODO shouldnt be hardcoded
 					}
 
 					if (!(sheetName.equals("Cover sheet") || sheetName.equals("Summary sheet") || sheetName.equals("Training set") || sheetName.equals("Test set"))) {
-						sheet.setAutoFilter(CellRangeAddress.valueOf("A1:D1"));
+						sheet.setAutoFilter(CellRangeAddress.valueOf("A1:E1"));//TODO shouldnt be hardcoded
 						if (rowid == 1) cell.setCellStyle(boldstyle);
 					}
 				}
