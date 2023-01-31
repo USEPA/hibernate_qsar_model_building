@@ -157,7 +157,7 @@ public class ExcelPredictionReportGenerator {
 		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
 		
 		String[] fields = { "exp_prop_id", "canon_qsar_smiles", "page_url", "source_url", "source_doi",
-				"source_name", "source_description", "source_type", "source_authors", "source_title", "source_dtxrid",
+				"source_name", "source_description", "source_authors", "source_title", "source_dtxrid",
 				"source_dtxsid", "source_casrn", "source_chemical_name", "source_smiles", "mapped_dtxcid", "mapped_dtxsid",
 				"mapped_cas", "mapped_chemical_name", "mapped_smiles", "mapped_molweight", "value_original", "value_max",
 				"value_min", "value_point_estimate", "value_units", "qsar_property_value", "qsar_property_units",
