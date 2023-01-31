@@ -18,12 +18,17 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
-
+import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xddf.usermodel.PresetColor;
@@ -46,6 +51,7 @@ import org.apache.poi.xddf.usermodel.chart.XDDFScatterChartData;
 import org.apache.poi.xssf.usermodel.XSSFChart;
 import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
 import org.apache.poi.xssf.usermodel.XSSFDrawing;
+import org.apache.poi.xssf.usermodel.XSSFHyperlink;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -59,6 +65,7 @@ import org.apache.poi.xddf.usermodel.chart.XDDFValueAxis;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
@@ -69,6 +76,9 @@ import gov.epa.endpoints.reports.OriginalCompound;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.PredictionReportGenerator;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
+import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class ExcelPredictionReportGenerator {
 
@@ -86,9 +96,8 @@ public class ExcelPredictionReportGenerator {
 
 	int countTest;
 	int countTestXgb;
-	String dataSetName;
+	ExcelUtilities eu = new ExcelUtilities();
 	
-
 	private static class Stats {
 		Double R2;
 		Double Q2;
@@ -233,7 +242,42 @@ public class ExcelPredictionReportGenerator {
 		e.generate(predictionReport, folder.getAbsolutePath()+File.separator+datasetName + "_report.xlsx");
 	}
 
+	
+	String getMappedJsonPath(String dataSetName) {
+		String dataSetName2=dataSetName.replace(" ", "_");
+		String folder="data\\dev_qsar\\output\\";
+		String jsonPath=folder+"//"+dataSetName2+"//"+dataSetName2+"_Mapped_Records.json";
+		return jsonPath;
+	}
+	
+	void addExperimentalRecordsSheet(Workbook wb,String jsonPath) {
+		
+		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
+		
+		String[] fields = { "exp_prop_id", "canon_qsar_smiles", "page_url", "source_url", "source_doi",
+				"source_name", "source_description", "source_type", "source_authors", "source_title", "source_dtxrid",
+				"source_dtxsid", "source_casrn", "source_chemical_name", "source_smiles", "mapped_dtxcid", "mapped_dtxsid",
+				"mapped_cas", "mapped_chemical_name", "mapped_smiles", "mapped_molweight", "value_original", "value_max",
+				"value_min", "value_point_estimate", "value_units", "qsar_property_value", "qsar_property_units",
+				"temperature_c", "pressure_mmHg", "pH", "notes", "qc_flag"};
+
+		Hashtable<String,String>htDescriptions=ExcelCreator.getColumnDescriptions();
+		
+		ExcelCreator.addSheet(wb, "Records",ja,fields, htDescriptions);
+		
+		wb.setSheetOrder("Records", wb.getSheetIndex("Test set")+1);
+		wb.setSheetOrder("Records field descriptions", wb.getSheetIndex("Records")+1);		
+		
+	}
+	
+	/**
+	 * Adds original experimental records
+	 * 
+	 * @param report
+	 * @param filepathOut
+	 */
 	public void generate(PredictionReport report, String filepathOut) {
+		
 		Workbook wb = new XSSFWorkbook();
 		
 		boolean isBinary = report.predictionReportMetadata.datasetUnit.equalsIgnoreCase("binary") ? true : false;
@@ -241,13 +285,23 @@ public class ExcelPredictionReportGenerator {
 
 		generateSummarySheet2(report, wb, isBinary);
 
-		generateSplitSheet2(report, wb, isBinary, report.predictionReportMetadata.datasetUnit);
+		generateSplitSheet2(report, wb, isBinary);
 
 		for (int i = 0; i < report.predictionReportDataPoints.get(0).qsarPredictedValues.size(); i++) {
 			generatePredictionSheet2(report.predictionReportDataPoints, i, wb, isBinary, report.predictionReportMetadata.datasetProperty,report.predictionReportMetadata.datasetUnit);
 		}
 
 		columnResizing(wb);
+		
+		String jsonPath=getMappedJsonPath(report.predictionReportMetadata.datasetName);
+		
+		if(new File(jsonPath).exists()) {
+			addExperimentalRecordsSheet(wb,jsonPath);		
+			addHyperlinksToRecords(report,wb);
+		} else {
+			System.out.println("Cant add experimental records json is missing:"+jsonPath);
+		}
+		
 
 		try {
 			FileOutputStream out = new FileOutputStream(filepathOut);
@@ -261,12 +315,101 @@ public class ExcelPredictionReportGenerator {
 		}
 		System.out.println("Spreadsheet written successfully" );
 		
-		this.dataSetName=report.predictionReportMetadata.datasetName;
+		
 
-		System.out.println("***\t"+dataSetName+"\t"+countTest+"\t"+countTestXgb);
+		System.out.println("***\t"+report.predictionReportMetadata.datasetName+"\t"+countTest+"\t"+countTestXgb);
 
 	}
 
+
+	private void addHyperlinksToRecords(PredictionReport pr,Workbook wb) {
+
+		XSSFSheet sheetRecords=(XSSFSheet) wb.getSheet("Records");
+		
+		CreationHelper createHelper = wb.getCreationHelper();
+		
+		CellStyle hlink_style = wb.createCellStyle();
+		Font hlink_font = wb.createFont();
+		hlink_font.setUnderline(Font.U_SINGLE);
+		hlink_font.setColor(IndexedColors.BLUE.getIndex());
+		hlink_style.setFont(hlink_font);
+		
+//		exp_prop_id
+		
+		int colNumRecords=eu.getColumnNumber(sheetRecords, "exp_prop_id", 1);
+				
+		for (PredictionReportModelMetadata md:pr.predictionReportModelMetadata) {
+//			System.out.println(md.qsarMethodName);
+			
+			XSSFSheet sheet=(XSSFSheet) wb.getSheet(md.qsarMethodName);
+			addHyperlink(sheet,sheetRecords, createHelper, hlink_style, colNumRecords);
+						
+			sheet=(XSSFSheet) wb.getSheet("Test set");
+			addHyperlink(sheet,sheetRecords, createHelper, hlink_style, colNumRecords);
+			
+			sheet=(XSSFSheet) wb.getSheet("Training set");
+			addHyperlink(sheet,sheetRecords, createHelper, hlink_style, colNumRecords);
+			
+		}
+		
+	}
+
+	private void addHyperlink(XSSFSheet sheet, XSSFSheet sheetRecords, CreationHelper createHelper, CellStyle hlink_style,
+			int colNumRecords) {
+		
+		int colNumPred=eu.getColumnNumber(sheet, "exp_prop_id", 0);
+		
+//		System.out.println(sheet.getSheetName()+"\t"+colNumPred);
+			
+		for (int i=1;i<=sheet.getLastRowNum();i++) {
+			Row row=sheet.getRow(i);
+			Cell cell=row.getCell(colNumPred);
+			addHyperlink(sheetRecords, createHelper, hlink_style, colNumRecords, cell);
+		}
+	}
+
+	private void addHyperlink(XSSFSheet sheetRecords, CreationHelper createHelper, CellStyle hlink_style,
+			int colNumRecords, Cell cell) {
+		
+		String exp_prop_id=cell.getStringCellValue();
+//		System.out.println(exp_prop_id);
+		
+		String []ids=exp_prop_id.split("\\|");
+		String firstId=ids[0];//just use first one since cant set multiple links
+
+		CellAddress cellAddress=null;				
+		for (int j=3;j<sheetRecords.getLastRowNum();j++) {		
+			
+			Cell cell2=sheetRecords.getRow(j).getCell(colNumRecords);
+			
+			String exp_prop_id_Records=null;
+			
+			if (cell2.getCellType().equals(CellType.NUMERIC)) {
+				exp_prop_id_Records=(int)(cell2.getNumericCellValue())+"";	
+			} else {
+				exp_prop_id_Records=cell2.getStringCellValue();
+			}
+			
+//			System.out.println(exp_prop_id_Records+"\t"+firstId);
+								
+			if(exp_prop_id_Records.equals(firstId)) {
+				cellAddress=sheetRecords.getRow(j).getCell(colNumRecords).getAddress();
+				break;
+			}					
+		}
+		
+//				if (cellAddress!=null) System.out.println(cellAddress.toString());
+		
+		if (cellAddress==null) {
+			System.out.println("Cant set url for "+firstId);
+			return;
+		}
+		XSSFHyperlink link = (XSSFHyperlink)createHelper.createHyperlink(HyperlinkType.DOCUMENT);
+		CellReference cr=new CellReference(cellAddress.getRow(),cellAddress.getColumn()); 
+		link.setAddress("'Records'!"+cr.formatAsR1C1String());
+		cell.setHyperlink(link);
+		cell.setCellStyle(hlink_style);
+	}
 
 	public void generate(String inputFilePath,String outputFilePath) {
 
@@ -324,12 +467,18 @@ public class ExcelPredictionReportGenerator {
 		return rowArrayList.toArray(new Object[rowArrayList.size()]);
 	}
 
-	public void generateSplitSheet2(PredictionReport predictionReport, Workbook wb,boolean isBinary, String unit) {
+	
+	public void generateSplitSheet2(PredictionReport predictionReport, Workbook wb,boolean isBinary) {
+	
+		String unit=predictionReport.predictionReportMetadata.datasetUnit;
 		Map < Integer, Object[] > trainMap = new TreeMap < Integer, Object[] >();
-		trainMap.put( 0, new Object[] { "DTXCID","CASRN", "Preferred Name", "Smiles", "MolecularWeight", "Canonical QSAR Ready Smiles", "Experimental Value" + " " + "(" + unit + ")"});
+
+		String [] columnNames= {"exp_prop_id", "DTXCID","CASRN", "Preferred Name", "Smiles", "MolecularWeight", "Canonical QSAR Ready Smiles", "Experimental Value" + " " + "(" + unit + ")"};
+		
+		trainMap.put( 0, columnNames);
 
 		Map < Integer, Object[] > testMap = new TreeMap < Integer, Object[] >();
-		testMap.put( 0, new Object[] { "DTXCID","CASRN", "Preferred Name", "Smiles", "MolecularWeight", "Canonical QSAR Ready Smiles", "Experimental Value" + " " + "(" + unit + ")"});
+		testMap.put( 0, columnNames);
 
 		for (int i = 0; i < predictionReport.predictionReportDataPoints.size(); i++) {
 
@@ -344,14 +493,16 @@ public class ExcelPredictionReportGenerator {
 			String canonQsarSmiles = predictionReport.predictionReportDataPoints.get(i).canonQsarSmiles;
 			
 			
-			boolean train = predictionReport.predictionReportDataPoints.get(i).qsarPredictedValues.get(0).splitNum == 0 ? true : false;
 			if (oc != null) {
-				Object[] row = new Object[] { oc.dtxcid, oc.casrn, oc.preferredName, oc.smiles, oc.molWeight, canonQsarSmiles, predictionReport.predictionReportDataPoints.get(i).experimentalPropertyValue 
+				
+				PredictionReportDataPoint dp=predictionReport.predictionReportDataPoints.get(i);
+				
+				Object[] row = new Object[] { dp.qsar_exp_prop_id,oc.dtxcid, oc.casrn, oc.preferredName, oc.smiles, oc.molWeight, canonQsarSmiles, dp.experimentalPropertyValue 
 				};
 
-				if (train == true) {
+				if (predictionReport.predictionReportDataPoints.get(i).qsarPredictedValues.get(0).splitNum == DevQsarConstants.TRAIN_SPLIT_NUM) {
 					trainMap.put(2 * i + 1, row);
-				} else {
+				} else if (predictionReport.predictionReportDataPoints.get(i).qsarPredictedValues.get(0).splitNum == DevQsarConstants.TEST_SPLIT_NUM) {
 					testMap.put(2 * i + 2, row);
 				}
 			}
@@ -502,60 +653,67 @@ public class ExcelPredictionReportGenerator {
 
 
 
-	private void buildSpreadSheet(Map < String, Object[] > map) {
+//	private void buildSpreadSheet(Map < String, Object[] > map) {
+//
+//	}
 
-	}
-
-	private static Map < String, Object[] > generatePredictionSheet(List<PredictionReportDataPoint> predictionReportDataPoints, int methodID, modelHashTables modelHashTable) {
-
-		final Hashtable<String,Double> expHash = new Hashtable<String,Double>();
-		final Hashtable<String,Double> predictionHash = new Hashtable<String,Double>();
-
-
-		for (int i = 0; i < predictionReportDataPoints.size(); i++) {
-
-			String compoundIdentifier = predictionReportDataPoints.get(i).canonQsarSmiles;
-
-			if (hasPrediction(predictionReportDataPoints.get(i), methodID)) {
-
-				expHash.put(compoundIdentifier, predictionReportDataPoints.get(i).experimentalPropertyValue);
-				if (predictionReportDataPoints.get(i).qsarPredictedValues.get(methodID).qsarPredictedValue != null) {
-					predictionHash.put(compoundIdentifier, predictionReportDataPoints.get(i).qsarPredictedValues.get(methodID).qsarPredictedValue);
-				}
-			}
-
-		}
-		modelHashTable.modelName = predictionReportDataPoints.get(0).qsarPredictedValues.get(methodID).qsarMethodName;
-		modelHashTable.expHash = expHash;
-		modelHashTable.predictionHash = predictionHash;
-
-		Map < String, Object[] > spreadsheetMap = new TreeMap < String, Object[] >();
-		spreadsheetMap.put( "AAA", new Object[] { "Canonical QSAR Ready Smiles","Exp", "Pred", "Error" });
-
-
-		Set<String> keys = predictionHash.keySet();
-		for(String key: keys){
-			spreadsheetMap.put(key, new Object[] { key, expHash.get(key) , predictionHash.get(key), Math.abs(expHash.get(key) - predictionHash.get(key)) });
-		}
-
-		return spreadsheetMap;
-
-
-
-
-	}
-
+//	private static Map < String, Object[] > generatePredictionSheet(List<PredictionReportDataPoint> predictionReportDataPoints, int methodID, modelHashTables modelHashTable) {
+//
+//		final Hashtable<String,Double> expHash = new Hashtable<String,Double>();
+//		final Hashtable<String,Double> predictionHash = new Hashtable<String,Double>();
+//
+//
+//		for (int i = 0; i < predictionReportDataPoints.size(); i++) {
+//
+//			String compoundIdentifier = predictionReportDataPoints.get(i).canonQsarSmiles;
+//
+//			if (hasPrediction(predictionReportDataPoints.get(i), methodID)) {
+//
+//				expHash.put(compoundIdentifier, predictionReportDataPoints.get(i).experimentalPropertyValue);
+//				if (predictionReportDataPoints.get(i).qsarPredictedValues.get(methodID).qsarPredictedValue != null) {
+//					predictionHash.put(compoundIdentifier, predictionReportDataPoints.get(i).qsarPredictedValues.get(methodID).qsarPredictedValue);
+//				}
+//			}
+//
+//		}
+//		modelHashTable.modelName = predictionReportDataPoints.get(0).qsarPredictedValues.get(methodID).qsarMethodName;
+//		modelHashTable.expHash = expHash;
+//		modelHashTable.predictionHash = predictionHash;
+//
+//		Map < String, Object[] > spreadsheetMap = new TreeMap < String, Object[] >();
+//		spreadsheetMap.put( "AAA", new Object[] { "exp_prop_id","Canonical QSAR Ready Smiles","Exp", "Pred", "Error" });
+//
+//
+//		Set<String> keys = predictionHash.keySet();
+//		for(String key: keys){
+//			spreadsheetMap.put(key, new Object[] { key, expHash.get(key) , predictionHash.get(key), Math.abs(expHash.get(key) - predictionHash.get(key)) });
+//		}
+//
+//		return spreadsheetMap;
+//
+//
+//
+//
+//	}
 
 	private void generatePredictionSheet2(List<PredictionReportDataPoint> predictionReportDataPoints, int methodID, Workbook wb, Boolean isBinary, String propertyName, String units) {
+		
+		Map < Integer, Object[] > spreadsheetMap = new TreeMap < Integer, Object[] >();
+		
+		String [] columnNames= { "exp_prop_id","Canonical QSAR Ready Smiles","Observed " + "(" + units + ")", "Predicted " + "(" + units + ")", "Error"};
+		spreadsheetMap.put( 0,columnNames );
 
-		final Hashtable<String,Double> expHash = new Hashtable<String,Double>();
-		final Hashtable<String,Double> predictionHash = new Hashtable<String,Double>();
+		Hashtable<String,String> idHash = new Hashtable<String,String>();
+		Hashtable<String,Double> expHash = new Hashtable<String,Double>();
+		Hashtable<String,Double> predictionHash = new Hashtable<String,Double>();
 
 		String methodName = predictionReportDataPoints.get(0).qsarPredictedValues.get(methodID).qsarMethodName;
 
 		for (int i = 0; i < predictionReportDataPoints.size(); i++) {
 
-			String compoundIdentifier = predictionReportDataPoints.get(i).canonQsarSmiles;
+			PredictionReportDataPoint dp=predictionReportDataPoints.get(i);
+			String compoundIdentifier = dp.canonQsarSmiles;
+			idHash.put(compoundIdentifier, dp.qsar_exp_prop_id);
 
 			if (hasPrediction(predictionReportDataPoints.get(i), methodID)) {
 
@@ -567,25 +725,15 @@ public class ExcelPredictionReportGenerator {
 
 		}
 
-		Map < Integer, Object[] > spreadsheetMap = new TreeMap < Integer, Object[] >();
-		spreadsheetMap.put( 0, new Object[] { "Canonical QSAR Ready Smiles","Observed " + "(" + units + ")", "Predicted " + "(" + units + ")", "Error" });
-
-
-		Set<String> keys = predictionHash.keySet();
-		ArrayList<String> keyList = new ArrayList<String>();
-		for (String key:keys) {
-			keyList.add(key);
-		}
-
-		for(int i = 0; i < keyList.size(); i++) {
-			spreadsheetMap.put(i + 1, new Object[] { keyList.get(i), expHash.get(keyList.get(i)) , predictionHash.get(keyList.get(i)), Math.abs(expHash.get(keyList.get(i)) - predictionHash.get(keyList.get(i))) });
+		int i=1;
+		for(String key:expHash.keySet()) {
+			String exp_prop_id=idHash.get(key);
+			Double exp=expHash.get(key);
+			Double pred=predictionHash.get(key);
+			spreadsheetMap.put(i++, new Object[] {exp_prop_id, key, exp , pred, Math.abs(exp-pred) });
 		}
 
 		populateSheet2(spreadsheetMap, wb, isBinary, methodName, propertyName, units);
-
-
-
-
 	}
 
 
@@ -599,14 +747,22 @@ public class ExcelPredictionReportGenerator {
 		}
 	}
 
+	
+	
 	private void columnResizing(Workbook wb) {
 
+		eu.autoSizeColumns(wb);
+		
 		String[] trainTest = {"Training set", "Test set"};
+
+		String [] colNames= {"Preferred Name","Smiles","Canonical QSAR Ready Smiles"};
 		for (String s:trainTest) {
 			XSSFSheet sheet = (XSSFSheet) wb.getSheet(s);
-			sheet.setColumnWidth(2, 50 * 256);
-			sheet.setColumnWidth(3, 50 * 256);
-			sheet.setColumnWidth(5, 50 * 256);
+			
+			for (String colName:colNames) {
+				int colNum=eu.getColumnNumber(sheet,colName,0);
+				sheet.setColumnWidth(colNum, 50 * 256);	
+			}
 		}
 
 		// fixes column width for plot sheets
@@ -614,20 +770,16 @@ public class ExcelPredictionReportGenerator {
         	XSSFSheet sheet = (XSSFSheet) wb.getSheetAt(i);
         	String sheetName = sheet.getSheetName();
         	if (!(sheetName.equals("Cover sheet") || sheetName.equals("Summary sheet") || sheetName.equals("Training set") || sheetName.equals("Test set"))) {
-        		sheet.setColumnWidth(0, 30 * 256);
+        		sheet.setColumnWidth(eu.getColumnNumber(sheet, "Canonical QSAR Ready Smiles",0), 30 * 256);
         	}
         }
-
-
-
 	}
 
 	private void populateSheet2(Map < Integer, Object[] > sheetMap, Workbook wb, boolean isBinary, String sheetName, String propertyName, String units) {
-		ExcelUtilities eu = new ExcelUtilities();
+		
 //		System.out.println(sheetName);
-		if (wb.getSheet(sheetName) != null) {
-			return;
-		}
+		if (wb.getSheet(sheetName) != null) return;
+		
 		XSSFSheet sheet = (XSSFSheet) wb.createSheet(sheetName);
 		// 2 decimal center aligned numeric cell style
 		CellStyle cellStyle = wb.createCellStyle();
@@ -641,8 +793,6 @@ public class ExcelPredictionReportGenerator {
 
 		XSSFRow row;
 		Set < Integer > keyid = sheetMap.keySet();
-
-
 
 		int rowid = 0;
 		for (Integer key : keyid)
@@ -660,11 +810,7 @@ public class ExcelPredictionReportGenerator {
 					/*TODO : come up with a sensible way of handling binary uniformally
 					 * 
 					 */
-					if (rowid > 1) {
-
-						cell.setCellStyle(cellStyle);
-
-					}
+					if (rowid > 1) cell.setCellStyle(cellStyle);
 
 
 				} else if (obj instanceof String) {
@@ -677,56 +823,30 @@ public class ExcelPredictionReportGenerator {
 					}
 
 					if (sheetName.equals("Summary sheet")) {
-
-						if (rowid == 1) { 
-							cell.setCellStyle(boldstyle);
-						} 
-
-						if (isBinary) {
-							sheet.setAutoFilter(CellRangeAddress.valueOf("A1:H1"));
-						} else {
-							sheet.setAutoFilter(CellRangeAddress.valueOf("A1:I1"));
-
-						}
+						if (rowid == 1) cell.setCellStyle(boldstyle);
+						if (isBinary) sheet.setAutoFilter(CellRangeAddress.valueOf("A1:H1"));
+						else sheet.setAutoFilter(CellRangeAddress.valueOf("A1:I1"));
 					}
 
 
 					if (sheetName.equals("Test set") || sheetName.equals("Training set")) {
-
-						if (rowid == 1) { 
-							cell.setCellStyle(boldstyle);
-						} 
-
+						if (rowid == 1) cell.setCellStyle(boldstyle);
 						sheet.setAutoFilter(CellRangeAddress.valueOf("A1:G1"));
-
 					}
 
 					if (!(sheetName.equals("Cover sheet") || sheetName.equals("Summary sheet") || sheetName.equals("Training set") || sheetName.equals("Test set"))) {
 						sheet.setAutoFilter(CellRangeAddress.valueOf("A1:D1"));
-
-						if (rowid == 1) { 
-							cell.setCellStyle(boldstyle);
-						} 
-
+						if (rowid == 1) cell.setCellStyle(boldstyle);
 					}
-
-
-
-
 				}
-
-
-
 			}
 		}
+
 		if (!(isBinary)) {
 			if (!(sheetName.equals("Cover sheet") || sheetName.equals("Summary sheet") || sheetName.equals("Training set") || sheetName.equals("Test set"))) {
 				eu.GenerateChart(sheet,"Experimental" + propertyName,"Predicted" + propertyName,sheetName,propertyName,units);
 			}
 		}
-
-
-		autoSizeColumns(wb);
 
 		if (sheetName.equals("Test set")) countTest=rowid-1;
 		if (sheetName.contains("xgb")) countTestXgb=rowid-1;
@@ -736,23 +856,7 @@ public class ExcelPredictionReportGenerator {
 
 
 
-	public void autoSizeColumns(Workbook workbook) {
-		int numberOfSheets = workbook.getNumberOfSheets();
-		for (int i = 0; i < numberOfSheets; i++) {
-			XSSFSheet sheet = (XSSFSheet) workbook.getSheetAt(i);
-			if (sheet.getPhysicalNumberOfRows() > 0) {
-				XSSFRow row = sheet.getRow(sheet.getFirstRowNum());
-				Iterator<Cell> cellIterator = row.cellIterator();
-				while (cellIterator.hasNext()) {
-					Cell cell = cellIterator.next();
-					int columnIndex = cell.getColumnIndex();
-					sheet.autoSizeColumn(columnIndex);
-					int currentColumnWidth = sheet.getColumnWidth(columnIndex);
-//					sheet.setColumnWidth(columnIndex, (currentColumnWidth + 200));
-				}
-			}
-		}
-	}
+	
 
 	static class modelHashTables {
 		String modelName;
@@ -796,8 +900,8 @@ public class ExcelPredictionReportGenerator {
 			bottomAxis.setCrosses(AxisCrosses.MIN);
 
 
-			CellRangeAddress crXData = new CellRangeAddress(1, sheet.getLastRowNum(), 1, 1);
-			CellRangeAddress crYData = new CellRangeAddress(1, sheet.getLastRowNum(), 2, 2);
+			CellRangeAddress crXData = new CellRangeAddress(1, sheet.getLastRowNum(), 2, 2);
+			CellRangeAddress crYData = new CellRangeAddress(1, sheet.getLastRowNum(), 3, 3);
 
 			XDDFDataSource<Double> dsXData = XDDFDataSourcesFactory.fromNumericCellRange(sheet, crXData);
 			XDDFNumericalDataSource<Double> dsXData2 = XDDFDataSourcesFactory.fromNumericCellRange(sheet, crXData);
@@ -837,6 +941,36 @@ public class ExcelPredictionReportGenerator {
 			XDDFChartLegend legend = chart.getOrAddLegend();
 			legend.setPosition(LegendPosition.BOTTOM);
 
+		}
+		
+		int getColumnNumber(XSSFSheet sheet,String colName, int rowNum) {		
+			Row row=sheet.getRow(rowNum);
+			
+			for (int i=0;i<row.getLastCellNum();i++) {
+				if (row.getCell(i).getStringCellValue().equals(colName)) {
+					return i;
+				}
+			}
+			return -1;
+		}
+
+		
+		public void autoSizeColumns(Workbook workbook) {
+			int numberOfSheets = workbook.getNumberOfSheets();
+			for (int i = 0; i < numberOfSheets; i++) {
+				XSSFSheet sheet = (XSSFSheet) workbook.getSheetAt(i);
+				if (sheet.getPhysicalNumberOfRows() > 0) {
+					XSSFRow row = sheet.getRow(sheet.getFirstRowNum());
+					Iterator<Cell> cellIterator = row.cellIterator();
+					while (cellIterator.hasNext()) {
+						Cell cell = cellIterator.next();
+						int columnIndex = cell.getColumnIndex();
+						sheet.autoSizeColumn(columnIndex);
+						int currentColumnWidth = sheet.getColumnWidth(columnIndex);
+//						sheet.setColumnWidth(columnIndex, (currentColumnWidth + 200));
+					}
+				}
+			}
 		}
 		
 		/**

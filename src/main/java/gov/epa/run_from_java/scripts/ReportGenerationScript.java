@@ -54,6 +54,17 @@ public class ReportGenerationScript {
 	}
 
 
+	public static void writeReport(PredictionReport report,String filePath) {
+
+		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+			writer.write(gson.toJson(report));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 
 	public static PredictionReport reportAllPredictions(String datasetName,String splittingName,String modelSetName,boolean deleteMissingSplitting) {
 

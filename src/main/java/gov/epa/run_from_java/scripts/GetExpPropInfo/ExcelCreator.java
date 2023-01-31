@@ -221,6 +221,92 @@ public class ExcelCreator {
 		}
 	}
 	
+	/**
+	 *	TODO- this might run out of memory
+	 *
+	 * Create excel file using data in JsonArray with fields in specified order
+	 * 
+	 * @param ja
+	 * @param excelFilePath
+	 * @param fields
+	 */
+	public static void addSheet(Workbook wb, String sheetName, JsonArray ja,String []fields,Hashtable<String,String>htDescriptions) {
+		try {
+
+			Sheet sheet=wb.createSheet(sheetName);
+
+			CellStyle styleURL=createStyleURL(wb);			
+
+			if(htDescriptions!=null)
+				createDescriptionsTab(wb,htDescriptions,fields);
+			
+			Row recSubtotalRow = sheet.createRow(0);
+			Row recHeaderRow = sheet.createRow(1);
+
+			for (int i=0;i<fields.length;i++) {
+				Cell cell=recHeaderRow.createCell(i);
+				cell.setCellValue(fields[i]);
+			}
+
+			for (int i=0;i<fields.length;i++) {
+				sheet.autoSizeColumn(i);
+				//sheet.setColumnWidth(i, sheet.getColumnWidth(i)+20);
+			}
+
+			int rowNum=2;
+
+			for (int i=0;i<ja.size();i++) {
+				JsonObject jo=ja.get(i).getAsJsonObject();
+
+				Row row=sheet.createRow(rowNum++);	
+
+				for (int k=0;k<fields.length;k++) {
+					Cell cell=row.createCell(k);
+
+					if (jo.get(fields[k])==null) continue;
+					if (jo.get(fields[k]).isJsonNull()) continue;
+					if (jo.get(fields[k]).getAsString().isBlank()) continue;
+
+					String value=jo.get(fields[k]).getAsString();
+
+					try {
+						cell.setCellValue(Double.parseDouble(value));	
+					} catch (Exception ex) {
+						//						System.out.println("Error setting cell value = "+value+" for "+fields[k]);
+						cell.setCellValue(value);	
+					}
+
+					if (fields[k].contains("url")) {
+						try {
+							Hyperlink link = wb.getCreationHelper().createHyperlink(HyperlinkType.URL);
+							link.setAddress(value);
+							cell.setHyperlink(link);
+							cell.setCellStyle(styleURL);
+						} catch (Exception ex) {
+							//							System.out.println(ex.getMessage());
+						}
+					}
+
+				}
+			}
+
+			for (int i = 0; i < fields.length; i++) {
+				String col = CellReference.convertNumToColString(i);
+				String recSubtotal = "SUBTOTAL(3,"+col+"$3:"+col+"$"+(ja.size()+2)+")";
+				recSubtotalRow.createCell(i).setCellFormula(recSubtotal);
+			}
+
+			String lastCol = CellReference.convertNumToColString(fields.length-1);
+			sheet.setAutoFilter(CellRangeAddress.valueOf("A2:"+lastCol+ja.size()+2));
+			sheet.createFreezePane(0, 2);
+
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	
 	private static void createDescriptionsTab(Workbook wb,Hashtable <String,String>htDesc,String []fieldnames) {
 
 		CellStyle cs=createStyleHeader(wb);
@@ -369,7 +455,7 @@ public class ExcelCreator {
 		return style;
 	}
 	
-	static Hashtable<String,String>getColumnDescriptions() {
+	public static Hashtable<String,String>getColumnDescriptions() {
 		Hashtable<String,String>htDescriptions=new Hashtable<>();
 		
 		

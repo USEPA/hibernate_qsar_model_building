@@ -51,7 +51,7 @@ public class ReportGenerator {
 		
 		for (ReportDataPoint dp:reportDataPoints) {
 			
-			if(dp.dtxcidQsar==null) {
+			if(dp.qsar_dtxcid==null) {
 				List<Compound> compounds = compoundService.findByCanonQsarSmiles(dp.canonQsarSmiles);
 				
 				if (compounds!=null) {
@@ -61,7 +61,7 @@ public class ReportGenerator {
 				}
 			} else {
 
-				String [] dtxCIDArray=dp.dtxcidQsar.split("\\|");
+				String [] dtxCIDArray=dp.qsar_dtxcid.split("\\|");
 				
 				Set<String> dtxcids = new HashSet<String>(Arrays.asList(dtxCIDArray));
 				allDtxcids.addAll(dtxcids);

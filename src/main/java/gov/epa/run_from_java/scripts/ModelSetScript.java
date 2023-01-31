@@ -2,15 +2,10 @@ package gov.epa.run_from_java.scripts;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetService;
@@ -19,10 +14,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
-import gov.epa.endpoints.models.ModelPrediction;
-import gov.epa.endpoints.models.ModelStatisticCalculator;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
-import gov.epa.web_services.embedding_service.CalculationInfo;
 
 public class ModelSetScript {
 
@@ -69,6 +61,16 @@ public class ModelSetScript {
 		
 	}
 	
+	class ModelSet2 {
+		
+		String splitting;
+		String descriptorsetName;
+		Boolean useEmbedding;
+		String modelsetName;
+		
+	}
+	
+	
 	void assignModelsToModelSets() {		
 		
 		List<String>datasetNames=new ArrayList<>();
@@ -79,63 +81,104 @@ public class ModelSetScript {
 		datasetNames.add("MP from exp_prop and chemprop");
 		datasetNames.add("BP from exp_prop and chemprop");
 
-		
-//		String splitting ="T=PFAS only, P=PFAS";
-//		String descriptorsetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
-//		boolean useEmbedding=false;
-//		String modelsetName="WebTEST2.0 PFAS";
-
-		String splitting ="T=PFAS only, P=PFAS";
-		String descriptorsetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
-		boolean useEmbedding=true;
-		String modelsetName="WebTEST2.1 PFAS";
-
-//		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
-//		String descriptorsetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
-//		boolean useEmbedding=false;
-//		String modelsetName="WebTEST2.0";
-
-//		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
-//		String descriptorsetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
-//		boolean useEmbedding=true;
-//		String modelsetName="WebTEST2.1";
-
-//		String splitting ="T=All but PFAS, P=PFAS";
-//		String descriptorsetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
-//		boolean useEmbedding=false;
-//		String modelsetName="WebTEST2.0 All but PFAS";
-
-//		String splitting ="T=All but PFAS, P=PFAS";
-//		String descriptorsetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
-//		boolean useEmbedding=true;
-//		String modelsetName="WebTEST2.1 All but PFAS";
+		ModelSet2 ms1=new ModelSet2();
+		ms1.splitting="T=PFAS only, P=PFAS";
+		ms1.descriptorsetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		ms1.useEmbedding=false;
+		ms1.modelsetName="WebTEST2.0 PFAS";
 		
 		
+		ModelSet2 ms2=new ModelSet2();
+		ms2.splitting ="T=PFAS only, P=PFAS";
+		ms2.descriptorsetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		ms2.useEmbedding=true;
+		ms2.modelsetName="WebTEST2.1 PFAS";
+
+		ModelSet2 ms3=new ModelSet2();
+		ms3.splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+		ms3.descriptorsetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		ms3.useEmbedding=false;
+		ms3.modelsetName="WebTEST2.0";
+
+		ModelSet2 ms4=new ModelSet2();
+		ms4.splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+		ms4.descriptorsetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		ms4.useEmbedding=true;
+		ms4.modelsetName="WebTEST2.1";
+
+		ModelSet2 ms5=new ModelSet2();
+		ms5.splitting ="T=all but PFAS, P=PFAS";
+		ms5.descriptorsetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		ms5.useEmbedding=false;
+		ms5.modelsetName="WebTEST2.0 All but PFAS";
+
+		ModelSet2 ms6=new ModelSet2();
+		ms6.splitting ="T=all but PFAS, P=PFAS";
+		ms6.descriptorsetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		ms6.useEmbedding=true;
+		ms6.modelsetName="WebTEST2.1 All but PFAS";
 		
-		ModelSet modelSet=mss.findByName(modelsetName);
-				
+		List<ModelSet2>sets=new ArrayList<>();
+//		sets.add(ms1);//done
+//		sets.add(ms2);//done
+		sets.add(ms3);
+		sets.add(ms4);
+		sets.add(ms5);
+		sets.add(ms6);
+		
+		
+		for (ModelSet2 set:sets) {
+			assignToModelSet(set,datasetNames);
+		}
+			
+		
+	}
+	
+	void assignToModelSet(ModelSet2 set,List<String>datasetNames) {
+		ModelSet modelSet=mss.findByName(set.modelsetName);
+		
+		System.out.println("\n"+set.modelsetName);
+		
 		for (String datasetName:datasetNames) {
-			List<Long>modelIds=getModels(datasetName, splitting, descriptorsetName, useEmbedding);
+			
+			String datasetNameShort=datasetName.replace(" from exp_prop and chemprop", "");
+			
+			System.out.println("\n"+datasetNameShort);
+			
+			List<Long>modelIds=getModels(datasetName, set.splitting, set.descriptorsetName, set.useEmbedding);
 
+			if (modelIds.size()==0) {
+				System.out.println("Models not built for "+datasetName);
+				continue;
+			}
+						
 			Long consensusModelId=getConsensusModelId(modelIds.get(0));
 			
-			if (consensusModelId!=null)
+			if (consensusModelId!=null) {
 				modelIds.add(consensusModelId);
+			} 
 			
 			for (Long modelId:modelIds) {
 				ModelInModelSet m=new ModelInModelSet();				
 				m.setCreatedBy(lanId);
 				m.setModel(ms.findById(modelId));
 				m.setModelSet(modelSet);
+
+				String sql="select m2.\"name\"  from qsar_models.models m\n"+ 
+				"join qsar_models.methods m2 on m2.id=m.fk_method_id\n"+
+				"where m.id="+modelId;		
+				String methodName=DatabaseLookup.runSQL(conn, sql);
 				
 				try {
 					mimss.create(m);
-					System.out.println(modelId+"\t"+modelSet.getId()+"\t"+modelSet.getName()+"\tcreated");
+					System.out.println(methodName+"\tcreated");
 				} catch (Exception ex) {
 //					System.out.println(ex.getMessage());
-					System.out.println(modelId+"\t"+modelSet.getId()+"\t"+modelSet.getName()+"\tNOT created");
+					System.out.println(methodName+"\tNOT created");
 				}
-			}						
+			}
+						
+			if(consensusModelId==null)	System.out.println("Consensus model\tmissing");
 		}
 	}
 	
