@@ -6,5 +6,7 @@ import java.util.List;
 public class ReportDataPoint {
 	public String canonQsarSmiles;
 	public List<OriginalCompound> originalCompounds = new ArrayList<OriginalCompound>();
-	public String dtxcidQsar;
+	public String qsar_dtxcid;
+	public String qsar_exp_prop_id;
+	
 }

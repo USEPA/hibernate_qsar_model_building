@@ -249,7 +249,10 @@ public class ExcelCreator {
 			}
 
 			for (int i=0;i<fields.length;i++) {
-				sheet.autoSizeColumn(i);
+				sheet.autoSizeColumn(i);				
+				sheet.setColumnWidth(i, (int)(sheet.getColumnWidth(i)*1.20));
+				
+				
 				//sheet.setColumnWidth(i, sheet.getColumnWidth(i)+20);
 			}
 
