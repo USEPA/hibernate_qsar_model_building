@@ -240,8 +240,8 @@ public class ExcelCreator {
 			if(htDescriptions!=null)
 				createDescriptionsTab(wb,htDescriptions,fields);
 			
-			Row recSubtotalRow = sheet.createRow(0);
-			Row recHeaderRow = sheet.createRow(1);
+//			Row recSubtotalRow = sheet.createRow(0);
+			Row recHeaderRow = sheet.createRow(0);
 
 			for (int i=0;i<fields.length;i++) {
 				Cell cell=recHeaderRow.createCell(i);
@@ -251,12 +251,10 @@ public class ExcelCreator {
 			for (int i=0;i<fields.length;i++) {
 				sheet.autoSizeColumn(i);				
 				sheet.setColumnWidth(i, (int)(sheet.getColumnWidth(i)*1.20));
-				
-				
 				//sheet.setColumnWidth(i, sheet.getColumnWidth(i)+20);
 			}
 
-			int rowNum=2;
+			int rowNum=1;
 
 			for (int i=0;i<ja.size();i++) {
 				JsonObject jo=ja.get(i).getAsJsonObject();
@@ -293,17 +291,20 @@ public class ExcelCreator {
 				}
 			}
 
-			for (int i = 0; i < fields.length; i++) {
-				String col = CellReference.convertNumToColString(i);
-				String recSubtotal = "SUBTOTAL(3,"+col+"$3:"+col+"$"+(ja.size()+2)+")";
-				recSubtotalRow.createCell(i).setCellFormula(recSubtotal);
-			}
+//			for (int i = 0; i < fields.length; i++) {
+//				String col = CellReference.convertNumToColString(i);
+//				String recSubtotal = "SUBTOTAL(3,"+col+"$3:"+col+"$"+(ja.size()+2)+")";
+//				recSubtotalRow.createCell(i).setCellFormula(recSubtotal);
+//			}
 
 			String lastCol = CellReference.convertNumToColString(fields.length-1);
-			sheet.setAutoFilter(CellRangeAddress.valueOf("A2:"+lastCol+ja.size()+2));
-			sheet.createFreezePane(0, 2);
 
+			sheet.createFreezePane(0, 1);
 
+			if(ja.size()<100000) {//Causes excel to be damaged otherwise and have to have excel fix it on opening
+				sheet.setAutoFilter(CellRangeAddress.valueOf("A1:"+lastCol+ja.size()+2));
+			}
+			
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}

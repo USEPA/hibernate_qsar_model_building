@@ -146,7 +146,7 @@ public class PredictionStatisticsScript {
 			}
 			
 		}
-		
+		System.out.println(sb.toString());
 		
 		try {
 			FileWriter fw=new FileWriter("data/reports/"+methodName+"_"+statName+".txt");
@@ -157,7 +157,7 @@ public class PredictionStatisticsScript {
 			ex.printStackTrace();
 		}
 		
-		System.out.println(sb.toString());
+		
 	}
 	
 	
@@ -173,25 +173,25 @@ public class PredictionStatisticsScript {
 	 * @param datasetNames
 	 */
 	private void createSummaryTableForModelSet(String statName, String modelSetName,List<String> methodNames, 
-			List<String> datasetNames, Hashtable<String,Double>htVals) {
+			List<String> datasetNames, Hashtable<String,Double>htVals,StringBuffer sb) {
+		
 		DecimalFormat df=new DecimalFormat("0.00");
 		
-		System.out.println("\n"+statName+" results for model set = "+modelSetName);
-		System.out.print("DatasetName\t");
+		sb.append("\n"+statName+" results for model set = "+modelSetName+"\n");
+		sb.append("DatasetName\t");
 		
 		for (int j=0;j<methodNames.size();j++) {
 			String methodName=methodNames.get(j);
-		
-			System.out.print(methodName);			
-			if (j<methodNames.size()-1) System.out.print("\t");
-			else System.out.print("\r\n");
+			sb.append(methodName);			
+			if (j<methodNames.size()-1) sb.append("\t");
+			else sb.append("\r\n");
 		}
 		
 		for (int i=0;i<datasetNames.size();i++) {
 			String datasetName=datasetNames.get(i);
 			
 //			String datasetName2=datasetName.replace(" from exp_prop and chemprop", "");						
-			System.out.print(datasetName+"\t");
+			sb.append(datasetName+"\t");
 						
 			for (int j=0;j<methodNames.size();j++) {
 				String methodName=methodNames.get(j);
@@ -202,11 +202,11 @@ public class PredictionStatisticsScript {
 				
 				Double modelSetStat=htVals.get(key);
 								
-				if (modelSetName==null) System.out.print("N/A");				
-				else System.out.print(df.format(modelSetStat));
+				if (modelSetName==null) sb.append("N/A");				
+				else sb.append(df.format(modelSetStat));
 
-				if (j<methodNames.size()-1) System.out.print("\t");
-				else System.out.print("\r\n");
+				if (j<methodNames.size()-1) sb.append("\t");
+				else sb.append("\r\n");
 			}
 		}
 	}
@@ -253,15 +253,29 @@ public class PredictionStatisticsScript {
 		}
 
 
-//		for (String modelSetName:modelSetNames) {
-//			createSummaryTableForModelSet(statisticName, modelSetName, methodNames, datasetNames, htVals);
-//		}
+		StringBuffer sb=new StringBuffer();
+		
+		for (String modelSetName:modelSetNames) {
+			createSummaryTableForModelSet(statisticName, modelSetName, methodNames, datasetNames, htVals,sb);
+		}
+		
+		System.out.println(sb.toString());
+		
+		try {
+			FileWriter fw=new FileWriter("data/reports/"+statisticName+".txt");
+			fw.write(sb.toString());
+			fw.flush();
+			fw.close();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+
 
 //		for (String methodName:methodNames) {
 //			createSummaryTableForMethod(statisticName, methodName, modelSetNames, datasetNames, htVals);
 //		}
 		
-		createSummaryTableForMethod(statisticName, DevQsarConstants.KNN, modelSetNames, datasetNames, htVals);
+//		createSummaryTableForMethod(statisticName, DevQsarConstants.KNN, modelSetNames, datasetNames, htVals);
 		
 	}
 	
@@ -369,8 +383,10 @@ public class PredictionStatisticsScript {
 			addHashtableEntry("BA_Test", methodName, modelSetNames, datasetNames,htVals);
 		}
 
+		StringBuffer sb=new StringBuffer();
+		
 		for (String modelSetName:modelSetNames) {
-			createSummaryTableForModelSet("BA_Test", modelSetName, methodNames, datasetNames, htVals);
+			createSummaryTableForModelSet("BA_Test", modelSetName, methodNames, datasetNames, htVals,sb);			
 		}
 
 		
@@ -385,7 +401,7 @@ public class PredictionStatisticsScript {
 		}
 
 		for (String modelSetName:modelSetNames) {
-			createSummaryTableForModelSet("PearsonRSQ_Test", modelSetName, methodNames, datasetNames2, htVals);
+			createSummaryTableForModelSet("PearsonRSQ_Test", modelSetName, methodNames, datasetNames2, htVals,sb);
 		}
 
 //		for (String methodName:methodNames) {
@@ -701,11 +717,11 @@ public class PredictionStatisticsScript {
 	
 	public static void main(String[] args) {
 		PredictionStatisticsScript ms=new PredictionStatisticsScript();
-		ms.createSummaryTableForMethod();
+//		ms.createSummaryTableForMethod();
 //		ms.createSummaryTableForMethodTEST();
 		
 //		Double stat=ms.calcPredictionStatsForPFAS(816,"MAE_Test");
-//		ms.createPredictionReportsExcelForJustPFAS();
+		ms.createPredictionReportsExcelForJustPFAS();
 	}
 
 }

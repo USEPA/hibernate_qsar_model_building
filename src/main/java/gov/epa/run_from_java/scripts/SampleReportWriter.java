@@ -1,6 +1,9 @@
 package gov.epa.run_from_java.scripts;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
@@ -144,9 +147,19 @@ public class SampleReportWriter {
 //		g.generateSamplePredictionReports(14L,false,false);
 		
 		// **************************************************************
-//		g.generateSamplePredictionReport(15L, "LogP from exp_prop and chemprop", "T=PFAS only, P=PFAS", false);
-		g.generateSamplePredictionReport(15L, "MP from exp_prop and chemprop", "T=PFAS only, P=PFAS",upload,deleteExistingReportInDatabase,overWriteReportFiles);
-		g.generateSamplePredictionReport(15L, "BP from exp_prop and chemprop", "T=PFAS only, P=PFAS",upload,deleteExistingReportInDatabase,overWriteReportFiles);
+		String splitting="T=PFAS only, P=PFAS";
+		long modelSetId=15L;
+		
+		List<String>datasetNames=new ArrayList<>();
+		datasetNames.add("HLC from exp_prop and chemprop");
+		datasetNames.add("WS from exp_prop and chemprop");
+		datasetNames.add("VP from exp_prop and chemprop");
+		datasetNames.add("LogP from exp_prop and chemprop");
+		datasetNames.add("MP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop");
+		
+		for (String datasetName:datasetNames) 
+			g.generateSamplePredictionReport(modelSetId, datasetName, splitting,upload,deleteExistingReportInDatabase,overWriteReportFiles);
 
 		
 		// **************************************************************

@@ -336,7 +336,7 @@ public class ExcelPredictionReportGenerator {
 		
 //		exp_prop_id
 		
-		int colNumRecords=eu.getColumnNumber(sheetRecords, "exp_prop_id", 1);
+		int colNumRecords=eu.getColumnNumber(sheetRecords, "exp_prop_id", 0);
 				
 		for (PredictionReportModelMetadata md:pr.predictionReportModelMetadata) {
 //			System.out.println(md.qsarMethodName);
@@ -404,9 +404,9 @@ public class ExcelPredictionReportGenerator {
 			System.out.println("Cant set url for "+firstId);
 			return;
 		}
+		
 		XSSFHyperlink link = (XSSFHyperlink)createHelper.createHyperlink(HyperlinkType.DOCUMENT);
-		CellReference cr=new CellReference(cellAddress.getRow(),cellAddress.getColumn()); 
-		link.setAddress("'Records'!"+cr.formatAsR1C1String());
+		link.setAddress("'Records'!"+cellAddress.formatAsR1C1String());
 		cell.setHyperlink(link);
 		cell.setCellStyle(hlink_style);
 	}
