@@ -528,6 +528,24 @@ public class RunCaseStudies {
 	 * 
 	 * @param id
 	 */
+	static void deleteModel(Model model) {
+		ModelServiceImpl ms=new ModelServiceImpl();
+		
+		if(model==null) return;
+		
+		System.out.println("deleting:"+model.getId());		
+		ModelBytesServiceImpl mb=new ModelBytesServiceImpl();
+		ModelBytes modelBytes=mb.findByModelId(model.getId());
+		if(modelBytes!=null) mb.delete(modelBytes);		
+		ms.delete(model);
+	}
+	
+	/**
+	 * Deletes a model by id
+	 * Needs to delete the bytes first or it wont work (doesnt happen automatically like other tables do)
+	 * 
+	 * @param id
+	 */
 	static void deleteModelsNoBytes() {
 		ModelServiceImpl ms=new ModelServiceImpl();
 		ModelBytesServiceImpl mb=new ModelBytesServiceImpl();
@@ -612,6 +630,26 @@ public class RunCaseStudies {
 		}
 		
 		return models2;
+	}
+	
+	static void deleteModelsWithSplitting() {
+		
+		ModelServiceImpl ms=new ModelServiceImpl();
+
+		List<Model>models=ms.getAll();
+		
+//		String splitting="T=all but PFAS, P=PFAS";
+		String splitting="T=PFAS only, P=PFAS";
+		for (int i=models.size()-1;i>=0;i--) {
+			Model model=models.get(i);
+			
+			if (!model.getSplittingName().equals(splitting)) continue;
+			
+			System.out.println(model.getId()+"\t"+model.getDatasetName()+"\t"+model.getSplittingName()+"\t"+model.getDescriptorSetName());
+			deleteModel(model);
+		}
+
+		
 	}
 	
 	
