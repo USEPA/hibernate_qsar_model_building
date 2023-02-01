@@ -68,11 +68,11 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 	@Override
 	public ModelBytes create(ModelBytes modelBytes, Session session) throws ConstraintViolationException {
 		byte[] bytes = modelBytes.getBytes();
-		
-		
+
+
 		List<byte[]> partitions = divideArray(bytes, chunkSize);
-		
-		
+
+
 		Transaction t = session.beginTransaction();
 		for (int i = 0; i < partitions.size(); i++) {
 			ModelBytes modelBytesPartitioned = new ModelBytes(modelBytes.getModel(), partitions.get(i), modelBytes.getCreatedBy());
@@ -81,38 +81,38 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 			if (!violations.isEmpty()) {
 				throw new ConstraintViolationException(violations);
 			}
-		
+
 			try {
 				session.save(modelBytesPartitioned);
 				session.flush();
 				session.clear();
-//				session.refresh(modelBytesPartitioned);
+				//				session.refresh(modelBytesPartitioned);
 			} catch (org.hibernate.exception.ConstraintViolationException e) {
 				t.rollback();
 				throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
 			}
-			}
+		}
 		t.commit();
 		return modelBytes;
-		}
-
-	@Override
-	public void delete(ModelBytes modelBytes) {
-		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
-		delete(modelBytes, session);
 	}
 
-	@Override
-	public void delete(ModelBytes modelBytes, Session session) {
-		if (modelBytes.getId()==null) {
-			return;
-		}
-		
-		Transaction t = session.beginTransaction();
-		session.delete(modelBytes);
-		session.flush();
-		t.commit();
-	}
+//	@Override
+//	public void delete(ModelBytes modelBytes) {
+//		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+//		delete(modelBytes, session);
+//	}
+//
+//	@Override
+//	public void delete(ModelBytes modelBytes, Session session) {
+//		if (modelBytes.getId()==null) {
+//			return;
+//		}
+//		
+//		Transaction t = session.beginTransaction();
+//		session.delete(modelBytes);
+//		session.flush();
+//		t.commit();
+//	}
 	
 	public static List<byte[]> divideArray(byte[] source, int chunksize) {
 		
@@ -166,5 +166,39 @@ public class ModelBytesServiceImpl implements ModelBytesService {
         return ret;
     }
 
+	@Override
+	public void deleteByModelId(Long id) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		deleteByModelId(id,session);
+	}
+	
+	@Override
+	public void deleteByModelId(Long modelId,Session session) {
+//		System.out.println("enter delete");
+		
+		Transaction t = session.beginTransaction();
+		
+		ModelBytesDao modelBytesDao = new ModelBytesDaoImpl();
+		List<ModelBytes> modelBytesList = modelBytesDao.findByModelId(modelId, session);
+		
+		
+		for(ModelBytes modelBytes:modelBytesList) {
+			
+//			System.out.println(modelBytes.getId());
+			
+//			if(true) continue;
+			
+			try {
+				session.delete(modelBytes);
+				session.flush();
+				session.clear();
+				//				session.refresh(modelBytesPartitioned);
+			} catch (org.hibernate.exception.ConstraintViolationException e) {
+				t.rollback();
+				throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+			}
+		}
+		t.commit();
+	}
 
 }

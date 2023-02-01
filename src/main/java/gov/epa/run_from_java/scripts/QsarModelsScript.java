@@ -267,11 +267,7 @@ public class QsarModelsScript {
 		}
 		
 		ModelBytesService modelBytesService = new ModelBytesServiceImpl();
-		ModelBytes modelBytes = modelBytesService.findByModelId(modelID);
-		if (modelBytes!=null) {
-			modelBytesService.delete(modelBytes);
-		}
-		
+		modelBytesService.deleteByModelId(model.getId());
 		
 		modelService.delete(model);
 
