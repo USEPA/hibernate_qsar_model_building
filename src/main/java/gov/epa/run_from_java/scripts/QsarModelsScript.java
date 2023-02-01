@@ -329,9 +329,10 @@ public class QsarModelsScript {
 			Model model=htModels.get(key);
 			
 			if (!model.getSplittingName().equals(splitting)) continue;
-			if(!model.getDatasetName().contains("Standard")) continue;
+//			if(!model.getDatasetName().contains("LLNA from exp_prop, without eChemPortal")) continue;
 			
-			System.out.println(model.getId()+"\t"+model.getDatasetName()+"\t"+model.getMethod().getName()+"\t"+model.getSplittingName()+"\t"+model.getDescriptorSetName());
+			boolean hasEmbedding=model.getDescriptorEmbedding()!=null;
+			System.out.println(model.getId()+"\t"+model.getDatasetName()+"\t"+model.getMethod().getName()+"\t"+model.getSplittingName()+"\t"+model.getDescriptorSetName()+"\thasEmbedding="+hasEmbedding);
 						
 //			deleteModel(model);
 		}
