@@ -18,10 +18,14 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingService;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 import gov.epa.web_services.ModelWebService;
 import gov.epa.web_services.embedding_service.CalculationInfo;
 
@@ -99,28 +103,9 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		String strModelId = String.valueOf(model.getId());
 		byte[] bytes = modelWebService.callTrain(data.trainingSetInstances, 
 				data.removeLogP_Descriptors, methodName, strModelId).getBody();
-		String hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
-		String description = modelWebService.callInfo(methodName).getBody();
-		String description_url=null;//TODO
-		
-		
-		JsonObject jo = gson.fromJson(hyperparameters, JsonObject.class);
-		String version = jo.get("version").getAsString();
-		Boolean isBinary = jo.get("is_binary").getAsBoolean();
-		String classOrRegr = isBinary ? "classifier" : "regressor";
-		String fullMethodName = methodName + "_" + classOrRegr + "_" + version;
-		
-		Method method = methodService.findByName(fullMethodName);
-		if (method==null) {
-			method = new Method(fullMethodName, description, description_url, hyperparameters, isBinary, lanId);
-			methodService.create(method);
-		} else {
-			JsonParser parser = new JsonParser();
-			if (!parser.parse(hyperparameters).equals(parser.parse(method.getHyperparameters()))) {
-//				logger.warn("Hyperparameters for " + fullMethodName + " have changed");
-			}
-		}
-		
+				
+		Method method=getDetails(methodName, model);
+
 		model.setMethod(method);
 		modelService.update(model);
 		
@@ -130,6 +115,56 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		return model.getId();
 	}
 
+	Method getDetails(String methodName,Model model) {
+		
+		String details = modelWebService.callDetails(methodName, model.getId()+"").getBody();			
+		JsonObject jo = gson.fromJson(details, JsonObject.class);
+		String version = jo.get("version").getAsString();
+		Boolean isBinary = jo.get("is_binary").getAsBoolean();				
+		String classOrRegr = isBinary ? "classifier" : "regressor";				
+		String fullMethodName = methodName + "_" + classOrRegr + "_" + version;		
+				
+		String description=jo.get("description").getAsString();
+		String description_url=jo.get("description_url").getAsString();
+		
+		Gson gson2 = new Gson();		
+		String hyperparameters=gson2.toJson(jo.get("hyperparameter_grid").getAsJsonObject());
+				
+		createCV_Statistic(jo, model);
+				
+		Method method = methodService.findByName(fullMethodName);
+		if (method==null) {
+			method = new Method(fullMethodName, description, description_url,hyperparameters, isBinary, lanId);
+			methodService.create(method);
+		} else {
+			JsonParser parser = new JsonParser();
+			if (!parser.parse(hyperparameters).equals(parser.parse(method.getHyperparameters()))) {
+				System.out.println("Hyperparameters for " + fullMethodName + " have changed");
+			}
+		}
+		return method;
+
+	}
+	
+	void createCV_Statistic(JsonObject jo,Model model) {
+		JsonObject joTrainingStats = jo.get("training_stats").getAsJsonObject();		
+//		double training_score=joTrainingStats.get("training_score").getAsDouble();
+		double training_cv_score=joTrainingStats.get("training_cv_score").getAsDouble();
+		
+//		System.out.println(training_score);
+		System.out.println("storing training_cv_score="+training_cv_score);
+		
+		StatisticServiceImpl ss=new StatisticServiceImpl();
+		Statistic statistic=ss.findByName("R2_CV_Training");		
+		ModelStatisticServiceImpl mss=new ModelStatisticServiceImpl();		
+		ModelStatistic modelStatistic=new ModelStatistic(statistic, model, training_cv_score, lanId);
+		modelStatistic=mss.create(modelStatistic);
+		
+		System.out.println(modelStatistic.getStatisticValue());
+		
+
+	}
+	
 	/**
 	 * Builds a Python and uses SQLalchemy to store
 	 * @param data
@@ -280,30 +315,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 
 //		String description = modelWebService.callInfo(methodName).getBody();//can get from details call instead
 
-		
-		String details = modelWebService.callDetails(methodName, strModelId).getBody();
-		JsonObject jo = gson.fromJson(details, JsonObject.class);
-
-		String version = jo.get("version").getAsString();
-		Boolean isBinary = jo.get("is_binary").getAsBoolean();
-		String classOrRegr = isBinary ? "classifier" : "regressor";
-		String fullMethodName = methodName + "_" + classOrRegr + "_" + version;		
-		String description=jo.get("description").getAsString();
-		String description_url=jo.get("description_url").getAsString();
-		
-		Gson gson2 = new Gson();		
-		String hyperparameters=gson2.toJson(jo.get("hyperparameter_grid").getAsJsonObject());
-		
-		Method method = methodService.findByName(fullMethodName);
-		if (method==null) {
-			method = new Method(fullMethodName, description, description_url,hyperparameters, isBinary, lanId);
-			methodService.create(method);
-		} else {
-			JsonParser parser = new JsonParser();
-			if (!parser.parse(hyperparameters).equals(parser.parse(method.getHyperparameters()))) {
-//				logger.warn("Hyperparameters for " + fullMethodName + " have changed");
-			}
-		}
+		Method method=getDetails(methodName, model);		
 		
 		model.setMethod(method);
 		modelService.update(model);
