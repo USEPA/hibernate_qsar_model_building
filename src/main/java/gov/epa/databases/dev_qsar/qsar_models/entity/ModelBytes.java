@@ -20,7 +20,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
-@Table(name="model_bytes", indexes = @Index(columnList = "fk_model_id", unique=true))
+@Table(name="model_bytes", indexes = @Index(columnList = "fk_model_id", unique=false))
 public class ModelBytes {
 	
 	@Id

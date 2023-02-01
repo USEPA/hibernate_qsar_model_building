@@ -1,5 +1,10 @@
 package gov.epa.databases.dev_qsar.qsar_models.service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 import org.hibernate.Session;
@@ -31,7 +36,23 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 	public ModelBytes findByModelId(Long modelId, Session session) {
 		Transaction t = session.beginTransaction();
 		ModelBytesDao modelBytesDao = new ModelBytesDaoImpl();
-		ModelBytes modelBytes = modelBytesDao.findByModelId(modelId, session);
+		List<ModelBytes> modelBytesList = modelBytesDao.findByModelId(modelId, session);
+		ModelBytes modelBytes = new ModelBytes();
+		modelBytes.setCreatedAt(modelBytesList.get(0).getCreatedAt());
+		modelBytes.setCreatedBy(modelBytesList.get(0).getCreatedBy());
+		modelBytes.setUpdatedAt(modelBytesList.get(0).getUpdatedAt());
+		modelBytes.setUpdatedBy(modelBytesList.get(0).getUpdatedBy());
+		modelBytes.setModel(modelBytesList.get(0).getModel());
+		modelBytes.setId(modelBytesList.get(0).getId());
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
+		for (int i = 0; i < modelBytesList.size(); i++) {
+			try {
+				outputStream.write( modelBytesList.get(i).getBytes() );
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		modelBytes.setBytes(outputStream.toByteArray());
 		t.rollback();
 		return modelBytes;
 	}
@@ -44,25 +65,31 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 
 	@Override
 	public ModelBytes create(ModelBytes modelBytes, Session session) throws ConstraintViolationException {
-		Set<ConstraintViolation<ModelBytes>> violations = validator.validate(modelBytes);
-		if (!violations.isEmpty()) {
-			throw new ConstraintViolationException(violations);
-		}
-		
+		byte[] bytes = modelBytes.getBytes();
+		int chunkSize = 2621360;
+		byte[][] partitions = divideArray(bytes, chunkSize);
 		Transaction t = session.beginTransaction();
+		for (int i = 0; i < partitions.length; i++) {
+			ModelBytes modelBytesPartitioned = new ModelBytes(modelBytes.getModel(), partitions[i], modelBytes.getCreatedBy());
+
+			Set<ConstraintViolation<ModelBytes>> violations = validator.validate(modelBytesPartitioned);
+			if (!violations.isEmpty()) {
+				throw new ConstraintViolationException(violations);
+			}
 		
-		try {
-			session.save(modelBytes);
-			session.flush();
-			session.refresh(modelBytes);
-			t.commit();
-		} catch (org.hibernate.exception.ConstraintViolationException e) {
-			t.rollback();
-			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
-		}
-		
+			try {
+				session.save(modelBytesPartitioned);
+				session.flush();
+				session.clear();
+//				session.refresh(modelBytesPartitioned);
+			} catch (org.hibernate.exception.ConstraintViolationException e) {
+				t.rollback();
+				throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+			}
+			}
+		t.commit();
 		return modelBytes;
-	}
+		}
 
 	@Override
 	public void delete(ModelBytes modelBytes) {
@@ -81,5 +108,31 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 		session.flush();
 		t.commit();
 	}
+	
+	public static byte[][] divideArray(byte[] source, int chunksize) {
+
+
+        byte[][] ret = new byte[(int) Math.ceil(source.length / (double) chunksize)][chunksize];
+
+        int start = 0;
+
+        int parts = 0;
+
+
+        for (int i = 0; i < ret.length; i++) {
+            if (start + chunksize > source.length) {
+                System.arraycopy(source, start, ret[i], 0, source.length - start);
+            } else {
+                System.arraycopy(source, start, ret[i], 0, chunksize);
+            }
+            start += chunksize;
+            parts++;
+        }
+
+        System.out.println("Parts" + parts + "");
+
+        return ret;
+    }
+
 
 }
