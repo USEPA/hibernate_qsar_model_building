@@ -245,7 +245,18 @@ public class QsarModelsScript {
 	}
 	
 	void deleteModel(long modelID) {
-		System.out.println("deleting model "+modelID);		
+		
+		System.out.println("deleting model "+modelID);
+		
+		ModelService modelService = new ModelServiceImpl();
+		Model model = modelService.findById(modelID);
+		
+		if(model==null) {
+			System.out.println("No model "+modelID);
+			return;
+		}
+				
+		
 		ModelQmrfService modelQmrfServiceImpl=new ModelQmrfServiceImpl();		
 		ModelQmrf modelQmrf=modelQmrfServiceImpl.findByModelId(modelID);		
 		
@@ -262,8 +273,6 @@ public class QsarModelsScript {
 		}
 		
 		
-		ModelService modelService = new ModelServiceImpl();
-		Model model = modelService.findById(modelID);
 		modelService.delete(model);
 
 	}

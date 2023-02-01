@@ -21,6 +21,8 @@ import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 
 public class ModelBytesServiceImpl implements ModelBytesService {
+
+	public static int chunkSize = 26214400;
 	
 	private Validator validator;
 	
@@ -66,11 +68,14 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 	@Override
 	public ModelBytes create(ModelBytes modelBytes, Session session) throws ConstraintViolationException {
 		byte[] bytes = modelBytes.getBytes();
-		int chunkSize = 2621360;
-		byte[][] partitions = divideArray(bytes, chunkSize);
+		
+		
+		List<byte[]> partitions = divideArray(bytes, chunkSize);
+		
+		
 		Transaction t = session.beginTransaction();
-		for (int i = 0; i < partitions.length; i++) {
-			ModelBytes modelBytesPartitioned = new ModelBytes(modelBytes.getModel(), partitions[i], modelBytes.getCreatedBy());
+		for (int i = 0; i < partitions.size(); i++) {
+			ModelBytes modelBytesPartitioned = new ModelBytes(modelBytes.getModel(), partitions.get(i), modelBytes.getCreatedBy());
 
 			Set<ConstraintViolation<ModelBytes>> violations = validator.validate(modelBytesPartitioned);
 			if (!violations.isEmpty()) {
@@ -109,21 +114,48 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 		t.commit();
 	}
 	
-	public static byte[][] divideArray(byte[] source, int chunksize) {
+	public static List<byte[]> divideArray(byte[] source, int chunksize) {
+		
+		System.out.println("Size of model bytes="+source.length);
+		
+		List <byte[]> ret=new ArrayList<>();
+		
+		if (source.length<chunksize) {
+			ret.add(new byte[source.length]);
+		} else {
+			
+			int numPieces=(int) Math.ceil(source.length / (double) chunksize);
+			
+			for (int i=0;i<numPieces-1;i++) {
+				ret.add(new byte[chunksize]);	
+			}
+			
+			int remainingBytesLength=source.length-(numPieces-1)*chunksize;
+			
+			ret.add(new byte[remainingBytesLength]);
+				
+		}
+		
+		int totalCount=0;
+		
+		for (byte[] bytes:ret) {
+			totalCount+=bytes.length;
+		}
 
-
-        byte[][] ret = new byte[(int) Math.ceil(source.length / (double) chunksize)][chunksize];
-
+		if(totalCount!=source.length) {
+			System.out.println("byte length mismatch:"+totalCount+"\t"+source.length);
+			return null;
+		}
+		
+		
         int start = 0;
-
         int parts = 0;
 
-
-        for (int i = 0; i < ret.length; i++) {
+        for (int i = 0; i < ret.size(); i++) {
             if (start + chunksize > source.length) {
-                System.arraycopy(source, start, ret[i], 0, source.length - start);
+                System.arraycopy(source, start, ret.get(i), 0, source.length - start);
             } else {
-                System.arraycopy(source, start, ret[i], 0, chunksize);
+                System.arraycopy(source, start, ret.get(i), 0, chunksize);
             }
             start += chunksize;
             parts++;
