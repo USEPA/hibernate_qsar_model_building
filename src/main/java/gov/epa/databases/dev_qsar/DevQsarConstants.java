@@ -94,6 +94,12 @@ public class DevQsarConstants {
 	public static final String DESCRIPTOR_SET_PADEL_SINGLE = "Padelpy webservice single";
 	public static final String DESCRIPTOR_SET_PADEL_BATCH = "Padelpy_batch";
 	
+	public static final String Applicability_Domain_TEST_Embedding_Cosine = "TEST Cosine Similarity Embedding Descriptors";
+	public static final String Applicability_Domain_TEST_Embedding_Euclidean = "TEST Euclidean Distance Embedding Descriptors";
+	public static final String Applicability_Domain_TEST_All_Descriptors_Cosine = "TEST Cosine Similarity All Descriptors";
+	public static final String Applicability_Domain_OPERA_local_index = "OPERA Local Index";
+
+	
 	// Property names
 	public static final String WATER_SOLUBILITY = "Water solubility";
 	public static final String HENRYS_LAW_CONSTANT = "Henry's law constant";
