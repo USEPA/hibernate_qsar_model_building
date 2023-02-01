@@ -43,7 +43,7 @@ public class SampleReportWriter {
 	}
 	
 	
-	public PredictionReport getReport(String modelSetName, String datasetName, 
+	public static PredictionReport getReport(String modelSetName, String datasetName, 
 			String splittingName) {
 		
 		String filepathReport = "data/reports/" + modelSetName + "_" + datasetName + "_PredictionReport.json";
