@@ -8,7 +8,10 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import javax.validation.ConstraintViolationException;
 
@@ -242,13 +245,14 @@ public class QsarModelsScript {
 	}
 	
 	void deleteModel(long modelID) {
-				
+		System.out.println("deleting model "+modelID);		
 		ModelQmrfService modelQmrfServiceImpl=new ModelQmrfServiceImpl();		
 		ModelQmrf modelQmrf=modelQmrfServiceImpl.findByModelId(modelID);		
+		
 		if (modelQmrf!=null) {
 			modelQmrfServiceImpl.delete(modelQmrf);
 		} else {
-			System.out.println("Qmrf for "+modelID+" is null");
+//			System.out.println("Qmrf for "+modelID+" is null");
 		}
 		
 		ModelBytesService modelBytesService = new ModelBytesServiceImpl();
@@ -257,11 +261,83 @@ public class QsarModelsScript {
 			modelBytesService.delete(modelBytes);
 		}
 		
+		
 		ModelService modelService = new ModelServiceImpl();
 		Model model = modelService.findById(modelID);
 		modelService.delete(model);
 
 	}
+	
+	void deleteModel(Model model) {
+		deleteModel(model.getId());
+	}
+	
+	/**
+	 * Deletes a model by id
+	 * Needs to delete the bytes first or it wont work (doesnt happen automatically like other tables do)
+	 * 
+	 * @param id
+	 */
+	void deleteModelsNoBytes() {
+		ModelServiceImpl ms=new ModelServiceImpl();
+		ModelBytesServiceImpl mb=new ModelBytesServiceImpl();
+		
+		List<Model>models=ms.getAll();
+		System.out.println("Number of models="+models.size());
+		
+		
+//		for (Model model:models) {
+		for (int i=0;i<models.size();i++) {
+			
+			if(i<500) continue;
+			
+			Model model=models.get(i);
+			
+			System.out.println(i);
+			
+			if (model.getMethod().getName().contains("consensus")) continue;				
+			if (model.getMethod().getName().contains("_")) continue;
+
+			ModelBytes modelBytes=mb.findByModelId(model.getId());
+			
+			if(modelBytes==null) {
+				
+//				System.out.println(model.getId()+"\t"+model.getMethod().getName());
+//				if (model.getId()==571L) continue;//need to delete consensus it's attached to
+				System.out.println("deleting:"+model.getId()+"\t"+model.getMethod().getName());
+				ms.delete(model);
+								
+			}
+		}
+	}
+
+	void deleteModelsWithAttributes() {
+
+		String splitting=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+//		String splitting="T=all but PFAS, P=PFAS";
+//		String splitting="T=PFAS only, P=PFAS";
+
+		ModelServiceImpl ms=new ModelServiceImpl();
+
+		List<Model>models=ms.getAll();
+
+		Map <Long,Model>htModels=new TreeMap<>((Collections.reverseOrder()));				
+		for (Model model:models)htModels.put(model.getId(), model);
+
+
+		for (Long key:htModels.keySet()) {
+			Model model=htModels.get(key);
+			
+			if (!model.getSplittingName().equals(splitting)) continue;
+			if(!model.getDatasetName().contains("Standard")) continue;
+			
+			System.out.println(model.getId()+"\t"+model.getDatasetName()+"\t"+model.getMethod().getName()+"\t"+model.getSplittingName()+"\t"+model.getDescriptorSetName());
+						
+//			deleteModel(model);
+		}
+
+	}
+	
 	
 	void deletePredictionReport() {
 		
@@ -392,11 +468,16 @@ public class QsarModelsScript {
 	public static void main(String[] args) {
 //		System.out.println(getComptoxImgUrl("dtxcid"));
 		
-		QsarModelsScript script = new QsarModelsScript("gsincl01");
-		long[] modelIds = { 43, 45, 46, 137, 139, 140, 218, 219, 225, 226, 227, 232 };
-		for (long l:modelIds) {
-			script.downloadModelBytes(l, "data/dev_qsar/qsar_models/test_models");
-		}
+//		QsarModelsScript script = new QsarModelsScript("gsincl01");
+//		long[] modelIds = { 43, 45, 46, 137, 139, 140, 218, 219, 225, 226, 227, 232 };
+//		for (long l:modelIds) {
+//			script.downloadModelBytes(l, "data/dev_qsar/qsar_models/test_models");
+//		}
+		
+		QsarModelsScript script = new QsarModelsScript("tmarti02");
+		script.deleteModelsWithAttributes();
+		
+		
 		
 //		script.removeModelFromSet(6L, 7L);
 		

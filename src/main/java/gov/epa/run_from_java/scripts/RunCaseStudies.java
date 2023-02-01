@@ -4,20 +4,24 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelQmrf;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingService;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionServiceImpl;
 import gov.epa.endpoints.models.ModelData;
@@ -503,81 +507,6 @@ public class RunCaseStudies {
 		return true;
 	}
 
-	/**
-	 * Deletes a model by id
-	 * Needs to delete the bytes first or it wont work (doesnt happen automatically like other tables do)
-	 * 
-	 * @param id
-	 */
-	static void deleteModel(long id) {
-		ModelServiceImpl ms=new ModelServiceImpl();
-		Model model=ms.findById(id);
-		
-		if(model==null) return;
-		
-		System.out.println("deleting:"+id);		
-		ModelBytesServiceImpl mb=new ModelBytesServiceImpl();
-		ModelBytes modelBytes=mb.findByModelId(model.getId());
-		if(modelBytes!=null) mb.delete(modelBytes);		
-		ms.delete(model);
-	}
-	
-	/**
-	 * Deletes a model by id
-	 * Needs to delete the bytes first or it wont work (doesnt happen automatically like other tables do)
-	 * 
-	 * @param id
-	 */
-	static void deleteModel(Model model) {
-		ModelServiceImpl ms=new ModelServiceImpl();
-		
-		if(model==null) return;
-		
-		System.out.println("deleting:"+model.getId());		
-		ModelBytesServiceImpl mb=new ModelBytesServiceImpl();
-		ModelBytes modelBytes=mb.findByModelId(model.getId());
-		if(modelBytes!=null) mb.delete(modelBytes);		
-		ms.delete(model);
-	}
-	
-	/**
-	 * Deletes a model by id
-	 * Needs to delete the bytes first or it wont work (doesnt happen automatically like other tables do)
-	 * 
-	 * @param id
-	 */
-	static void deleteModelsNoBytes() {
-		ModelServiceImpl ms=new ModelServiceImpl();
-		ModelBytesServiceImpl mb=new ModelBytesServiceImpl();
-		
-		List<Model>models=ms.getAll();
-		System.out.println("Number of models="+models.size());
-		
-		
-//		for (Model model:models) {
-		for (int i=0;i<models.size();i++) {
-			
-			if(i<500) continue;
-			
-			Model model=models.get(i);
-			
-			System.out.println(i);
-			
-			if (model.getMethod().getName().contains("consensus")) continue;				
-			if (model.getMethod().getName().contains("_")) continue;
-
-			ModelBytes modelBytes=mb.findByModelId(model.getId());
-			
-			if(modelBytes==null) {
-				
-//				System.out.println(model.getId()+"\t"+model.getMethod().getName());
-//				if (model.getId()==571L) continue;//need to delete consensus it's attached to
-				System.out.println("deleting:"+model.getId()+"\t"+model.getMethod().getName());
-				ms.delete(model);
-								
-			}
-		}
-	}
 
 	
 
@@ -632,25 +561,6 @@ public class RunCaseStudies {
 		return models2;
 	}
 	
-	static void deleteModelsWithSplitting() {
-		
-		ModelServiceImpl ms=new ModelServiceImpl();
-
-		List<Model>models=ms.getAll();
-		
-//		String splitting="T=all but PFAS, P=PFAS";
-		String splitting="T=PFAS only, P=PFAS";
-		for (int i=models.size()-1;i>=0;i--) {
-			Model model=models.get(i);
-			
-			if (!model.getSplittingName().equals(splitting)) continue;
-			
-			System.out.println(model.getId()+"\t"+model.getDatasetName()+"\t"+model.getSplittingName()+"\t"+model.getDescriptorSetName());
-			deleteModel(model);
-		}
-
-		
-	}
 	
 	
 	public static void main(String[] args) {
@@ -661,7 +571,8 @@ public class RunCaseStudies {
 //		runCaseStudyOPERA_All_Endpoints();
 		
 //		runCaseStudyExpProp_All_Endpoints();		
-		runCaseStudyExpProp_All_Endpoints_No_Embedding();
+//		runCaseStudyExpProp_All_Endpoints_No_Embedding();
+		
 		
 //		for (int i=641;i<=649;i++) {
 //			deleteModel(i);
