@@ -24,7 +24,7 @@ public class QsarModelsSession {
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.PropertyInCategory.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.PropertyCategory.class);
 
-        	
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Bob.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Method.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Model.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes.class);
