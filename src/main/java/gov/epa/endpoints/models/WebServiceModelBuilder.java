@@ -4,8 +4,12 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.validation.ConstraintViolationException;
 
@@ -22,14 +26,19 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
-import gov.epa.databases.dev_qsar.qsar_models.entity.Splitting;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingService;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.SplittingServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingService;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 
 import gov.epa.web_services.ModelWebService;
@@ -43,7 +52,8 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	StatisticServiceImpl statisticService=new StatisticServiceImpl();
 	ModelStatisticServiceImpl modelStatisticService=new ModelStatisticServiceImpl();
 	SplittingServiceImpl splittingService=new SplittingServiceImpl();
-
+	DataPointInSplittingService dataPointInSplittingService = new DataPointInSplittingServiceImpl();
+	DataPointServiceImpl dataPointService=new DataPointServiceImpl();
 	
 	protected ModelWebService modelWebService;
 	
@@ -150,9 +160,110 @@ public class WebServiceModelBuilder extends ModelBuilder {
 //			System.out.println(cvp.id+"\t"+cvp.exp+"\t"+cvp.pred+"\t"+cvp.split);
 //		}
 
-		Splitting splitting=splittingService.findByName(DevQsarConstants.SPLITTING_TRAINING_CROSS_VALIDATION);
-		postPredictions(Arrays.asList(mps), model,splitting);	//use split+10 because split 1 is already taken by test set predictions
+		//TODO need to loop over 5 cross validation splittings
+		
+				
+		List<DataPointInSplitting> dataPointsInSplittingCV1 = 
+				dataPointInSplittingService.findByDatasetNameAndSplittingName(model.getDatasetName(), "CV1");
+		
+		postDPIS_and_CV_predictions(model, mps,dataPointsInSplittingCV1.size()==0);
+		
+		
+//		Splitting splitting=splittingService.findByName(DevQsarConstants.SPLITTING_TRAINING_CROSS_VALIDATION);
+//		postPredictions(Arrays.asList(mps), model,splitting);	//use split+10 because split 1 is already taken by test set predictions
 
+	}
+
+	/**
+	 * Creates DataPointsInSplitting and posts CV prediction
+	 * 
+	 * @param model
+	 * @param mps
+	 * @param createDPIS
+	 */
+	private void postDPIS_and_CV_predictions(Model model, ModelPrediction[] mps,boolean createDPIS) {
+		
+		Hashtable<Integer,Splitting>htSplittings=new Hashtable<>();
+		for (int i=1;i<=5;i++) {
+			Splitting splitting=splittingService.findByName("CV"+i);
+			htSplittings.put(i,splitting);
+		}
+				
+		Hashtable<Integer,List<ModelPrediction>>htSets=new Hashtable<>();
+		for (ModelPrediction mp:mps) {
+			if(htSets.get(mp.split)==null) {
+				List<ModelPrediction>mpsTestSet=new ArrayList<>();
+				mpsTestSet.add(mp);
+				htSets.put(mp.split, mpsTestSet);
+				
+			} else {
+				List<ModelPrediction>mpsTestSet=htSets.get(mp.split);
+				mpsTestSet.add(mp);					
+			}
+		}
+		
+		for (Integer key:htSets.keySet()) {			
+			Splitting splittingCV=htSplittings.get(key);
+			List<ModelPrediction>mpsTestSet=htSets.get(key);//predicts in test sets for CV
+
+			if (createDPIS) {				
+				System.out.print("Creating CV DPIS Split "+key+" ");
+				createCV_DPIS(model, splittingCV, mpsTestSet);
+				System.out.print("done\n");
+			}			
+			
+			System.out.print("Posting CV predictions Split "+key+" ");
+			postPredictions(mpsTestSet, model, splittingCV);
+			System.out.print("done\n");
+			
+		}
+	}
+
+	private void createCV_DPIS(Model model, Splitting splittingCV, List<ModelPrediction> mpsTestSet) {
+		
+		
+		List<DataPointInSplitting> dataPointsInSplittingModel = 
+				dataPointInSplittingService.findByDatasetNameAndSplittingName(model.getDatasetName(), model.getSplittingName());
+
+		
+		List<DataPoint> dataPoints = 
+				dataPointService.findByDatasetName(model.getDatasetName());
+
+		Map<String, DataPoint> dataPointMap = dataPoints.stream()
+				.collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp));
+
+		
+		
+		List<String>idsTest=new ArrayList<>();
+		for (ModelPrediction mp:mpsTestSet) idsTest.add(mp.id);					
+
+		
+		List<DataPointInSplitting>dpisTrainingSet=new ArrayList<>();//training set for CV- need for stats
+		List<DataPointInSplitting>dpisTestSet=new ArrayList<>();//training set for CV- need for stats
+
+		for(ModelPrediction mp:mpsTestSet) {
+			DataPointInSplitting dpisNew=new DataPointInSplitting(dataPointMap.get(mp.id), splittingCV, DevQsarConstants.TEST_SPLIT_NUM, lanId);
+			dpisTestSet.add(dpisNew);										
+		}
+		
+		for (DataPointInSplitting dpis:dataPointsInSplittingModel) {
+
+			if(dpis.getSplitNum()!=DevQsarConstants.TRAIN_SPLIT_NUM) continue;//can have splitNum=2 for the PFAS ones...
+			
+			if(!idsTest.contains(dpis.getDataPoint().getCanonQsarSmiles())) {
+				//in the model splitting training set and not in CV test set:
+				DataPointInSplitting dpisNew=new DataPointInSplitting(dpis.getDataPoint(), splittingCV, DevQsarConstants.TRAIN_SPLIT_NUM, lanId);
+				dpisTrainingSet.add(dpisNew);										
+			}
+		}
+		
+		for (DataPointInSplitting dpis:dpisTrainingSet) {
+			dataPointInSplittingService.create(dpis);//TODO do this in batch mode
+		}
+		
+		for (DataPointInSplitting dpis:dpisTestSet) {
+			dataPointInSplittingService.create(dpis);//TODO do this in batch mode
+		}
 	}
 	
 	/**
@@ -357,7 +468,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		String strModelId = String.valueOf(modelId);
 
-		Splitting splitting=splittingService.findByName(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE);
+		Splitting splitting=splittingService.findByName(model.getSplittingName());
 
 		String predictResponse = modelWebService.callPredictSQLAlchemy(data.predictionSetInstances, methodName, strModelId).getBody();		
 		ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);				
@@ -383,6 +494,9 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	 * @param params
 	 */
 	public void predict(ModelData data, String methodName, Long modelId) throws ConstraintViolationException {
+		
+		System.out.println("Enter predict");
+		
 		if (modelId==null) {
 //			logger.error("Model with supplied parameters has not been built");
 			return;
@@ -402,12 +516,14 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		String strModelId = String.valueOf(modelId);
 		modelWebService.callInit(bytes, methodName, strModelId).getBody();
 		
-		Splitting splitting=splittingService.findByName(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE);
+		Splitting splitting=splittingService.findByName(model.getSplittingName());
+		
+//		System.out.println("Splitting id = "+splitting.getId());
 				
 		String predictResponse = modelWebService.callPredict(data.predictionSetInstances, methodName, strModelId).getBody();
 		ModelPrediction[] modelPredictionsArray = gson.fromJson(predictResponse, ModelPrediction[].class);
 		List<ModelPrediction>modelTestPredictions=Arrays.asList(modelPredictionsArray);			
-		for(ModelPrediction mp:modelTestPredictions)mp.split=DevQsarConstants.TEST_SPLIT_NUM;		
+		for(ModelPrediction mp:modelTestPredictions) mp.split=DevQsarConstants.TEST_SPLIT_NUM;		
 		postPredictions(modelTestPredictions, model,splitting);		
 		
 		List<ModelPrediction> modelTrainingPredictions = predictTraining(model, data, methodName, strModelId);

@@ -12,6 +12,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.OneToMany;
+import javax.persistence.PrimaryKeyJoinColumn;
+import javax.persistence.SecondaryTable;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -22,7 +24,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
-@Table(name="splittings", indexes={@Index(name="split_name_idx", columnList="name", unique=true)})
+@Table(name="splittings", schema = "qsar_datasets", indexes={@Index(name="split_name_idx", columnList="name", unique=true)})
+//@SecondaryTable(name = "predictions",  schema = "qsar_models", catalog = "", pkJoinColumns = {@PrimaryKeyJoinColumn(name = "fk_splitting_id", referencedColumnName = "id")})
+
 public class Splitting {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)

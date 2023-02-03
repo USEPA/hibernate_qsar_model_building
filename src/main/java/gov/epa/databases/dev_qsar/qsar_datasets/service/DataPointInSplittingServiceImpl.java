@@ -38,12 +38,14 @@ public class DataPointInSplittingServiceImpl implements DataPointInSplittingServ
 		return dataPointsInSplitting;
 	}
 	
+
 	@Override
 	public DataPointInSplitting create(DataPointInSplitting dpis) throws ConstraintViolationException {
 		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
 		return create(dpis, session);
 	}
 
+	//***** TODO need batch insert mode!!!- this is slow on VPN
 	@Override
 	public DataPointInSplitting create(DataPointInSplitting dpis, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<DataPointInSplitting>> violations = validator.validate(dpis);

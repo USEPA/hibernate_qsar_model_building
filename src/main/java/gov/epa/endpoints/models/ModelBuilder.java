@@ -16,7 +16,7 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServ
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
-import gov.epa.databases.dev_qsar.qsar_models.entity.Splitting;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
 import gov.epa.databases.dev_qsar.qsar_models.service.MethodService;
 import gov.epa.databases.dev_qsar.qsar_models.service.MethodServiceImpl;
@@ -67,6 +67,8 @@ public class ModelBuilder {
 	
 	
 	public void postPredictions(List<ModelPrediction> modelPredictions, Model model,Splitting splitting) {
+		
+		//TODO this in batch mode to speed up!
 		
 // Attempt at batch insert- not working yet		
 //		List<Prediction>predictions=new ArrayList<>();

@@ -25,14 +25,16 @@ import com.google.gson.GsonBuilder;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInConsensusModel;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
-import gov.epa.databases.dev_qsar.qsar_models.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
@@ -40,7 +42,6 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionService;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 import gov.epa.endpoints.models.ModelPrediction;
@@ -52,88 +53,20 @@ public class RecalcStatsScript {
 	public static class SplitPredictions {
 		List<ModelPrediction> trainingSetPredictions = new ArrayList<ModelPrediction>();
 		List<ModelPrediction> testSetPredictions = new ArrayList<ModelPrediction>();
-		
-		
 	}
 	
-	private ModelService modelService;
-	private DataPointInSplittingService dataPointInSplittingService;
-	private DataPointService dataPointService;
+	private static ModelService modelService=new ModelServiceImpl();
+	private static DataPointInSplittingService dataPointInSplittingService=new DataPointInSplittingServiceImpl();
+	private static DataPointService dataPointService=new DataPointServiceImpl();
 	
-	private PredictionService predictionService;
-	private ModelStatisticService modelStatisticService;
-	private StatisticService statisticService;
-	SplittingServiceImpl splittingService;
-	
+	private static PredictionService predictionService=new PredictionServiceImpl();
+	private static ModelStatisticService modelStatisticService=new ModelStatisticServiceImpl();
+	private static StatisticService statisticService=new StatisticServiceImpl();
+	private static SplittingServiceImpl splittingService=new SplittingServiceImpl();
+
+
 	private Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 	
-	
-	public RecalcStatsScript() {
-		this.dataPointInSplittingService = new DataPointInSplittingServiceImpl();
-		this.modelService = new ModelServiceImpl();
-		this.predictionService = new PredictionServiceImpl();
-		this.modelStatisticService = new ModelStatisticServiceImpl();
-		this.statisticService = new StatisticServiceImpl();
-		this.splittingService=new SplittingServiceImpl();
-		this.dataPointService=new DataPointServiceImpl();
-	}
-	
-	public SplitPredictions getSplitPredictions(Model model) {
-		
-		Splitting splitting=splittingService.findByName(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE);
-				
-		List<Prediction> allPredictions = predictionService.findByIds(model.getId(),splitting.getId());
-		SplitPredictions splitPredictions = new SplitPredictions();
-		
-		List<DataPoint>dps=dataPointService.findByDatasetName(model.getDatasetName());
-//		System.out.println(dps.size());
-		
-		Hashtable<String,DataPoint> htDP=new Hashtable<>();//so can look up datapoint by smiles and then get experimental value
-		
-		for (DataPoint dp:dps) {
-			htDP.put(dp.getCanonQsarSmiles(), dp);
-		}
-		
-		for (Prediction p:allPredictions) {
-			DataPoint dp=htDP.get(p.getCanonQsarSmiles());
-			ModelPrediction mp = new ModelPrediction(p.getCanonQsarSmiles(), 
-					dp.getQsarPropertyValue(), 
-					p.getQsarPredictedValue());
-			
-			if (p.getSplitNum()==DevQsarConstants.TRAIN_SPLIT_NUM) {
-				splitPredictions.trainingSetPredictions.add(mp);
-			} else if (p.getSplitNum()==DevQsarConstants.TEST_SPLIT_NUM) {
-				splitPredictions.testSetPredictions.add(mp);
-			}
-		}
-		
-		System.out.println(Utilities.gson.toJson(splitPredictions));
-		
-		//Old way needs to use dataPointsInSplitting which is a pain
-		
-//		List<DataPointInSplitting> dataPointsInSplitting = 
-//				dataPointInSplittingService.findByDatasetNameAndSplittingName(model.getDatasetName(), model.getSplittingName());
-//		
-//		SplitPredictions splitPredictions = new SplitPredictions();
-//		for (DataPointInSplitting dpis:dataPointsInSplitting) {
-//			String canonQsarSmiles = dpis.getDataPoint().getCanonQsarSmiles();
-//			Prediction pred = allPredictionsMap.get(canonQsarSmiles);
-//			if (pred!=null) {
-//				ModelPrediction mp = new ModelPrediction(canonQsarSmiles, 
-//						dpis.getDataPoint().getQsarPropertyValue(), 
-//						pred.getQsarPredictedValue());
-//				
-//				Integer splitNum = dpis.getSplitNum();
-//				if (splitNum==DevQsarConstants.TRAIN_SPLIT_NUM) {
-//					splitPredictions.trainingSetPredictions.add(mp);
-//				} else if (splitNum==DevQsarConstants.TEST_SPLIT_NUM) {
-//					splitPredictions.testSetPredictions.add(mp);
-//				}
-//			}
-//		}
-		
-		return splitPredictions;
-	}
 	
 	private void writeModelExcelComparison(Long modelId, String folderPath) {
 		Model model = modelService.findById(modelId);
@@ -146,7 +79,9 @@ public class RecalcStatsScript {
 		String splittingName = model.getSplittingName();
 		String methodName = model.getMethod().getName();
 		
-		SplitPredictions splitPredictions = getSplitPredictions(model);
+		Splitting splitting=splittingService.findByName(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE);
+		
+		SplitPredictions splitPredictions = getSplitPredictions(model,splitting);
 		Double meanExpTraining = ModelStatisticCalculator.calcMeanExpTraining(splitPredictions.trainingSetPredictions);
 		
 		Workbook workbook = new XSSFWorkbook();
@@ -354,8 +289,9 @@ public class RecalcStatsScript {
 		if (model==null) {
 			return;
 		}
-
-		SplitPredictions splitPredictions = getSplitPredictions(model);
+		Splitting splitting=splittingService.findByName(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE);
+		
+		SplitPredictions splitPredictions = getSplitPredictions(model,splitting);
 		
 		Map<String, Double> modelTrainingStatisticValues = null;
 		if (model.getMethod().getIsBinary()) {
@@ -388,13 +324,26 @@ public class RecalcStatsScript {
 		}
 	}
 	
-	public void viewTrainingSetPreds(Long modelId) {
+	public static void viewPredsForSplitSet(Long modelId) {
 		Model model = modelService.findById(modelId);
-		SplitPredictions splitPredictions = getSplitPredictions(model);
 		
+		Splitting splitting=splittingService.findByName(model.getSplittingName());
+		
+		System.out.println(model.getDatasetName());
+		System.out.println(splitting.getName());
+		
+		SplitPredictions splitPredictions = getSplitPredictions(model,splitting);
+		
+		System.out.println("training set predictions");
 		for (ModelPrediction mp:splitPredictions.trainingSetPredictions) {
 			System.out.println(String.join("\t", mp.id, String.valueOf(mp.exp), String.valueOf(mp.pred)));
 		}
+		
+		System.out.println("\ntest set predictions");
+		for (ModelPrediction mp:splitPredictions.testSetPredictions) {
+			System.out.println(String.join("\t", mp.id, String.valueOf(mp.exp), String.valueOf(mp.pred)));
+		}
+
 	}
 	
 	/**
@@ -404,48 +353,116 @@ public class RecalcStatsScript {
 	 * @param modelId
 	 * @return
 	 */
-	public double calculateQ2_CV(long modelId) {
+	public double calculateCV_Stat(long modelId,String stat) {
 		
 		Model model=modelService.findById(modelId);
 		
-		Splitting splitting=splittingService.findByName(DevQsarConstants.SPLITTING_TRAINING_CROSS_VALIDATION);
 
-		//slow because not primary key- would be nice if prediction table had copy of experimental value :)
-		List<Prediction> allPredictions = predictionService.findByIds(model.getId(),splitting.getId());
-		System.out.println("done loading from DB");
+		double stat_Avg=0;
+		for (int i=1;i<=5;i++) {
+			
+			Splitting splittingCV=splittingService.findByName("CV"+i);
+			
+			SplitPredictions sp=getSplitPredictions(model, splittingCV);
 						
-		List<ModelPrediction> mps=new ArrayList<>();
+			double stat_i=0;
+			
+			if(stat.equals("Q2_CV")) {
+				stat_i=ModelStatisticCalculator.calculateQ2(sp.trainingSetPredictions, sp.testSetPredictions);	
+			} else if(stat.equals("R2_CV")) {				
+				double YbarTrain=ModelStatisticCalculator.calcMeanExpTraining(sp.trainingSetPredictions);				
+				Map<String, Double>mapStats=ModelStatisticCalculator.calculateContinuousStatistics(sp.testSetPredictions, YbarTrain, DevQsarConstants.TAG_TEST);				
+				stat_i=mapStats.get(DevQsarConstants.PEARSON_RSQ + DevQsarConstants.TAG_TEST);
+			}
+						
+			System.out.println("stat"+i+"="+stat_i);			
+			stat_Avg+=stat_i;
+		}		
+		stat_Avg/=5.0;
+		System.out.println("stat_Avg="+stat_Avg);
 		
-		for (Prediction p:allPredictions) {
-			ModelPrediction mp = new ModelPrediction(p.getCanonQsarSmiles(),p.getQsarExperimentalValue(),p.getQsarPredictedValue(), p.getSplitNum());			
-			mps.add(mp);
-		}
+		return stat_Avg;
 		
-		return ModelStatisticCalculator.calculateQ2_CV(mps);
 	}
 	
-	public double calculateR2_CV(long modelId) {
+	public static SplitPredictions getSplitPredictions(Model model, Splitting splitting) {
 		
-		Model model=modelService.findById(modelId);
+		SplitPredictions splitPredictions=new SplitPredictions();
 		
-		Splitting splitting=splittingService.findByName(DevQsarConstants.SPLITTING_TRAINING_CROSS_VALIDATION);
+		List<DataPoint> dataPoints =dataPointService.findByDatasetName(model.getDatasetName());
+		
+		Map<String, Double> expMap = dataPoints.stream()
+				.collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp.getQsarPropertyValue()));
 
-		//slow because not primary key- would be nice if prediction table had copy of experimental value :)
-		List<Prediction> allPredictions = predictionService.findByIds(model.getId(),splitting.getId());
-		System.out.println("done loading from DB");
-						
-		List<ModelPrediction> mps=new ArrayList<>();
+		List<Prediction> predictions = predictionService.findByIds(model.getId(),splitting.getId());
 		
-		for (Prediction p:allPredictions) {
-			ModelPrediction mp = new ModelPrediction(p.getCanonQsarSmiles(),p.getQsarExperimentalValue(),p.getQsarPredictedValue(), p.getSplitNum());			
-			mps.add(mp);
+		List<DataPointInSplitting> dataPointsInSplitting = 
+				dataPointInSplittingService.findByDatasetNameAndSplittingName(model.getDatasetName(), splitting.getName());
+		Map<String, Integer> splittingMap = dataPointsInSplitting.stream()
+				.collect(Collectors.toMap(dpis -> dpis.getDataPoint().getCanonQsarSmiles(), dpis -> dpis.getSplitNum()));
+
+		for(Prediction prediction:predictions) {
+			
+			String smiles=prediction.getCanonQsarSmiles();
+			double exp=expMap.get(prediction.getCanonQsarSmiles());
+			double pred=prediction.getQsarPredictedValue();
+			int splitNum=splittingMap.get(prediction.getCanonQsarSmiles()); 			
+			
+			ModelPrediction mp=new ModelPrediction(smiles,exp,pred,splitNum);
+			
+			if (splitNum==DevQsarConstants.TRAIN_SPLIT_NUM) {
+				splitPredictions.trainingSetPredictions.add(mp);	
+			} else if (splitNum==DevQsarConstants.TEST_SPLIT_NUM) {
+				splitPredictions.testSetPredictions.add(mp);
+			}
 		}
 		
-		return ModelStatisticCalculator.calculateR2_CV(mps);
-	}
-
-	
+		if (splitPredictions.trainingSetPredictions.size()>0)		
+			return splitPredictions;
 		
+		//For Cross Validation there wont be predictions for training set in the database so:
+		
+		for (DataPointInSplitting dpis:dataPointsInSplitting) {
+
+			if(dpis.getSplitNum()!=DevQsarConstants.TRAIN_SPLIT_NUM) continue;//can have splitNum=2 for the PFAS ones...
+			
+			DataPoint dp=dpis.getDataPoint();
+			
+			String id=dp.getCanonQsarSmiles();
+			double exp=expMap.get(dp.getCanonQsarSmiles());
+			double pred=Double.NaN;//we dont have preds for training in CV 
+				
+			ModelPrediction mp=new ModelPrediction(id, exp, pred, DevQsarConstants.TRAIN_SPLIT_NUM);
+			splitPredictions.trainingSetPredictions.add(mp);	
+			
+		}
+
+		return splitPredictions;
+	}
+	
+	
+	private List<ModelPrediction> getModelPredictions(Map<String, Integer> splittingMap, Map<String, Double> expMap, Model model,Splitting splitting, int splitNum) {
+		
+		List<Prediction> predictions = predictionService.findByIds(model.getId(),splitting.getId());
+		List<ModelPrediction>mps=new ArrayList<>();	
+		
+		for(Prediction prediction:predictions) {
+
+			int splitNumPred=splittingMap.get(prediction.getCanonQsarSmiles()); 			
+			if (splitNumPred!=splitNum) continue;
+			
+			double exp=expMap.get(prediction.getCanonQsarSmiles());
+			double pred=prediction.getQsarPredictedValue();
+			String smiles=prediction.getCanonQsarSmiles();
+			
+			ModelPrediction mp=new ModelPrediction(smiles,exp,pred,splitNum);			
+			
+//			System.out.println(mp.id+"\t"+mp.exp+"\t"+pred);
+			
+			mps.add(mp);
+		}
+		return mps;
+	}
 	
 
 	public static void main(String[] args) {
@@ -456,11 +473,17 @@ public class RecalcStatsScript {
 //		Model model=r.modelService.findById(1051L);
 //		r.getSplitPredictions(model);
 		
-//		storing R2_CV_Training=0.6902989835515109
-//		storing Q2_CV_Training=0.653416130883743
-				
-		r.calculateQ2_CV(1066);
-		r.calculateR2_CV(1066);
+//				strModelID=1111
+//				http://localhost:5004/models/knn/1111
+//				storing R2_CV_Training=0.6700950135231265
+//				storing Q2_CV_Training=0.6364247502716454
+		
+//		r.calculateCV_Stat(1111,"R2_CV");
+//		r.calculateCV_Stat(1111,"Q2_CV");
+	
+//		r.viewPredsForSplitSet(1111L);
+		
+		
 		
 	}
 

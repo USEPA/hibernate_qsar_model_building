@@ -17,12 +17,12 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
-import gov.epa.databases.dev_qsar.qsar_models.entity.Splitting;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionService;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.SplittingServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import kong.unirest.Unirest;
 
 public class PredictorComparisonScript {

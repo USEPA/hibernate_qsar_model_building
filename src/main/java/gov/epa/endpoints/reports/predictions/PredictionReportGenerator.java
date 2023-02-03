@@ -32,7 +32,7 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
-import gov.epa.databases.dev_qsar.qsar_models.entity.Splitting;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
@@ -41,7 +41,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionService;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.SplittingServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.endpoints.reports.ReportGenerator;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportMetadata;
@@ -60,7 +60,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 	private ModelSetService modelSetService;
 	
 	private PredictionReport predictionReport;
-//	private Map<String, Integer> splittingMap;
+	private Map<String, Integer> splittingMap;
 	SplittingServiceImpl splittingService;
 	
 	
@@ -97,10 +97,10 @@ public class PredictionReportGenerator extends ReportGenerator {
 //		System.out.println(predictionReportData.size());
 
 		//No longer need it because have splits in prediction table:
-//		List<DataPointInSplitting> dataPointsInSplitting = 
-//				dataPointInSplittingService.findByDatasetNameAndSplittingName(datasetName, splittingName);
-//		this.splittingMap = dataPointsInSplitting.stream()
-//				.collect(Collectors.toMap(dpis -> dpis.getDataPoint().getCanonQsarSmiles(), dpis -> dpis.getSplitNum()));
+		List<DataPointInSplitting> dataPointsInSplitting = 
+				dataPointInSplittingService.findByDatasetNameAndSplittingName(datasetName, splittingName);
+		this.splittingMap = dataPointsInSplitting.stream()
+				.collect(Collectors.toMap(dpis -> dpis.getDataPoint().getCanonQsarSmiles(), dpis -> dpis.getSplitNum()));
 	}
 	
 	private void addAllPredictions() {
@@ -152,18 +152,23 @@ public class PredictionReportGenerator extends ReportGenerator {
 		
 		List<Prediction> modelPredictions = predictionService.findByIds(model.getId(),splitting.getId());
 		
+		List<DataPoint>dataPoints=dataPointService.findByDatasetName(model.getDatasetName());
+
+		
 		Map<String, Prediction> modelPredictionsMap = modelPredictions.stream()
 				.collect(Collectors.toMap(p -> p.getCanonQsarSmiles(), p -> p));
 		
 		for (PredictionReportDataPoint data:predictionReport.predictionReportDataPoints) {
 
 			Prediction pred = modelPredictionsMap.get(data.canonQsarSmiles);
+			int splitNum=splittingMap.get(data.canonQsarSmiles);
+			
 			if (pred!=null) {
 				data.qsarPredictedValues.add(new QsarPredictedValue(method.getName(), 
-						pred.getQsarPredictedValue(), pred.getSplitNum()));
+						pred.getQsarPredictedValue(), splitNum));
 			} else {
 				data.qsarPredictedValues.add(new QsarPredictedValue(method.getName(), 
-						null, pred.getSplitNum()));
+						null, splitNum));
 			}
 		}
 	}

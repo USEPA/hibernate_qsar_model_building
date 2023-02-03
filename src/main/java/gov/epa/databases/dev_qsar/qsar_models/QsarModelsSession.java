@@ -13,7 +13,18 @@ public class QsarModelsSession {
         if (sessionFactory==null) {
         	Configuration config = new Configuration();
         	
-        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Splitting.class);
+        	//Need to add classes from qsar_datasets in order to be able to use Splitting from qsar_datasets
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.Property.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointContributor.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.PropertyInCategory.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.PropertyCategory.class);
+
+        	
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Method.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Model.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes.class);

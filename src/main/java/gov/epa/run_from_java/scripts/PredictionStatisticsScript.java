@@ -552,7 +552,7 @@ public class PredictionStatisticsScript {
 				String ID=rs.getString(1);
 				Double exp=Double.parseDouble(rs.getString(2));
 				Double pred=htPred.get(ID);				
-				modelPredictions.add(new ModelPrediction(ID,exp,pred));
+				modelPredictions.add(new ModelPrediction(ID,exp,pred,1));
 			}
 			
 		} catch (SQLException e) {
@@ -858,22 +858,23 @@ public class PredictionStatisticsScript {
 		if (htModelPredictions.get(qpv.qsarMethodName)==null) {
 			List<ModelPrediction>modelPredictions=new ArrayList<>();
 			htModelPredictions.put(qpv.qsarMethodName,modelPredictions);
-			modelPredictions.add(new ModelPrediction(dp.canonQsarSmiles,dp.experimentalPropertyValue,qpv.qsarPredictedValue));
+			modelPredictions.add(new ModelPrediction(dp.canonQsarSmiles,dp.experimentalPropertyValue,qpv.qsarPredictedValue,qpv.splitNum));
 		} else {
 			List<ModelPrediction>modelPredictions=htModelPredictions.get(qpv.qsarMethodName);
-			modelPredictions.add(new ModelPrediction(dp.canonQsarSmiles,dp.experimentalPropertyValue,qpv.qsarPredictedValue));
+			modelPredictions.add(new ModelPrediction(dp.canonQsarSmiles,dp.experimentalPropertyValue,qpv.qsarPredictedValue,qpv.splitNum));
 		}
 	}
 
 	
 	public static void main(String[] args) {
 		PredictionStatisticsScript ms=new PredictionStatisticsScript();
-		ms.createSummaryTableForMethod_Rnd_Representative();
+//		ms.createSummaryTableForMethod_Rnd_Representative();
 //		ms.createSummaryTableForMethod();
 //		ms.createSummaryTableForMethodTEST();
 		
 //		Double stat=ms.calcPredictionStatsForPFAS(816,"MAE_Test");
 //		ms.createPredictionReportsExcelForJustPFAS();
+		RecalcStatsScript.viewPredsForSplitSet(1111L);
 	}
 
 }

@@ -526,13 +526,13 @@ public class ExcelPredictionReportGenerator {
 		Map < String, Object[] > spreadsheetMap = new TreeMap < String, Object[] >();
 		spreadsheetMap.put( "AAA", new Object[] { "ID","Exp", "Pred", "Error" });
 		for(String key: presentInAllModelKeys){
-			ModelPrediction modelPrediction = new ModelPrediction(key, expConsensusHash.get(key), predConsensusHash.get(key));
+			ModelPrediction modelPrediction = new ModelPrediction(key, expConsensusHash.get(key), predConsensusHash.get(key),DevQsarConstants.TRAIN_SPLIT_NUM);
 			modelPredictionsTraining.add(modelPrediction);
 			spreadsheetMap.put(key, new Object[] { key, expConsensusHash.get(key) , predConsensusHash.get(key), Math.abs(expConsensusHash.get(key) - predConsensusHash.get(key)) });
 		}
 
 		for(String key: presentinTraining) {
-			ModelPrediction modelPrediction = new ModelPrediction(key, expConsensusHash.get(key), predConsensusHash.get(key));
+			ModelPrediction modelPrediction = new ModelPrediction(key, expConsensusHash.get(key), predConsensusHash.get(key),DevQsarConstants.TEST_SPLIT_NUM);
 			modelPredictionsTest.add(modelPrediction);
 		}
 

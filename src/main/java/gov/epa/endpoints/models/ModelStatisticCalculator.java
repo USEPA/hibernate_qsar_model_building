@@ -65,103 +65,60 @@ public class ModelStatisticCalculator {
 	 * @return
 	 */
 	public static double calculateQ2(List<ModelPrediction> trainMP, List<ModelPrediction> testMP) {		
+		
 		double YbarTrain=calcMeanExpTraining(trainMP);
 		double numerator= calcAvgSumSqError(testMP);
 		double denominator = calcAvgYminusYbar(trainMP,YbarTrain);		
-		double q2=1-numerator/denominator;
+		
+		double q2=1.0-numerator/denominator;
+		
+//		System.out.println(numerator+"\t"+denominator+"\t"+q2);
+		
 		return q2;
 	}
 	
 
-	/**
-	 * 
-	 * Calculates Q2_F3 see eqn 2 of Consonni et al, 2019 (https://onlinelibrary.wiley.com/doi/full/10.1002/minf.201800029)
-	 * 
-	 * @param modelId
-	 * @return
-	 */
-	public static double calculateQ2_CV(List<ModelPrediction>modelPredictions) {
-		
-		Hashtable<Integer, List<ModelPrediction>> htMP = createModelPredictionHashtable(modelPredictions);
-		
-		//Now calculate Q2 ext:
-		
-		double q2=0;
-		
-		for (int i=1;i<=htMP.keySet().size();i++) {
-			List<ModelPrediction>trainMP=new ArrayList<>();
-			List<ModelPrediction>testMP=new ArrayList<>();
-			
-			for (int j=1;j<=5;j++) {
-				
-				if(i==j) {
-					testMP.addAll(htMP.get(j));
-				} else {
-					trainMP.addAll(htMP.get(j));
-				}
-			}
-//			System.out.println(trainMP.size()+"\t"+testMP.size());
-			
-			double q2i = ModelStatisticCalculator.calculateQ2(trainMP, testMP);
-		    System.out.println(i+"\t"+q2i);
-		    q2 = q2 + q2i;
-		}
-		
-		q2/=htMP.keySet().size();
-		System.out.println("q2="+q2+"\n");
-		
-		return q2;
-		
-		
-	}
-	
-	/**
-	 * 
-	 * Calculates Q2_F3 see eqn 2 of Consonni et al, 2019 (https://onlinelibrary.wiley.com/doi/full/10.1002/minf.201800029)
-	 * 
-	 * @param modelId
-	 * @return
-	 */
-	public static double calculateR2_CV(List<ModelPrediction>modelPredictions) {
-		
-		Hashtable<Integer, List<ModelPrediction>> htMP = createModelPredictionHashtable(modelPredictions);
-		
-		//Now calculate Q2 ext:
-		
-		double r2=0;
-		
-		for (int i=1;i<=htMP.keySet().size();i++) {
-			List<ModelPrediction>trainMP=new ArrayList<>();
-			List<ModelPrediction>testMP=new ArrayList<>();
-			
-			for (int j=1;j<=5;j++) {
-				
-				if(i==j) {
-					testMP.addAll(htMP.get(j));
-				} else {
-					trainMP.addAll(htMP.get(j));
-				}
-			}
-//			System.out.println(trainMP.size()+"\t"+testMP.size());
-			
-			double YbarTrain=calcMeanExpTraining(trainMP);
-			
-			Map<String, Double>mapStats=calculateContinuousStatistics(trainMP, YbarTrain, DevQsarConstants.TAG_TEST);
-			
-			double r2i=mapStats.get(DevQsarConstants.PEARSON_RSQ + DevQsarConstants.TAG_TEST);
-						
-		    System.out.println(i+"\t"+r2i);
-		    r2 = r2 + r2i;
-		}
-		
-		r2/=htMP.keySet().size();
-		System.out.println("r2_cv="+r2+"\n");
-		
-		return r2;
-		
-		
-	}
-	
+//	/**
+//	 * 
+//	 * Calculates Q2_F3 see eqn 2 of Consonni et al, 2019 (https://onlinelibrary.wiley.com/doi/full/10.1002/minf.201800029)
+//	 * 
+//	 * @param modelId
+//	 * @return
+//	 */
+//	public static double calculateQ2_CV(List<ModelPrediction>modelPredictions) {
+//		
+//		Hashtable<Integer, List<ModelPrediction>> htMP = createModelPredictionHashtable(modelPredictions);
+//		
+//		//Now calculate Q2 ext:
+//		
+//		double q2=0;
+//		
+//		for (int i=1;i<=htMP.keySet().size();i++) {
+//			List<ModelPrediction>trainMP=new ArrayList<>();
+//			List<ModelPrediction>testMP=new ArrayList<>();
+//			
+//			for (int j=1;j<=5;j++) {
+//				
+//				if(i==j) {
+//					testMP.addAll(htMP.get(j));
+//				} else {
+//					trainMP.addAll(htMP.get(j));
+//				}
+//			}
+////			System.out.println(trainMP.size()+"\t"+testMP.size());
+//			
+//			double q2i = ModelStatisticCalculator.calculateQ2(trainMP, testMP);
+//		    System.out.println(i+"\t"+q2i);
+//		    q2 = q2 + q2i;
+//		}
+//		
+//		q2/=htMP.keySet().size();
+//		System.out.println("q2="+q2+"\n");
+//		
+//		return q2;
+//		
+//		
+//	}
 	
 
 	private static Hashtable<Integer, List<ModelPrediction>> createModelPredictionHashtable(List<ModelPrediction> mpsAll) {
@@ -271,6 +228,9 @@ public class ModelStatisticCalculator {
 				meanPred += mp.pred;
 			}
 		}
+		
+//		System.out.println("");
+				
 		meanExp /= (double) countPredicted;
 		meanPred /= (double) countPredicted;
 		

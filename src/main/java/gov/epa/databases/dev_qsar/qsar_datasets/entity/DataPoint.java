@@ -26,6 +26,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Entity
 @Table(name="data_points", uniqueConstraints={@UniqueConstraint(columnNames = {"canon_qsar_smiles", "fk_dataset_id"})})
 public class DataPoint {
+
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
@@ -193,5 +194,10 @@ public class DataPoint {
 	public void setQsar_dtxcid(String dtxcid) {
 		this.qsar_dtxcid = dtxcid;
 	}
+	
+	public List<DataPointInSplitting> getDataPointInSplitting() {
+		return dataPointInSplitting;
+	}
+
 
 }
