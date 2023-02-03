@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointService;
@@ -16,10 +17,12 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionService;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.SplittingServiceImpl;
 import kong.unirest.Unirest;
 
 public class PredictorComparisonScript {
@@ -86,8 +89,11 @@ public class PredictorComparisonScript {
 	public static final double COMPARISON_TOLERANCE = 0.000001;
 	
 	public static Map<String, Prediction> getDatabasePredictions(Long modelId) {
+		SplittingServiceImpl splittingService = new SplittingServiceImpl();
+		Splitting splitting=splittingService.findByName(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE);
+		
 		PredictionService predictionService = new PredictionServiceImpl();
-		List<Prediction> predictions = predictionService.findByModelId(modelId);
+		List<Prediction> predictions = predictionService.findByIds(modelId,splitting.getId());
 		return predictions.stream().collect(Collectors.toMap(p -> p.getCanonQsarSmiles(), p -> p));
 	}
 	

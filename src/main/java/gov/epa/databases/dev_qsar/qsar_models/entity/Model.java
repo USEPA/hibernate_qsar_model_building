@@ -50,6 +50,9 @@ public class Model {
 	@Column(name="splitting_name")
 	private String splittingName;
 	
+	@Column(name="hyperparameters")
+	private String hyperparameters;
+	
 	@Column(name="updated_at")
 	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
@@ -185,4 +188,13 @@ public class Model {
 	public List<ModelInConsensusModel> getModelsInConsensusModel() {
 		return modelsInConsensusModel;
 	}
+	
+	public String getHyperparameters() {
+		return hyperparameters;
+	}
+
+	public void setHyperparameters(String hyperparameters) {
+		this.hyperparameters = hyperparameters;
+	}
+
 }

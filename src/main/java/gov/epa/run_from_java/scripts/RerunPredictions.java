@@ -52,7 +52,9 @@ public class RerunPredictions {
 		
 //		String modelWsServer=DevQsarConstants.SERVER_819;
 		String modelWsServer=DevQsarConstants.SERVER_LOCAL;
-		int modelWsPort=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
+//		int modelWsPort=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
+//		int modelWsPort=5014;
+		int modelWsPort=5004;
 		
 		
 		ModelWebService modelWs = new ModelWebService(modelWsServer, modelWsPort);
@@ -60,42 +62,52 @@ public class RerunPredictions {
 		String strModelId = String.valueOf(modelId);
 		String response= modelWs.callInit(bytes, model.getMethod().getName(), strModelId).getBody();
 		
-//		System.out.println(response);
+		System.out.println(response);
 		
-		
-		String modelSetName="Sample models T.E.S.T. 5.1 descriptors";	//TODO pass this variable	
-		PredictionReport pr=ReportGenerationScript.reportAllPredictions(model.getDatasetName(), model.getSplittingName(),modelSetName,true);
-		Hashtable <String,Double>htDB=new Hashtable<>();
-		
-		for(PredictionReportDataPoint prdp:	pr.predictionReportDataPoints) {
-			for (QsarPredictedValue qpv:prdp.qsarPredictedValues) {
-				
-				if (!qpv.qsarMethodName.equals(model.getMethod().getName())) continue;
-				if (qpv.splitNum!=1) continue;
-				if (qpv.qsarPredictedValue==null) continue;
-				
-//				System.out.println(prdp.canonQsarSmiles+"\t"+qpv.qsarPredictedValue);
-				htDB.put(prdp.canonQsarSmiles,qpv.qsarPredictedValue);				
-			}
-		}
-
 		String predictResponse = modelWs.callPredict(md.predictionSetInstances, model.getMethod().getName(), strModelId).getBody();
 		System.out.println("predictResponse="+predictResponse);
-		
 		Gson gson=new Gson();
-
 		ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);
 
 		for (ModelPrediction mp:modelPredictions) {
-			System.out.println(mp.ID+"\t"+mp.pred+"\t"+htDB.get(mp.ID));
+			System.out.println(mp.id+"\t"+mp.pred);
 		}
+
+		//Following compares to what we got before:
+		
+//		String modelSetName="Sample models T.E.S.T. 5.1 descriptors";	//TODO pass this variable	
+//		PredictionReport pr=ReportGenerationScript.reportAllPredictions(model.getDatasetName(), model.getSplittingName(),modelSetName,true);
+//		Hashtable <String,Double>htDB=new Hashtable<>();
+//		
+//		for(PredictionReportDataPoint prdp:	pr.predictionReportDataPoints) {
+//			for (QsarPredictedValue qpv:prdp.qsarPredictedValues) {
+//				
+//				if (!qpv.qsarMethodName.equals(model.getMethod().getName())) continue;
+//				if (qpv.splitNum!=1) continue;
+//				if (qpv.qsarPredictedValue==null) continue;
+//				
+////				System.out.println(prdp.canonQsarSmiles+"\t"+qpv.qsarPredictedValue);
+//				htDB.put(prdp.canonQsarSmiles,qpv.qsarPredictedValue);				
+//			}
+//		}
+//
+//		String predictResponse = modelWs.callPredict(md.predictionSetInstances, model.getMethod().getName(), strModelId).getBody();
+//		System.out.println("predictResponse="+predictResponse);
+//		
+//		Gson gson=new Gson();
+//
+//		ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);
+//
+//		for (ModelPrediction mp:modelPredictions) {
+//			System.out.println(mp.ID+"\t"+mp.pred+"\t"+htDB.get(mp.ID));
+//		}
 	}
 	public static void main(String[] args) {
 		Unirest.config().connectTimeout(0).socketTimeout(0);
 		
 		RerunPredictions r=new RerunPredictions();
 //		r.predict(136L);
-		r.predict(62L);
+		r.predict(1055L);
 	}
 
 }

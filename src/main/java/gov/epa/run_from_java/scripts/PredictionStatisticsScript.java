@@ -516,7 +516,7 @@ public class PredictionStatisticsScript {
 		//Remove non PFAS compounds:
 		for (int i=0;i<modelPredictions.size();i++) {
 			ModelPrediction mp=modelPredictions.get(i);
-			if(!smilesArray.contains(mp.ID)) {
+			if(!smilesArray.contains(mp.id)) {
 				modelPredictions.remove(i--);
 			}
 		}
@@ -727,13 +727,13 @@ public class PredictionStatisticsScript {
 				ModelPrediction mp=testSetPredictions.get(i);				
 				
 				if (smilesArray!=null) {
-					if(!smilesArray.contains(mp.ID)) {
+					if(!smilesArray.contains(mp.id)) {
 						testSetPredictions.remove(i--);
 					}
 				}
 				
-				if (htAD.get(mp.ID)!=null) {				
-					ApplicabilityDomainPrediction ad=htAD.get(mp.ID);					
+				if (htAD.get(mp.id)!=null) {				
+					ApplicabilityDomainPrediction ad=htAD.get(mp.id);					
 					if (!ad.AD)	mp.pred=null;//stat calculations use null preds to calc coverage
 					
 //					System.out.println(mp.ID+"\t"+mp.AD);
@@ -746,7 +746,7 @@ public class PredictionStatisticsScript {
 				ModelPrediction mp=trainingSetPredictions.get(i);
 				
 				if (smilesArray!=null) {
-					if(!smilesArray.contains(mp.ID)) {
+					if(!smilesArray.contains(mp.id)) {
 						trainingSetPredictions.remove(i--);
 					}
 				}

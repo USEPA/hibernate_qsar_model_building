@@ -12,6 +12,9 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.PredictionDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.PredictionDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
@@ -24,15 +27,15 @@ public class PredictionServiceImpl implements PredictionService {
 		this.validator = DevQsarValidator.getValidator();
 	}
 	
-	public List<Prediction> findByModelId(Long modelId) {
+	public List<Prediction> findByIds(Long modelId,Long splittingId) {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
-		return findByModelId(modelId, session);
+		return findByIds(modelId, splittingId, session);
 	}
 	
-	public List<Prediction> findByModelId(Long modelId, Session session) {
+	public List<Prediction> findByIds(Long modelId, Long splittingId, Session session) {
 		Transaction t = session.beginTransaction();
 		PredictionDao predictionDao = new PredictionDaoImpl();
-		List<Prediction> predictions = predictionDao.findByModelId(modelId, session);
+		List<Prediction> predictions = predictionDao.findByIds(modelId, splittingId, session);
 		t.rollback();
 		return predictions;
 	}
@@ -64,5 +67,35 @@ public class PredictionServiceImpl implements PredictionService {
 		
 		return prediction;
 	}
+	
+//	@Override
+//	public void create(List<Prediction>predictions) {
+//		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+//
+//		Transaction t = session.beginTransaction();
+//		//TODO need to figure out how to create/find persistence.xml and get the name for the factory
+//		EntityManagerFactory emf = Persistence.createEntityManagerFactory("gov.epa.databases.dev_qsar.qsar_models.entity.Prediction");
+//		EntityManager entityManager=emf.createEntityManager();
+//		
+//		int BATCH_SIZE=1000;
+//		
+//		for (int i=0;i<predictions.size();i++) {
+//			Prediction prediction=predictions.get(i);
+//			
+//			Set<ConstraintViolation<Prediction>> violations = validator.validate(prediction);
+//			if (!violations.isEmpty()) {
+//				throw new ConstraintViolationException(violations);
+//			}
+//			
+//			session.save(prediction);
+//			
+//			if (i > 0 && i % BATCH_SIZE == 0) {
+//	            entityManager.flush();
+//	            entityManager.clear();
+//	        }
+//		}
+//	}
+	
+
 
 }

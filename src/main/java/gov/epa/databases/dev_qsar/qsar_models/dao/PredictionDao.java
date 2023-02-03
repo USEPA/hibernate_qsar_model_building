@@ -8,6 +8,6 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 
 public interface PredictionDao {
 	
-	public List<Prediction> findByModelId(Long modelId, Session session);
+	public List<Prediction> findByIds(Long modelId, Long splittingId, Session session);
 
 }

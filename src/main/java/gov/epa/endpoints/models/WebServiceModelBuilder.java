@@ -10,22 +10,28 @@ import java.util.List;
 import javax.validation.ConstraintViolationException;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 
 import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingService;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
+
 import gov.epa.web_services.ModelWebService;
 import gov.epa.web_services.embedding_service.CalculationInfo;
 
@@ -33,6 +39,11 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	
 	private DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 	private ModelBytesService modelBytesService = new ModelBytesServiceImpl();
+	
+	StatisticServiceImpl statisticService=new StatisticServiceImpl();
+	ModelStatisticServiceImpl modelStatisticService=new ModelStatisticServiceImpl();
+	SplittingServiceImpl splittingService=new SplittingServiceImpl();
+
 	
 	protected ModelWebService modelWebService;
 	
@@ -83,85 +94,64 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	 */
 	@SuppressWarnings("deprecation")
 	public Long train(ModelData data, String methodName) throws ConstraintViolationException {
-		if (data==null || data.trainingSetInstances==null) {
-//			logger.error("Dataset instances were not initialized");
-			return null;
-		}
-		
-//		logger.debug("Building Python model with dataset = " + data.datasetName + ", descriptors = " + data.descriptorSetName
-//				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName);
-		
-		Method genericMethod = methodService.findByName(methodName);
-		if (genericMethod==null) {
-			genericMethod = new Method(methodName, methodName, null, null, false, lanId);
-			methodService.create(genericMethod);
-		}
-		
-		Model model = new Model(genericMethod, data.descriptorSetName, data.datasetName, data.splittingName, lanId);
-		modelService.create(model);
-		
-		String strModelId = String.valueOf(model.getId());
-		byte[] bytes = modelWebService.callTrain(data.trainingSetInstances, 
-				data.removeLogP_Descriptors, methodName, strModelId).getBody();
-				
-		Method method=getDetails(methodName, model);
-
-		model.setMethod(method);
-		modelService.update(model);
-		
-		ModelBytes modelBytes = new ModelBytes(model, bytes, lanId);
-		modelBytesService.create(modelBytes);
-		
-		return model.getId();
+		return trainWithPreselectedDescriptors(data, methodName, null);
 	}
 
-	Method getDetails(String methodName,Model model) {
+	Method getDetails(String methodName,Model model,JsonObject joDetails) {
 		
-		String details = modelWebService.callDetails(methodName, model.getId()+"").getBody();			
-		JsonObject jo = gson.fromJson(details, JsonObject.class);
-		String version = jo.get("version").getAsString();
-		Boolean isBinary = jo.get("is_binary").getAsBoolean();				
+		String version = joDetails.get("version").getAsString();
+		Boolean isBinary = joDetails.get("is_binary").getAsBoolean();				
 		String classOrRegr = isBinary ? "classifier" : "regressor";				
 		String fullMethodName = methodName + "_" + classOrRegr + "_" + version;		
 				
-		String description=jo.get("description").getAsString();
-		String description_url=jo.get("description_url").getAsString();
+		String description=joDetails.get("description").getAsString();
+		String description_url=joDetails.get("description_url").getAsString();
 		
 		Gson gson2 = new Gson();		
-		String hyperparameters=gson2.toJson(jo.get("hyperparameter_grid").getAsJsonObject());
-				
-		createCV_Statistic(jo, model);
+		String hyperparameters=gson2.toJson(joDetails.get("hyperparameter_grid").getAsJsonObject());
 				
 		Method method = methodService.findByName(fullMethodName);
 		if (method==null) {
 			method = new Method(fullMethodName, description, description_url,hyperparameters, isBinary, lanId);
 			methodService.create(method);
 		} else {
-			JsonParser parser = new JsonParser();
-			if (!parser.parse(hyperparameters).equals(parser.parse(method.getHyperparameters()))) {
-				System.out.println("Hyperparameters for " + fullMethodName + " have changed");
-			}
+//			JsonParser parser = new JsonParser();
+//			if (!parser.parse(hyperparameters).equals(parser.parse(method.getHyperparameters()))) {
+//				System.out.println("Hyperparameters for " + fullMethodName + " have changed");
+//			}
 		}
 		return method;
 
 	}
 	
-	void createCV_Statistic(JsonObject jo,Model model) {
+	
+
+	void createCV_Statistics(JsonObject jo,Model model) {
+
 		JsonObject joTrainingStats = jo.get("training_stats").getAsJsonObject();		
-//		double training_score=joTrainingStats.get("training_score").getAsDouble();
-		double training_cv_score=joTrainingStats.get("training_cv_score").getAsDouble();
+
+		double R2_CV_Training=joTrainingStats.get("training_cv_r2").getAsDouble();
+		System.out.println("storing R2_CV_Training="+R2_CV_Training);
+		Statistic statistic=statisticService.findByName("R2_CV_Training");					
+		ModelStatistic modelStatistic=new ModelStatistic(statistic, model, R2_CV_Training, lanId);
+		modelStatistic=modelStatisticService.create(modelStatistic);
+
+		double Q2_CV_Training=joTrainingStats.get("training_cv_q2").getAsDouble();
+		System.out.println("storing Q2_CV_Training="+Q2_CV_Training);
+		statistic=statisticService.findByName("Q2_CV_Training");					
+		modelStatistic=new ModelStatistic(statistic, model, Q2_CV_Training, lanId);
+		modelStatistic=modelStatisticService.create(modelStatistic);
 		
-//		System.out.println(training_score);
-		System.out.println("storing training_cv_score="+training_cv_score);
+		JsonArray jaPreds=joTrainingStats.get("training_cv_predictions").getAsJsonArray();
 		
-		StatisticServiceImpl ss=new StatisticServiceImpl();
-		Statistic statistic=ss.findByName("R2_CV_Training");		
-		ModelStatisticServiceImpl mss=new ModelStatisticServiceImpl();		
-		ModelStatistic modelStatistic=new ModelStatistic(statistic, model, training_cv_score, lanId);
-		modelStatistic=mss.create(modelStatistic);
-		
-		System.out.println(modelStatistic.getStatisticValue());
-		
+		ModelPrediction[] mps = gson.fromJson(jaPreds, ModelPrediction[].class);
+				
+//		for (CrossValidationPrediction cvp:cvps) {
+//			System.out.println(cvp.id+"\t"+cvp.exp+"\t"+cvp.pred+"\t"+cvp.split);
+//		}
+
+		Splitting splitting=splittingService.findByName(DevQsarConstants.SPLITTING_TRAINING_CROSS_VALIDATION);
+		postPredictions(Arrays.asList(mps), model,splitting);	//use split+10 because split 1 is already taken by test set predictions
 
 	}
 	
@@ -254,7 +244,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	 * @param params
 	 */
 	@SuppressWarnings("deprecation")
-	public Long trainWithPreselectedDescriptors(ModelData data, String methodName, String descriptorEmbeddingName) 
+	public Long trainWithPreselectedDescriptorsByEmbeddingName(ModelData data, String methodName, String descriptorEmbeddingName) 
 			throws ConstraintViolationException {
 		
 		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByName(descriptorEmbeddingName);
@@ -279,12 +269,10 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	 * @param data
 	 * @param params
 	 */
-	@SuppressWarnings("deprecation")
+	
 	public Long trainWithPreselectedDescriptors(ModelData data, String methodName, DescriptorEmbedding descriptorEmbedding) 
 			throws ConstraintViolationException {
 
-		System.out.println("descriptor embedding name = " + descriptorEmbedding.getName());
-		
 		if (data.trainingSetInstances==null) {
 //			logger.error("Dataset instances were not initialized");
 			System.out.println("Dataset instances were not initialized");
@@ -295,8 +283,13 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		System.out.println("Building Python model with dataset = " + data.datasetName + ", descriptors = " + data.descriptorSetName
 				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName);
 		
-		System.out.println("embedding tsv =" + descriptorEmbedding.getEmbeddingTsv());
-
+		if (descriptorEmbedding!=null) {
+			System.out.println("Embedding "+descriptorEmbedding.getName()+":\t"+descriptorEmbedding.getEmbeddingTsv());	
+		} else {
+			System.out.println("No embedding used");
+		}
+		
+		
 		Method genericMethod = methodService.findByName(methodName);
 		if (genericMethod==null) {
 			genericMethod = new Method(methodName, methodName, null,null, false, lanId);
@@ -310,14 +303,28 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		System.out.println("strModelID="+strModelId);
 		
-		byte[] bytes = modelWebService.callTrainWithPreselectedDescriptors(data.trainingSetInstances, 
-				data.removeLogP_Descriptors, methodName, strModelId, descriptorEmbedding.getEmbeddingTsv()).getBody();
+		byte[] bytes=null;
+		
+		if (descriptorEmbedding!=null) {		
+			bytes = modelWebService.callTrainWithPreselectedDescriptors(data.trainingSetInstances, data.removeLogP_Descriptors, methodName, strModelId, descriptorEmbedding.getEmbeddingTsv()).getBody();
+		} else {
+			bytes = modelWebService.callTrain(data.trainingSetInstances,data.removeLogP_Descriptors, methodName, strModelId).getBody();
+		}
 
 //		String description = modelWebService.callInfo(methodName).getBody();//can get from details call instead
 
-		Method method=getDetails(methodName, model);		
+		String details = modelWebService.callDetails(methodName, model.getId()+"").getBody();			
+		JsonObject joDetails = gson.fromJson(details, JsonObject.class);
+		
+		Method method=getDetails(methodName, model,joDetails);
+
+		createCV_Statistics(joDetails, model);//Add stats
+
+		Gson gson2=new Gson();//no pretty printing
+		String hyperparameters=gson2.toJson(joDetails.get("hyperparameters").getAsJsonObject());
 		
 		model.setMethod(method);
+		model.setHyperparameters(hyperparameters);		
 		modelService.update(model);
 		
 		ModelBytes modelBytes = new ModelBytes(model, bytes, lanId);
@@ -349,24 +356,25 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		Model model = modelBytes.getModel();
 		
 		String strModelId = String.valueOf(modelId);
-		
-		String predictResponse = modelWebService.callPredictSQLAlchemy(data.predictionSetInstances, methodName, strModelId).getBody();
-		ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);
-		postPredictions(Arrays.asList(modelPredictions), model);
+
+		Splitting splitting=splittingService.findByName(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE);
+
+		String predictResponse = modelWebService.callPredictSQLAlchemy(data.predictionSetInstances, methodName, strModelId).getBody();		
+		ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);				
+		for(ModelPrediction mp:modelPredictions)mp.split=DevQsarConstants.TEST_SPLIT_NUM;
+		postPredictions(Arrays.asList(modelPredictions), model,splitting);
 		
 		if (data.trainingSetInstances==null) {
 			System.out.println("Dataset instances were not initialized");
 		}
-		
-		String predictTrainingResponse = modelWebService.callPredictSQLAlchemy(data.trainingSetInstances, methodName, strModelId).getBody();
-		ModelPrediction[] modelTrainingPredictionsArray = gson.fromJson(predictTrainingResponse, ModelPrediction[].class);
 
-		List<ModelPrediction> modelTrainingPredictions = Arrays.asList(modelTrainingPredictionsArray);
+		String predictTrainingResponse = modelWebService.callPredictSQLAlchemy(data.trainingSetInstances, methodName, strModelId).getBody();
+		ModelPrediction[] modelTrainingPredictions = gson.fromJson(predictTrainingResponse, ModelPrediction[].class);	
+		for(ModelPrediction mp:modelTrainingPredictions)mp.split=DevQsarConstants.TRAIN_SPLIT_NUM;
+		postPredictions(Arrays.asList(modelTrainingPredictions), model,splitting);
 		
-		
-		postPredictions(modelTrainingPredictions, model);
-		
-		calculateAndPostModelStatistics(modelTrainingPredictions, Arrays.asList(modelPredictions), model);
+		calculateAndPostModelStatistics(Arrays.asList(modelTrainingPredictions), Arrays.asList(modelPredictions), model);
+
 	}
 
 	/**
@@ -394,14 +402,19 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		String strModelId = String.valueOf(modelId);
 		modelWebService.callInit(bytes, methodName, strModelId).getBody();
 		
+		Splitting splitting=splittingService.findByName(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE);
+				
 		String predictResponse = modelWebService.callPredict(data.predictionSetInstances, methodName, strModelId).getBody();
-		ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);
-		postPredictions(Arrays.asList(modelPredictions), model);
+		ModelPrediction[] modelPredictionsArray = gson.fromJson(predictResponse, ModelPrediction[].class);
+		List<ModelPrediction>modelTestPredictions=Arrays.asList(modelPredictionsArray);			
+		for(ModelPrediction mp:modelTestPredictions)mp.split=DevQsarConstants.TEST_SPLIT_NUM;		
+		postPredictions(modelTestPredictions, model,splitting);		
 		
 		List<ModelPrediction> modelTrainingPredictions = predictTraining(model, data, methodName, strModelId);
-		postPredictions(modelTrainingPredictions, model);
+		for(ModelPrediction mp:modelTrainingPredictions) mp.split=DevQsarConstants.TRAIN_SPLIT_NUM;
+		postPredictions(modelTrainingPredictions, model,splitting);
 		
-		calculateAndPostModelStatistics(modelTrainingPredictions, Arrays.asList(modelPredictions), model);
+		calculateAndPostModelStatistics(modelTrainingPredictions, modelTestPredictions, model);
 	}
 
 	private List<ModelPrediction> predictTraining(Model model, ModelData data, String methodName, String strModelId) {
@@ -441,7 +454,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			boolean removeLogDescriptors, String methodName, String descriptorEmbeddingName) throws ConstraintViolationException {
 		ModelData data =ModelData.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors,false);
 		
-		Long modelId = trainWithPreselectedDescriptors(data, methodName, descriptorEmbeddingName);
+		Long modelId = trainWithPreselectedDescriptorsByEmbeddingName(data, methodName, descriptorEmbeddingName);
 		predict(data, methodName, modelId);
 		
 		return modelId;

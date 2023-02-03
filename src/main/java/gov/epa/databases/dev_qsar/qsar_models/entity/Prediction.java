@@ -9,6 +9,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -19,8 +20,12 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import gov.epa.endpoints.models.ModelPrediction;
+
+
+
 @Entity
-@Table(name="predictions", uniqueConstraints={@UniqueConstraint(columnNames = {"canon_qsar_smiles", "fk_model_id"})})
+@Table(name="predictions", uniqueConstraints={@UniqueConstraint(columnNames = {"canon_qsar_smiles", "fk_model_id","fk_splitting_id","split_num"})})
 public class Prediction {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
@@ -39,6 +44,9 @@ public class Prediction {
 	@Column(name="qsar_predicted_value")
 	private Double qsarPredictedValue;
 	
+	@Column(name="qsar_experimental_value")
+	private Double qsarExperimentalValue;
+
 	@Column(name="updated_at")
 	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
@@ -56,14 +64,38 @@ public class Prediction {
 	@Column(name="created_by")
 	private String createdBy;
 	
+//	@NotNull(message="Split required") //TODO later add this when we redo it but cant set it now because have predictions with it missing
+	@Column(name="split_num")
+	private Integer splitNum;
+	
+	@OneToOne
+//	@NotNull(message="Splitting required")  //TODO later add this when we redo it
+	@JoinColumn(name="fk_splitting_id")
+	private Splitting splitting;
+
 	public Prediction() {}
 	
-	public Prediction(String canonQsarSmiles, Model model, Double qsarPredictedValue, String createdBy) {
+	public Prediction(Model model,String canonQsarSmiles, Double qsarExperimentalValue,Double qsarPredictedValue, Integer splitNum, Splitting splitting, String createdBy) {
 		this.setCanonQsarSmiles(canonQsarSmiles);
 		this.setModel(model);
+		this.setQsarExperimentalValue(qsarExperimentalValue);
 		this.setQsarPredictedValue(qsarPredictedValue);
 		this.setCreatedBy(createdBy);
+		this.setSplitNum(splitNum);
+		this.setSplitting(splitting);
 	}
+	
+	
+	public Prediction(ModelPrediction mp, Model model, Splitting splitting, String createdBy) {
+		this.setCanonQsarSmiles(mp.id);
+		this.setModel(model);
+		this.setQsarExperimentalValue(mp.exp);
+		this.setQsarPredictedValue(mp.pred);
+		this.setCreatedBy(createdBy);
+		this.setSplitNum(mp.split);
+		this.setSplitting(splitting);
+	}
+
 
 	public Long getId() {
 		return id;
@@ -128,4 +160,28 @@ public class Prediction {
 	public void setCreatedBy(String createdBy) {
 		this.createdBy = createdBy;
 	}
+	
+	public Integer getSplitNum() {
+		return splitNum;
+	}
+
+	public void setSplitNum(Integer splitNum) {
+		this.splitNum = splitNum;
+	}
+	public Splitting getSplitting() {
+		return splitting;
+	}
+
+	public void setSplitting(Splitting splitting) {
+		this.splitting = splitting;
+	}
+
+	public Double getQsarExperimentalValue() {
+		return qsarExperimentalValue;
+	}
+
+	public void setQsarExperimentalValue(Double qsarExperimentalValue) {
+		this.qsarExperimentalValue = qsarExperimentalValue;
+	}
+
 }

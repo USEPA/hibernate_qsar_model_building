@@ -16,6 +16,7 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServ
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
 import gov.epa.databases.dev_qsar.qsar_models.service.MethodService;
 import gov.epa.databases.dev_qsar.qsar_models.service.MethodServiceImpl;
@@ -65,9 +66,20 @@ public class ModelBuilder {
 	}
 	
 	
-	public void postPredictions(List<ModelPrediction> modelPredictions, Model model) {
+	public void postPredictions(List<ModelPrediction> modelPredictions, Model model,Splitting splitting) {
+		
+// Attempt at batch insert- not working yet		
+//		List<Prediction>predictions=new ArrayList<>();
+//		for (ModelPrediction mp:modelPredictions) {
+//			Prediction prediction = new Prediction(mp.ID, model, mp.pred, lanId);
+//			predictions.add(prediction);
+//		}
+//		
+//		predictionService.create(predictions);
+		
 		for (ModelPrediction mp:modelPredictions) {
-			Prediction prediction = new Prediction(mp.ID, model, mp.pred, lanId);
+			Prediction prediction = new Prediction(mp, model, splitting, lanId);
+			
 			try {
 				predictionService.create(prediction);
 			} catch (ConstraintViolationException e) {
@@ -78,18 +90,15 @@ public class ModelBuilder {
 	
 	protected void calculateAndPostModelStatistics(List<ModelPrediction> trainingSetPredictions, List<ModelPrediction> testSetPredictions,
 			Model model) {
-		double meanExpTraining = 0.0;
-		int count = 0;
-		for (ModelPrediction mp:trainingSetPredictions) {
-			if (mp.exp!=null) {
-				meanExpTraining += mp.exp;
-				count++;
-			}
-		}
-		meanExpTraining /= count;
+		
+		
+		double meanExpTraining= ModelStatisticCalculator.calcMeanExpTraining(trainingSetPredictions);
+		
+		
 		
 		Map<String, Double> modelTestStatisticValues = null;
 		Map<String, Double> modelTrainingStatisticValues = null;
+		
 		if (model.getMethod().getIsBinary()) {
 			modelTestStatisticValues = 
 					ModelStatisticCalculator.calculateBinaryStatistics(testSetPredictions, 

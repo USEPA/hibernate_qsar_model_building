@@ -59,7 +59,8 @@ public class ReportGenerator {
 					allDtxcids.addAll(dtxcids);
 					mapDtxcidsByCanonQsarSmiles.put(dp.canonQsarSmiles, dtxcids);
 				}
-			} else {
+			
+			} else {//TMM: better way just get it from the cid stored in the datapoint because compounds table could have multiple entries for same smiles
 
 				String [] dtxCIDArray=dp.qsar_dtxcid.split("\\|");
 				

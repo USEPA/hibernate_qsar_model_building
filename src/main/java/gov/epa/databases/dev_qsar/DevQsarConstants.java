@@ -168,6 +168,7 @@ public class DevQsarConstants {
 	
 	// Splitting names
 	public static final String SPLITTING_RND_REPRESENTATIVE = "RND_REPRESENTATIVE";
+	public static final String SPLITTING_TRAINING_CROSS_VALIDATION = "TRAINING_CROSS_VALIDATION";
 	public static final String SPLITTING_OPERA = "OPERA";
 	public static final String SPLITTING_TEST = "TEST";
 	
