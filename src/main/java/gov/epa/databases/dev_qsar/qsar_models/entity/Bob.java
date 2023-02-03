@@ -72,7 +72,10 @@ public class Bob {
 
 			long t2=System.currentTimeMillis();
 			System.out.println(batchSize+"\t"+(t2-t1)+" millisec");
-
+			
+			conn.commit();
+			
+//			conn.setAutoCommit(true);
 
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -85,7 +88,7 @@ public class Bob {
 	
 	public static void main(String[] args) {
         
-		int [] sizes= {1, 10,100,1000,10000};
+		int [] sizes= {100,1000,10000};
 		
         for (int size:sizes)
         	tryBatchInsert(size,10000);
