@@ -43,7 +43,7 @@ public class DatasetCreatorScript {
 //		getDatasetStats();//Get record counts for the papers
 //		getDatasetStatsUsingSql();//Get record counts for the papers
 //		getDatasetStatsForOneDataset();
-		createPKAa();
+		createPKAb();
 //		DatasetServiceImpl ds=new DatasetServiceImpl();
 //		ds.delete(112);
 
@@ -466,6 +466,37 @@ public class DatasetCreatorScript {
 		creator.createPropertyDataset(listMappedParams, false);
 		
 	}
+	
+	public static void createPKAb() {
+		// comment for diff
+		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
+
+		String propertyName = DevQsarConstants.PKA_B;
+		// String listName = "ExpProp_HLC_WithChemProp_121421";
+
+		ArrayList<String> listNameArray = new ArrayList<String>();
+		listNameArray.add("ExpProp_PKAb_WithChemProp_011423");
+
+		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
+				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
+
+//		String datasetName = "ExpProp_LogP_WithChemProp_MULTIPLE";
+		String datasetName = "pKAb from exp_prop and chemprop";
+		String datasetDescription = "pKAb from exp_prop and chemprop with no bounds";
+		
+		DatasetParams listMappedParams = new DatasetParams(datasetName, 
+				datasetDescription, 
+				propertyName,
+				listMappingParams,
+				null);
+		creator.createPropertyDataset(listMappedParams, false);
+		
+	}
+
 
 
 
