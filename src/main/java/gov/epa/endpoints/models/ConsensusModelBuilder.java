@@ -169,18 +169,9 @@ public class ConsensusModelBuilder extends ModelBuilder {
 
 						
 		predictModelSplitting(consensusModel, modelsInConsensusModel, expMap);
-				
-		double R2_CV=predictCV(consensusModel, modelsInConsensusModel, expMap,"R2_CV");
-		System.out.println("storing R2_CV_Training="+R2_CV);
-		Statistic statistic=statisticService.findByName("R2_CV_Training");					
-		ModelStatistic modelStatistic=new ModelStatistic(statistic, consensusModel, R2_CV, lanId);
-		modelStatistic=modelStatisticService.create(modelStatistic);
-
-		double Q2_CV=predictCV(consensusModel, modelsInConsensusModel, expMap,"Q2_CV");		
-		System.out.println("storing Q2_CV_Training="+Q2_CV);
-		statistic=statisticService.findByName("Q2_CV_Training");					
-		modelStatistic=new ModelStatistic(statistic, consensusModel, Q2_CV, lanId);
-		modelStatistic=modelStatisticService.create(modelStatistic);
+		
+							
+		predictCV(consensusModel, modelsInConsensusModel, expMap,true);
 				
 	}
 	
@@ -206,24 +197,29 @@ public class ConsensusModelBuilder extends ModelBuilder {
 		List<ModelPrediction> trainPreds = computeConsensusPredictions(modelsInConsensusModel,splittingMap,expMap, DevQsarConstants.TRAIN_SPLIT_NUM,splitting,datasetName);
 //		System.out.println(trainPreds.size());
 				
+		System.out.print("Posting predictions...");
 		postPredictions(trainPreds, consensusModel,splitting);
+		System.out.print("done\n");
 				
 		List<ModelPrediction> testPreds = computeConsensusPredictions(modelsInConsensusModel, splittingMap,expMap,DevQsarConstants.TEST_SPLIT_NUM,splitting,datasetName);
 		postPredictions(testPreds, consensusModel,splitting);
 
+		System.out.print("Posting stats...");
 		calculateAndPostModelStatistics(trainPreds, testPreds, consensusModel);
+		System.out.print("done\n");
 	}
 	
 	/**
 	 * Handles CV
 	 * 
 	 */
-	double predictCV(Model consensusModel,List<ModelInConsensusModel> micm,Map<String, Double> expMap,String stat) {
+	double [] predictCV(Model consensusModel,List<ModelInConsensusModel> micm,Map<String, Double> expMap,boolean postPredictions) {
 
 		Model model0=modelService.findById(micm.get(0).getModel().getId());
 		String datasetName=model0.getDatasetName();
 		
-		double Stat_Avg=0;
+		double Q2_CV=0;
+		double R2_CV=0;
 		
 		for (int i=1;i<=5;i++) {
 			
@@ -236,6 +232,13 @@ public class ConsensusModelBuilder extends ModelBuilder {
 					.collect(Collectors.toMap(dpis -> dpis.getDataPoint().getCanonQsarSmiles(), dpis -> dpis.getSplitNum()));
 
 			List<ModelPrediction> mpsTestSet = computeConsensusPredictions(micm,splittingMapCV,expMap, DevQsarConstants.TEST_SPLIT_NUM,splittingCV,datasetName);				
+						
+			if (postPredictions) {
+				System.out.print("Posting CV predictions Split "+i+" ");
+				postPredictions(mpsTestSet, consensusModel, splittingCV);
+				System.out.print("done\n");
+			}
+			
 			List<ModelPrediction> mpsTrainSet=new ArrayList<>();
 						
 			for (DataPointInSplitting dpis:dataPointsInSplittingCV) {
@@ -248,23 +251,39 @@ public class ConsensusModelBuilder extends ModelBuilder {
 								
 				mpsTrainSet.add(new ModelPrediction(id, exp, pred, DevQsarConstants.TRAIN_SPLIT_NUM));
 			}
-						
-			double stat_i=0;
-			if (stat.equals("Q2_CV")) {
-				stat_i=ModelStatisticCalculator.calculateQ2(mpsTrainSet, mpsTestSet);	
-			} else if (stat.equals("R2_CV")) {
-				double YbarTrain=ModelStatisticCalculator.calcMeanExpTraining(mpsTrainSet);				
-				Map<String, Double>mapStats=ModelStatisticCalculator.calculateContinuousStatistics(mpsTestSet, YbarTrain, DevQsarConstants.TAG_TEST);				
-				stat_i=mapStats.get(DevQsarConstants.PEARSON_RSQ + DevQsarConstants.TAG_TEST);
-			}
-					
-			System.out.println("statCV"+i+"="+stat_i);			
-			Stat_Avg+=stat_i;
-		}		
-		Stat_Avg/=5;
-		System.out.println(stat+"_Avg="+Stat_Avg);
-		return (Stat_Avg);
+				
+			
+			double Q2_CV_i=ModelStatisticCalculator.calculateQ2(mpsTrainSet, mpsTestSet);
+			Q2_CV+=Q2_CV_i;
+			
+			double YbarTrain=ModelStatisticCalculator.calcMeanExpTraining(mpsTrainSet);				
+			Map<String, Double>mapStats=ModelStatisticCalculator.calculateContinuousStatistics(mpsTestSet, YbarTrain, DevQsarConstants.TAG_TEST);				
+			double R2_CV_i=mapStats.get(DevQsarConstants.PEARSON_RSQ + DevQsarConstants.TAG_TEST);
+			R2_CV+=R2_CV_i;
 
+		}		
+		
+		R2_CV/=5.0;
+		Q2_CV/=5.0;
+
+		if (postPredictions) {			
+			System.out.println("storing R2_CV_Training="+R2_CV);
+			Statistic statistic=statisticService.findByName("R2_CV_Training");					
+			ModelStatistic modelStatistic=new ModelStatistic(statistic, consensusModel, R2_CV, lanId);
+			modelStatistic=modelStatisticService.create(modelStatistic);
+				
+			System.out.println("storing Q2_CV_Training="+Q2_CV);
+			statistic=statisticService.findByName("Q2_CV_Training");					
+			modelStatistic=new ModelStatistic(statistic, consensusModel, Q2_CV, lanId);
+			modelStatistic=modelStatisticService.create(modelStatistic);
+		} else {
+			System.out.println("R2_CV_Training="+R2_CV);
+			System.out.println("Q2_CV_Training="+Q2_CV);
+		}
+
+		double [] results={R2_CV,Q2_CV};
+		return results;
+		
 	}
 	private List<ModelPrediction> computeConsensusPredictions(List<ModelInConsensusModel> modelsInConsensusMethod,Map<String, Integer> splittingMap,Map<String, Double> expMap, Integer splitNum,Splitting splitting,String datasetName) {
 		
@@ -407,13 +426,11 @@ public class ConsensusModelBuilder extends ModelBuilder {
 		
 		Map<String, Double> expMap = dataPoints.stream()
 				.collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp.getQsarPropertyValue()));
-
 		
 		predResultsModelSplitting(consensusModels,expMap);
 		
 		//For cross-validation:
-//		predictCV(consensusModel, consensusModels, expMap,"Q2_CV");
-		predictCV(consensusModel, consensusModels, expMap,"R2_CV");
+		predictCV(consensusModel, consensusModels, expMap,false);
 		
 			
 	}
@@ -433,8 +450,6 @@ public class ConsensusModelBuilder extends ModelBuilder {
 		Map<String, Integer> splittingMap = dataPointsInSplitting.stream()
 				.collect(Collectors.toMap(dpis -> dpis.getDataPoint().getCanonQsarSmiles(), dpis -> dpis.getSplitNum()));
 		
-
-
 		List<ModelPrediction> trainPreds = computeConsensusPredictions(consensusModels, splittingMap, expMap, DevQsarConstants.TRAIN_SPLIT_NUM,splitting,datasetName);
 		double meanExpTraining=ModelStatisticCalculator.calcMeanExpTraining(trainPreds);
 				
@@ -520,7 +535,7 @@ public class ConsensusModelBuilder extends ModelBuilder {
 		ConsensusModelBuilder cmb = new ConsensusModelBuilder("tmarti02");
 
 		List<Long> consensusModelIDs = new ArrayList<Long>();
-		for (Long i=1111L;i<=1111L;i++) consensusModelIDs.add(i);
+		for (Long i=1113L;i<=1116L;i++) consensusModelIDs.add(i);
 		cmb.testCalcConsensus(consensusModelIDs);
 		
 	}
