@@ -24,4 +24,6 @@ public interface ModelBytesService {
 
 	public void deleteByModelId(Long id, Session session);
 
+	public ModelBytes createSQL(ModelBytes modelBytes);
+
 }

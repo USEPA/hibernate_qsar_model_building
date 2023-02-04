@@ -316,7 +316,7 @@ public class ConsensusModelBuilder extends ModelBuilder {
 			
 			consensusPreds.add(mpNew);
 			
-			System.out.println(mpNew.id+"\t"+mpNew.exp+"\t"+"\t"+mpNew.pred+"\t"+mps.size());
+//			System.out.println(mpNew.id+"\t"+mpNew.exp+"\t"+"\t"+mpNew.pred+"\t"+mps.size());
 		}
 		System.out.println("");
 		

@@ -2,6 +2,10 @@ package gov.epa.databases.dev_qsar.qsar_models.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -15,6 +19,8 @@ import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelBytesDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelBytesDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -65,6 +71,66 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 		return create(modelBytes, session);
 	}
 
+	@Override
+	public ModelBytes createSQL (ModelBytes modelBytes) {
+
+		Connection conn=DatabaseLookup.getConnectionPostgres();
+		
+		List<byte[]> partitions = divideArray(modelBytes.getBytes(), chunkSize);
+		
+		
+		String [] fieldNames= {"bytes","fk_model_id","created_by","created_at"};
+		int batchSize=1;
+		
+		String sql="INSERT INTO qsar_models.model_bytes (";
+		
+		for (int i=0;i<fieldNames.length;i++) {
+			sql+=fieldNames[i];
+			if (i<fieldNames.length-1)sql+=",";
+			else sql+=") VALUES (";
+		}
+		
+		for (int i=0;i<fieldNames.length-1;i++) {
+			sql+="?";
+			if (i<fieldNames.length-1)sql+=",";			 		
+		}
+		sql+="current_timestamp)";	
+//		System.out.println(sql);
+		
+		try {
+			conn.setAutoCommit(false);
+			PreparedStatement prep = conn.prepareStatement(sql);
+			prep.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+			long t1=System.currentTimeMillis();
+
+			for (int counter = 0; counter < partitions.size(); counter++) {
+				byte[] bytes=partitions.get(counter);
+				prep.setBytes(1, bytes);
+				prep.setLong(2, modelBytes.getModel().getId());
+				prep.setString(3, modelBytes.getCreatedBy());
+				prep.addBatch();
+				
+				if (counter % batchSize == 0 && counter!=0) {
+					// System.out.println(counter);
+					prep.executeBatch();
+				}
+			}
+
+			int[] count = prep.executeBatch();// do what's left
+			
+			long t2=System.currentTimeMillis();
+			System.out.println("time to post "+modelBytes.getBytes().length+" bytes using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
+			conn.commit();
+//			conn.setAutoCommit(true);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return modelBytes;
+	}		
+	
+	
+	
+	
 	@Override
 	public ModelBytes create(ModelBytes modelBytes, Session session) throws ConstraintViolationException {
 		byte[] bytes = modelBytes.getBytes();

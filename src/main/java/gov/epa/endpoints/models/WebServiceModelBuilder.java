@@ -323,7 +323,8 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		modelService.update(model);
 
 		ModelBytes modelBytes = new ModelBytes(model, bytes, lanId);
-		modelBytesService.create(modelBytes);
+//		modelBytesService.create(modelBytes);
+		modelBytesService.createSQL(modelBytes);
 		
 		
 		crossValidate.crossValidate(model,data.removeLogP_Descriptors,num_threads, true);			
