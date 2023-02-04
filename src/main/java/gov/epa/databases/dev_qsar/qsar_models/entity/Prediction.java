@@ -9,7 +9,6 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -69,10 +68,11 @@ public class Prediction {
 //	@Column(name="split_num")
 //	private Integer splitNum;
 	
-	@OneToOne
+//	@OneToOne
 //	@NotNull(message="Splitting required")  //TODO later add this when we redo it
 	@JoinColumn(name="fk_splitting_id")
-	private Splitting splitting;
+//	private Splitting splitting;
+	private Long fk_splitting_id;
 
 
 	public Prediction() {}
@@ -84,7 +84,7 @@ public class Prediction {
 		this.setQsarPredictedValue(qsarPredictedValue);
 		this.setCreatedBy(createdBy);
 //		this.setSplitNum(splitNum);
-		this.setSplitting(splitting);
+		this.setFk_splitting_id(splitting.getId());
 	}
 	
 	
@@ -95,17 +95,17 @@ public class Prediction {
 		this.setQsarPredictedValue(mp.pred);
 		this.setCreatedBy(createdBy);
 //		this.setSplitNum(mp.split);
-		this.setSplitting(splitting);
+		this.setFk_splitting_id(splitting.getId());
 	}
 
 
-	public Splitting getSplitting() {
-		return splitting;
-	}
-
-	public void setSplitting(Splitting splitting) {
-		this.splitting = splitting;
-	}
+//	public Splitting getSplitting() {
+//		return splitting;
+//	}
+//
+//	public void setSplitting(Splitting splitting) {
+//		this.splitting = splitting;
+//	}
 
 	public Long getId() {
 		return id;
@@ -169,6 +169,14 @@ public class Prediction {
 
 	public void setCreatedBy(String createdBy) {
 		this.createdBy = createdBy;
+	}
+
+	public Long getFk_splitting_id() {
+		return fk_splitting_id;
+	}
+
+	public void setFk_splitting_id(Long fk_splitting_id) {
+		this.fk_splitting_id = fk_splitting_id;
 	}
 	
 

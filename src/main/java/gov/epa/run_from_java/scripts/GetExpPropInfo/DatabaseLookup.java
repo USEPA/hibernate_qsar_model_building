@@ -2,11 +2,14 @@ package gov.epa.run_from_java.scripts.GetExpPropInfo;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -18,6 +21,9 @@ import gov.epa.databases.dsstox.service.GenericSubstanceServiceImpl;
 import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
 
 public class DatabaseLookup {
+	
+	private static Map<String, Connection> connPool = new HashMap<>();
+	
 	
 	public static DsstoxRecord lookUpByRID(String dtxrid) {
 		
@@ -31,6 +37,8 @@ public class DatabaseLookup {
 
 	}
 	
+	
+
 	
 	public static String lookUpSourceChemicalIdentifiersByRID(String dtxrid) {
 		
@@ -49,8 +57,21 @@ public class DatabaseLookup {
 
 	}
 	
-
-	public static Connection getConnection() {
+	public static final String dbPostGres="Postgres";
+	public static final String dbDSSTOX="DSSTOX";
+	
+	
+	public static Connection getConnectionPostgres() {
+		
+		try {
+			if (connPool.containsKey(dbPostGres) && connPool.get(dbPostGres) != null && !connPool.get(dbPostGres).isClosed()) {
+				return connPool.get(dbPostGres);
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		String host = System.getenv().get("DEV_QSAR_HOST");
 		String port = System.getenv().get("DEV_QSAR_PORT");
 		String db = System.getenv().get("DEV_QSAR_DATABASE");
@@ -61,6 +82,7 @@ public class DatabaseLookup {
 
 		try {
 			Connection conn = DriverManager.getConnection(url, user, password);
+			connPool.put(dbPostGres, conn);
 			return conn;
 		} catch (Exception ex) {
 			return null;
@@ -68,6 +90,17 @@ public class DatabaseLookup {
 	}
 
 	static Connection getConnectionDSSTOX() {
+		
+		try {
+			if (connPool.containsKey(dbDSSTOX) && connPool.get(dbDSSTOX) != null && !connPool.get(dbDSSTOX).isClosed()) {
+				return connPool.get(dbDSSTOX);
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		
 		String host = System.getenv().get("DSSTOX_HOST");
 		String port = System.getenv().get("DSSTOX_PORT");
 		String db = System.getenv().get("DSSTOX_DATABASE");
@@ -78,6 +111,9 @@ public class DatabaseLookup {
 
 		try {
 			Connection conn = DriverManager.getConnection(url, user, password);
+			
+			connPool.put(dbDSSTOX, conn);
+			
 			return conn;
 		} catch (Exception ex) {
 			return null;
@@ -351,13 +387,14 @@ public class DatabaseLookup {
 	}
 
 	
+	
 	public static void main(String[] args) {
 
-		DsstoxRecord dr=lookUpByRID("DTXRID2016296331");
-		System.out.println(dr.casrn+"\t"+dr.preferredName);		
-
-		String json=lookUpSourceChemicalIdentifiersByRID("DTXRID2016296331");
-		System.out.println(json);		
+//		DsstoxRecord dr=lookUpByRID("DTXRID2016296331");
+//		System.out.println(dr.casrn+"\t"+dr.preferredName);		
+//
+//		String json=lookUpSourceChemicalIdentifiersByRID("DTXRID2016296331");
+//		System.out.println(json);		
 		
 	}
 }

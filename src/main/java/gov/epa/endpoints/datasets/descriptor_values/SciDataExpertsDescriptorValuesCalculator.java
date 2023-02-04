@@ -219,7 +219,7 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 		Long id_descriptor=descriptorSet.getId();
 		Long id_dataset=dataset.getId();
 				
-		Connection conn=DatabaseLookup.getConnection();
+		Connection conn=DatabaseLookup.getConnectionPostgres();
 		
 		//gets list of smiles in the dataset
 		String sql="select dp.canon_qsar_smiles from qsar_datasets.data_points dp \r\n"

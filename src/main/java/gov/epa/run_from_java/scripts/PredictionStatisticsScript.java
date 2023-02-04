@@ -47,7 +47,7 @@ public class PredictionStatisticsScript {
 
 	
 	String lanId="tmarti02";
-	Connection conn=DatabaseLookup.getConnection();
+	Connection conn=DatabaseLookup.getConnectionPostgres();
 
 	/**
 	 * Get the modelID for model for given dataset, method, and modelSet

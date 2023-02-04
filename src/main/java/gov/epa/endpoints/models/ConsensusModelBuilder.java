@@ -251,8 +251,7 @@ public class ConsensusModelBuilder extends ModelBuilder {
 								
 				mpsTrainSet.add(new ModelPrediction(id, exp, pred, DevQsarConstants.TRAIN_SPLIT_NUM));
 			}
-				
-			
+							
 			double Q2_CV_i=ModelStatisticCalculator.calculateQ2(mpsTrainSet, mpsTestSet);
 			Q2_CV+=Q2_CV_i;
 			
@@ -314,12 +313,13 @@ public class ConsensusModelBuilder extends ModelBuilder {
 			ModelPrediction mpNew=new ModelPrediction(ID, exp, pred,split);
 			
 //			System.out.println(exp+"\t"+mpNew.exp);			
-
 			
 			consensusPreds.add(mpNew);
 			
-//			System.out.println("**"+mpNew.id+"\t"+mpNew.exp+"\t"+"\t"+mpNew.pred+"\t"+mps.size());
+			System.out.println(mpNew.id+"\t"+mpNew.exp+"\t"+"\t"+mpNew.pred+"\t"+mps.size());
 		}
+		System.out.println("");
+		
 		
 		return consensusPreds;
 	}
@@ -407,6 +407,7 @@ public class ConsensusModelBuilder extends ModelBuilder {
 	
 	void testCalcConsensus(List<Long> consensusModelIDs) {
 		
+			
 		List<ModelInConsensusModel>consensusModels=new ArrayList<>();
 		
 		Model consensusModel=new Model();
@@ -460,6 +461,7 @@ public class ConsensusModelBuilder extends ModelBuilder {
 		for (String key:modelTrainingStatisticValues.keySet()) {
 			System.out.println(key+"\t"+modelTrainingStatisticValues.get(key));
 		}
+		System.out.println("");
 
 		List<ModelPrediction> testPreds = computeConsensusPredictions(consensusModels, splittingMap, expMap, DevQsarConstants.TEST_SPLIT_NUM,splitting,datasetName);
 
@@ -470,7 +472,7 @@ public class ConsensusModelBuilder extends ModelBuilder {
 		for (String key:modelTestStatisticValues.keySet()) {
 			System.out.println(key+"\t"+modelTestStatisticValues.get(key));
 		}
-		
+		System.out.println("");
 	}
 
 //	private void calculateQ2_CV(List<ModelInConsensusModel> consensusModels, String datasetName) {

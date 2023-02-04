@@ -624,18 +624,18 @@ public class GetExpPropInfo {
 	static void createCheckingSpreadsheets() {
 		
 		String folder="data\\dev_qsar\\output\\";
-		Connection conn=DatabaseLookup.getConnection();
+		Connection conn=DatabaseLookup.getConnectionPostgres();
 		Connection connDSSTOX=DatabaseLookup.getConnectionDSSTOX();					
 		
 		List<String>datasetNames=new ArrayList<>();
 
 		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("ExpProp_BCF_Fish_TMM");
+//		datasetNames.add("BP from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("ExpProp_BCF_Fish_TMM");
 		
 //		String version="V4";
 		String version="V5";
@@ -669,7 +669,7 @@ public class GetExpPropInfo {
 
 	private static void detectBadLogPvalues() {
 		String folder="data\\dev_qsar\\output\\";
-		Connection conn=DatabaseLookup.getConnection();
+		Connection conn=DatabaseLookup.getConnectionPostgres();
 		Connection connDSSTOX=DatabaseLookup.getConnectionDSSTOX();					
 		detectBadLogPValuesFromExpprop("ExpProp_LogP_WithChemProp_TMM3", conn, folder);
 	}

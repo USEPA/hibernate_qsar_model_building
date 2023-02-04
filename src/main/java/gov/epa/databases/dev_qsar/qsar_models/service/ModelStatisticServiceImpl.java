@@ -25,16 +25,16 @@ public class ModelStatisticServiceImpl implements ModelStatisticService {
 	}
 
 	@Override
-	public List<ModelStatistic> findByModelId(Long modelId) {
+	public List<ModelStatistic> findByModelId(Long modelId, Long statisticId) {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
-		return findByModelId(modelId, session);
+		return findByModelId(modelId, statisticId,session);
 	}
 
 	@Override
-	public List<ModelStatistic> findByModelId(Long modelId, Session session) {
+	public List<ModelStatistic> findByModelId(Long modelId, Long statisticId, Session session) {
 		Transaction t = session.beginTransaction();
 		ModelStatisticDao modelStatisticDao = new ModelStatisticDaoImpl();
-		List<ModelStatistic> modelStatistic = modelStatisticDao.findByModelId(modelId, session);
+		List<ModelStatistic> modelStatistic = modelStatisticDao.findByModelId(modelId, statisticId, session);
 		t.rollback();
 		return modelStatistic;
 	}

@@ -92,7 +92,7 @@ public class ModelData {
 	 */
 	public void initTrainingPredictionInstances() {
 		
-		Connection conn=DatabaseLookup.getConnection();
+		Connection conn=DatabaseLookup.getConnectionPostgres();
 		String idField="canon_qsar_smiles";
 		if(useDTXCIDs) idField="qsar_dtxcid";
 		
@@ -156,7 +156,7 @@ public class ModelData {
 	
 	public static String generateInstancesWithoutSplitting(String datasetName,String descriptorSetName,boolean useDTXCIDs) {
 			
-		Connection conn=DatabaseLookup.getConnection();
+		Connection conn=DatabaseLookup.getConnectionPostgres();
 		String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetName+"'";
 		String datasetId=DatabaseLookup.runSQL(conn, sql);
 
@@ -213,7 +213,7 @@ public class ModelData {
 	
 	public void generateInstancesNotinOperaPredictionSet() {
 		
-		Connection conn=DatabaseLookup.getConnection();
+		Connection conn=DatabaseLookup.getConnectionPostgres();
 		String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetName+"'";
 		String datasetId=DatabaseLookup.runSQL(conn, sql);
 
@@ -350,7 +350,7 @@ public class ModelData {
 	}
 
 	public void generateInstancesNotinOperaTrainingSet() {
-		Connection conn=DatabaseLookup.getConnection();
+		Connection conn=DatabaseLookup.getConnectionPostgres();
 		String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetName+"'";
 		String datasetId=DatabaseLookup.runSQL(conn, sql);
 

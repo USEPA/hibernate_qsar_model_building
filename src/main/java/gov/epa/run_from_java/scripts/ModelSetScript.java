@@ -22,7 +22,7 @@ public class ModelSetScript {
 	ModelSetService mss=new ModelSetServiceImpl();
 	ModelInModelSetService mimss=new ModelInModelSetServiceImpl();
 	String lanId="tmarti02";
-	Connection conn=DatabaseLookup.getConnection();
+	Connection conn=DatabaseLookup.getConnectionPostgres();
 	
 	void createModelSets() {
 

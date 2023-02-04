@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
+import gov.epa.web_services.embedding_service.CalculationInfo;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
@@ -84,6 +85,25 @@ public class ModelWebService extends WebService {
 		return response;
 	}
 
+	
+	public HttpResponse<String> crossValidate(String qsarMethod,String training_tsv,String prediction_tsv,
+			boolean remove_log_p, int num_jobs,String embeddingTsv,String params) {
+
+//		System.out.println(this.address+ "/models/" + qsarMethod +"/cross_validate");
+
+		HttpResponse<String> response = Unirest.post(this.address+ "/models/{qsar_method}/cross_validate")
+				.routeParam("qsar_method", qsarMethod)
+				.field("training_tsv",training_tsv)
+				.field("prediction_tsv", prediction_tsv)
+				.field("remove_log_p",String.valueOf(remove_log_p))
+				.field("num_jobs",String.valueOf(num_jobs))
+				.field("embedding_tsv", embeddingTsv)
+				.field("params", params)
+				.asString();
+		return response;
+	}
+
+	
 	public HttpResponse<String> callDetails(String qsarMethod, String modelId) {
 		System.out.println(address+"/models/" + qsarMethod + "/" + modelId);
 		HttpResponse<String> response = Unirest.get(address+"/models/{qsar_method}/{model_id}")
@@ -144,4 +164,5 @@ public class ModelWebService extends WebService {
 		
 		return response;
 	}
+
 }

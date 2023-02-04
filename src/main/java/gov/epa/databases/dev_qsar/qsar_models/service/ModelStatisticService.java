@@ -10,9 +10,9 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 
 public interface ModelStatisticService {
 	
-	public List<ModelStatistic> findByModelId(Long modelId);
+	public List<ModelStatistic> findByModelId(Long modelId,Long statisticId);
 	
-	public List<ModelStatistic> findByModelId(Long modelId, Session session);
+	public List<ModelStatistic> findByModelId(Long modelId, Long statisticId, Session session);
 	
 	public ModelStatistic create(ModelStatistic modelStatistic) throws ConstraintViolationException;
 	

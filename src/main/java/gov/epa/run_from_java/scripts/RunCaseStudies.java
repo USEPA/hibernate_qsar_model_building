@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
@@ -24,6 +25,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionServiceImpl;
+import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.ModelStatisticCalculator;
@@ -213,8 +215,8 @@ public class RunCaseStudies {
 		lanId="cramslan";		
 		boolean buildModels=true;
 		
-		serverModelBuilding=DevQsarConstants.SERVER_819;
-//		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+//		serverModelBuilding=DevQsarConstants.SERVER_819;
+		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
 		portModelBuilding=5004;
 		
 		DescriptorEmbeddingServiceImpl descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
@@ -222,16 +224,16 @@ public class RunCaseStudies {
 
 		List<String>datasetNames=new ArrayList<>();
 
-//		datasetNames.add("HLC from exp_prop and chemprop");
+		datasetNames.add("HLC from exp_prop and chemprop");
 //		datasetNames.add("WS from exp_prop and chemprop");
 //		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop");
 		
 //		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
-//		String splitting ="T=PFAS only, P=PFAS";
-		String splitting = "T=all but PFAS, P=PFAS";
+		String splitting ="T=PFAS only, P=PFAS";
+//		String splitting = "T=all but PFAS, P=PFAS";
 
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
@@ -273,9 +275,9 @@ public class RunCaseStudies {
 
 			if (!buildModels) continue;
 
-			String methods[]= {DevQsarConstants.KNN, DevQsarConstants.RF, DevQsarConstants.XGB, DevQsarConstants.SVM};
+//			String methods[]= {DevQsarConstants.KNN, DevQsarConstants.RF, DevQsarConstants.XGB, DevQsarConstants.SVM};
 //			String methods[]= {DevQsarConstants.SVM};
-//			String methods[]= {DevQsarConstants.KNN};
+			String methods[]= {DevQsarConstants.KNN};
 //			String methods[]= {DevQsarConstants.RF, DevQsarConstants.XGB, DevQsarConstants.SVM};
 //			String methods[]= {DevQsarConstants.XGB, DevQsarConstants.SVM};
 //			String methods[]= {DevQsarConstants.KNN, DevQsarConstants.RF};
@@ -284,7 +286,7 @@ public class RunCaseStudies {
 				System.out.println(method + "descriptor" + descriptorSetName);
 				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
 			}
-			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methods.length);
+//			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methods.length);
 		}
 
 	}
@@ -413,7 +415,7 @@ public class RunCaseStudies {
 				+ "fk_descriptor_embedding_id is null;";
 		
 		
-		Connection conn=DatabaseLookup.getConnection();
+		Connection conn=DatabaseLookup.getConnectionPostgres();
 		ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
 		
 		Set<Long> consensusModelIDs = new HashSet<Long>(); 
@@ -473,7 +475,7 @@ public class RunCaseStudies {
 		}
 		
 		Iterator<Long>iterator=consensusModelIDs.iterator();
-		Connection conn=DatabaseLookup.getConnection();
+		Connection conn=DatabaseLookup.getConnectionPostgres();
 		
 		List <Integer>counts=new ArrayList<>();
 		while(iterator.hasNext()) {
@@ -570,8 +572,11 @@ public class RunCaseStudies {
 //		runCaseStudyTest();
 //		runCaseStudyOPERA_All_Endpoints();
 		
-//		runCaseStudyExpProp_All_Endpoints();		
-		runCaseStudyExpProp_All_Endpoints_No_Embedding();
+//		ModelBuilder mb=new ModelBuilder("tmarti02");
+//		mb.postPredictionsSQL(null, null, new Splitting(), null);
+		
+		runCaseStudyExpProp_All_Endpoints();		
+//		runCaseStudyExpProp_All_Endpoints_No_Embedding();
 		
 		
 //		for (int i=641;i<=649;i++) {

@@ -34,7 +34,7 @@ public class GetExpPropInfoOld {
 	static void createCheckingSpreadsheetOld() {
 
 		String folder="data\\dev_qsar\\dataset_files\\";
-		Connection conn=DatabaseLookup.getConnection();
+		Connection conn=DatabaseLookup.getConnectionPostgres();
 		Connection connDSSTOX=DatabaseLookup.getConnectionDSSTOX();					
 
 		int id_dataset=31;
@@ -303,7 +303,7 @@ public class GetExpPropInfoOld {
 	public static void main(String[] args) {
 
 		String folder="data\\dev_qsar\\output\\";
-		Connection conn=DatabaseLookup.getConnection();
+		Connection conn=DatabaseLookup.getConnectionPostgres();
 		Connection connDSSTOX=DatabaseLookup.getConnectionDSSTOX();					
 		long dataset_id=88L;
 		getDataSetData(dataset_id,conn,connDSSTOX,folder);//pulls data from the database

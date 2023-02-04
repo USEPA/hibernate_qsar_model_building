@@ -124,7 +124,7 @@ public class DatasetCreatorScript {
 
 		System.out.println("propertyName\tRaw*\tDSSTox Mapped\tDataset");
 
-		Connection conn=DatabaseLookup.getConnection();
+		Connection conn=DatabaseLookup.getConnectionPostgres();
 		
 		List<String>datasetNames=new ArrayList<>();
 

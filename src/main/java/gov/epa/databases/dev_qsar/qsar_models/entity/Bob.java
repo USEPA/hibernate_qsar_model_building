@@ -43,7 +43,7 @@ public class Bob {
 
 		try {
 
-			Connection conn = DatabaseLookup.getConnection();
+			Connection conn = DatabaseLookup.getConnectionPostgres();
 			conn.setAutoCommit(false);
 
 			PreparedStatement prep = conn.prepareStatement(sql);
@@ -88,10 +88,10 @@ public class Bob {
 	
 	public static void main(String[] args) {
         
-		int [] sizes= {100,1000,10000};
+		int [] sizes= {10,100};
 		
         for (int size:sizes)
-        	tryBatchInsert(size,10000);
+        	tryBatchInsert(size,100);
 		
 	}
 
