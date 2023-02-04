@@ -111,7 +111,7 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 				prep.addBatch();
 				
 				if (counter % batchSize == 0 && counter!=0) {
-					// System.out.println(counter);
+					 System.out.println(counter);
 					prep.executeBatch();
 				}
 			}
@@ -227,7 +227,7 @@ public class ModelBytesServiceImpl implements ModelBytesService {
             parts++;
         }
 
-        System.out.println("Parts" + parts + "");
+        System.out.println("# Parts = " + parts + "");
 
         return ret;
     }

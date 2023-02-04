@@ -355,7 +355,7 @@ public class ConsensusModelBuilder extends ModelBuilder {
 	
 	private void addPredictionsToConsensusPredictions(Hashtable<String, List<ModelPrediction>> htConsensusPredictions, Map<String, Integer> splittingMap, Map<String, Double> expMap, ModelInConsensusModel micm,Integer splitNum,Splitting splitting) {
 
-		System.out.println(splitting.getId()+"\t"+micm.getModel().getId());
+//		System.out.println(splitting.getId()+"\t"+micm.getModel().getId());
 		
 		List<Prediction> predictions = predictionService.findByIds(micm.getModel().getId(),splitting.getId());
 				

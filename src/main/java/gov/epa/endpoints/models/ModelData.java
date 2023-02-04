@@ -112,7 +112,7 @@ public class ModelData {
 		"join qsar_datasets.splittings s on s.id=dpis.fk_splitting_id\n"+ 
 		"where d.\"name\"='"+datasetName+"' and ds.\"name\"='"+descriptorSetName+"' and s.\"name\"='"+splittingName+"';";
 		
-		System.out.println("\n"+sql);
+//		System.out.println("\n"+sql);
 
 		StringBuilder sbTraining = new StringBuilder(instanceHeader);
 		StringBuilder sbPrediction = new StringBuilder(instanceHeader);
@@ -126,7 +126,7 @@ public class ModelData {
 			while (rs.next()) {
 				counter++;
 				
-				if (counter%1000==0) System.out.println(counter+ "building instances");
+//				if (counter%1000==0) System.out.println(counter+ "\tbuilding instances");
 				
 				String id=rs.getString(1);
 				String qsar_property_value=rs.getString(2);
