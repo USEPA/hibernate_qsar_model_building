@@ -32,9 +32,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.PredictionService;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 
-import java.sql.Timestamp;
 
 import kong.unirest.Unirest;
 
@@ -74,70 +72,21 @@ public class ModelBuilder {
 	}
 	
 	
-	public void postPredictionsSQL (List<ModelPrediction> modelPredictions, Model model,Splitting splitting,Connection conn) {
-		String [] fieldNames= {"canon_qsar_smiles","qsar_predicted_value","fk_model_id","fk_splitting_id","created_by","created_at"};
-		int batchSize=1000;
-		
-		String sql="INSERT INTO qsar_models.predictions (";
-		
-		for (int i=0;i<fieldNames.length;i++) {
-			sql+=fieldNames[i];
-			if (i<fieldNames.length-1)sql+=",";
-			else sql+=") VALUES (";
-		}
-		
-		for (int i=0;i<fieldNames.length-1;i++) {
-			sql+="?";
-			if (i<fieldNames.length-1)sql+=",";			 		
-		}
-		sql+="current_timestamp)";	
-//		System.out.println(sql);
-		
-		try {
-			conn.setAutoCommit(false);
-			PreparedStatement prep = conn.prepareStatement(sql);
-			prep.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
-			long t1=System.currentTimeMillis();
-
-			for (int counter = 1; counter < modelPredictions.size(); counter++) {
-				ModelPrediction mp=modelPredictions.get(counter);
-				prep.setString(1, mp.id);
-				prep.setDouble(2, mp.pred);
-				prep.setLong(3, model.getId());
-				prep.setLong(4, splitting.getId());
-				prep.setString(5, lanId);
-				prep.addBatch();
-				if (counter % batchSize == 0) {
-					// System.out.println(counter);
-					prep.executeBatch();
-				}
-			}
-
-			int[] count = prep.executeBatch();// do what's left
-			long t2=System.currentTimeMillis();
-			System.out.println("time to post "+modelPredictions.size()+ " using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
-			conn.commit();
-//			conn.setAutoCommit(true);
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-	}			
 	
 	
 	public void postPredictions(List<ModelPrediction> modelPredictions, Model model,Splitting splitting) {
+
+		List<Prediction>predictions=new ArrayList<>();
+		for (ModelPrediction mp:modelPredictions) {
+			Prediction prediction = new Prediction(mp, model, splitting, lanId);
+			predictions.add(prediction);
+		}
+
 		
-		Connection conn=DatabaseLookup.getConnectionPostgres();
-		postPredictionsSQL(modelPredictions, model, splitting, conn);
-		
-		
-		//TODO this in batch mode to speed up!
+		//TODO for now use sql implementation unless hibernate can be sped up:		
+		predictionService.createSQL(predictions);
 		
 // Attempt at batch insert- not working yet		
-//		List<Prediction>predictions=new ArrayList<>();
-//		for (ModelPrediction mp:modelPredictions) {
-//			Prediction prediction = new Prediction(mp.ID, model, mp.pred, lanId);
-//			predictions.add(prediction);
-//		}
 //		
 //		predictionService.create(predictions);
 		
@@ -150,11 +99,6 @@ public class ModelBuilder {
 //				System.out.println(e.getMessage());
 //			}
 //		}
-
-			
-		
-		
-		
 	}
 	
 	protected void calculateAndPostModelStatistics(List<ModelPrediction> trainingSetPredictions, List<ModelPrediction> testSetPredictions,
@@ -209,4 +153,6 @@ public class ModelBuilder {
 			}
 		}
 	}
+	
+	
 }

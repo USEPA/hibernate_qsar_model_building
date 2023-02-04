@@ -6,6 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +55,8 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	SplittingServiceImpl splittingService=new SplittingServiceImpl();
 	DataPointInSplittingService dataPointInSplittingService = new DataPointInSplittingServiceImpl();
 	DataPointServiceImpl dataPointService=new DataPointServiceImpl();
-
+	
+	CrossValidate crossValidate=new CrossValidate();
 	
 	
 	int num_threads=8;
@@ -323,7 +325,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		ModelBytes modelBytes = new ModelBytes(model, bytes, lanId);
 		modelBytesService.create(modelBytes);
 		
-		CrossValidate crossValidate=new CrossValidate();		
+		
 		crossValidate.crossValidate(model,data.removeLogP_Descriptors,num_threads, true);			
 
 		
@@ -332,11 +334,14 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	
 	class CrossValidate {
 		
+		int numSplits=5;
+		
 		
 		public void crossValidate(Model model, boolean remove_log_p, int num_jobs, boolean postPredictions) {
 			
-			//TODO need to check if have dpis for CV1-5 splittings- if not create them...
-			addCV_DPIS();
+			System.out.println(model.getSplittingName());
+			
+			addCV_DPIS(model);
 			
 			DescriptorEmbedding descriptorEmbedding=model.getDescriptorEmbedding();		
 			List<DataPoint> dataPoints =dataPointService.findByDatasetName(model.getDatasetName());
@@ -354,8 +359,139 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		}
 		
 
-		public void addCV_DPIS() {
-			//TODO do this in runCaseStudies?
+		public void addCV_DPIS(Model model) {
+			
+			Splitting splittingCV1=splittingService.findByName(model.getSplittingName()+"_CV1");
+			createSplittings(model, splittingCV1);
+			createDataPointInSplittings(model, splittingCV1);
+		}
+
+
+		private void createDataPointInSplittings(Model model, Splitting splittingCV1) {
+			//Check if have DPIS:
+			String sql="select count(dpis.id) from qsar_datasets.data_points_in_splittings dpis\n"+ 
+			"join qsar_datasets.splittings s on s.id=dpis.fk_splitting_id\n"+ 
+			"join qsar_datasets.data_points dp on dp.id=dpis.fk_data_point_id\n"+ 
+			"join qsar_datasets.datasets d on d.id=dp.fk_dataset_id\n"+ 
+			"where s.\"name\" ='"+splittingCV1.getName()+"' and d.\"name\" ='"+model.getDatasetName()+"'";
+
+//			System.out.println(sql);
+			
+			int countDPIS=Integer.parseInt(DatabaseLookup.runSQL(DatabaseLookup.getConnectionPostgres(), sql));
+			
+			if (countDPIS!=0) return;
+						
+//			System.out.println(countDPIS);
+			
+			List<String>ids=ModelData.getTrainingIds(model, false);
+			Collections.shuffle(ids);
+			
+//			for (String id:ids) {
+//				System.out.println(id);
+//			}
+			
+			int idCount=ids.size();
+			int countPerSplit=idCount/numSplits;
+			
+//			System.out.println(idCount);
+			
+			Hashtable<Integer,List<String>>htSplits=createSplitHashtable(ids, countPerSplit);
+			
+			
+			List<DataPoint> dataPoints = 
+					dataPointService.findByDatasetName(model.getDatasetName());
+
+			Map<String, DataPoint> dpMap = dataPoints.stream()
+					.collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp));
+
+			
+			for (int fold=1;fold<=numSplits;fold++) {
+				
+				List<String>idsTrain=new ArrayList<>();
+				List<String>idsTest=new ArrayList<>();
+				
+				for (int i=1;i<=numSplits;i++) {
+					List<String>idsFold=htSplits.get(i);
+					
+					if (i!=fold) {
+						idsTrain.addAll(idsFold);						
+					} else {
+						idsTest.addAll(idsFold);
+					}
+				}
+				
+//				System.out.println(fold+"\t"+idsTrain.size()+"\t"+idsTest.size());
+				
+				Splitting splittingFold=splittingService.findByName(model.getSplittingName()+"_CV"+fold);
+				List<DataPointInSplitting> dpisTrain = createDPIS(dpMap, idsTrain, splittingFold,DevQsarConstants.TRAIN_SPLIT_NUM);
+				List<DataPointInSplitting> dpisTest = createDPIS(dpMap, idsTest, splittingFold,DevQsarConstants.TEST_SPLIT_NUM);
+				
+//				System.out.println(fold+"\t"+dpisTrain.size()+"\t"+dpisTest.size());
+				
+			}
+			
+		}
+
+
+		private List<DataPointInSplitting> createDPIS(Map<String, DataPoint> dpMap, List<String> idsSet,
+				Splitting splittingFold, int splitNum) {
+			List<DataPointInSplitting>dpisTrain=new ArrayList<>();
+			for(String id:idsSet) {
+				DataPointInSplitting dpis=new DataPointInSplitting(dpMap.get(id), splittingFold, splitNum, lanId);
+				dpisTrain.add(dpis);
+			}				
+			dataPointInSplittingService.createSQL(dpisTrain);
+			return dpisTrain;
+		}
+
+
+		private void createSplittings(Model model, Splitting splittingCV1) {
+			
+			if (splittingCV1!=null) return;
+			
+			for (int fold=1;fold<=5;fold++) {
+				String name=model.getSplittingName()+"_CV"+fold;
+				String description="Cross validation split "+fold+" for splitting = "+model.getSplittingName();
+				Splitting splitting=new Splitting(name, description, 2, lanId);
+				splittingService.create(splitting);
+			}
+			
+		}
+
+
+		private  Hashtable<Integer,List<String>> createSplitHashtable(List<String> ids, int countPerSplit) {
+			Hashtable<Integer,List<String>>htSplits=new Hashtable<>();
+
+			for (int fold=1;fold<=numSplits;fold++) {
+
+				for (int j=1;j<=countPerSplit;j++) {
+					if(htSplits.get(fold)==null) {
+						List<String>ids_i=new ArrayList<>();
+						htSplits.put(fold, ids_i);
+						ids_i.add(ids.remove(0));
+					} else {
+						List<String>ids_i=htSplits.get(fold);
+						ids_i.add(ids.remove(0));
+					}
+				}
+//				System.out.println(fold+"\t"+htSplits.get(fold).size());
+			}
+
+			//Distribute remaining ids:
+			int countRemaining=ids.size();
+			int currentFold=1;
+			for (int i=1;i<=countRemaining;i++) {
+				List<String>ids_i=htSplits.get(currentFold);
+				ids_i.add(ids.remove(0));
+				currentFold++;
+			}
+			
+//			for (int fold=1;fold<=numSplits;fold++) {
+//				List<String>ids_i=htSplits.get(fold);
+//				System.out.println(ids_i.size());
+//			}
+			
+			return htSplits;
 		}
 
 		void calcCV_Folds( Model model, boolean remove_log_p, int num_jobs,Map<String, Double> expMap,boolean postPredictions) {
@@ -366,7 +502,8 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			int countChemicals=0;
 			
 			for (int fold=1;fold<=5;fold++) {
-				String splittingNameCV="CV"+fold;
+								
+				String splittingNameCV=model.getSplittingName()+"_CV"+fold;
 				
 				System.out.println("running "+splittingNameCV);
 				
@@ -784,6 +921,14 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		predict(data, methodName, modelId);
 		
 		return modelId;
+	}
+	
+	public static void main(String[] args) {
+
+		WebServiceModelBuilder mb=new WebServiceModelBuilder (null,"tmarti02");
+		Model model=mb.modelService.findById(1138L);
+		mb.crossValidate.addCV_DPIS(model);
+		
 	}
 
 }

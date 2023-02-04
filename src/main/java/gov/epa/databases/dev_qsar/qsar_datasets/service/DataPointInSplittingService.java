@@ -22,4 +22,6 @@ public interface DataPointInSplittingService {
 	
 	public void delete(DataPointInSplitting dpis, Session session);
 
+	void createSQL(List<DataPointInSplitting> dpisList);
+
 }

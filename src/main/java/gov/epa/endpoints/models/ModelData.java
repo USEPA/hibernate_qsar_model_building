@@ -2,9 +2,12 @@ package gov.epa.endpoints.models;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.List;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.web_services.embedding_service.CalculationInfo;
 
@@ -148,6 +151,42 @@ public class ModelData {
 		this.trainingSetInstances = sbTraining.toString();
 		this.predictionSetInstances = sbPrediction.toString();
 	}
+	
+	
+	/**
+	 * Get training and prediction set tsvs using sql 
+	 */
+	public static List<String> getTrainingIds(Model model,boolean useDTXCIDs) {
+		
+		Connection conn=DatabaseLookup.getConnectionPostgres();
+		String idField="canon_qsar_smiles";
+		if(useDTXCIDs) idField="qsar_dtxcid";
+		
+		String sql="select dp."+idField+" from qsar_datasets.data_points dp\n"+ 
+		"inner join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
+		"join qsar_datasets.datasets d on d.id =dp.fk_dataset_id\n"+ 
+		"join qsar_datasets.splittings s on s.id=dpis.fk_splitting_id\n"+
+		"where d.\"name\"='"+model.getDatasetName()+"' and "+
+		"s.\"name\"='"+model.getSplittingName()+"' and "+
+		"dpis.split_num="+DevQsarConstants.TRAIN_SPLIT_NUM+";";
+		
+//		System.out.println(sql);
+		
+		try {			
+			List<String>ids=new ArrayList<>();		
+			ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
+			while (rs.next()) {
+				String id=rs.getString(1);
+				ids.add(id);
+			}
+			return ids;
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
+
 
 	
 	public static String generateInstancesWithoutSplitting(String datasetName,String descriptorSetName) {

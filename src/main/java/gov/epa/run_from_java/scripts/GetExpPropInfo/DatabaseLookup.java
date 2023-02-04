@@ -65,6 +65,7 @@ public class DatabaseLookup {
 		
 		try {
 			if (connPool.containsKey(dbPostGres) && connPool.get(dbPostGres) != null && !connPool.get(dbPostGres).isClosed()) {
+//				System.out.println("have active conn");
 				return connPool.get(dbPostGres);
 			}
 		} catch (SQLException e) {

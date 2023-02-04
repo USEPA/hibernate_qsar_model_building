@@ -223,7 +223,7 @@ public class ConsensusModelBuilder extends ModelBuilder {
 		
 		for (int i=1;i<=5;i++) {
 			
-			Splitting splittingCV=splittingService.findByName("CV"+i);
+			Splitting splittingCV=splittingService.findByName(model0.getSplittingName()+"_CV"+i);
 
 			List<DataPointInSplitting> dataPointsInSplittingCV = 
 					dataPointInSplittingService.findByDatasetNameAndSplittingName(datasetName, splittingCV.getName());
@@ -354,11 +354,11 @@ public class ConsensusModelBuilder extends ModelBuilder {
 	}
 	
 	private void addPredictionsToConsensusPredictions(Hashtable<String, List<ModelPrediction>> htConsensusPredictions, Map<String, Integer> splittingMap, Map<String, Double> expMap, ModelInConsensusModel micm,Integer splitNum,Splitting splitting) {
+
+		System.out.println(splitting.getId()+"\t"+micm.getModel().getId());
 		
 		List<Prediction> predictions = predictionService.findByIds(micm.getModel().getId(),splitting.getId());
 				
-//		System.out.println(splitting.getId());
-		
 		
 		for(Prediction prediction:predictions) {
 
@@ -475,69 +475,10 @@ public class ConsensusModelBuilder extends ModelBuilder {
 		System.out.println("");
 	}
 
-//	private void calculateQ2_CV(List<ModelInConsensusModel> consensusModels, String datasetName) {
-//		
-//		
-//		for (int i=1;i<=5;i++) {
-//		
-//			Splitting splitting=splittingService.findByName("CV"+i);
-//			
-//
-//			List<DataPoint> dataPoints = 
-//					dataPointService.findByDatasetName(datasetName);
-//			
-//			List<DataPointInSplitting> dataPointsInSplitting = 
-//					dataPointInSplittingService.findByDatasetNameAndSplittingName(datasetName, splitting.getName());
-//
-//			Map<String, Integer> splittingMap = dataPointsInSplitting.stream()
-//					.collect(Collectors.toMap(dpis -> dpis.getDataPoint().getCanonQsarSmiles(), dpis -> dpis.getSplitNum()));
-//			Map<String, Double> expMap = dataPoints.stream()
-//					.collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp.getQsarPropertyValue()));
-//
-//
-//			List<ModelPrediction> trainPreds = computeConsensusPredictions(consensusModels, splittingMap, expMap, DevQsarConstants.TRAIN_SPLIT_NUM,splitting,datasetName);
-//			double meanExpTraining=ModelStatisticCalculator.calcMeanExpTraining(trainPreds);
-//					
-//			Map<String,Double>modelTrainingStatisticValues =ModelStatisticCalculator.calculateContinuousStatistics(trainPreds, 
-//					meanExpTraining,DevQsarConstants.TAG_TRAINING);
-//							
-//			System.out.println("Training stats:");
-//			for (String key:modelTrainingStatisticValues.keySet()) {
-//				System.out.println(key+"\t"+modelTrainingStatisticValues.get(key));
-//			}
-//
-//			List<ModelPrediction> testPreds = computeConsensusPredictions(consensusModels, splittingMap, expMap, DevQsarConstants.TEST_SPLIT_NUM,splitting,datasetName);
-//
-//		}
-//	}
-		
-		
-		
-//		Splitting splittingCV=splittingService.findByName(DevQsarConstants.SPLITTING_TRAINING_CROSS_VALIDATION);
-//		
-//		List<DataPointInSplitting> dataPointsInSplittingCV = 
-//				dataPointInSplittingService.findByDatasetNameAndSplittingName(datasetName, splittingCV.getName());
-//
-//		Map<String, Integer> splittingMapCV = dataPointsInSplittingCV.stream()
-//				.collect(Collectors.toMap(dpis -> dpis.getDataPoint().getCanonQsarSmiles(), dpis -> dpis.getSplitNum()));
-//
-//			
-//		List<ModelPrediction> trainPredsCV = computeConsensusPredictions(consensusModels,splittingMapCV, expMap, null,splittingCV,datasetName);
-//		
-//		double r2=ModelStatisticCalculator.calculateR2_CV(trainPredsCV);
-//		double q2=ModelStatisticCalculator.calculateQ2_CV(trainPredsCV);
-		
-		
-	
-	
-
-	
 	public static void main(String[] args) {
-					
 		ConsensusModelBuilder cmb = new ConsensusModelBuilder("tmarti02");
-
 		List<Long> consensusModelIDs = new ArrayList<Long>();
-		for (Long i=1113L;i<=1116L;i++) consensusModelIDs.add(i);
+		for (Long i=1143L;i<=1146L;i++) consensusModelIDs.add(i);
 		cmb.testCalcConsensus(consensusModelIDs);
 		
 	}

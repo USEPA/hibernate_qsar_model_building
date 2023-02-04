@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.hibernate.Session;
 
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 import gov.epa.endpoints.models.ModelPrediction;
 
@@ -20,6 +22,8 @@ public interface PredictionService {
 	public Prediction create(Prediction prediction, Session session) throws ConstraintViolationException;
 
 	Prediction create(Prediction prediction) throws ConstraintViolationException;
+
+	public void createSQL(List<Prediction> predictions);
 
 	
 

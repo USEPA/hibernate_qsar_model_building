@@ -9,13 +9,18 @@ import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 
 public class PredictionDaoImpl implements PredictionDao {
-	
+
+	//Following works when Splitting is an object:
+//	private static final String HQL_BY_IDs = "select p from Prediction p "
+//				+ "join p.model m "
+//				+ "join p.splitting s "
+//				+ "where m.id = :modelId and s.id = :splittingId";
+		
+	//Following works when Splitting is just a foreign key:
 	private static final String HQL_BY_IDs = "select p from Prediction p "
-				+ "join p.model m "
-				+ "join p.splitting s "
-				+ "where m.id = :modelId and s.id = :splittingId";
-		
-		
+			+ "join p.model m "
+			+ "where m.id = :modelId and p.fk_splitting_id = :splittingId";
+
 	@Override
 	public List<Prediction> findByIds(Long modelId, Long splittingId, Session session) {
 		
