@@ -110,17 +110,22 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 				prep.setString(3, modelBytes.getCreatedBy());
 				prep.addBatch();
 				
-				if (counter % batchSize == 0 && counter!=0) {
-					 System.out.println(counter);
-					prep.executeBatch();
-				}
+//				if (counter % batchSize == 0 && counter!=0) {
+//					 System.out.println(counter);
+//					prep.executeBatch();
+//					conn.commit();//see if this frees up memory
+//				}
+
+				prep.executeBatch();
+				conn.commit();//just commit each one to free up memory
+
 			}
 
 			int[] count = prep.executeBatch();// do what's left
 			
 			long t2=System.currentTimeMillis();
 			System.out.println("time to post "+modelBytes.getBytes().length+" bytes using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
-			conn.commit();
+//			conn.commit();
 //			conn.setAutoCommit(true);
 		} catch (SQLException e) {
 			e.printStackTrace();
