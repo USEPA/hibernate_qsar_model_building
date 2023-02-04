@@ -90,7 +90,7 @@ public class DatabaseLookup {
 		}
 	}
 
-	static Connection getConnectionDSSTOX() {
+	public static Connection getConnectionDSSTOX() {
 		
 		try {
 			if (connPool.containsKey(dbDSSTOX) && connPool.get(dbDSSTOX) != null && !connPool.get(dbDSSTOX).isClosed()) {

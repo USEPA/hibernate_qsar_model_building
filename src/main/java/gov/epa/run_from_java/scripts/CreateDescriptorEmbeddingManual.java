@@ -133,7 +133,7 @@ public class CreateDescriptorEmbeddingManual {
 		
 		String sql="select id,description from qsar_models.descriptor_embeddings de ";
 		
-		Connection conn=DatabaseLookup.getConnection();
+		Connection conn=DatabaseLookup.getConnectionPostgres();
 		ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
 		
 		try {
@@ -189,8 +189,8 @@ public class CreateDescriptorEmbeddingManual {
 		DescriptorEmbeddingServiceImpl desi=new DescriptorEmbeddingServiceImpl();
 		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\datasets\\GA\\";
 		
-//		String filename="PFAS_exp_prop_gen=10_opt=10_threshold=1_1674336604254.json";//T=all but PFAS, P=PFAS
-		String filename="exp_prop_gen=100_opt=10_threshold=1_1674349423275.json";//RND_REPRESENTATIVE
+		String filename="PFAS_exp_prop_gen=10_opt=10_threshold=1_1674336604254.json";//T=all but PFAS, P=PFAS
+//		String filename="exp_prop_gen=100_opt=10_threshold=1_1674349423275.json";//RND_REPRESENTATIVE
 //		String filename="T=PFAS only, P=PFAS_gen=100_opt=10_threshold=1_1674409204305.json";
 //		String filename="exp_prop_gen=100_opt=10_threshold=1_1674430512598.json";//100 gen RND_REPRESENTATIVE, LogP, remove_log_P=true
 //		String filename="exp_prop_gen=10_opt=10_threshold=1_1674414440056.json";//10 gen RND_REPRESENTATIVE, LogP, remove_log_P=true
@@ -226,8 +226,14 @@ public class CreateDescriptorEmbeddingManual {
 					System.out.println("already have "+deNew.getName()+" in DB");
 					continue;
 				}
-
-							
+				
+//				System.out.println(deNew.getEmbeddingTsv());
+				
+//				String [] descriptors=deNew.getEmbeddingTsv().split("\t");
+//				for (String descriptor:descriptors) {
+//					System.out.println(descriptor);;
+//				}
+				
 				deNew.setDescription(ci.toString());//make sure formatting is same				
 				System.out.println(ci.toString());
 				

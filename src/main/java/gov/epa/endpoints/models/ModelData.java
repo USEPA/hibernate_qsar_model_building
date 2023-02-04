@@ -105,14 +105,14 @@ public class ModelData {
 //		System.out.println(instanceHeader+"\n");
 		
 		sql="select dp."+idField+", dp.qsar_property_value, dv.values_tsv, dpis.split_num from qsar_datasets.data_points dp\n"+ 
-		"inner join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
-		"inner join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
+		"join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
+		"join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
 		"join qsar_descriptors.descriptor_sets ds on dv.fk_descriptor_set_id =ds.id\n"+
 		"join qsar_datasets.datasets d on d.id =dp.fk_dataset_id\n"+ 
 		"join qsar_datasets.splittings s on s.id=dpis.fk_splitting_id\n"+ 
 		"where d.\"name\"='"+datasetName+"' and ds.\"name\"='"+descriptorSetName+"' and s.\"name\"='"+splittingName+"';";
 		
-//		System.out.println(sql);
+		System.out.println("\n"+sql);
 
 		StringBuilder sbTraining = new StringBuilder(instanceHeader);
 		StringBuilder sbPrediction = new StringBuilder(instanceHeader);
@@ -124,8 +124,9 @@ public class ModelData {
 			int counter=0;
 			
 			while (rs.next()) {
+				counter++;
 				
-//				System.out.println(++counter);
+				if (counter%1000==0) System.out.println(counter+ "building instances");
 				
 				String id=rs.getString(1);
 				String qsar_property_value=rs.getString(2);
