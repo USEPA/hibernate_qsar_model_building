@@ -29,6 +29,27 @@ public class Bob {
 
 	
 	public Bob() {}
+	
+	public Bob(String description, String createdBy) {
+		this.description = description;
+		this.createdBy = createdBy;
+	}
+	
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	
+	public String getDescription() {
+		return this.description;
+	}
+	
+	public void setCreatedBy(String createdBy) {
+		this.createdBy = createdBy;
+	}
+	
+	public String getCreatedBy() {
+		return this.createdBy;
+	}
 
 	public Bob(String description) {			
 		this.description=description;

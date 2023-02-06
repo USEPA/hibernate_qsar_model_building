@@ -16,12 +16,12 @@ public class TestBobTable {
 	private static void tryHibernateBatchInsert(int batchSize, int totalNumber) {
 		BobService bobService = new BobServiceImpl();
 		Bob bob = new Bob("hibernate is the best", "cramslan");
-		long t1=System.currentTimeMillis();
 
 		List<Bob> bobs = new ArrayList<Bob>();
 		for (int i = 0; i < totalNumber; i++) {
 			bobs.add(bob);
 		}
+		long t1=System.currentTimeMillis();
 		bobService.batchCreate(bobs);
 		long t2=System.currentTimeMillis();
 		System.out.println(batchSize+"\t"+(t2-t1)+" millisec");
@@ -38,7 +38,7 @@ public class TestBobTable {
 
 		try {
 
-			Connection conn = DatabaseLookup.getConnectionPostgres();
+			Connection conn = SqlUtilities.getConnectionPostgres();
 			conn.setAutoCommit(false);
 
 			PreparedStatement prep = conn.prepareStatement(sql);
@@ -84,9 +84,10 @@ public class TestBobTable {
 	public static void main(String[] args) {
         
 		int [] sizes= {10,100};
-		
-		tryHibernateBatchInsert(20,100);
-		
+		System.out.println("hibernate:");
+		tryHibernateBatchInsert(1000,100000);
+		System.out.println("jdbc:");
+		tryBatchInsert(1000,100000);
         for (int size:sizes) {
         //	tryBatchInsert(size,100);
         }
