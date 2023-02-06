@@ -7,16 +7,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
-import gov.epa.endpoints.models.ModelPrediction;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.run_from_java.scripts.RecalcStatsScript.SplitPredictions;
 
 public class SqlUtilities {
@@ -26,6 +19,12 @@ public class SqlUtilities {
 	public static final String dbPostGres="Postgres";
 	public static final String dbDSSTOX="DSSTOX";
 
+	/**
+	 * Gives you connection to Postgres database based on the environment variables
+	 * connPool allows the next call to be instantaneous
+	 * 
+	 * @return
+	 */
 	public static Connection getConnectionPostgres() {
 		
 		try {
@@ -86,6 +85,12 @@ public class SqlUtilities {
 		}
 	}
 	
+	/**
+	 * Lets you look up splitNum from smiles for the given splittingName and datasetName
+	 * @param datasetName
+	 * @param splittingName
+	 * @return
+	 */
 	public static Hashtable<String, Integer> getHashtableSplitNum(String datasetName, String splittingName) {
 		Hashtable<String,Integer>htSplitNum=new Hashtable<>();
 
@@ -149,6 +154,8 @@ public class SqlUtilities {
 	
 	/**
 	 * Get predicted values for specified splitting (e.g. CV split)
+	 * Lets you look up predicted value from smiles
+	 * 
 	 * @param modelId
 	 * @param splittingName
 	 * @return
@@ -194,6 +201,14 @@ public class SqlUtilities {
 		return SplitPredictions.getSplitPredictionsSql(model, splittingName);
 	}
 	
+	
+	
+	/**
+	 * Lets you look up experimental value from smiles
+	 * 
+	 * @param datasetName
+	 * @return
+	 */
 	public static Hashtable<String,Double> getHashtableExp(String datasetName) {
 		Hashtable<String,Double>htExps=new Hashtable<>();
 

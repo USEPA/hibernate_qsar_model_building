@@ -120,8 +120,10 @@ public class RecalcStatsScript {
 				}
 			}
 			
-			if (splitPredictions.trainingSetPredictions.size()>0)		
+			if (splitPredictions.trainingSetPredictions.size()>0) {		
+				//There were predictions in the database for training set:
 				return splitPredictions;
+			}
 			
 			//For Cross Validation there wont be predictions for training set in the database so:
 			
