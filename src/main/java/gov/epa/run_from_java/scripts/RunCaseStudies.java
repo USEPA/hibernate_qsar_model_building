@@ -415,7 +415,7 @@ public class RunCaseStudies {
 				+ "fk_descriptor_embedding_id is null;";
 		
 		
-		Connection conn=DatabaseLookup.getConnectionPostgres();
+		Connection conn=SqlUtilities.getConnectionPostgres();
 		ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
 		
 		Set<Long> consensusModelIDs = new HashSet<Long>(); 
@@ -475,7 +475,7 @@ public class RunCaseStudies {
 		}
 		
 		Iterator<Long>iterator=consensusModelIDs.iterator();
-		Connection conn=DatabaseLookup.getConnectionPostgres();
+		Connection conn=SqlUtilities.getConnectionPostgres();
 		
 		List <Integer>counts=new ArrayList<>();
 		while(iterator.hasNext()) {
