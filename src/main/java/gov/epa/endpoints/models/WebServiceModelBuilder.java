@@ -62,9 +62,6 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	CrossValidate crossValidate=new CrossValidate();
 	
 	
-	int num_threads=8;
-	 
-	
 	protected ModelWebService modelWebService;
 	
 	public WebServiceModelBuilder(ModelWebService modelWebService, String lanId) {
@@ -331,7 +328,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		modelBytesService.createSQL(modelBytes);
 		
 		
-		crossValidate.crossValidate(model,data.removeLogP_Descriptors,num_threads, true);			
+		crossValidate.crossValidate(model,data.removeLogP_Descriptors,modelWebService.num_jobs, true);			
 
 		
 		return model.getId();

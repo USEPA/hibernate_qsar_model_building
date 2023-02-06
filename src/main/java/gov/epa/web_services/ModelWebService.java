@@ -15,7 +15,7 @@ import kong.unirest.Unirest;
  */
 public class ModelWebService extends WebService {
 
-	int num_jobs=8;
+	public static int num_jobs=8;
 	
 	public ModelWebService(String server, int port) {
 		super(server, port);
@@ -67,6 +67,7 @@ public class ModelWebService extends WebService {
 				.routeParam("qsar_method", qsarMethod)
 				.field("training_tsv", trainingSet)
 				.field("model_id", modelId)
+				.field("num_jobs", String.valueOf(num_jobs))
 				.field("embedding_tsv", embeddingTsv)
 				.field("remove_log_p", String.valueOf(removeLogDescriptors))
 				.asBytes();
