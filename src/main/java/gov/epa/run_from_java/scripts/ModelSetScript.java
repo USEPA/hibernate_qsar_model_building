@@ -14,7 +14,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
+
 
 public class ModelSetScript {
 
@@ -22,7 +22,7 @@ public class ModelSetScript {
 	ModelSetService mss=new ModelSetServiceImpl();
 	ModelInModelSetService mimss=new ModelInModelSetServiceImpl();
 	String lanId="tmarti02";
-	Connection conn=DatabaseLookup.getConnectionPostgres();
+	Connection conn=SqlUtilities.getConnectionPostgres();
 	
 	void createModelSets() {
 
@@ -119,7 +119,7 @@ public class ModelSetScript {
 		ms6.modelsetName="WebTEST2.1 All but PFAS";
 		
 		List<ModelSet2>sets=new ArrayList<>();
-//		sets.add(ms1);//done
+		sets.add(ms1);
 //		sets.add(ms2);//done
 		sets.add(ms3);
 		sets.add(ms4);
@@ -167,7 +167,7 @@ public class ModelSetScript {
 				String sql="select m2.\"name\"  from qsar_models.models m\n"+ 
 				"join qsar_models.methods m2 on m2.id=m.fk_method_id\n"+
 				"where m.id="+modelId;		
-				String methodName=DatabaseLookup.runSQL(conn, sql);
+				String methodName=SqlUtilities.runSQL(conn, sql);
 				
 				try {
 					mimss.create(m);
@@ -276,7 +276,7 @@ public class ModelSetScript {
 	Long getConsensusModelId(long modelId) {
 		
 		String sql="select micm.fk_consensus_model_id from qsar_models.models_in_consensus_models micm where fk_model_id="+modelId;
-		String strId=DatabaseLookup.runSQL(conn, sql);
+		String strId=SqlUtilities.runSQL(conn, sql);
 		if(strId==null) return null;
 		else return (Long.parseLong(strId));
 	}
@@ -304,7 +304,7 @@ public class ModelSetScript {
 		else
 			sql+="m.fk_descriptor_embedding_id is null;";
 		
-		ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
+		ResultSet rs=SqlUtilities.runSQL2(conn, sql);
 		List<Long> consensusModelIDs = new ArrayList<Long>(); 
 		
 		try {

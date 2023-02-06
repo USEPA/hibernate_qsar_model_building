@@ -16,6 +16,7 @@ import com.google.gson.JsonObject;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.service.DsstoxCompoundService;
 import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.util.wekalite.CSVLoader;
 import gov.epa.util.wekalite.Instances;
 
@@ -34,8 +35,8 @@ public class GetExpPropInfoOld {
 	static void createCheckingSpreadsheetOld() {
 
 		String folder="data\\dev_qsar\\dataset_files\\";
-		Connection conn=DatabaseLookup.getConnectionPostgres();
-		Connection connDSSTOX=DatabaseLookup.getConnectionDSSTOX();					
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		Connection connDSSTOX=SqlUtilities.getConnectionDSSTOX();					
 
 		int id_dataset=31;
 		String inputFileName="Standard Water solubility from exp_prop_T.E.S.T. 5.1_T=PFAS only, P=PFAS_prediction.tsv";
@@ -303,8 +304,8 @@ public class GetExpPropInfoOld {
 	public static void main(String[] args) {
 
 		String folder="data\\dev_qsar\\output\\";
-		Connection conn=DatabaseLookup.getConnectionPostgres();
-		Connection connDSSTOX=DatabaseLookup.getConnectionDSSTOX();					
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		Connection connDSSTOX=SqlUtilities.getConnectionDSSTOX();					
 		long dataset_id=88L;
 		getDataSetData(dataset_id,conn,connDSSTOX,folder);//pulls data from the database
 		

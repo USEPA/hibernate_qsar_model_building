@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 
 import javax.validation.ConstraintViolationException;
 
+import org.apache.poi.ss.formula.functions.IDStarAlgorithm;
+
 import com.google.gson.Gson;
 
 import com.google.gson.JsonArray;
@@ -41,6 +43,7 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServ
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.web_services.ModelWebService;
 import gov.epa.web_services.embedding_service.CalculationInfo;
@@ -104,15 +107,6 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		}
 	}
 
-	/**
-	 * Builds a Python model with the given data and parameters
-	 * @param data
-	 * @param params
-	 */
-	@SuppressWarnings("deprecation")
-	public Long train(ModelData data, String methodName) throws ConstraintViolationException {
-		return trainWithPreselectedDescriptors(data, methodName, null);
-	}
 
 	Method getDetails(String methodName,Model model,JsonObject joDetails) {
 		
@@ -253,6 +247,16 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		return trainWithPreselectedDescriptors(data, methodName, descriptorEmbedding);
 	}
 	
+	/**
+	 * Builds a Python model with the given data and parameters
+	 * @param data
+	 * @param params
+	 */
+	@SuppressWarnings("deprecation")
+	public Long train(ModelData data, String methodName) throws ConstraintViolationException {
+		return trainWithPreselectedDescriptors(data, methodName, null);
+	}
+
 	
 	/**
 	 * Builds a Python model with the given data and parameters
@@ -361,7 +365,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 
 		public void addCV_DPIS(Model model) {
-			
+//			System.out.println(model.getSplittingName());
 			Splitting splittingCV1=splittingService.findByName(model.getSplittingName()+"_CV1");
 			createSplittings(model, splittingCV1);
 			createDataPointInSplittings(model, splittingCV1);
@@ -378,7 +382,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 
 //			System.out.println(sql);
 			
-			int countDPIS=Integer.parseInt(DatabaseLookup.runSQL(DatabaseLookup.getConnectionPostgres(), sql));
+			int countDPIS=Integer.parseInt(SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sql));
 			
 			if (countDPIS!=0) return;
 						
@@ -391,12 +395,10 @@ public class WebServiceModelBuilder extends ModelBuilder {
 //				System.out.println(id);
 //			}
 			
-			int idCount=ids.size();
-			int countPerSplit=idCount/numSplits;
 			
 //			System.out.println(idCount);
 			
-			Hashtable<Integer,List<String>>htSplits=createSplitHashtable(ids, countPerSplit);
+			Hashtable<Integer,List<String>>htSplits=createSplitHashtable(ids);
 			
 			
 			List<DataPoint> dataPoints = 
@@ -460,12 +462,13 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		}
 
 
-		private  Hashtable<Integer,List<String>> createSplitHashtable(List<String> ids, int countPerSplit) {
+		private  Hashtable<Integer,List<String>> createSplitHashtable(List<String> ids) {
 			Hashtable<Integer,List<String>>htSplits=new Hashtable<>();
 
-			for (int fold=1;fold<=numSplits;fold++) {
+			
+			while (true) {
+				for (int fold=1;fold<=numSplits;fold++) {
 
-				for (int j=1;j<=countPerSplit;j++) {
 					if(htSplits.get(fold)==null) {
 						List<String>ids_i=new ArrayList<>();
 						htSplits.put(fold, ids_i);
@@ -474,25 +477,14 @@ public class WebServiceModelBuilder extends ModelBuilder {
 						List<String>ids_i=htSplits.get(fold);
 						ids_i.add(ids.remove(0));
 					}
-				}
-//				System.out.println(fold+"\t"+htSplits.get(fold).size());
-			}
+					
+					if(ids.size()==0) {
+						return htSplits;
+					}
 
-			//Distribute remaining ids:
-			int countRemaining=ids.size();
-			int currentFold=1;
-			for (int i=1;i<=countRemaining;i++) {
-				List<String>ids_i=htSplits.get(currentFold);
-				ids_i.add(ids.remove(0));
-				currentFold++;
+				}
 			}
 			
-//			for (int fold=1;fold<=numSplits;fold++) {
-//				List<String>ids_i=htSplits.get(fold);
-//				System.out.println(ids_i.size());
-//			}
-			
-			return htSplits;
 		}
 
 		void calcCV_Folds( Model model, boolean remove_log_p, int num_jobs,Map<String, Double> expMap,boolean postPredictions) {
@@ -540,7 +532,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 				modelStatistic=modelStatisticService.create(modelStatistic);
 
 //				String sql="Select ms.statistic_value from qsar_models.model_statistics ms where ms.fk_model_id="+model.getId()+" and ms.fk_statistic_id="+statistic.getId();
-//				String statistic_value=DatabaseLookup.runSQL(DatabaseLookup.getConnectionPostgres(), sql);
+//				String statistic_value=SqlUtilitiesrunSQL(SqlUtilities.getConnectionPostgres(), sql);
 																
 //				if (statistic_value==null) {
 //					modelStatistic=modelStatisticService.create(modelStatistic);
@@ -582,10 +574,17 @@ public class WebServiceModelBuilder extends ModelBuilder {
 				System.out.println("Dataset instances were not initialized");
 				return null;
 			}
+						
+			String predictResponse=null;
 
-			String predictResponse=modelWebService.crossValidate(qsarMethod,data.trainingSetInstances, data.predictionSetInstances, 
-					removeLogP, num_jobs, model.getDescriptorEmbedding().getEmbeddingTsv(), model.getHyperparameters()).getBody();
-			
+			if (model.getDescriptorEmbedding()==null) {
+				predictResponse=modelWebService.crossValidate(qsarMethod,data.trainingSetInstances, data.predictionSetInstances, 
+						removeLogP, num_jobs, model.getHyperparameters()).getBody();
+			} else {
+				predictResponse=modelWebService.crossValidate(qsarMethod,data.trainingSetInstances, data.predictionSetInstances, 
+						removeLogP, num_jobs, model.getDescriptorEmbedding().getEmbeddingTsv(), model.getHyperparameters()).getBody();			
+			}
+						
 			ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);
 			return Arrays.asList(modelPredictions);
 			
@@ -927,7 +926,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	public static void main(String[] args) {
 
 		WebServiceModelBuilder mb=new WebServiceModelBuilder (null,"tmarti02");
-		Model model=mb.modelService.findById(1138L);
+		Model model=mb.modelService.findById(1284L);
 		mb.crossValidate.addCV_DPIS(model);
 		
 	}

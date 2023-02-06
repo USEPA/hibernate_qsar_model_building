@@ -133,7 +133,7 @@ public class CreateDescriptorEmbeddingManual {
 		
 		String sql="select id,description from qsar_models.descriptor_embeddings de ";
 		
-		Connection conn=DatabaseLookup.getConnectionPostgres();
+		Connection conn=SqlUtilities.getConnectionPostgres();
 		ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
 		
 		try {

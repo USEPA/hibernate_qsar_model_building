@@ -57,69 +57,9 @@ public class DatabaseLookup {
 
 	}
 	
-	public static final String dbPostGres="Postgres";
-	public static final String dbDSSTOX="DSSTOX";
 	
 	
-	public static Connection getConnectionPostgres() {
-		
-		try {
-			if (connPool.containsKey(dbPostGres) && connPool.get(dbPostGres) != null && !connPool.get(dbPostGres).isClosed()) {
-//				System.out.println("have active conn");
-				return connPool.get(dbPostGres);
-			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		String host = System.getenv().get("DEV_QSAR_HOST");
-		String port = System.getenv().get("DEV_QSAR_PORT");
-		String db = System.getenv().get("DEV_QSAR_DATABASE");
-
-		String url = "jdbc:postgresql://" + host + ":" + port + "/" + db;
-		String user = System.getenv().get("DEV_QSAR_USER");
-		String password = System.getenv().get("DEV_QSAR_PASS");
-
-		try {
-			Connection conn = DriverManager.getConnection(url, user, password);
-			connPool.put(dbPostGres, conn);
-			return conn;
-		} catch (Exception ex) {
-			return null;
-		}
-	}
-
-	public static Connection getConnectionDSSTOX() {
-		
-		try {
-			if (connPool.containsKey(dbDSSTOX) && connPool.get(dbDSSTOX) != null && !connPool.get(dbDSSTOX).isClosed()) {
-				return connPool.get(dbDSSTOX);
-			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		
-		String host = System.getenv().get("DSSTOX_HOST");
-		String port = System.getenv().get("DSSTOX_PORT");
-		String db = System.getenv().get("DSSTOX_DATABASE");
-
-		String url = "jdbc:mysql://" + host + ":" + port + "/" + db;
-		String user = System.getenv().get("DSSTOX_USER");
-		String password = System.getenv().get("DSSTOX_PASS");
-
-		try {
-			Connection conn = DriverManager.getConnection(url, user, password);
-			
-			connPool.put(dbDSSTOX, conn);
-			
-			return conn;
-		} catch (Exception ex) {
-			return null;
-		}
-	}
+	
 
 	
 	static String lookupMolWt(String dtxcid, Connection connDSSTOX) {

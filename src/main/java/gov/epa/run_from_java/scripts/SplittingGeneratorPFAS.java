@@ -425,7 +425,7 @@ public class SplittingGeneratorPFAS {
 		datasetNames.add("BP from exp_prop and chemprop");
 //		datasetNames.add("ExpProp BCF Fish_TMM");
 
-		Connection conn = DatabaseLookup.getConnectionPostgres();
+		Connection conn = SqlUtilities.getConnectionPostgres();
 		
 //		for (String datasetName : datasetNames) {
 //			p.getPFASChemicalCountForDataSet(datasetName, smilesArray);

@@ -47,8 +47,10 @@ public class PredictionStatisticsScript {
 
 	
 	String lanId="tmarti02";
-	Connection conn=DatabaseLookup.getConnectionPostgres();
-
+	static Connection conn=SqlUtilities.getConnectionPostgres();
+	RecalcStatsScript recalcStatsScript=new RecalcStatsScript();
+	
+	
 	/**
 	 * Get the modelID for model for given dataset, method, and modelSet
 	 * 
@@ -215,18 +217,27 @@ public class PredictionStatisticsScript {
 	
 	void createSummaryTableForMethod() {
 //		String statisticName = "MAE_Test";
-		String statisticName="PearsonRSQ_Test";
+//		String statisticName="PearsonRSQ_Test";
+		String statisticName="Q2_CV_Training";
+		
+		// Getting predictions for PFAS compounds in test set:		
+		String listName="PFASSTRUCTV4";		
+		String folder="data/dev_qsar/dataset_files/";
+		String filePath=folder+listName+"_qsar_ready_smiles.txt";
+		ArrayList<String>smilesArrayPFAS=SplittingGeneratorPFAS.getPFASSmiles(filePath);
+
 		
 		List<String> modelSetNames=new ArrayList<>();
 				
 		modelSetNames.add("WebTEST2.0 PFAS");
-//		modelSetNames.add("WebTEST2.0");//TODO calc stats just for PFAS
 		modelSetNames.add("WebTEST2.0 All but PFAS");
+		modelSetNames.add("WebTEST2.0_justPFAS");
 		modelSetNames.add("WebTEST2.0");
 		
+		
 		modelSetNames.add("WebTEST2.1 PFAS");
-//		modelSetNames.add("WebTEST2.1");//TODO calc stats just for PFAS
 		modelSetNames.add("WebTEST2.1 All but PFAS");
+		modelSetNames.add("WebTEST2.1_justPFAS");
 		modelSetNames.add("WebTEST2.1");
 		
 		List<String>datasetNames=new ArrayList<>();
@@ -239,10 +250,10 @@ public class PredictionStatisticsScript {
 
 		List<String> methodNames=new ArrayList<>();
 		methodNames.add(DevQsarConstants.KNN);
-		methodNames.add(DevQsarConstants.RF);
-		methodNames.add(DevQsarConstants.XGB);
-		methodNames.add(DevQsarConstants.SVM);
-		methodNames.add(DevQsarConstants.CONSENSUS);
+//		methodNames.add(DevQsarConstants.RF);
+//		methodNames.add(DevQsarConstants.XGB);
+//		methodNames.add(DevQsarConstants.SVM);
+//		methodNames.add(DevQsarConstants.CONSENSUS);
 
 		Hashtable<String,Double>htVals=new Hashtable<>();
 		for (String methodName:methodNames) {
@@ -250,7 +261,7 @@ public class PredictionStatisticsScript {
 		}
 		
 		for (String methodName:methodNames) {
-			addHashtableEntryLimitToPFAS(statisticName, methodName, modelSetNames, datasetNames,htVals);
+			addHashtableEntryLimitToPFAS(statisticName, methodName, modelSetNames, datasetNames,htVals,smilesArrayPFAS);
 		}
 
 
@@ -276,7 +287,7 @@ public class PredictionStatisticsScript {
 //			createSummaryTableForMethod(statisticName, methodName, modelSetNames, datasetNames, htVals);
 //		}
 		
-//		createSummaryTableForMethod(statisticName, DevQsarConstants.KNN, modelSetNames, datasetNames, htVals);
+		createSummaryTableForMethod(statisticName, DevQsarConstants.KNN, modelSetNames, datasetNames, htVals);
 		
 	}
 	
@@ -351,6 +362,8 @@ public class PredictionStatisticsScript {
 						
 			for (int j=0;j<modelSetNames.size();j++) {
 				String modelSetName=modelSetNames.get(j);
+				
+				if(modelSetName.contains("_justPFAS")) continue;
 
 				String key=methodName+"\t"+modelSetName+"\t"+datasetName;
 				
@@ -381,38 +394,41 @@ public class PredictionStatisticsScript {
 	 * @param datasetNames
 	 */
 	private void addHashtableEntryLimitToPFAS(String statisticName, String methodName, List<String> modelSetNames,
-			List<String> datasetNames,Hashtable<String,Double>htVals) {
+			List<String> datasetNames,Hashtable<String,Double>htVals,List<String>smilesArrayPFAS) {
 		
 		for (int i=0;i<datasetNames.size();i++) {
 			String datasetName=datasetNames.get(i);
-						
-			for (int j=0;j<modelSetNames.size();j++) {
-				String modelSetName=modelSetNames.get(j);
-				
-				if (!modelSetName.equals("WebTEST2.0") && !modelSetName.equals("WebTEST2.1")) continue;
-				
-				
-				if(!modelSetNames.contains(modelSetName+"_justPFAS")) {
-					int index=modelSetNames.indexOf(modelSetName);
-					modelSetNames.add(index,modelSetName+"_justPFAS");
-				}				
-				
-				String key=methodName+"\t"+modelSetName+"_justPFAS"+"\t"+datasetName;
-				
-				Long modelId=getModelId(modelSetName, datasetName, methodName);
-				
-				if (modelId==null) {
-					htVals.put(key, Double.NaN);
-					continue;
-				}
-								
-				Double stat=calcPredictionStatsForPFAS(modelId,statisticName);
-				
-				if (stat!=null)	htVals.put(key, stat);
-				else htVals.put(key, Double.NaN);
-					
-			}
+			addPFAS_Stats(statisticName, methodName, htVals, smilesArrayPFAS, datasetName, "WebTEST2.0");
+			addPFAS_Stats(statisticName, methodName, htVals, smilesArrayPFAS, datasetName, "WebTEST2.1");
 		}
+	}
+
+
+	private void addPFAS_Stats(String statisticName, String methodName, Hashtable<String, Double> htVals,
+			List<String> smilesArrayPFAS, String datasetName, String modelSetName) {
+
+		System.out.println("Adding PFAS stats for "+datasetName+"\t"+modelSetName);
+
+		String key=methodName+"\t"+modelSetName+"_justPFAS"+"\t"+datasetName;
+			
+		Long modelId=getModelId(modelSetName, datasetName, methodName);
+			
+		if (modelId==null) {
+			htVals.put(key, Double.NaN);
+			return;
+		}
+
+		Double stat=null;
+			
+		if (statisticName.equals("Q2_CV_Training") || statisticName.equals("R2_CV_Training")) {
+			stat=recalcStatsScript.calculateCV_Stat(modelId, statisticName, smilesArrayPFAS);
+		} else {
+			stat=calcPredictionStatsForPFAS(modelId,statisticName,smilesArrayPFAS);
+		}
+			
+		if (stat!=null)	htVals.put(key, stat);
+		else htVals.put(key, Double.NaN);
+
 	}
 	
 	
@@ -491,7 +507,7 @@ public class PredictionStatisticsScript {
 	 * for this splitting (can use model for RND_REPRESENTATIVE)
 	 * 
 	 */
-	public Double calcPredictionStatsForPFAS(long modelId,String statisticName) {
+	public Double calcPredictionStatsForPFAS(long modelId,String statisticName,List<String>smilesArrayPFAS) {
 		
 		Hashtable<String, Double> htPred = getPredValues(modelId);//gets all preds (both T and P)
 
@@ -503,11 +519,6 @@ public class PredictionStatisticsScript {
 		List<ModelPrediction> modelPredictions = mergeExpPredValues(htPred, datasetName, splittingName);
 		
 		//	***************************************
-		// Getting predictions for PFAS compounds in test set:		
-		String listName="PFASSTRUCTV4";		
-		String folder="data/dev_qsar/dataset_files/";
-		String filePath=folder+listName+"_qsar_ready_smiles.txt";
-		ArrayList<String>smilesArray=SplittingGeneratorPFAS.getPFASSmiles(filePath);
 		
 //		for (String smiles:smilesArray) {
 //			System.out.println(smiles);
@@ -516,10 +527,12 @@ public class PredictionStatisticsScript {
 		//Remove non PFAS compounds:
 		for (int i=0;i<modelPredictions.size();i++) {
 			ModelPrediction mp=modelPredictions.get(i);
-			if(!smilesArray.contains(mp.id)) {
+			if(!smilesArrayPFAS.contains(mp.id)) {
 				modelPredictions.remove(i--);
 			}
 		}
+		
+
 		
 //		for (int i=0;i<modelPredictions.size();i++) {
 //			ModelPrediction mp=modelPredictions.get(i);
@@ -530,8 +543,12 @@ public class PredictionStatisticsScript {
 		// Calc stats		
 		double mean_exp_training=0;//TODO q2 will be wrong unless fixed. 
 		Map<String, Double>statsMap=ModelStatisticCalculator.calculateContinuousStatistics(modelPredictions,mean_exp_training,DevQsarConstants.TAG_TEST);
+		
+		if (statsMap.get(statisticName)==null) return null;
+		
 		double stat=statsMap.get(statisticName);
-//		System.out.println("number of preds="+modelPredictions.size());
+
+//		System.out.println(datasetName+"\t"+"number of preds="+modelPredictions.size());
 //		System.out.println(statisticName+"="+stat);//need to make sure number of chemicals matches excel table
 		return stat;
 	}
@@ -562,16 +579,22 @@ public class PredictionStatisticsScript {
 		return modelPredictions;
 	}
 
-	private Hashtable<String, Double> getPredValues(long modelId) {
+	public static Hashtable<String, Double> getPredValues(long modelId) {
 		//Get pred values:
-		String sql="select canon_qsar_smiles,qsar_predicted_value  from qsar_models.predictions p where fk_model_id="+modelId;
+
+		String sql="select p.canon_qsar_smiles,p.qsar_predicted_value, p.fk_splitting_id  from qsar_models.predictions p\n"+ 
+		"join qsar_models.models m on m.id=p.fk_model_id\n"+
+		"join qsar_datasets.splittings s on s.id=p.fk_splitting_id\n"+ 
+		"where fk_model_id="+modelId+" and s.\"name\" =m.splitting_name;";
+
 		ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
 		Hashtable<String,Double>htPred=new Hashtable<>();
 		
 		try {
 			while (rs.next()) {				
 				String ID=rs.getString(1);
-				Double pred=Double.parseDouble(rs.getString(2));
+				Double pred=rs.getDouble(2);
+				int splittingId=rs.getInt(3);//Just for inspection
 				htPred.put(ID, pred);
 			}
 			
@@ -869,12 +892,12 @@ public class PredictionStatisticsScript {
 	public static void main(String[] args) {
 		PredictionStatisticsScript ms=new PredictionStatisticsScript();
 //		ms.createSummaryTableForMethod_Rnd_Representative();
-//		ms.createSummaryTableForMethod();
+		ms.createSummaryTableForMethod();
 //		ms.createSummaryTableForMethodTEST();
 		
-//		Double stat=ms.calcPredictionStatsForPFAS(816,"MAE_Test");
+//		Double stat=ms.calcPredictionStatsForPFAS(816,"MAE_Test",null);
 //		ms.createPredictionReportsExcelForJustPFAS();
-		RecalcStatsScript.viewPredsForSplitSet(1111L);
+//		RecalcStatsScript.viewPredsForSplitSet(1111L);
 	}
 
 }

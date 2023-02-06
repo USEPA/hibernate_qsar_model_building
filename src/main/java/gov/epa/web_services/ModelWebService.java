@@ -15,6 +15,8 @@ import kong.unirest.Unirest;
  */
 public class ModelWebService extends WebService {
 
+	int num_jobs=8;
+	
 	public ModelWebService(String server, int port) {
 		super(server, port);
 	}
@@ -23,7 +25,7 @@ public class ModelWebService extends WebService {
 		HttpResponse<byte[]> response = Unirest.post(address+"/models/{qsar_method}/train")
 				.routeParam("qsar_method", qsarMethod)
 				.field("training_tsv", trainingSet)
-				.field("embedding_tsv", "")
+				.field("num_jobs", String.valueOf(num_jobs))
 				.field("model_id", modelId)
 				.field("remove_log_p", String.valueOf(removeLogDescriptors))
 				.asBytes();
@@ -103,6 +105,21 @@ public class ModelWebService extends WebService {
 		return response;
 	}
 
+	public HttpResponse<String> crossValidate(String qsarMethod,String training_tsv,String prediction_tsv,
+			boolean remove_log_p, int num_jobs,String params) {
+
+//		System.out.println(this.address+ "/models/" + qsarMethod +"/cross_validate");
+
+		HttpResponse<String> response = Unirest.post(this.address+ "/models/{qsar_method}/cross_validate")
+				.routeParam("qsar_method", qsarMethod)
+				.field("training_tsv",training_tsv)
+				.field("prediction_tsv", prediction_tsv)
+				.field("remove_log_p",String.valueOf(remove_log_p))
+				.field("num_jobs",String.valueOf(num_jobs))
+				.field("params", params)
+				.asString();
+		return response;
+	}
 	
 	public HttpResponse<String> callDetails(String qsarMethod, String modelId) {
 		System.out.println(address+"/models/" + qsarMethod + "/" + modelId);

@@ -53,6 +53,7 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.service.DsstoxCompoundService;
 import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.util.MathUtil;
 import gov.epa.util.wekalite.CSVLoader;
 import gov.epa.util.wekalite.Instances;
@@ -624,8 +625,8 @@ public class GetExpPropInfo {
 	static void createCheckingSpreadsheets() {
 		
 		String folder="data\\dev_qsar\\output\\";
-		Connection conn=DatabaseLookup.getConnectionPostgres();
-		Connection connDSSTOX=DatabaseLookup.getConnectionDSSTOX();					
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		Connection connDSSTOX=SqlUtilities.getConnectionDSSTOX();					
 		
 		List<String>datasetNames=new ArrayList<>();
 
@@ -669,8 +670,8 @@ public class GetExpPropInfo {
 
 	private static void detectBadLogPvalues() {
 		String folder="data\\dev_qsar\\output\\";
-		Connection conn=DatabaseLookup.getConnectionPostgres();
-		Connection connDSSTOX=DatabaseLookup.getConnectionDSSTOX();					
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		Connection connDSSTOX=SqlUtilities.getConnectionDSSTOX();					
 		detectBadLogPValuesFromExpprop("ExpProp_LogP_WithChemProp_TMM3", conn, folder);
 	}
 

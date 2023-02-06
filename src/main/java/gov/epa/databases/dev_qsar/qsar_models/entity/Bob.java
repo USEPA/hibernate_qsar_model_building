@@ -11,6 +11,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 
 @Entity
@@ -43,7 +44,7 @@ public class Bob {
 
 		try {
 
-			Connection conn = DatabaseLookup.getConnectionPostgres();
+			Connection conn = SqlUtilities.getConnectionPostgres();
 			conn.setAutoCommit(false);
 
 			PreparedStatement prep = conn.prepareStatement(sql);

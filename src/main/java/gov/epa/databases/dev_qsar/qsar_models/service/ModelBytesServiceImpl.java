@@ -20,6 +20,7 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.ModelBytesDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelBytesDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 
 import javax.validation.ConstraintViolation;
@@ -74,7 +75,7 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 	@Override
 	public ModelBytes createSQL (ModelBytes modelBytes) {
 
-		Connection conn=DatabaseLookup.getConnectionPostgres();
+		Connection conn=SqlUtilities.getConnectionPostgres();
 		
 		List<byte[]> partitions = divideArray(modelBytes.getBytes(), chunkSize);
 		
@@ -124,7 +125,10 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 			int[] count = prep.executeBatch();// do what's left
 			
 			long t2=System.currentTimeMillis();
-			System.out.println("time to post "+modelBytes.getBytes().length+" bytes using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
+			
+			String strLenBytes=String.format("%,d", modelBytes.getBytes().length);
+			
+			System.out.println("time to post "+strLenBytes+" bytes using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
 //			conn.commit();
 //			conn.setAutoCommit(true);
 		} catch (SQLException e) {

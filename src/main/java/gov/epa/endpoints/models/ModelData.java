@@ -8,6 +8,7 @@ import java.util.List;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.web_services.embedding_service.CalculationInfo;
 
@@ -95,13 +96,13 @@ public class ModelData {
 	 */
 	public void initTrainingPredictionInstances() {
 		
-		Connection conn=DatabaseLookup.getConnectionPostgres();
+		Connection conn=SqlUtilities.getConnectionPostgres();
 		String idField="canon_qsar_smiles";
 		if(useDTXCIDs) idField="qsar_dtxcid";
 		
 		String sql="select headers_tsv from qsar_descriptors.descriptor_sets d\n"+					
 					"where d.\"name\"='"+descriptorSetName+"';";
-		String instanceHeader="ID\tProperty\t"+DatabaseLookup.runSQL(conn, sql)+"\r\n";
+		String instanceHeader="ID\tProperty\t"+SqlUtilities.runSQL(conn, sql)+"\r\n";
 //		System.out.println(instanceHeader+"\n");
 		
 		sql="select dp."+idField+", dp.qsar_property_value, dv.values_tsv, dpis.split_num from qsar_datasets.data_points dp\n"+ 
@@ -119,7 +120,7 @@ public class ModelData {
 
 		try {
 			
-			ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
+			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
 			
 			int counter=0;
 			
@@ -159,7 +160,7 @@ public class ModelData {
 	 */
 	public static List<String> getTrainingIds(Model model,boolean useDTXCIDs) {
 		
-		Connection conn=DatabaseLookup.getConnectionPostgres();
+		Connection conn=SqlUtilities.getConnectionPostgres();
 		String idField="canon_qsar_smiles";
 		if(useDTXCIDs) idField="qsar_dtxcid";
 		
@@ -175,7 +176,7 @@ public class ModelData {
 		
 		try {			
 			List<String>ids=new ArrayList<>();		
-			ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
+			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
 			while (rs.next()) {
 				String id=rs.getString(1);
 				ids.add(id);
@@ -196,18 +197,18 @@ public class ModelData {
 	
 	public static String generateInstancesWithoutSplitting(String datasetName,String descriptorSetName,boolean useDTXCIDs) {
 			
-		Connection conn=DatabaseLookup.getConnectionPostgres();
+		Connection conn=SqlUtilities.getConnectionPostgres();
 		String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetName+"'";
-		String datasetId=DatabaseLookup.runSQL(conn, sql);
+		String datasetId=SqlUtilities.runSQL(conn, sql);
 
 		sql="select id from qsar_descriptors.descriptor_sets d where d.\"name\" ='"+descriptorSetName+"'";
-		String descriptorSetId=DatabaseLookup.runSQL(conn, sql);
+		String descriptorSetId=SqlUtilities.runSQL(conn, sql);
 		
 		String idField="canon_qsar_smiles";
 		if(useDTXCIDs) idField="qsar_dtxcid";
 
 		sql="select headers_tsv from qsar_descriptors.descriptor_sets d where d.id="+descriptorSetId;
-		String instanceHeader="ID\tProperty\t"+DatabaseLookup.runSQL(conn, sql)+"\r\n";
+		String instanceHeader="ID\tProperty\t"+SqlUtilities.runSQL(conn, sql)+"\r\n";
 				
 		StringBuilder sbOverall = new StringBuilder(instanceHeader);
 
@@ -221,7 +222,7 @@ public class ModelData {
 		
 		try {
 			
-			ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
+			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
 			
 			
 			int counter=0;
@@ -253,23 +254,23 @@ public class ModelData {
 	
 	public void generateInstancesNotinOperaPredictionSet() {
 		
-		Connection conn=DatabaseLookup.getConnectionPostgres();
+		Connection conn=SqlUtilities.getConnectionPostgres();
 		String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetName+"'";
-		String datasetId=DatabaseLookup.runSQL(conn, sql);
+		String datasetId=SqlUtilities.runSQL(conn, sql);
 
 		sql="select id from qsar_descriptors.descriptor_sets d where d.\"name\" ='"+descriptorSetName+"'";
-		String descriptorSetId=DatabaseLookup.runSQL(conn, sql);
+		String descriptorSetId=SqlUtilities.runSQL(conn, sql);
 		
 		String idField="canon_qsar_smiles";
 
 		sql="select headers_tsv from qsar_descriptors.descriptor_sets d where d.id="+descriptorSetId;
-		String instanceHeader="ID\tProperty\t"+DatabaseLookup.runSQL(conn, sql)+"\r\n";
+		String instanceHeader="ID\tProperty\t"+SqlUtilities.runSQL(conn, sql)+"\r\n";
 
 		sql="select p.name from qsar_datasets.datasets d \r\n"
 				+ "inner join qsar_datasets.properties p on p.id =d.fk_property_id \r\n"
 				+ "where d.id="+datasetId+";";
 				
-		String propertyName=DatabaseLookup.runSQL(conn, sql);
+		String propertyName=SqlUtilities.runSQL(conn, sql);
 		
 		String propertyNameOpera=propertyName;
 		if(propertyName.equals("LogBCF_Fish_WholeBody")) propertyNameOpera="LogBCF";
@@ -279,9 +280,9 @@ public class ModelData {
 		String datasetNameOpera=propertyNameOpera+" OPERA";
 		sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetNameOpera.replace("'", "''")+"'";
 //		System.out.println("\n"+sql+"\n");
-		String datasetIdOpera=DatabaseLookup.runSQL(conn, sql);
+		String datasetIdOpera=SqlUtilities.runSQL(conn, sql);
 		sql="select id from qsar_datasets.splittings s where s.\"name\" ='OPERA'";
-		String splittingIdOpera=DatabaseLookup.runSQL(conn, sql);		
+		String splittingIdOpera=SqlUtilities.runSQL(conn, sql);		
 		String sqlOpera="select dp."+idField+", dp.qsar_property_value, dv.values_tsv, dpis.split_num from qsar_datasets.data_points dp\n"+ 
 		"inner join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
 		"inner join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
@@ -302,10 +303,10 @@ public class ModelData {
 
 		try {
 			
-			ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
+			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
 
 			//Make look up for Opera pred set instances:
-			ResultSet rsOpera=DatabaseLookup.runSQL2(conn, sqlOpera);
+			ResultSet rsOpera=SqlUtilities.runSQL2(conn, sqlOpera);
 			Hashtable<String,String>htOperaPredSet=new Hashtable<>();
 			while (rsOpera.next()) {
 				String id=rsOpera.getString(1);
@@ -390,23 +391,23 @@ public class ModelData {
 	}
 
 	public void generateInstancesNotinOperaTrainingSet() {
-		Connection conn=DatabaseLookup.getConnectionPostgres();
+		Connection conn=SqlUtilities.getConnectionPostgres();
 		String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetName+"'";
-		String datasetId=DatabaseLookup.runSQL(conn, sql);
+		String datasetId=SqlUtilities.runSQL(conn, sql);
 
 		sql="select id from qsar_descriptors.descriptor_sets d where d.\"name\" ='"+descriptorSetName+"'";
-		String descriptorSetId=DatabaseLookup.runSQL(conn, sql);
+		String descriptorSetId=SqlUtilities.runSQL(conn, sql);
 		
 		String idField="canon_qsar_smiles";
 
 		sql="select headers_tsv from qsar_descriptors.descriptor_sets d where d.id="+descriptorSetId;
-		String instanceHeader="ID\tProperty\t"+DatabaseLookup.runSQL(conn, sql)+"\r\n";
+		String instanceHeader="ID\tProperty\t"+SqlUtilities.runSQL(conn, sql)+"\r\n";
 
 		sql="select p.name from qsar_datasets.datasets d \r\n"
 				+ "inner join qsar_datasets.properties p on p.id =d.fk_property_id \r\n"
 				+ "where d.id="+datasetId+";";
 				
-		String propertyName=DatabaseLookup.runSQL(conn, sql);
+		String propertyName=SqlUtilities.runSQL(conn, sql);
 		
 		String propertyNameOpera=propertyName;
 		if(propertyName.equals("LogBCF_Fish_WholeBody")) propertyNameOpera="LogBCF";
@@ -416,9 +417,9 @@ public class ModelData {
 		String datasetNameOpera=propertyNameOpera+" OPERA";
 		sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetNameOpera.replace("'", "''")+"'";
 //		System.out.println("\n"+sql+"\n");
-		String datasetIdOpera=DatabaseLookup.runSQL(conn, sql);
+		String datasetIdOpera=SqlUtilities.runSQL(conn, sql);
 		sql="select id from qsar_datasets.splittings s where s.\"name\" ='OPERA'";
-		String splittingIdOpera=DatabaseLookup.runSQL(conn, sql);		
+		String splittingIdOpera=SqlUtilities.runSQL(conn, sql);		
 		String sqlOpera="select dp."+idField+", dp.qsar_property_value, dv.values_tsv, dpis.split_num from qsar_datasets.data_points dp\n"+ 
 		"inner join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
 		"inner join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
@@ -439,10 +440,10 @@ public class ModelData {
 
 		try {
 			
-			ResultSet rs=DatabaseLookup.runSQL2(conn, sql);
+			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
 
 			//Make look up for Opera pred set instances:
-			ResultSet rsOpera=DatabaseLookup.runSQL2(conn, sqlOpera);
+			ResultSet rsOpera=SqlUtilities.runSQL2(conn, sqlOpera);
 			Hashtable<String,String>htOperaTrainingSet=new Hashtable<>();
 			while (rsOpera.next()) {
 				String id=rsOpera.getString(1);

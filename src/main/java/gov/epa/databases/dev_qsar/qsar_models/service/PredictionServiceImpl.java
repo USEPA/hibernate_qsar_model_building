@@ -18,6 +18,7 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.PredictionDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 import gov.epa.endpoints.models.ModelPrediction;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 
 import javax.persistence.EntityManager;
@@ -79,7 +80,7 @@ public class PredictionServiceImpl implements PredictionService {
 	@Override
 	public void createSQL (List<Prediction> predictions) {
 
-		Connection conn=DatabaseLookup.getConnectionPostgres();
+		Connection conn=SqlUtilities.getConnectionPostgres();
 		
 		String [] fieldNames= {"canon_qsar_smiles","qsar_predicted_value","fk_model_id","fk_splitting_id","created_by","created_at"};
 		int batchSize=1000;

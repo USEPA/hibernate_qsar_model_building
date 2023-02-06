@@ -22,6 +22,7 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorSet;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorValues;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
 import gov.epa.web_services.descriptors.SciDataExpertsDescriptorWebService;
@@ -219,7 +220,7 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 		Long id_descriptor=descriptorSet.getId();
 		Long id_dataset=dataset.getId();
 				
-		Connection conn=DatabaseLookup.getConnectionPostgres();
+		Connection conn=SqlUtilities.getConnectionPostgres();
 		
 		//gets list of smiles in the dataset
 		String sql="select dp.canon_qsar_smiles from qsar_datasets.data_points dp \r\n"

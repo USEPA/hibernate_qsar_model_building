@@ -117,7 +117,7 @@ public class ModelBuildingScript {
 	public static void buildModel(String lanId,String modelWsServer,int modelWsPort,String methodName,
 			DescriptorEmbedding de,CalculationInfo ci) {
 
-		System.out.println("Building "+methodName+" model for "+ci.datasetName + "with" + ci.descriptorSetName + "descriptors");
+		System.out.println("\nBuilding "+methodName+" model for "+ci.datasetName + "with" + ci.descriptorSetName + "descriptors");
 
 		if (!modelWsServer.startsWith("http://")) {
 			modelWsServer = "http://" + modelWsServer;

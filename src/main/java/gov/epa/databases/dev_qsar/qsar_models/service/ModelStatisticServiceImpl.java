@@ -25,19 +25,36 @@ public class ModelStatisticServiceImpl implements ModelStatisticService {
 	}
 
 	@Override
-	public List<ModelStatistic> findByModelId(Long modelId, Long statisticId) {
+	public ModelStatistic findByModelId(Long modelId, Long statisticId) {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
 		return findByModelId(modelId, statisticId,session);
 	}
 
 	@Override
-	public List<ModelStatistic> findByModelId(Long modelId, Long statisticId, Session session) {
+	public ModelStatistic findByModelId(Long modelId, Long statisticId, Session session) {
 		Transaction t = session.beginTransaction();
 		ModelStatisticDao modelStatisticDao = new ModelStatisticDaoImpl();
-		List<ModelStatistic> modelStatistic = modelStatisticDao.findByModelId(modelId, statisticId, session);
+		ModelStatistic modelStatistic = modelStatisticDao.findByModelId(modelId, statisticId, session);
 		t.rollback();
 		return modelStatistic;
 	}
+	
+	@Override
+	public List<ModelStatistic> findByModelId(Long modelId) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return findByModelId(modelId, session);				
+	}
+
+	@Override
+	public List<ModelStatistic> findByModelId(Long modelId, Session session) {
+		Transaction t = session.beginTransaction();
+		ModelStatisticDao modelStatisticDao = new ModelStatisticDaoImpl();
+		List<ModelStatistic> modelStatistic = modelStatisticDao.findByModelId(modelId, session);
+		t.rollback();
+		return modelStatistic;
+	}
+
+	
 
 	@Override
 	public ModelStatistic create(ModelStatistic modelStatistic) throws ConstraintViolationException {
@@ -66,5 +83,6 @@ public class ModelStatisticServiceImpl implements ModelStatisticService {
 		
 		return modelStatistic;
 	}
+
 
 }

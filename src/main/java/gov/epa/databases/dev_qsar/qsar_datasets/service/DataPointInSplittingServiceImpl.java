@@ -19,6 +19,7 @@ import gov.epa.databases.dev_qsar.qsar_datasets.QsarDatasetsSession;
 import gov.epa.databases.dev_qsar.qsar_datasets.dao.DataPointInSplittingDao;
 import gov.epa.databases.dev_qsar.qsar_datasets.dao.DataPointInSplittingDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 
 public class DataPointInSplittingServiceImpl implements DataPointInSplittingService {
@@ -28,7 +29,7 @@ public class DataPointInSplittingServiceImpl implements DataPointInSplittingServ
 	@Override
 	public void createSQL (List<DataPointInSplitting> dpisList) {
 
-		Connection conn=DatabaseLookup.getConnectionPostgres();
+		Connection conn=SqlUtilities.getConnectionPostgres();
 		
 		String [] fieldNames= {"fk_data_point_id","fk_splitting_id","split_num","created_by","created_at"};
 		int batchSize=1000;

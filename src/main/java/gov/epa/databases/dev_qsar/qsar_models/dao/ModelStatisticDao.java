@@ -8,6 +8,8 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 
 public interface ModelStatisticDao {
 	
-	public List<ModelStatistic> findByModelId(Long modelId, Long splittingId, Session session);
+	public ModelStatistic findByModelId(Long modelId, Long splittingId, Session session);
+
+	public List<ModelStatistic> findByModelId(Long modelId, Session session);
 
 }

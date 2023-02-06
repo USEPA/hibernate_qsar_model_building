@@ -441,7 +441,7 @@ public class DatasetFileWriter {
 //
 //		String folderMainOpera="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\datasets_benchmark\\";
 //		
-//		Connection conn=DatabaseLookup.getConnection();
+//		Connection conn=SqlUtilities.getConnection();
 //		
 //		String sql="select p.\"name\" from qsar_datasets.datasets d \r\n"
 //				+ "inner join qsar_datasets.properties p on p.id =d.fk_property_id \r\n"
