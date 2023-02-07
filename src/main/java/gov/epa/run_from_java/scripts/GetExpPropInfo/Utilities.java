@@ -155,7 +155,16 @@ public class Utilities {
 				if (m==null) break;
 
 				String DTXSID=m.getProperty("dsstox_substance_id");
+				
+				if (m.getProperty(propertyAbbrev2+" Reference")==null) {
+					System.out.println(propertyAbbrev+"\t"+DTXSID+"\tref missing");
+					
+					continue;
+				}
+				
 				String Reference=m.getProperty(propertyAbbrev2+" Reference");
+				
+				
 				ht.put(DTXSID, Reference);
 			}
 

@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -50,9 +51,13 @@ import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
+import gov.epa.databases.dsstox.DsstoxRecord;
+import gov.epa.databases.dsstox.entity.ChemicalList;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
+import gov.epa.databases.dsstox.service.ChemicalListServiceImpl;
 import gov.epa.databases.dsstox.service.DsstoxCompoundService;
 import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
+import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.util.MathUtil;
 import gov.epa.util.wekalite.CSVLoader;
@@ -62,6 +67,10 @@ import gov.epa.util.wekalite.Instances;
 public class GetExpPropInfo {
 
 
+	static ChemicalListServiceImpl listService=new ChemicalListServiceImpl();
+	static SourceSubstanceServiceImpl sourceSubstanceService=new SourceSubstanceServiceImpl();
+
+	
 	//	static String[]  fieldsFinal= {"exp_prop_id","canon_qsar_smiles","dtxcid_final","qsar_property_value","qsar_property_units",
 	//			"exp_prop_id", "fk_public_source_id", "fk_literature_source_id",
 	//			"fk_source_chemical_id",  "name","description", "type","url", "page_url",  "source_dtxrid",
@@ -361,7 +370,7 @@ public class GetExpPropInfo {
 	 * @param folder
 	 * @param arrayPFAS_CIDs
 	 */
-	static void createCheckingSpreadsheet_PFAS_data(String dataSetName,Connection conn,Connection connDSSTOX,String folder,ArrayList<String>arrayPFAS_CIDs,String versionRulesPFAS,Hashtable<String,String> htOperaReferences) {
+	static void createCheckingSpreadsheet_PFAS_data(String dataSetName,Connection conn,Connection connDSSTOX,String folder,List<String>arrayPFAS_CIDs,String listName,Hashtable<String,String> htOperaReferences) {
 //		String dataSetName=getDataSetName(dataset_id, conn);
 
 		dataSetName=dataSetName.replace(" ", "_").replace("="," ");
@@ -382,10 +391,9 @@ public class GetExpPropInfo {
 			String dtxcid_original=jo.get("mapped_dtxcid").getAsString();
 			String dtxsid_original=jo.get("mapped_dtxsid").getAsString();
 			
-			if(htOperaReferences.get(dtxsid_original)!=null) {
+			if(htOperaReferences!=null && htOperaReferences.get(dtxsid_original)!=null) {
 				String operaReference=htOperaReferences.get(dtxsid_original);
 				jo.addProperty("source_description", operaReference);
-				
 //				System.out.println(operaReference);
 			}
 			
@@ -404,10 +412,20 @@ public class GetExpPropInfo {
 //		System.out.println("Number of PFAS records="+ja2.size());
 //		System.out.println("Number of unique PFAS records="+arrayQSARSmiles.size());
 
-		String pathout=folder+"//"+dataSetName+"//PFAS "+dataSetName+"_PFASSTRUCT"+versionRulesPFAS+".xlsx";
+		String pathout=folder+"//"+dataSetName+"//PFAS "+dataSetName+"_"+listName+".xlsx";
 
 		Hashtable<String,String>htDescriptions=ExcelCreator.getColumnDescriptions();
 		ExcelCreator.createExcel2(ja2, pathout,fieldsFinal,htDescriptions);
+				
+		String pathout2=folder+"//checking spreadsheets//"+listName+"_"+dataSetName+".xlsx";
+		
+		try {
+			Files.copy(Paths.get(pathout), Paths.get(pathout2), StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 
 //		System.out.println("Excel file created:\t"+pathout);
 
@@ -622,6 +640,18 @@ public class GetExpPropInfo {
 	}
 
 
+	static List<DsstoxRecord> getChemicalsFromDSSTOXList(String listName) {
+		ChemicalList chemicalList = listService.findByName(listName);
+		
+		if (chemicalList != null) {
+			 List<DsstoxRecord>dsstoxRecords = sourceSubstanceService
+					.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(listName);
+			 return dsstoxRecords;
+		}
+		return null;
+		
+	}
+	
 	static void createCheckingSpreadsheets() {
 		
 		String folder="data\\dev_qsar\\output\\";
@@ -631,24 +661,50 @@ public class GetExpPropInfo {
 		List<String>datasetNames=new ArrayList<>();
 
 		datasetNames.add("MP from exp_prop and chemprop");
-//		datasetNames.add("BP from exp_prop and chemprop");
-//		datasetNames.add("WS from exp_prop and chemprop");
-//		datasetNames.add("LogP from exp_prop and chemprop");
-//		datasetNames.add("VP from exp_prop and chemprop");
-//		datasetNames.add("HLC from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("WS from exp_prop and chemprop");
+		datasetNames.add("LogP from exp_prop and chemprop");
+		datasetNames.add("VP from exp_prop and chemprop");
+		datasetNames.add("HLC from exp_prop and chemprop");
+		
 //		datasetNames.add("ExpProp_BCF_Fish_TMM");
 		
 //		String version="V4";
-		String version="V5";
+//		String version="V5";
+		//Old way use text file 
 		//From File generated from PFAS_SplittingGenerator.generateQSAR_ReadyPFAS_STRUCT, create list of PFAS cids:
-		ArrayList<String>arrayPFAS_CIDs=getPFAS_CIDs("data\\dev_qsar\\dataset_files\\PFASSTRUCT"+version+"_qsar_ready_smiles.txt");
+//		ArrayList<String>arrayPFAS_CIDs=getPFAS_CIDs("data\\dev_qsar\\dataset_files\\PFASSTRUCT"+version+"_qsar_ready_smiles.txt");
 
-		Hashtable<String,String> htOperaReferences=Utilities.createOpera_Reference_Lookup("LogP","Kow");
 
+		String listName="CCL5PFAS";
+//		String listName="PFASSTRUCTV4";
+//		String listName="PFASSTRUCTV5";
+		
+		//New way get it directly from list in DSSTOX:
+		List<DsstoxRecord>dsstoxRecords=getChemicalsFromDSSTOXList(listName);		
+		List<String>arrayPFAS_CIDs=new ArrayList<>();
+		for (DsstoxRecord dr:dsstoxRecords) arrayPFAS_CIDs.add(dr.dsstoxCompoundId);
+			
+		
 		System.out.println("dataSetName\tRecords\tuniqueRecords");
 		for(String dataSetName:datasetNames) {
 //			System.out.println(dataSetName);
-			createCheckingSpreadsheet_PFAS_data(dataSetName,conn,connDSSTOX, folder,arrayPFAS_CIDs,version,htOperaReferences);//create checking spreadsheet using json file for mapped records that was created when dataset was created
+			
+			String abbrev=dataSetName.substring(0,dataSetName.indexOf(" ")).trim().replace("HLC", "HL");
+			
+			Hashtable<String,String> htOperaReferences=null;
+			
+			if (abbrev.equals("LogP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("LogP","Kow");
+			if (abbrev.equals("WS")) htOperaReferences=Utilities.createOpera_Reference_Lookup("WS","WS");
+			if (abbrev.equals("VP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("VP","VP");
+			if (abbrev.equals("HL")) htOperaReferences=Utilities.createOpera_Reference_Lookup("HL","HL");
+			
+			createCheckingSpreadsheet_PFAS_data(dataSetName,conn,connDSSTOX, folder,arrayPFAS_CIDs,listName,htOperaReferences);//create checking spreadsheet using json file for mapped records that was created when dataset was created
+			
+			
+
+			
+			
 //			System.out.println("");
 		}
 
