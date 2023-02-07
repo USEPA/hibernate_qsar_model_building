@@ -345,11 +345,15 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			
 			addCV_DPIS(model);
 			
-			DescriptorEmbedding descriptorEmbedding=model.getDescriptorEmbedding();		
-			List<DataPoint> dataPoints =dataPointService.findByDatasetName(model.getDatasetName());
-
-			Map<String, Double> expMap = dataPoints.stream()
-					.collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp.getQsarPropertyValue()));
+			DescriptorEmbedding descriptorEmbedding=model.getDescriptorEmbedding();
+			
+//			List<DataPoint> dataPoints =dataPointService.findByDatasetName(model.getDatasetName());//this is a lot slower
+//
+//			Map<String, Double> expMap = dataPoints.stream()
+//					.collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp.getQsarPropertyValue()));
+			
+			Hashtable<String,Double>expMap=SqlUtilities.getHashtableExp(model.getDatasetName());
+			
 
 			System.out.println("Cross validation for dataset = " + model.getDatasetName() + ", descriptors = " + model.getDescriptorSetName()
 			+ ", splitting = " + model.getSplittingName() + " using QSAR method = " + model.getMethod().getName());
@@ -499,6 +503,8 @@ public class WebServiceModelBuilder extends ModelBuilder {
 				
 				List<ModelPrediction>mpsTestSet=crossValidateWithPreselectedDescriptors(model, remove_log_p, splittingNameCV, num_jobs);
 				List<ModelPrediction>mpsTrainSet=getTrainingSetModelPredictions(dataPointInSplittingService, model.getDatasetName(), expMap, splittingNameCV);
+				
+				System.out.println("Fold "+fold+", P="+mpsTestSet.size()+"\tT="+mpsTrainSet.size());
 				
 				double Q2_CV_i=ModelStatisticCalculator.calculateQ2(mpsTrainSet, mpsTestSet);
 				Q2_CV+=Q2_CV_i;
@@ -915,6 +921,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		ModelData data = ModelData.initModelData(ci,false);
 		
 		Long modelId = train(data, methodName);
+		
 		predict(data, methodName, modelId);
 		
 		return modelId;
