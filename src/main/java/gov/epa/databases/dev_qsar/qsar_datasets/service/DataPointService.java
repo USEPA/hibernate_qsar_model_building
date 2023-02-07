@@ -21,5 +21,10 @@ public interface DataPointService {
 	public DataPoint create(DataPoint dataPoint) throws ConstraintViolationException;
 	
 	public DataPoint create(DataPoint dataPoint, Session session) throws ConstraintViolationException;
+	
+	public List<DataPoint> createBatch(List<DataPoint> dataPoints) throws ConstraintViolationException;
+	
+	public List<DataPoint> createBatch(List<DataPoint> dataPoints, Session session) throws ConstraintViolationException;
+
 
 }

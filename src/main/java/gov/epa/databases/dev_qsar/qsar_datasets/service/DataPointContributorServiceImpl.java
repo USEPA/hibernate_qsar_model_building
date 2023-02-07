@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_datasets.service;
 
+import java.util.List;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
@@ -11,6 +12,7 @@ import org.hibernate.Transaction;
 
 import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.qsar_datasets.QsarDatasetsSession;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointContributor;
 
 public class DataPointContributorServiceImpl implements DataPointContributorService {
@@ -47,6 +49,36 @@ public class DataPointContributorServiceImpl implements DataPointContributorServ
 		}
 		
 		return dataPointContributor;
+	}
+	
+	
+	@Override
+	public List<DataPointContributor> createBatch(List<DataPointContributor> dataPointContributors) throws ConstraintViolationException {
+		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
+		return createBatch(dataPointContributors, session);
+	}
+
+	@Override
+	public List<DataPointContributor> createBatch(List<DataPointContributor> dataPointContributors, Session session)
+			throws ConstraintViolationException {
+		Transaction tx = session.beginTransaction();
+		try {
+		for (int i = 0; i < dataPointContributors.size(); i++) {
+			DataPointContributor dataPointContributor = dataPointContributors.get(i);
+			session.save(dataPointContributor);
+		    if ( i % 50 == 0 ) { //50, same as the JDBC batch size
+		        //flush a batch of inserts and release memory:
+		        session.flush();
+		        session.clear();
+		    }
+		}
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			tx.rollback();
+		}
+		
+		tx.commit();
+		session.close();
+		return dataPointContributors;
 	}
 
 }

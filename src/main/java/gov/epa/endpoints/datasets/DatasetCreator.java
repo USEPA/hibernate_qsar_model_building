@@ -497,6 +497,8 @@ public class DatasetCreator {
 	 * @param dataset
 	 */
 	private void postDataPointsWithCIDs(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, Dataset dataset) {
+		List<DataPoint> dataPoints = new ArrayList<DataPoint>();
+		List<DataPointContributor> dataPointContributors = new ArrayList<DataPointContributor>();
 		
 		for (String structure:unifiedPropertyValues.keySet()) {
 			List<MappedPropertyValue> structurePropertyValues = unifiedPropertyValues.get(structure);
@@ -525,15 +527,16 @@ public class DatasetCreator {
 			if (dataPoint.getCanonQsarSmiles()==null) continue;
 			
 			try {
-				dataPointService.create(dataPoint);
+				// dataPointService.create(dataPoint);
+				dataPoints.add(dataPoint);
 				
 				for (MappedPropertyValue mpv:structurePropertyValues) {
 					String expPropId = mpv.propertyValue.generateExpPropId();
 //					String expPropId = mpv.propertyValue.getId()+"";//change to make things easier
 					DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, expPropId, mpv.compound.getDtxcid(), lanId);
-				
+					dataPointContributors.add(dataPointContributor);
 					try {
-						dataPointContributorService.create(dataPointContributor);
+						// dataPointContributorService.create(dataPointContributor);
 					} catch (ConstraintViolationException e1) {
 						System.out.println(e1.getMessage());
 					}
@@ -542,6 +545,13 @@ public class DatasetCreator {
 				System.out.println(e.getMessage());
 			}
 		}
+		try {
+			dataPointService.createBatch(dataPoints);
+			dataPointContributorService.createBatch(dataPointContributors);
+		} catch (ConstraintViolationException e1) {
+			System.out.println(e1.getMessage());
+		}
+		
 	}
 	
 	

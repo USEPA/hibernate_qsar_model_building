@@ -15,6 +15,8 @@ import gov.epa.databases.dev_qsar.qsar_datasets.QsarDatasetsSession;
 import gov.epa.databases.dev_qsar.qsar_datasets.dao.DataPointDao;
 import gov.epa.databases.dev_qsar.qsar_datasets.dao.DataPointDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
+import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Bob;
 
 public class DataPointServiceImpl implements DataPointService {
 
@@ -76,6 +78,35 @@ public class DataPointServiceImpl implements DataPointService {
 		}
 		
 		return dataPoint;
+	}
+
+	@Override
+	public List<DataPoint> createBatch(List<DataPoint> dataPoints) throws ConstraintViolationException {
+		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
+		return createBatch(dataPoints, session);
+	}
+
+	@Override
+	public List<DataPoint> createBatch(List<DataPoint> dataPoints, Session session)
+			throws ConstraintViolationException {
+		Transaction tx = session.beginTransaction();
+		try {
+		for (int i = 0; i < dataPoints.size(); i++) {
+			DataPoint dataPoint = dataPoints.get(i);
+			session.save(dataPoint);
+		    if ( i % 50 == 0 ) { //50, same as the JDBC batch size
+		        //flush a batch of inserts and release memory:
+		        session.flush();
+		        session.clear();
+		    }
+		}
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			tx.rollback();
+		}
+		
+		tx.commit();
+		session.close();
+		return dataPoints;
 	}
 
 }

@@ -35,6 +35,8 @@ public class QsarDatasetsSession {
         	config.setProperty("hibernate.current_session_context_class", "thread");
         	config.setProperty("hibernate.show_sql", "false");
         	config.setProperty("hibernate.hbm2ddl.auto", "update");
+        	config.setProperty("hibernate.jdbc.batch_size", "50");
+
             
             config.setProperty("hibernate.c3p0.acquire_increment", "1");
             config.setProperty("hibernate.c3p0.idle_test_period", "300"); // Must be <= timeout
