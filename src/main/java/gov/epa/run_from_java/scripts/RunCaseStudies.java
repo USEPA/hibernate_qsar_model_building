@@ -352,19 +352,18 @@ public class RunCaseStudies {
 	
 	
 	public static void runCaseStudyOPERA_All_Endpoints() {
-		String server=DevQsarConstants.SERVER_LOCAL;
+		String server=DevQsarConstants.SERVER_819;
 		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(server, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
 
 		String sampleSource="OPERA";
-			/*	
+				
 		String [] endpoints= {DevQsarConstants.LOG_KOA,DevQsarConstants.LOG_KM_HL,DevQsarConstants.HENRYS_LAW_CONSTANT,
 				DevQsarConstants.LOG_BCF,DevQsarConstants.LOG_OH,DevQsarConstants.LOG_KOC,DevQsarConstants.VAPOR_PRESSURE,
 				DevQsarConstants.WATER_SOLUBILITY, DevQsarConstants.BOILING_POINT, DevQsarConstants.MELTING_POINT,
 				DevQsarConstants.LOG_KOW};
-			*/
-		String [] endpoints= {DevQsarConstants.BOILING_POINT, DevQsarConstants.MELTING_POINT,
-				DevQsarConstants.LOG_KOW};
+			
+//		String [] endpoints= {DevQsarConstants.BOILING_POINT, DevQsarConstants.MELTING_POINT,				DevQsarConstants.LOG_KOW};
 
 		for (String endpoint:endpoints) {
 			System.out.println(endpoint);
@@ -570,12 +569,12 @@ public class RunCaseStudies {
 //		runCaseStudyOPERA();
 //		runCaseStudyTest_All_Endpoints();
 //		runCaseStudyTest();
-//		runCaseStudyOPERA_All_Endpoints();
+		runCaseStudyOPERA_All_Endpoints();
 		
 //		ModelBuilder mb=new ModelBuilder("tmarti02");
 //		mb.postPredictionsSQL(null, null, new Splitting(), null);
 		
-		runCaseStudyExpProp_All_Endpoints();		
+//		runCaseStudyExpProp_All_Endpoints();		
 //		runCaseStudyExpProp_All_Endpoints_No_Embedding();
 		
 		
