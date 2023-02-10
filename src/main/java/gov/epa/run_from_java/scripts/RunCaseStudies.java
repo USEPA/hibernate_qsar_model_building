@@ -38,7 +38,7 @@ public class RunCaseStudies {
 	static String lanId="cramslan";
 //	static String lanId = "tmarti02";
 	
-	static int portModelBuilding=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
+	static int portModelBuilding=5005;
 
 //	static String serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
 	static String serverModelBuilding=DevQsarConstants.SERVER_819;
@@ -567,9 +567,9 @@ public class RunCaseStudies {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 //		runCaseStudyOPERA();
-//		runCaseStudyTest_All_Endpoints();
+		runCaseStudyTest_All_Endpoints();
 //		runCaseStudyTest();
-		runCaseStudyOPERA_All_Endpoints();
+//		runCaseStudyOPERA_All_Endpoints();
 		
 //		ModelBuilder mb=new ModelBuilder("tmarti02");
 //		mb.postPredictionsSQL(null, null, new Splitting(), null);
