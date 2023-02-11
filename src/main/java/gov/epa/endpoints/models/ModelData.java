@@ -111,7 +111,7 @@ public class ModelData {
 		"join qsar_descriptors.descriptor_sets ds on dv.fk_descriptor_set_id =ds.id\n"+
 		"join qsar_datasets.datasets d on d.id =dp.fk_dataset_id\n"+ 
 		"join qsar_datasets.splittings s on s.id=dpis.fk_splitting_id\n"+ 
-		"where d.\"name\"='"+datasetName+"' and ds.\"name\"='"+descriptorSetName+"' and s.\"name\"='"+splittingName+"';";
+		"where d.\"name\"='"+datasetName.replace("'", "''")+"' and ds.\"name\"='"+descriptorSetName+"' and s.\"name\"='"+splittingName+"';";
 		
 //		System.out.println("\n"+sql);
 
