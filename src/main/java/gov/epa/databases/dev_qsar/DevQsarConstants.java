@@ -109,9 +109,9 @@ public class DevQsarConstants {
 	public static final String DENSITY = "Density";
 	public static final String BOILING_POINT = "Boiling point";
 	public static final String FLASH_POINT = "Flash point";
-	public static final String PKA = "pKA";
-	public static final String PKA_A = "pKAa";
-	public static final String PKA_B = "pKAb";
+	public static final String PKA = "pKa";
+	public static final String PKA_A = "pKa_a";
+	public static final String PKA_B = "pKa_b";
 	public static final String LOG_BCF = "LogBCF";
 	public static final String LOG_OH = "LogOH";
 	public static final String LOG_KOC = "LogKOC";

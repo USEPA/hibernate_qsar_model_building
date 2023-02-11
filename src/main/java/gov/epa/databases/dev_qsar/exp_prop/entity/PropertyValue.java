@@ -236,7 +236,7 @@ public class PropertyValue {
 	}
 	
 	public static Boolean checkRangeForProperty(double min, double max, String propertyName) {
-		if (propertyName.equals(DevQsarConstants.PKA) 
+		if (propertyName.equals(DevQsarConstants.PKA) || propertyName.equals(DevQsarConstants.PKA_A) || propertyName.equals(DevQsarConstants.PKA_B)  
 				|| propertyName.equals(DevQsarConstants.LOG_KOW)
 				|| propertyName.equals(DevQsarConstants.LOG_BCF_FISH_WHOLEBODY)) {
 			return isRangeWithinTolerance(min, max, DevQsarConstants.LOG_RANGE_TOLERANCE);

@@ -7,6 +7,8 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.poi.xssf.usermodel.XSSFPivotCacheRecords;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -15,12 +17,14 @@ import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 //import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.endpoints.datasets.BoundParameterValue;
 import gov.epa.endpoints.datasets.DatasetCreator;
 import gov.epa.endpoints.datasets.DatasetParams;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 
@@ -43,10 +47,9 @@ public class DatasetCreatorScript {
 //		getDatasetStats();//Get record counts for the papers
 //		getDatasetStatsUsingSql();//Get record counts for the papers
 //		getDatasetStatsForOneDataset();
-		createPKAb();
+//		
 //		DatasetServiceImpl ds=new DatasetServiceImpl();
 //		ds.delete(112);
-
 		
 //		createHLC();//done		
 //		createVP();//done
@@ -55,13 +58,17 @@ public class DatasetCreatorScript {
 //		createBCF();//done
 //		createMP();//done
 //		createBP();
-//		
 
+//		create_pKA();
+//		createPKAa();
+//		createPKAb();
+		
+		String folder="data\\dev_qsar\\output\\";
+		GetExpPropInfo.createCheckingSpreadsheet("pKa_a from exp_prop and chemprop", folder, null);
+		
 		
 		//TODO recreate WS dataset now that keep was set to false based on manual check
-//		create_pKA();
 //		createBP_exclude_LookChem();
-		
 		
 	}
 	
@@ -438,7 +445,12 @@ public class DatasetCreatorScript {
 	}
 	
 	public static void createPKAa() {
-		// comment for diff
+
+//		DatasetServiceImpl ds=new DatasetServiceImpl();
+//		ds.delete(126);
+//		if(true) return;
+		
+				// comment for diff
 		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 
@@ -454,9 +466,8 @@ public class DatasetCreatorScript {
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
-//		String datasetName = "ExpProp_LogP_WithChemProp_MULTIPLE";
-		String datasetName = "pKAa from exp_prop and chemprop";
-		String datasetDescription = "pKAa from exp_prop and chemprop with no bounds";
+		String datasetName = propertyName+" from exp_prop and chemprop";
+		String datasetDescription = propertyName+" from exp_prop and chemprop with no bounds";
 		
 		DatasetParams listMappedParams = new DatasetParams(datasetName, 
 				datasetDescription, 
@@ -484,9 +495,8 @@ public class DatasetCreatorScript {
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
-//		String datasetName = "ExpProp_LogP_WithChemProp_MULTIPLE";
-		String datasetName = "pKAb from exp_prop and chemprop";
-		String datasetDescription = "pKAb from exp_prop and chemprop with no bounds";
+		String datasetName = propertyName+" from exp_prop and chemprop";
+		String datasetDescription = propertyName+" from exp_prop and chemprop with no bounds";
 		
 		DatasetParams listMappedParams = new DatasetParams(datasetName, 
 				datasetDescription, 
@@ -595,7 +605,7 @@ public class DatasetCreatorScript {
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
 		
-		String datasetName = "HLC from exp_prop and chemprop";
+		String datasetName = "HLC from exp_prop and chemprop-testbatchinsert2";
 //		String datasetName = "HLC delete later";
 		
 		String datasetDescription = "HLC from exp_prop and chemprop where "
