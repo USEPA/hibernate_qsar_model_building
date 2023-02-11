@@ -46,7 +46,7 @@ import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithSt
 import kong.unirest.Unirest;
 import javax.validation.Validator;
 
-public class SplittingGeneratorPFAS {
+public class SplittingGeneratorPFAS_Script {
 
 	public static final String splittingPFASOnly="T=PFAS only, P=PFAS";
 	public static final String splittingAll="T=all, P=PFAS";		
@@ -60,7 +60,7 @@ public class SplittingGeneratorPFAS {
 //	Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
 	Validator validator = DevQsarValidator.getValidator();
 	
-	public SplittingGeneratorPFAS() {
+	public SplittingGeneratorPFAS_Script() {
 //		System.setProperty("org.jboss.logging.provider", "log4j");
 //		System.setProperty("com.mchange.v2.log.MLog", "log4j");
 //		
@@ -405,7 +405,7 @@ public class SplittingGeneratorPFAS {
 		"inner join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+
 		"join qsar_datasets.datasets d on dp.fk_dataset_id =d.id\n"+
 		"join qsar_datasets.splittings s on s.id = dpis.fk_splitting_id\n"+ 
-		"where d.\"name\"='"+datasetName+"'\n"
+		"where d.\"name\"='"+datasetName.replace("'","''")+"'\n"
 		+ "and s.\"name\"='"+splitting+"' and dpis.split_num = "+splitNum+";";
 		
 //		System.out.println(sql+"\n");
@@ -417,13 +417,16 @@ public class SplittingGeneratorPFAS {
 	
 	void createSplittings () {
 		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop");
 //		datasetNames.add("ExpProp BCF Fish_TMM");
+		datasetNames.add("pKa_a from exp_prop and chemprop");
+//		datasetNames.add("pKa_b from exp_prop and chemprop");
+
 
 		Connection conn = SqlUtilities.getConnectionPostgres();
 		
@@ -444,11 +447,11 @@ public class SplittingGeneratorPFAS {
 //		p.generateQSAR_ReadyPFAS_STRUCT(listName,filePath);		
 		
 		ArrayList<String>smilesArray=getPFASSmiles(filePath);
-
 		
 		for (String datasetName : datasetNames) {
 			for (String splittingName : splittingNames) {
-//				p.createSplitting(datasetName,splittingName,smilesArray);	
+				
+				createSplitting(datasetName,splittingName,smilesArray);	
 				int countTraining = getCount(conn, datasetName, splittingName, 0);
 				int countPrediction = getCount(conn, datasetName, splittingName, 1);
 				System.out.println(datasetName+"\t"+splittingName+"\t"+countTraining + "\t" + countPrediction);
@@ -487,11 +490,31 @@ public class SplittingGeneratorPFAS {
 		
 	}
 	
+	void deleteSplittings() {
+		
+		String dataSetName= "pKa_a from exp_prop and chemprop";
+//		String dataSetName= "pKa_b from exp_prop and chemprop";
+		String splittingName=splittingAll;
+//		String splittingName=splittingAllButPFAS;
+//		String splittingName=splittingPFASOnly;
+		
+		DataPointInSplittingServiceImpl dpisService=new DataPointInSplittingServiceImpl();
+		
+		List<DataPointInSplitting>dpisList=dpisService.findByDatasetNameAndSplittingName(dataSetName, splittingName);
+		
+		for (DataPointInSplitting dpis:dpisList) {
+			System.out.println(dpis.getSplitNum());
+//			dpisService.delete(dpis);
+		}
+		
+	}
+	
 	
 	public static void main(String[] args) {
-		SplittingGeneratorPFAS p=new SplittingGeneratorPFAS();
+		SplittingGeneratorPFAS_Script p=new SplittingGeneratorPFAS_Script();
 		
-		p.createSplittings();
+//		p.createSplittings();
+		p.deleteSplittings();
 //		p.write_exp_prop_datasets();		
 //		p.createFiveFoldExternalSplittings(folder, datasetName,"T.E.S.T. 5.1", smilesArray);
 		
