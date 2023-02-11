@@ -59,7 +59,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	DataPointInSplittingService dataPointInSplittingService = new DataPointInSplittingServiceImpl();
 	DataPointServiceImpl dataPointService=new DataPointServiceImpl();
 	
-	CrossValidate crossValidate=new CrossValidate();
+	public CrossValidate crossValidate=new CrossValidate();
 	
 	
 	protected ModelWebService modelWebService;
@@ -334,7 +334,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		return model.getId();
 	}
 	
-	class CrossValidate {
+	public class CrossValidate {
 		
 		int numSplits=5;
 		
@@ -919,6 +919,8 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	public long build(String methodName, CalculationInfo ci){
 		
 		ModelData data = ModelData.initModelData(ci,false);
+		
+//		System.out.println(data.trainingSetInstances);
 		
 		Long modelId = train(data, methodName);
 		
