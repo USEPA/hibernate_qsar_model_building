@@ -26,7 +26,7 @@ public class SampleReportWriter {
 		
 		PredictionReport predictionReport = null;
 
-		String filepathReport = "data/reports/" + modelSetName + "_" + datasetName + "_PredictionReport.json";
+		String filepathReport = "data/reports/" + modelSetName +"/"+ datasetName + "_PredictionReport.json";
 		File reportFile = new File(filepathReport);
 
 		if (reportFile.exists() && !overWriteJsonReport) {
@@ -43,10 +43,9 @@ public class SampleReportWriter {
 	}
 	
 	
-	public static PredictionReport getReport(String modelSetName, String datasetName, 
-			String splittingName) {
+	public static PredictionReport getReport(String modelSetName, String datasetName, String splittingName) {
 		
-		String filepathReport = "data/reports/" + modelSetName + "_" + datasetName + "_PredictionReport.json";
+		String filepathReport = "data/reports/" + modelSetName + "/" + datasetName + "_PredictionReport.json";
 		File reportFile = new File(filepathReport);
 
 		if (reportFile.exists()) {
@@ -78,14 +77,13 @@ public class SampleReportWriter {
 
 		String modelSetName = mss.findById(modelSetId).getName();
 		
-		String outputFolder = "data/reports/prediction reports upload";
+		String outputFolder = "data/reports/prediction reports upload/"+modelSetName;
 		
 		File f = new File(outputFolder);
 		if (!f.exists())
 			f.mkdirs();
 
-		String filepath = outputFolder + File.separator + String.join("_", modelSetName, datasetName, splittingName)
-		+ ".xlsx";
+		String filepath = outputFolder + File.separator + String.join("_", datasetName, splittingName) + ".xlsx";
 		
 		File excelFile=new File(filepath);
 		
@@ -146,21 +144,6 @@ public class SampleReportWriter {
 //		g.generateSamplePredictionReports(2L,true,true);
 //		g.generateSamplePredictionReports(14L,false,false);
 		
-		// **************************************************************
-		String splitting="T=PFAS only, P=PFAS";
-		long modelSetId=15L;
-		
-		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
-		
-		for (String datasetName:datasetNames) 
-			g.generateSamplePredictionReport(modelSetId, datasetName, splitting,upload,deleteExistingReportInDatabase,overWriteReportFiles);
-
 		
 		// **************************************************************
 //		 QsarModelsScript q=new QsarModelsScript("tmarti02");

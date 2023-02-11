@@ -121,6 +121,9 @@ public class PredictionReportGenerator extends ReportGenerator {
 				.filter(m -> m.getSplittingName().equals(predictionReport.predictionReportMetadata.splittingName))
 				.collect(Collectors.toList());
 		for (Model model:models) {
+			
+			System.out.println(model.getId()+"\t"+model.getMethod().getName());
+			
 			addModelPredictionsAndMetadata(model);
 		}
 	}
@@ -148,11 +151,11 @@ public class PredictionReportGenerator extends ReportGenerator {
 		
 		Method method = model.getMethod();
 		
-		Splitting splitting=splittingService.findByName(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE);
+		Splitting splitting=splittingService.findByName(model.getSplittingName());
 		
 		List<Prediction> modelPredictions = predictionService.findByIds(model.getId(),splitting.getId());
 		
-		List<DataPoint>dataPoints=dataPointService.findByDatasetName(model.getDatasetName());
+//		List<DataPoint>dataPoints=dataPointService.findByDatasetName(model.getDatasetName());
 
 		
 		Map<String, Prediction> modelPredictionsMap = modelPredictions.stream()
@@ -161,7 +164,17 @@ public class PredictionReportGenerator extends ReportGenerator {
 		for (PredictionReportDataPoint data:predictionReport.predictionReportDataPoints) {
 
 			Prediction pred = modelPredictionsMap.get(data.canonQsarSmiles);
+			
+			if (splittingMap.get(data.canonQsarSmiles)==null) {
+//				System.out.println("Missing split num for "+data.canonQsarSmiles);
+				continue;
+			}
+			
 			int splitNum=splittingMap.get(data.canonQsarSmiles);
+			
+			if(splitNum!=DevQsarConstants.TRAIN_SPLIT_NUM && splitNum!=DevQsarConstants.TEST_SPLIT_NUM) continue;
+			
+//			System.out.println(splitNum+"\t"+pred);
 			
 			if (pred!=null) {
 				data.qsarPredictedValues.add(new QsarPredictedValue(method.getName(), 

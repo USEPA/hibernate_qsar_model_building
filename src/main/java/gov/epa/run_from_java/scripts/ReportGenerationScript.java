@@ -36,7 +36,7 @@ public class ReportGenerationScript {
 	static PredictionReportGenerator gen = new PredictionReportGenerator();
 
 	private static void writeReport(String datasetName, String modelSetName, PredictionReport report) {
-		String filePath = "data/reports/" + modelSetName+"_"+datasetName + "_PredictionReport.json";
+		String filePath = "data/reports/" + modelSetName+"/"+datasetName + "_PredictionReport.json";
 
 		File file = new File(filePath);
 		if (file.getParentFile()!=null) {
@@ -56,7 +56,7 @@ public class ReportGenerationScript {
 
 	public static void writeReport(PredictionReport report,String filePath) {
 
-		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().serializeSpecialFloatingPointValues().create();
 		try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
 			writer.write(gson.toJson(report));
 		} catch (IOException e) {
@@ -75,10 +75,12 @@ public class ReportGenerationScript {
 		if (deleteMissingSplitting) {
 			for(int i=0;i<report.predictionReportDataPoints.size();i++) {
 				PredictionReportDataPoint dp=report.predictionReportDataPoints.get(i);
-				if(dp.qsarPredictedValues.get(0).splitNum==null) {					
-					System.out.println(datasetName+"\t"+dp.canonQsarSmiles+"\tfirst predicted value has null splitNum");					
+				
+				if(dp.qsarPredictedValues.size()==0 || dp.qsarPredictedValues.get(0).splitNum==null) {
+//					System.out.println(datasetName+"\t"+dp.canonQsarSmiles+"\tremoving data point since no predictions");					
 					report.predictionReportDataPoints.remove(i--);
 				}
+				
 			}			
 		}
 		

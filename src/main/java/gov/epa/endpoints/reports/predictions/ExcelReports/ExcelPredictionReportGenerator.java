@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonIOException;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
@@ -39,10 +40,19 @@ public class ExcelPredictionReportGenerator {
 	int countTest;
 	int countTestXgb;
 	ExcelUtilities eu = new ExcelUtilities();
+
+	
+	String[] fieldsMappedRecords = { "exp_prop_id", "canon_qsar_smiles", "page_url", "source_url", "source_doi",
+			"source_name", "source_description", "source_authors", "source_title", "source_dtxrid",
+			"source_dtxsid", "source_casrn", "source_chemical_name", "source_smiles", "mapped_dtxcid", "mapped_dtxsid",
+			"mapped_cas", "mapped_chemical_name", "mapped_smiles", "mapped_molweight", "value_original", "value_max",
+			"value_min", "value_point_estimate", "value_units", "qsar_property_value", "qsar_property_units",
+			"temperature_c", "pressure_mmHg", "pH", "notes", "qc_flag"};
+
 	
 	private static class Stats {
 		
-		List<String> continuousStats= new ArrayList<String>(Arrays.asList("Split","R2","Q2", "RMSE", "MAE", "Coverage"));
+		List<String> continuousStats= new ArrayList<String>(Arrays.asList("Split","Q2_CV","R2","Q2","RMSE", "MAE", "Coverage"));
 		List<String> binaryStats = (Arrays.asList("Split", "BA", "SN", "SP", "Coverage"));
 		
 		//TODO add R2_Inside_AD, BA_inside_AD (store in database...)
@@ -78,6 +88,40 @@ public class ExcelPredictionReportGenerator {
 			if (set.equals("Test")) htStats=htStatsTest;
 			else htStats=htStatsTraining;
 
+			List<Object>statValues=new ArrayList<>();			
+			for (String statname:statNames) statValues.add(htStats.get(statname));
+			return statValues;
+		}
+
+	}
+	
+	
+	private static class Stats2 {
+		
+		
+		List<String> continuousStats= new ArrayList<String>(Arrays.asList("R2_CV_Training","Q2_CV_Training",				
+				"R2_Test","Q2_Test","MAE_Test","RMSE_Test","Coverage_Test"));
+		
+									
+		List<String> binaryStats = (Arrays.asList("Split", "BA", "SN", "SP", "Coverage"));
+		
+		//TODO add R2_Inside_AD, BA_inside_AD (store in database...)
+				
+		Hashtable<String,Object>htStats=new Hashtable<>();
+				
+		// switch statement limited to newer version of java on strings for some reason
+		private void storeStats(PredictionReportModelStatistic s) {
+						
+			String statisticName=s.statisticName.replace("PearsonRSQ", "R2");			
+			htStats.put(statisticName, s.statisticValue);
+		}
+
+		private List<Object> provideStats(boolean isBinary) {
+			
+			List<String>statNames=null;
+			if (isBinary) statNames=binaryStats;		
+			else statNames=continuousStats;
+			
 			List<Object>statValues=new ArrayList<>();			
 			for (String statname:statNames) statValues.add(htStats.get(statname));
 			return statValues;
@@ -152,23 +196,39 @@ public class ExcelPredictionReportGenerator {
 		return jsonPath;
 	}
 	
-	void addExperimentalRecordsSheet(Workbook wb,String jsonPath) {
+	JsonArray addExperimentalRecordsSheet(Workbook wb,String jsonPath) {
 		
 		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
 		
-		String[] fields = { "exp_prop_id", "canon_qsar_smiles", "page_url", "source_url", "source_doi",
-				"source_name", "source_description", "source_authors", "source_title", "source_dtxrid",
-				"source_dtxsid", "source_casrn", "source_chemical_name", "source_smiles", "mapped_dtxcid", "mapped_dtxsid",
-				"mapped_cas", "mapped_chemical_name", "mapped_smiles", "mapped_molweight", "value_original", "value_max",
-				"value_min", "value_point_estimate", "value_units", "qsar_property_value", "qsar_property_units",
-				"temperature_c", "pressure_mmHg", "pH", "notes", "qc_flag"};
-
 		Hashtable<String,String>htDescriptions=ExcelCreator.getColumnDescriptions();
 		
-		ExcelCreator.addSheet(wb, "Records",ja,fields, htDescriptions);
+		ExcelCreator.addSheet(wb, "Records",ja,fieldsMappedRecords, htDescriptions);
 		
 		wb.setSheetOrder("Records", wb.getSheetIndex("Test set")+1);
-		wb.setSheetOrder("Records field descriptions", wb.getSheetIndex("Records")+1);		
+		wb.setSheetOrder("Records field descriptions", wb.getSheetIndex("Records")+1);
+		
+		return ja;
+		
+	}
+	
+	
+	JsonArray addExperimentalRecordsSheet(Workbook wb,String jsonPath,List<String>smilesList) {
+		
+		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
+		
+		for (int i=0;i<ja.size();i++) {
+			JsonObject jo=ja.get(i).getAsJsonObject();
+			String smiles=jo.get("canon_qsar_smiles").getAsString();
+			if(!smilesList.contains(smiles)) {
+				ja.remove(i--);
+			}
+		}
+		
+		Hashtable<String,String>htDescriptions=ExcelCreator.getColumnDescriptions();
+		ExcelCreator.addSheet(wb, "Records",ja,fieldsMappedRecords, htDescriptions);
+		wb.setSheetOrder("Records", wb.getSheetIndex("Test set")+1);
+		wb.setSheetOrder("Records field descriptions", wb.getSheetIndex("Records")+1);
+		return ja;
 		
 	}
 	
@@ -183,12 +243,18 @@ public class ExcelPredictionReportGenerator {
 		Workbook wb = new XSSFWorkbook();
 		
 		boolean isBinary = report.predictionReportMetadata.datasetUnit.equalsIgnoreCase("binary") ? true : false;
+		
+		System.out.println("Generating cover sheet");
 		generateCoverSheet2(report,wb, isBinary);
 
+		System.out.println("Generating summary sheet");
 		generateSummarySheet2(report, wb, isBinary);
-
+		
+		System.out.println("Generating training and prediction set sheets");
 		generateSplitSheet2(report, wb, isBinary);
 
+		
+		System.out.println("Generating prediction sheets");
 		for (int i = 0; i < report.predictionReportDataPoints.get(0).qsarPredictedValues.size(); i++) {
 			generatePredictionSheet2(report.predictionReportDataPoints, i, wb, isBinary, report.predictionReportMetadata.datasetProperty,report.predictionReportMetadata.datasetUnit);
 		}
@@ -198,13 +264,25 @@ public class ExcelPredictionReportGenerator {
 		String jsonPath=getMappedJsonPath(report.predictionReportMetadata.datasetName);
 		
 		if(new File(jsonPath).exists()) {
-			addExperimentalRecordsSheet(wb,jsonPath);		
-			addHyperlinksToRecords(report,wb);
+			
+			System.out.println("Adding experimental mapped records sheet");
+			JsonArray ja=addExperimentalRecordsSheet(wb,jsonPath);	
+			
+			Hashtable<String,Integer>htExp_Prop_ids=new Hashtable<>();			
+			
+			for (int i=0;i<ja.size();i++) {
+				JsonObject jo=ja.get(i).getAsJsonObject();
+				String exp_prop_id=jo.get("exp_prop_id").getAsString();
+				htExp_Prop_ids.put(exp_prop_id, i);
+//				System.out.println(i+"\t"+exp_prop_id);
+			}
+			
+			System.out.println("Adding intrahyperlinks to sheets");			
+			addHyperlinksToRecords(report,wb,htExp_Prop_ids);
 		} else {
 			System.out.println("Cant add experimental records json is missing:"+jsonPath);
 		}
 		
-
 		try {
 			FileOutputStream out = new FileOutputStream(filepathOut);
 			wb.write(out);
@@ -219,12 +297,72 @@ public class ExcelPredictionReportGenerator {
 		
 		
 
-		System.out.println("***\t"+report.predictionReportMetadata.datasetName+"\t"+countTest+"\t"+countTestXgb);
+//		System.out.println("***\t"+report.predictionReportMetadata.datasetName+"\t"+countTest+"\t"+countTestXgb);
+
+	}
+	
+	
+	/**
+	 * Adds original experimental records
+	 * 
+	 * @param report
+	 * @param filepathOut
+	 */
+	public void generate(PredictionReport report, String filepathOut,List<String>smiles) {
+		
+		Workbook wb = new XSSFWorkbook();
+		
+		boolean isBinary = report.predictionReportMetadata.datasetUnit.equalsIgnoreCase("binary") ? true : false;
+		generateCoverSheet2(report,wb, isBinary);
+
+		generateSummarySheet2(report, wb, isBinary);
+		
+		generateSplitSheet2(report, wb, isBinary);
+
+		for (int i = 0; i < report.predictionReportDataPoints.get(0).qsarPredictedValues.size(); i++) {
+			generatePredictionSheet2(report.predictionReportDataPoints, i, wb, isBinary, report.predictionReportMetadata.datasetProperty,report.predictionReportMetadata.datasetUnit);
+		}
+
+		columnResizing(wb);
+		
+		String jsonPath=getMappedJsonPath(report.predictionReportMetadata.datasetName);
+		
+		if(new File(jsonPath).exists()) {
+			JsonArray ja=addExperimentalRecordsSheet(wb,jsonPath,smiles);
+			
+			Hashtable<String,Integer>htExp_Prop_ids=new Hashtable<>();//look up index of specific exp_prop_id			
+			for (int i=0;i<ja.size();i++) {
+				JsonObject jo=ja.get(i).getAsJsonObject();
+				String exp_prop_id=jo.get("exp_prop_id").getAsString();
+				htExp_Prop_ids.put(exp_prop_id, i);
+//				System.out.println("*"+exp_prop_id+"\t"+i);
+			}
+			
+			addHyperlinksToRecords(report,wb,htExp_Prop_ids);
+		} else {
+			System.out.println("Cant add experimental records json is missing:"+jsonPath);
+		}
+		
+		try {
+			FileOutputStream out = new FileOutputStream(filepathOut);
+			wb.write(out);
+			wb.close();			
+			out.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		System.out.println("Spreadsheet written successfully" );
+		
+		
+
+//		System.out.println("***\t"+report.predictionReportMetadata.datasetName+"\t"+countTest+"\t"+countTestXgb);
 
 	}
 
 
-	private void addHyperlinksToRecords(PredictionReport pr,Workbook wb) {
+	private void addHyperlinksToRecords(PredictionReport pr,Workbook wb,Hashtable <String,Integer>htExp_Prop_Ids) {
 
 		XSSFSheet sheetRecords=(XSSFSheet) wb.getSheet("Records");
 		
@@ -240,24 +378,25 @@ public class ExcelPredictionReportGenerator {
 		
 		int colNumRecords=eu.getColumnNumber(sheetRecords, "exp_prop_id", 0);
 				
+	
+//		Hashtable <String,XSSFHyperlink>htLinks=new Hashtable<>();
+
+		XSSFSheet sheetTest=(XSSFSheet) wb.getSheet("Test set");
+		addHyperlink(sheetTest,sheetRecords, createHelper, hlink_style, colNumRecords,htExp_Prop_Ids);
+		
+		XSSFSheet sheetTraining=(XSSFSheet) wb.getSheet("Training set");
+		addHyperlink(sheetTraining,sheetRecords, createHelper, hlink_style, colNumRecords,htExp_Prop_Ids);
+
 		for (PredictionReportModelMetadata md:pr.predictionReportModelMetadata) {
 //			System.out.println(md.qsarMethodName);
-			
-			XSSFSheet sheet=(XSSFSheet) wb.getSheet(md.qsarMethodName);
-			addHyperlink(sheet,sheetRecords, createHelper, hlink_style, colNumRecords);
-						
-			sheet=(XSSFSheet) wb.getSheet("Test set");
-			addHyperlink(sheet,sheetRecords, createHelper, hlink_style, colNumRecords);
-			
-			sheet=(XSSFSheet) wb.getSheet("Training set");
-			addHyperlink(sheet,sheetRecords, createHelper, hlink_style, colNumRecords);
-			
+			XSSFSheet sheetMethod=(XSSFSheet) wb.getSheet(md.qsarMethodName);
+			addHyperlink(sheetMethod,sheetRecords, createHelper, hlink_style, colNumRecords,htExp_Prop_Ids);
 		}
 		
 	}
 
 	private void addHyperlink(XSSFSheet sheet, XSSFSheet sheetRecords, CreationHelper createHelper, CellStyle hlink_style,
-			int colNumRecords) {
+			int colNumRecords,Hashtable <String,Integer>htExp_Prop_Ids) {
 		
 		int colNumPred=eu.getColumnNumber(sheet, "exp_prop_id", 0);
 		
@@ -266,51 +405,33 @@ public class ExcelPredictionReportGenerator {
 		for (int i=1;i<=sheet.getLastRowNum();i++) {
 			Row row=sheet.getRow(i);
 			Cell cell=row.getCell(colNumPred);
-			addHyperlink(sheetRecords, createHelper, hlink_style, colNumRecords, cell);
+			addHyperlink(sheetRecords, createHelper, hlink_style, colNumRecords, cell,htExp_Prop_Ids);
 		}
 	}
 
 	private void addHyperlink(XSSFSheet sheetRecords, CreationHelper createHelper, CellStyle hlink_style,
-			int colNumRecords, Cell cell) {
+			int colNumRecords, Cell cell, Hashtable <String,Integer>htExp_Prop_Ids) {
 		
 		String exp_prop_id=cell.getStringCellValue();
+		
 //		System.out.println(exp_prop_id);
 		
 		String []ids=exp_prop_id.split("\\|");
 		String firstId=ids[0];//just use first one since cant set multiple links
-
-		CellAddress cellAddress=null;				
-		for (int j=3;j<sheetRecords.getLastRowNum();j++) {		
-			
-			Cell cell2=sheetRecords.getRow(j).getCell(colNumRecords);
-			
-			String exp_prop_id_Records=null;
-			
-			if (cell2.getCellType().equals(CellType.NUMERIC)) {
-				exp_prop_id_Records=(int)(cell2.getNumericCellValue())+"";	
-			} else {
-				exp_prop_id_Records=cell2.getStringCellValue();
-			}
-			
-//			System.out.println(exp_prop_id_Records+"\t"+firstId);
-								
-			if(exp_prop_id_Records.equals(firstId)) {
-				cellAddress=sheetRecords.getRow(j).getCell(colNumRecords).getAddress();
-				break;
-			}					
+		
+		if (htExp_Prop_Ids.get(firstId)==null) {
+//			System.out.println("cant add hyperlink for "+firstId);
+			return;			
 		}
 		
-//				if (cellAddress!=null) System.out.println(cellAddress.toString());
-		
-		if (cellAddress==null) {
-			System.out.println("Cant set url for "+firstId);
-			return;
-		}
-		
+		int row=htExp_Prop_Ids.get(firstId)+1;
+		CellAddress cellAddress=sheetRecords.getRow(row).getCell(colNumRecords).getAddress();
 		XSSFHyperlink link = (XSSFHyperlink)createHelper.createHyperlink(HyperlinkType.DOCUMENT);
 		link.setAddress("'Records'!"+cellAddress.formatAsR1C1String());
+
 		cell.setHyperlink(link);
 		cell.setCellStyle(hlink_style);
+		
 	}
 
 	public void generate(String inputFilePath,String outputFilePath) {
@@ -418,13 +539,69 @@ public class ExcelPredictionReportGenerator {
 
 
 
+//	private void generateSummarySheet2(PredictionReport report, Workbook wb,
+//			boolean isBinary) {
+//		Map < Integer, Object[] > spreadsheetMap = new TreeMap < Integer, Object[] >();
+//		ArrayList<String> headerStats = new ArrayList<String>(Arrays.asList("Dataset Name", "Descriptor Software", "Method Name"));
+//
+//		if (isBinary) headerStats.addAll(new Stats().binaryStats);
+//		else headerStats.addAll(new Stats().continuousStats);
+//
+//		String[] headerStatsArray = new String[headerStats.size()];
+//		headerStatsArray = headerStats.toArray(headerStatsArray);
+//		Object[] headerStatsObject = headerStatsArray;
+//		spreadsheetMap.put(0, headerStatsObject);	        
+//
+//
+//		int i=0;
+//		
+//		for (PredictionReportModelMetadata mmd:report.predictionReportModelMetadata) {
+//
+//			Stats stats = new Stats();
+//			
+//			ArrayList<Object> modelSplitInfoTrain = new ArrayList<Object>();
+//			modelSplitInfoTrain.add(report.predictionReportMetadata.datasetName);
+//			modelSplitInfoTrain.add(mmd.descriptorSetName);
+//			modelSplitInfoTrain.add(mmd.qsarMethodName);
+//
+//			ArrayList<Object> modelSplitInfoTest = (ArrayList<Object>) modelSplitInfoTrain.clone();
+//
+//			
+//			for (PredictionReportModelStatistic ms:mmd.predictionReportModelStatistics) {
+//				stats.storeStats(ms);
+//			}
+//			
+//			modelSplitInfoTrain.addAll(stats.provideStats("Train",isBinary));
+//			modelSplitInfoTest.addAll(stats.provideStats("Test",isBinary));
+//
+//			Object[] trainRow = modelSplitInfoTrain.toArray();
+//			Object[] testRow = modelSplitInfoTest.toArray();
+//
+//			spreadsheetMap.put(2*i+1, trainRow);
+//			spreadsheetMap.put(2*i + 2, testRow);
+//			i++;
+//
+//		}
+//
+//		populateSheet2(spreadsheetMap, wb, isBinary, "Summary sheet", null, null);
+//
+//	}
+	
+	/**
+	 * This version has one row per model instead of separating training and prediction
+	 * 
+	 * @param report
+	 * @param wb
+	 * @param isBinary
+	 */
 	private void generateSummarySheet2(PredictionReport report, Workbook wb,
 			boolean isBinary) {
+		
 		Map < Integer, Object[] > spreadsheetMap = new TreeMap < Integer, Object[] >();
 		ArrayList<String> headerStats = new ArrayList<String>(Arrays.asList("Dataset Name", "Descriptor Software", "Method Name"));
 
-		if (isBinary) headerStats.addAll(new Stats().binaryStats);
-		else headerStats.addAll(new Stats().continuousStats);
+		if (isBinary) headerStats.addAll(new Stats2().binaryStats);
+		else headerStats.addAll(new Stats2().continuousStats);
 
 		String[] headerStatsArray = new String[headerStats.size()];
 		headerStatsArray = headerStats.toArray(headerStatsArray);
@@ -433,31 +610,24 @@ public class ExcelPredictionReportGenerator {
 
 
 		int i=0;
+		
 		for (PredictionReportModelMetadata mmd:report.predictionReportModelMetadata) {
 
-			Stats stats = new Stats();
+			Stats2 stats2 = new Stats2();
 			
-			
-			ArrayList<Object> modelSplitInfoTrain = new ArrayList<Object>();
-			modelSplitInfoTrain.add(report.predictionReportMetadata.datasetName);
-			modelSplitInfoTrain.add(mmd.descriptorSetName);
-			modelSplitInfoTrain.add(mmd.qsarMethodName);
+			ArrayList<Object> modelSplitInfo = new ArrayList<Object>();
+			modelSplitInfo.add(report.predictionReportMetadata.datasetName);
+			modelSplitInfo.add(mmd.descriptorSetName);
+			modelSplitInfo.add(mmd.qsarMethodName);
 
-			ArrayList<Object> modelSplitInfoTest = (ArrayList<Object>) modelSplitInfoTrain.clone();
-
-			
 			for (PredictionReportModelStatistic ms:mmd.predictionReportModelStatistics) {
-				stats.storeStats(ms);
+				stats2.storeStats(ms);
 			}
 			
-			modelSplitInfoTrain.addAll(stats.provideStats("Train",isBinary));
-			modelSplitInfoTest.addAll(stats.provideStats("Test",isBinary));
+			modelSplitInfo.addAll(stats2.provideStats(isBinary));
 
-			Object[] trainRow = modelSplitInfoTrain.toArray();
-			Object[] testRow = modelSplitInfoTest.toArray();
-
-			spreadsheetMap.put(2*i+1, trainRow);
-			spreadsheetMap.put(2*i + 2, testRow);
+			Object[] trainRow = modelSplitInfo.toArray();		
+			spreadsheetMap.put(i+1, trainRow);			
 			i++;
 
 		}
@@ -465,6 +635,54 @@ public class ExcelPredictionReportGenerator {
 		populateSheet2(spreadsheetMap, wb, isBinary, "Summary sheet", null, null);
 
 	}
+	
+//	private void generateSummarySheet2(PredictionReport report, Workbook wb,
+//			boolean isBinary) {
+//		Map < Integer, Object[] > spreadsheetMap = new TreeMap < Integer, Object[] >();
+//		ArrayList<String> headerStats = new ArrayList<String>(Arrays.asList("Dataset Name", "Descriptor Software", "Method Name"));
+//
+//		if (isBinary) headerStats.addAll(new Stats().binaryStats);
+//		else headerStats.addAll(new Stats().continuousStats);
+//
+//		String[] headerStatsArray = new String[headerStats.size()];
+//		headerStatsArray = headerStats.toArray(headerStatsArray);
+//		Object[] headerStatsObject = headerStatsArray;
+//		spreadsheetMap.put(0, headerStatsObject);	        
+//
+//
+//		int i=0;
+//		
+//		for (PredictionReportModelMetadata mmd:report.predictionReportModelMetadata) {
+//
+//			Stats stats = new Stats();
+//			
+//			ArrayList<Object> modelSplitInfoTrain = new ArrayList<Object>();
+//			modelSplitInfoTrain.add(report.predictionReportMetadata.datasetName);
+//			modelSplitInfoTrain.add(mmd.descriptorSetName);
+//			modelSplitInfoTrain.add(mmd.qsarMethodName);
+//
+//			ArrayList<Object> modelSplitInfoTest = (ArrayList<Object>) modelSplitInfoTrain.clone();
+//
+//			
+//			for (PredictionReportModelStatistic ms:mmd.predictionReportModelStatistics) {
+//				stats.storeStats(ms);
+//			}
+//			
+//			modelSplitInfoTrain.addAll(stats.provideStats("Train",isBinary));
+//			modelSplitInfoTest.addAll(stats.provideStats("Test",isBinary));
+//
+//			Object[] trainRow = modelSplitInfoTrain.toArray();
+//			Object[] testRow = modelSplitInfoTest.toArray();
+//
+//			spreadsheetMap.put(2*i+1, trainRow);
+//			spreadsheetMap.put(2*i + 2, testRow);
+//			i++;
+//
+//		}
+//
+//		populateSheet2(spreadsheetMap, wb, isBinary, "Summary sheet", null, null);
+//
+//	}
 
 	private static double findExperimentalAverage(List<ModelPrediction> modelPredictions) {
 		Double sum = 0.0;
@@ -619,7 +837,14 @@ public class ExcelPredictionReportGenerator {
 		for(String key:expHash.keySet()) {
 			String exp_prop_id=idHash.get(key);
 			Double exp=expHash.get(key);
-			Double pred=predictionHash.get(key);
+			
+			Double pred=Double.NaN;
+			
+			if (predictionHash.get(key)!=null) {
+				pred=predictionHash.get(key);	
+			}
+			
+			
 			//TODO add AD here
 			
 			spreadsheetMap.put(i++, new Object[] {exp_prop_id, key, exp , pred, Math.abs(exp-pred) });
@@ -648,12 +873,15 @@ public class ExcelPredictionReportGenerator {
 		String[] trainTest = {"Training set", "Test set"};
 
 		String [] colNames= {"Preferred Name","Smiles","Canonical QSAR Ready Smiles"};
+		
 		for (String s:trainTest) {
 			XSSFSheet sheet = (XSSFSheet) wb.getSheet(s);
 			
 			for (String colName:colNames) {
+				
 				int colNum=eu.getColumnNumber(sheet,colName,0);
-				sheet.setColumnWidth(colNum, 50 * 256);	
+				if (colNum!=-1)
+					sheet.setColumnWidth(colNum, 50 * 256);	
 			}
 		}
 
@@ -716,7 +944,7 @@ public class ExcelPredictionReportGenerator {
 
 					if (sheetName.equals("Summary sheet")) {
 						if (rowid == 1) cell.setCellStyle(boldstyle);
-						if (isBinary) sheet.setAutoFilter(CellRangeAddress.valueOf("A1:H1"));
+						if (isBinary) sheet.setAutoFilter(CellRangeAddress.valueOf("A1:J1"));
 						else sheet.setAutoFilter(CellRangeAddress.valueOf("A1:I1"));//TODO shouldnt be hardcoded
 					}
 
@@ -779,7 +1007,7 @@ public class ExcelPredictionReportGenerator {
 		 */
 		public void GenerateChart(XSSFSheet sheet,String source1,String source2,String methodName, String propertyName,String units) {
 			XSSFDrawing drawing = sheet.createDrawingPatriarch();
-			XSSFClientAnchor anchor = drawing.createAnchor(0, 0, 0, 0, 5, 0, 16, 24);
+			XSSFClientAnchor anchor = drawing.createAnchor(0, 0, 0, 0, 6, 0, 14, 24);
 
 			XSSFChart chart = drawing.createChart(anchor);
 
@@ -835,6 +1063,8 @@ public class ExcelPredictionReportGenerator {
 		}
 		
 		int getColumnNumber(XSSFSheet sheet,String colName, int rowNum) {		
+			
+			if (sheet==null) return -1;
 			Row row=sheet.getRow(rowNum);
 			
 			for (int i=0;i<row.getLastCellNum();i++) {
@@ -857,8 +1087,14 @@ public class ExcelPredictionReportGenerator {
 						Cell cell = cellIterator.next();
 						int columnIndex = cell.getColumnIndex();
 						sheet.autoSizeColumn(columnIndex);
-						int currentColumnWidth = sheet.getColumnWidth(columnIndex);
-//						sheet.setColumnWidth(columnIndex, (currentColumnWidth + 200));
+						
+						int currentColumnWidthNew = sheet.getColumnWidth(columnIndex)+400;
+						
+						try {
+							sheet.setColumnWidth(columnIndex, currentColumnWidthNew);
+						} catch (Exception ex) {
+//							System.out.println("Cant set columnWidth to "+currentColumnWidthNew);
+						}
 					}
 				}
 			}

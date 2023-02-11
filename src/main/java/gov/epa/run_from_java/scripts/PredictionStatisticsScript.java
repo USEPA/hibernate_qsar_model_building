@@ -20,7 +20,9 @@ import com.google.gson.JsonArray;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.ModelStatisticCalculator;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
@@ -108,7 +110,7 @@ public class PredictionStatisticsScript {
 		
 		StringBuffer sb=new StringBuffer();
 		
-		DecimalFormat df=new DecimalFormat("0.00");
+		DecimalFormat df=new DecimalFormat("0.000");
 		
 		sb.append("\n"+statName+" results for method = "+methodName+"\n");
 		sb.append("DatasetName\t");
@@ -145,7 +147,7 @@ public class PredictionStatisticsScript {
 		System.out.println(sb.toString());
 		
 		try {
-			FileWriter fw=new FileWriter("data/reports/"+methodName+"_"+statName+".txt");
+			FileWriter fw=new FileWriter("data/reports/stats/"+methodName+"_"+statName+".txt");
 			fw.write(sb.toString());
 			fw.flush();
 			fw.close();
@@ -210,7 +212,7 @@ public class PredictionStatisticsScript {
 		System.out.println(sb.toString());
 		
 		try {
-			FileWriter fw=new FileWriter("data/reports/"+statName+".txt");
+			FileWriter fw=new FileWriter("data/reports/stats/"+statName+"_"+modelSetName+".txt");
 			fw.write(sb.toString());
 			fw.flush();
 			fw.close();
@@ -233,7 +235,7 @@ public class PredictionStatisticsScript {
 		String listName="PFASSTRUCTV4";		
 		String folder="data/dev_qsar/dataset_files/";
 		String filePath=folder+listName+"_qsar_ready_smiles.txt";
-		ArrayList<String>smilesArrayPFAS=SplittingGeneratorPFAS.getPFASSmiles(filePath);
+		ArrayList<String>smilesArrayPFAS=SplittingGeneratorPFAS_Script.getPFASSmiles(filePath);
 		
 		List<String> modelSetNames=new ArrayList<>();
 		
@@ -255,6 +257,9 @@ public class PredictionStatisticsScript {
 		datasetNames.add("MP from exp_prop and chemprop");
 		datasetNames.add("BP from exp_prop and chemprop");
 
+		datasetNames.add("pKa_a from exp_prop and chemprop");
+		datasetNames.add("pKa_b from exp_prop and chemprop");
+
 		Hashtable<String,Double>htVals=new Hashtable<>();
 		addHashtableEntry(statisticName, methodName, modelSetNames, datasetNames,htVals);
 				
@@ -268,14 +273,14 @@ public class PredictionStatisticsScript {
 	
 	void createSummaryTableForSet() {
 //		String statisticName = "MAE_Test";
-//		String statisticName="PearsonRSQ_Test";
-		String statisticName="Q2_CV_Training";
+		String statisticName="PearsonRSQ_Test";
+//		String statisticName="Q2_CV_Training";
 		
 		// Getting predictions for PFAS compounds in test set:		
 		String listName="PFASSTRUCTV4";		
 		String folder="data/dev_qsar/dataset_files/";
 		String filePath=folder+listName+"_qsar_ready_smiles.txt";
-		ArrayList<String>smilesArrayPFAS=SplittingGeneratorPFAS.getPFASSmiles(filePath);
+		ArrayList<String>smilesArrayPFAS=SplittingGeneratorPFAS_Script.getPFASSmiles(filePath);
 
 //		String modelSetName="WebTEST2.0 PFAS";
 //		String modelSetName="WebTEST2.0 All but PFAS";
@@ -284,8 +289,8 @@ public class PredictionStatisticsScript {
 		
 //		String modelSetName="WebTEST2.1 PFAS";
 //		String modelSetName="WebTEST2.1 All but PFAS";
-		String modelSetName="WebTEST2.1_justPFAS";
-//		String modelSetName="WebTEST2.1";
+//		String modelSetName="WebTEST2.1_justPFAS";
+		String modelSetName="WebTEST2.1";
 		
 		List<String> modelSetNames=new ArrayList<>();
 		modelSetNames.add(modelSetName);
@@ -297,6 +302,9 @@ public class PredictionStatisticsScript {
 		datasetNames.add("LogP from exp_prop and chemprop");
 		datasetNames.add("MP from exp_prop and chemprop");
 		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("pKa_a from exp_prop and chemprop");
+		datasetNames.add("pKa_b from exp_prop and chemprop");
+
 
 		List<String> methodNames=new ArrayList<>();
 		methodNames.add(DevQsarConstants.KNN);
@@ -312,6 +320,7 @@ public class PredictionStatisticsScript {
 		
 		if (modelSetName.contains("_justPFAS")) {
 			for (String methodName:methodNames) {
+				System.out.println("\n"+methodName);
 				for (String datasetName:datasetNames) {
 					addHashtableEntryLimitToPFAS(statisticName, methodName, datasetName,htVals,smilesArrayPFAS);
 				}
@@ -639,64 +648,133 @@ public class PredictionStatisticsScript {
 	
 	void createPredictionReportsExcelForJustPFAS() {
 		
+//		String modelSetName="WebTEST2.0";
+		String modelSetName="WebTEST2.1";
+
+		
 		String listName="PFASSTRUCTV4";		
 		String folder="data/dev_qsar/dataset_files/";
 		String filePathPFAS=folder+listName+"_qsar_ready_smiles.txt";
-		ArrayList<String>smilesArray=SplittingGeneratorPFAS.getPFASSmiles(filePathPFAS);
+		ArrayList<String>smilesArray=SplittingGeneratorPFAS_Script.getPFASSmiles(filePathPFAS);
 		
 		List<String>datasetNames=new ArrayList<>();
 		datasetNames.add("HLC from exp_prop and chemprop");
 		datasetNames.add("WS from exp_prop and chemprop");
 		datasetNames.add("VP from exp_prop and chemprop");
 		datasetNames.add("LogP from exp_prop and chemprop");
-//		datasetNames.add("MP from exp_prop and chemprop");
-//		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("MP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop");
 		
-		SampleReportWriter g = new SampleReportWriter();
+		datasetNames.add("pKa_a from exp_prop and chemprop");
+		datasetNames.add("pKa_b from exp_prop and chemprop");
+
+		
+		SampleReportWriter srw = new SampleReportWriter();
 
 		boolean overWriteReportFiles=false;
 		boolean deleteExistingReportInDatabase=false;
 		boolean upload=false;
 
 		String splittingName=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
-
-//		String modelSetName="WebTEST2.0";
-//		long modelSetId=2L;
 		
-		String modelSetName="WebTEST2.1";
-		long modelSetId=4L;
+		ModelSetServiceImpl modelSetService=new ModelSetServiceImpl();
+		ModelSet ms=modelSetService.findByName(modelSetName);
 
+	
 //		Create the PredictionReport for all compounds in SPLITTING_RND_REPRESENTATIVE:
 		for (String datasetName:datasetNames) {
-			g.generateSamplePredictionReport(modelSetId, datasetName, splittingName,upload,deleteExistingReportInDatabase,overWriteReportFiles);
+			srw.generateSamplePredictionReport(ms.getId(), datasetName, splittingName,upload,deleteExistingReportInDatabase,overWriteReportFiles);
 		}
 		
 		for (String datasetName:datasetNames) {
-			PredictionReport predictionReport=g.getReport(modelSetName, datasetName, splittingName);
+			
+			if (datasetName.contains("pKa"))continue;
+			
+			PredictionReport predictionReport=srw.getReport(modelSetName, datasetName, splittingName);
 
 			//Delete non PFAS from report and recalc stats:
 			limitPredictionReportToPFAS(smilesArray, predictionReport);
 			
-			String filePath = "data/reports/" + modelSetName+"_"+datasetName + "_PredictionReport_only_PFAS.json";
+			String filePath = "data/reports/" + modelSetName+"/"+datasetName + "_PredictionReport_only_PFAS.json";
 			ReportGenerationScript.writeReport(predictionReport, filePath);
 			 
 //			System.out.println(Utilities.gson.toJson(predictionReport));
 			
 			String outputFolder = "data/reports/prediction reports upload";
 			
-			String filepathExcel = outputFolder + File.separator + String.join("_", modelSetName, datasetName, splittingName)
+			String filepathExcel = outputFolder + File.separator + modelSetName+File.separator+String.join("_", datasetName, splittingName)
 			+ "_PFAS.xlsx";
-
-			ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
-			eprg.generate(predictionReport, filepathExcel);
 			
-//			addMappedRecordsToExcel(filepathExcel, datasetName);
-			
-			System.out.println(filepathExcel);
+			if(!new File(filepathExcel).exists()) {
+				ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
+				eprg.generate(predictionReport, filepathExcel,smilesArray);
+				System.out.println("Created:"+filepathExcel);
+			} else {
+				System.out.println("Exists:"+filepathExcel);
+			}
 			
 		}
 		
 		
+	}
+	
+	
+	private void createPredictionReportsExcelPFASOnlyModels() {
+		
+
+		String splittingName="T=PFAS only, P=PFAS";
+		String modelSetName="WebTEST2.0 PFAS";//TODO look up from id
+		
+//		String splittingName="T=PFAS only, P=PFAS";
+//		String modelSetName="WebTEST2.1 PFAS";//TODO look up from id
+
+//		String splittingName="T=all but PFAS, P=PFAS";	
+//		String modelSetName="WebTEST2.0 All but PFAS";//TODO look up from id
+		
+//		String splittingName="T=all but PFAS, P=PFAS";	
+//		String modelSetName="WebTEST2.1 All but PFAS";//TODO look up from id
+
+		ModelSetServiceImpl modelSetService=new ModelSetServiceImpl();
+		ModelSet ms=modelSetService.findByName(modelSetName);
+		
+		String listName="PFASSTRUCTV4";		
+		String folder="data/dev_qsar/dataset_files/";
+		String filePathPFAS=folder+listName+"_qsar_ready_smiles.txt";
+		ArrayList<String>smilesArray=SplittingGeneratorPFAS_Script.getPFASSmiles(filePathPFAS);	
+		
+		List<String>datasetNames=new ArrayList<>();
+		datasetNames.add("HLC from exp_prop and chemprop");
+		datasetNames.add("WS from exp_prop and chemprop");
+		datasetNames.add("VP from exp_prop and chemprop");
+		datasetNames.add("LogP from exp_prop and chemprop");
+		datasetNames.add("MP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop");
+		
+		SampleReportWriter srw = new SampleReportWriter();
+		
+		boolean overWriteReportFiles=false;
+				
+		for (String datasetName:datasetNames) {
+
+			PredictionReport predictionReport=srw.createPredictionReport(ms.getId(), datasetName, splittingName,overWriteReportFiles);
+			
+			String outputFolder = "data/reports/prediction reports upload";
+			
+			String filepathExcel = outputFolder + File.separator +modelSetName+File.separator+ String.join("_", datasetName, splittingName)
+			+ ".xlsx";
+			
+			if(!new File(filepathExcel).exists()) {
+				ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
+				eprg.generate(predictionReport, filepathExcel,smilesArray);
+				System.out.println("Created:"+filepathExcel);
+			} else {
+				System.out.println("Exists:"+filepathExcel);
+			}
+			
+		}
+		
+		
+
 	}
 
 	void addMappedRecordsToExcel(String filepath,String dataSetName) {
@@ -920,19 +998,23 @@ public class PredictionStatisticsScript {
 	}
 
 	
+	
+	
 	public static void main(String[] args) {
 		PredictionStatisticsScript ms=new PredictionStatisticsScript();
 		
 //		ms.createSummaryTableForMethod_Rnd_Representative();
 		
-//		ms.createSummaryTableForMethod();
+		ms.createSummaryTableForMethod();
 		ms.createSummaryTableForSet();
 		
+//		ms.createPredictionReportsExcelForJustPFAS();
+//		ms.createPredictionReportsExcelPFASOnlyModels();
 		
 //		ms.createSummaryTableForMethodTEST();
-		
 //		Double stat=ms.calcPredictionStatsForPFAS(816,"MAE_Test",null);
-//		ms.createPredictionReportsExcelForJustPFAS();
+		
+//		
 //		RecalcStatsScript.viewPredsForSplitSet(1111L);
 	}
 
