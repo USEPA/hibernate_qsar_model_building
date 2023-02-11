@@ -88,6 +88,16 @@ public class ModelWebService extends WebService {
 		return response;
 	}
 
+	public HttpResponse<String> callPredictionApplicabilityDomain(String trainingSet,String testSet, Boolean removeLogDescriptors,
+			String applicability_domain) {
+		HttpResponse<String> response= Unirest.post(address + "/models/prediction_applicability_domain")
+				.field("training_tsv", trainingSet)
+				.field("test_tsv", testSet)
+				.field("remove_log_p", String.valueOf(removeLogDescriptors))
+				.field("applicability_domain", applicability_domain).asString();
+		return response;
+	}
+
 	
 	public HttpResponse<String> crossValidate(String qsarMethod,String training_tsv,String prediction_tsv,
 			boolean remove_log_p, int num_jobs,String embeddingTsv,String params) {
@@ -182,5 +192,6 @@ public class ModelWebService extends WebService {
 		
 		return response;
 	}
+
 
 }

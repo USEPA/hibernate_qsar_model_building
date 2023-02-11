@@ -826,10 +826,10 @@ public class PredictionStatisticsScript {
 //		System.out.println(htAD.size());
 		
 		
-		//Delete old statistics:
-		for (PredictionReportModelMetadata prmmd:predictionReport.predictionReportModelMetadata) {
-			prmmd.predictionReportModelStatistics.clear();
-		}
+//		//Delete old statistics:
+//		for (PredictionReportModelMetadata prmmd:predictionReport.predictionReportModelMetadata) {
+//			prmmd.predictionReportModelStatistics.clear();
+//		}
 		
 		Hashtable<String,List<ModelPrediction>>htModelPredictionsTestSet=new Hashtable<>();
 		Hashtable<String,List<ModelPrediction>>htModelPredictionsTrainingSet=new Hashtable<>();
@@ -848,8 +848,13 @@ public class PredictionStatisticsScript {
 			}
 		}
 
+		boolean print=false;
+		
 		for (PredictionReportModelMetadata prmm:predictionReport.predictionReportModelMetadata) {
 
+//			if (prmm.qsarMethodName.contains("consensus")) print=true;
+//			else print=false;
+			
 //			System.out.println(prmm.qsarMethodName);
 
 			List<ModelPrediction>trainingSetPredictions=htModelPredictionsTrainingSet.get(prmm.qsarMethodName);
@@ -885,24 +890,171 @@ public class PredictionStatisticsScript {
 //				System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
 			}
 
-			System.out.println(testSetPredictions.size());
-			System.out.println(trainingSetPredictions.size());
+//			System.out.println(testSetPredictions.size());
+//			System.out.println(trainingSetPredictions.size());
 
 			double meanExpTraining = calculateMeanExpTraining(trainingSetPredictions);
 
 			Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator
 					.calculateContinuousStatistics(testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
 
-			Map<String, Double> modelTrainingStatisticValues = ModelStatisticCalculator.calculateContinuousStatistics(
-					trainingSetPredictions, meanExpTraining, DevQsarConstants.TAG_TRAINING);
+//			Map<String, Double> modelTrainingStatisticValues = ModelStatisticCalculator.calculateContinuousStatistics(
+//					trainingSetPredictions, meanExpTraining, DevQsarConstants.TAG_TRAINING);
 			
+			
+			if(print) System.out.println("test set");
 			for (String statisticName:modelTestStatisticValues.keySet()) {
-				prmm.predictionReportModelStatistics.add(new PredictionReportModelStatistic(statisticName, modelTestStatisticValues.get(statisticName)));
+
+				double statisticValue=modelTestStatisticValues.get(statisticName);
+
+				if (statisticName.equals("Coverage_Test")) {
+					for (int i=0;i<prmm.predictionReportModelStatistics.size();i++) {
+						PredictionReportModelStatistic prms=prmm.predictionReportModelStatistics.get(i);
+						if(prms.statisticName.equals("Coverage_Test")) {
+							prmm.predictionReportModelStatistics.remove(i);
+							break;
+						}
+						
+					}
+					
+					prmm.predictionReportModelStatistics.add(new PredictionReportModelStatistic(statisticName, statisticValue));
+					
+					if(print) System.out.println("\t"+statisticName+"\t"+statisticValue);
+					
+				} else {
+					String statisticNameNew=statisticName+"_inside_AD";
+					if(print) System.out.println("\t"+statisticNameNew+"\t"+statisticValue);				
+					prmm.predictionReportModelStatistics.add(new PredictionReportModelStatistic(statisticNameNew, statisticValue));
+				}
+				
+			}
+			
+			if(print) System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
+			
+//
+//			if(print) System.out.println("\ntraining set");			
+//			for (String statisticName:modelTrainingStatisticValues.keySet()) {
+//				if(print) System.out.println("\t"+statisticName+"\t"+modelTestStatisticValues.get(statisticName));
+//
+//				prmm.predictionReportModelStatistics.add(new PredictionReportModelStatistic(statisticName, modelTrainingStatisticValues.get(statisticName)));
+//			}
+			
+//			System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
+			
+			
+		}//end loop over model metadata
+	}
+	
+	public static void getStatsOutsideAD(PredictionReport predictionReport,List<ApplicabilityDomainPrediction>adPredictions,ArrayList<String> smilesArray) {
+
+		Hashtable<String,ApplicabilityDomainPrediction>htAD=new Hashtable<>();
+		
+		for (ApplicabilityDomainPrediction ad:adPredictions) {
+			htAD.put(ad.id,ad);
+		}
+		
+//		System.out.println(htAD.size());
+		
+		
+//		//Delete old statistics:
+//		for (PredictionReportModelMetadata prmmd:predictionReport.predictionReportModelMetadata) {
+//			prmmd.predictionReportModelStatistics.clear();
+//		}
+		
+		Hashtable<String,List<ModelPrediction>>htModelPredictionsTestSet=new Hashtable<>();
+		Hashtable<String,List<ModelPrediction>>htModelPredictionsTrainingSet=new Hashtable<>();
+		
+		for (int i=0;i<predictionReport.predictionReportDataPoints.size();i++) {				
+			PredictionReportDataPoint dp=predictionReport.predictionReportDataPoints.get(i);
+			
+			for (QsarPredictedValue qpv:dp.qsarPredictedValues) {
+				
+				if(qpv.splitNum==DevQsarConstants.TEST_SPLIT_NUM) {
+					storePredictionInHashtable(htModelPredictionsTestSet, dp, qpv);
+				} 
+				if (qpv.splitNum==DevQsarConstants.TRAIN_SPLIT_NUM) {
+					storePredictionInHashtable(htModelPredictionsTrainingSet, dp, qpv);
+				}
+			}
+		}
+
+		boolean print=false;
+		
+		for (PredictionReportModelMetadata prmm:predictionReport.predictionReportModelMetadata) {
+
+//			if (prmm.qsarMethodName.contains("consensus")) print=true;
+//			else print=false;
+			
+//			System.out.println(prmm.qsarMethodName);
+
+			List<ModelPrediction>trainingSetPredictions=htModelPredictionsTrainingSet.get(prmm.qsarMethodName);
+			List<ModelPrediction>testSetPredictions=htModelPredictionsTestSet.get(prmm.qsarMethodName);
+			
+			for(int i=0;i<testSetPredictions.size(); i++) {								
+				ModelPrediction mp=testSetPredictions.get(i);				
+				
+				if (smilesArray!=null) {
+					if(!smilesArray.contains(mp.id)) {
+						testSetPredictions.remove(i--);
+					}
+				}
+				
+				if (htAD.get(mp.id)!=null) {				
+					ApplicabilityDomainPrediction ad=htAD.get(mp.id);					
+					if (ad.AD)	mp.pred=null;//stat calculations use null preds to calc coverage
+					
+//					System.out.println(mp.ID+"\t"+mp.AD);
+				}
+				
+//				System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
+			}
+			
+			for(int i=0;i<trainingSetPredictions.size(); i++) {
+				ModelPrediction mp=trainingSetPredictions.get(i);
+				
+				if (smilesArray!=null) {
+					if(!smilesArray.contains(mp.id)) {
+						trainingSetPredictions.remove(i--);
+					}
+				}
+//				System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
 			}
 
-			for (String statisticName:modelTrainingStatisticValues.keySet()) {
-				prmm.predictionReportModelStatistics.add(new PredictionReportModelStatistic(statisticName, modelTrainingStatisticValues.get(statisticName)));
+//			System.out.println(testSetPredictions.size());
+//			System.out.println(trainingSetPredictions.size());
+
+			double meanExpTraining = calculateMeanExpTraining(trainingSetPredictions);
+
+			Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator
+					.calculateContinuousStatistics(testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
+
+//			Map<String, Double> modelTrainingStatisticValues = ModelStatisticCalculator.calculateContinuousStatistics(
+//					trainingSetPredictions, meanExpTraining, DevQsarConstants.TAG_TRAINING);
+			
+			
+			if(print) System.out.println("test set");
+			for (String statisticName:modelTestStatisticValues.keySet()) {
+
+				double statisticValue=modelTestStatisticValues.get(statisticName);
+
+				if (statisticName.equals("Coverage_Test")) continue;
+				else {
+					String statisticNameNew=statisticName+"_outside_AD";
+					if(print) System.out.println("\t"+statisticNameNew+"\t"+statisticValue);				
+					prmm.predictionReportModelStatistics.add(new PredictionReportModelStatistic(statisticNameNew, statisticValue));
+				}
+				
 			}
+			
+			if(print) System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
+			
+//
+//			if(print) System.out.println("\ntraining set");			
+//			for (String statisticName:modelTrainingStatisticValues.keySet()) {
+//				if(print) System.out.println("\t"+statisticName+"\t"+modelTestStatisticValues.get(statisticName));
+//
+//				prmm.predictionReportModelStatistics.add(new PredictionReportModelStatistic(statisticName, modelTrainingStatisticValues.get(statisticName)));
+//			}
 			
 //			System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
 			

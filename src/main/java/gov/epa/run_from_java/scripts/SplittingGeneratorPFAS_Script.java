@@ -508,13 +508,35 @@ public class SplittingGeneratorPFAS_Script {
 		}
 		
 	}
+	void getCounts() {
+		List<String>datasetNames=new ArrayList<>();
+
+		datasetNames.add("HLC from exp_prop and chemprop");
+		datasetNames.add("WS from exp_prop and chemprop");
+		datasetNames.add("VP from exp_prop and chemprop");
+		datasetNames.add("LogP from exp_prop and chemprop");
+		datasetNames.add("MP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop");
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		
+//		String splittingName=splittingPFASOnly;
+//		String splittingName=splittingAllButPFAS;
+		String splittingName=splittingAll;
+		
+		for (String datasetName:datasetNames) {			
+			int countTR=getCount(conn, datasetName, splittingName, 0);
+			int countTest=getCount(conn, datasetName, splittingName, 1);
+			System.out.println(datasetName+"\t"+countTR+"\t"+countTest);
+		}
+		
+	}
 	
 	
 	public static void main(String[] args) {
 		SplittingGeneratorPFAS_Script p=new SplittingGeneratorPFAS_Script();
-		
+		p.getCounts();
 //		p.createSplittings();
-		p.deleteSplittings();
+//		p.deleteSplittings();
 //		p.write_exp_prop_datasets();		
 //		p.createFiveFoldExternalSplittings(folder, datasetName,"T.E.S.T. 5.1", smilesArray);
 		
@@ -523,3 +545,4 @@ public class SplittingGeneratorPFAS_Script {
 	
 
 }
+

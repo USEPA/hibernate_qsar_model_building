@@ -1,5 +1,6 @@
 package gov.epa.run_from_java.scripts;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -11,9 +12,12 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
 import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
+import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
+import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelStatistic;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.web_services.ModelWebService;
 import gov.epa.web_services.embedding_service.CalculationInfo;
+import kong.unirest.Unirest;
 
 public class ApplicabilityDomainScript {
 	
@@ -50,43 +54,53 @@ public class ApplicabilityDomainScript {
 	
 	
 	public void runCaseStudyExpProp_All_Endpoints() {
+		String modelSetName="WebTEST2.1";
+//		String modelSetName="WebTEST2.0";
 		
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Cosine;
-//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
-//		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_local_index;
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;		
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine; 		
+		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_local_index;
 		
-		//Need to use following for 2.0 models:
-		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine; 
+		System.out.println("\t"+applicability_domain);
+//		System.out.println("datasetName\tR2_Test_Inside_AD\tFraction_inside_AD\tProduct\tR2_Test_Outside_AD");
+		System.out.println("datasetName\tR2_Inside\tR2_Outside");
 		
 		boolean storeNeighbors=false;
-//		serverModelBuilding=DevQsarConstants.SERVER_819;
-		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
-		portModelBuilding=5004;
+		
+		serverModelBuilding=DevQsarConstants.SERVER_819;
+		portModelBuilding=5014;
+		
+//		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+//		portModelBuilding=5004;
+		
+		Unirest.config().connectTimeout(0).socketTimeout(0);
 		
 		ModelWebService mws=new ModelWebService(serverModelBuilding, portModelBuilding);
-
+		
 		
 		String listName="PFASSTRUCTV4";		
 		String folder="data/dev_qsar/dataset_files/";
 		String filePath=folder+listName+"_qsar_ready_smiles.txt";
-		ArrayList<String>smilesArray=SplittingGeneratorPFAS.getPFASSmiles(filePath);
+		ArrayList<String>smilesArray=SplittingGeneratorPFAS_Script.getPFASSmiles(filePath);
 
 		List<String>datasetNames=new ArrayList<>();
 
 		datasetNames.add("HLC from exp_prop and chemprop");
-//		datasetNames.add("WS from exp_prop and chemprop");
-//		datasetNames.add("VP from exp_prop and chemprop");
-//		datasetNames.add("LogP from exp_prop and chemprop");
-//		datasetNames.add("MP from exp_prop and chemprop");
-//		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("WS from exp_prop and chemprop");
+		datasetNames.add("VP from exp_prop and chemprop");
+		datasetNames.add("LogP from exp_prop and chemprop");
+		datasetNames.add("pKa_a from exp_prop and chemprop");
+		datasetNames.add("pKa_b from exp_prop and chemprop");
+		datasetNames.add("MP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop");
+		
 		
 		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 //		String splitting ="T=PFAS only, P=PFAS";
 //		String splitting = "T=all but PFAS, P=PFAS";
 
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
-		
-		String modelSetName="WebTEST2.0";
 		
 		if (modelSetName.contains("2.0") && !applicability_domain.equals(DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine)) {
 			System.out.println("Invalid AD!");
@@ -115,23 +129,31 @@ public class ApplicabilityDomainScript {
 				if (de==null) {
 					continue;
 				}
-			} else {
-				de=new DescriptorEmbedding();
-				de.setEmbeddingTsv("N/A");//dummy value not used by All descriptors AD but need it for API call to work
-			}			
-
+			} 
+			
+		
 			ModelData data = ModelData.initModelData(ci,false);
+			
+//			System.out.println(data.predictionSetInstances);
+//			if(true)return;
 
-			//Run AD calculations using webservice:
-			String strResponse=mws.callPredictionApplicabilityDomain(data.trainingSetInstances,data.predictionSetInstances,
-					remove_log_p,de.getEmbeddingTsv(),applicability_domain).getBody();
+			//Run AD calculations using webservice:			
+			String strResponse=null;
+			
+			if (de==null) {
+				strResponse=mws.callPredictionApplicabilityDomain(data.trainingSetInstances,data.predictionSetInstances,
+						remove_log_p,applicability_domain).getBody();				
+			} else {
+				strResponse=mws.callPredictionApplicabilityDomain(data.trainingSetInstances,data.predictionSetInstances,
+						remove_log_p,de.getEmbeddingTsv(),applicability_domain).getBody();
+			}
+			
 
 //			System.out.println(strResponse);
 //			String strResponse=strSampleResponse;
 
 			List<ApplicabilityDomainPrediction>adPredictions=convertResponse(strResponse,storeNeighbors);
 
-			System.out.println("AD="+applicability_domain);
 
 //			for (ApplicabilityDomainPrediction pred:adPredictions) {
 //				if (!pred.AD)
@@ -142,15 +164,96 @@ public class ApplicabilityDomainScript {
 			
 			PredictionReport predictionReport=SampleReportWriter.getReport(modelSetName, datasetName, splitting);
 			
-			System.out.println(Utilities.gson.toJson(predictionReport.predictionReportModelMetadata.get(0)));
+//			System.out.println(Utilities.gson.toJson(predictionReport.predictionReportModelMetadata.get(0)));
+			
 			if (splitting.equals(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE)) {
 				PredictionStatisticsScript.getStatsInsideAD(predictionReport, adPredictions,null);
 			} else {
 				PredictionStatisticsScript.getStatsInsideAD(predictionReport, adPredictions,smilesArray);	
 			}
-			System.out.println(Utilities.gson.toJson(predictionReport.predictionReportModelMetadata.get(0)));
+			
+			String stats=getStats(predictionReport);
+
+			if (splitting.equals(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE)) {
+				PredictionStatisticsScript.getStatsOutsideAD(predictionReport, adPredictions,null);
+			} else {
+				PredictionStatisticsScript.getStatsOutsideAD(predictionReport, adPredictions,smilesArray);	
+			}
+			
+			String statsOutside=getStatsOutside(predictionReport);
+			
+
+			System.out.println(datasetName.replace(" from exp_prop and chemprop", "")+"\t"+stats+"\t"+statsOutside);
+
+			
+			
+//			System.out.println(Utilities.gson.toJson(predictionReport.predictionReportModelMetadata.get(0)));
 		}
 	}
+
+	/**
+	 * For now look at consensus
+	 * 
+	 * @param report
+	 * @return
+	 */
+	String getStats(PredictionReport report) {
+		DecimalFormat df=new DecimalFormat("0.000");
+		
+		for (PredictionReportModelMetadata prmm:report.predictionReportModelMetadata) {
+
+			if (!prmm.qsarMethodName.contains("consensus")) continue;
+
+			Double coverage_TEST=getStat(prmm.predictionReportModelStatistics,"Coverage_Test");
+			Double PearsonRSQ_Test_inside_AD=getStat(prmm.predictionReportModelStatistics,"PearsonRSQ_Test_inside_AD");
+
+			double product=PearsonRSQ_Test_inside_AD*coverage_TEST;
+			
+//			return(df.format(PearsonRSQ_Test_inside_AD)+"\t"+df.format(coverage_TEST)+"\t"+df.format(product));
+			return(df.format(PearsonRSQ_Test_inside_AD));
+		}
+		
+		return null;
+		
+	}
+	
+	/**
+	 * For now look at consensus
+	 * 
+	 * @param report
+	 * @return
+	 */
+	String getStatsOutside(PredictionReport report) {
+		DecimalFormat df=new DecimalFormat("0.000");
+		
+		for (PredictionReportModelMetadata prmm:report.predictionReportModelMetadata) {
+
+			if (!prmm.qsarMethodName.contains("consensus")) continue;
+
+			Double PearsonRSQ_Test_outside_AD=getStat(prmm.predictionReportModelStatistics,"PearsonRSQ_Test_outside_AD");
+			return(df.format(PearsonRSQ_Test_outside_AD));
+		}
+		
+		return null;
+		
+	}
+	
+	
+	Double getStat(List<PredictionReportModelStatistic>stats,String statisticName) {
+		
+		for (PredictionReportModelStatistic stat:stats) {
+			if(statisticName.equals(stat.statisticName)) {
+				return stat.statisticValue;
+			}
+//			System.out.println(stat.statisticName);
+		}
+		
+		return Double.NaN;
+		
+	}
+	
+	
+	
 	
 	DescriptorEmbedding getEmbedding(CalculationInfo ci) {
 		
@@ -169,7 +272,7 @@ public class ApplicabilityDomainScript {
 			return null;
 			
 		} else {
-			System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
+//			System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
 			return descriptorEmbedding;
 		}
 	}
