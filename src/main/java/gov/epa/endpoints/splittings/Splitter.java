@@ -2,6 +2,7 @@ package gov.epa.endpoints.splittings;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -116,6 +117,9 @@ public class Splitter {
 	    int countTrain = 0;
 	    int countTest = 0;
 	    Map<String, DataPoint> dataPointsMap = dataPoints.stream().collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp));
+	    
+	    List<DataPointInSplitting>dpisList=new ArrayList<>();
+	    
 	    for (SplittingCalculationResponse split:splittingResponse) {
 	        String smiles = split.ID;
 	        Integer splitNum = null;
@@ -130,13 +134,14 @@ public class Splitter {
 	        DataPoint dp = dataPointsMap.get(smiles);
 	        if (dp!=null && splitNum!=null) {
 	            DataPointInSplitting dpis = new DataPointInSplitting(dp, splitting, splitNum, lanId);
-	            dataPointInSplittingService.create(dpis);
+//	            dataPointInSplittingService.create(dpis);	        	
+	        	dpisList.add(dpis);	        	
 	        } else {
 	        	System.out.println("Cant create datapoint for smiles:"+smiles);
 	        	return;
 	        }
 	    }
-	    
+	    dataPointInSplittingService.createSQL(dpisList);
 	    System.out.println("Training size: " + countTrain + ", test size:  " + countTest);
 	}
 	
