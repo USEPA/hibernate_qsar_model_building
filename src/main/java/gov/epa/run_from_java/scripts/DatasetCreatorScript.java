@@ -64,7 +64,9 @@ public class DatasetCreatorScript {
 //		createPKAb();
 		
 		String folder="data\\dev_qsar\\output\\";
-		GetExpPropInfo.createCheckingSpreadsheet("pKa_a from exp_prop and chemprop", folder, null);
+		// CR: 2/14/23 this was causing an error
+		System.out.println("fix this error in datasetcreator before running again");
+//		GetExpPropInfo.createCheckingSpreadsheet("pKa_a from exp_prop and chemprop", folder, null);
 		
 		
 		//TODO recreate WS dataset now that keep was set to false based on manual check
