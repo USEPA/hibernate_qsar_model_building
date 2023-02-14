@@ -40,8 +40,8 @@ public class RunCaseStudies {
 	
 	static int portModelBuilding=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
 
-//	static String serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
-	static String serverModelBuilding=DevQsarConstants.SERVER_819;
+	static String serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+//	static String serverModelBuilding=DevQsarConstants.SERVER_819;
 //	static String serverModelBuilding="10.140.73.169";
 	
 	static String qsarMethodGA = DevQsarConstants.KNN;
@@ -56,10 +56,10 @@ public class RunCaseStudies {
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
 
 		String sampleSource="OPERA";
-		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
-		
+//		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
+//		String endpoint = DevQsarConstants.WATER_SOLUBILITY;
 //		String endpoint=DevQsarConstants.LOG_OH;
-//		String endpoint=DevQsarConstants.LOG_KOW;
+		String endpoint=DevQsarConstants.LOG_KOW;
 //		String endpoint=DevQsarConstants.LOG_BCF;
 //		String endpoint=DevQsarConstants.MELTING_POINT;
 //		String endpoint=DevQsarConstants.LOG_HALF_LIFE;
@@ -78,7 +78,7 @@ public class RunCaseStudies {
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 		
 		CalculationInfo ci = new CalculationInfo();
-		ci.num_generations = 100;
+		ci.num_generations = 11;
 		ci.remove_log_p = removeLogDescriptors;
 		ci.qsarMethodGA = qsarMethodGA;
 		ci.datasetName=datasetName;
@@ -566,7 +566,7 @@ public class RunCaseStudies {
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-//		runCaseStudyOPERA();
+		runCaseStudyOPERA();
 //		runCaseStudyTest_All_Endpoints();
 //		runCaseStudyTest();
 //		runCaseStudyOPERA_All_Endpoints();
