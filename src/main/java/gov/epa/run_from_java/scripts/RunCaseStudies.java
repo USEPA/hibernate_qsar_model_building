@@ -40,8 +40,8 @@ public class RunCaseStudies {
 	
 	static int portModelBuilding=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
 
-	static String serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
-//	static String serverModelBuilding=DevQsarConstants.SERVER_819;
+//	static String serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+	static String serverModelBuilding=DevQsarConstants.SERVER_819;
 //	static String serverModelBuilding="10.140.73.169";
 	
 	static String qsarMethodGA = DevQsarConstants.KNN;
@@ -78,7 +78,7 @@ public class RunCaseStudies {
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 		
 		CalculationInfo ci = new CalculationInfo();
-		ci.num_generations = 11;
+		ci.num_generations = 100;
 		ci.remove_log_p = removeLogDescriptors;
 		ci.qsarMethodGA = qsarMethodGA;
 		ci.datasetName=datasetName;
@@ -360,9 +360,12 @@ public class RunCaseStudies {
 				
 		String [] endpoints= {DevQsarConstants.LOG_KOA,DevQsarConstants.LOG_KM_HL,DevQsarConstants.HENRYS_LAW_CONSTANT,
 				DevQsarConstants.LOG_BCF,DevQsarConstants.LOG_OH,DevQsarConstants.LOG_KOC,DevQsarConstants.VAPOR_PRESSURE,
-				DevQsarConstants.WATER_SOLUBILITY, DevQsarConstants.BOILING_POINT, DevQsarConstants.MELTING_POINT,
+				DevQsarConstants.WATER_SOLUBILITY};
+
+/*			
+				DevQsarConstants.BOILING_POINT, DevQsarConstants.MELTING_POINT,
 				DevQsarConstants.LOG_KOW};
-			
+*/
 //		String [] endpoints= {DevQsarConstants.BOILING_POINT, DevQsarConstants.MELTING_POINT,				DevQsarConstants.LOG_KOW};
 
 		for (String endpoint:endpoints) {
@@ -566,10 +569,10 @@ public class RunCaseStudies {
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		runCaseStudyOPERA();
+//		runCaseStudyOPERA();
 //		runCaseStudyTest_All_Endpoints();
 //		runCaseStudyTest();
-//		runCaseStudyOPERA_All_Endpoints();
+		runCaseStudyOPERA_All_Endpoints();
 		
 //		ModelBuilder mb=new ModelBuilder("tmarti02");
 //		mb.postPredictionsSQL(null, null, new Splitting(), null);
