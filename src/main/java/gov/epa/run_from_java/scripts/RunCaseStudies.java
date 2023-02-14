@@ -358,11 +358,11 @@ public class RunCaseStudies {
 
 		String sampleSource="OPERA";
 				
-		String [] endpoints= {DevQsarConstants.LOG_KOA,DevQsarConstants.LOG_KM_HL,DevQsarConstants.HENRYS_LAW_CONSTANT,
+		String [] endpoints= {
 				DevQsarConstants.LOG_BCF,DevQsarConstants.LOG_OH,DevQsarConstants.LOG_KOC,DevQsarConstants.VAPOR_PRESSURE,
 				DevQsarConstants.WATER_SOLUBILITY};
 
-/*			
+/*			DevQsarConstants.LOG_KOA,DevQsarConstants.LOG_KM_HL,DevQsarConstants.HENRYS_LAW_CONSTANT
 				DevQsarConstants.BOILING_POINT, DevQsarConstants.MELTING_POINT,
 				DevQsarConstants.LOG_KOW};
 */
