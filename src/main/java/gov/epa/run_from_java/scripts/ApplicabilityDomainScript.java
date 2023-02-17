@@ -56,6 +56,9 @@ public class ApplicabilityDomainScript {
 	public void runCaseStudyExpProp_All_Endpoints() {
 		String modelSetName="WebTEST2.1";
 //		String modelSetName="WebTEST2.0";
+				
+		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+
 		
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Cosine;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;		
@@ -78,12 +81,6 @@ public class ApplicabilityDomainScript {
 		
 		ModelWebService mws=new ModelWebService(serverModelBuilding, portModelBuilding);
 		
-		
-		String listName="PFASSTRUCTV4";		
-		String folder="data/dev_qsar/dataset_files/";
-		String filePath=folder+listName+"_qsar_ready_smiles.txt";
-		ArrayList<String>smilesArray=SplittingGeneratorPFAS_Script.getPFASSmiles(filePath);
-
 		List<String>datasetNames=new ArrayList<>();
 
 		datasetNames.add("HLC from exp_prop and chemprop");
@@ -95,10 +92,6 @@ public class ApplicabilityDomainScript {
 		datasetNames.add("MP from exp_prop and chemprop");
 		datasetNames.add("BP from exp_prop and chemprop");
 		
-		
-		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
-//		String splitting ="T=PFAS only, P=PFAS";
-//		String splitting = "T=all but PFAS, P=PFAS";
 
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
@@ -166,18 +159,151 @@ public class ApplicabilityDomainScript {
 			
 //			System.out.println(Utilities.gson.toJson(predictionReport.predictionReportModelMetadata.get(0)));
 			
-			if (splitting.equals(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE)) {
-				PredictionStatisticsScript.getStatsInsideAD(predictionReport, adPredictions,null);
+			PredictionStatisticsScript.getStatsInsideAD(predictionReport, adPredictions,null);			
+			String stats=getStatsInside(predictionReport);
+
+			PredictionStatisticsScript.getStatsOutsideAD(predictionReport, adPredictions,null);
+			String statsOutside=getStatsOutside(predictionReport);
+			
+
+			System.out.println(datasetName.replace(" from exp_prop and chemprop", "")+"\t"+stats+"\t"+statsOutside);
+
+			
+			
+//			System.out.println(Utilities.gson.toJson(predictionReport.predictionReportModelMetadata.get(0)));
+		}
+	}
+	
+	public void runCaseStudyExpProp_All_Endpoints_PFAS() {
+				
+//		String modelSetName="WebTEST2.0";
+		
+//		String modelSetName="WebTEST2.1 PFAS";
+//		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;
+		
+//		String modelSetName="WebTEST2.1";
+//		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+
+		String modelSetName="WebTEST2.1 All but PFAS";
+		String splitting =SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+
+		
+		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Cosine;
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;		
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine; 		
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_local_index;
+		
+		System.out.println("\t"+applicability_domain);
+//		System.out.println("datasetName\tR2_Test_Inside_AD\tFraction_inside_AD\tProduct\tR2_Test_Outside_AD");
+		System.out.println("Dataset\tR2_Inside\tFrac_Inside\tR2_Outside");
+		
+		boolean storeNeighbors=false;
+		
+		serverModelBuilding=DevQsarConstants.SERVER_819;
+		portModelBuilding=5014;
+		
+//		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+//		portModelBuilding=5004;
+		
+		Unirest.config().connectTimeout(0).socketTimeout(0);
+		
+		ModelWebService mws=new ModelWebService(serverModelBuilding, portModelBuilding);
+		
+		
+		String listName="PFASSTRUCTV4";		
+		String folder="data/dev_qsar/dataset_files/";
+		String filePath=folder+listName+"_qsar_ready_smiles.txt";
+		ArrayList<String>smilesArray=SplittingGeneratorPFAS_Script.getPFASSmiles(filePath);
+
+		List<String>datasetNames=new ArrayList<>();
+
+		datasetNames.add("HLC from exp_prop and chemprop");
+		datasetNames.add("WS from exp_prop and chemprop");
+		datasetNames.add("VP from exp_prop and chemprop");
+		datasetNames.add("LogP from exp_prop and chemprop");
+		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop");
+		
+		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		
+		if (modelSetName.contains("2.0") && !applicability_domain.equals(DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine)) {
+			System.out.println("Invalid AD!");
+			return;			
+		}
+				
+		for (String datasetName:datasetNames) {
+						
+			boolean remove_log_p = false;
+			if(datasetName.contains("LogP")) remove_log_p=true;
+			
+			CalculationInfo ci = new CalculationInfo();
+			ci.num_generations = 100;			
+			if (datasetName.contains("BP") || splitting.equals("T=all but PFAS, P=PFAS")) ci.num_generations=10;//takes too long to do 100			
+
+			ci.remove_log_p = remove_log_p;
+			ci.qsarMethodGA = qsarMethodGA;
+			ci.datasetName=datasetName;
+			ci.descriptorSetName=descriptorSetName;
+			ci.splittingName=splitting;
+						
+			DescriptorEmbedding de=null;
+			
+			if (modelSetName.contains("2.1")) {
+				de=getEmbedding(ci);
+//				System.out.println(de.getEmbeddingTsv());
+				
+				if (de==null) {
+					continue;
+				}
+			} 
+			
+		
+			ModelData data = ModelData.initModelData(ci,false);
+			
+//			System.out.println(data.predictionSetInstances);
+//			if(true)return;
+
+			//Run AD calculations using webservice:			
+			String strResponse=null;
+			
+			if (de==null) {
+				strResponse=mws.callPredictionApplicabilityDomain(data.trainingSetInstances,data.predictionSetInstances,
+						remove_log_p,applicability_domain).getBody();				
 			} else {
-				PredictionStatisticsScript.getStatsInsideAD(predictionReport, adPredictions,smilesArray);	
+				strResponse=mws.callPredictionApplicabilityDomain(data.trainingSetInstances,data.predictionSetInstances,
+						remove_log_p,de.getEmbeddingTsv(),applicability_domain).getBody();
 			}
 			
-			String stats=getStats(predictionReport);
+
+//			System.out.println(strResponse);
+//			String strResponse=strSampleResponse;
+
+			List<ApplicabilityDomainPrediction>adPredictions=convertResponse(strResponse,storeNeighbors);
+
+
+			for (ApplicabilityDomainPrediction pred:adPredictions) {
+//				if (!pred.AD)
+//					System.out.println(pred.id+"\t"+pred.AD);
+			}
+			
+//			System.out.println("Results="+Utilities.gson.toJson(adPredictions)+"\n");
+			
+			PredictionReport predictionReport=SampleReportWriter.getReport(modelSetName, datasetName, splitting);
+			
+//			System.out.println(Utilities.gson.toJson(predictionReport.predictionReportModelMetadata.get(0)));
+			
+			if (splitting.equals(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE)) {
+				PredictionStatisticsScript.getStatsInsideAD(predictionReport, adPredictions,smilesArray);
+			} else {
+				PredictionStatisticsScript.getStatsInsideAD(predictionReport, adPredictions,null);	
+			}
+			
+			String stats=getStatsInsideWithFrac(predictionReport);
 
 			if (splitting.equals(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE)) {
-				PredictionStatisticsScript.getStatsOutsideAD(predictionReport, adPredictions,null);
+				PredictionStatisticsScript.getStatsOutsideAD(predictionReport, adPredictions,smilesArray);
 			} else {
-				PredictionStatisticsScript.getStatsOutsideAD(predictionReport, adPredictions,smilesArray);	
+				PredictionStatisticsScript.getStatsOutsideAD(predictionReport, adPredictions,null);					
 			}
 			
 			String statsOutside=getStatsOutside(predictionReport);
@@ -197,7 +323,7 @@ public class ApplicabilityDomainScript {
 	 * @param report
 	 * @return
 	 */
-	String getStats(PredictionReport report) {
+	String getStatsInside(PredictionReport report) {
 		DecimalFormat df=new DecimalFormat("0.000");
 		
 		for (PredictionReportModelMetadata prmm:report.predictionReportModelMetadata) {
@@ -217,6 +343,26 @@ public class ApplicabilityDomainScript {
 		
 	}
 	
+	
+	String getStatsInsideWithFrac(PredictionReport report) {
+		DecimalFormat df=new DecimalFormat("0.000");
+		
+		for (PredictionReportModelMetadata prmm:report.predictionReportModelMetadata) {
+
+			if (!prmm.qsarMethodName.contains("consensus")) continue;
+
+			Double coverage_TEST=getStat(prmm.predictionReportModelStatistics,"Coverage_Test");
+			Double PearsonRSQ_Test_inside_AD=getStat(prmm.predictionReportModelStatistics,"PearsonRSQ_Test_inside_AD");
+
+			double product=PearsonRSQ_Test_inside_AD*coverage_TEST;
+			
+			return(df.format(PearsonRSQ_Test_inside_AD)+"\t"+df.format(coverage_TEST));
+//			return(df.format(PearsonRSQ_Test_inside_AD));
+		}
+		
+		return null;
+		
+	}
 	/**
 	 * For now look at consensus
 	 * 
@@ -322,7 +468,8 @@ public class ApplicabilityDomainScript {
 	
 	public static void main(String[] args) {
 		ApplicabilityDomainScript ads=new ApplicabilityDomainScript();
-		ads.runCaseStudyExpProp_All_Endpoints();		
+//		ads.runCaseStudyExpProp_All_Endpoints();
+		ads.runCaseStudyExpProp_All_Endpoints_PFAS();
 	}
 
 }
