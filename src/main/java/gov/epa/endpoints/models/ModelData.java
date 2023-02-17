@@ -207,23 +207,21 @@ public class ModelData {
 
 
 	
-	public static String generateInstancesWithoutSplitting(String datasetName,String descriptorSetName) {
+	public String generateInstancesWithoutSplitting(String datasetName,String descriptorSetName) {
 		return generateInstancesWithoutSplitting(datasetName,descriptorSetName,false);		
 	}
 	
-	public static String generateInstancesWithoutSplitting(String datasetName,String descriptorSetName,boolean useDTXCIDs) {
+	public String generateInstancesWithoutSplitting(String datasetName,String descriptorSetName,boolean useDTXCIDs) {
 			
 		Connection conn=SqlUtilities.getConnectionPostgres();
-		String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetName+"'";
-		String datasetId=SqlUtilities.runSQL(conn, sql);
-
-		sql="select id from qsar_descriptors.descriptor_sets d where d.\"name\" ='"+descriptorSetName+"'";
-		String descriptorSetId=SqlUtilities.runSQL(conn, sql);
 		
+		Dataset dataset=datasetService.findByName(datasetName);
+		DescriptorSet descriptorSet=descriptorSetService.findByName(descriptorSetName);
+				
 		String idField="canon_qsar_smiles";
 		if(useDTXCIDs) idField="qsar_dtxcid";
 
-		sql="select headers_tsv from qsar_descriptors.descriptor_sets d where d.id="+descriptorSetId;
+		String sql="select headers_tsv from qsar_descriptors.descriptor_sets d where d.id="+descriptorSet.getId();
 		String instanceHeader="ID\tProperty\t"+SqlUtilities.runSQL(conn, sql)+"\r\n";
 				
 		StringBuilder sbOverall = new StringBuilder(instanceHeader);
@@ -232,7 +230,7 @@ public class ModelData {
 		sql="select dp."+idField+", dp.qsar_property_value, dv.values_tsv from qsar_datasets.data_points dp\n"+ 
 		"inner join qsar_descriptors.descriptor_values dv\n"+ 
 		"on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
-		"where dp.fk_dataset_id="+datasetId+" and dv.fk_descriptor_set_id="+descriptorSetId;
+		"where dp.fk_dataset_id="+dataset.getId()+" and dv.fk_descriptor_set_id="+descriptorSet.getId();
 		
 //		System.out.println("\n"+sql+"\n");
 		
@@ -271,20 +269,18 @@ public class ModelData {
 	public void generateInstancesNotinOperaPredictionSet() {
 		
 		Connection conn=SqlUtilities.getConnectionPostgres();
-		String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetName+"'";
-		String datasetId=SqlUtilities.runSQL(conn, sql);
-
-		sql="select id from qsar_descriptors.descriptor_sets d where d.\"name\" ='"+descriptorSetName+"'";
-		String descriptorSetId=SqlUtilities.runSQL(conn, sql);
+		
+		Dataset dataset=datasetService.findByName(datasetName);
+		DescriptorSet descriptorSet=descriptorSetService.findByName(descriptorSetName);
 		
 		String idField="canon_qsar_smiles";
 
-		sql="select headers_tsv from qsar_descriptors.descriptor_sets d where d.id="+descriptorSetId;
+		String sql="select headers_tsv from qsar_descriptors.descriptor_sets d where d.id="+descriptorSet.getId();
 		String instanceHeader="ID\tProperty\t"+SqlUtilities.runSQL(conn, sql)+"\r\n";
 
 		sql="select p.name from qsar_datasets.datasets d \r\n"
 				+ "inner join qsar_datasets.properties p on p.id =d.fk_property_id \r\n"
-				+ "where d.id="+datasetId+";";
+				+ "where d.id="+dataset.getId()+";";
 				
 		String propertyName=SqlUtilities.runSQL(conn, sql);
 		
@@ -294,23 +290,21 @@ public class ModelData {
 		
 		//*****************************************************************************************
 		String datasetNameOpera=propertyNameOpera+" OPERA";
-		sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetNameOpera.replace("'", "''")+"'";
-//		System.out.println("\n"+sql+"\n");
-		String datasetIdOpera=SqlUtilities.runSQL(conn, sql);
-		sql="select id from qsar_datasets.splittings s where s.\"name\" ='OPERA'";
-		String splittingIdOpera=SqlUtilities.runSQL(conn, sql);		
+		Dataset datasetOpera=datasetService.findByName(datasetNameOpera);
+		Splitting splittingOpera=splittingService.findByName("OPERA");	
+				
 		String sqlOpera="select dp."+idField+", dp.qsar_property_value, dv.values_tsv, dpis.split_num from qsar_datasets.data_points dp\n"+ 
 		"inner join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
 		"inner join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
-		"where dp.fk_dataset_id="+datasetIdOpera+" and dv.fk_descriptor_set_id="+descriptorSetId+" and "+
-		"dpis.split_num=1"+" and dpis.fk_splitting_id="+splittingIdOpera+";";
+		"where dp.fk_dataset_id="+datasetOpera.getId()+" and dv.fk_descriptor_set_id="+descriptorSet.getId()+" and "+
+		"dpis.split_num=1"+" and dpis.fk_splitting_id="+splittingOpera.getId()+";";
 		//*****************************************************************************************
 		
 		
 		sql="select dp."+idField+", dp.qsar_property_value, dv.values_tsv from qsar_datasets.data_points dp\n"+ 
 		"inner join qsar_descriptors.descriptor_values dv\n"+ 
 		"on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
-		"where dp.fk_dataset_id="+datasetId+" and dv.fk_descriptor_set_id="+descriptorSetId;
+		"where dp.fk_dataset_id="+dataset.getId()+" and dv.fk_descriptor_set_id="+descriptorSet.getId();
 //		System.out.println("\n"+sql+"\n");
 
 		
@@ -408,20 +402,18 @@ public class ModelData {
 
 	public void generateInstancesNotinOperaTrainingSet() {
 		Connection conn=SqlUtilities.getConnectionPostgres();
-		String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetName+"'";
-		String datasetId=SqlUtilities.runSQL(conn, sql);
+				
+		Dataset dataset=datasetService.findByName(datasetName);
+		DescriptorSet descriptorSet=descriptorSetService.findByName(descriptorSetName);
 
-		sql="select id from qsar_descriptors.descriptor_sets d where d.\"name\" ='"+descriptorSetName+"'";
-		String descriptorSetId=SqlUtilities.runSQL(conn, sql);
-		
 		String idField="canon_qsar_smiles";
 
-		sql="select headers_tsv from qsar_descriptors.descriptor_sets d where d.id="+descriptorSetId;
+		String sql="select headers_tsv from qsar_descriptors.descriptor_sets d where d.id="+descriptorSet.getId();
 		String instanceHeader="ID\tProperty\t"+SqlUtilities.runSQL(conn, sql)+"\r\n";
 
 		sql="select p.name from qsar_datasets.datasets d \r\n"
 				+ "inner join qsar_datasets.properties p on p.id =d.fk_property_id \r\n"
-				+ "where d.id="+datasetId+";";
+				+ "where d.id="+dataset.getId()+";";
 				
 		String propertyName=SqlUtilities.runSQL(conn, sql);
 		
@@ -431,23 +423,21 @@ public class ModelData {
 		
 		//*****************************************************************************************
 		String datasetNameOpera=propertyNameOpera+" OPERA";
-		sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+datasetNameOpera.replace("'", "''")+"'";
-//		System.out.println("\n"+sql+"\n");
-		String datasetIdOpera=SqlUtilities.runSQL(conn, sql);
-		sql="select id from qsar_datasets.splittings s where s.\"name\" ='OPERA'";
-		String splittingIdOpera=SqlUtilities.runSQL(conn, sql);		
+		Dataset datasetOpera=datasetService.findByName(datasetNameOpera);
+		Splitting splittingOpera=splittingService.findByName("OPERA");		
+		
 		String sqlOpera="select dp."+idField+", dp.qsar_property_value, dv.values_tsv, dpis.split_num from qsar_datasets.data_points dp\n"+ 
 		"inner join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
 		"inner join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
-		"where dp.fk_dataset_id="+datasetIdOpera+" and dv.fk_descriptor_set_id="+descriptorSetId+" and "+
-		"dpis.split_num=0"+" and dpis.fk_splitting_id="+splittingIdOpera+";";
+		"where dp.fk_dataset_id="+datasetOpera.getId()+" and dv.fk_descriptor_set_id="+descriptorSet.getId()+" and "+
+		"dpis.split_num=0"+" and dpis.fk_splitting_id="+splittingOpera.getId()+";";
 		//*****************************************************************************************
 		
 		
 		sql="select dp."+idField+", dp.qsar_property_value, dv.values_tsv from qsar_datasets.data_points dp\n"+ 
 		"inner join qsar_descriptors.descriptor_values dv\n"+ 
 		"on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
-		"where dp.fk_dataset_id="+datasetId+" and dv.fk_descriptor_set_id="+descriptorSetId;
+		"where dp.fk_dataset_id="+dataset.getId()+" and dv.fk_descriptor_set_id="+descriptorSet.getId();
 //		System.out.println("\n"+sql+"\n");
 
 		
