@@ -255,10 +255,10 @@ public class PredictionStatisticsScript {
 		datasetNames.add("VP from exp_prop and chemprop");
 		datasetNames.add("LogP from exp_prop and chemprop");
 		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop v2");
 
-		datasetNames.add("pKa_a from exp_prop and chemprop");
-		datasetNames.add("pKa_b from exp_prop and chemprop");
+//		datasetNames.add("pKa_a from exp_prop and chemprop");
+//		datasetNames.add("pKa_b from exp_prop and chemprop");
 
 		Hashtable<String,Double>htVals=new Hashtable<>();
 		addHashtableEntry(statisticName, methodName, modelSetNames, datasetNames,htVals);
@@ -658,15 +658,16 @@ public class PredictionStatisticsScript {
 		ArrayList<String>smilesArray=SplittingGeneratorPFAS_Script.getPFASSmiles(filePathPFAS);
 		
 		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop v2");
 		
-		datasetNames.add("pKa_a from exp_prop and chemprop");
-		datasetNames.add("pKa_b from exp_prop and chemprop");
+//		datasetNames.add("pKa_a from exp_prop and chemprop");
+//		datasetNames.add("pKa_b from exp_prop and chemprop");
 
 		
 		SampleReportWriter srw = new SampleReportWriter();
@@ -722,8 +723,8 @@ public class PredictionStatisticsScript {
 	private void createPredictionReportsExcelPFASOnlyModels() {
 		
 
-		String splittingName="T=PFAS only, P=PFAS";
-		String modelSetName="WebTEST2.0 PFAS";//TODO look up from id
+//		String splittingName="T=PFAS only, P=PFAS";
+//		String modelSetName="WebTEST2.0 PFAS";//TODO look up from id
 		
 //		String splittingName="T=PFAS only, P=PFAS";
 //		String modelSetName="WebTEST2.1 PFAS";//TODO look up from id
@@ -731,8 +732,8 @@ public class PredictionStatisticsScript {
 //		String splittingName="T=all but PFAS, P=PFAS";	
 //		String modelSetName="WebTEST2.0 All but PFAS";//TODO look up from id
 		
-//		String splittingName="T=all but PFAS, P=PFAS";	
-//		String modelSetName="WebTEST2.1 All but PFAS";//TODO look up from id
+		String splittingName="T=all but PFAS, P=PFAS";	
+		String modelSetName="WebTEST2.1 All but PFAS";//TODO look up from id
 
 		ModelSetServiceImpl modelSetService=new ModelSetServiceImpl();
 		ModelSet ms=modelSetService.findByName(modelSetName);
@@ -990,6 +991,8 @@ public class PredictionStatisticsScript {
 			List<ModelPrediction>trainingSetPredictions=htModelPredictionsTrainingSet.get(prmm.qsarMethodName);
 			List<ModelPrediction>testSetPredictions=htModelPredictionsTestSet.get(prmm.qsarMethodName);
 			
+			int countPred=0;
+			
 			for(int i=0;i<testSetPredictions.size(); i++) {								
 				ModelPrediction mp=testSetPredictions.get(i);				
 				
@@ -1001,13 +1004,20 @@ public class PredictionStatisticsScript {
 				
 				if (htAD.get(mp.id)!=null) {				
 					ApplicabilityDomainPrediction ad=htAD.get(mp.id);					
-					if (ad.AD)	mp.pred=null;//stat calculations use null preds to calc coverage
+					if (ad.AD)	{
+						mp.pred=null;//stat calculations use null preds to calc coverage
+					} else {
+						countPred++;
+					}
 					
 //					System.out.println(mp.ID+"\t"+mp.AD);
 				}
 				
 //				System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
 			}
+			
+//			System.out.println("countPred="+countPred);
+			
 			
 			for(int i=0;i<trainingSetPredictions.size(); i++) {
 				ModelPrediction mp=trainingSetPredictions.get(i);
@@ -1158,7 +1168,7 @@ public class PredictionStatisticsScript {
 //		ms.createSummaryTableForMethod_Rnd_Representative();
 		
 		ms.createSummaryTableForMethod();
-		ms.createSummaryTableForSet();
+//		ms.createSummaryTableForSet();
 		
 //		ms.createPredictionReportsExcelForJustPFAS();
 //		ms.createPredictionReportsExcelPFASOnlyModels();
