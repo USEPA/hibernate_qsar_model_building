@@ -50,7 +50,7 @@ public class DevQsarConstants {
 	public static final Double MAX_MELTING_POINT_C = 550.0;
 
 	public static final Double MIN_BOILING_POINT_C = -150.0;
-	public static final Double MAX_BOILING_POINT_C = 600.0;
+	public static final Double MAX_BOILING_POINT_C = 800.0;
 	
 	public static final Double MIN_VAPOR_PRESSURE_MMHG = 1.0e-14;
 	public static final Double MAX_VAPOR_PRESSURE_MMHG = 1.0e6;

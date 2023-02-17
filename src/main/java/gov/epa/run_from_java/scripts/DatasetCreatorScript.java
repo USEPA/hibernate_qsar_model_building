@@ -17,6 +17,7 @@ import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 //import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.endpoints.datasets.BoundParameterValue;
@@ -851,8 +852,9 @@ public class DatasetCreatorScript {
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts);
 
 
-		String datasetName = "BP from exp_prop and chemprop";
-		String datasetDescription = "BP from exp_prop and chemprop where -150 < BP < 600 and 740 < P < 780";
+		String datasetName = "BP from exp_prop and chemprop v2";
+		
+		String datasetDescription = "BP from exp_prop and chemprop where "+DevQsarConstants.MIN_BOILING_POINT_C+" < BP < "+DevQsarConstants.MAX_BOILING_POINT_C+" and 740 < P < 780";
 
 		
 		DatasetParams listMappedParams = new DatasetParams(datasetName, 
