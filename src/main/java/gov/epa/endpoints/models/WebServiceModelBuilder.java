@@ -382,7 +382,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			"join qsar_datasets.data_points dp on dp.id=dpis.fk_data_point_id\n"+ 
 			"where dp.fk_dataset_id="+dataset.getId()+" and dpis.fk_splitting_id="+splittingCV1.getId()+";"; 
 			
-			System.out.println(sql);
+//			System.out.println(sql);
 			
 			int countDPIS=Integer.parseInt(SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sql));
 			
@@ -392,7 +392,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			
 			Splitting splittingModel=splittingService.findByName(model.getSplittingName());
 			
-			List<String>ids=ModelData.getTrainingIds(model, dataset, splittingModel, false);
+			List<String>ids=ModelData.getTrainingIds(dataset, splittingModel, false);
 			Collections.shuffle(ids);
 			
 //			for (String id:ids) {

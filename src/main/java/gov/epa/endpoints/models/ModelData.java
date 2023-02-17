@@ -176,7 +176,7 @@ public class ModelData {
 	/**
 	 * Get training and prediction set tsvs using sql 
 	 */
-	public static List<String> getTrainingIds(Model model,Dataset dataset, Splitting splitting, boolean useDTXCIDs) {
+	public static List<String> getTrainingIds(Dataset dataset, Splitting splitting, boolean useDTXCIDs) {
 		
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		String idField="canon_qsar_smiles";
