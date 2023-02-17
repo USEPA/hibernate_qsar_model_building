@@ -7,7 +7,18 @@ import java.util.Hashtable;
 import java.util.List;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingService;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorSet;
+import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.web_services.embedding_service.CalculationInfo;
@@ -28,6 +39,10 @@ public class ModelData {
 	public String trainingSetInstances;
 	public String predictionSetInstances;
 	public boolean useDTXCIDs;
+	
+	SplittingServiceImpl splittingService=new SplittingServiceImpl();
+	DatasetServiceImpl datasetService=new DatasetServiceImpl();
+	DescriptorSetServiceImpl descriptorSetService=new DescriptorSetServiceImpl(); 
 	
 	public ModelData(String datasetName, String descriptorSetName, String splittingName,boolean removeLogP_Descriptors,boolean useDTXCIDs) {
 		this.datasetName = datasetName;
@@ -100,6 +115,10 @@ public class ModelData {
 		String idField="canon_qsar_smiles";
 		if(useDTXCIDs) idField="qsar_dtxcid";
 		
+		Dataset dataset=datasetService.findByName(datasetName);
+		Splitting splitting=splittingService.findByName(splittingName);
+		DescriptorSet descriptorSet=descriptorSetService.findByName(descriptorSetName);
+				
 		String sql="select headers_tsv from qsar_descriptors.descriptor_sets d\n"+					
 					"where d.\"name\"='"+descriptorSetName+"';";
 		String instanceHeader="ID\tProperty\t"+SqlUtilities.runSQL(conn, sql)+"\r\n";
@@ -108,21 +127,18 @@ public class ModelData {
 		sql="select dp."+idField+", dp.qsar_property_value, dv.values_tsv, dpis.split_num from qsar_datasets.data_points dp\n"+ 
 		"join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
 		"join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
-		"join qsar_descriptors.descriptor_sets ds on dv.fk_descriptor_set_id =ds.id\n"+
-		"join qsar_datasets.datasets d on d.id =dp.fk_dataset_id\n"+ 
-		"join qsar_datasets.splittings s on s.id=dpis.fk_splitting_id\n"+ 
-		"where d.\"name\"='"+datasetName.replace("'", "''")+"' and ds.\"name\"='"+descriptorSetName+"' and s.\"name\"='"+splittingName+"';";
+		"where dp.fk_dataset_id="+dataset.getId()+" and dv.fk_descriptor_set_id="+descriptorSet.getId()+" and dpis.fk_splitting_id="+splitting.getId()+";";
 		
 //		System.out.println("\n"+sql);
 
 		StringBuilder sbTraining = new StringBuilder(instanceHeader);
 		StringBuilder sbPrediction = new StringBuilder(instanceHeader);
 
+		int counter=0;
+		
 		try {
 			
 			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
-			
-			int counter=0;
 			
 			while (rs.next()) {
 				counter++;
@@ -150,6 +166,8 @@ public class ModelData {
 			ex.printStackTrace();
 		}
 				
+		System.out.println("Training / prediction instances created:"+counter);
+		
 		this.trainingSetInstances = sbTraining.toString();
 		this.predictionSetInstances = sbPrediction.toString();
 	}
@@ -158,7 +176,7 @@ public class ModelData {
 	/**
 	 * Get training and prediction set tsvs using sql 
 	 */
-	public static List<String> getTrainingIds(Model model,boolean useDTXCIDs) {
+	public static List<String> getTrainingIds(Model model,Dataset dataset, Splitting splitting, boolean useDTXCIDs) {
 		
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		String idField="canon_qsar_smiles";
@@ -166,10 +184,8 @@ public class ModelData {
 		
 		String sql="select dp."+idField+" from qsar_datasets.data_points dp\n"+ 
 		"inner join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
-		"join qsar_datasets.datasets d on d.id =dp.fk_dataset_id\n"+ 
-		"join qsar_datasets.splittings s on s.id=dpis.fk_splitting_id\n"+
-		"where d.\"name\"='"+model.getDatasetName()+"' and "+
-		"s.\"name\"='"+model.getSplittingName()+"' and "+
+		"where dp.fk_dataset_id="+dataset.getId()+" and "+
+		"dpis.fk_splitting_id="+splitting.getId()+" and "+
 		"dpis.split_num="+DevQsarConstants.TRAIN_SPLIT_NUM+";";
 		
 //		System.out.println(sql);

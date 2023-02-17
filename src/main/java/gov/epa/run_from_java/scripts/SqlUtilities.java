@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.run_from_java.scripts.RecalcStatsScript.SplitPredictions;
 
@@ -209,13 +210,13 @@ public class SqlUtilities {
 	 * @param datasetName
 	 * @return
 	 */
-	public static Hashtable<String,Double> getHashtableExp(String datasetName) {
+	public static Hashtable<String,Double> getHashtableExp(Dataset dataset) {
 		Hashtable<String,Double>htExps=new Hashtable<>();
 
 
 		String sql="select dp.canon_qsar_smiles ,dp.qsar_property_value  from qsar_datasets.data_points dp\n"+ 
 		"join qsar_datasets.datasets d on d.id=dp.fk_dataset_id\n"+ 
-		"where d.\"name\" ='"+datasetName+"';";
+		"where dp.fk_dataset_id="+dataset.getId()+";";
 		
 		ResultSet rs=runSQL2(getConnectionPostgres(), sql);
 		

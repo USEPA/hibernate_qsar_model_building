@@ -27,11 +27,13 @@ import com.google.gson.GsonBuilder;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInConsensusModel;
@@ -102,8 +104,11 @@ public class RecalcStatsScript {
 			
 			SplitPredictions splitPredictions=new SplitPredictions();
 			
+			DatasetServiceImpl datasetService=new DatasetServiceImpl();
+			Dataset dataset=datasetService.findByName(model.getDatasetName());
+			
 			Hashtable<String, Double>htPreds=SqlUtilities.getHashtablePredValues(model.getId(),splittingName);
-			Hashtable<String, Double>expMap=SqlUtilities.getHashtableExp(model.getDatasetName());
+			Hashtable<String, Double>expMap=SqlUtilities.getHashtableExp(dataset);
 			Hashtable<String, Integer>htSplitNum=SqlUtilities.getHashtableSplitNum(model.getDatasetName(), splittingName);
 			
 			for (String smiles:htPreds.keySet()) {			

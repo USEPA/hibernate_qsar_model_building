@@ -13,9 +13,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.validation.ConstraintViolationException;
-
-import org.apache.poi.ss.formula.functions.IDStarAlgorithm;
-
 import com.google.gson.Gson;
 
 import com.google.gson.JsonArray;
@@ -31,6 +28,7 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingService;
@@ -41,10 +39,10 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.web_services.ModelWebService;
 import gov.epa.web_services.embedding_service.CalculationInfo;
 
@@ -58,6 +56,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	SplittingServiceImpl splittingService=new SplittingServiceImpl();
 	DataPointInSplittingService dataPointInSplittingService = new DataPointInSplittingServiceImpl();
 	DataPointServiceImpl dataPointService=new DataPointServiceImpl();
+	DatasetServiceImpl datasetService=new DatasetServiceImpl();
 	
 	public CrossValidate crossValidate=new CrossValidate();
 	
@@ -342,8 +341,11 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		public void crossValidate(Model model, boolean remove_log_p, int num_jobs, boolean postPredictions) {
 			
 			System.out.println(model.getSplittingName());
+						
+			Dataset dataset=datasetService.findByName(model.getDatasetName());
 			
-			addCV_DPIS(model);
+			
+			addCV_DPIS(model,dataset);
 			
 			DescriptorEmbedding descriptorEmbedding=model.getDescriptorEmbedding();
 			
@@ -352,7 +354,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 //			Map<String, Double> expMap = dataPoints.stream()
 //					.collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp.getQsarPropertyValue()));
 			
-			Hashtable<String,Double>expMap=SqlUtilities.getHashtableExp(model.getDatasetName());
+			Hashtable<String,Double>expMap=SqlUtilities.getHashtableExp(dataset);
 			
 
 			System.out.println("Cross validation for dataset = " + model.getDatasetName() + ", descriptors = " + model.getDescriptorSetName()
@@ -365,23 +367,22 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		}
 		
 
-		public void addCV_DPIS(Model model) {
+		public void addCV_DPIS(Model model,Dataset dataset) {
 //			System.out.println(model.getSplittingName());
 			Splitting splittingCV1=splittingService.findByName(model.getSplittingName()+"_CV1");
 			createSplittings(model, splittingCV1);
-			createDataPointInSplittings(model, splittingCV1);
+			createDataPointInSplittings(model, dataset,splittingCV1);
 		}
 
 
-		private void createDataPointInSplittings(Model model, Splitting splittingCV1) {
+		private void createDataPointInSplittings(Model model, Dataset dataset, Splitting splittingCV1) {
+
 			//Check if have DPIS:
 			String sql="select count(dpis.id) from qsar_datasets.data_points_in_splittings dpis\n"+ 
-			"join qsar_datasets.splittings s on s.id=dpis.fk_splitting_id\n"+ 
 			"join qsar_datasets.data_points dp on dp.id=dpis.fk_data_point_id\n"+ 
-			"join qsar_datasets.datasets d on d.id=dp.fk_dataset_id\n"+ 
-			"where s.\"name\" ='"+splittingCV1.getName()+"' and d.\"name\" ='"+model.getDatasetName()+"'";
-
-//			System.out.println(sql);
+			"where dp.fk_dataset_id="+dataset.getId()+" and dpis.fk_splitting_id="+splittingCV1.getId()+";"; 
+			
+			System.out.println(sql);
 			
 			int countDPIS=Integer.parseInt(SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sql));
 			
@@ -389,7 +390,9 @@ public class WebServiceModelBuilder extends ModelBuilder {
 						
 //			System.out.println(countDPIS);
 			
-			List<String>ids=ModelData.getTrainingIds(model, false);
+			Splitting splittingModel=splittingService.findByName(model.getSplittingName());
+			
+			List<String>ids=ModelData.getTrainingIds(model, dataset, splittingModel, false);
 			Collections.shuffle(ids);
 			
 //			for (String id:ids) {
@@ -931,9 +934,9 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	
 	public static void main(String[] args) {
 
-		WebServiceModelBuilder mb=new WebServiceModelBuilder (null,"tmarti02");
-		Model model=mb.modelService.findById(1284L);
-		mb.crossValidate.addCV_DPIS(model);
+//		WebServiceModelBuilder mb=new WebServiceModelBuilder (null,"tmarti02");
+//		Model model=mb.modelService.findById(1284L);
+//		mb.crossValidate.addCV_DPIS(model);
 		
 	}
 

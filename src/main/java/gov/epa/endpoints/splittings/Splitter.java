@@ -91,6 +91,8 @@ public class Splitter {
 		//Be sure to use smiles as the ID field when creating tsv or it cant create the splittings later by smiles
 		String tsv = ModelData.generateInstancesWithoutSplitting(datasetName,descriptorSetName);
 		
+		System.out.println("tsv generated");
+		
 //		System.out.println(tsv);
 //		
 //		try {
