@@ -40,9 +40,9 @@ public class ModelData {
 	public String predictionSetInstances;
 	public boolean useDTXCIDs;
 	
-	SplittingServiceImpl splittingService=new SplittingServiceImpl();
-	DatasetServiceImpl datasetService=new DatasetServiceImpl();
-	DescriptorSetServiceImpl descriptorSetService=new DescriptorSetServiceImpl(); 
+	static SplittingServiceImpl splittingService=new SplittingServiceImpl();
+	static DatasetServiceImpl datasetService=new DatasetServiceImpl();
+	static DescriptorSetServiceImpl descriptorSetService=new DescriptorSetServiceImpl(); 
 	
 	public ModelData(String datasetName, String descriptorSetName, String splittingName,boolean removeLogP_Descriptors,boolean useDTXCIDs) {
 		this.datasetName = datasetName;
@@ -207,11 +207,11 @@ public class ModelData {
 
 
 	
-	public String generateInstancesWithoutSplitting(String datasetName,String descriptorSetName) {
+	public static String generateInstancesWithoutSplitting(String datasetName,String descriptorSetName) {
 		return generateInstancesWithoutSplitting(datasetName,descriptorSetName,false);		
 	}
 	
-	public String generateInstancesWithoutSplitting(String datasetName,String descriptorSetName,boolean useDTXCIDs) {
+	public static String generateInstancesWithoutSplitting(String datasetName,String descriptorSetName,boolean useDTXCIDs) {
 			
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		
