@@ -198,48 +198,82 @@ public class SplittingGeneratorPFAS_Script {
 		
 		System.out.println(splitting.getId()+"\t"+splitting.getDescription());
 		
-		int counter=0;
+		
+		List<DataPointInSplitting>dpisList=new ArrayList<>();
+		
 		
 		for (DataPointInSplitting dpis:dataPointsInSplitting) {
 			DataPointInSplitting dpisNew = new DataPointInSplitting(dpis.getDataPoint(), splitting, dpis.getSplitNum(), lanid);
-						
+			
 			if (dpis.getSplitNum()==DevQsarConstants.TRAIN_SPLIT_NUM) {
+
 				if (splittingName.equals(splittingAll)) {
-					counter=createDataPointInSplitting(dpisNew,counter);
+					//Leave splitNum as is
 				} else if (splittingName.equals(splittingPFASOnly)) {					
-					if (isPFAS(smilesArray,dpis)) {						
-//						System.out.println(dpis.getDataPoint().getId()+"\t"+dpis.getDataPoint().getCanonQsarSmiles()+"\t"+dpis.getSplitNum()+"\t"+dpis.getSplitting().getName());
-						counter=createDataPointInSplitting(dpisNew,counter);					
-					} else {						
+					if (!isPFAS(smilesArray,dpis)) 
 						dpisNew.setSplitNum(2);
-						counter=createDataPointInSplitting(dpisNew,counter);		
-					}
 				} else if (splittingName.equals(splittingAllButPFAS)) {
-					if (!isPFAS(smilesArray,dpis)) {						
-//						System.out.println(dpis.getDataPoint().getCanonQsarSmiles()+"\t"+dpis.getSplitNum()+"\t"+dpis.getSplitting().getName());
-						counter=createDataPointInSplitting(dpisNew,counter);		
-					} else {
+					if (isPFAS(smilesArray,dpis)) 						
 						dpisNew.setSplitNum(2);
-						counter=createDataPointInSplitting(dpisNew,counter);		
-					}
 				} else {
 					dpisNew.setSplitNum(2);
-					counter=createDataPointInSplitting(dpisNew,counter);
+					dpisList.add(dpisNew);
 				}
-			}else if (dpis.getSplitNum()==DevQsarConstants.TEST_SPLIT_NUM) {
-				if (isPFAS(smilesArray,dpis)) {
-//					System.out.println(dpis.getDataPoint().getCanonQsarSmiles()+"\t"+dpis.getSplitNum()+"\t"+dpis.getSplitting().getName());
-					counter=createDataPointInSplitting(dpisNew,counter);
-				} else {
-					dpisNew.setSplitNum(2);//dont use
-					counter=createDataPointInSplitting(dpisNew,counter);					
-				}
+			
+			} else if (dpis.getSplitNum()==DevQsarConstants.TEST_SPLIT_NUM) {
+				if (!isPFAS(smilesArray,dpis)) 
+					dpisNew.setSplitNum(2);//dont use				
 			}
 			
-			if(counter%1000==0)
-				System.out.println(counter);
+			dpisList.add(dpisNew);
 			
 		}
+		
+		DataPointInSplittingServiceImpl dpisService=new DataPointInSplittingServiceImpl();
+		dpisService.createSQL(dpisList);
+		
+		
+//		int counter=0;
+//		for (DataPointInSplitting dpis:dataPointsInSplitting) {
+//			DataPointInSplitting dpisNew = new DataPointInSplitting(dpis.getDataPoint(), splitting, dpis.getSplitNum(), lanid);
+//						
+//			if (dpis.getSplitNum()==DevQsarConstants.TRAIN_SPLIT_NUM) {
+//				if (splittingName.equals(splittingAll)) {
+//					counter=createDataPointInSplitting(dpisNew,counter);
+//				} else if (splittingName.equals(splittingPFASOnly)) {					
+//					if (isPFAS(smilesArray,dpis)) {						
+////						System.out.println(dpis.getDataPoint().getId()+"\t"+dpis.getDataPoint().getCanonQsarSmiles()+"\t"+dpis.getSplitNum()+"\t"+dpis.getSplitting().getName());
+//						counter=createDataPointInSplitting(dpisNew,counter);					
+//					} else {						
+//						dpisNew.setSplitNum(2);
+//						counter=createDataPointInSplitting(dpisNew,counter);		
+//					}
+//				} else if (splittingName.equals(splittingAllButPFAS)) {
+//					if (!isPFAS(smilesArray,dpis)) {						
+////						System.out.println(dpis.getDataPoint().getCanonQsarSmiles()+"\t"+dpis.getSplitNum()+"\t"+dpis.getSplitting().getName());
+//						counter=createDataPointInSplitting(dpisNew,counter);		
+//					} else {
+//						dpisNew.setSplitNum(2);
+//						counter=createDataPointInSplitting(dpisNew,counter);		
+//					}
+//				} else {
+//					dpisNew.setSplitNum(2);
+//					counter=createDataPointInSplitting(dpisNew,counter);
+//				}
+//			}else if (dpis.getSplitNum()==DevQsarConstants.TEST_SPLIT_NUM) {
+//				if (isPFAS(smilesArray,dpis)) {
+////					System.out.println(dpis.getDataPoint().getCanonQsarSmiles()+"\t"+dpis.getSplitNum()+"\t"+dpis.getSplitting().getName());
+//					counter=createDataPointInSplitting(dpisNew,counter);
+//				} else {
+//					dpisNew.setSplitNum(2);//dont use
+//					counter=createDataPointInSplitting(dpisNew,counter);					
+//				}
+//			}
+//			
+//			if(counter%1000==0)
+//				System.out.println(counter);
+//			
+//		}
 //		session.close();
 	}
 	
@@ -424,9 +458,10 @@ public class SplittingGeneratorPFAS_Script {
 //		datasetNames.add("MP from exp_prop and chemprop");
 //		datasetNames.add("BP from exp_prop and chemprop");
 //		datasetNames.add("ExpProp BCF Fish_TMM");
-		datasetNames.add("pKa_a from exp_prop and chemprop");
+//		datasetNames.add("pKa_a from exp_prop and chemprop");
 //		datasetNames.add("pKa_b from exp_prop and chemprop");
-
+		datasetNames.add("BP from exp_prop and chemprop v4");
+		
 
 		Connection conn = SqlUtilities.getConnectionPostgres();
 		
@@ -436,7 +471,7 @@ public class SplittingGeneratorPFAS_Script {
 
 		List<String>splittingNames=new ArrayList<>();
 		splittingNames.add(splittingPFASOnly);
-		splittingNames.add(splittingAll);
+//		splittingNames.add(splittingAll);//Dont need since we use RND_REPRESENTATIVE split and limit to PFAS results later
 		splittingNames.add(splittingAllButPFAS);
 
 		String listName="PFASSTRUCTV4";		
@@ -511,17 +546,18 @@ public class SplittingGeneratorPFAS_Script {
 	void getCounts() {
 		List<String>datasetNames=new ArrayList<>();
 
-		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop v2");
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		
-//		String splittingName=splittingPFASOnly;
+		String splittingName=splittingPFASOnly;
 //		String splittingName=splittingAllButPFAS;
-		String splittingName=splittingAll;
+//		String splittingName=splittingAll;
+//		String splittingName=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 		
 		for (String datasetName:datasetNames) {			
 			int countTR=getCount(conn, datasetName, splittingName, 0);
