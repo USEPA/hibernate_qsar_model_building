@@ -22,7 +22,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity()
 @Table(name = "predictions_dashboard", uniqueConstraints={@UniqueConstraint(columnNames = {"smiles", "dtxcid", "dtxsid", "fk_model_id"})})
-public class PredictionsDashboard {
+public class PredictionDashboard {
 
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
