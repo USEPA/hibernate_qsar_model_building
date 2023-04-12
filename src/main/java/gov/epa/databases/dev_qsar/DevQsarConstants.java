@@ -224,6 +224,8 @@ public class DevQsarConstants {
 	public static final String TAG_TEST = "_Test";
 	public static final String TAG_TRAINING = "_Training";
 
+	public static final String SOURCE_WEBTEST = "WebTEST2.0";
+
 
 	
 	// Acceptable atoms in structures for modeling

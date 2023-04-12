@@ -177,7 +177,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			methodService.create(genericMethod);
 		}
 		
-		Model model = new Model(genericMethod, descriptorEmbedding, data.descriptorSetName, data.datasetName, data.splittingName, lanId);
+		Model model = new Model(genericMethod, descriptorEmbedding, data.descriptorSetName, data.datasetName, data.splittingName, DevQsarConstants.SOURCE_WEBTEST, lanId);
 		modelService.create(model);
 		String hyperparameters = null;
 		String strModelId = String.valueOf(model.getId());
@@ -286,7 +286,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			methodService.create(genericMethod);
 		}
 		
-		Model model = new Model(genericMethod, descriptorEmbedding, data.descriptorSetName, data.datasetName, data.splittingName, lanId);
+		Model model = new Model(genericMethod, descriptorEmbedding, data.descriptorSetName, data.datasetName, data.splittingName,DevQsarConstants.SOURCE_WEBTEST, lanId);
 		modelService.create(model);
 		
 		String strModelId = String.valueOf(model.getId());
@@ -845,6 +845,51 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		calculateAndPostModelStatistics(modelTrainingPredictions, modelTestPredictions, model);
 	}
+	
+	/**
+	 * Validates a Python model with the given data and parameters
+	 * @param data
+	 * @param params
+	 */
+	public void predictTraining(ModelData data, String methodName, Long modelId) throws ConstraintViolationException {
+		
+		System.out.println("Enter predict");
+		
+		if (modelId==null) {
+//			logger.error("Model with supplied parameters has not been built");
+			return;
+		} else if (data.predictionSetInstances==null) {
+//			logger.error("Dataset instances were not initialized");
+			return;
+		}
+		
+//		logger.debug("Validating Python model with dataset = " + data.datasetName + ", descriptors = " + data.descriptorSetName
+//				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName 
+//				+ " (qsar_models ID = " + modelId + ")");
+		
+		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
+		Model model = modelBytes.getModel();
+		byte[] bytes = modelBytes.getBytes();
+		
+		String strModelId = String.valueOf(modelId);
+		modelWebService.callInit(bytes, methodName, strModelId).getBody();
+		
+		Splitting splitting=splittingService.findByName(model.getSplittingName());
+		
+//		System.out.println("Splitting id = "+splitting.getId());
+				
+		String predictResponse = modelWebService.callPredict(data.predictionSetInstances, methodName, strModelId).getBody();
+//		ModelPrediction[] modelPredictionsArray = gson.fromJson(predictResponse, ModelPrediction[].class);
+//		List<ModelPrediction>modelTestPredictions=Arrays.asList(modelPredictionsArray);			
+//		for(ModelPrediction mp:modelTestPredictions) mp.split=DevQsarConstants.TEST_SPLIT_NUM;		
+//		postPredictions(modelTestPredictions, model,splitting);		
+		
+		List<ModelPrediction> modelTrainingPredictions = predictTraining(model, data, methodName, strModelId);
+		for(ModelPrediction mp:modelTrainingPredictions) mp.split=DevQsarConstants.TRAIN_SPLIT_NUM;
+		postPredictions(modelTrainingPredictions, model,splitting);
+		
+//		calculateAndPostModelStatistics(modelTrainingPredictions, modelTestPredictions, model);
+	}
 
 	private List<ModelPrediction> predictTraining(Model model, ModelData data, String methodName, String strModelId) {
 		if (data.trainingSetInstances==null) {
@@ -854,7 +899,6 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		String predictTrainingResponse = modelWebService.callPredict(data.trainingSetInstances, methodName, strModelId).getBody();
 		ModelPrediction[] modelTrainingPredictions = gson.fromJson(predictTrainingResponse, ModelPrediction[].class);
-
 		return Arrays.asList(modelTrainingPredictions);
 	}
 

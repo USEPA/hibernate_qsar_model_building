@@ -98,7 +98,7 @@ public class ConsensusModelBuilder extends ModelBuilder {
 			consensusMethod = methodService.create(consensusMethod);
 		}
 		
-		Model consensusModel = new Model(consensusMethod, DevQsarConstants.CONSENSUS, datasetName, splittingName, lanId);
+		Model consensusModel = new Model(consensusMethod, DevQsarConstants.CONSENSUS, datasetName, splittingName, DevQsarConstants.SOURCE_WEBTEST,lanId);
 		consensusModel = modelService.create(consensusModel);
 		
 		for (Model model:models) {
@@ -394,9 +394,10 @@ public class ConsensusModelBuilder extends ModelBuilder {
 		
 	}
 	
-	public void buildUnweighted(Set<Long> modelIds) {
+	public Long buildUnweighted(Set<Long> modelIds) {
 		Long consensusModelId = createUnweighted(modelIds);
 		predict(consensusModelId);
+		return consensusModelId;
 	}
 	
 	public void buildWeighted(Map<Long, Double> modelIdsWithWeights) {
