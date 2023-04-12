@@ -148,14 +148,16 @@ public class PredictionDashboardScriptTEST {
 	private Model createModel(Model model) {
 		List<Model>models=modelService.findByDatasetName(model.getDatasetName());
 
-		if(models.size()==1) {
-			return models.get(0);
-		} else if (models.size()>1) {
-			System.out.println("Multiple models");
-			return null;
+		for (Model currentModel:models) {
+			if(!currentModel.getMethod().getName().equals(model.getMethod().getName())) continue;
+			if(!currentModel.getDescriptorSetName().equals(model.getDescriptorSetName())) continue;
+			if(!currentModel.getDatasetName().equals(model.getDatasetName())) continue;
+			if(!currentModel.getSplittingName().equals(model.getSplittingName())) continue;
+			if(!currentModel.getSource().equals(model.getSource())) continue;
+			return currentModel;
 		}
 		
-		System.out.print("Need to create model for "+model.getDatasetName()+"...");
+		System.out.print("Creating model for "+model.getDatasetName()+"...");
 		model=modelService.create(model);
 		System.out.println("done");
 		return model;
@@ -424,6 +426,7 @@ public class PredictionDashboardScriptTEST {
 				String datasetName=getDatasetName(propertyName);
 				
 				pd.setModel(htModels.get(datasetName));
+				pd.setCanonQsarSmiles("N/A");
 				pd.setDtxsid(pr.getDTXSID());
 				pd.setDtxcid(pr.getDTXCID());
 				pd.setSmiles(pr.getSmiles());
@@ -604,20 +607,16 @@ public class PredictionDashboardScriptTEST {
 	public static void main(String[] args) {
 		PredictionDashboardScriptTEST pds=new PredictionDashboardScriptTEST();
 
+//		pds.createDatasets();//TODO need to add the datapoints
+
 //		String filePathJson="reports/sample_predictions.json";
 //		String SoftwareVersion = "5.1.4";
 //		pds.runFromSampleJsonFileHashtable(filePathJson,SoftwareVersion);
 
 		String filePathJson="reports/TEST_results_all_endpoints_snapshot_compounds1.json";
-		String SoftwareVersion = "5.1.3";
+		String SoftwareVersion = "5.1.3";//TODO add software version to the json file so dont need to set it here
 		pds.runFromSampleJsonFile(filePathJson,SoftwareVersion);
 		
-//		pds.runFromSampleJsonFile(filePathJson,SoftwareVersion);
-		
-//		pds.createDatasets();
-
-		
-		//TODO make a new sample file that is ran from SDF that has cids
 		//TODO create createSQL (List<PredictionDashboard> predictions)- this way you can create predictions which arent in the models table
 		//TODO make SQL query to assemble the results for displaying on dashboard...
 	}

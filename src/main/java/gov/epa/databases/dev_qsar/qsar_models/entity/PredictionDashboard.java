@@ -31,7 +31,7 @@ public class PredictionDashboard {
 	@Column(name="smiles")
 	private String smiles;
 
-//	@NotBlank(message="Canonical QSAR-ready SMILES required")
+	@NotBlank(message="Canonical QSAR-ready SMILES required")
 	@Column(name="canon_qsar_smiles")
 	private String canonQsarSmiles;
 	
