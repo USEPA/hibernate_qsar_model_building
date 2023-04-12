@@ -126,7 +126,7 @@ public class PredictionServiceImpl implements PredictionService {
 			System.out.println("time to post "+predictions.size()+" predictions using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
 			conn.commit();
 //			conn.setAutoCommit(true);
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}			

@@ -79,7 +79,10 @@ public class PropertyValueServiceImpl implements PropertyValueService {
 	@Override
 	public PropertyValue create(PropertyValue propertyValue, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<PropertyValue>> violations = validator.validate(propertyValue);
+		
+		
 		if (!violations.isEmpty()) {
+			System.out.println(violations);
 			throw new ConstraintViolationException(violations);
 		}
 		
@@ -88,17 +91,19 @@ public class PropertyValueServiceImpl implements PropertyValueService {
 		try {
 			session.save(propertyValue);
 			session.flush();
-			session.refresh(propertyValue);
+//			session.refresh(propertyValue);
 			t.commit();
 		} catch (org.hibernate.exception.ConstraintViolationException e) {
 			System.out.println(e);
 			t.rollback();
 			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
 		} catch (Exception e) {
+			System.out.println(e);
 			t.rollback();
 			throw e;
 		}
 		
+//		System.out.println(propertyValue==null);
 		return propertyValue;
 	}
 

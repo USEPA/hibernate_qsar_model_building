@@ -12,4 +12,6 @@ public interface ExpPropPropertyDao {
 	
 	public List<ExpPropProperty> findAll(Session session);
 
+	public ExpPropProperty findByPropertyName(String propertyName, Session session);
+
 }

@@ -14,6 +14,10 @@ public interface CompoundService {
 
 	public Compound findByDtxcidSmilesAndStandardizer(String dtxcid, String smiles, String standardizer, Session session);
 
+	public List<Compound> findAllWithStandardizerSmilesNotNull(String standardizer);
+	
+	public List<Compound> findAllWithStandardizerSmilesNotNull(String standardizer, Session session);
+	
 	public List<Compound> findByCanonQsarSmiles(String canonQsarSmiles);
 	
 	public List<Compound> findByCanonQsarSmiles(String canonQsarSmiles, Session session);

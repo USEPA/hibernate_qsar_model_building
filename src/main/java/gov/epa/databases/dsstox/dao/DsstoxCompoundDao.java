@@ -29,5 +29,7 @@ public interface DsstoxCompoundDao {
 	public List<DsstoxRecord> findAsDsstoxRecordsByDtxcidIn(Collection<String> dtxcids, Session session);
 
 	public List<DsstoxRecord> findAsDsstoxRecordsByInChiKeyIn(Collection<String> inChiKeys, Session session);
-	
+
+	List<DsstoxCompound> findAll(Session session);
+
 }

@@ -78,4 +78,20 @@ public class CompoundServiceImpl implements CompoundService {
 		
 		return compound;
 	}
+
+	@Override
+	public List<Compound> findAllWithStandardizerSmilesNotNull(String standardizer, Session session) {
+		Transaction t = session.beginTransaction();
+		CompoundDao compoundDao = new CompoundDaoImpl();
+		List<Compound> compounds = compoundDao.findAllWithStandardizerSmilesNotNull(standardizer, session);
+		t.rollback();
+		return compounds;
+	}
+
+	@Override
+	public List<Compound> findAllWithStandardizerSmilesNotNull(String standardizer) {
+		Session session = QsarDescriptorsSession.getSessionFactory().getCurrentSession();
+		return findAllWithStandardizerSmilesNotNull(standardizer, session);
+		
+	}
 }

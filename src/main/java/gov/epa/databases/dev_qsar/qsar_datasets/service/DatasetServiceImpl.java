@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_datasets.service;
 
+import java.sql.Connection;
 import java.util.List;
 import java.util.Set;
 
@@ -17,6 +18,7 @@ import gov.epa.databases.dev_qsar.qsar_datasets.dao.DatasetDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointContributor;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 
 public class DatasetServiceImpl implements DatasetService {
 
@@ -87,9 +89,9 @@ public class DatasetServiceImpl implements DatasetService {
 			session.delete(dataset);
 			System.out.print("done\n");
 			
-			System.out.print("Flushing...");
-			session.flush();
-			System.out.print("done\n");
+//			System.out.print("Flushing...");
+//			session.flush();
+//			System.out.print("done\n");
 			
 			System.out.print("Committing...");
 			t.commit();
@@ -100,7 +102,33 @@ public class DatasetServiceImpl implements DatasetService {
 		}
 		
 	}
+	
+	public void deleteSQL(long id) {
 
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		
+		String sqlDID="delete from qsar_datasets.datasets_in_dashboard did\n"+ 
+		"where did.fk_datasets_id="+id+";";
+		SqlUtilities.runSQLUpdate(conn, sqlDID);
+
+		
+		String sqlDPC="delete from qsar_datasets.data_point_contributors dpc\n"+ 
+		"using qsar_datasets.data_points dp\n"+
+		"where dp.fk_dataset_id="+id+" and dpc.fk_data_points_id =dp.id;";
+		SqlUtilities.runSQLUpdate(conn, sqlDPC);
+		
+		String sqlDP="delete from qsar_datasets.data_points dp\n"+
+		"where dp.fk_dataset_id="+id+";";
+		
+		SqlUtilities.runSQLUpdate(conn, sqlDP);
+		
+		String sqlD="delete from qsar_datasets.datasets d\n"+
+		"where d.id="+id+";";
+		SqlUtilities.runSQLUpdate(conn, sqlD);
+		
+
+	}
+	
 
 	@Override
 	public Dataset findById(Long datasetId) {

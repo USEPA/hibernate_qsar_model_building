@@ -15,6 +15,8 @@ public class ExpPropPropertyDaoImpl implements ExpPropPropertyDao {
 			+ "join pic.propertyCategory pc "
 			+ "where pc.name = :propertyCategoryName";
 	private static final String HQL_ALL = "from ExpPropProperty";
+	
+	private static final String HQL_BY_PROPERTY_NAME = "from ExpPropProperty epp where epp.name = :propertyName";
 
 	@Override
 	public List<ExpPropProperty> findByPropertyCategoryName(String propertyCategoryName, Session session) {
@@ -23,6 +25,15 @@ public class ExpPropPropertyDaoImpl implements ExpPropPropertyDao {
 		query.setParameter("propertyCategoryName", propertyCategoryName);
 		return (List<ExpPropProperty>) query.list();
 	}
+	
+	@Override
+	public ExpPropProperty findByPropertyName(String propertyName, Session session) {
+		if (session==null) { session = ExpPropSession.getSessionFactory().getCurrentSession(); }
+		Query query = session.createQuery(HQL_BY_PROPERTY_NAME);
+		query.setParameter("propertyName", propertyName);
+		return (ExpPropProperty) query.uniqueResult();
+	}
+	
 	
 	@Override
 	public List<ExpPropProperty> findAll(Session session) {

@@ -39,6 +39,8 @@ public class DsstoxCompoundDaoImpl implements DsstoxCompoundDao {
 
 	private static final String HQL_WHERE_BY_INCHIKEY_LIST = "where c.jchemInchikey in (:inChiKeys) or c.indigoInchikey in (:inChiKeys)";
 	
+	private static final String HQL_FIND_ALL = "select c from DsstoxCompound c ";
+	
 	
 	@Override
 	public DsstoxCompound findById(Long id, Session session) {
@@ -47,6 +49,17 @@ public class DsstoxCompoundDaoImpl implements DsstoxCompoundDao {
 		query.setParameter("id", id);
 		return (DsstoxCompound) query.uniqueResult();
 	}
+	
+
+
+	
+	@Override
+	public List<DsstoxCompound> findAll(Session session) {
+		if (session==null) { session = DsstoxSession.getSessionFactory().getCurrentSession(); }
+		Query query = session.createQuery(HQL_FIND_ALL);
+		return (List<DsstoxCompound>) query.list();
+	}
+
 	
 	@Override
 	public List<DsstoxCompound> findByIdIn(Collection<Long> ids, Session session) {

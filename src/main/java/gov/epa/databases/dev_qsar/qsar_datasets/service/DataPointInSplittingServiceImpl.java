@@ -81,10 +81,6 @@ public class DataPointInSplittingServiceImpl implements DataPointInSplittingServ
 	}	
 	
 	
-	
-	
-	
-	
 	public DataPointInSplittingServiceImpl() {
 		this.validator = DevQsarValidator.getValidator();
 	}

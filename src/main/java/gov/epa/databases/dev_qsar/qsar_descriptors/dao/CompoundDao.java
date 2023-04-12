@@ -14,4 +14,6 @@ public interface CompoundDao {
 	
 	public List<Compound> findByCanonQsarSmiles(String canonQsarSmiles, Session session);
 
+	public List<Compound> findAllWithStandardizerSmilesNotNull(String standardizer, Session session);
+
 }

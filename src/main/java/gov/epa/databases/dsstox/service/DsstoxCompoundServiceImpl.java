@@ -46,6 +46,25 @@ public class DsstoxCompoundServiceImpl implements DsstoxCompoundService {
 		return compounds;
 	}
 	
+
+	
+	@Override
+	public List<DsstoxCompound> findAll() {
+		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+		return findAll(session);
+	}
+
+	
+	
+	@Override
+	public List<DsstoxCompound> findAll(Session session) {
+		Transaction t = session.beginTransaction();
+		DsstoxCompoundDao compoundDao = new DsstoxCompoundDaoImpl();
+		List<DsstoxCompound> compounds = compoundDao.findAll(session);
+		t.rollback();
+		return compounds;
+	}
+	
 	@Override
 	public DsstoxCompound findByDtxcid(String dtxcid) {
 		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
