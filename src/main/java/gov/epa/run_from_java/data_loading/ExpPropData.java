@@ -2,7 +2,9 @@ package gov.epa.run_from_java.data_loading;
 
 import java.util.regex.Matcher;
 
+import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropUnit;
 import gov.epa.databases.dev_qsar.exp_prop.entity.LiteratureSource;
+import gov.epa.databases.dev_qsar.exp_prop.entity.Parameter;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
@@ -34,28 +36,45 @@ public class ExpPropData {
 		public String publicSourceName;
 		public String literatureSourceName;
 		
+		public Long id_source_database;
+		
+		
 		public SourceChemical sourceChemical;
 		public PropertyValue propertyValue;
 		public ParameterValue reliabilityValue;
 		
+		/**
+		 * Sets propertyName, publicSourceName, literatueSourceName, propertyUnitName, sourceChemical,
+			propertyValue, and reliabilityValue
+		 * 
+		 * @param rec
+		 */
 		public void getValues(ExperimentalRecord rec) {
+			
 			url = rec.url;
 			propertyName = rec.property_name;
-			if (rec.property_name.endsWith("_LC50")) {
-				propertyName = "LC50";
-			} else if (rec.property_name.endsWith("_LD50")) {
-				propertyName = "LD50";
-			} else if (rec.property_name.endsWith("_EyeIrritation")) {
-				propertyName = "Eye irritation";
-			} else if (rec.property_name.endsWith("_EyeCorrosion")) {
-				propertyName = "Eye corrosion";
-			} else if (rec.property_name.endsWith("_SkinIrritation")) {
-				propertyName = "Skin irritation";
-			} if (rec.property_name.equals("SkinSensitizationLLNA")) {
-				propertyName = "LLNA";
-			}
+
+			//TODO do we really want to use vague property names, or keep the original specific name???
+//			if (rec.property_name.endsWith("_LC50")) {
+//				propertyName = "LC50";
+//			} else if (rec.property_name.endsWith("_LD50")) {
+//				propertyName = "LD50";
+//			} else if (rec.property_name.endsWith("_EyeIrritation")) {
+//				propertyName = "Eye irritation";
+//			} else if (rec.property_name.endsWith("_EyeCorrosion")) {
+//				propertyName = "Eye corrosion";
+//			} else if (rec.property_name.endsWith("_SkinIrritation")) {
+//				propertyName = "Skin irritation";
+//			} if (rec.property_name.equals("SkinSensitizationLLNA")) {
+//				propertyName = "LLNA";
+//			}
 			
 			publicSourceName = rec.source_name;
+			
+//			id_source_database=rec.id_source_database;
+//			System.out.println(publicSourceName);
+			
+			
 			if (publicSourceName.equals("OECD Toolbox Skin Irritation")) {
 				publicSourceName = "OECD Toolbox";
 			}
@@ -80,7 +99,7 @@ public class ExpPropData {
 				case "Appearance":
 				case "Water solubility":
 				case "Vapor pressure":
-					propertyUnitName = "Text";
+					propertyUnitName = "Text";//TMM why is this set to text?
 					break;
 				case "LLNA":
 				case "Eye irritation":
@@ -109,15 +128,77 @@ public class ExpPropData {
 			sourceChemical = getSourceChemical(rec);
 			propertyValue = getPropertyValue(rec);
 			reliabilityValue = getReliabilityValue(rec);
+			
+			addGenericParametersValues(rec);
+			
+
+		}
+		
+		/**
+		 * TODO these properties wont post unless the parameters are in properties_acceptable_parameters for the given property
+		 * 
+		 * @param rec
+		 */
+		private void addGenericParametersValues(ExperimentalRecord rec) {
+
+			if (rec.experimental_parameters==null) return;
+			
+			
+			for (String parameterName:rec.experimental_parameters.keySet()) {
+
+				Object value=rec.experimental_parameters.get(parameterName);
+				
+//				System.out.println(parameterName+"\t"+value+"\t"+value.getClass().getName());
+				
+				
+				ParameterValue parameterValue = new ParameterValue();
+				parameterValue.setCreatedBy(loader.lanId);
+				
+				if (value instanceof Double) {
+					parameterValue.setValuePointEstimate((Double)value);
+				} else if (value instanceof String) {
+					parameterValue.setValueText((String)value);	
+				}
+				
+				Parameter parameter=loader.parametersMap.get(parameterName);
+				ExpPropUnit unit=loader.unitsMap.get("Text");//TODO how do we handle generic unit that has specific units? add units to experimental_parameters dictionary for each entry? or add handle like temperature or pressure was
+				
+				parameterValue.setPropertyValue(propertyValue);
+				parameterValue.setParameter(parameter);//need to add parameter to Parameters table first
+				parameterValue.setUnit(unit);
+				propertyValue.addParameterValue(parameterValue);
+
+			}
+			
+//			System.out.println("done add generic params");
+			
 		}
 		
 		public void constructPropertyValue(boolean createLiteratureSources) {
+			
+//			System.out.println("enter constructPropertyValue");
+			
+			
 			PublicSource ps = loader.publicSourcesMap.get(publicSourceName);
+			
+			if (createLiteratureSources && ps==null) {//added by TMM
+				String psName = publicSourceName.length() > 255 ? publicSourceName.substring(0, 255) : publicSourceName;
+				PublicSource psNew = new PublicSource();
+				
+				psNew.setName(psName);
+				psNew.setDescription(publicSourceName);
+				psNew.setCreatedBy(loader.lanId);
+				//TODO need to set type and url manually in the public_sources table
+				ps = loader.publicSourceService.create(psNew);
+				loader.publicSourcesMap.put(publicSourceName, ps);
+			}
+			
+			
+			
 			LiteratureSource ls = loader.literatureSourcesMap.get(literatureSourceName);
 			
 			sourceChemical.setPublicSource(ps);
-			
-			
+						
 			if (createLiteratureSources && ls==null && literatureSourceName!=null && !literatureSourceName.isBlank()) {
 				String lsName = literatureSourceName.length() > 255 ? literatureSourceName.substring(0, 255) : literatureSourceName;
 				LiteratureSource lsNew = new LiteratureSource(lsName, literatureSourceName, loader.lanId);
@@ -126,11 +207,15 @@ public class ExpPropData {
 			}
 			sourceChemical.setLiteratureSource(ls);
 			
+
+
 			SourceChemical dbSourceChemical = sourceChemicalService.findMatch(sourceChemical);
+			
 			if (dbSourceChemical==null) {
 				sourceChemical = sourceChemicalService.create(sourceChemical);
 			} else {
 				sourceChemical = dbSourceChemical;
+//				System.out.println("Found source chemical: " + sourceChemical.generateSrcChemId());
 //				ExperimentalRecordLoader.logger.trace("Found source chemical: " + sourceChemical.generateSrcChemId());
 			}
 			
@@ -140,7 +225,6 @@ public class ExpPropData {
 			propertyValue.setPublicSource(ps);
 			propertyValue.setLiteratureSource(ls);
 			
-		
 			
 			if (url==null || url.isBlank() || (ps!=null && url.equals(ps.getUrl())) || (ls!=null && url.equals(ls.getUrl()))) {
 				// No individual page URL, do nothing
@@ -148,15 +232,17 @@ public class ExpPropData {
 				propertyValue.setPageUrl(url);
 			}
 			
-			if (reliabilityValue!=null) {
+			if (reliabilityValue!=null) {//TODO should this occur elsewhere?
 				reliabilityValue.setPropertyValue(propertyValue);
 				reliabilityValue.setParameter(loader.parametersMap.get("Reliability"));
 				reliabilityValue.setUnit(loader.unitsMap.get("Text"));
 				propertyValue.addParameterValue(reliabilityValue);
 			}
+			
+
 		}
 		
-		public boolean post() {
+		public boolean postPropertyValue() {
 			propertyValue = propertyValueService.create(propertyValue);
 			if (propertyValue!=null) {
 				return true;
@@ -230,6 +316,7 @@ public class ExpPropData {
 			propertyValue.setValuePointEstimate(rec.property_value_point_estimate_final);
 			propertyValue.setValueMin(rec.property_value_min_final);
 			propertyValue.setValueMax(rec.property_value_max_final);
+			
 			if (rec.property_value_qualitative!=null && 
 					rec.property_value_qualitative.length()>255) { 
 				rec.property_value_qualitative = rec.property_value_qualitative.substring(0, 255);

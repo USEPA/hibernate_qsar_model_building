@@ -21,7 +21,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 
 @Entity()
-@Table(name = "predictions_dashboard", uniqueConstraints={@UniqueConstraint(columnNames = {"smiles", "dtxcid", "dtxsid", "fk_model_id"})})
+@Table(name = "predictions_dashboard", uniqueConstraints={@UniqueConstraint(columnNames = {"canon_qsar_smiles","smiles", "dtxcid", "dtxsid", "fk_model_id"})})
 public class PredictionDashboard {
 
 	@Id
@@ -31,8 +31,7 @@ public class PredictionDashboard {
 	@Column(name="smiles")
 	private String smiles;
 
-
-	@NotBlank(message="Canonical QSAR-ready SMILES required")
+//	@NotBlank(message="Canonical QSAR-ready SMILES required")
 	@Column(name="canon_qsar_smiles")
 	private String canonQsarSmiles;
 	
@@ -49,7 +48,7 @@ public class PredictionDashboard {
 	@NotNull(message="Model required")
 	@JoinColumn(name="fk_model_id")
 	private Model model;
-
+	
 	
 	@Column(name="prediction_value")
 	private Double predictionValue;
@@ -58,7 +57,7 @@ public class PredictionDashboard {
 	private String predictionString;
 	
 	@Column(name="prediction_error")
-	private Double predictionError;
+	private String predictionError;
 	
 	@Column(name="updated_at")
 	@UpdateTimestamp
@@ -141,11 +140,11 @@ public class PredictionDashboard {
 		this.predictionString = predictionString;
 	}
 
-	public Double getPredictionError() {
+	public String getPredictionError() {
 		return predictionError;
 	}
 
-	public void setPredictionError(Double predictionError) {
+	public void setPredictionError(String predictionError) {
 		this.predictionError = predictionError;
 	}
 
@@ -180,9 +179,5 @@ public class PredictionDashboard {
 	public void setCreatedBy(String createdBy) {
 		this.createdBy = createdBy;
 	}
-
-	
-	
-	
 
 }

@@ -65,6 +65,37 @@ import gov.epa.web_services.standardizers.Standardizer;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponse;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithStatus;
 
+/**
+ * Discards exp_prop records during dataset creation if
+ * 
+- has no mapped dsstox record
+- mapped dsstox record doesnt have both dtxsid and dtxcid
+- fails mapping to dsstox
+	o is "No hit"
+	o contains UvcbKeywords (can be turned off)
+	o OPSIN ambiguous name (can be turned off)
+	o conflicts dont resolve to the same 2d structure
+	o is not authoritative "exact" match in terms of available identifiers	 
+- fails validate structure (there is option to turn off validation of structure for properties for dashboard)
+	o bad substanceType (Mineral/Composite, Mixture/Formulation, and Polymer)
+	o no smiles in DsstoxRecord
+	o omittedSalt
+	o singleAtom
+	o multipleOrganicFragments
+	o hasUnacceptable element for modeling
+	o isInorganic
+- has invalid property value
+	o no numerical data
+	o range doesnt have both max and min
+	o range too wide
+	o unrealistic property value
+- has invalid experimental parameter
+	o parameter is outside specified bounds e.g. Temperature = 35 C but bounds are 20-30 C for vapor pressure value
+- has units that cant be converted to desired final qsar units
+
+ * @author gsinclair, tmarti02
+ *
+ */
 public class DsstoxMapper {
 	
 	// Column headers for ChemReg import
@@ -110,11 +141,13 @@ public class DsstoxMapper {
 	
 	private Set<String> acceptableAtoms;
 	private String finalUnitName;
-	private boolean omitSalts;
+//	private boolean omitSalts;
 	private String lanId;
 	
 	private Standardizer standardizer;
 	private String standardizerName;
+	
+	 HashMap<String,String>hmCanonSmilesLookup;
 	
 	private Map<String, List<PropertyValue>> propertyValuesMap;
 	private Map<String, DsstoxRecord> dsstoxRecordsMap;
@@ -132,8 +165,10 @@ public class DsstoxMapper {
 	private SourceSubstanceService sourceSubstanceService;
 	private GenericSubstanceService genericSubstanceService;
 	
-	public DsstoxMapper(DatasetParams datasetParams, Standardizer standardizer, String finalUnitName, 
-			boolean omitSalts, Set<String> acceptableAtoms, String lanId) throws IOException {
+	
+	
+	public DsstoxMapper(DatasetParams datasetParams, Standardizer standardizer, HashMap<String,String>hmCanonSmilesLookup,String finalUnitName, 
+			 Set<String> acceptableAtoms, String lanId) throws IOException {
 		this.compoundService = new CompoundServiceImpl();
 		
 		this.dsstoxCompoundService = new DsstoxCompoundServiceImpl();
@@ -147,13 +182,15 @@ public class DsstoxMapper {
 		this.datasetFolderPath = DevQsarConstants.OUTPUT_FOLDER_PATH + File.separator + datasetFileName;
 		
 		this.finalUnitName = finalUnitName;
-		this.omitSalts = omitSalts;
+//		this.omitSalts = omitSalts;//TMM can just get from datasetParams
 		this.acceptableAtoms = acceptableAtoms;
 		this.lanId = lanId;
 		
 		this.standardizer = standardizer;
 		this.standardizerName = this.standardizer==null ? 
 				DevQsarConstants.STANDARDIZER_NONE : this.standardizer.standardizerName;
+		
+		this.hmCanonSmilesLookup=hmCanonSmilesLookup;
 		
 		this.propertyValuesMap = new HashMap<String, List<PropertyValue>>();
 		this.dsstoxRecordsMap = new HashMap<String, DsstoxRecord>();
@@ -399,13 +436,31 @@ public class DsstoxMapper {
 			List<PropertyValue> propertyValues = propertyValuesMap.get(id);
 			DsstoxRecord dsstoxRecord = dsstoxRecordsMap.get(id);
 			
+			
 			if (dsstoxRecord==null) {
 				unmappedPropertyValuesMap.put(id, propertyValues);
 				discardPropertyValues(propertyValues, null, "No DSSTox record found");
 				continue;
 			}
 			
+			
 			SourceChemical sourceChemical = propertyValues.iterator().next().getSourceChemical();
+			
+			if (dsstoxRecord.getConnectionReason().equals("DTXRID matched <b>SOURCE_DTXRID</b>")) {
+				//Get the original dsstoxRecord from the source chemicals dtxrid:
+				dsstoxRecord=DsstoxRecord.getDsstoxRecord(sourceChemical);//we need to backtrack to original record that chris created (not the one in the current chemreg list)
+//				System.out.println(Utilities.gson.toJson(dsstoxRecord));
+//				System.out.println(Utilities.gson.toJson(sourceChemical));
+				
+				if (dsstoxRecord==null) {
+					unmappedPropertyValuesMap.put(id, propertyValues);
+					discardPropertyValues(propertyValues, null, "No DSSTox record found");
+					continue;
+				}
+				
+			}
+			
+			
 			if (!datasetParams.mappingParams.isNaive) {
 //				System.out.println(dsstoxRecord.casrn);
 				ExplainedResponse acceptMapping = acceptMapping(dsstoxRecord, sourceChemical);
@@ -428,12 +483,23 @@ public class DsstoxMapper {
 				continue;
 			}
 			
-			// Validates structure from DSSTox
-			ExplainedResponse validStructure = dsstoxRecord.validateStructure(omitSalts, acceptableAtoms);
-			if (!validStructure.response) {
-				discardPropertyValues(propertyValues, dsstoxRecord, validStructure.reason);
-				continue;
+			
+			if (datasetParams.mappingParams.validateStructure) {//validateStructure when dataset is to be used for modeling
+				// Validates structure from DSSTox
+
+				ExplainedResponse validStructure = dsstoxRecord.validateStructure(datasetParams.mappingParams.omitSalts, acceptableAtoms);
+				if (!validStructure.response) {
+					discardPropertyValues(propertyValues, dsstoxRecord, validStructure.reason);
+					continue;
+				}
+				
+			} else {//Even if not validating structure, we at least need a smiles
+				if (dsstoxRecord.smiles==null || dsstoxRecord.smiles.isBlank() || dsstoxRecord.smiles.toLowerCase().equals("null")) {
+					discardPropertyValues(propertyValues, dsstoxRecord, "Missing SMILES");
+					continue;
+				}
 			}
+			
 			
 			for (PropertyValue pv:propertyValues) {
 				ExplainedResponse validValue = pv.validateValue();
@@ -471,33 +537,31 @@ public class DsstoxMapper {
 	}
 	
 	private ExplainedResponse acceptMapping(DsstoxRecord dr, SourceChemical sc) {
+		
+
 		String bin = dr.connectionReason.replaceAll("</?b>", "").replaceAll("<br/>", ", ");
+		bin = bin.replaceAll("</?b>", "").replaceAll("<br/>", ", ");
+		String binOriginal=bin;
+
+		bin = bin.replaceAll("(CAS-RN matched (other record:  )?)[^,]+", "$1" + SOURCE_CASRN_HEADER);
+		bin = bin.replaceAll("(Preferred Name matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
+		bin = bin.replaceAll("(Valid Synonym matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
+		bin = bin.replaceAll("(Unique Synonym matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
+		bin = bin.replaceAll("(Ambiguous Synonym matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
+		bin = bin.replaceAll("(Name2Structure matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
+		bin = bin.replaceAll("(Mapped Identifier matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
+		bin = bin.replaceAll("(?<!2)(Structure matched (other record:  )?)[^,]+", "$1" + SOURCE_SMILES_HEADER);
+		
+//		if(!binOriginal.equals(bin)) {
+//			System.out.println(dr.dsstoxRecordId);
+//			System.out.println("binOriginal\t"+binOriginal);
+//			System.out.println("bin\t"+bin+"\n");	
+//		}
+		
+		dr.setConnectionReason(bin);
+		
 		if (bin.equals("No Hits")) {
 			return new ExplainedResponse(false, "No hit");
-		}
-		
-		Gson gson=new Gson();
-		
-		if (bin.contains(DTXRID_MATCH)) {
-			// If source chemical is identified by DTXRID only, fetch the source substance identifiers associated
-			// with that DTXRID, and then go through mapping with those as usual using the bin string from that source substance mapping			
-			
-			if (!bin.equals("DTXRID matched SOURCE_DTXRID")) {//[TMM] 11/23/22: added if statement because fillInSourceSubstanceIdentifiers wont get connection reason from database
-				bin=fillInSourceSubstanceIdentifiers(sc);
-				bin = bin.replaceAll("</?b>", "").replaceAll("<br/>", ", ");
-				bin = bin.replaceAll("(CAS-RN matched (other record:  )?)[^,]+", "$1" + SOURCE_CASRN_HEADER);
-				bin = bin.replaceAll("(Preferred Name matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
-				bin = bin.replaceAll("(Valid Synonym matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
-				bin = bin.replaceAll("(Unique Synonym matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
-				bin = bin.replaceAll("(Ambiguous Synonym matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
-				bin = bin.replaceAll("(Name2Structure matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
-				bin = bin.replaceAll("(Mapped Identifier matched (other record:  )?)[^,]+", "$1" + SOURCE_CHEMICAL_NAME_HEADER);
-				bin = bin.replaceAll("(?<!2)(Structure matched (other record:  )?)[^,]+", "$1" + SOURCE_SMILES_HEADER);
-//				System.out.println("here2\t"+bin);
-//				System.out.println(gson.toJson(sc));
-			} else {
-				fillInSourceSubstanceIdentifiers2(sc);//just in case it might have other source identifiers- probably wont
-			}
 		}
 		
 		if (datasetParams.mappingParams.useCuratorValidation && dr.curatorValidated) {
@@ -508,13 +572,15 @@ public class DsstoxMapper {
 		if (datasetParams.mappingParams.requireCuratorValidation && !dr.curatorValidated) {
 			return new ExplainedResponse(false, "Curator validation required");
 		}
-		
-		if (bin.contains(DTXSID_MATCH) || bin.contains(DTXCID_MATCH) || bin.contains(DTXRID_MATCH)) {//[TMM] 11/23/22 added or for RID match
+				
+//		if (bin.contains(DTXSID_MATCH) || bin.contains(DTXCID_MATCH) || bin.contains(DTXRID_MATCH)) {//[TMM] 11/23/22 added or for RID match
+		if (bin.contains(DTXSID_MATCH) || bin.contains(DTXCID_MATCH)) {//[TMM] 3/30/23 RID matches may not be curator validated so dont blindly accept it
 			// Accept DTXSID, DTXCID, DTXRID matches
 //			if (bin.equals(DTXRID_MATCH)) {
 //				System.out.println(gson.toJson(sc));
 //			}
-			return new ExplainedResponse(true, "Matched source DTXSID, DTXCID, or DTXRID");
+//			return new ExplainedResponse(true, "Matched source DTXSID, DTXCID, or DTXRID");
+			return new ExplainedResponse(true, "Matched source DTXSID, DTXCID");
 		}
 		
 		if (bin.contains(DTXSID_CONFLICT)) {
@@ -544,10 +610,12 @@ public class DsstoxMapper {
 			}
 		}
 		
+		
 		if (datasetParams.mappingParams.autoResolveConflicts 
 				&& (DsstoxMapperStringUtil.hasMappingConflict(bin) || DsstoxMapperStringUtil.hasDelimiters(sc))) {
 			// If applying auto conflict resolution, do it
 			DsstoxConflict conflict = new DsstoxConflict(sc, dr);
+			
 			
 			if (DsstoxMapperStringUtil.hasMappingConflict(bin)) {
 				boolean foundAllMappingConflicts = findMappingConflicts(conflict, bin);
@@ -583,6 +651,8 @@ public class DsstoxMapper {
 			// Reject conflicted mappings
 			return new ExplainedResponse(false, "Auto conflict resolution not selected");
 		}
+		
+//		System.out.println("authoritative match="+authoritativeMatch(bin, sc)+"\tbin="+bin);
 		
 		return new ExplainedResponse(authoritativeMatch(bin, sc), bin);
 	}
@@ -827,6 +897,9 @@ public class DsstoxMapper {
 		String drStandardizedInchikey = null;
 		String drQsarReadyInchikey = null;
 		boolean needStandardizer = false;
+		
+		//TODO- code needs to be augmented when have salts since qsar ready smiles might be null
+		
 		if (conflict.bestDsstoxRecord.qsarReadySmiles!=null && !conflict.bestDsstoxRecord.qsarReadySmiles.isBlank()) {
 			drQsarReadySmiles = conflict.bestDsstoxRecord.qsarReadySmiles;
 		} else if (standardizer!=null && conflict.bestDsstoxRecord.isWellDefined()) {
@@ -1024,63 +1097,32 @@ public class DsstoxMapper {
 		return score;
 	}
 	
-	private String fillInSourceSubstanceIdentifiers(SourceChemical sc) {
-		String dtxrid = sc.getSourceDtxrid();
+	private String fillInSourceSubstanceIdentifiers(SourceChemical sourceChemical) {
+		String dtxrid = sourceChemical.getSourceDtxrid();
 		if (dtxrid==null) {
 			return null;
 		}
-		
 		SourceSubstance sourceSubstance = sourceSubstanceService.findByDtxrid(dtxrid);
-		for (SourceSubstanceIdentifier ssi:sourceSubstance.getSourceSubstanceIdentifiers()) {
-			String identifier = ssi.getIdentifier();
-			switch (ssi.getIdentifierType()) {
-			case "DTXSID":
-				sc.setSourceDtxsid(identifier);
-				break;
-			case "NAME":
-				sc.setSourceChemicalName(identifier);
-				break;
-			case "CASRN":
-				sc.setSourceCasrn(identifier);
-				break;
-			case "SMILES":
-			case "STRUCTURE":
-				sc.setSourceSmiles(identifier);
-				break;
-			}
-		}
+		DsstoxRecord.fill_in_identifiers(sourceChemical, sourceSubstance);
 		
 		return sourceSubstance.getSourceGenericSubstanceMapping().getConnectionReason();
 	}
 	
-	private void fillInSourceSubstanceIdentifiers2(SourceChemical sc) {
-		
-		SourceSubstance sourceSubstance = sourceSubstanceService.findByDtxrid(sc.getSourceDtxrid());
-		for (SourceSubstanceIdentifier ssi:sourceSubstance.getSourceSubstanceIdentifiers()) {
-			String identifier = ssi.getIdentifier();
-			
-//			System.out.println(sc.getSourceDtxrid()+"\t"+identifier);
-			
-			switch (ssi.getIdentifierType()) {
-			case "DTXSID":
-				sc.setSourceDtxsid(identifier);
-				break;
-			case "NAME":
-				sc.setSourceChemicalName(identifier);
-				break;
-			case "CASRN":
-				sc.setSourceCasrn(identifier);
-				break;
-			case "SMILES":
-			case "STRUCTURE":
-				sc.setSourceSmiles(identifier);
-				break;
-			}
-		}
-		
-	}
+//	private void fillInSourceSubstanceIdentifiersRID_Match(SourceChemical sourceChemical) {
+//		SourceSubstance sourceSubstance = sourceSubstanceService.findByDtxrid(sourceChemical.getSourceDtxrid());
+//		DsstoxRecord.fill_in_identifiers(sourceChemical, sourceSubstance);
+//	}
+
+	
+	
 	
 	private String standardizeSmiles(String srcChemId, DsstoxRecord dr) {
+		
+		if(hmCanonSmilesLookup.containsKey(dr.smiles)) {
+//			System.out.println(dr.smiles+"\t"+hmCanonSmilesLookup.get(dr.smiles));
+			return hmCanonSmilesLookup.get(dr.smiles);
+		}
+		
 		// Check (by DTXCID) if compound already has a standardization
 		Compound compound = compoundService.findByDtxcidSmilesAndStandardizer(dr.dsstoxCompoundId, dr.smiles,standardizerName);
 		
@@ -1110,7 +1152,7 @@ public class DsstoxMapper {
 				return null;
 			}
 		}
-		
+//		System.out.println("From db:"+compound.getCanonQsarSmiles());
 		return compound.getCanonQsarSmiles();
 	}
 
@@ -1348,7 +1390,7 @@ public class DsstoxMapper {
 				"source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",				
 				"source_name", "source_description", "source_authors", "source_title", "source_doi", "source_url",
 				"source_type", "page_url", "notes", "qc_flag", "temperature_c", "pressure_mmHg", "pH",
-				"value_qualifier", "value_original", "value_max", "value_min", "value_point_estimate",
+				"value_qualifier", "value_original","value_text", "value_max", "value_min", "value_point_estimate",
 				"value_units" };
 
 		

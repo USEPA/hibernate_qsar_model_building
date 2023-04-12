@@ -44,7 +44,7 @@ public class PropertyValueMerger {
 			
 			Double finalValue=consensusValue > DevQsarConstants.BINARY_CUTOFF ? 1.0 : 0.0;
 			Vector<String> vecFinalCIDs=new Vector<>();
-			Vector<String> vecFinalExpPropIds=new Vector<>();
+			Vector<Long> vecFinalExpPropIds=new Vector<>();
 			
 			for (MappedPropertyValue mpv:mappedPropertyValues) {
 				if (mpv.qsarPropertyValue==finalValue) {
@@ -52,7 +52,7 @@ public class PropertyValueMerger {
 //						vecFinalCIDs.add(mpv.compound.getDtxcid());					
 
 					vecFinalCIDs.add(mpv.compound.getDtxcid());					
-					vecFinalExpPropIds.add(mpv.propertyValue.generateExpPropId());
+					vecFinalExpPropIds.add(mpv.propertyValue.getId());
 				}
 			}			
 
@@ -126,6 +126,7 @@ public class PropertyValueMerger {
 			MappedPropertyValue mpv2 = mappedPropertyValues.get(size / 2);
 			Double v1 = mpv1.qsarPropertyValue;
 			Double v2 = mpv2.qsarPropertyValue;
+			
 			if (PropertyValue.checkRangeForProperty(v1, v2, propertyName)) {
 				finalValue= (v1 + v2) / 2.0;
 
@@ -136,7 +137,7 @@ public class PropertyValueMerger {
 //				}
 				
 				finalCIDs=mpv1.compound.getDtxcid()+"|"+mpv2.compound.getDtxcid();//Need both so can line up with CIDs
-				final_exp_prop_ids=mpv1.propertyValue.generateExpPropId()+"|"+mpv2.propertyValue.generateExpPropId();	
+				final_exp_prop_ids=mpv1.propertyValue.getId()+"|"+mpv2.propertyValue.getId();	
 								
 			} else {
 				System.out.println(mappedPropertyValues.iterator().next().standardizedSmiles + ": Range too wide to calculate consensus value");
@@ -145,12 +146,12 @@ public class PropertyValueMerger {
 		} else if (size==1) {//only 1 record
 			finalValue = mappedPropertyValues.get(0).qsarPropertyValue;
 			finalCIDs= mappedPropertyValues.get(0).compound.getDtxcid();
-			final_exp_prop_ids=mappedPropertyValues.get(0).propertyValue.generateExpPropId();
+			final_exp_prop_ids=mappedPropertyValues.get(0).propertyValue.getId()+"";
 			
 		} else {//odd number of records, use middle one
 			finalValue = mappedPropertyValues.get(size/2).qsarPropertyValue;
 			finalCIDs= mappedPropertyValues.get(size/2).compound.getDtxcid();
-			final_exp_prop_ids=mappedPropertyValues.get(size/2).propertyValue.generateExpPropId();
+			final_exp_prop_ids=mappedPropertyValues.get(size/2).propertyValue.getId()+"";
 		}		
 		String [] result= new String[3];
 		result[0]=finalValue+"";

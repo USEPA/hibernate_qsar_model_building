@@ -19,7 +19,8 @@ public class SqlUtilities {
 	
 	public static final String dbPostGres="Postgres";
 	public static final String dbDSSTOX="DSSTOX";
-
+	public static final String dbToxVal93="dbToxVal93";
+	
 	/**
 	 * Gives you connection to Postgres database based on the environment variables
 	 * connPool allows the next call to be instantaneous
@@ -79,6 +80,38 @@ public class SqlUtilities {
 			Connection conn = DriverManager.getConnection(url, user, password);
 			
 			connPool.put(dbDSSTOX, conn);
+			
+			return conn;
+		} catch (Exception ex) {
+			return null;
+		}
+	}
+	
+	
+public static Connection getConnectionToxValV93() {
+		
+		try {
+			if (connPool.containsKey(dbDSSTOX) && connPool.get(dbDSSTOX) != null && !connPool.get(dbDSSTOX).isClosed()) {
+				return connPool.get(dbDSSTOX);
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		
+		String host = System.getenv().get("DSSTOX_HOST");
+		String port = System.getenv().get("DSSTOX_PORT");
+		String db = "prod_toxval_v93";
+
+		String url = "jdbc:mysql://" + host + ":" + port + "/" + db;
+		String user = System.getenv().get("DSSTOX_USER");
+		String password = System.getenv().get("DSSTOX_PASS");
+
+		try {
+			Connection conn = DriverManager.getConnection(url, user, password);
+			
+			connPool.put(dbToxVal93, conn);
 			
 			return conn;
 		} catch (Exception ex) {
@@ -249,6 +282,17 @@ public class SqlUtilities {
 		}
 		return null;
 	}
+	
+	public static void runSQLUpdate(Connection conn, String sql) {
+		try {
+			Statement st = conn.createStatement();			
+			st.executeUpdate(sql);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 	
 	public static ResultSet runSQL2(Connection conn, String sql) {
 		try {

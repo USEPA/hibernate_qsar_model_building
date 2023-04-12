@@ -18,6 +18,7 @@ public class MappedPropertyValue {
 	public String standardizedSmiles;
 	
 	public Double qsarPropertyValue;
+	public String qsarPropertyUnits;
 	
 //	private static final Logger logger = LogManager.getLogger(MappedPropertyValue.class);
 	
@@ -29,6 +30,7 @@ public class MappedPropertyValue {
 		this.dsstoxRecord = dsstoxRecord;
 		
 		this.isStandardized = false;
+		this.qsarPropertyUnits=finalUnitName;
 		
 		this.setQsarPropertyValue(value, finalUnitName);
 	}
@@ -42,6 +44,7 @@ public class MappedPropertyValue {
 		}
 		
 		String propertyName = propertyValue.getProperty().getName();
+		
 		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
 			if (unitName.equals(DevQsarConstants.LOG_M)) {
 				qsarPropertyValue = -value;
@@ -50,28 +53,27 @@ public class MappedPropertyValue {
 			} else if (unitName.equals(DevQsarConstants.G_L) && value!=0 && dsstoxRecord.molWeight!=null) {
 				qsarPropertyValue = -Math.log10(value/dsstoxRecord.molWeight);
 			} else {
-				System.out.println(propertyValue.generateExpPropId() + ": Undefined property value conversion for unit: " + unitName);
+				System.out.println(propertyValue.getId() + ": Undefined property value conversion for unit: " + unitName);
 				return;
 			}
 		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
 			if (unitName.equals(DevQsarConstants.ATM_M3_MOL)) {
 				qsarPropertyValue = -Math.log10(value);
 			} else {
-				System.out.println(propertyValue.generateExpPropId() + ": Undefined property value conversion for unit: " + unitName);
+				System.out.println(propertyValue.getId() + ": Undefined property value conversion for unit: " + unitName);
 				return;
 			}
 		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
 			if (unitName.equals(DevQsarConstants.MMHG)) {
 				qsarPropertyValue = Math.log10(value);
 			} else {
-				System.out.println(propertyValue.generateExpPropId() + ": Undefined property value conversion for unit: " + unitName);
+				System.out.println(propertyValue.getId() + ": Undefined property value conversion for unit: " + unitName);
 				return;
 			}
 		} else if (propertyName.equals("LogBCF_Fish_WholeBody")) {
-				qsarPropertyValue = value;
-		} else {
-			
-			System.out.println(propertyValue.generateExpPropId() + ": Undefined property value conversion for property: " + propertyName);
+			qsarPropertyValue = value;
+		} else {			
+			System.out.println(propertyValue.getId() + ": Undefined property value conversion for property: " + propertyName);
 		}
 	}
 }

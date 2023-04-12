@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -90,10 +91,16 @@ public class DatasetCreator {
 	private String standardizerName;
 	
 	private Map<String, String> finalUnits;
+	private Map<String, String> contributorUnits;
+
 	private Set<String> physchemPropertyNames;
 	private Set<String> acceptableAtoms;
+
 	
-	boolean createExcelFiles=false;//whether to create excel files for discarded and mapped records in addition to the json files
+	
+	
+	
+	public static boolean createExcelFiles=true;//whether to create excel files for discarded and mapped records in addition to the json files
 	
 	public static void main(String[] args) {
 		System.out.println("eclipse recognizes new code2");
@@ -120,18 +127,20 @@ public class DatasetCreator {
 //		bounds.add(speciesBound);
 		
 		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, 
-				false, true, false, true, true, false, false, null,true);
+				false, true, false, true, true, false, false, null,true,true);
 		MappingParams casrnMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_CASRN, null,
-				true, false, false, false, false, false, true, null,true);
+				true, false, false, false, false, false, true, null,true,true);
 		String listMappingName = "TESTING2_ExpProp_VP_WithChemProp_070822";
 		String casrnMappingName = "CASRN mapping of " + propertyName + " from exp_prop, without eChemPortal";
 		String listMappingDescription = "TESTRUN2 Vapor Pressure with 20 < T (C) < 30";
 		String casrnMappingDescription = propertyName + " with species = Mouse, mapped by CASRN";
+		
 		DatasetParams casrnMappedParams = new DatasetParams(casrnMappingName, 
 				casrnMappingDescription, 
 				propertyName,
 				casrnMappingParams,
 				bounds);
+		
 		DatasetParams listMappedParams = new DatasetParams(listMappingName, 
 				listMappingDescription, 
 				propertyName,
@@ -183,6 +192,7 @@ public class DatasetCreator {
 //		this.gson = new GsonBuilder().disableHtmlEscaping().create();
 		this.acceptableAtoms = DevQsarConstants.getAcceptableAtomsSet();
 		this.finalUnits = DevQsarConstants.getFinalUnitsMap();
+		this.contributorUnits = DevQsarConstants.getContributorUnitsMap();
 		
 		physchemPropertyNames = expPropPropertyService.findByPropertyCategoryName("Physchem").stream()
 				.map(p -> p.getName())
@@ -193,7 +203,7 @@ public class DatasetCreator {
 		this(null, lanId); // If initialized without a standardizer web service, uses DSSTox QSAR-ready SMILES
 	}
 	
-	private List<MappedPropertyValue> mapPropertyValuesToDsstoxRecords(List<PropertyValue> propertyValues, DatasetParams params) {
+	private List<MappedPropertyValue> mapPropertyValuesToDsstoxRecords(List<PropertyValue> propertyValues, DatasetParams params,HashMap<String,String>hmCanonSmilesLookup) {
 		List<MappedPropertyValue> mappedPropertyValues = new ArrayList<MappedPropertyValue>();
 		
 		String finalUnitName = finalUnits.get(params.propertyName);
@@ -201,8 +211,7 @@ public class DatasetCreator {
 //		params.mappingParams.omitSalts = false;
 		
 		try {
-			DsstoxMapper dsstoxMapper = new DsstoxMapper(params, standardizer, finalUnitName, params.mappingParams.omitSalts, 
-					acceptableAtoms, lanId);
+			DsstoxMapper dsstoxMapper = new DsstoxMapper(params, standardizer, hmCanonSmilesLookup,finalUnitName, acceptableAtoms, lanId);
 			
 			if (params.mappingParams.dsstoxMappingId.equals(DevQsarConstants.MAPPING_BY_CASRN)
 					|| params.mappingParams.dsstoxMappingId.equals(DevQsarConstants.MAPPING_BY_DTXSID)
@@ -226,24 +235,47 @@ public class DatasetCreator {
 		return mappedPropertyValues;
 	}
 	
-	private void standardize(List<MappedPropertyValue> mappedPropertyValues) {
+	
+	
+	private void standardize(List<MappedPropertyValue> mappedPropertyValues, HashMap<String, String> hmQsarSmilesLookup) {
 		// Go through all compounds retrieved from DSSTox
 		List<String> smilesToBatchStandardize = new ArrayList<String>();
 		
 		int counter=0;
 		
+		//TODO make a batch based method to get the standardized smiles to speed it up
+		
+		
 		for (MappedPropertyValue mpv:mappedPropertyValues) {
 			counter++;
+
+			DsstoxRecord dr = mpv.dsstoxRecord;
+
+//			if (mpv.propertyValue.getSourceChemical().getSourceChemicalName()!=null) {
+//				if (mpv.propertyValue.getSourceChemical().getSourceChemicalName().equals("radon")) {
+//					System.out.println("*** For smiles ="+dr.smiles+",qsarSmiles="+mpv.standardizedSmiles);	
+//				}
+//			}
 			
 			if(counter%1000==0) System.out.println(counter+ " of "+mappedPropertyValues.size());
 			
-			DsstoxRecord dr = mpv.dsstoxRecord;
+			
+			if(hmQsarSmilesLookup.containsKey(dr.smiles)) {
+				mpv.standardizedSmiles = hmQsarSmilesLookup.get(dr.smiles);
+				mpv.isStandardized = true;
+				mpv.compound = new Compound(dr.dsstoxCompoundId,dr.smiles, mpv.standardizedSmiles, standardizerName, lanId);
+				
+				
+//				System.out.println("For smiles = "+dr.smiles+",qsarSmiles="+mpv.standardizedSmiles);
+				continue;
+			}
+			
 
 			// Check (by DTXCID) if compound already has a standardization
 			Compound compound = compoundService.findByDtxcidSmilesAndStandardizer(dr.dsstoxCompoundId, dr.smiles,standardizerName);
 
 			if (compound!=null) {
-//				System.out.println("Standardization in db:"+compound.getDtxcid()+"\t"+compound.getSmiles()+"\t"+compound.getCanonQsarSmiles());
+				System.out.println("Standardization in db:"+compound.getDtxcid()+"\t"+compound.getSmiles()+"\t"+compound.getCanonQsarSmiles());
 				
 				// If already standardized, set standardization and mark record as standardized
 				// Additionally store mapped compound so we don't have to query it later
@@ -263,8 +295,18 @@ public class DatasetCreator {
 				} else {
 					// Standardize one at a time
 					StandardizeResponseWithStatus standardizeResponse = standardizer.callStandardize(dr.smiles);
+					
+					
+//					if (mpv.propertyValue.getSourceChemical().getSourceChemicalName()!=null) {
+//						if (mpv.propertyValue.getSourceChemical().getSourceChemicalName().equals("radon")) {
+//							System.out.println("***radon status="+standardizeResponse.status);
+//						}
+//					}
+					
 					if (standardizeResponse.status==200) {
+						
 						StandardizeResponse standardizeResponseData = standardizeResponse.standardizeResponse;
+						
 						if (standardizeResponseData.success) {
 							mpv.standardizedSmiles = standardizeResponseData.qsarStandardizedSmiles;
 							mpv.isStandardized = true;
@@ -287,7 +329,22 @@ public class DatasetCreator {
 //							logger.debug(mpv.id + ": Standardized: " + dr.smiles + " -> " + mpv.standardizedSmiles);
 						} else {
 //							logger.warn(mpv.id + ": Standardization failed for SMILES: " + dr.smiles);
+//							System.out.println(mpv.id + ": Standardization failed for SMILES: " + dr.smiles);
 						}
+					
+					} else if (standardizeResponse.status==404) {
+
+						mpv.standardizedSmiles=null;
+						compound = new Compound(dr.dsstoxCompoundId,dr.smiles, mpv.standardizedSmiles, standardizerName, lanId);
+						System.out.println("standardized:"+dr.dsstoxCompoundId+"\t"+dr.smiles+"\t"+mpv.standardizedSmiles);
+						
+						//TODO check if this addition causes duplication error message...
+						try {
+							mpv.compound = compoundService.create(compound);
+						} catch (ConstraintViolationException e) {
+							System.out.println(e.getMessage());
+						}
+						
 					} else {
 //						logger.warn(mpv.id + ": Standardizer HTTP response failed for SMILES: " 
 //								+ dr.smiles + " with code " + standardizeResponse.status);
@@ -355,7 +412,7 @@ public class DatasetCreator {
 	
 	
 	private Map<String, List<MappedPropertyValue>> unifyPropertyValuesByStructure(List<MappedPropertyValue> mappedPropertyValues,
-			boolean useStdevFilter) {
+			boolean useStdevFilter,boolean validateStructure) {
 		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = 
 				new HashMap<String, List<MappedPropertyValue>>();
 		Double datasetStdev = MathUtil.stdevS(mappedPropertyValues.stream().map(mpv -> mpv.qsarPropertyValue).collect(Collectors.toList()));
@@ -371,15 +428,32 @@ public class DatasetCreator {
 //			String structure = IndigoUtil.toInchikey(data.standardizedSmiles);
 //			structure = structure==null ? null : structure.substring(0, 14);
 			
-			if (structure==null) {
-				System.out.println(mpv.id+": Skipped unification since QSAR Ready smiles was null");
-//				logger.info(mpv.id + ": Skipped unification due to missing structure");
-				continue;
-			}
-			
-			if (structure.contains(".")) {
-				System.out.println(mpv.id+": Skipped unification since QSAR Ready smiles was still a mixture (i.e. it contained a period)");
-				continue;
+			if (validateStructure) {//TODO we need to change it so that qsar ready smiles should stay a mixture instead of null when have multiple components
+				if (structure==null) {
+					System.out.println(mpv.id+": Skipped unification since QSAR Ready smiles was null");
+//					logger.info(mpv.id + ": Skipped unification due to missing structure");
+					continue;
+				}
+				
+				if (structure.contains(".")) {
+					System.out.println(mpv.id+": Skipped unification since QSAR Ready smiles was still a mixture (i.e. it contained a period)");
+					continue;
+				}
+			} else {
+
+				if (mpv.compound==null) {
+					System.out.println(mpv.id+": Skipped unification since compound was null:"+mpv.propertyValue.getSourceChemical().getSourceChemicalName());
+//					logger.info(mpv.id + ": Skipped unification due to missing structure");
+					continue;
+				}
+
+				
+				if (structure==null) {
+//					System.out.println(mpv.id+": using original smiles:"+mpv.compound.getSmiles());
+					structure=mpv.compound.getSmiles();
+//					logger.info(mpv.id + ": Skipped unification due to missing structure");
+				}
+				
 			}
 
 			
@@ -418,8 +492,8 @@ public class DatasetCreator {
 		return property;
 	}
 	
-	private Unit initializeUnit(DatasetParams params) throws ConstraintViolationException {
-		String finalUnitName = finalUnits.get(params.propertyName);
+	private Unit initializeUnit(String finalUnitName) throws ConstraintViolationException {
+		
 		Unit unit = unitService.findByName(finalUnitName);
 		if (unit==null) {
 			// If not, search exp_prop
@@ -438,6 +512,8 @@ public class DatasetCreator {
 		return unit;
 	}
 	
+
+	
 	private Dataset initializeDataset(Dataset dataset) throws ConstraintViolationException {
 		Dataset dbDataset = datasetService.findByName(dataset.getName());
 		
@@ -451,7 +527,7 @@ public class DatasetCreator {
 		return dataset;
 	}
 	
-	private void postDataPoints(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, Dataset dataset) {
+	private void postDataPoints(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, Dataset dataset,Unit datapointContributerUnit) {
 		for (String structure:unifiedPropertyValues.keySet()) {
 			List<MappedPropertyValue> structurePropertyValues = unifiedPropertyValues.get(structure);
 			String unitName = dataset.getUnit().getName();
@@ -475,8 +551,8 @@ public class DatasetCreator {
 				dataPointService.create(dataPoint);
 					
 				for (MappedPropertyValue mpv:structurePropertyValues) {
-					String expPropId = mpv.propertyValue.generateExpPropId();
-					DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, expPropId, mpv.compound.getDtxcid(), lanId);
+					
+					DataPointContributor dataPointContributor = new DataPointContributor(dataPoint,mpv,datapointContributerUnit, lanId);
 					
 					try {
 						dataPointContributorService.create(dataPointContributor);
@@ -496,7 +572,7 @@ public class DatasetCreator {
 	 * @param unifiedPropertyValues
 	 * @param dataset
 	 */
-	private void postDataPointsWithCIDs(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, Dataset dataset) {
+	private void postDataPointsWithCIDs(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, Dataset dataset,Unit unitDatapointContributor) {
 		List<DataPoint> dataPoints = new ArrayList<DataPoint>();
 		List<DataPointContributor> dataPointContributors = new ArrayList<DataPointContributor>();
 		
@@ -514,7 +590,7 @@ public class DatasetCreator {
 			}
 			
 			if (values==null) {
-//				logger.info(structure + ": Skipped posting data point due to invalid consensus value");
+				System.out.println(structure + ": Skipped posting data point due to invalid flattened value");
 				continue;
 			}
 
@@ -531,9 +607,9 @@ public class DatasetCreator {
 				dataPoints.add(dataPoint);
 				
 				for (MappedPropertyValue mpv:structurePropertyValues) {
-					String expPropId = mpv.propertyValue.generateExpPropId();
+					
 //					String expPropId = mpv.propertyValue.getId()+"";//change to make things easier
-					DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, expPropId, mpv.compound.getDtxcid(), lanId);
+					DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, mpv,unitDatapointContributor, lanId);
 					dataPointContributors.add(dataPointContributor);
 					try {
 						// dataPointContributorService.create(dataPointContributor);
@@ -546,8 +622,13 @@ public class DatasetCreator {
 			}
 		}
 		try {
-			dataPointService.createBatch(dataPoints);
-			dataPointContributorService.createBatch(dataPointContributors);
+//			dataPointService.createBatch(dataPoints);
+//			dataPointContributorService.createBatch(dataPointContributors);
+			
+			dataPointService.createBatchSQL(dataPoints);
+			dataPointContributorService.createBatchSQL(dataset,dataPointContributors);
+
+			
 		} catch (ConstraintViolationException e1) {
 			System.out.println(e1.getMessage());
 		}
@@ -586,10 +667,8 @@ public class DatasetCreator {
 			if (dataPoint.getCanonQsarSmiles()==null) continue;
 			
 			for (MappedPropertyValue mpv:structurePropertyValues) {
-				String expPropId = mpv.propertyValue.generateExpPropId();
-				DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, expPropId, mpv.compound.getDtxcid(), lanId);
+				DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, mpv, null, lanId);
 				counter++;
-					
 			}
 		}
 		
@@ -602,7 +681,10 @@ public class DatasetCreator {
 	}
 	
 	public void createPropertyDataset(DatasetParams params, boolean useStdevFilter,List<String>excludedSources) {
-		
+//		System.out.println("enter createPropertyDataset with excluded sources");
+
+		HashMap<String,String>hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
+				
 		Dataset datasetDB = datasetService.findByName(params.datasetName);
 		if(datasetDB!=null) {
 			System.out.println("already have "+params.datasetName+" in db");
@@ -630,7 +712,182 @@ public class DatasetCreator {
 		System.out.println("Retrieving DSSTox structure data...");
 		List<MappedPropertyValue> mappedPropertyValues = null;
 		try {
-			mappedPropertyValues = mapPropertyValuesToDsstoxRecords(propertyValues, params);
+			mappedPropertyValues = mapPropertyValuesToDsstoxRecords(propertyValues, params,hmQsarSmilesLookup);
+		} catch (Exception e) {
+//			logger.error("Failed DSSTox query: " + e.getMessage());
+			e.printStackTrace();
+			return;
+		}
+		
+		if (mappedPropertyValues==null || mappedPropertyValues.isEmpty()) {
+				System.out.println(params.datasetName + ": DSSTox structure data unavailable");
+			return;
+		}
+		
+		//TODO store mapping of source chemicals to dtxsid/dtxcid in source_chemical_mappings table or use datasets with contributer table
+		
+		Property property = initializeProperty(propertyValues);
+		if (property.getId()==null) { return; }
+		
+		String finalUnitName = finalUnits.get(params.propertyName);		
+		Unit unit = initializeUnit(finalUnitName);
+		
+		String contributorUnitName=contributorUnits.get(params.propertyName);
+		Unit unitDatapointContributor=initializeUnit(contributorUnitName);
+		
+		if (unit.getId()==null) { return; }
+				
+		System.out.println("Standardizing structures using " + standardizerName + "...");
+		long t1 = System.currentTimeMillis();
+		standardize(mappedPropertyValues,hmQsarSmilesLookup);
+		long t2 = System.currentTimeMillis();
+		System.out.println("Standardization time: " + (t2 - t1)/1000.0 + " s");
+		
+		System.out.println("Unifying structures...");
+		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, useStdevFilter,params.mappingParams.validateStructure);
+		
+		System.out.println("Saving unification data to examine...");
+//		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit);redundant- we have excel and json
+		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit,createExcelFiles);
+		
+		
+		
+		
+		if(true) return;
+		
+		Dataset dataset = new Dataset(params.datasetName, params.datasetDescription, property, unit, unitDatapointContributor, 
+				gson.toJson(params.mappingParams), lanId);
+		
+		Dataset dataset2=dataset;//used to look at datapoints later
+		
+		dataset = initializeDataset(dataset);
+
+		System.out.println("Posting final merged values...");
+		long t7 = System.currentTimeMillis();
+		
+		if (dataset!=null) {//We can post:
+//			postDataPoints(unifiedPropertyValues, dataset);//old method doesnt have CIDs or exp_prop_ids 
+			postDataPointsWithCIDs(unifiedPropertyValues, dataset,unitDatapointContributor);
+		
+		} else {//Data set already exists lets look at datapoints:
+			lookatDataPoints(unifiedPropertyValues, dataset2);		
+		}
+		
+		long t8 = System.currentTimeMillis();
+		System.out.println("Time to post: " + (t8 - t7)/1000.0 + " s");
+		
+		
+		if (dataset==null) {
+			System.out.println("*** Warning dataset already exists! New dataset not created ***"); 
+		} 
+
+	}
+
+
+
+	private HashMap<String,String> getQsarSmilesLookupFromDB() {
+		HashMap<String,String>htQsarSmiles=new HashMap<>();
+
+		List<Compound>standardizedCompounds=compoundService.findAllWithStandardizerSmilesNotNull(standardizerName);
+		
+		System.out.println("Number of standardized compounds in db:"+standardizedCompounds.size());
+		
+		for (Compound compound:standardizedCompounds) {
+//			System.out.println(compound.getSmiles()+"\t"+compound.getCanonQsarSmiles());
+			htQsarSmiles.put(compound.getSmiles(), compound.getCanonQsarSmiles());
+		}
+		return htQsarSmiles;
+		
+	}
+	
+	
+//	public void mapSourceChemicalsForProperty(DatasetParams params) {
+//		HashMap<String,String>hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
+//		
+//		Gson gson = new Gson();
+//		
+//		System.out.println("Selecting experimental property data for " + params.propertyName + "...");
+//		long t5 = System.currentTimeMillis();
+//		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(params.propertyName, true, true);
+//		long t6 = System.currentTimeMillis();
+//		System.out.println("Selection time = " + (t6 - t5)/1000.0 + " s");
+//
+//		System.out.println("Raw records:"+propertyValues.size());		
+//		
+////		excludePropertyValues(excludedSources, propertyValues);
+////		if (excludedSources.size()>0) System.out.println("Raw records after source exclusion:"+propertyValues.size());
+//		
+//		if (propertyValues==null || propertyValues.isEmpty()) {
+////			logger.error(params.datasetName + ": Experimental property data unavailable");
+//			System.out.println(params.propertyName + ": Experimental property data unavailable");
+//			return;
+//		}
+//		
+//		System.out.println("Retrieving DSSTox structure data...");
+//		List<MappedPropertyValue> mappedPropertyValues = null;
+//		try {
+//			mappedPropertyValues = mapPropertyValuesToDsstoxRecords(propertyValues, params,hmQsarSmilesLookup);
+//			
+//			
+//		} catch (Exception e) {
+////			logger.error("Failed DSSTox query: " + e.getMessage());
+//			e.printStackTrace();
+//			return;
+//		}
+//		
+//		if (mappedPropertyValues==null || mappedPropertyValues.isEmpty()) {
+//				System.out.println(params.datasetName + ": DSSTox structure data unavailable");
+//			return;
+//		}
+//		
+//		for (MappedPropertyValue mpv:mappedPropertyValues) {
+//			
+//			if(mpv.dsstoxRecord==null && mpv.dsstoxRecord.getDsstoxSubstanceId()==null) continue;
+//			
+//			String dtxsid=mpv.dsstoxRecord.getDsstoxSubstanceId();
+//			Long sourceChemicalId=mpv.propertyValue.getSourceChemical().getId();
+//			System.out.println(dtxsid+"\t"+sourceChemicalId);
+//			
+//			//TODO store this mapping in source_chemical_mapping table
+//		}
+//
+//	}
+
+	
+	
+	public void createPropertyDatasetWithSpecifiedSources(DatasetParams params, boolean useStdevFilter,List<String>includedSources) {
+	
+		HashMap<String,String>hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
+		
+		System.out.println("Enter createPropertyDatasetWithSpecifiedSources");
+		Dataset datasetDB = datasetService.findByName(params.datasetName);
+		if(datasetDB!=null) {
+			System.out.println("already have "+params.datasetName+" in db");
+			return;
+		}
+		
+		Gson gson = new Gson();
+		
+		System.out.println("Selecting experimental property data for " + params.propertyName + "...");
+		long t5 = System.currentTimeMillis();
+		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(params.propertyName, true, true);
+		long t6 = System.currentTimeMillis();
+		System.out.println("Selection time = " + (t6 - t5)/1000.0 + " s");
+
+		System.out.println("Raw records:"+propertyValues.size());		
+		excludePropertyValues2(includedSources, propertyValues);
+		if (includedSources.size()>0) System.out.println("Raw records after source exclusion:"+propertyValues.size());
+		
+		if (propertyValues==null || propertyValues.isEmpty()) {
+//			logger.error(params.datasetName + ": Experimental property data unavailable");
+			System.out.println(params.datasetName + ": Experimental property data unavailable");
+			return;
+		}
+		
+		System.out.println("Retrieving DSSTox structure data...");
+		List<MappedPropertyValue> mappedPropertyValues = null;
+		try {
+			mappedPropertyValues = mapPropertyValuesToDsstoxRecords(propertyValues, params,hmQsarSmilesLookup);
 		} catch (Exception e) {
 //			logger.error("Failed DSSTox query: " + e.getMessage());
 			e.printStackTrace();
@@ -645,10 +902,15 @@ public class DatasetCreator {
 		Property property = initializeProperty(propertyValues);
 		if (property.getId()==null) { return; }
 		
-		Unit unit = initializeUnit(params);
+		String finalUnitName = finalUnits.get(params.propertyName);		
+		Unit unit = initializeUnit(finalUnitName);
+		
+		String contributorUnitName=contributorUnits.get(params.propertyName);
+		Unit unitDatapointContributor=initializeUnit(contributorUnitName);
+		
 		if (unit.getId()==null) { return; }
 		
-		Dataset dataset = new Dataset(params.datasetName, params.datasetDescription, property, unit, 
+		Dataset dataset = new Dataset(params.datasetName, params.datasetDescription, property, unit,unitDatapointContributor, 
 				gson.toJson(params.mappingParams), lanId);
 		
 		Dataset dataset2=dataset;//used to look at datapoints later
@@ -658,12 +920,12 @@ public class DatasetCreator {
 		
 		System.out.println("Standardizing structures using " + standardizerName + "...");
 		long t1 = System.currentTimeMillis();
-		standardize(mappedPropertyValues);
+		standardize(mappedPropertyValues,hmQsarSmilesLookup);
 		long t2 = System.currentTimeMillis();
 		System.out.println("Standardization time: " + (t2 - t1)/1000.0 + " s");
 		
 		System.out.println("Unifying structures...");
-		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, useStdevFilter);
+		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, useStdevFilter,params.mappingParams.validateStructure);
 		
 		System.out.println("Saving unification data to examine...");
 //		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit);redundant- we have excel and json
@@ -674,7 +936,7 @@ public class DatasetCreator {
 		
 		if (dataset!=null) {//We can post:
 //			postDataPoints(unifiedPropertyValues, dataset);//old method doesnt have CIDs or exp_prop_ids 
-			postDataPointsWithCIDs(unifiedPropertyValues, dataset);
+			postDataPointsWithCIDs(unifiedPropertyValues, dataset,unitDatapointContributor);
 		
 		} else {//Data set already exists lets look at datapoints:
 			lookatDataPoints(unifiedPropertyValues, dataset2);		
@@ -711,6 +973,33 @@ public class DatasetCreator {
 		}
 	}
 	
+	private void excludePropertyValues2(List<String> includedSources, List<PropertyValue> propertyValues) {
+		
+		if(includedSources.size()==0) return;
+		
+		for (int i=0;i<propertyValues.size();i++) {
+			PropertyValue pv=propertyValues.get(i);
+			
+			if(pv.getPublicSource()!=null) {
+				if(!includedSources.contains(pv.getPublicSource().getName())) 
+					propertyValues.remove(i--);				
+			}
+			
+			if(pv.getLiteratureSource()!=null) {
+				if(!includedSources.contains(pv.getLiteratureSource().getName())) 
+					propertyValues.remove(i--);				
+			}
+		}
+	}
+	
+	@Deprecated
+	/**
+	 * Old method to store mapped records as tsv
+	 * 
+	 * @param unifiedPropertyValues
+	 * @param datasetName
+	 * @param unit
+	 */
 	public void saveUnifiedData(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, String datasetName, Unit unit) {
 	
 
@@ -748,16 +1037,25 @@ public class DatasetCreator {
 		}
 	}
 	
-	
+	/**
+	 * Saves mapped data as json and xlsx
+	 * 
+	 * @param unifiedPropertyValues
+	 * @param datasetName
+	 * @param unit
+	 * @param createExcel
+	 */
 	public void saveUnifiedData(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, String datasetName, Unit unit, boolean createExcel) {
 //		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, false);
 
-		String[] fields = { "canon_qsar_smiles","exp_prop_id", "source_dtxrid", 
-				"source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",
-				"mapped_dtxcid", "mapped_dtxsid", "mapped_chemical_name", "mapped_cas", "mapped_smiles", "mapped_molweight",
+		System.out.println("Enter saveUnifiedData - creates excel file for mapped records");
+		
+		String[] fields = { "canon_qsar_smiles","exp_prop_id", 
+				"source_chemical_id","source_dtxrid","source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",
+				"mapped_dtxcid", "mapped_dtxsid", "mapped_chemical_name", "mapped_cas", "mapped_smiles", "mapped_molweight","mapped_connection_reason",
 				"source_name", "source_description", "source_authors", "source_title", "source_doi", "source_url",
 				"source_type", "page_url", "notes", "qc_flag", "temperature_c", "pressure_mmHg", "pH",
-				"value_qualifier", "value_original", "value_max", "value_min", "value_point_estimate",
+				"value_qualifier", "value_original", "value_text","value_max", "value_min", "value_point_estimate",
 				"value_units","qsar_property_value","qsar_property_units" };
 
 		List<String>keys=new ArrayList<>();
@@ -833,7 +1131,8 @@ public class DatasetCreator {
 
 		jo.addProperty("canon_qsar_smiles", structure);
 		jo.addProperty("exp_prop_id", String.valueOf(pv.getId()));
-		
+				
+		jo.addProperty("source_chemical_id", sc.getId());
 		jo.addProperty("source_dtxrid", sc.getSourceDtxrid());
 		jo.addProperty("source_dtxsid", sc.getSourceDtxsid());
 		jo.addProperty("source_dtxcid", sc.getSourceDtxcid());
@@ -848,6 +1147,7 @@ public class DatasetCreator {
 			jo.addProperty("mapped_cas", dr.getCasrn());
 			jo.addProperty("mapped_smiles", dr.getSmiles());
 			jo.addProperty("mapped_molweight", dr.getMolWeight());
+			jo.addProperty("mapped_connection_reason", dr.getConnectionReason());
 		}
 
 		if (pv.getLiteratureSource()!=null) {
@@ -872,6 +1172,7 @@ public class DatasetCreator {
 		
 		jo.addProperty("value_qualifier", pv.getValueQualifier());
 		jo.addProperty("value_original", pv.getValueOriginal());
+		jo.addProperty("value_text", pv.getValueText());
 		
 		jo.addProperty("value_max", pv.getValueMax());
 		jo.addProperty("value_min", pv.getValueMin());
@@ -929,7 +1230,7 @@ public class DatasetCreator {
 			Dataset dataset1NotInDataset2 = new Dataset("Data from " + datasetName1 + " external to " + datasetName2, 
 					"Data points from " + datasetName1 + " with structures not found in " + datasetName2, 
 					dataset1.getProperty(), 
-					dataset1.getUnit(), 
+					dataset1.getUnit(), null,
 					dataset1.getDsstoxMappingStrategy(), 
 					lanId);
 			dataset1NotInDataset2 = initializeDataset(dataset1NotInDataset2);
@@ -941,7 +1242,7 @@ public class DatasetCreator {
 					dataPointService.create(dataPoint);
 					for (DataPointContributor dpc:dp.getDataPointContributors()) {
 //						DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, dpc.getExpPropId(), lanId);						
-						DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, dpc.getExpPropId(), dpc.getDTXCID(), lanId);
+						DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, dpc.getExp_prop_property_values_id(), dpc.getDtxcid(), lanId);
 						
 						try {
 							dataPointContributorService.create(dataPointContributor);
@@ -959,7 +1260,7 @@ public class DatasetCreator {
 			Dataset dataset2NotInDataset1 = new Dataset("Data from " + datasetName2 + " external to " + datasetName1, 
 					"Data points from " + datasetName2 + " with structures not found in " + datasetName1, 
 					dataset2.getProperty(), 
-					dataset2.getUnit(), 
+					dataset2.getUnit(), null,
 					dataset2.getDsstoxMappingStrategy(), 
 					lanId);
 			dataset2NotInDataset1 = initializeDataset(dataset2NotInDataset1);
@@ -970,8 +1271,8 @@ public class DatasetCreator {
 				try {
 					dataPointService.create(dataPoint);
 					for (DataPointContributor dpc:dp.getDataPointContributors()) {
-						DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, dpc.getExpPropId(), dpc.getDTXCID(), lanId);
-
+						DataPointContributor dataPointContributor = new DataPointContributor(dataPoint, dpc.getExp_prop_property_values_id(), dpc.getDtxcid(), lanId);
+						
 						try {
 							dataPointContributorService.create(dataPointContributor);
 						} catch (ConstraintViolationException e1) {

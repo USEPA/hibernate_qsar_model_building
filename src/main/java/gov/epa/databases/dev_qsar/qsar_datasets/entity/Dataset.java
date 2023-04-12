@@ -49,6 +49,13 @@ public class Dataset {
 	@JoinColumn(name="fk_unit_id")
 	private Unit unit;
 	
+	
+	@ManyToOne
+	@NotNull(message="Contributor unit required")
+	@JoinColumn(name="fk_unit_id_contributor")
+	private Unit unitContributor;//this unit is used for both raw experimental data point contributors and for Dashboard predictions (make them consistent for the dashboard)
+
+	
 	@Column(name="dsstox_mapping_strategy", length=2047)
 	@Length(max=2047)
 	private String dsstoxMappingStrategy;
@@ -75,12 +82,13 @@ public class Dataset {
 	
 	public Dataset() {}
 	
-	public Dataset(String name, String description, Property property, Unit unit, 
+	public Dataset(String name, String description, Property property, Unit unit, Unit unitContributor,
 			String dsstoxMappingStrategy, String createdBy) {
 		this.setName(name);
 		this.setDescription(description);
 		this.setProperty(property);
 		this.setUnit(unit);
+		this.setUnitContributor(unitContributor);
 		this.setDsstoxMappingStrategy(dsstoxMappingStrategy);
 		this.setCreatedBy(createdBy);
 	}
@@ -163,5 +171,13 @@ public class Dataset {
 
 	public void setDsstoxMappingStrategy(String dsstoxMappingStrategy) {
 		this.dsstoxMappingStrategy = dsstoxMappingStrategy;
+	}
+
+	public Unit getUnitContributor() {
+		return unitContributor;
+	}
+
+	public void setUnitContributor(Unit unitContributor) {
+		this.unitContributor = unitContributor;
 	}
 }

@@ -6,28 +6,17 @@ public class PhyschemExpPropData extends ExpPropData {
 
 	PhyschemExpPropData(ExperimentalRecordLoader experimentalRecordLoader) {
 		super(experimentalRecordLoader);
-		// TODO Auto-generated constructor stub
 	}
-	
-	public ParameterValue pressureValue;
-	public ParameterValue temperatureValue;
-	public ParameterValue phValue;
-	public ParameterValue measurementMethodValue;
 	
 	public void getValues(ExperimentalRecord rec) {
 		super.getValues(rec);
-		pressureValue = getPressureValue(rec);
-		temperatureValue = getTemperatureValue(rec);
-		phValue = getPhValue(rec);
-		measurementMethodValue = getMeasurementMethodValue(rec);
+		addPhyschemParameterValues(rec);
 	}
 	
-	public void constructPropertyValue(boolean createLiteratureSources) {
-		super.constructPropertyValue(createLiteratureSources);
-		addPhyschemParameterValues();
-	}
 	
-	private void addPhyschemParameterValues() {
+	private void addPhyschemParameterValues(ExperimentalRecord rec) {
+		
+		ParameterValue pressureValue = getPressureValue(rec);
 		if (pressureValue!=null) {
 			pressureValue.setPropertyValue(propertyValue);
 			pressureValue.setParameter(loader.parametersMap.get("Pressure"));
@@ -35,7 +24,10 @@ public class PhyschemExpPropData extends ExpPropData {
 //			QueryExpPropDb.postParameterValue(expPropDbUrl, pressureValue);
 			propertyValue.addParameterValue(pressureValue);
 		}
+
+		//*******************************************************************************************************
 		
+		ParameterValue temperatureValue = getTemperatureValue(rec);
 		if (temperatureValue!=null) {
 			temperatureValue.setPropertyValue(propertyValue);
 			temperatureValue.setParameter(loader.parametersMap.get("Temperature"));
@@ -43,7 +35,11 @@ public class PhyschemExpPropData extends ExpPropData {
 //			QueryExpPropDb.postParameterValue(expPropDbUrl, temperatureValue);
 			propertyValue.addParameterValue(temperatureValue);
 		}
-		
+
+		//*******************************************************************************************************
+
+		ParameterValue phValue = getPhValue(rec);
+
 		if (phValue!=null) {
 			phValue.setPropertyValue(propertyValue);
 			phValue.setParameter(loader.parametersMap.get("pH"));
@@ -52,6 +48,10 @@ public class PhyschemExpPropData extends ExpPropData {
 			propertyValue.addParameterValue(phValue);
 		}
 		
+		//*******************************************************************************************************
+
+		ParameterValue measurementMethodValue = getMeasurementMethodValue(rec);
+
 		if (measurementMethodValue!=null) {
 			measurementMethodValue.setPropertyValue(propertyValue);
 			measurementMethodValue.setParameter(loader.parametersMap.get("Measurement method"));

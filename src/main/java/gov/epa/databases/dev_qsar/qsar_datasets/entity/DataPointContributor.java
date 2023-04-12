@@ -9,6 +9,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -18,33 +19,36 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.endpoints.datasets.MappedPropertyValue;
+
 @Entity
-@Table(name="data_point_contributors", uniqueConstraints={@UniqueConstraint(columnNames = {"exp_prop_id", "fk_data_point_id"})})
+@Table(name="data_point_contributors", uniqueConstraints={@UniqueConstraint(columnNames = {"exp_prop_property_values_id", "fk_data_points_id"})})
 public class DataPointContributor {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 	
 	@NotNull(message="Data point required")
-	@JoinColumn(name="fk_data_point_id")
+	@JoinColumn(name="fk_data_points_id")
 	@ManyToOne
 	private DataPoint dataPoint;
 	
-	@NotBlank(message="Experimental property ID required")
-	@Column(name="exp_prop_id")
-	private String expPropId;
+	@NotNull(message="Experimental property ID required")
+	@Column(name="exp_prop_property_values_id")
+	private Long exp_prop_property_values_id;
 	
-	
-	private String DTXCID;
-	
-	public String getDTXCID() {
-		return DTXCID;
-	}
+	@Column(name="dtxcid")
+	private String dtxcid;
 
-	public void setDTXCID(String dTXCID) {
-		DTXCID = dTXCID;
-	}
+	@Column(name="dtxsid")
+	private String dtxsid;
 
+	
+	@Column(name="smiles")
+	private String smiles;
+
+	
 	@Column(name="updated_at")
 	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
@@ -62,14 +66,68 @@ public class DataPointContributor {
 	@Column(name="created_by")
 	private String createdBy;
 	
+	@Column (name="property_value")
+	private Double propertyValue;
+	
 	public DataPointContributor() {}
 	
-	public DataPointContributor(DataPoint dataPoint, String expPropId, String DTXCID, String createdBy) {
+	public DataPointContributor(DataPoint dataPoint, MappedPropertyValue mpv, Unit finalUnit,String lanId) {
+		
 		this.setDataPoint(dataPoint);
-		this.setExpPropId(expPropId);
-		this.setCreatedBy(createdBy);
-		this.setDTXCID(DTXCID);
+		this.setExp_prop_property_values_id(mpv.propertyValue.getId());
+		this.setCreatedBy(lanId);
+
+		this.setDtxcid(mpv.dsstoxRecord.getDsstoxCompoundId());
+		this.setDtxsid(mpv.dsstoxRecord.getDsstoxSubstanceId());
+		this.setSmiles(mpv.dsstoxRecord.getSmiles());
+		
+		if (finalUnit!=null) {
+			this.setPropertyValue(mpv,finalUnit);
+		}
 	}
+	
+	/**
+	 * Sets propertyValue in desired units in DataPointPointContributor object/table
+	 * 
+	 * @param mpv
+	 * @param finalUnit
+	 */
+	public void setPropertyValue(MappedPropertyValue mpv, Unit finalUnit) {
+		
+		String propertyName=mpv.propertyValue.getProperty().getName();
+		
+		if (finalUnit.getName().equals(mpv.qsarPropertyUnits)) {
+			this.propertyValue=mpv.qsarPropertyValue;
+		} else if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
+			if (finalUnit.getName().equals(DevQsarConstants.MOLAR) && mpv.qsarPropertyUnits.equals(DevQsarConstants.NEG_LOG_M)) {
+				this.propertyValue=Math.pow(10, -mpv.qsarPropertyValue);
+			} 
+		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
+			if (finalUnit.getName().equals(DevQsarConstants.ATM_M3_MOL) && mpv.qsarPropertyUnits.equals(DevQsarConstants.NEG_LOG_ATM_M3_MOL)) {
+				this.propertyValue=Math.pow(10, -mpv.qsarPropertyValue);
+			}
+		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
+			if (finalUnit.getName().equals(DevQsarConstants.MMHG) && mpv.qsarPropertyUnits.equals(DevQsarConstants.LOG_MMHG)) {
+				this.propertyValue=Math.pow(10, mpv.qsarPropertyValue);
+			}
+		} else {
+			System.out.println("*** Need to add code to DataPointContributor.setQsarPropertyValue() to assign property value for finalUnit:"+finalUnit+",qsarPropertyUnits="+mpv.qsarPropertyUnits);
+		}
+	}
+	
+	
+//	public void setPropertyValue(Double propertyValue) {
+//		this.propertyValue = propertyValue;
+//	}
+
+	
+	public DataPointContributor(DataPoint dataPoint, Long exp_prop_property_values_id, String dtxcid, String lanId) {
+		this.setDataPoint(dataPoint);
+		this.setExp_prop_property_values_id(exp_prop_property_values_id);
+		this.setCreatedBy(lanId);
+		this.setDtxcid(dtxcid);
+	}
+	
 
 	public Long getId() {
 		return id;
@@ -119,11 +177,43 @@ public class DataPointContributor {
 		this.createdBy = createdBy;
 	}
 
-	public String getExpPropId() {
-		return expPropId;
+	public Long getExp_prop_property_values_id() {
+		return exp_prop_property_values_id;
 	}
 
-	public void setExpPropId(String expPropId) {
-		this.expPropId = expPropId;
+	public void setExp_prop_property_values_id(Long exp_prop_property_values_id) {
+		this.exp_prop_property_values_id = exp_prop_property_values_id;
 	}
+
+	public Double getPropertyValue() {
+		return propertyValue;
+	}
+
+
+
+
+	public String getDtxcid() {
+		return dtxcid;
+	}
+
+	public void setDtxcid(String dtxcid) {
+		this.dtxcid = dtxcid;
+	}
+
+	public String getSmiles() {
+		return smiles;
+	}
+
+	public void setSmiles(String smiles) {
+		this.smiles = smiles;
+	}
+
+	public String getDtxsid() {
+		return dtxsid;
+	}
+
+	public void setDtxsid(String dtxsid) {
+		this.dtxsid = dtxsid;
+	}
+
 }

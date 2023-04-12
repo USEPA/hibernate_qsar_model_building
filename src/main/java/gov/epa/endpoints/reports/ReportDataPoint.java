@@ -7,6 +7,6 @@ public class ReportDataPoint {
 	public String canonQsarSmiles;
 	public List<OriginalCompound> originalCompounds = new ArrayList<OriginalCompound>();
 	public String qsar_dtxcid;
-	public String qsar_exp_prop_id;
+	public String qsar_exp_prop_property_values_id;
 	
 }

@@ -9,36 +9,33 @@ public class ToxExpPropData extends ExpPropData {
 		// TODO Auto-generated constructor stub
 	}
 	
-	public ParameterValue speciesValue;
-	public ParameterValue adminRouteValue;
-	public ParameterValue purityValue;
 	
 	public void getValues(ExperimentalRecord rec) {
 		super.getValues(rec);
-		speciesValue = getSpeciesValue(rec);
-		adminRouteValue = getAdminRouteValue(rec);
-		purityValue = getPurityValue(rec);
+		addToxParameterValues(rec);
 	}
 	
-	public void constructPropertyValue(boolean createLiteratureSources) {
-		super.constructPropertyValue(createLiteratureSources);
-		addToxParameterValues();
-	}
 	
-	private void addToxParameterValues() {
+	private void addToxParameterValues(ExperimentalRecord rec) {
+		
+		ParameterValue speciesValue = getSpeciesValue(rec);
 		if (speciesValue!=null) {
 			speciesValue.setPropertyValue(propertyValue);
 			speciesValue.setParameter(loader.parametersMap.get("Species"));
 			speciesValue.setUnit(loader.unitsMap.get("Text"));
 			propertyValue.addParameterValue(speciesValue);
 		}
-		
+
+		ParameterValue adminRouteValue = getAdminRouteValue(rec);
+
 		if (adminRouteValue!=null) {
 			adminRouteValue.setPropertyValue(propertyValue);
 			adminRouteValue.setParameter(loader.parametersMap.get("Route of administration"));
 			adminRouteValue.setUnit(loader.unitsMap.get("Text"));
 			propertyValue.addParameterValue(adminRouteValue);
 		}
+		
+		ParameterValue purityValue = getPurityValue(rec);
 		
 		if (purityValue!=null) {
 			purityValue.setPropertyValue(propertyValue);

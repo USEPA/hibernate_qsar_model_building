@@ -63,6 +63,9 @@ public class PropertyValue {
 	@JsonManagedReference
 	private LiteratureSource literatureSource;
 	
+//	@Column(name="id_source_database")
+//	private Long id_source_database;
+		
 	// If there is a direct link to a static page with chemical information available
 	@Column(name="page_url", length=1000)
 	private String pageUrl;
@@ -356,10 +359,10 @@ public class PropertyValue {
 	    return publicSource != null || literatureSource != null;
 	}
 	
-	public String generateExpPropId() {
-		return String.format("EXP%012d", id);
-	}
-
+//	public String generateExpPropId() {
+//		return String.format("EXP%012d", id);
+//	}
+	
 	public Long getId() {
 		return id;
 	}
@@ -583,4 +586,5 @@ public class PropertyValue {
 	public void setQcNotes(String qcNotes) {
 		this.qcNotes = qcNotes;
 	}
+
 }

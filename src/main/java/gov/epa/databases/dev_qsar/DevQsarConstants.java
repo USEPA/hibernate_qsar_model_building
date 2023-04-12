@@ -14,6 +14,8 @@ import gov.epa.web_services.embedding_service.CalculationInfo;
 
 public class DevQsarConstants {
 	
+
+
 	public Gson gson;
 	
 	// Numerical constants for processing and modeling
@@ -109,10 +111,20 @@ public class DevQsarConstants {
 	public static final String DENSITY = "Density";
 	public static final String BOILING_POINT = "Boiling point";
 	public static final String FLASH_POINT = "Flash point";
+	public static final String VISCOSITY = "Viscosity";
+	public static final String SURFACE_TENSION = "Surface tension";
+	public static final String THERMAL_CONDUCTIVITY="Thermal conductivity";
+	
+	public static final String ESTROGEN_RECEPTOR_BINDING = "Estrogen Receptor Binding";
+	public static final String ESTROGEN_RECEPTOR_RBA = "Estrogen Receptor RBA";
+	
 	public static final String PKA = "pKa";
 	public static final String PKA_A = "pKa_a";
 	public static final String PKA_B = "pKa_b";
+
+	public static final String BCF = "BCF";
 	public static final String LOG_BCF = "LogBCF";
+	
 	public static final String LOG_OH = "LogOH";
 	public static final String LOG_KOC = "LogKOC";
 	public static final String LOG_HALF_LIFE = "LogHalfLife";
@@ -128,7 +140,10 @@ public class DevQsarConstants {
 	public static final String LLNA ="LLNA";
 	public static final String MUTAGENICITY ="Mutagenicity";
 	
+	
+	
 	// Unit names
+	public static final String DIMENSIONLESS = "Dimensionless";
 	public static final String BINARY = "Binary";
 	public static final String G_L = "g/L";
 	public static final String MG_L = "mg/L";
@@ -140,6 +155,7 @@ public class DevQsarConstants {
 	public static final String LOG_M = "log10(M)";
 	public static final String NEG_LOG_M = "-log10(M)";
 	public static final String NEG_LOG_MOL_KG = "-log10(mol/kg)";
+	public static final String MOL_KG = "mol/kg";
 	public static final String LOG_L_KG = "log10(L/kg)";
 	public static final String G_CM3 = "g/cm3";
 	public static final String ATM_M3_MOL = "atm-m3/mol";
@@ -159,7 +175,7 @@ public class DevQsarConstants {
 	public static final String DYN_CM="dyn/cm";
 	
 	public static final String LOG_CP = "log10(cP)";
-	public static final String CP = "log10(cP)";
+	public static final String CP = "cP";
 	
 	
 	// Integer codes for train/test splitting
@@ -208,7 +224,7 @@ public class DevQsarConstants {
 	public static final String TAG_TEST = "_Test";
 	public static final String TAG_TRAINING = "_Training";
 
-	
+
 	
 	// Acceptable atoms in structures for modeling
 	public static HashSet<String> getAcceptableAtomsSet() {
@@ -226,7 +242,7 @@ public class DevQsarConstants {
 		map.put(PKA, LOG_UNITS);
 		map.put(PKA_A, LOG_UNITS);
 		map.put(PKA_B, LOG_UNITS);
-		map.put(LOG_BCF_FISH_WHOLEBODY, LOG_UNITS);
+		map.put(LOG_BCF_FISH_WHOLEBODY, LOG_L_KG);
 		map.put(WATER_SOLUBILITY, NEG_LOG_M);
 		map.put(HENRYS_LAW_CONSTANT, NEG_LOG_ATM_M3_MOL);
 		map.put(VAPOR_PRESSURE, LOG_MMHG);
@@ -235,6 +251,24 @@ public class DevQsarConstants {
 		return map;
 	}
 	
+	public static HashMap<String, String> getContributorUnitsMap() {
+		HashMap<String, String> map = new HashMap<String, String>();
+		map.put(MELTING_POINT, DEG_C);
+		map.put(BOILING_POINT, DEG_C);
+		map.put(FLASH_POINT, DEG_C);
+		map.put(LOG_KOW, LOG_UNITS);
+		map.put(PKA, LOG_UNITS);
+		map.put(PKA_A, LOG_UNITS);
+		map.put(PKA_B, LOG_UNITS);
+		map.put(LOG_BCF_FISH_WHOLEBODY, LOG_L_KG);
+		map.put(WATER_SOLUBILITY, MOLAR);//**
+		map.put(HENRYS_LAW_CONSTANT, ATM_M3_MOL);//***
+		map.put(VAPOR_PRESSURE, MMHG);//***
+		map.put(DENSITY, G_CM3);
+		map.put(LLNA, BINARY);
+		return map;
+	}
+
 	
-	public final String GeneticAlgorithmDefaults = gson.toJson(CalculationInfo.createDefault());
+//	public final String GeneticAlgorithmDefaults = gson.toJson(CalculationInfo.createDefault());
 }

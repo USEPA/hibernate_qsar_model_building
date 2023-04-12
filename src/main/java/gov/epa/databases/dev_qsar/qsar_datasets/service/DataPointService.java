@@ -26,5 +26,7 @@ public interface DataPointService {
 	
 	public List<DataPoint> createBatch(List<DataPoint> dataPoints, Session session) throws ConstraintViolationException;
 
+	public void createBatchSQL(List<DataPoint> dataPoints);
+
 
 }

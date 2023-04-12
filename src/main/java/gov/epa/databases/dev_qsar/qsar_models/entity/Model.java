@@ -22,6 +22,8 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+//TODO add name, version columns 
+
 @Entity
 @Table(name="models")
 public class Model {
@@ -41,6 +43,10 @@ public class Model {
 	@NotNull(message="Descriptor set name required")
 	@Column(name="descriptor_set_name")
 	private String descriptorSetName;
+
+	@Column(name="source")
+	private String source;
+	
 	
 	@NotNull(message="Dataset name required")
 	@Column(name="dataset_name")
@@ -70,6 +76,9 @@ public class Model {
 	@Column(name="created_by")
 	private String createdBy;
 	
+	
+	
+	
 //	@OneToOne(mappedBy="model", cascade=CascadeType.ALL, fetch=FetchType.LAZY, optional=false)
 //	private ModelBytes modelBytes;
 	
@@ -87,21 +96,23 @@ public class Model {
 	
 	public Model() {}
 	
-	public Model(Method method, String descriptorSetName, String datasetName, String splittingName, String createdBy) {
+	public Model(Method method, String descriptorSetName, String datasetName, String splittingName, String source, String createdBy) {
 		this.setMethod(method);
 		this.setDescriptorSetName(descriptorSetName);
 		this.setDatasetName(datasetName);
 		this.setSplittingName(splittingName);
+		this.setSource(source);
 		this.setCreatedBy(createdBy);
 	}
 	
 	public Model(Method method, DescriptorEmbedding descriptorEmbedding, 
-			String descriptorSetName, String datasetName, String splittingName, String createdBy) {
+			String descriptorSetName, String datasetName, String splittingName, String source,String createdBy) {
 		this.setMethod(method);
 		this.setDescriptorEmbedding(descriptorEmbedding);
 		this.setDescriptorSetName(descriptorSetName);
 		this.setDatasetName(datasetName);
 		this.setSplittingName(splittingName);
+		this.setSource(source);
 		this.setCreatedBy(createdBy);
 	}
 
@@ -195,6 +206,14 @@ public class Model {
 
 	public void setHyperparameters(String hyperparameters) {
 		this.hyperparameters = hyperparameters;
+	}
+
+	public String getSource() {
+		return source;
+	}
+
+	public void setSource(String source) {
+		this.source = source;
 	}
 
 }

@@ -22,11 +22,13 @@ public class DatasetParams {
 		public boolean omitOpsinAmbiguousNames;
 		public boolean omitUvcbKeywords;
 		public boolean omitSalts;
+		public boolean validateStructure;//set to false when we are just creating a dataset for exposing raw data to dashboard
+		
 		
 		public MappingParams(String dsstoxMappingId, String chemicalListName, boolean isNaive, boolean useValidation, 
 				boolean requireValidation, boolean resolveConflicts,
 				boolean validateConflictsTogether, boolean omitOpsinAmbiguousNames, boolean omitUvcbNames,
-				ArrayList<String> chemRegListNameList,boolean omitSalts) {
+				ArrayList<String> chemRegListNameList,boolean omitSalts,boolean validateStructure) {
 			this.dsstoxMappingId = dsstoxMappingId;
 			this.isNaive = isNaive;
 			this.useCuratorValidation = useValidation;
@@ -38,12 +40,13 @@ public class DatasetParams {
 			this.chemicalListName = chemicalListName;
 			this.chemRegListNameList = chemRegListNameList;
 			this.omitSalts=omitSalts;
+			this.validateStructure=validateStructure;
 		}
 		
 		public MappingParams(String dsstoxMappingId, boolean isNaive, boolean useValidation, boolean requireValidation, boolean resolveConflicts,
-				boolean validateConflictsTogether, boolean omitOpsinAmbiguousNames, boolean omitUvcbKeywords, ArrayList<String> chemRegListNameList,boolean omitSalts) {
+				boolean validateConflictsTogether, boolean omitOpsinAmbiguousNames, boolean omitUvcbKeywords, ArrayList<String> chemRegListNameList,boolean omitSalts,boolean validateStructure) {
 			this(dsstoxMappingId, null, isNaive, useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
-					omitOpsinAmbiguousNames, omitUvcbKeywords, chemRegListNameList,omitSalts);
+					omitOpsinAmbiguousNames, omitUvcbKeywords, chemRegListNameList,omitSalts,validateStructure);
 		}
 	}
 	
@@ -51,6 +54,7 @@ public class DatasetParams {
 	public String datasetDescription;
 	
 	public String propertyName;
+//	public String unitNameDatapointContributor;
 	
 	public MappingParams mappingParams;
 	

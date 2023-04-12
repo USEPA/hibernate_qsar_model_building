@@ -42,17 +42,8 @@ public class DataPoint {
 	@Column(name="qsar_dtxcid")
 	private String qsar_dtxcid;
 
-	@Column(name="qsar_exp_prop_id")
-	private String qsar_exp_prop_id;
-
-
-	public String getQsar_exp_prop_id() {
-		return qsar_exp_prop_id;
-	}
-
-	public void setQsar_exp_prop_id(String qsar_exp_prop_id) {
-		this.qsar_exp_prop_id = qsar_exp_prop_id;
-	}
+	@Column(name="qsar_exp_prop_property_values_id")
+	private String qsar_exp_prop_property_values_id;
 
 	@NotNull(message="Outlier boolean required")
 	@Column(name="outlier")
@@ -99,7 +90,7 @@ public class DataPoint {
 	public DataPoint(String canonQsarSmiles, String DTXCID, String exp_prop_id, Double qsarPropertyValue, Dataset dataset, Boolean outlier, String createdBy) {
 		this.setCanonQsarSmiles(canonQsarSmiles);
 		this.setQsar_dtxcid(DTXCID);
-		this.setQsar_exp_prop_id(exp_prop_id);
+		this.setQsar_exp_prop_property_values_id(exp_prop_id);
 		this.setQsarPropertyValue(qsarPropertyValue);
 		this.setDataset(dataset);
 		this.setOutlier(outlier);
@@ -197,6 +188,14 @@ public class DataPoint {
 	
 	public List<DataPointInSplitting> getDataPointInSplitting() {
 		return dataPointInSplitting;
+	}
+
+	public String getQsar_exp_prop_property_values_id() {
+		return qsar_exp_prop_property_values_id;
+	}
+
+	public void setQsar_exp_prop_property_values_id(String qsar_exp_prop_property_values_id) {
+		this.qsar_exp_prop_property_values_id = qsar_exp_prop_property_values_id;
 	}
 
 

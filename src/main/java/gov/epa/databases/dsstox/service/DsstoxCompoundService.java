@@ -50,4 +50,8 @@ public interface DsstoxCompoundService {
 	
 	public List<DsstoxRecord> findAsDsstoxRecordsByInChiKeyIn(Collection<String> inChiKeys);
 
+	public List<DsstoxCompound> findAll(Session session);
+
+	public List<DsstoxCompound> findAll();
+
 }
