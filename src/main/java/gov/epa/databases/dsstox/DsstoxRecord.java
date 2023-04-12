@@ -8,7 +8,16 @@ import org.openscience.cdk.AtomContainerSet;
 import org.openscience.cdk.graph.ConnectivityChecker;
 import org.openscience.cdk.interfaces.IAtom;
 
+import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
+import gov.epa.databases.dsstox.entity.DsstoxCompound;
+import gov.epa.databases.dsstox.entity.GenericSubstance;
+import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
+import gov.epa.databases.dsstox.entity.SourceGenericSubstanceMapping;
+import gov.epa.databases.dsstox.entity.SourceSubstance;
+import gov.epa.databases.dsstox.entity.SourceSubstanceIdentifier;
+import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
 import gov.epa.endpoints.datasets.ExplainedResponse;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class DsstoxRecord {
 	public String dsstoxRecordId;
@@ -41,6 +50,137 @@ public class DsstoxRecord {
 		this.molWeight = molWeight;
 		this.qsarReadySmiles = qsarReadySmiles;
 	}
+	
+	
+
+	/**
+	 * Assembles dsstoxRecord from the rid
+	 * 
+	 * @param dtxrid
+	 * @return
+	 */
+	public static DsstoxRecord getDsstoxRecord(String dtxrid) {
+		
+		DsstoxRecord dr=new DsstoxRecord();	
+		
+		SourceSubstanceServiceImpl sss=new SourceSubstanceServiceImpl();
+		SourceSubstance sourceSubstance=sss.findByDtxrid(dtxrid);
+		
+		SourceGenericSubstanceMapping sgsm=sourceSubstance.getSourceGenericSubstanceMapping();
+		GenericSubstance gs=sgsm.getGenericSubstance();
+		GenericSubstanceCompound gsc=gs.getGenericSubstanceCompound();		
+		DsstoxCompound c=gsc.getCompound();
+		
+		dr.setDsstoxCompoundId(c.getDsstoxCompoundId());
+		dr.setDsstoxSubstanceId(gs.getDsstoxSubstanceId());
+
+		dr.setCasrn(gs.getCasrn());
+		dr.setPreferredName(gs.getPreferredName());
+		dr.setDsstoxRecordId(dtxrid);
+		
+		dr.setSmiles(gsc.getCompound().getSmiles());
+		
+		dr.setMolWeight(c.getMolWeight());
+		dr.setSubstanceType(gs.getSubstanceType());
+		
+		dr.setConnectionReason(sgsm.getConnectionReason());
+		dr.setCuratorValidated(sgsm.getCuratorValidated());
+		
+//		SourceChemical sc=new SourceChemical();
+//		fill_in_identifiers(sc, sourceSubstance);
+//		System.out.println(Utilities.gson.toJson(sc));
+//		System.out.println(Utilities.gson.toJson(dr));
+		
+//		public String externalId;
+//		public Double linkageScore;
+//		public String casrnOther;//TMM
+//		public String qsarReadySmiles;
+//		public String msReadySmiles;
+//		public String synonymQuality;
+		
+		
+		return dr;
+	}
+	
+	
+	/**
+	 * Assembles dsstoxRecord from the rid
+	 * 
+	 * @param dtxrid
+	 * @return
+	 */
+	public static DsstoxRecord getDsstoxRecord(SourceChemical sc) {
+		
+		DsstoxRecord dr=new DsstoxRecord();	
+		
+		SourceSubstanceServiceImpl sss=new SourceSubstanceServiceImpl();
+		SourceSubstance sourceSubstance=sss.findByDtxrid(sc.getSourceDtxrid());
+		
+		SourceGenericSubstanceMapping sgsm=sourceSubstance.getSourceGenericSubstanceMapping();
+		GenericSubstance gs=sgsm.getGenericSubstance();
+		GenericSubstanceCompound gsc=gs.getGenericSubstanceCompound();
+		
+		if(gsc==null) return null;
+		
+		DsstoxCompound c=gsc.getCompound();
+		
+		dr.setDsstoxCompoundId(c.getDsstoxCompoundId());
+		dr.setDsstoxSubstanceId(gs.getDsstoxSubstanceId());
+
+		dr.setCasrn(gs.getCasrn());
+		dr.setPreferredName(gs.getPreferredName());
+		dr.setDsstoxRecordId(sc.getSourceDtxrid());
+		
+		dr.setSmiles(gsc.getCompound().getSmiles());
+		
+		dr.setMolWeight(c.getMolWeight());
+		dr.setSubstanceType(gs.getSubstanceType());
+		
+		dr.setConnectionReason(sgsm.getConnectionReason());
+		dr.setCuratorValidated(sgsm.getCuratorValidated());
+		
+		fill_in_identifiers(sc, sourceSubstance);
+		
+//		System.out.println(Utilities.gson.toJson(sc));
+//		System.out.println(Utilities.gson.toJson(dr));
+		
+//		public String externalId;
+//		public Double linkageScore;
+//		public String casrnOther;//TMM
+//		public String qsarReadySmiles;
+//		public String msReadySmiles;
+//		public String synonymQuality;
+		
+		
+		return dr;
+	}
+	
+	public static void fill_in_identifiers(SourceChemical sc, SourceSubstance sourceSubstance) {
+		
+		for (SourceSubstanceIdentifier ssi:sourceSubstance.getSourceSubstanceIdentifiers()) {
+				String identifier = ssi.getIdentifier();
+				switch (ssi.getIdentifierType()) {
+				case "DTXSID":
+					sc.setSourceDtxsid(identifier);
+					break;
+				case "NAME":
+					if (sc.getSourceChemicalName()!=null) {
+						sc.setSourceChemicalName(sc.getSourceChemicalName()+"; "+identifier);
+					} else {
+						sc.setSourceChemicalName(identifier);	
+					}
+//					System.out.println(identifier);
+					break;
+				case "CASRN":
+					sc.setSourceCasrn(identifier);
+					break;
+				case "SMILES":
+				case "STRUCTURE":
+					sc.setSourceSmiles(identifier);
+					break;
+				}
+			}
+		}
 	
 	public ExplainedResponse validateStructure(boolean omitSalts, Set<String> acceptableAtoms) {
 		if (substanceType==null || substanceType.isBlank()
@@ -254,4 +394,27 @@ public class DsstoxRecord {
 	public void setSynonymQuality(String synonymQuality) {
 		this.synonymQuality = synonymQuality;
 	}
+	
+	
+	public static void main(String[] args) {
+//		String rid="DTXRID2015044697";//only has CAS
+//		String rid="DTXRID8016290872";//name, cas
+//		String rid="DTXRID5016289776";
+//		String rid="DTXRID805797238";//name
+//		String rid="DTXRID405797250";
+
+		DsstoxRecord dr=getDsstoxRecord("DTXRID2020689619");
+		System.out.println(Utilities.gson.toJson(dr)+"\n");
+
+		DsstoxRecord dr2=getDsstoxRecord("DTXRID405797179");
+		System.out.println(Utilities.gson.toJson(dr2));
+		
+		
+		
+		
+		
+		
+		//DOES all of the chemprop data already have a DTXCID mapping? or just RID and identifiers? how many are validated or just have a default mapping??
+	}
+
 }
