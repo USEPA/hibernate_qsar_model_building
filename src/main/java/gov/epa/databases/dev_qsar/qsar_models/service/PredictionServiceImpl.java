@@ -103,7 +103,7 @@ public class PredictionServiceImpl implements PredictionService {
 		try {
 			conn.setAutoCommit(false);
 			PreparedStatement prep = conn.prepareStatement(sql);
-			prep.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+//			prep.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
 			long t1=System.currentTimeMillis();
 
 			for (int counter = 0; counter < predictions.size(); counter++) {

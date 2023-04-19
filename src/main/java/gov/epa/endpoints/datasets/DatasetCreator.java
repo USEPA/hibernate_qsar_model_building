@@ -191,7 +191,7 @@ public class DatasetCreator {
 		
 //		this.gson = new GsonBuilder().disableHtmlEscaping().create();
 		this.acceptableAtoms = DevQsarConstants.getAcceptableAtomsSet();
-		this.finalUnits = DevQsarConstants.getFinalUnitsMap();
+		this.finalUnits = DevQsarConstants.getDatasetFinalUnitsMap();
 		this.contributorUnits = DevQsarConstants.getContributorUnitsMap();
 		
 		physchemPropertyNames = expPropPropertyService.findByPropertyCategoryName("Physchem").stream()

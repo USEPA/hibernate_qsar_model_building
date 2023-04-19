@@ -10,3 +10,8 @@ target/
 # Other
 data/
 /reports/
+*.xlsx
+*.txt
+*.zip
+*.bak
+*.rej

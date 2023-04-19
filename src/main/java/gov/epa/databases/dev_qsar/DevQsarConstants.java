@@ -115,15 +115,24 @@ public class DevQsarConstants {
 	public static final String SURFACE_TENSION = "Surface tension";
 	public static final String THERMAL_CONDUCTIVITY="Thermal conductivity";
 	
-	public static final String ESTROGEN_RECEPTOR_BINDING = "Estrogen Receptor Binding";
-	public static final String ESTROGEN_RECEPTOR_RBA = "Estrogen Receptor RBA";
+	public static final String MOLAR_REFRACTIVITY = "Molar refractivity";
+	public static final String MOLAR_VOLUME = "Molar volume";
+	public static final String POLARIZABILITY = "Polarizability";
+	public static final String PARACHOR = "Parachor";
+	public static final String INDEX_OF_REFRACTION = "Index of refraction";
+	public static final String DIELECTRIC_CONSTANT = "Dielectric constant";
+	public static final String LogD_pH_7_4 = "LogD at pH=7.4";
+	
+	
+	public static final String ESTROGEN_RECEPTOR_BINDING = "Estrogen receptor binding";
+	public static final String ESTROGEN_RECEPTOR_RBA = "Estrogen receptor relative binding affinity";
 	
 	public static final String PKA = "pKa";
 	public static final String PKA_A = "pKa_a";
 	public static final String PKA_B = "pKa_b";
 
-	public static final String BCF = "BCF";
-	public static final String LOG_BCF = "LogBCF";
+	public static final String BCF = "Bioconcentration factor";
+	public static final String LOG_BCF = "Log10(Bioconcentration factor)";
 	
 	public static final String LOG_OH = "LogOH";
 	public static final String LOG_KOC = "LogKOC";
@@ -131,16 +140,26 @@ public class DevQsarConstants {
 	public static final String LOG_KM_HL = "LogKmHL";
 	public static final String LOG_KOA = "LogKOA";
 	public static final String LOG_BCF_FISH_WHOLEBODY = "LogBCF_Fish_WholeBody";
-	
-	public static final String DEV_TOX ="DevTox";
-	public static final String IGC50 ="IGC50";
+
+	//Old versions
+	public static final String MUTAGENICITY ="Mutagenicity";
 	public static final String LC50 ="LC50";
 	public static final String LC50DM ="LC50DM";
-	public static final String LD50="LD50";
+	public static final String IGC50 ="IGC50";
+	public static final String LD50 ="LD50";
 	public static final String LLNA ="LLNA";
-	public static final String MUTAGENICITY ="Mutagenicity";
+	public static final String DEV_TOX ="DevTox";
 	
 	
+	//New versions for dashboard
+	public static final String FORTY_EIGHT_HR_IGC50 ="48 hour Tetrahymena pyriformis IGC50";
+	public static final String NINETY_SIX_HOUR_LC50 ="96 hour fathead minnow LC50";
+	public static final String FORTY_EIGHT_HR_DM_LC50 ="48 hour Daphnia magna LC50";
+	public static final String ORAL_RAT_LD50="Oral rat LD50";
+	public static final String AMES_MUTAGENICITY ="Ames Mutagenicity";
+	public static final String DEVELOPMENTAL_TOXICITY ="Developmental toxicity";
+	public static final String LOCAL_LYMPH_NODE_ASSAY ="Local lymph node assay";
+
 	
 	// Unit names
 	public static final String DIMENSIONLESS = "Dimensionless";
@@ -158,6 +177,11 @@ public class DevQsarConstants {
 	public static final String MOL_KG = "mol/kg";
 	public static final String LOG_L_KG = "log10(L/kg)";
 	public static final String G_CM3 = "g/cm3";
+	
+	public static final String CM3 = "cm^3";
+	public static final String CUBIC_ANGSTROM = "Å^3";
+	
+	
 	public static final String ATM_M3_MOL = "atm-m3/mol";
 	public static final String NEG_LOG_ATM_M3_MOL = "-log10(atm-m3/mol)";
 	public static final String LOG_ATM_M3_MOL = "log10(atm-m3/mol)";
@@ -226,6 +250,8 @@ public class DevQsarConstants {
 
 	public static final String SOURCE_WEBTEST = "WebTEST2.0";
 
+	
+
 
 	
 	// Acceptable atoms in structures for modeling
@@ -235,7 +261,7 @@ public class DevQsarConstants {
 	}
 	
 	// Final modeling unit names for each property name
-	public static HashMap<String, String> getFinalUnitsMap() {
+	public static HashMap<String, String> getDatasetFinalUnitsMap() {
 		HashMap<String, String> map = new HashMap<String, String>();
 		map.put(MELTING_POINT, DEG_C);
 		map.put(BOILING_POINT, DEG_C);
@@ -249,9 +275,96 @@ public class DevQsarConstants {
 		map.put(HENRYS_LAW_CONSTANT, NEG_LOG_ATM_M3_MOL);
 		map.put(VAPOR_PRESSURE, LOG_MMHG);
 		map.put(DENSITY, G_CM3);
-		map.put(LLNA, BINARY);
+		map.put(LOCAL_LYMPH_NODE_ASSAY, BINARY);
+		map.put(SURFACE_TENSION,LOG_CP);
+		map.put(THERMAL_CONDUCTIVITY,MW_MK);
+		map.put(VISCOSITY,LOG_CP);
+		
+		map.put(MUTAGENICITY,BINARY);
+		map.put(DEV_TOX,BINARY);
+		map.put(LC50, NEG_LOG_M);
+		map.put(LC50DM, NEG_LOG_M);
+		map.put(IGC50, NEG_LOG_M);
+		map.put(LD50, NEG_LOG_MOL_KG);
+		
+		map.put(AMES_MUTAGENICITY,BINARY);
+		map.put(DEVELOPMENTAL_TOXICITY,BINARY);
+		map.put(NINETY_SIX_HOUR_LC50, NEG_LOG_M);
+		map.put(FORTY_EIGHT_HR_DM_LC50, NEG_LOG_M);
+		map.put(FORTY_EIGHT_HR_IGC50, NEG_LOG_M);
+		map.put(ORAL_RAT_LD50, NEG_LOG_MOL_KG);
+		map.put(BCF, LOG_L_KG);
+		
+		map.put(ESTROGEN_RECEPTOR_RBA,DIMENSIONLESS);
+		map.put(ESTROGEN_RECEPTOR_BINDING,BINARY);
+		
 		return map;
 	}
+	
+
+	public static String getPropertyDescription(String propertyNameDB) {
+		
+		if (propertyNameDB.equals(DevQsarConstants.NINETY_SIX_HOUR_LC50)) {
+			return "The concentration of the test chemical in water that causes 50% of fathead minnow to die after 96 hours";
+		} else if (propertyNameDB.equals(DevQsarConstants.FORTY_EIGHT_HR_DM_LC50)) {
+			return("The concentration of the test chemical in water that causes 50% of Daphnia magna to die after 48 hours");
+		} else if (propertyNameDB.equals(DevQsarConstants.FORTY_EIGHT_HR_IGC50)) {
+			return("The concentration of the test chemical in water that causes 50% growth inhibition to Tetrahymena pyriformis after 48 hours");
+		} else if (propertyNameDB.equals(DevQsarConstants.ORAL_RAT_LD50)) {
+			return("The amount of chemical that causes 50% of rats to die after oral ingestion");
+		} else if (propertyNameDB.equals(DevQsarConstants.BCF)) {
+			return "Bioconcentration factor: the ratio of the chemical concentration in fish as a result of absorption via the respiratory surface to that in water at steady state";
+		} else if (propertyNameDB.equals(DevQsarConstants.DEVELOPMENTAL_TOXICITY)) {
+			return "Developmental Toxicity: whether or not a chemical causes developmental toxicity effects to humans or animals";
+		} else if (propertyNameDB.equals(DevQsarConstants.AMES_MUTAGENICITY)) {
+			return "Ames Mutagenicity: A compound is positive for mutagenicity if it induces revertant colony growth in any strain of Salmonella typhimurium";
+		} else if (propertyNameDB.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
+			return "Henry's law volatility constant (Hv). A common way to define a Hv is dividing the partial pressure by the aqueous-phase concentration";
+		} else if (propertyNameDB.equals(DevQsarConstants.WATER_SOLUBILITY)) {
+			return "The amount of a chemical that will dissolve in liquid water to form a homogeneous solution";
+		} else if (propertyNameDB.equals(DevQsarConstants.BOILING_POINT)) {
+			return "Temperature at which a chemical changes state from liquid to vapor at a given pressure";
+		} else if (propertyNameDB.equals(DevQsarConstants.MELTING_POINT)) {
+			return "The temperature at which a chemical changes state from solid to liquid";
+		} else if (propertyNameDB.equals(DevQsarConstants.FLASH_POINT)) {
+			return "The lowest temperature at which a chemical can vaporize to form an ignitable mixture in air";
+		} else if (propertyNameDB.equals(DevQsarConstants.VAPOR_PRESSURE)) {
+			return "The pressure exerted by a vapor in thermodynamic equilibrium with the liquid phase in a closed system at a given temperature";
+		} else if (propertyNameDB.equals(DevQsarConstants.LOG_KOW)) {
+			return "Log10 of the the ratio of the concentration of a chemical in n-octanol and water at equilibrium at a specified temperature";
+		} else if (propertyNameDB.equals(DevQsarConstants.DENSITY)) {
+			return "The mass per unit volume";
+		} else if (propertyNameDB.equals(DevQsarConstants.SURFACE_TENSION)) {
+			return "A property of the surface of a liquid (dyn/cm) that allows it to resist an external force";
+		} else if (propertyNameDB.equals(DevQsarConstants.ESTROGEN_RECEPTOR_BINDING)) {
+			return "Whether or not a chemical binds to the estrogen receptor";
+		} else if (propertyNameDB.equals(DevQsarConstants.ESTROGEN_RECEPTOR_RBA)) {
+			return "Binding to the estrogen receptor relative to 17ß-Estradiol (E2)";
+		} else if (propertyNameDB.equals(DevQsarConstants.THERMAL_CONDUCTIVITY)) {
+			return "The property of a material reflecting its ability to conduct heat";
+		} else if (propertyNameDB.equals(DevQsarConstants.VISCOSITY)) {
+			return "A measure of the resistance of a fluid to flow defined as the proportionality constant between shear rate and shear stress";
+		} else if (propertyNameDB.equals(DevQsarConstants.INDEX_OF_REFRACTION)) {
+			return "Measure of the bending of a ray of light when passing from one medium into another";
+		} else if (propertyNameDB.equals(DevQsarConstants.DIELECTRIC_CONSTANT)) {
+			return "The permittivity of a material expressed as a ratio with the electric permittivity of a vacuum";
+		} else if (propertyNameDB.equals(DevQsarConstants.MOLAR_VOLUME)) {
+			return "The ratio of the volume occupied by a substance to the amount of substance, usually given at a given temperature and pressure";
+		} else if (propertyNameDB.equals(DevQsarConstants.MOLAR_REFRACTIVITY)) {
+			return "A measure of the total polarizability of a mole of a substance and is dependent on the temperature, the index of refraction, and the pressure";
+		} else if (propertyNameDB.equals(DevQsarConstants.POLARIZABILITY)) {
+			return "The tendency of matter, when subjected to an electric field, to acquire an electric dipole moment in proportion to that applied field";
+		} else if (propertyNameDB.equals(DevQsarConstants.PARACHOR)) {
+			return "The molecular weight of the liquid multiplied by the fourth root of its surface tension divided by the difference between the densities of the liquid and the vapour in equilibrium with it";
+		} else if (propertyNameDB.equals(DevQsarConstants.LogD_pH_7_4)) {
+			return "Octanol water parition coefficient at a pH of 7.4";
+
+		} else {
+			return "*"+propertyNameDB;
+		} 
+	}
+	
+	
 	
 	public static HashMap<String, String> getContributorUnitsMap() {
 		HashMap<String, String> map = new HashMap<String, String>();
@@ -259,15 +372,43 @@ public class DevQsarConstants {
 		map.put(BOILING_POINT, DEG_C);
 		map.put(FLASH_POINT, DEG_C);
 		map.put(LOG_KOW, LOG_UNITS);
-		map.put(PKA, LOG_UNITS);
-		map.put(PKA_A, LOG_UNITS);
-		map.put(PKA_B, LOG_UNITS);
-		map.put(LOG_BCF_FISH_WHOLEBODY, LOG_L_KG);
 		map.put(WATER_SOLUBILITY, MOLAR);//**
 		map.put(HENRYS_LAW_CONSTANT, ATM_M3_MOL);//***
 		map.put(VAPOR_PRESSURE, MMHG);//***
 		map.put(DENSITY, G_CM3);
-		map.put(LLNA, BINARY);
+		map.put(THERMAL_CONDUCTIVITY,MW_MK);
+		map.put(VISCOSITY,CP);
+		map.put(PKA, LOG_UNITS);
+		map.put(PKA_A, LOG_UNITS);
+		map.put(PKA_B, LOG_UNITS);
+		map.put(SURFACE_TENSION,CP);
+
+		//Percepta properties:
+		map.put(MOLAR_VOLUME, CM3);
+		map.put(MOLAR_REFRACTIVITY, CM3);
+		map.put(INDEX_OF_REFRACTION, DIMENSIONLESS);
+		map.put(POLARIZABILITY, CUBIC_ANGSTROM);
+		map.put(LogD_pH_7_4, LOG_UNITS);
+		
+		//https://www.sciencedirect.com/topics/chemistry/parachor#:~:text=The%20conventional%20numerical%20values%20of,(cm3%2Fmol).
+		//(erg/cm2)1/4 × (cm3/mol)
+		map.put(PARACHOR, DIMENSIONLESS);//null in prod_chemprop, see https://www.epj-conferences.org/articles/epjconf/pdf/2015/11/epjconf_efm2014_02054.pdf
+		map.put(DIELECTRIC_CONSTANT, DIMENSIONLESS);//https://byjus.com/physics/dielectric-constant/#what-is-dielectric-constant		
+
+		
+		map.put(LOG_BCF_FISH_WHOLEBODY, LOG_L_KG);//TODO is this right?
+		map.put(BCF, L_KG);
+		map.put(LOCAL_LYMPH_NODE_ASSAY, BINARY);
+		map.put(NINETY_SIX_HOUR_LC50,MOLAR);
+		map.put(FORTY_EIGHT_HR_DM_LC50,MOLAR);
+		map.put(FORTY_EIGHT_HR_IGC50,MOLAR);
+		map.put(ORAL_RAT_LD50,MOL_KG);
+		map.put(AMES_MUTAGENICITY,BINARY);
+		map.put(DEVELOPMENTAL_TOXICITY,BINARY);
+		map.put(ESTROGEN_RECEPTOR_RBA,DIMENSIONLESS);
+		map.put(ESTROGEN_RECEPTOR_BINDING,BINARY);
+		
+		
 		return map;
 	}
 

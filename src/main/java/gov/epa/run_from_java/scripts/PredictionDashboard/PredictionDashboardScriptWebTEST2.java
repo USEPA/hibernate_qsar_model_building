@@ -10,7 +10,8 @@ import java.util.List;
 
 import com.google.gson.reflect.TypeToken;
 
-
+import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
@@ -63,6 +64,20 @@ public class PredictionDashboardScriptWebTEST2 {
 	private PredictionDashboard convertPredictionResultsToPredictionDashboard(Object pr,
 			HashMap<Long, Model> hmModels) {
 		PredictionDashboard pd=new PredictionDashboard();
+		
+		Model model=new Model();
+		Dataset dataset=new Dataset();
+		
+		//Converting units:
+		if(dataset.getUnit().getName().equals(DevQsarConstants.NEG_LOG_M)) {
+			if(dataset.getUnitContributor().getName().equals(DevQsarConstants.MOLAR)) {
+				pd.setPredictionValue(Math.pow(10.0,-Double.parseDouble(pr.getPredToxValue())));
+			}
+		}
+		
+		
+		
+		
 		return pd;
 	}
 

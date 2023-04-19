@@ -30,6 +30,11 @@ public class Model {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
+
+	
+	@Column(name="name")
+	private String name;
+
 	
 	@NotNull(message="Method required")
 	@ManyToOne
@@ -96,7 +101,8 @@ public class Model {
 	
 	public Model() {}
 	
-	public Model(Method method, String descriptorSetName, String datasetName, String splittingName, String source, String createdBy) {
+	public Model(String name, Method method, String descriptorSetName, String datasetName, String splittingName, String source, String createdBy) {
+		this.setName(name);
 		this.setMethod(method);
 		this.setDescriptorSetName(descriptorSetName);
 		this.setDatasetName(datasetName);
@@ -105,8 +111,9 @@ public class Model {
 		this.setCreatedBy(createdBy);
 	}
 	
-	public Model(Method method, DescriptorEmbedding descriptorEmbedding, 
+	public Model(String name, Method method, DescriptorEmbedding descriptorEmbedding, 
 			String descriptorSetName, String datasetName, String splittingName, String source,String createdBy) {
+		this.setName(name);
 		this.setMethod(method);
 		this.setDescriptorEmbedding(descriptorEmbedding);
 		this.setDescriptorSetName(descriptorSetName);
@@ -214,6 +221,14 @@ public class Model {
 
 	public void setSource(String source) {
 		this.source = source;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 }
