@@ -1,5 +1,8 @@
 package gov.epa.databases.dev_qsar.qsar_models.service;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Set;
 
@@ -17,6 +20,7 @@ import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Bob;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 
 public class PredictionDashboardServiceImpl implements PredictionDashboardService {
 	Validator validator;
@@ -87,5 +91,72 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		session.close();
 		return predictionDashboards;
 	}
+	
+	
+	
+	
+	@Override
+	public void createSQL (List<PredictionDashboard> predictionDashboards) {
+
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		
+		String [] fieldNames= {"smiles", "canon_qsar_smiles", "dtxcid", "dtxsid",
+				"fk_model_id", "prediction_value", "prediction_string", "prediction_error",
+				 "updated_by", "created_by", "created_at"};
+
+		int batchSize=1000;
+		
+		String sql="INSERT INTO qsar_models.predictions_dashboard (";
+		
+		for (int i=0;i<fieldNames.length;i++) {
+			sql+=fieldNames[i];
+			if (i<fieldNames.length-1)sql+=",";
+			else sql+=") VALUES (";
+		}
+		
+		for (int i=0;i<fieldNames.length-1;i++) {
+			sql+="?";
+			if (i<fieldNames.length-1)sql+=",";			 		
+		}
+		sql+="current_timestamp)";	
+//		System.out.println(sql);
+		
+		try {
+			conn.setAutoCommit(false);
+			PreparedStatement prep = conn.prepareStatement(sql);
+			long t1=System.currentTimeMillis();
+
+			for (int counter = 0; counter < predictionDashboards.size(); counter++) {
+				PredictionDashboard p=predictionDashboards.get(counter);
+				prep.setString(1, p.getSmiles());
+				prep.setString(2, p.getCanonQsarSmiles());
+				prep.setString(3, p.getDtxcid());
+				prep.setString(4, p.getDtxsid());
+				prep.setLong(5, p.getModel().getId());
+				prep.setDouble(6, p.getPredictionValue());
+				prep.setString(7, p.getPredictionString());
+				prep.setString(8, p.getPredictionError());
+				prep.setString(9, p.getUpdatedBy());
+				prep.setString(10, p.getCreatedBy());
+				
+				
+				prep.addBatch();
+				
+				if (counter % batchSize == 0 && counter!=0) {
+					// System.out.println(counter);
+					prep.executeBatch();
+				}
+			}
+
+			int[] count = prep.executeBatch();// do what's left
+			long t2=System.currentTimeMillis();
+			System.out.println("time to post "+predictionDashboards.size()+" predictions using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
+			conn.commit();
+//			conn.setAutoCommit(true);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}			
+
 
 }

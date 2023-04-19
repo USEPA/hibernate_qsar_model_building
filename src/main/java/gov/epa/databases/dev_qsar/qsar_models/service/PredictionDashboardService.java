@@ -16,6 +16,9 @@ public interface PredictionDashboardService {
 	public List<PredictionDashboard> createBatch(List<PredictionDashboard> predictionDashboard) throws ConstraintViolationException;
 	
 	public List<PredictionDashboard> createBatch(List<PredictionDashboard> predictionDashboard, Session session) throws ConstraintViolationException;
+	
+	public void createSQL(List<PredictionDashboard> predictionDashboard);
+
 
 }
 

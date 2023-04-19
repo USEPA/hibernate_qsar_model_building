@@ -35,12 +35,12 @@ public class PredictionDashboard {
 	@Column(name="canon_qsar_smiles")
 	private String canonQsarSmiles;
 	
-//	@NotBlank(message="dtxcid required")
+	@NotBlank(message="dtxcid required")
 	@Column(name="dtxcid")
 	private String dtxcid;
 	
 	
-//	@NotBlank(message="dtxsid required")
+	@NotBlank(message="dtxsid required")
 	@Column(name="dtxsid")
 	private String dtxsid;
 
