@@ -19,10 +19,6 @@ public class ValeryPredictionWebService extends WebService {
 			HttpResponse<String> response = Unirest.post(address + "/predictor/predict")
 			.header("Content-Type", "application/json")
 			.body(new JSONObject(json))
-//			.field("chemicals", jsonObject.getJSONArray("chemicals").toString())
-//			.field("datasets", jsonObject.getJSONArray("datasets").toString())
-//			.field("workflow", jsonObject.getString("workflow"))
-//			.field("modelset_id", jsonObject.getString("modelSetId"))
 		    .asString();
 			System.out.println("status= " + response.getStatus());
 		return response;
