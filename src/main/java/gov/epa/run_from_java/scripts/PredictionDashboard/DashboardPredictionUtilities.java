@@ -15,13 +15,15 @@ import org.openscience.cdk.io.MDLV3000Reader;
 import org.openscience.cdk.smiles.SmilesParser;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public class DashboardPredictionUtilities {
 	
 	public Gson gson;
 	
 	public DashboardPredictionUtilities() {
-		this.gson = new Gson();
+		this.gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+
 	}
 	
 	/**

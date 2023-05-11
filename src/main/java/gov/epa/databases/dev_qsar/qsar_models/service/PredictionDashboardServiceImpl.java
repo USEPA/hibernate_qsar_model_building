@@ -77,7 +77,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		for (int i = 0; i < predictionDashboards.size(); i++) {
 			PredictionDashboard predictionDashboard = predictionDashboards.get(i);
 			session.save(predictionDashboard);
-		    if ( i % 1000 == 0 ) { //20, same as the JDBC batch size
+		    if ( i % 20 == 0 ) { //20, same as the JDBC batch size
 		        //flush a batch of inserts and release memory:
 		        session.flush();
 		        session.clear();

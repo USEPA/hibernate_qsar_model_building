@@ -6,7 +6,7 @@ public class Method {
 	@Expose
     public boolean binary;
 	@Expose
-    public Long model_id;
+    public int model_id;
 	@Expose
     public String name;
 	@Expose
