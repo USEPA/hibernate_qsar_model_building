@@ -30,7 +30,7 @@ import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.Chemical;
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.Dataset;
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.ValeryBody;
-import gov.epa.run_from_java.scripts.PredictionDashboard.valery.ValeryResponse;
+import gov.epa.run_from_java.scripts.PredictionDashboard.valery.WebTEST2PredictionResponse;
 import gov.epa.web_services.ValeryPredictionWebService;
 import kong.unirest.HttpResponse;
 import kong.unirest.JsonNode;
@@ -40,17 +40,31 @@ import kong.unirest.json.JSONObject;
 * @author TMARTI02
 */
 public class PredictionResultsWebTest2Script {
+	PredictionDashboardService predictionDashboardService = new PredictionDashboardServiceImpl();
+	ValeryPredictionWebService valery = new ValeryPredictionWebService("https://hcd.rtpnc.epa.gov/api/");
+	
+	ModelService modelService = new ModelServiceImpl();
+
+	DsstoxCompoundService dsstoxCompoundService = new DsstoxCompoundServiceImpl();
+
+	DatasetService datasetService = new DatasetServiceImpl();
+	
+	DashboardPredictionUtilities dpu = new DashboardPredictionUtilities();
 	
 
-	
 	public static void main(String[] args) {
 //		r.runChemical("DTXSID3039242");
-		
+		PredictionResultsWebTest2Script script = new PredictionResultsWebTest2Script();
+		// script.runPredictionSnapshot();
+		WebTEST2PredictionResponse predictSingleChemical = script.valery.predictSingleChemical("Br[Ga](Br)Br", "31", "2");
+	}
+	
+	private void runPredictionSnapshot() {
 		int maxCount=20;//number of chemicals to run
 		boolean skipMissingSID=false;//skip entries without an SDF
 		
 		String folderSrc="C:\\Users\\cramslan\\Documents\\code\\java\\hibernate_qsar_modelbuilding\\data\\dsstox\\sdf\\";
-		String fileName="snapshot_compounds4";
+		String fileName="snapshot_compounds7";
 		String fileNameSDF = fileName + ".sdf";
 		String filepathSDF=folderSrc+fileNameSDF;
 		
@@ -60,7 +74,6 @@ public class PredictionResultsWebTest2Script {
 		String outputFileName= fileName + "-" + propertyAbbreviation + ".json";
 		String destJsonPath=strOutputFolder+File.separator+outputFileName;
 		
-		ArrayList<PredictionDashboard> predictionDashboards = new ArrayList<>();
 		ArrayList<String> datasetIds = new ArrayList<String>();
 		//31 WS, 44 LLNA
 
@@ -68,13 +81,13 @@ public class PredictionResultsWebTest2Script {
 		// datasetIds.add("44");
 		String modelSetId = "2";
 
-		runSDF(filepathSDF, destJsonPath, skipMissingSID, maxCount, datasetIds, modelSetId, predictionDashboards);
+		ArrayList<PredictionDashboard> predictionDashboards = runSDF(filepathSDF, destJsonPath, skipMissingSID, maxCount, datasetIds, modelSetId);
 		
 		DashboardPredictionUtilities dpu = new DashboardPredictionUtilities();
 		PredictionDashboardService predictionDashboardService = new PredictionDashboardServiceImpl();
 		for (int i = 0; i < predictionDashboards.size(); i++) {
 			try {
-			predictionDashboardService.create(predictionDashboards.get(i));
+				predictionDashboardService.create(predictionDashboards.get(i));
 			} catch (Exception ex) {
 				continue;
 			}
@@ -84,35 +97,32 @@ public class PredictionResultsWebTest2Script {
 
 
 	// provide it 
-	public static void createPredictionDashboard(ValeryResponse[] valeryResponse, ArrayList<String> originalSmiles, int originalSmilesIndex, ArrayList<PredictionDashboard> predictionDashboards,
-			DsstoxCompoundService dsstoxCompoundService, ModelService modelService, DashboardPredictionUtilities dpu, String dtxsid, String dtxcid, Boolean isSalt) {
+	public ArrayList<PredictionDashboard> createPredictionDashboard(WebTEST2PredictionResponse valeryResponse, Boolean isSalt) {
+		ArrayList<PredictionDashboard> predictionDashboards = new ArrayList<>();
 		PredictionDashboard p = new PredictionDashboard();
 		p.setCreatedBy("cramslan");
-		p.setSmiles(originalSmiles.get(originalSmilesIndex));
-		p.setCanonQsarSmiles(valeryResponse[0].predictions.get(originalSmilesIndex).chemical.smiles);
-		p.setDtxcid(dtxcid);
-		p.setDtxsid(dtxsid);
-		ArrayList<PredictionDashboard> predictionDashboardsAllModels = new ArrayList<>();
-		String datasetName = valeryResponse[0].dataset.dataset_name;
+		p.setSmiles(valeryResponse.predictions.get(0).chemical.originalSmiles);
+		p.setCanonQsarSmiles(valeryResponse.predictions.get(0).chemical.smiles);
+		p.setDtxcid(valeryResponse.predictions.get(0).chemical.dtxcid);
+		p.setDtxsid(valeryResponse.predictions.get(0).chemical.dtxsid);
+		String datasetName = valeryResponse.dataset.dataset_name;
+		String unit = valeryResponse.dataset.unit;
 
-		
 		if (isSalt) {
 			p.setPredictionError("salt compound");
-			predictionDashboardsAllModels.add(p);
-			return;
+			predictionDashboards.add(p);
+			return predictionDashboards;
 		}
-		String valuesJSON = dpu.gson.toJson(valeryResponse[0].predictions.get(originalSmilesIndex).values);
+		String valuesJSON = dpu.gson.toJson(valeryResponse.predictions.get(0).values);
 		JSONObject valuesJO = new JSONObject(valuesJSON);
-		
-		for (int i = 0; i < valeryResponse[0].dataset.methods.size(); i++) {
-			System.out.println(i);
-			
+		System.out.println("methods size=" + valeryResponse.dataset.methods.size());
+		for (int i = 0; i < valeryResponse.dataset.methods.size(); i++) {			
 			PredictionDashboard p1 = p;
-			String methodName = valeryResponse[0].dataset.methods.get(i).name;
+			String methodName = valeryResponse.dataset.methods.get(i).name;
 			if (methodName.equals("consensus")) {
 				methodName = "avg";
 			}
-			int modelId = valeryResponse[0].dataset.methods.get(i).model_id;
+			int modelId = valeryResponse.dataset.methods.get(i).model_id;
 			Long newmodelId = modelIdRemapping(modelId);
 			System.out.println("new model id =" + newmodelId);
 			Model model = modelService.findById(newmodelId);
@@ -121,17 +131,14 @@ public class PredictionResultsWebTest2Script {
 			if (!(valuesJO.has(methodName))) {
 				continue;
 			}
-			Double predictionValue = valuesJO.getDouble(methodName);
-			
-
-			p1.setPredictionString(String.valueOf(predictionValue));
-			p1.setPredictionValue(predictionValue);
-			PredictionDashboard p2 = convertUnits(datasetName, p1);
-			
-			predictionDashboardsAllModels.add(p1);
+			Double predictionValueOriginalUnits = valuesJO.getDouble(methodName);
+			Double predictionValueConverted = convertUnits(datasetName, predictionValueOriginalUnits);
+			p1.setPredictionString(String.valueOf(predictionValueConverted) + " " + unit);
+			p1.setPredictionValue(predictionValueConverted);			
+			predictionDashboards.add(p1);
 		}
 		
-		predictionDashboards.addAll(predictionDashboardsAllModels);
+		return predictionDashboards;
 		
 	}
 	
@@ -178,9 +185,9 @@ public class PredictionResultsWebTest2Script {
 	}
 	
 	
-	public static void runSDF(String SDFFilePath, String destJsonPath,boolean skipMissingSID,int maxCount,
-			ArrayList<String> datasetIds, String modelSetId, 		ArrayList<PredictionDashboard> predictionDashboards
-) {
+	public ArrayList<PredictionDashboard> runSDF(String SDFFilePath, String destJsonPath,boolean skipMissingSID,int maxCount,
+			ArrayList<String> datasetIds, String modelSetId) {
+		ArrayList<PredictionDashboard> predictionDashboards = new ArrayList<>();
 		DashboardPredictionUtilities dpu = new DashboardPredictionUtilities();
 		
 		AtomContainerSet acs= dpu.readSDFV3000(SDFFilePath);
@@ -189,13 +196,6 @@ public class PredictionResultsWebTest2Script {
 
 		Iterator<IAtomContainer> iterator= acs2.atomContainers().iterator();
 
-		ValeryPredictionWebService valery = new ValeryPredictionWebService("https://hcd.rtpnc.epa.gov/api/");
-		
-		ModelService modelService = new ModelServiceImpl();
-
-		DsstoxCompoundService dsstoxCompoundService = new DsstoxCompoundServiceImpl();
-
-		DatasetService datasetService = new DatasetServiceImpl();
 		// if datasets were linked up, this is where we'd get dataset from		
 		
 		System.out.println(acs2.getAtomContainerCount());
@@ -219,7 +219,6 @@ public class PredictionResultsWebTest2Script {
 			System.out.println(isSalt);
 			System.out.println("***"+count+"\t"+smiles);
 			
-			
 			ArrayList<String> smilesList = new ArrayList<String>();
 			smilesList.add(smiles);
 //			smiles.add("CCCO");
@@ -230,26 +229,33 @@ public class PredictionResultsWebTest2Script {
 			vb.setWorkflow("qsar-ready");
 			String json = dpu.gson.toJson(vb);
 			HttpResponse<String> response = valery.predict(json);
-			System.out.print("response body=" + response.getBody());
-			ValeryResponse[] vr = dpu.gson.fromJson(response.getBody(), ValeryResponse[].class);
-			
-
-			for (int i = 0; i < smilesList.size(); i++) {
-				createPredictionDashboard(vr, smilesList, i, predictionDashboards, dsstoxCompoundService, modelService, dpu, dtxsid, dtxcid, isSalt);
+			if (response.getStatus() == 400) {
+				System.out.println("cannot predict " + smiles);
+				continue;
 			}
+			System.out.print("response body=" + response.getBody());
+			WebTEST2PredictionResponse[] vr = dpu.gson.fromJson(response.getBody(), WebTEST2PredictionResponse[].class);
+			WebTEST2PredictionResponse valeryResponse = vr[0];
+			valeryResponse.predictions.get(0).chemical.dtxcid = dtxcid;
+			valeryResponse.predictions.get(0).chemical.dtxsid = dtxsid;
+			valeryResponse.predictions.get(0).chemical.originalSmiles = smiles;
+
+			ArrayList<PredictionDashboard> chemicalPredictionDashboard = createPredictionDashboard(valeryResponse, isSalt);
 			
 		}
 
 //		System.out.println(Utilities.gson.toJson(allResults));
 		//TODO do API call for json Report, store that too
-		
+		return predictionDashboards;
 	}
 	
-	private static PredictionDashboard convertUnits(String dataset, PredictionDashboard pd) {
+	private static Double convertUnits(String dataset, Double predictionValue) {
+		Double convertedValue;
 		if (dataset.toLowerCase().contains("water")) {
-			pd.setPredictionValue(Math.pow(10.0,pd.getPredictionValue()));
+			convertedValue = (Math.pow(10.0, predictionValue));
+			return convertedValue;
 		}
-		return pd;
+		return predictionValue;
 	}
 	
 	
