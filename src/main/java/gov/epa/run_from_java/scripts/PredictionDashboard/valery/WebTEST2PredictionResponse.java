@@ -6,7 +6,7 @@ import com.google.gson.annotations.Expose;
 
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.Dataset;
 
-public class ValeryResponse {
+public class WebTEST2PredictionResponse {
 	@Expose
     public Dataset dataset;
 	@Expose
