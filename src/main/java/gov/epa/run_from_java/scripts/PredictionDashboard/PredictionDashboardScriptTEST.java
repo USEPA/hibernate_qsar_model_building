@@ -1,12 +1,16 @@
 package gov.epa.run_from_java.scripts.PredictionDashboard;
 
+import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 
+import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 
@@ -19,8 +23,10 @@ import gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
+import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport;
 import gov.epa.databases.dev_qsar.qsar_models.service.MethodServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.PredictionReportServiceImpl;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 
@@ -31,6 +37,7 @@ public class PredictionDashboardScriptTEST  {
 	
 	MethodServiceImpl methodService=new MethodServiceImpl();
 	PredictionDashboardServiceImpl predictionDashboardService=new PredictionDashboardServiceImpl();
+	PredictionReportServiceImpl predictionReportService=new PredictionReportServiceImpl();
 
 	String lanId="tmarti02";
 	String version="5.1.3";
@@ -64,7 +71,7 @@ public class PredictionDashboardScriptTEST  {
 				List<PredictionResults>listPredictionResults=htResultsAll.get(DTXSID);
 				
 				for (PredictionResults pr:listPredictionResults) {
-					PredictionDashboard pd=convertPredictionResultsToPredictionDashboard(pr,hmModels);
+					PredictionDashboard pd=convertPredictionResultsToPredictionDashboard(pr,hmModels,true);
 					predictionDashboardService.create(pd);
 //					System.out.println(Utilities.gson.toJson(pd));
 				}
@@ -93,7 +100,7 @@ public class PredictionDashboardScriptTEST  {
 //			if(true)return;
 			
 			for (PredictionResults pr:resultsAll) {
-				PredictionDashboard pd=convertPredictionResultsToPredictionDashboard(pr,hmModels);
+				PredictionDashboard pd=convertPredictionResultsToPredictionDashboard(pr,hmModels,true);
 				predictionDashboardService.create(pd);
 //				System.out.println(Utilities.gson.toJson(pd));
 			}
@@ -103,14 +110,113 @@ public class PredictionDashboardScriptTEST  {
 		} 
 		
 	}
+	
+	
+	void runFromDashboardJsonFile(String filepathJson) {
+		
+		
+		try {
+			
+			//TODO add code to create automatically new methods if they arent in the methods table in db
+			HashMap<String,Method> hmMethods=new HashMap<>();
+			hmMethods.put("consensus_regressor",methodService.findByName("consensus_regressor"));
+			hmMethods.put("consensus_classifier",methodService.findByName("consensus_classifier"));
+			
+			HashMap<String, Model> hmModels = createModels(hmMethods);
+			
+			BufferedReader br=new BufferedReader(new FileReader(filepathJson));
+			
+			int count=0;
+
+//			for (String line:lines) {
+			while (true) {
+				String strPredictionResults=br.readLine();
+				if(strPredictionResults==null) break;
+				count++;
+				
+				PredictionResults predictionResults=Utilities.gson.fromJson(strPredictionResults,PredictionResults.class);
+//				System.out.println(Utilities.gson.toJson(pr));
+				
+				PredictionDashboard pd=convertPredictionResultsToPredictionDashboard(predictionResults,hmModels,true);
+				pd=predictionDashboardService.create(pd);
+
+//				if(predictionDashboard.getPredictionError()!=null) continue;//For testing
+				
+//				byte[] bytes=PredictionReport.compress(strPredictionResults);
+//				byte[] bytes=strPredictionResults.getBytes(StandardCharsets.ISO_8859_1);
+				byte[] bytes=strPredictionResults.getBytes();
+				
+//				String line2=PredictionReport.decompress(bytes);
+//				System.out.println("Decompressed:"+line2);
+				
+				
+				System.out.println(pd.getDtxcid()+"\t"+pd.getModel().getName()+"\t"+pd.getPredictionValue()+"\t"+pd.getPredictionString()+"\t"+pd.getPredictionError());
+
+				PredictionReport predictionReport=new PredictionReport(pd, bytes, lanId);
+				predictionReportService.create(predictionReport);
+				
+//				if(true) break;
+				
+			}
+			
+			
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		} 
+		
+	}
+	
+	
+	void extractRecords(String filepathJson,String filepathOutput,String dtxcid) {
+		
+		try {
+			
+			
+			BufferedReader br=new BufferedReader(new FileReader(filepathJson));
+			FileWriter fw=new FileWriter(filepathOutput);
+			
+			int count=0;
+			
+			Gson gson=new Gson();
+			
+
+//			for (String line:lines) {
+			while (true) {
+				String line=br.readLine();
+				if(line==null) break;
+				count++;
+				PredictionResults pr=Utilities.gson.fromJson(line,PredictionResults.class);
+				
+				if (pr.getDTXCID().equals(dtxcid)) {
+					System.out.println(Utilities.gson.toJson(pr));
+					fw.write(gson.toJson(pr)+"\r\n");
+					fw.flush();
+				}
+				
+				
+			}
+			fw.close();
+			br.close();
+			
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		} 
+		
+	}
+
+
+	
+
 
 
 	private HashMap<String, Model> createModels(HashMap<String, Method> hmMethods) {
 		HashMap<String,Model> hmModels=new HashMap<>();
 		
 		for (String propertyName:propertyNames) {
-			String source="T.E.S.T. "+version;
-			String descriptorSetName="T.E.S.T. "+version;
+			String source=getSoftwareName();
+			String descriptorSetName=getSoftwareName();
 
 			String splittingName="TEST";
 			String propertyNameDB=getPropertyNameDB(propertyName);
@@ -125,8 +231,12 @@ public class PredictionDashboardScriptTEST  {
 
 			String modelName=getModelName(propertyNameDB); 
 			
+//			System.out.println(modelName);
+			
 			Model model=new Model(modelName, hmMethods.get(methodName), null,descriptorSetName, datasetName, splittingName, source,lanId);
 			model=CreatorScript.createModel(model);
+			
+//			System.out.println(modelName+"\t"+model.getName());
 			hmModels.put(modelName, model);
 		}
 		return hmModels;
@@ -245,17 +355,23 @@ public class PredictionDashboardScriptTEST  {
 //		
 //	}
 	
+	String getSoftwareName() {
+		return "TEST"+version;
+	}
 	
 	String getModelName(String propertyNameDB) {
-		return "TEST"+version+" "+propertyNameDB;
+		return propertyNameDB+" "+getSoftwareName();
 	}
 
 	private String getDatasetName(String propertyNameDB) {
-		return propertyNameDB+" TEST"+version;
+		return getModelName(propertyNameDB);
 	}
+	
+	
+	
 
 	
-	PredictionDashboard convertPredictionResultsToPredictionDashboard(PredictionResults pr,HashMap<String,Model>htModels) {
+	PredictionDashboard convertPredictionResultsToPredictionDashboard(PredictionResults pr,HashMap<String,Model>htModels,boolean convertPredictionMolarUnits) {
 
 		PredictionDashboard pd=new PredictionDashboard();
 		
@@ -267,11 +383,15 @@ public class PredictionDashboardScriptTEST  {
 
 				String propertyName=pr.getEndpoint();
 				String propertyNameDB=getPropertyNameDB(propertyName);
-				
-				String datasetName=propertyNameDB+" TEST"+pr.getVersion();
 				String modelName=getModelName(propertyNameDB);
 				
+//				System.out.println(Utilities.gson.toJson(htModels.get(modelName)));
+				
 				pd.setModel(htModels.get(modelName));
+				
+//				System.out.println("here");
+				
+				
 				pd.setCanonQsarSmiles("N/A");
 				pd.setDtxsid(pr.getDTXSID());
 				pd.setDtxcid(pr.getDTXCID());
@@ -293,23 +413,11 @@ public class PredictionDashboardScriptTEST  {
 						if (pt.getPredToxValue().equals("N/A")) {
 							pd.setPredictionError(pt.getMessage());
 						} else {
-							if (propertyName.equals("Fathead minnow LC50 (96 hr)") || propertyName.equals("Daphnia magna LC50 (48 hr)") || propertyName.equals("T. pyriformis IGC50 (48 hr)") || propertyName.equals("Water solubility at 25°C")) {								
-								//Convert to M:
-								pd.setPredictionValue(Math.pow(10.0,-Double.parseDouble(pt.getPredToxValue())));
-							} else if (propertyName.equals("Oral rat LD50")) {
-								//Convert to mol/kg:
-								pd.setPredictionValue(Math.pow(10.0,-Double.parseDouble(pt.getPredToxValue())));
-							} else if (propertyName.equals("Bioconcentration factor")) {
-								//Convert to L/kg:
-								pd.setPredictionValue(Math.pow(10.0,Double.parseDouble(pt.getPredToxValue())));
-							} else if (propertyName.contains("Vapor pressure")) {
-								//Convert mmHg:
-								pd.setPredictionValue(Math.pow(10.0,Double.parseDouble(pt.getPredToxValue())));
-							} else if (propertyName.contains("Viscosity")) {
-								//Convert to cP:
-								pd.setPredictionValue(Math.pow(10.0,Double.parseDouble(pt.getPredToxValue())));
-							} else if (propertyName.equals("Estrogen Receptor RBA")) {
-								pd.setPredictionValue(Math.pow(10.0,Double.parseDouble(pt.getPredToxValue())));
+							if (convertPredictionMolarUnits)
+								convertLogMolarUnits(pd, pt);
+							else {
+								pd.setPredictionValue(Double.parseDouble(pt.getPredToxValue()));
+//								pd.prediction_units=pt.getMolarLogUnits();
 							}
 						}
 					} else {
@@ -330,6 +438,7 @@ public class PredictionDashboardScriptTEST  {
 					}
 				}
 
+//				pd.setModel(null);//so can print out
 //				System.out.println(Utilities.gson.toJson(pd));
 			} catch (Exception ex) {
 				//					System.out.println(gson.toJson(pr));
@@ -347,7 +456,39 @@ public class PredictionDashboardScriptTEST  {
 	}
 
 	
+	private static void convertLogMolarUnits(PredictionDashboard pd, PredictionResultsPrimaryTable pt) {
+		
+		String modelName=pd.getModel().getName();
+		String name=modelName.replace(" "+pd.getModel().getSource(), "");
+		
+		if (name.equals(DevQsarConstants.NINETY_SIX_HOUR_LC50)
+				|| name.equals(DevQsarConstants.FORTY_EIGHT_HR_DM_LC50)
+				|| name.equals(DevQsarConstants.FORTY_EIGHT_HR_IGC50)
+				|| name.contains(DevQsarConstants.WATER_SOLUBILITY)) {
+			pd.setPredictionValue(Math.pow(10.0,-Double.parseDouble(pt.getPredToxValue())));
+//			pd.prediction_units="M";
+		} else if (name.equals(DevQsarConstants.ORAL_RAT_LD50)) {
+			pd.setPredictionValue(Math.pow(10.0,-Double.parseDouble(pt.getPredToxValue())));
+//			pd.prediction_units="mol/kg";
+		} else if (name.equals(DevQsarConstants.BCF)) {
+			pd.setPredictionValue(Math.pow(10.0,Double.parseDouble(pt.getPredToxValue())));
+//			pd.prediction_units="L/kg";								
+		} else if (name.contains(DevQsarConstants.VAPOR_PRESSURE)) {
+			pd.setPredictionValue(Math.pow(10.0,Double.parseDouble(pt.getPredToxValue())));
+//			pd.prediction_units="mmHg";								
+		} else if (name.contains(DevQsarConstants.VISCOSITY)) {
+			pd.setPredictionValue(Math.pow(10.0,Double.parseDouble(pt.getPredToxValue())));
+//			pd.prediction_units="cP";								
+		} else if (name.equals(DevQsarConstants.ESTROGEN_RECEPTOR_RBA)) {
+			pd.setPredictionValue(Math.pow(10.0,Double.parseDouble(pt.getPredToxValue())));
+//			pd.prediction_units="Dimensionless";
+		} else {
+			System.out.println("Not handled:"+name);
+		}
+	}
 	
+	
+
 
 	void createDatasets() {
 		
@@ -397,7 +538,20 @@ public class PredictionDashboardScriptTEST  {
 	
 	
 	
-	
+	void testRetrievePredictionReport() {
+
+		//To do it via sql:  select convert_from(file, 'ISO-8859-1') from qsar_models.prediction_reports r
+
+		PredictionReport pr=predictionReportService.findByPredictionDashboardId(1406L);
+//		String strPredictionReport=pr.decompress(pr.getFile());
+//		String strPredictionReport=new String(pr.getFile(), StandardCharsets.ISO_8859_1);
+		String strPredictionReport=new String(pr.getFile());
+		
+		System.out.println(strPredictionReport);
+			
+		PredictionResults predictionResults=Utilities.gson.fromJson(strPredictionReport, PredictionResults.class);
+		System.out.println(Utilities.gson.toJson(predictionResults));
+	}
 	
 	
 
@@ -406,13 +560,25 @@ public class PredictionDashboardScriptTEST  {
 
 		pds.version="5.1.3";
 		
-		pds.createDatasets();//TODO need to add the datapoints
+//		pds.createDatasets();//TODO need to add the datapoints
 
 //		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\TEST_2020_03_18\\reports\\sample_predictions.json";
 //		pds.runFromSampleJsonFileHashtable(filePathJson,SoftwareVersion);
 
-		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\TEST_2020_03_18\\reports\\TEST_results_all_endpoints_snapshot_compounds1.json";
-		pds.runFromSampleJsonFile(filePathJson);
+//		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\TEST_2020_03_18\\reports\\TEST_results_all_endpoints_snapshot_compounds1.json";
+//		pds.runFromSampleJsonFile(filePathJson);
+
+		
+//		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\TEST_results_all_endpoints_snapshot_compounds4.json";
+		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\sample.json";
+//		pds.runFromDashboardJsonFile(filePathJson);
+		
+		pds.testRetrievePredictionReport();
+				
+
+//		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\TEST_results_all_endpoints_snapshot_compounds4.json";
+//		String filePathJson2="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\sample.json";
+//		pds.extractRecords(filePathJson,filePathJson2,"DTXCID0080822");
 		
 		//TODO create createSQL (List<PredictionDashboard> predictions)- this way you can create predictions which arent in the models table
 		//TODO make SQL query to assemble the results for displaying on dashboard...

@@ -7,6 +7,7 @@ import java.util.Vector;
 public class PredictionResults {
 
 	private String reportBase;
+	private String version;
 	
 	
     private String Smiles;//test chemical CAS (chemical being predicted)
@@ -240,6 +241,14 @@ public class PredictionResults {
 
 	public void setDTXCID(String dTXCID) {
 		DTXCID = dTXCID;
+	}
+
+	public String getVersion() {
+		return version;
+	}
+
+	public void setVersion(String version) {
+		this.version = version;
 	}
 
 }
