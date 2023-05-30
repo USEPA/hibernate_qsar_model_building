@@ -2,8 +2,13 @@ package gov.epa.run_from_java.scripts;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
+
+import org.openscience.cdk.AtomContainer;
+import org.openscience.cdk.AtomContainerSet;
+import org.openscience.cdk.interfaces.IAtomContainer;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -13,7 +18,7 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorSet;
 import gov.epa.endpoints.datasets.descriptor_values.DescriptorValuesCalculator;
 import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValuesCalculator;
 import gov.epa.endpoints.datasets.descriptor_values.TestDescriptorValuesCalculator;
-
+import gov.epa.run_from_java.scripts.PredictionDashboard.DashboardPredictionUtilities;
 import gov.epa.util.wekalite.*;
 import gov.epa.web_services.descriptors.SciDataExpertsDescriptorWebService.SciDataExpertsChemical;
 import gov.epa.web_services.descriptors.SciDataExpertsDescriptorWebService.SciDataExpertsDescriptorResponse;
@@ -54,18 +59,83 @@ public class QsarDescriptorsScriptTodd {
 		
 		List<String>datasetNames=new ArrayList<>();
 
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("ExpProp BCF Fish_TMM");
+//		datasetNames.add("BP from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("ExpProp BCF Fish_TMM");
+//		datasetNames.add("pKa_a from exp_prop and chemprop");
+//		datasetNames.add("pKa_b from exp_prop and chemprop");
+
+//		datasetNames.add("MP from exp_prop and chemprop v2");
+//		datasetNames.add("WS from exp_prop and chemprop v2");
+//		datasetNames.add("BP from exp_prop and chemprop v3");
+		
+		datasetNames.add("HLC v1");
+		datasetNames.add("WS v1");
+		datasetNames.add("VP v1");
+		datasetNames.add("LogP v1");
+		datasetNames.add("BP v1");
+		datasetNames.add("MP v1");
 		
 		int batchSize=1;//right now if one chemical in batch fails, the batch run fails, so run 1 at a time
 		for (String datasetName:datasetNames) {
 			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,batchSize);
 		}
+	}
+	
+	
+	void generateDescriptorsForDsstoxSDF() {
+
+		String server="https://hcd.rtpnc.epa.gov/";
+		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
+
+		String folderSrc="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\hibernate_qsar_model_building\\data\\dsstox\\sdf\\";
+		String fileName="snapshot_compounds1.sdf";
+		String filepathSDF=folderSrc+fileName;
+		
+		int batchSize=500;//right now if one chemical in batch fails, the batch run fails, so run 1 at a time
+		boolean skipMissingSID=true;//skip if SDF chemical has no DSSTOXSID
+		int maxCount=-1;//number of chemicals to extract from SDF, -1 to extract all
+
+		
+//		String descriptorSetName="WebTEST-default";
+		String descriptorSetName="ToxPrints-default";
+//		String descriptorSetName="RDKit-default";
+//		String descriptorSetName="PaDEL-default";
+		
+
+		DashboardPredictionUtilities dpu = new DashboardPredictionUtilities();
+		AtomContainerSet acs= dpu.readSDFV3000(filepathSDF);
+		AtomContainerSet acs2 = dpu.filterAtomContainerSet(acs, skipMissingSID, maxCount);
+		
+		System.out.println(acs2.getAtomContainerCount()+" chemicals loaded from SDF");
+
+		List<String>smilesList=new ArrayList<>();
+		
+		Iterator<IAtomContainer> iterator= acs2.atomContainers().iterator();
+		
+		int count=0;
+
+		while (iterator.hasNext()) {
+			count++;
+			AtomContainer ac=(AtomContainer) iterator.next();
+			String smiles=ac.getProperty("smiles");
+			
+			if (smiles==null) {
+				String DTXCID=ac.getProperty("DTXCID");
+				System.out.println(DTXCID+" smiles is null");
+				//TODO generate smiles from AC
+				continue;
+			}
+			
+//			System.out.println(count+"\t"+smiles);
+			smilesList.add(smiles);
+		}
+
+		calc.calculateDescriptors_useSqlToExcludeExisting(smilesList,  descriptorSetName, true,batchSize);
+		
 	}
 
 	void calcSingleChemical() {
@@ -88,10 +158,11 @@ public class QsarDescriptorsScriptTodd {
 		Unirest.config().connectTimeout(0).socketTimeout(0);
 
 		QsarDescriptorsScriptTodd q=new QsarDescriptorsScriptTodd();
-		q.generateDescriptorsForDataset();
+//		q.generateDescriptorsForDataset();
+		q.generateDescriptorsForDsstoxSDF();
 		
 //		q.calcSingleChemical();
-		if(true) return;
+//		if(true) return;
 		
 		
 //		String tsv = calculateDescriptorsForDataset(

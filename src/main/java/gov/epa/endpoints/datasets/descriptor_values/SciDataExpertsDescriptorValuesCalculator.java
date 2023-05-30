@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.openscience.cdk.AtomContainerSet;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -383,5 +385,60 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 			
 			
 		}
+	}
+
+	public void calculateDescriptors_useSqlToExcludeExisting(List<String>canonQsarSmilesToCalculate, String descriptorSetName,
+			boolean writeToDatabase, int batchSize) {
+		
+		DescriptorSet descriptorSet = descriptorSetService.findByName(descriptorSetName);
+		if (descriptorSet==null) {
+			System.out.println("No such descriptor set: " + descriptorSetName);
+			return;
+		}
+		
+		try {
+			Connection conn=SqlUtilities.getConnectionPostgres();
+			Statement st = conn.createStatement();			
+
+			//List of ones where we already have descriptors:
+			String sql="select canon_qsar_smiles from qsar_descriptors.descriptor_values\r\n"
+					+ "where fk_descriptor_set_id ="+descriptorSet.getId()+";";
+			
+			System.out.println(sql);
+			
+			ResultSet rs = st.executeQuery(sql);
+			while (rs.next()) {//Remove the ones that are already in the descriptor values table:
+				canonQsarSmilesToCalculate.remove(rs.getString(1));
+			}
+			
+//			System.out.println(canonQsarSmilesToCalculate.size());
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+				
+		System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");
+		
+		while (canonQsarSmilesToCalculate.size()>0) {
+			List<String> canonQsarSmilesToCalculate2 = new ArrayList<String>();
+			int stop=batchSize;
+			if (batchSize>canonQsarSmilesToCalculate.size()) stop=canonQsarSmilesToCalculate.size();
+			
+			for (int i=0;i<stop;i++) {
+				canonQsarSmilesToCalculate2.add(canonQsarSmilesToCalculate.remove(0));
+			}
+			
+//			System.out.println(canonQsarSmilesToCalculate2.get(0));
+			
+			calculateDescriptors(canonQsarSmilesToCalculate2, descriptorSet, null, writeToDatabase);			
+			System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");			
+			if (canonQsarSmilesToCalculate.size()==0) break;
+			
+//			if(true) break;
+			
+		}
+		
 	}
 }

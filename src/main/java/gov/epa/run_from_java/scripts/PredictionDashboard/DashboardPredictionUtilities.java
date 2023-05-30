@@ -12,6 +12,8 @@ import org.openscience.cdk.AtomContainerSet;
 import org.openscience.cdk.DefaultChemObjectBuilder;
 import org.openscience.cdk.interfaces.IAtomContainer;
 import org.openscience.cdk.io.MDLV3000Reader;
+import org.openscience.cdk.smiles.SmiFlavor;
+import org.openscience.cdk.smiles.SmilesGenerator;
 import org.openscience.cdk.smiles.SmilesParser;
 
 import com.google.gson.Gson;
@@ -34,12 +36,11 @@ public class DashboardPredictionUtilities {
 	 */
 	public AtomContainerSet readSDFV3000(String sdfFilePath) {
 
-		AtomContainerSet acs = new AtomContainerSet();
-
 		MDLV3000Reader mr=new MDLV3000Reader();
-
 		SmilesParser sp  = new SmilesParser(DefaultChemObjectBuilder.getInstance());
+		SmilesGenerator sg= new SmilesGenerator(SmiFlavor.Unique);
 
+		AtomContainerSet acs = new AtomContainerSet();
 		
 		try {
 
@@ -111,13 +112,22 @@ public class DashboardPredictionUtilities {
 						molecule2 = new AtomContainer();
 					}							
 						
-					molecule2.setProperties(molecule.getProperties());
+					molecule2.setProperties(molecule.getProperties());					
 					acs.addAtomContainer(molecule2);
 					
 				} else {
 					acs.addAtomContainer(molecule);
+
+					String smiles=molecule.getProperty("smiles");
+					
+					if(smiles==null) {
+						smiles=sg.create(molecule);
+						String DTXCID=molecule.getProperty("DTXCID");
+						molecule.setProperty("smiles", smiles);
+//						System.out.println(DTXCID+"\t"+smiles);
+					}
 				}
-						
+				
 			}
 			
 			br.close();
