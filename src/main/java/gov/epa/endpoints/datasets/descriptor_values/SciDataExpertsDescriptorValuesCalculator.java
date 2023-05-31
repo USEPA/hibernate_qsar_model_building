@@ -443,11 +443,13 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 			
 			calculateDescriptors(canonQsarSmilesToCalculate2, descriptorSet, mapDescriptors);			
 			
-			if (canonQsarSmilesToCalculate.size()==0) break;
-					
+//			for (String smiles:mapDescriptors.keySet()) {
+//				System.out.println(smiles+"\t"+mapDescriptors.get(smiles));
+//			}
+			
 			writeDescriptorValuesToDatabase(mapDescriptors, descriptorSet,lanId);
 			
-			System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");			
+			System.out.println("At end of loop: "+canonQsarSmilesToCalculate.size()+"\tremaining to run");			
 
 
 //			if(true) break;
