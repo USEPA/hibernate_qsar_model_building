@@ -49,7 +49,7 @@ public class QsarDescriptorsScriptTodd {
 		calc.deleteDescriptorSetValuesForDataset(datasetName, descriptorSetName);
 	}
 	
-	void generateDescriptorsForDataset() {
+	void generateDescriptorsForDatasets() {
 		
 		String descriptorSetName="WebTEST-default";
 //		String descriptorSetName="ToxPrints-default";
@@ -87,6 +87,34 @@ public class QsarDescriptorsScriptTodd {
 		}
 	}
 	
+
+	void generateDescriptorsForDataset() {
+		
+		String server="https://hcd.rtpnc.epa.gov/";
+		
+		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
+		
+//		String[] sciDataExpertsDescriptorSetNames = {
+//				"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
+//		};
+		
+//		String[] sciDataExpertsDescriptorSetNames = {
+//				"RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
+//		};
+		
+//		String[] sciDataExpertsDescriptorSetNames = {"WebTEST-default"};
+		String[] sciDataExpertsDescriptorSetNames = {"ToxPrints-default"};
+//		String[] sciDataExpertsDescriptorSetNames = {"Mordred-default"};
+
+		int batchSize=200;
+		String datasetName="HLC";
+				
+		for (String descriptorSetName:sciDataExpertsDescriptorSetNames) {
+			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,batchSize);
+		}
+		
+	}
+	
 	
 	void generateDescriptorsForDsstoxSDF() {
 
@@ -97,7 +125,7 @@ public class QsarDescriptorsScriptTodd {
 		String fileName="snapshot_compounds1.sdf";
 		String filepathSDF=folderSrc+fileName;
 		
-		int batchSize=200;//right now if one chemical in batch fails, the batch run fails, so run 1 at a time
+		int batchSize=200;//if batchsize is too big the API might return null		
 		boolean skipMissingSID=true;//skip if SDF chemical has no DSSTOXSID
 		int maxCount=-1;//number of chemicals to extract from SDF, -1 to extract all
 
@@ -113,13 +141,17 @@ public class QsarDescriptorsScriptTodd {
 		AtomContainerSet acs2 = dpu.filterAtomContainerSet(acs, skipMissingSID, maxCount);
 		
 		System.out.println(acs2.getAtomContainerCount()+" chemicals loaded from SDF");
-
-		List<String>smilesList=new ArrayList<>();
 		
+		List<String> smilesList = makeSmilesListFromSDF(acs2);
+
+		calc.calculateDescriptors_useSqlToExcludeExisting(smilesList,  descriptorSetName, true,batchSize);
+		
+	}
+
+	private List<String> makeSmilesListFromSDF(AtomContainerSet acs2) {
 		Iterator<IAtomContainer> iterator= acs2.atomContainers().iterator();
-		
+		List<String>smilesList=new ArrayList<>();
 		int count=0;
-
 		
 		while (iterator.hasNext()) {
 			count++;
@@ -129,16 +161,15 @@ public class QsarDescriptorsScriptTodd {
 			if (smiles==null) {
 				String DTXCID=ac.getProperty("DTXCID");
 				System.out.println(DTXCID+" smiles is null");
-				//TODO generate smiles from AC
 				continue;
 			}
 			
 //			System.out.println(count+"\t"+smiles);
-			smilesList.add(smiles);
+			
+			if(!smilesList.contains(smiles))		
+				smilesList.add(smiles);
 		}
-
-		calc.calculateDescriptors_useSqlToExcludeExisting(smilesList,  descriptorSetName, true,batchSize);
-		
+		return smilesList;
 	}
 
 	void calcSingleChemical() {
@@ -162,72 +193,14 @@ public class QsarDescriptorsScriptTodd {
 		Unirest.config().connectTimeout(0).socketTimeout(0);
 		
 		QsarDescriptorsScriptTodd q=new QsarDescriptorsScriptTodd();
+		
 //		q.generateDescriptorsForDataset();
+//		q.generateDescriptorsForDatasets();
 		q.generateDescriptorsForDsstoxSDF();
 		
-//		q.calcSingleChemical();
-		
 		//*********************************************************************************************************		
-		
-		
-//		String tsv = calculateDescriptorsForDataset(
-//				"Standard Water solubility from exp_prop", "PaDEL-default",
-//				DevQsarConstants.SERVER_819 + ":443", true, "tmarti02");
-
-		
-//		String tsv = calculateDescriptorsForDataset(
-//				"Water solubility OPERA", "PaDEL-default",
-//				DevQsarConstants.SERVER_819 + ":443", true, "tmarti02");		
-
-		
-		
-//		String datasetName = "Henry's law constant OPERA";
-//		String datasetName = "LC50 TEST";
-//		String datasetName = "LD50 TEST";
-//		String datasetName = "Mutagenicity TEST";
-
-//		String datasetName="LogBCF OPERA";
-//		String splitting="OPERA";
-
-		
-//		String[] sciDataExpertsDescriptorSetNames = {
-//				"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
-//		};
-		
-//		String[] sciDataExpertsDescriptorSetNames = {
-//				"RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
-//		};
-		
-//		String[] sciDataExpertsDescriptorSetNames = {"WebTEST-default"};
-//		String[] sciDataExpertsDescriptorSetNames = {"Mordred-default"};
-		
-//		String urlSDE=HCD_SCI_DATA_EXPERTS_URL;
-//		String urlSDE = DevQsarConstants.SERVER_819 + ":443";
-		
-//		DescriptorValuesCalculator calc = new DescriptorValuesCalculator("tmarti02");
-//		
-//		for (String descriptorSetName:sciDataExpertsDescriptorSetNames) {
-//			
-////			calc.deleteDescriptorSetValuesForDataset(datasetName, descriptorSetName);
-//			
-//			String tsv = calculateDescriptorsForDataset(datasetName, descriptorSetName, urlSDE, true, "tmarti02");
-//			System.out.println(descriptorSetName + "\t" + tsv.split("\r\n").length);
-//			String header = tsv.substring(0, tsv.indexOf("\r"));
-//			System.out.println(header.split("\t").length);
-//			System.out.println(header);
-//			System.out.println();
-//		}
-		
-		
-//		SciDataExpertsDescriptorValuesCalculator calc = new SciDataExpertsDescriptorValuesCalculator(urlSDE, "tmarti02");
-////		String smiles="Cc1c(cc(cc1[N+](=O)[O-])[N+](=O)[O-])[N+](=O)[O-]";
-////		String smiles="CC1(C)C(C=C(Cl)Cl)C1C(=O)OCC1=CC(OC2=CC=CC=C2)=CC=C1";
-//		
-//		String smiles="ClC12C3(Cl)C4(Cl)C5(Cl)C(Cl)(C1(Cl)C4(Cl)Cl)C2(Cl)C(Cl)(Cl)C35Cl";
-//		
-//		calc.runSingleChemical("RDKit-default", smiles);
+//		q.calcSingleChemical();
 //		runSimple();
-		
 //		compareToGrace();
 	}
 	

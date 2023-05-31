@@ -208,8 +208,6 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 	 */
 	public void calculateDescriptors_useSqlToExcludeExisting(String datasetName, String descriptorSetName, boolean writeToDatabase, int batchSize) {
 		
-		
-		
 		DescriptorSet descriptorSet = descriptorSetService.findByName(descriptorSetName);
 		if (descriptorSet==null) {
 			System.out.println("No such descriptor set: " + descriptorSetName);
@@ -265,10 +263,10 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 //		}
 		
 				
-//		//Run in batches(TMM):
-		int count=batchSize;		
-		System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");
 		
+		System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");
+
+//		//Run in batches(TMM):
 		runSmilesList(canonQsarSmilesToCalculate, batchSize, descriptorSet);
 		
 	}
@@ -378,19 +376,15 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 			return;
 		}
 		
-		System.out.println(descriptorSet.getId());
+//		System.out.println(descriptorSet.getId());
+		removeSmilesAlreadyInDatabase(canonQsarSmilesToCalculate, descriptorSet);
+		System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");
+
+		runSmilesList(canonQsarSmilesToCalculate, batchSize, descriptorSet);
 		
-		
-		Collections.sort(canonQsarSmilesToCalculate);
-		
-		
-		for (int i=0;i<canonQsarSmilesToCalculate.size()-1;i++) {
-			if(canonQsarSmilesToCalculate.get(i).equals(canonQsarSmilesToCalculate.get(i+1))) {
-				System.out.println("Duplicate removed:"+canonQsarSmilesToCalculate.remove(i+1));
-				i--;
-			}
-		}
-		
+	}
+
+	private void removeSmilesAlreadyInDatabase(List<String> canonQsarSmilesToCalculate, DescriptorSet descriptorSet) {
 		try {
 			Connection conn=SqlUtilities.getConnectionPostgres();
 			Statement st = conn.createStatement();			
@@ -412,16 +406,20 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-				
-		System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");
-		
-			
-		runSmilesList(canonQsarSmilesToCalculate, batchSize, descriptorSet);
+	}
+
+	private void removeSmilesDuplicates(List<String> canonQsarSmilesToCalculate) {
+		Collections.sort(canonQsarSmilesToCalculate);
 		
 		
-		
-		
+		for (int i=0;i<canonQsarSmilesToCalculate.size()-1;i++) {
+			if(canonQsarSmilesToCalculate.get(i).equals(canonQsarSmilesToCalculate.get(i+1))) {
+				String duplicate=canonQsarSmilesToCalculate.get(i+1);
+				canonQsarSmilesToCalculate.remove(i+1);
+				System.out.println("Duplicate removed:"+duplicate);
+				i--;
+			}
+		}
 	}
 
 	private void runSmilesList(List<String> canonQsarSmilesToCalculate, int batchSize, DescriptorSet descriptorSet) {
@@ -449,7 +447,7 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 			
 			writeDescriptorValuesToDatabase(mapDescriptors, descriptorSet,lanId);
 			
-			System.out.println("At end of loop: "+canonQsarSmilesToCalculate.size()+"\tremaining to run");			
+			System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");			
 
 
 //			if(true) break;
