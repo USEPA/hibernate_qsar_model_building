@@ -97,7 +97,7 @@ public class QsarDescriptorsScriptTodd {
 		String fileName="snapshot_compounds1.sdf";
 		String filepathSDF=folderSrc+fileName;
 		
-		int batchSize=500;//right now if one chemical in batch fails, the batch run fails, so run 1 at a time
+		int batchSize=200;//right now if one chemical in batch fails, the batch run fails, so run 1 at a time
 		boolean skipMissingSID=true;//skip if SDF chemical has no DSSTOXSID
 		int maxCount=-1;//number of chemicals to extract from SDF, -1 to extract all
 
