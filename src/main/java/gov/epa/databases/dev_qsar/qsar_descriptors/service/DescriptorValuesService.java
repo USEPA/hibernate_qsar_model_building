@@ -30,4 +30,6 @@ public interface DescriptorValuesService {
 	
 	public void delete(DescriptorValues descriptorValues, Session session);
 
+	public  void createSql(List<DescriptorValues> valuesArray);
+
 }

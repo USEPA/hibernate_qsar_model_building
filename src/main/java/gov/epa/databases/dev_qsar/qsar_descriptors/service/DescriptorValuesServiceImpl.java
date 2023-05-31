@@ -1,20 +1,35 @@
 package gov.epa.databases.dev_qsar.qsar_descriptors.service;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
+import javax.persistence.Column;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.qsar_descriptors.QsarDescriptorsSession;
 import gov.epa.databases.dev_qsar.qsar_descriptors.dao.DescriptorValuesDao;
 import gov.epa.databases.dev_qsar.qsar_descriptors.dao.DescriptorValuesDaoImpl;
+import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorSet;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorValues;
+import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 
 public class DescriptorValuesServiceImpl implements DescriptorValuesService {
 	
@@ -117,5 +132,59 @@ public class DescriptorValuesServiceImpl implements DescriptorValuesService {
 		session.flush();
 		t.commit();
 	}
+
+	@Override
+	public  void createSql(List<DescriptorValues> valuesArray) {
+
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		
+		String [] fieldNames= {"canon_qsar_smiles", "fk_descriptor_set_id", "values_tsv",
+				 "created_by", "created_at"};
+
+		int batchSize=100;
+		
+		String sql="INSERT INTO qsar_descriptors.descriptor_values (";
+		
+		for (int i=0;i<fieldNames.length;i++) {
+			sql+=fieldNames[i];
+			if (i<fieldNames.length-1)sql+=",";
+			else sql+=") VALUES (";
+		}
+		
+		for (int i=0;i<fieldNames.length-1;i++) {
+			sql+="?";
+			if (i<fieldNames.length-1)sql+=",";			 		
+		}
+		sql+="current_timestamp)";	
+//		System.out.println(sql);
+		
+		try {
+			conn.setAutoCommit(false);
+			PreparedStatement prep = conn.prepareStatement(sql);
+			long t1=System.currentTimeMillis();
+
+			for (int counter = 0; counter < valuesArray.size(); counter++) {
+				DescriptorValues p=valuesArray.get(counter);
+				prep.setString(1, p.getCanonQsarSmiles());
+				prep.setLong(2, p.getDescriptorSet().getId());
+				prep.setString(3, p.getValuesTsv());
+				prep.setString(4, p.getCreatedBy());
+				prep.addBatch();
+				
+				if (counter % batchSize == 0 && counter!=0) {
+//					System.out.println(counter);
+					prep.executeBatch();
+				}
+			}
+
+			int[] count = prep.executeBatch();// do what's left
+			long t2=System.currentTimeMillis();
+			System.out.println("time to post "+valuesArray.size()+" predictions using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
+			conn.commit();
+//			conn.setAutoCommit(true);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}			
 
 }

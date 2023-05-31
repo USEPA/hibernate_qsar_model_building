@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -179,7 +180,7 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 			for (int i=0;i<stop;i++) {
 				canonQsarSmilesToCalculate2.add(canonQsarSmilesToCalculate.remove(0));
 			}
-			calculateDescriptors(canonQsarSmilesToCalculate2, descriptorSet, descriptorsMap, writeToDatabase);
+			calculateDescriptors(canonQsarSmilesToCalculate2, descriptorSet, descriptorsMap);
 			
 			System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");
 			
@@ -268,24 +269,7 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 		int count=batchSize;		
 		System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");
 		
-		while (canonQsarSmilesToCalculate.size()>0) {
-			List<String> canonQsarSmilesToCalculate2 = new ArrayList<String>();
-			int stop=count;
-			if (count>canonQsarSmilesToCalculate.size()) stop=canonQsarSmilesToCalculate.size();
-			
-			for (int i=0;i<stop;i++) {
-				canonQsarSmilesToCalculate2.add(canonQsarSmilesToCalculate.remove(0));
-			}
-			
-//			System.out.println(canonQsarSmilesToCalculate2.get(0));
-			
-			calculateDescriptors(canonQsarSmilesToCalculate2, descriptorSet, null, writeToDatabase);			
-			System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");			
-			if (canonQsarSmilesToCalculate.size()==0) break;
-			
-//			if(true) break;
-			
-		}
+		runSmilesList(canonQsarSmilesToCalculate, batchSize, descriptorSet);
 		
 	}
 
@@ -298,7 +282,7 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 	 * @param writeToDatabase
 	 */
 	private void calculateDescriptors(List<String> canonQsarSmilesToCalculate, DescriptorSet descriptorSet, 
-			Map<String, String> descriptorsMap, boolean writeToDatabase) {
+			Map<String, String> descriptorsMap) {
 		String descriptorService = descriptorSet.getDescriptorService();
 		String descriptorServiceOptionsStr = descriptorSet.getDescriptorServiceOptions();
 		Map<String, Object> descriptorServiceOptions = new HashMap<String, Object>();
@@ -371,10 +355,6 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 					if (descriptorsMap!=null)
 						descriptorsMap.put(chemical.smiles, valuesTsv);
 					
-					if (writeToDatabase) {
-//						System.out.println(chemical.smiles+"\t"+valuesTsv);
-						writeDescriptorValuesToDatabase(chemical.smiles, descriptorSet, valuesTsv);
-					}
 				}
 			} else {
 				System.out.println("chemicals are null for "+canonQsarSmilesToCalculate.size()+" chemicals");
@@ -382,10 +362,12 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 			}
 		} else {
 			System.out.println("response is null for "+canonQsarSmilesToCalculate.size()+" chemicals");
-			
-			
 		}
+		
+		
 	}
+
+	
 
 	public void calculateDescriptors_useSqlToExcludeExisting(List<String>canonQsarSmilesToCalculate, String descriptorSetName,
 			boolean writeToDatabase, int batchSize) {
@@ -394,6 +376,19 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 		if (descriptorSet==null) {
 			System.out.println("No such descriptor set: " + descriptorSetName);
 			return;
+		}
+		
+		System.out.println(descriptorSet.getId());
+		
+		
+		Collections.sort(canonQsarSmilesToCalculate);
+		
+		
+		for (int i=0;i<canonQsarSmilesToCalculate.size()-1;i++) {
+			if(canonQsarSmilesToCalculate.get(i).equals(canonQsarSmilesToCalculate.get(i+1))) {
+				System.out.println("Duplicate removed:"+canonQsarSmilesToCalculate.remove(i+1));
+				i--;
+			}
 		}
 		
 		try {
@@ -421,7 +416,21 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 				
 		System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");
 		
+			
+		runSmilesList(canonQsarSmilesToCalculate, batchSize, descriptorSet);
+		
+		
+		
+		
+	}
+
+	private void runSmilesList(List<String> canonQsarSmilesToCalculate, int batchSize, DescriptorSet descriptorSet) {
+
 		while (canonQsarSmilesToCalculate.size()>0) {
+
+			Map<String,String>mapDescriptors=new HashMap<>();
+
+			
 			List<String> canonQsarSmilesToCalculate2 = new ArrayList<String>();
 			int stop=batchSize;
 			if (batchSize>canonQsarSmilesToCalculate.size()) stop=canonQsarSmilesToCalculate.size();
@@ -432,13 +441,16 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 			
 //			System.out.println(canonQsarSmilesToCalculate2.get(0));
 			
-			calculateDescriptors(canonQsarSmilesToCalculate2, descriptorSet, null, writeToDatabase);			
-			System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");			
+			calculateDescriptors(canonQsarSmilesToCalculate2, descriptorSet, mapDescriptors);			
+			
 			if (canonQsarSmilesToCalculate.size()==0) break;
+					
+			writeDescriptorValuesToDatabase(mapDescriptors, descriptorSet,lanId);
 			
+			System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");			
+
+
 //			if(true) break;
-			
 		}
-		
 	}
 }

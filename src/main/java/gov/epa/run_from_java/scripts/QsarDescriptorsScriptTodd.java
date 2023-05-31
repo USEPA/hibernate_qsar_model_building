@@ -2,8 +2,10 @@ package gov.epa.run_from_java.scripts;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 import org.openscience.cdk.AtomContainer;
@@ -118,6 +120,7 @@ public class QsarDescriptorsScriptTodd {
 		
 		int count=0;
 
+		
 		while (iterator.hasNext()) {
 			count++;
 			AtomContainer ac=(AtomContainer) iterator.next();
@@ -155,14 +158,16 @@ public class QsarDescriptorsScriptTodd {
 	}
 	public static void main(String[] args) {
 		java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.OFF);
+		
 		Unirest.config().connectTimeout(0).socketTimeout(0);
-
+		
 		QsarDescriptorsScriptTodd q=new QsarDescriptorsScriptTodd();
 //		q.generateDescriptorsForDataset();
 		q.generateDescriptorsForDsstoxSDF();
 		
 //		q.calcSingleChemical();
-//		if(true) return;
+		
+		//*********************************************************************************************************		
 		
 		
 //		String tsv = calculateDescriptorsForDataset(
@@ -176,7 +181,6 @@ public class QsarDescriptorsScriptTodd {
 
 		
 		
-//*********************************************************************************************************		
 //		String datasetName = "Henry's law constant OPERA";
 //		String datasetName = "LC50 TEST";
 //		String datasetName = "LD50 TEST";

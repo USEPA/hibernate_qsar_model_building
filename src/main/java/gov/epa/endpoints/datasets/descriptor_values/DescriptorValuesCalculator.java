@@ -1,5 +1,6 @@
 package gov.epa.endpoints.datasets.descriptor_values;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -99,6 +100,19 @@ public class DescriptorValuesCalculator {
 		} catch (ConstraintViolationException e) {
 			System.out.println(e.getMessage());
 		}
+	}
+	
+	
+	protected void writeDescriptorValuesToDatabase(Map<String, String> descriptorsMap, DescriptorSet descriptorSet,String createdBy) {
+		
+		List<DescriptorValues>valuesArray=new ArrayList<>();
+		
+		for (String smiles:descriptorsMap.keySet()) {
+			DescriptorValues dv=new DescriptorValues(smiles,descriptorSet,descriptorsMap.get(smiles),createdBy);
+			valuesArray.add(dv);
+		}
+		descriptorValuesService.createSql(valuesArray);
+		
 	}
 
 }
