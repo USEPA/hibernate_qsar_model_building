@@ -1,25 +1,38 @@
 package gov.epa.run_from_java.scripts;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
+import org.apache.commons.io.FileUtils;
+import org.json.CDL;
 import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.AtomContainerSet;
 import org.openscience.cdk.interfaces.IAtomContainer;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorSet;
 import gov.epa.endpoints.datasets.descriptor_values.DescriptorValuesCalculator;
 import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValuesCalculator;
 import gov.epa.endpoints.datasets.descriptor_values.TestDescriptorValuesCalculator;
+
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.DashboardPredictionUtilities;
 import gov.epa.util.wekalite.*;
 import gov.epa.web_services.descriptors.SciDataExpertsDescriptorWebService.SciDataExpertsChemical;
@@ -102,12 +115,12 @@ public class QsarDescriptorsScriptTodd {
 //				"RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
 //		};
 		
-//		String[] sciDataExpertsDescriptorSetNames = {"WebTEST-default"};
-		String[] sciDataExpertsDescriptorSetNames = {"ToxPrints-default"};
+		String[] sciDataExpertsDescriptorSetNames = {"WebTEST-default"};
+//		String[] sciDataExpertsDescriptorSetNames = {"ToxPrints-default"};
 //		String[] sciDataExpertsDescriptorSetNames = {"Mordred-default"};
 
 		int batchSize=200;
-		String datasetName="HLC";
+		String datasetName="WS v1 res_qsar";
 				
 		for (String descriptorSetName:sciDataExpertsDescriptorSetNames) {
 			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,batchSize);
@@ -194,15 +207,66 @@ public class QsarDescriptorsScriptTodd {
 		
 		QsarDescriptorsScriptTodd q=new QsarDescriptorsScriptTodd();
 		
-//		q.generateDescriptorsForDataset();
+		q.generateDescriptorsForDataset();
 //		q.generateDescriptorsForDatasets();
-		q.generateDescriptorsForDsstoxSDF();
+//		q.generateDescriptorsForDsstoxSDF();
+//		q.runChemicalsFromBatchSearchCSV();
 		
 		//*********************************************************************************************************		
 //		q.calcSingleChemical();
 //		runSimple();
 //		compareToGrace();
 	}
+	
+	
+	/**
+	 * Runs chemicals from batch seatch csv- assumes it has a SMILES column
+	 * 
+	 */
+	private void runChemicalsFromBatchSearchCSV() {
+		
+		
+		try {
+			
+//			String filename="batch search toxprints top20 hazard chemicals.csv";
+			String filename="batch search toxprints 5000 random TSCA chemicals.csv";
+			
+			String descriptorSetName="ToxPrints-default";
+			int batchSize=200;
+			
+			InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(filename);	         
+
+			String csvAsString = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
+			
+			String json = CDL.toJSONArray(csvAsString).toString();
+			inputStream.close();
+			
+			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+//			System.out.println("Number of records in csv:"+ja.size());
+
+			List<String> smilesList=new ArrayList<>();
+
+			for (int i=0;i<ja.size();i++) {
+				JsonObject jo=ja.get(i).getAsJsonObject();
+				String SMILES=jo.get("SMILES").getAsString();
+//				System.out.println(SMILES);
+				
+				if (!smilesList.contains(SMILES))
+					smilesList.add(SMILES);
+			}
+			
+			String server="https://hcd.rtpnc.epa.gov/";
+			SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
+			calc.calculateDescriptors_useSqlToExcludeExisting(smilesList,  descriptorSetName, true,batchSize);
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+	}
+	
 	
 	
 	static List<Double> runSimple() {
