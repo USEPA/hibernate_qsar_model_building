@@ -1,0 +1,32 @@
+name,description,isBinary
+Coverage_Test,Test set coverage,FALSE
+Coverage_Training,Training set coverage,FALSE
+CVscore_fold1,Cross-Validation Score for training fold 1,FALSE
+CVscore_fold2,Cross-Validation Score for training fold 2,FALSE
+CVscore_fold3,Cross-Validation Score for training fold 3,FALSE
+CVscore_fold4,Cross-Validation Score for training fold 4,FALSE
+CVscore_fold5,Cross-Validation Score for training fold 5,FALSE
+MAE_Test,Mean absolute error on test set,FALSE
+MAE_Training,Mean absolute error on training set,FALSE
+OOB_score,Out of Bag Score,FALSE
+OOBscore_fold1,Out of Bag Score for training fold 1,FALSE
+OOBscore_fold2,Out of Bag Score for training fold 2,FALSE
+OOBscore_fold3,Out of Bag Score for training fold 3,FALSE
+OOBscore_fold4,Out of Bag Score for training fold 4,FALSE
+OOBscore_fold5,Out of Bag Score for training fold 5,FALSE
+PearsonRSQ_Test,Pearson product moment correlation coefficient on test set (matches Excel RSQ function),FALSE
+PearsonRSQ_Training,Pearson product moment correlation coefficient on training set (matches Excel RSQ function),FALSE
+Q2_CV_Training,Mean Cross-Validation Q2 for training set,FALSE
+Q2_Test,Coefficient of determination on test set,FALSE
+R2_CV_Training,Mean Cross-Validation R2 for training set,FALSE
+R2_Training,Coefficient of determination on training set,FALSE
+RMSE_Test,Root mean squared error on test set,FALSE
+RMSE_Training,Root mean squared error on training set,FALSE
+BA_Test,Balanced accuracy on test set,TRUE
+BA_Training,Balanced accuracy on training set,TRUE
+Concordance_Test,Concordance on test set,TRUE
+Concordance_Training,Concordance on training set,TRUE
+SN_Test,Sensitivity on test set,TRUE
+SN_Training,Sensitivity on training set,TRUE
+SP_Test,Specificity on test set,TRUE
+SP_Training,Specificity on training set,TRUE
