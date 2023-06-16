@@ -44,6 +44,8 @@ public class ModelData {
 	static DatasetServiceImpl datasetService=new DatasetServiceImpl();
 	static DescriptorSetServiceImpl descriptorSetService=new DescriptorSetServiceImpl(); 
 	
+	boolean debug=false;
+	
 	public ModelData(String datasetName, String descriptorSetName, String splittingName,boolean removeLogP_Descriptors,boolean useDTXCIDs) {
 		this.datasetName = datasetName;
 		this.descriptorSetName = descriptorSetName;
@@ -134,14 +136,14 @@ public class ModelData {
 		StringBuilder sbTraining = new StringBuilder(instanceHeader);
 		StringBuilder sbPrediction = new StringBuilder(instanceHeader);
 
-		int counter=0;
+		int counterTrain=0;
+		int counterTest=0;
 		
 		try {
 			
 			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
 			
 			while (rs.next()) {
-				counter++;
 				
 //				if (counter%1000==0) System.out.println(counter+ "\tbuilding instances");
 				
@@ -152,12 +154,23 @@ public class ModelData {
 				
 				
 				String instance=generateInstance(id, qsar_property_value, descriptors);
-				if (instance==null) continue;
+				
+				if (instance==null) {
+					System.out.println(id+"\tnull instance");
+					continue;
+				}
 
 				if (splitNum==DevQsarConstants.TRAIN_SPLIT_NUM) {
 					sbTraining.append(instance);
+					counterTrain++;
+
+//					System.out.print(instance);
+					
 				} else if (splitNum==DevQsarConstants.TEST_SPLIT_NUM) {
 					sbPrediction.append(instance);
+					counterTest++;
+				} else {
+//					System.out.println(splitNum);
 				}
 				
 			}
@@ -166,7 +179,10 @@ public class ModelData {
 			ex.printStackTrace();
 		}
 				
-		System.out.println("Training / prediction instances created:"+counter);
+		if (debug) {
+			System.out.println("Training instances created:"+counterTrain);
+			System.out.println("Test instances created:"+counterTest);
+		}
 		
 		this.trainingSetInstances = sbTraining.toString();
 		this.predictionSetInstances = sbPrediction.toString();
@@ -396,7 +412,10 @@ public class ModelData {
 		//TODO need to go through all instances of overall set and remove bad columns instead of rejecting rows
 //		if (valuesTsv.toLowerCase().contains("infinity")) return null;
 //		if (valuesTsv.toLowerCase().contains("∞")) return null;
-		if (valuesTsv.toLowerCase().contains("error")) return null;
+		if (valuesTsv.toLowerCase().contains("error")) {
+			System.out.println(smiles+"\t"+valuesTsv);
+			return null;
+		}
 		return smiles + "\t" + qsar_property_value+ "\t" + valuesTsv + "\r\n";
 	}
 

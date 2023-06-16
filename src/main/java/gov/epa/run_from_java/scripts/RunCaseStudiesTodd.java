@@ -344,16 +344,20 @@ public class RunCaseStudiesTodd {
 		List<String>datasetNames=new ArrayList<>();
 		datasetNames.add("HLC v1");
 		datasetNames.add("VP v1");
-		datasetNames.add("WS v1");
 		datasetNames.add("BP v1");
+		datasetNames.add("WS v1");
 		datasetNames.add("LogP v1");
 		datasetNames.add("MP v1");
 
-//		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;		
-		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+//		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;
 //		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+
+		System.out.println(splitting);
+		System.out.println("Dataset	Len(Embedding)	Embedding");
+				
 		
 		
 		for (String datasetName:datasetNames) {
@@ -380,8 +384,6 @@ public class RunCaseStudiesTodd {
 				strDescriptors+="\""+descriptor+"\"";
 				if(i<descriptors.length-1) strDescriptors+=", ";
 			}
-			
-			
 			
 			System.out.println(datasetName+"\t"+descriptors.length+"\t'"+strDescriptors);
 		}
@@ -420,20 +422,22 @@ public class RunCaseStudiesTodd {
 //		datasetNames.add("BP from exp_prop and chemprop v3");
 //		datasetNames.add("MP from exp_prop and chemprop v2");
 		
-		datasetNames.add("HLC v1");
+//		datasetNames.add("HLC v1");
 //		datasetNames.add("VP v1");
 //		datasetNames.add("WS v1");
 //		datasetNames.add("BP v1");
 //		datasetNames.add("LogP v1");
 //		datasetNames.add("MP v1");
+		
+		datasetNames.add("WS v1 res_qsar");
 
 
 //		datasetNames.add("pKa_a from exp_prop and chemprop");
 //		datasetNames.add("pKa_b from exp_prop and chemprop");
 		
 //		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;
-//		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;		
-		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;		
+//		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
 
 		System.out.println("\n*** portNumber="+portModelBuilding+" ***");
 		
@@ -475,6 +479,56 @@ public class RunCaseStudiesTodd {
 			}
 			
 			buildConsensusModel(datasetName,splitting,descriptorSetName,methodsConsensus);
+			
+		}
+
+	}
+	
+	
+	public static void printDataSetSize() {
+		
+		lanId="tmarti02";		
+		
+		List<String>datasetNames=new ArrayList<>();
+		datasetNames.add("HLC v1");
+		datasetNames.add("VP v1");
+		datasetNames.add("BP v1");
+		datasetNames.add("WS v1");
+		datasetNames.add("LogP v1");
+		datasetNames.add("MP v1");
+		
+//		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;
+//		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;		
+
+		
+		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+
+		System.out.println(splitting);
+
+		System.out.println("Dataset\tNtrain\tNtest");
+		
+		for (String datasetName:datasetNames) {
+						
+			boolean remove_log_p = false;
+			if(datasetName.contains("LogP")) remove_log_p=true;
+						
+			CalculationInfo ci=new CalculationInfo();
+			ci.remove_log_p = remove_log_p;
+			ci.qsarMethodGA = qsarMethodGA;
+			ci.datasetName=datasetName;
+			ci.descriptorSetName=descriptorSetName;
+			ci.splittingName=splitting;
+					
+			
+			ModelData data = ModelData.initModelData(ci,false);
+			
+			long countTraining = data.trainingSetInstances.chars().filter(ch -> ch == '\n').count()-1;
+			long countPrediction = data.predictionSetInstances.chars().filter(ch -> ch == '\n').count()-1;
+			
+			
+			System.out.println(datasetName+"\t"+countTraining+"\t"+countPrediction);
+//			System.out.println(data.predictionSetInstances);
 			
 		}
 
@@ -551,7 +605,7 @@ public class RunCaseStudiesTodd {
 
 	public static void runCaseStudyExpProp_All_Endpoints_No_Embedding_Include_kNN() {
 		
-		boolean buildIndividualModels=false;
+		boolean buildIndividualModels=true;
 
 		lanId="tmarti02";		
 		ModelWebService.num_jobs=8;
@@ -564,17 +618,19 @@ public class RunCaseStudiesTodd {
 
 		List<String>datasetNames=new ArrayList<>();
 
-		datasetNames.add("HLC v1");
-		datasetNames.add("VP v1");
-		datasetNames.add("WS v1");
-		datasetNames.add("BP v1");
-		datasetNames.add("LogP v1");
-		datasetNames.add("MP v1");
+//		datasetNames.add("HLC v1");
+//		datasetNames.add("VP v1");
+//		datasetNames.add("WS v1");
+//		datasetNames.add("BP v1");
+//		datasetNames.add("LogP v1");
+//		datasetNames.add("MP v1");
 
+		datasetNames.add("WS v1 res_qsar");
+		
 
 //		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;
-//		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;		
-		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;		
+//		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
 
 		System.out.println("\n*** portNumber="+portModelBuilding+" ***");
 		
@@ -1021,23 +1077,17 @@ public class RunCaseStudiesTodd {
 		
 //		ModelBuilder mb=new ModelBuilder("tmarti02");
 //		mb.postPredictionsSQL(null, null, new Splitting(), null);
-		
-		printEmbeddings();
+
+//		printDataSetSize();
+//		printEmbeddings();
 		
 //		runCaseStudyExpProp_All_Endpoints();		
 //		runCaseStudyExpProp_All_Endpoints_No_Embedding();
 //		runCaseStudyExpProp_All_Endpoints_No_Embedding_Omit_kNN();
-//		runCaseStudyExpProp_All_Endpoints_No_Embedding_Include_kNN();
+		runCaseStudyExpProp_All_Endpoints_No_Embedding_Include_kNN();
 //		runCV_and_Predict_for_Model();
 		
 		
-//		for (int i=641;i<=649;i++) {
-//			deleteModel(i);
-//		}
-		
-//		deleteModel(658L);
-//		deleteModelsNoBytes();
-//		calcPredictionStatsForPFAS();
 	}
 	
 	
