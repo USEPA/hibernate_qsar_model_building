@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,6 +21,7 @@ import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Vector;
@@ -39,18 +41,24 @@ import com.epam.indigo.IndigoInchi;
 import com.epam.indigo.IndigoObject;
 import com.google.gson.Gson;
 
-
+import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
+import gov.epa.endpoints.models.ModelData;
 import gov.epa.run_from_java.scripts.DatasetFileWriter;
+import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.run_from_java.scripts.dataSetCreatorOPERA_Padel;
 import gov.epa.util.StructureImageUtil;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+
 public class OutlierReport {
-
-
 	
-	public static void main(String[] args) throws IOException {
 
+	void runGenOutlierReport() {
+		
 //		String dataset = "Standard Water solubility from exp_prop";
 		String dataset = "Standard Henry's law constant from exp_prop";
 		String folderOutput="Reports/Outlier testing";
@@ -66,38 +74,115 @@ public class OutlierReport {
 
 		String tsv=null;
 		
-		if (genOverallSetTSV) {
-			DatasetFileWriter writer = new DatasetFileWriter();
-			tsv=writer.writeWithoutSplitting(dataset, descriptorSetName, folderTSV,true);		
-			System.out.println("Tsv creation done");
-		} else {
-		    tsv = Files.readString(Path.of(tsvFilePath));
-		    System.out.println("Tsv loaded");
-		}
-		
-		String json=null;
-		
-		if (genOutliersJSON) {
-			String server="http://localhost";
-//			String server="http://v2626umcth819.rtord.epa.gov";//TODO 819 not working...
-						              		
-			json=QueryOutlierDetectionAPI.callPythonOutlierDetection(tsv, false, server);		
-			FileWriter fw=new FileWriter(jsonFilePath);
-			fw.write(json);
-			System.out.println(json);
-			fw.flush();
-			fw.close();
+		try {
+
+			if (genOverallSetTSV) {
+				DatasetFileWriter writer = new DatasetFileWriter();
+				tsv=writer.writeWithoutSplitting(dataset, descriptorSetName, folderTSV,true);		
+				System.out.println("Tsv creation done");
+			} else {
+				tsv = Files.readString(Path.of(tsvFilePath));
+				System.out.println("Tsv loaded");
+			}
+
+			String json=null;
+
+			if (genOutliersJSON) {
+				String server="http://localhost";
+				//			String server="http://v2626umcth819.rtord.epa.gov";//TODO 819 not working...
+
+				json=QueryOutlierDetectionAPI.callPythonOutlierDetection(tsv, false, server);		
+				FileWriter fw=new FileWriter(jsonFilePath);
+				
+				fw.write(json);
+				System.out.println(json);
+				fw.flush();
+				fw.close();
+
+			} else {
+				json = Files.readString(Path.of(jsonFilePath));
+				System.out.println(json);
+			}
+
+			Outlier[] recordsOutliers= new Gson().fromJson(json, Outlier[].class);		
+
+			findAnalogs(tsv, recordsOutliers);
+			String outputFileName="outlier report "+dataset+".html";
 			
-		} else {
-			json = Files.readString(Path.of(jsonFilePath));
-			System.out.println(json);
+			Connection conn=SqlUtilities.getConnectionPostgres();
+			createReport(conn, dataset,recordsOutliers, folderOutput,outputFileName,outputFileName);
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
-	    	    		
-		Outlier[] recordsOutliers= new Gson().fromJson(json, Outlier[].class);		
+	}
+	
+	void runGenOutlierReportExpProp() {
+
+		boolean genOutliersJSON=true;//if false saves time by not having to find the outliers using web service
+
 		
-		findAnalogs(tsv, recordsOutliers);
-		String outputFileName="outlier report "+dataset+".html";
-		createReport(recordsOutliers, folderOutput,outputFileName,outputFileName);	
+//		String dataset = "Standard Water solubility from exp_prop";
+//		String dataset = "HLC from exp_prop and chemprop";
+		String dataset = "LogP from exp_prop and chemprop";
+		
+		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\";
+		String folderOutput=folderMain+"datasets\\"+dataset+"\\Outlier testing";
+		
+		String jsonFilePath=folderOutput+"/"+dataset+".json";
+		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+
+		
+		String tsv = ModelData.generateInstancesWithoutSplitting(dataset,descriptorSetName,true);
+		System.out.println("tsv retrieved from the database for "+dataset);
+		
+
+		File f=new File(folderOutput);
+		f.mkdirs();
+
+		try {
+			String json=null;
+
+			if (genOutliersJSON) {
+				String server="http://localhost";
+				//			String server="http://v2626umcth819.rtord.epa.gov";//TODO 819 not working...
+
+				QueryOutlierDetectionAPI.port=5000;
+				
+				json=QueryOutlierDetectionAPI.callPythonOutlierDetection(tsv, false, server);
+				
+				Object obj=Utilities.gson.fromJson(json, Object.class);
+				
+				json=Utilities.gson.toJson(obj);
+				FileWriter fw=new FileWriter(jsonFilePath);
+				fw.write(json);
+				fw.flush();
+				fw.close();
+
+			} else {
+				json = Files.readString(Path.of(jsonFilePath));
+//				System.out.println(json);
+			}
+
+			Outlier[] recordsOutliers= new Gson().fromJson(json, Outlier[].class);		
+
+			findAnalogs(tsv, recordsOutliers);
+			String outputFileName="outlier report "+dataset+".html";
+			Connection conn=SqlUtilities.getConnectionPostgres();
+			
+			createReport(conn, dataset, recordsOutliers, folderOutput,outputFileName,outputFileName);
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	
+	
+	public static void main(String[] args)  {
+		 OutlierReport og=new OutlierReport();
+//		 og.runGenOutlierReport();
+		 og.runGenOutlierReportExpProp();
+	
 	}
 	
 	public static String parseJSONFile(String filename) throws IOException {
@@ -114,7 +199,34 @@ public class OutlierReport {
 		}
 	}
 
-	public static void createReport(Outlier[] recs, String outputFolder, String outputFileName, 
+	
+	 public static LinkedList<String> Parse(String Line, String Delimiter) {
+		    // parses a delimited string into a list
+
+		    LinkedList<String> myList = new LinkedList<String>();
+
+		    int tabpos = 1;
+
+		    while (tabpos > -1) {
+		      tabpos = Line.indexOf(Delimiter);
+
+		      if (tabpos > 0) {
+		        myList.add(Line.substring(0, tabpos));
+		        Line = Line.substring(tabpos + Delimiter.length(), Line.length());
+		      } else if (tabpos == 0) {
+		        myList.add("");
+		        Line = Line.substring(tabpos + Delimiter.length(), Line.length());
+		      } else {
+		        myList.add(Line.trim());
+		      }
+		    }
+
+		    return myList;
+
+		  }
+	 
+	 
+	public static void createReport(Connection conn, String datasetName, Outlier[] recs, String outputFolder, String outputFileName, 
 			String searchDescription) {
 		
 		int imageWidth= (int)Toolkit.getDefaultToolkit().getScreenSize().getWidth()/4;
@@ -140,8 +252,26 @@ public class OutlierReport {
 			writeHeader(fw,maxCols,searchDescription);
 			
 			
-			
 			for (Outlier rec:recl) {
+
+				String sql="select dp.qsar_exp_prop_id from qsar_datasets.data_points dp\n"+ 
+				"inner join qsar_datasets.datasets d on dp.fk_dataset_id =d.id\n"+ 
+				"where dp.qsar_dtxcid ='"+rec.ID+"' and d.\"name\"='"+datasetName+"';";
+
+				if (conn!=null) {
+					String exp_prop_id=SqlUtilities.runSQL(conn, sql);
+					
+					LinkedList<String>list=Parse(exp_prop_id, "|");
+					
+					String ID="";					
+					for (int i=0;i<list.size();i++) {
+						String currentID=Integer.parseInt(list.get(i).replace("EXP", ""))+"";
+						ID+=currentID;
+						if(i<list.size()-1) ID+="|";
+					}
+					double err=Math.abs(rec.exp-rec.pred);
+					System.out.println(rec.ID+"\t"+rec.exp+"\t"+rec.pred+"\t"+err+"\t"+ID);	
+				}
 				
 				
 				fw.write("<tr>\r\n");
@@ -156,7 +286,8 @@ public class OutlierReport {
 //				fw.write("<img src=\""+imgURL+rec.ID+"\" height="+imageWidth+">");
 				
 				if (rec.ID.contains("DTXCID")) {
-					fw.write("<img src=\""+imgURL+rec.ID+"\" height="+imageWidth+">");	
+					LinkedList<String>list=Parse(rec.ID, "|");
+					fw.write("<img src=\""+imgURL+list.get(0)+"\" height="+imageWidth+">");
 				} else {
 					fw.write("<img src=\""+StructureImageUtil.generateImgSrc(rec.ID)+"\" width="+imageWidth+">");
 				}
@@ -187,13 +318,20 @@ public class OutlierReport {
 //					 fw.write(HtmlUtil.generateImgSrc(analog.ID, outputFolder + "/img"));
 					
 					if (analog.ID.contains("DTXCID")) {
-						fw.write("<img src=\""+imgURL+analog.ID+"\" height="+imageWidth+">");	
+						
+						if (analog.ID.contains("|")) {
+							String [] ids=analog.ID.split("\\|");
+							fw.write("<img src=\""+imgURL+ids[0]+"\" height="+imageWidth+">");
+						} else {
+							fw.write("<img src=\""+imgURL+analog.ID+"\" height="+imageWidth+">");
+						}
+						
 					} else {
 						fw.write("<img src=\""+StructureImageUtil.generateImgSrc(analog.ID)+"\" width="+imageWidth+">");
 					}
 					
 					
-					fw.write("<figcaption>"+analog.ID+"("+df.format(analog.sim)+")"+"<br>exp="+df.format(analog.exp)+"<br></figcaption>");
+					fw.write("<figcaption>"+analog.ID+"("+df.format(analog.sim)+")"+"<br>exp="+df.format(analog.exp)+"<br><br></figcaption>");
 					fw.write("</figure></td>");
 					
 				}		
