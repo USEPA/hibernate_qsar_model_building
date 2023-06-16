@@ -158,9 +158,9 @@ public class ModelBuildingScript {
 
 	}
 
-	public static void buildUnweightedConsensusModel(Set<Long> modelIds, String lanId) {
+	public static Long buildUnweightedConsensusModel(Set<Long> modelIds, String lanId) {
 		ConsensusModelBuilder cmb = new ConsensusModelBuilder(lanId);
-		cmb.buildUnweighted(modelIds);
+		return cmb.buildUnweighted(modelIds);
 	}
 
 	public static void buildWeightedConsensusModel(Map<Long, Double> modelIdsWithWeights, String lanId) {
