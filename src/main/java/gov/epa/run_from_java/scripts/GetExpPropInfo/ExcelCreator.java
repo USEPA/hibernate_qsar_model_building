@@ -10,28 +10,148 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.poi.common.usermodel.HyperlinkType;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellValue;
+import org.apache.poi.ss.usermodel.ClientAnchor;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.Drawing;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Hyperlink;
 import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Picture;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.util.Units;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import gov.epa.util.StructureImageUtil;
+
 public class ExcelCreator {
 
 	
-	public static JsonArray convertExcelToJsonArray(String filepath,int rowNumHeader) {
+	public static void createImage(String smiles, int startRow,int column,Sheet sheet, int rowspan) {
+
+		Workbook wb=sheet.getWorkbook();
+		if (smiles==null || smiles.equals("N/A") || smiles.contains("error")) return;		
+		byte[] imageBytes=StructureImageUtil.generateImageBytesFromSmiles(smiles);		
+		if (imageBytes==null) return;
+		
+		int pictureIdx = wb.addPicture(imageBytes, Workbook.PICTURE_TYPE_PNG);
+
+		//create an anchor with upper left cell column/startRow, only one cell anchor since bottom right depends on resizing
+		CreationHelper helper = wb.getCreationHelper();
+		ClientAnchor anchor = helper.createClientAnchor();
+		anchor.setCol1(column);
+		anchor.setRow1(startRow);
+
+		//create a picture anchored to Col1 and Row1
+		Drawing drawing = sheet.createDrawingPatriarch();
+		Picture pict = drawing.createPicture(anchor, pictureIdx);
+
+		//get the picture width in px
+		int pictWidthPx = pict.getImageDimension().width;
+		//get the picture height in px
+		int pictHeightPx = pict.getImageDimension().height;
+
+		//get column width of column in px
+		float columnWidthPx = sheet.getColumnWidthInPixels(column);
+
+		//get the heights of all merged rows in px
+		float[] rowHeightsPx = new float[startRow+rowspan];
+		float rowsHeightPx = 0f;
+		for (int r = startRow; r < startRow+rowspan; r++) {
+			Row row = sheet.getRow(r);
+			float rowHeightPt = row.getHeightInPoints();
+			rowHeightsPx[r-startRow] = rowHeightPt * Units.PIXEL_DPI / Units.POINT_DPI;
+			rowsHeightPx += rowHeightsPx[r-startRow];
+		}
+
+		//calculate scale
+		float scale = 1;
+		if (pictHeightPx > rowsHeightPx) {
+			float tmpscale = rowsHeightPx / (float)pictHeightPx;
+			if (tmpscale < scale) scale = tmpscale;
+		}
+		if (pictWidthPx > columnWidthPx) {
+			float tmpscale = columnWidthPx / (float)pictWidthPx;
+			if (tmpscale < scale) scale = tmpscale;
+		}
+
+		//calculate the horizontal center position
+		int horCenterPosPx = Math.round(columnWidthPx/2f - pictWidthPx*scale/2f);
+		//set the horizontal center position as Dx1 of anchor
+
+
+		anchor.setDx1(horCenterPosPx * Units.EMU_PER_PIXEL); //in unit EMU for XSSF
+
+
+		//calculate the vertical center position
+		int vertCenterPosPx = Math.round(rowsHeightPx/2f - pictHeightPx*scale/2f);
+		//get Row1
+		Integer row1 = null;
+		rowsHeightPx = 0f;
+		for (int r = 0; r < rowHeightsPx.length; r++) {
+			float rowHeightPx = rowHeightsPx[r];
+			if (rowsHeightPx + rowHeightPx > vertCenterPosPx) {
+				row1 = r + startRow;
+				break;
+			}
+			rowsHeightPx += rowHeightPx;
+		}
+		//set the vertical center position as Row1 plus Dy1 of anchor
+		if (row1 != null) {
+			anchor.setRow1(row1);
+			if (wb instanceof XSSFWorkbook) {
+				anchor.setDy1(Math.round(vertCenterPosPx - rowsHeightPx) * Units.EMU_PER_PIXEL); //in unit EMU for XSSF
+			} else if (wb instanceof HSSFWorkbook) {
+				//see https://stackoverflow.com/questions/48567203/apache-poi-xssfclientanchor-not-positioning-picture-with-respect-to-dx1-dy1-dx/48607117#48607117 for HSSF
+				float DEFAULT_ROW_HEIGHT = 12.75f;
+				anchor.setDy1(Math.round((vertCenterPosPx - rowsHeightPx) * Units.PIXEL_DPI / Units.POINT_DPI * 14.75f * DEFAULT_ROW_HEIGHT / rowHeightsPx[row1]));
+			}
+		}
+
+		//set Col2 of anchor the same as Col1 as all is in one column
+		anchor.setCol2(column);
+
+		//calculate the horizontal end position of picture
+		int horCenterEndPosPx = Math.round(horCenterPosPx + pictWidthPx*scale);
+		//set set the horizontal end position as Dx2 of anchor
+
+		anchor.setDx2(horCenterEndPosPx * Units.EMU_PER_PIXEL); //in unit EMU for XSSF
+
+		//calculate the vertical end position of picture
+		int vertCenterEndPosPx = Math.round(vertCenterPosPx + pictHeightPx*scale);
+		//get Row2
+		Integer row2 = null;
+		rowsHeightPx = 0f;
+		for (int r = 0; r < rowHeightsPx.length; r++) {
+			float rowHeightPx = rowHeightsPx[r];
+			if (rowsHeightPx + rowHeightPx > vertCenterEndPosPx) {
+				row2 = r + startRow;
+				break;
+			}
+			rowsHeightPx += rowHeightPx;
+		}
+
+		//set the vertical end position as Row2 plus Dy2 of anchor
+		if (row2 != null) {
+			anchor.setRow2(row2);
+			anchor.setDy2(Math.round(vertCenterEndPosPx - rowsHeightPx) * Units.EMU_PER_PIXEL); //in unit EMU for XSSF
+		}
+	}
+
+	
+	public static JsonArray convertExcelToJsonArray(String filepath,int rowNumHeader,String sheetName) {
 
 		JsonArray ja=new JsonArray();
 		try {
@@ -41,7 +161,7 @@ public class ExcelCreator {
 			inputStream = new FileInputStream(new File(filepath));
 
 			Workbook workbook = new XSSFWorkbook(inputStream);
-			Sheet sheet = workbook.getSheet("Records");
+			Sheet sheet = workbook.getSheet(sheetName);
 
 			List<String>fields=new ArrayList<>();
 
@@ -55,7 +175,7 @@ public class ExcelCreator {
 //				System.out.println(fieldName);
 			}
 
-			for (int rowNum=rowNumHeader+1;rowNum<sheet.getLastRowNum();rowNum++) {
+			for (int rowNum=rowNumHeader+1;rowNum<=sheet.getLastRowNum();rowNum++) {
 				JsonObject jo=new JsonObject();
 
 				Row row=sheet.getRow(rowNum);
