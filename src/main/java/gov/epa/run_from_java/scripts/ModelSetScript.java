@@ -293,7 +293,7 @@ public class ModelSetScript {
 	List<Long>getModels(String datasetName,String splittingName,String descriptorsetName,boolean usesEmbedding) {
 		
 		String sql="select m.id from qsar_models.models m\n"+
-		"where m.dataset_name='"+datasetName+"' and\n"+ 
+		"where m.dataset_name='"+datasetName.replace("'", "''")+"' and\n"+ 
 		"m.splitting_name ='"+splittingName+"' and \n"+
 		"m.descriptor_set_name ='"+descriptorsetName+"' and \n";
 		
