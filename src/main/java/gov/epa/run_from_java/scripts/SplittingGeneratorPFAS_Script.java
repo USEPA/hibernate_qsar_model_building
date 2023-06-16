@@ -54,7 +54,7 @@ public class SplittingGeneratorPFAS_Script {
 
 	ChemicalListService chemicalListService = new ChemicalListServiceImpl();
 	SourceSubstanceService sourceSubstanceService = new SourceSubstanceServiceImpl();
-	SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
+	SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,"qsar-ready","https://hcd.rtpnc.epa.gov");
 	DataPointInSplittingService dataPointInSplittingService = new DataPointInSplittingServiceImpl();
 	CompoundService compoundService = new CompoundServiceImpl();
 //	Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
@@ -217,7 +217,6 @@ public class SplittingGeneratorPFAS_Script {
 						dpisNew.setSplitNum(2);
 				} else {
 					dpisNew.setSplitNum(2);
-					dpisList.add(dpisNew);
 				}
 			
 			} else if (dpis.getSplitNum()==DevQsarConstants.TEST_SPLIT_NUM) {
@@ -225,7 +224,11 @@ public class SplittingGeneratorPFAS_Script {
 					dpisNew.setSplitNum(2);//dont use				
 			}
 			
-			dpisList.add(dpisNew);
+			//Only add ones that are in training and test set (ignore ones with SplitNum=2):
+			//TODO- does this break report generation?
+			
+			if (dpisNew.getSplitNum()!=2)
+				dpisList.add(dpisNew);
 			
 		}
 		
@@ -307,7 +310,7 @@ public class SplittingGeneratorPFAS_Script {
 				String [] values=Line.split("\t");
 				String smiles=values[1];
 				
-				if (!smiles.contains("error") && !smiles.isBlank()) {
+				if (!smiles.contains("error") && !smiles.isBlank() && smiles.contains("F")) {
 					smilesArray.add(smiles);
 				}
 			}
@@ -460,8 +463,17 @@ public class SplittingGeneratorPFAS_Script {
 //		datasetNames.add("ExpProp BCF Fish_TMM");
 //		datasetNames.add("pKa_a from exp_prop and chemprop");
 //		datasetNames.add("pKa_b from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop v4");
 		
+//		datasetNames.add("WS from exp_prop and chemprop v2");
+//		datasetNames.add("BP from exp_prop and chemprop v3");
+//		datasetNames.add("MP from exp_prop and chemprop v2");
+		
+		datasetNames.add("HLC v1");
+		datasetNames.add("VP v1");
+		datasetNames.add("WS v1");
+		datasetNames.add("BP v1");
+		datasetNames.add("LogP v1");
+		datasetNames.add("MP v1");
 
 		Connection conn = SqlUtilities.getConnectionPostgres();
 		
@@ -527,20 +539,43 @@ public class SplittingGeneratorPFAS_Script {
 	
 	void deleteSplittings() {
 		
-		String dataSetName= "pKa_a from exp_prop and chemprop";
+//		String dataSetName= "pKa_a from exp_prop and chemprop";
+		
+		
 //		String dataSetName= "pKa_b from exp_prop and chemprop";
-		String splittingName=splittingAll;
-//		String splittingName=splittingAllButPFAS;
+//		String splittingName=splittingAll;
+		String splittingName=splittingAllButPFAS;
 //		String splittingName=splittingPFASOnly;
+//		String splittingName=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 		
 		DataPointInSplittingServiceImpl dpisService=new DataPointInSplittingServiceImpl();
+
 		
-		List<DataPointInSplitting>dpisList=dpisService.findByDatasetNameAndSplittingName(dataSetName, splittingName);
-		
-		for (DataPointInSplitting dpis:dpisList) {
-			System.out.println(dpis.getSplitNum());
-//			dpisService.delete(dpis);
+		List<String>datasetNames=new ArrayList<>();
+		datasetNames.add("HLC v1");
+//		datasetNames.add("VP v1");
+//		datasetNames.add("WS v1");
+//		datasetNames.add("BP v1");
+//		datasetNames.add("LogP v1");
+//		datasetNames.add("MP v1");
+
+		for(String dataSetName:datasetNames) {
+			
+			List<DataPointInSplitting>dpisList=dpisService.findByDatasetNameAndSplittingName(dataSetName, splittingName);
+
+			System.out.println(dpisList.size());
+			
+			for (DataPointInSplitting dpis:dpisList) {
+				
+				System.out.println(dpis.getDataPoint().getCanonQsarSmiles()+"\t"+dpis.getSplitNum());
+				//dpisService.delete(dpis);
+				
+				
+			}
+
 		}
+		
+
 		
 	}
 	void getCounts() {
@@ -551,13 +586,25 @@ public class SplittingGeneratorPFAS_Script {
 //		datasetNames.add("VP from exp_prop and chemprop");
 //		datasetNames.add("LogP from exp_prop and chemprop");
 //		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop v2");
+//		datasetNames.add("BP from exp_prop and chemprop v2");
+		
+//		datasetNames.add("WS from exp_prop and chemprop v2");
+//		datasetNames.add("BP from exp_prop and chemprop v3");
+//		datasetNames.add("MP from exp_prop and chemprop v2");
+
+		datasetNames.add("HLC v1");
+		datasetNames.add("VP v1");
+		datasetNames.add("WS v1");
+		datasetNames.add("BP v1");
+		datasetNames.add("LogP v1");
+		datasetNames.add("MP v1");
+
+		
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		
-		String splittingName=splittingPFASOnly;
+//		String splittingName=splittingPFASOnly;
 //		String splittingName=splittingAllButPFAS;
-//		String splittingName=splittingAll;
-//		String splittingName=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+		String splittingName=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 		
 		for (String datasetName:datasetNames) {			
 			int countTR=getCount(conn, datasetName, splittingName, 0);
