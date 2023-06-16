@@ -177,7 +177,11 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			methodService.create(genericMethod);
 		}
 		
-		Model model = new Model(genericMethod, descriptorEmbedding, data.descriptorSetName, data.datasetName, data.splittingName, DevQsarConstants.SOURCE_WEBTEST, lanId);
+		String modelName="model"+System.currentTimeMillis();//TODO maybe use dataset name and method name in modelName
+		
+		Model model = new Model(modelName, genericMethod, descriptorEmbedding, data.descriptorSetName, data.datasetName, data.splittingName, DevQsarConstants.SOURCE_WEBTEST, lanId);
+		
+		
 		modelService.create(model);
 		String hyperparameters = null;
 		String strModelId = String.valueOf(model.getId());
@@ -286,7 +290,9 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			methodService.create(genericMethod);
 		}
 		
-		Model model = new Model(genericMethod, descriptorEmbedding, data.descriptorSetName, data.datasetName, data.splittingName,DevQsarConstants.SOURCE_WEBTEST, lanId);
+		String modelName="model"+System.currentTimeMillis();//TODO maybe use dataset name and method name in modelName
+
+		Model model = new Model(modelName, genericMethod, descriptorEmbedding, data.descriptorSetName, data.datasetName, data.splittingName,DevQsarConstants.SOURCE_WEBTEST, lanId);
 		modelService.create(model);
 		
 		String strModelId = String.valueOf(model.getId());
@@ -370,8 +376,13 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		public void addCV_DPIS(Model model,Dataset dataset) {
 //			System.out.println(model.getSplittingName());
 			Splitting splittingCV1=splittingService.findByName(model.getSplittingName()+"_CV1");
-			createSplittings(model, splittingCV1);
-			createDataPointInSplittings(model, dataset,splittingCV1);
+			
+			if (splittingCV1==null)  {
+				createSplittings(model);
+				splittingCV1=splittingService.findByName(model.getSplittingName()+"_CV1");
+			}
+			
+			 createDataPointInSplittings(model, dataset,splittingCV1);
 		}
 
 
@@ -452,9 +463,8 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		}
 
 
-		private void createSplittings(Model model, Splitting splittingCV1) {
+		private void createSplittings(Model model) {
 			
-			if (splittingCV1!=null) return;
 			
 			for (int fold=1;fold<=5;fold++) {
 				String name=model.getSplittingName()+"_CV"+fold;
