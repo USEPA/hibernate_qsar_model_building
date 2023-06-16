@@ -393,7 +393,7 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 			String sql="select canon_qsar_smiles from qsar_descriptors.descriptor_values\r\n"
 					+ "where fk_descriptor_set_id ="+descriptorSet.getId()+";";
 			
-			System.out.println(sql);
+//			System.out.println(sql);
 			
 			ResultSet rs = st.executeQuery(sql);
 			while (rs.next()) {//Remove the ones that are already in the descriptor values table:
