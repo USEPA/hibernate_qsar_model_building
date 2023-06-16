@@ -180,7 +180,10 @@ public class DevQsarConstants {
 	
 	public static final String CM3 = "cm^3";
 	public static final String CUBIC_ANGSTROM = "Å^3";
-	
+
+//	public static final String CM3 = "cm3";
+//	public static final String CUBIC_ANGSTROM = "Å3";
+
 	
 	public static final String ATM_M3_MOL = "atm-m3/mol";
 	public static final String NEG_LOG_ATM_M3_MOL = "-log10(atm-m3/mol)";
@@ -230,6 +233,7 @@ public class DevQsarConstants {
 	public static final String SVM = "svm";
 	public static final String RF = "rf";
 	public static final String DNN = "dnn";
+	public static final String REG = "reg";
 	public static final String CONSENSUS = "consensus";
 	
 	// Statistic names in qsar_models database
@@ -261,42 +265,45 @@ public class DevQsarConstants {
 	}
 	
 	// Final modeling unit names for each property name
-	public static HashMap<String, String> getDatasetFinalUnitsMap() {
+	public static HashMap<String, String> getDatasetFinalUnitsNameMap() {
 		HashMap<String, String> map = new HashMap<String, String>();
-		map.put(MELTING_POINT, DEG_C);
-		map.put(BOILING_POINT, DEG_C);
-		map.put(FLASH_POINT, DEG_C);
-		map.put(LOG_KOW, LOG_UNITS);
-		map.put(PKA, LOG_UNITS);
-		map.put(PKA_A, LOG_UNITS);
-		map.put(PKA_B, LOG_UNITS);
-		map.put(LOG_BCF_FISH_WHOLEBODY, LOG_L_KG);
-		map.put(WATER_SOLUBILITY, NEG_LOG_M);
-		map.put(HENRYS_LAW_CONSTANT, NEG_LOG_ATM_M3_MOL);
-		map.put(VAPOR_PRESSURE, LOG_MMHG);
-		map.put(DENSITY, G_CM3);
-		map.put(LOCAL_LYMPH_NODE_ASSAY, BINARY);
-		map.put(SURFACE_TENSION,LOG_CP);
-		map.put(THERMAL_CONDUCTIVITY,MW_MK);
-		map.put(VISCOSITY,LOG_CP);
+		map.put(MELTING_POINT, "DEG_C");
+		map.put(BOILING_POINT, "DEG_C");
+		map.put(FLASH_POINT, "DEG_C");
+		map.put(LOG_KOW, "LOG_UNITS");
+		map.put(PKA, "LOG_UNITS");
+		map.put(PKA_A, "LOG_UNITS");
+		map.put(PKA_B, "LOG_UNITS");
+		map.put(LOG_BCF_FISH_WHOLEBODY, "LOG_L_KG");
+		map.put(WATER_SOLUBILITY, "NEG_LOG_M");
+		map.put(HENRYS_LAW_CONSTANT, "NEG_LOG_ATM_M3_MOL");
+		map.put(VAPOR_PRESSURE, "LOG_MMHG");
+		map.put(DENSITY, "G_CM3");
+		map.put(LOCAL_LYMPH_NODE_ASSAY, "BINARY");
+		map.put(SURFACE_TENSION,"LOG_CP");
+		map.put(THERMAL_CONDUCTIVITY,"MW_MK");
+		map.put(VISCOSITY,"LOG_CP");
 		
-		map.put(MUTAGENICITY,BINARY);
-		map.put(DEV_TOX,BINARY);
-		map.put(LC50, NEG_LOG_M);
-		map.put(LC50DM, NEG_LOG_M);
-		map.put(IGC50, NEG_LOG_M);
-		map.put(LD50, NEG_LOG_MOL_KG);
+		map.put(MUTAGENICITY,"BINARY");
+				
+		map.put(DEV_TOX,"BINARY");
+		map.put(LC50, "NEG_LOG_M");
 		
-		map.put(AMES_MUTAGENICITY,BINARY);
-		map.put(DEVELOPMENTAL_TOXICITY,BINARY);
-		map.put(NINETY_SIX_HOUR_LC50, NEG_LOG_M);
-		map.put(FORTY_EIGHT_HR_DM_LC50, NEG_LOG_M);
-		map.put(FORTY_EIGHT_HR_IGC50, NEG_LOG_M);
-		map.put(ORAL_RAT_LD50, NEG_LOG_MOL_KG);
-		map.put(BCF, LOG_L_KG);
+		map.put(LC50DM, "NEG_LOG_M");
+		map.put(IGC50, "NEG_LOG_M");
+		map.put(LD50, "NEG_LOG_MOL_KG");
 		
-		map.put(ESTROGEN_RECEPTOR_RBA,DIMENSIONLESS);
-		map.put(ESTROGEN_RECEPTOR_BINDING,BINARY);
+		map.put(AMES_MUTAGENICITY,"BINARY");
+		map.put(DEVELOPMENTAL_TOXICITY,"BINARY");
+		
+		map.put(NINETY_SIX_HOUR_LC50, "NEG_LOG_M");
+		map.put(FORTY_EIGHT_HR_DM_LC50, "NEG_LOG_M");
+		map.put(FORTY_EIGHT_HR_IGC50, "NEG_LOG_M");
+		map.put(ORAL_RAT_LD50, "NEG_LOG_MOL_KG");
+		map.put(BCF, "LOG_L_KG");
+		
+		map.put(ESTROGEN_RECEPTOR_RBA,"DIMENSIONLESS");
+		map.put(ESTROGEN_RECEPTOR_BINDING,"BINARY");
 		
 		return map;
 	}
@@ -366,47 +373,49 @@ public class DevQsarConstants {
 	
 	
 	
-	public static HashMap<String, String> getContributorUnitsMap() {
+	public static HashMap<String, String> getContributorUnitsNameMap() {
 		HashMap<String, String> map = new HashMap<String, String>();
-		map.put(MELTING_POINT, DEG_C);
-		map.put(BOILING_POINT, DEG_C);
-		map.put(FLASH_POINT, DEG_C);
-		map.put(LOG_KOW, LOG_UNITS);
-		map.put(WATER_SOLUBILITY, MOLAR);//**
-		map.put(HENRYS_LAW_CONSTANT, ATM_M3_MOL);//***
-		map.put(VAPOR_PRESSURE, MMHG);//***
-		map.put(DENSITY, G_CM3);
-		map.put(THERMAL_CONDUCTIVITY,MW_MK);
-		map.put(VISCOSITY,CP);
-		map.put(PKA, LOG_UNITS);
-		map.put(PKA_A, LOG_UNITS);
-		map.put(PKA_B, LOG_UNITS);
-		map.put(SURFACE_TENSION,CP);
+		map.put(MELTING_POINT, "DEG_C");//Changed it to add quotes around the unit names so it stores the unit name and not the abbreviation (TMM, 6/2/23)
+		map.put(BOILING_POINT, "DEG_C");
+		map.put(FLASH_POINT, "DEG_C");
+		
+		map.put(LOG_KOW, "LOG_UNITS");
+		map.put(WATER_SOLUBILITY, "MOLAR");//**
+		map.put(HENRYS_LAW_CONSTANT, "ATM_M3_MOL");//***
+		map.put(VAPOR_PRESSURE, "MMHG");//***
+		map.put(DENSITY, "G_CM3");
+		map.put(THERMAL_CONDUCTIVITY,"MW_MK");
+		map.put(VISCOSITY,"CP");
+		map.put(PKA, "LOG_UNITS");
+		map.put(PKA_A, "LOG_UNITS");
+		map.put(PKA_B, "LOG_UNITS");
+		map.put(SURFACE_TENSION,"CP");
 
 		//Percepta properties:
-		map.put(MOLAR_VOLUME, CM3);
-		map.put(MOLAR_REFRACTIVITY, CM3);
-		map.put(INDEX_OF_REFRACTION, DIMENSIONLESS);
-		map.put(POLARIZABILITY, CUBIC_ANGSTROM);
-		map.put(LogD_pH_7_4, LOG_UNITS);
+		map.put(MOLAR_VOLUME, "CM3");
+		map.put(MOLAR_REFRACTIVITY, "CM3");
+		
+		map.put(INDEX_OF_REFRACTION, "DIMENSIONLESS");
+		map.put(POLARIZABILITY, "CUBIC_ANGSTROM");
+		map.put(LogD_pH_7_4, "LOG_UNITS");
 		
 		//https://www.sciencedirect.com/topics/chemistry/parachor#:~:text=The%20conventional%20numerical%20values%20of,(cm3%2Fmol).
 		//(erg/cm2)1/4 × (cm3/mol)
-		map.put(PARACHOR, DIMENSIONLESS);//null in prod_chemprop, see https://www.epj-conferences.org/articles/epjconf/pdf/2015/11/epjconf_efm2014_02054.pdf
-		map.put(DIELECTRIC_CONSTANT, DIMENSIONLESS);//https://byjus.com/physics/dielectric-constant/#what-is-dielectric-constant		
+		map.put(PARACHOR, "DIMENSIONLESS");//null in prod_chemprop, see https://www.epj-conferences.org/articles/epjconf/pdf/2015/11/epjconf_efm2014_02054.pdf
+		map.put(DIELECTRIC_CONSTANT, "DIMENSIONLESS");//https://byjus.com/physics/dielectric-constant/#what-is-dielectric-constant		
 
 		
-		map.put(LOG_BCF_FISH_WHOLEBODY, LOG_L_KG);//TODO is this right?
-		map.put(BCF, L_KG);
-		map.put(LOCAL_LYMPH_NODE_ASSAY, BINARY);
-		map.put(NINETY_SIX_HOUR_LC50,MOLAR);
-		map.put(FORTY_EIGHT_HR_DM_LC50,MOLAR);
-		map.put(FORTY_EIGHT_HR_IGC50,MOLAR);
-		map.put(ORAL_RAT_LD50,MOL_KG);
-		map.put(AMES_MUTAGENICITY,BINARY);
-		map.put(DEVELOPMENTAL_TOXICITY,BINARY);
-		map.put(ESTROGEN_RECEPTOR_RBA,DIMENSIONLESS);
-		map.put(ESTROGEN_RECEPTOR_BINDING,BINARY);
+		map.put(LOG_BCF_FISH_WHOLEBODY, "LOG_L_KG");//TODO is this right?
+		map.put(BCF, "L_KG");
+		map.put(LOCAL_LYMPH_NODE_ASSAY, "BINARY");
+		map.put(NINETY_SIX_HOUR_LC50,"MOLAR");
+		map.put(FORTY_EIGHT_HR_DM_LC50,"MOLAR");
+		map.put(FORTY_EIGHT_HR_IGC50, "MOLAR");
+		map.put(ORAL_RAT_LD50, "MOL_KG");
+		map.put(AMES_MUTAGENICITY,"BINARY");
+		map.put(DEVELOPMENTAL_TOXICITY,"BINARY");
+		map.put(ESTROGEN_RECEPTOR_RBA,"DIMENSIONLESS");
+		map.put(ESTROGEN_RECEPTOR_BINDING,"BINARY");
 		
 		
 		return map;
