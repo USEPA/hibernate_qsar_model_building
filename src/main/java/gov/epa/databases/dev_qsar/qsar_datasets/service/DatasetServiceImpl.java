@@ -114,7 +114,7 @@ public class DatasetServiceImpl implements DatasetService {
 		
 		String sqlDPC="delete from qsar_datasets.data_point_contributors dpc\n"+ 
 		"using qsar_datasets.data_points dp\n"+
-		"where dp.fk_dataset_id="+id+" and dpc.fk_data_points_id =dp.id;";
+		"where dp.fk_dataset_id="+id+" and dpc.fk_data_point_id =dp.id;";
 		SqlUtilities.runSQLUpdate(conn, sqlDPC);
 		
 		String sqlDP="delete from qsar_datasets.data_points dp\n"+

@@ -17,20 +17,23 @@ import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.endpoints.datasets.MappedPropertyValue;
 
 @Entity
-@Table(name="data_point_contributors", uniqueConstraints={@UniqueConstraint(columnNames = {"exp_prop_property_values_id", "fk_data_points_id"})})
+@Table(name="data_point_contributors", uniqueConstraints={@UniqueConstraint(columnNames = {"exp_prop_property_values_id", "fk_data_point_id"})})
 public class DataPointContributor {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 	
+//	@NotFound(action=NotFoundAction.IGNORE)
 	@NotNull(message="Data point required")
-	@JoinColumn(name="fk_data_points_id")
+	@JoinColumn(name="fk_data_point_id")
 	@ManyToOne
 	private DataPoint dataPoint;
 	
@@ -99,20 +102,32 @@ public class DataPointContributor {
 		if (finalUnit.getName().equals(mpv.qsarPropertyUnits)) {
 			this.propertyValue=mpv.qsarPropertyValue;
 		} else if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
-			if (finalUnit.getName().equals(DevQsarConstants.MOLAR) && mpv.qsarPropertyUnits.equals(DevQsarConstants.NEG_LOG_M)) {
-				this.propertyValue=Math.pow(10, -mpv.qsarPropertyValue);
+			if (finalUnit.getName().equals("MOLAR")) {
+				if(mpv.qsarPropertyUnits.equals("NEG_LOG_M")) {
+					this.propertyValue=Math.pow(10, -mpv.qsarPropertyValue);
+				}
 			} 
 		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
-			if (finalUnit.getName().equals(DevQsarConstants.ATM_M3_MOL) && mpv.qsarPropertyUnits.equals(DevQsarConstants.NEG_LOG_ATM_M3_MOL)) {
-				this.propertyValue=Math.pow(10, -mpv.qsarPropertyValue);
+			if (finalUnit.getName().equals("ATM_M3_MOL")) {
+				if (mpv.qsarPropertyUnits.equals(DevQsarConstants.NEG_LOG_ATM_M3_MOL)) {
+					this.propertyValue=Math.pow(10, -mpv.qsarPropertyValue);
+				}
 			}
 		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
-			if (finalUnit.getName().equals(DevQsarConstants.MMHG) && mpv.qsarPropertyUnits.equals(DevQsarConstants.LOG_MMHG)) {
-				this.propertyValue=Math.pow(10, mpv.qsarPropertyValue);
+			if (finalUnit.getName().equals("MMHG")) {
+				if (mpv.qsarPropertyUnits.equals(DevQsarConstants.LOG_MMHG)) {
+					this.propertyValue=Math.pow(10, mpv.qsarPropertyValue);
+				}
 			}
 		} else {
 			System.out.println("*** Need to add code to DataPointContributor.setQsarPropertyValue() to assign property value for finalUnit:"+finalUnit+",qsarPropertyUnits="+mpv.qsarPropertyUnits);
 		}
+		
+		
+		if (this.propertyValue==null) {
+			System.out.println("Couldnt set propertyValue in DataPointContributor.setQsarPropertyValue() to convert "+finalUnit.getName()+" to ");
+		}
+		
 	}
 	
 	

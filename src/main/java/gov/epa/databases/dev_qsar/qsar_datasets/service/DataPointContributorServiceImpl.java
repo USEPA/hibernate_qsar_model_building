@@ -117,7 +117,7 @@ public class DataPointContributorServiceImpl implements DataPointContributorServ
 			return;
 		}
 
-		String[] fieldNames = { "fk_data_points_id", "exp_prop_property_values_id", "dtxcid", "dtxsid", "smiles",
+		String[] fieldNames = { "fk_data_point_id", "exp_prop_property_values_id", "dtxcid", "dtxsid", "smiles",
 				"property_value", "created_by", "created_at" };
 		int batchSize = 1000;
 
