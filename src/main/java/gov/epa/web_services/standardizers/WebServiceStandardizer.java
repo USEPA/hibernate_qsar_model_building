@@ -51,4 +51,10 @@ public class WebServiceStandardizer extends Standardizer {
 		
 		return BatchStandardizeResponseWithStatus.fromHttpBatchStandardizeResponse(response);
 	}
+
+	@Override
+	public HttpResponse<String> callQsarReadyStandardizePost(String smiles, boolean full) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

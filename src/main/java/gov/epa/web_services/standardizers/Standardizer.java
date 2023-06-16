@@ -69,4 +69,6 @@ public abstract class Standardizer {
 	public abstract BatchStandardizeResponseWithStatus callBatchStandardize(List<String> smiles);
 	
 	public abstract BatchStandardizeResponseWithStatus callBatchStandardize(String filePath);
+	
+	public abstract HttpResponse<String> callQsarReadyStandardizePost(String smiles,boolean full);
 }
