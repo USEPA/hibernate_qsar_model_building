@@ -2,6 +2,7 @@ package gov.epa.run_from_java.scripts;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -61,7 +62,7 @@ public class PredictionStatisticsScript {
 		"join qsar_models.methods m2 on m2.id=m.fk_method_id\n"+
 		"join qsar_models.model_sets ms on ms.id=mims.fk_model_set_id\n"+ 
 		"where ms.\"name\"='"+modelSetName+"' and \n"+
-		"m.dataset_name ='"+datasetName+"' and \n"+
+		"m.dataset_name ='"+datasetName.replace("'", "''")+"' and \n"+
 		"m2.\"name\" like '"+methodName+"%';";
 		
 //		System.out.println(sql+"\n");
@@ -174,7 +175,7 @@ public class PredictionStatisticsScript {
 			List<String> datasetNames, Hashtable<String,Double>htVals) {
 		
 		StringBuffer sb=new StringBuffer();
-		DecimalFormat df=new DecimalFormat("0.00");
+		DecimalFormat df=new DecimalFormat("0.000");
 		
 		sb.append("\n"+statName+" results for model set = "+modelSetName+"\n");
 		sb.append("DatasetName\t");
@@ -187,10 +188,19 @@ public class PredictionStatisticsScript {
 		}
 		
 		for (int i=0;i<datasetNames.size();i++) {
+			
 			String datasetName=datasetNames.get(i);
 			
+			String datasetName2=null;
+			
+			if(datasetName.contains(" from")) {
+				datasetName2=datasetName.substring(0,datasetName.indexOf(" from")).trim();				
+			} else {
+				datasetName2=datasetName;
+			}
+			
 //			String datasetName2=datasetName.replace(" from exp_prop and chemprop", "");						
-			sb.append(datasetName+"\t");
+			sb.append(datasetName2+"\t");
 						
 			for (int j=0;j<methodNames.size();j++) {
 				String methodName=methodNames.get(j);
@@ -228,6 +238,67 @@ public class PredictionStatisticsScript {
 		String methodName=DevQsarConstants.CONSENSUS;
 	
 //		String statisticName = "MAE_Test";
+//		String statisticName="PearsonRSQ_Test";
+		String statisticName="Q2_CV_Training";
+		
+		// Getting predictions for PFAS compounds in test set:		
+		String listName="PFASSTRUCTV4";		
+		String folder="data/dev_qsar/dataset_files/";
+		String filePath=folder+listName+"_qsar_ready_smiles.txt";
+		ArrayList<String>smilesArrayPFAS=SplittingGeneratorPFAS_Script.getPFASSmiles(filePath);
+		
+		List<String> modelSetNames=new ArrayList<>();
+		
+//		modelSetNames.add("WebTEST2.0 PFAS");
+//		modelSetNames.add("WebTEST2.0 All but PFAS");
+//		modelSetNames.add("WebTEST2.0_justPFAS");
+		modelSetNames.add("WebTEST2.0");
+		
+//		modelSetNames.add("WebTEST2.1 PFAS");
+//		modelSetNames.add("WebTEST2.1 All but PFAS");
+//		modelSetNames.add("WebTEST2.1_justPFAS");
+		modelSetNames.add("WebTEST2.1");
+
+		List<String>datasetNames=new ArrayList<>();
+		
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop v2");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop v2");
+//		datasetNames.add("BP from exp_prop and chemprop v3");
+			
+		datasetNames.add("HLC v1");
+		datasetNames.add("VP v1");
+		datasetNames.add("WS v1");
+		datasetNames.add("BP v1");
+		datasetNames.add("LogP v1");
+		datasetNames.add("MP v1");
+
+
+//		datasetNames.add("pKa_a from exp_prop and chemprop");
+//		datasetNames.add("pKa_b from exp_prop and chemprop");
+
+		Hashtable<String,Double>htVals=new Hashtable<>();
+		addHashtableEntry(statisticName, methodName, modelSetNames, datasetNames,htVals);
+				
+		
+		if(modelSetNames.contains("WebTEST2.0_justPFAS")) {
+			for (String datasetName:datasetNames) {
+				addHashtableEntryLimitToPFAS(statisticName, methodName, datasetName,htVals,smilesArrayPFAS);
+			}
+		}
+
+		createSummaryTableForMethod(statisticName, DevQsarConstants.CONSENSUS, modelSetNames, datasetNames, htVals);
+		
+	}
+	
+
+	void createSummaryTableForMethod_PFAS() {
+		
+		String methodName=DevQsarConstants.CONSENSUS;
+	
+//		String statisticName = "MAE_Test";
 		String statisticName="PearsonRSQ_Test";
 //		String statisticName="Q2_CV_Training";
 		
@@ -250,12 +321,21 @@ public class PredictionStatisticsScript {
 		modelSetNames.add("WebTEST2.1");
 
 		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop v2");
+		
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop v2");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop v2");
+//		datasetNames.add("BP from exp_prop and chemprop v3");
+			
+		datasetNames.add("HLC v1");
+		datasetNames.add("VP v1");
+		datasetNames.add("WS v1");
+		datasetNames.add("BP v1");
+		datasetNames.add("LogP v1");
+		datasetNames.add("MP v1");
+
 
 //		datasetNames.add("pKa_a from exp_prop and chemprop");
 //		datasetNames.add("pKa_b from exp_prop and chemprop");
@@ -263,8 +343,11 @@ public class PredictionStatisticsScript {
 		Hashtable<String,Double>htVals=new Hashtable<>();
 		addHashtableEntry(statisticName, methodName, modelSetNames, datasetNames,htVals);
 				
-		for (String datasetName:datasetNames) {
-			addHashtableEntryLimitToPFAS(statisticName, methodName, datasetName,htVals,smilesArrayPFAS);
+		
+		if(modelSetNames.contains("WebTEST2.0_justPFAS") || modelSetNames.contains("WebTEST2.1_justPFAS")) {
+			for (String datasetName:datasetNames) {
+				addHashtableEntryLimitToPFAS(statisticName, methodName, datasetName,htVals,smilesArrayPFAS);
+			}
 		}
 
 		createSummaryTableForMethod(statisticName, DevQsarConstants.CONSENSUS, modelSetNames, datasetNames, htVals);
@@ -285,12 +368,12 @@ public class PredictionStatisticsScript {
 //		String modelSetName="WebTEST2.0 PFAS";
 //		String modelSetName="WebTEST2.0 All but PFAS";
 //		String modelSetName="WebTEST2.0_justPFAS";
-//		String modelSetName="WebTEST2.0";
+		String modelSetName="WebTEST2.0";
 		
 //		String modelSetName="WebTEST2.1 PFAS";
 //		String modelSetName="WebTEST2.1 All but PFAS";
 //		String modelSetName="WebTEST2.1_justPFAS";
-		String modelSetName="WebTEST2.1";
+//		String modelSetName="WebTEST2.1";
 		
 		List<String> modelSetNames=new ArrayList<>();
 		modelSetNames.add(modelSetName);
@@ -331,6 +414,121 @@ public class PredictionStatisticsScript {
 		createSummaryTableForModelSet(statisticName, modelSetName, methodNames, datasetNames, htVals);
 
 	}
+	
+	void createSummaryTableForSetOPERA() {
+//		String statisticName = "MAE_Test";
+		String statisticName="PearsonRSQ_Test";
+//		String statisticName="Q2_CV_Training";
+		
+		String modelSetName="WebTEST2.1 Sample models";
+		
+		List<String> modelSetNames=new ArrayList<>();
+		modelSetNames.add(modelSetName);
+
+		String [] propertyNames= {DevQsarConstants.LOG_KOA,DevQsarConstants.LOG_KM_HL,DevQsarConstants.HENRYS_LAW_CONSTANT,
+				DevQsarConstants.LOG_BCF,DevQsarConstants.LOG_OH,DevQsarConstants.LOG_KOC,DevQsarConstants.VAPOR_PRESSURE,
+				DevQsarConstants.WATER_SOLUBILITY, DevQsarConstants.BOILING_POINT, DevQsarConstants.MELTING_POINT,
+				DevQsarConstants.LOG_KOW};
+
+		
+		List<String>datasetNames=new ArrayList<>();
+		
+		for (String propertyName:propertyNames) {
+			datasetNames.add(propertyName+" OPERA");
+		}
+		
+
+		List<String> methodNames=new ArrayList<>();
+		methodNames.add(DevQsarConstants.KNN);
+		methodNames.add(DevQsarConstants.RF);
+		methodNames.add(DevQsarConstants.XGB);
+		methodNames.add(DevQsarConstants.SVM);
+		methodNames.add("reg");
+//		methodNames.add(DevQsarConstants.CONSENSUS);
+
+		Hashtable<String,Double>htVals=new Hashtable<>();
+		for (String methodName:methodNames) {
+			addHashtableEntry(statisticName, methodName, modelSetNames, datasetNames,htVals);
+		}
+		
+		
+		//Create the summary table as text file:
+		createSummaryTableForModelSet(statisticName, modelSetName, methodNames, datasetNames, htVals);
+
+	}
+	
+	void createSummaryTableForSet2() {
+		
+		// Getting predictions for PFAS compounds in test set:		
+		String listName="PFASSTRUCTV4";		
+		String folder="data/dev_qsar/dataset_files/";
+		String filePath=folder+listName+"_qsar_ready_smiles.txt";
+		ArrayList<String>smilesArrayPFAS=SplittingGeneratorPFAS_Script.getPFASSmiles(filePath);
+
+		List<String> modelSetNames=new ArrayList<>();
+		modelSetNames.add("WebTEST2.0");
+		modelSetNames.add("WebTEST2.1");
+
+		List<String>datasetNames=new ArrayList<>();
+
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop v2");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop v2");
+//		datasetNames.add("BP from exp_prop and chemprop v3");
+		
+		datasetNames.add("HLC v1");
+		datasetNames.add("VP v1");
+		datasetNames.add("WS v1");
+		datasetNames.add("BP v1");
+		datasetNames.add("LogP v1");
+		datasetNames.add("MP v1");
+
+//		datasetNames.add("pKa_a from exp_prop and chemprop");
+//		datasetNames.add("pKa_b from exp_prop and chemprop");
+
+
+		List<String> methodNames=new ArrayList<>();
+		methodNames.add(DevQsarConstants.KNN);
+		methodNames.add(DevQsarConstants.RF);
+		methodNames.add(DevQsarConstants.XGB);
+		methodNames.add(DevQsarConstants.SVM);
+		methodNames.add(DevQsarConstants.CONSENSUS);
+
+		
+		List<String>statisticNames=new ArrayList<>();
+		statisticNames.add("Q2_CV_Training");
+		statisticNames.add("PearsonRSQ_Test");
+//		statisticNames.add("MAE_Test");
+		
+		
+		for (String modelSetName:modelSetNames) {
+			
+			for (String statisticName:statisticNames) {
+				
+				Hashtable<String,Double>htVals=new Hashtable<>();
+				for (String methodName:methodNames) {
+					addHashtableEntry(statisticName, methodName, modelSetNames, datasetNames,htVals);
+				}
+
+				if (modelSetName.contains("_justPFAS")) {
+					for (String methodName:methodNames) {
+						System.out.println("\n"+methodName);
+						for (String datasetName:datasetNames) {
+							addHashtableEntryLimitToPFAS(statisticName, methodName, datasetName,htVals,smilesArrayPFAS);
+						}
+					}
+				}
+
+				//Create the summary table as text file:
+				createSummaryTableForModelSet(statisticName, modelSetName, methodNames, datasetNames, htVals);
+			}
+		}
+
+	}
+	
+	
 	
 	void createSummaryTableForMethod_Rnd_Representative() {
 //		String statisticName = "MAE_Test";
@@ -664,11 +862,21 @@ public class PredictionStatisticsScript {
 //		datasetNames.add("LogP from exp_prop and chemprop");
 //		datasetNames.add("MP from exp_prop and chemprop");
 //		datasetNames.add("BP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop v2");
+//		datasetNames.add("BP from exp_prop and chemprop v2");
 		
+//		datasetNames.add("WS from exp_prop and chemprop v2");
+//		datasetNames.add("BP from exp_prop and chemprop v3");
+//		datasetNames.add("MP from exp_prop and chemprop v2");
+
 //		datasetNames.add("pKa_a from exp_prop and chemprop");
 //		datasetNames.add("pKa_b from exp_prop and chemprop");
 
+		datasetNames.add("HLC v1");
+		datasetNames.add("VP v1");
+		datasetNames.add("WS v1");
+		datasetNames.add("BP v1");
+		datasetNames.add("LogP v1");
+		datasetNames.add("MP v1");
 		
 		SampleReportWriter srw = new SampleReportWriter();
 
@@ -744,12 +952,27 @@ public class PredictionStatisticsScript {
 		ArrayList<String>smilesArray=SplittingGeneratorPFAS_Script.getPFASSmiles(filePathPFAS);	
 		
 		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop");
+		
+//		datasetNames.add("WS from exp_prop and chemprop v2");
+//		datasetNames.add("BP from exp_prop and chemprop v3");
+//		datasetNames.add("MP from exp_prop and chemprop v2");
+
+		
+		datasetNames.add("HLC v1");
+		datasetNames.add("MP v1");
+		datasetNames.add("VP v1");
+		datasetNames.add("BP v1");
+		datasetNames.add("LogP v1");
+		datasetNames.add("WS v1");
+
+		
+
 		
 		SampleReportWriter srw = new SampleReportWriter();
 		
@@ -759,10 +982,12 @@ public class PredictionStatisticsScript {
 
 			PredictionReport predictionReport=srw.createPredictionReport(ms.getId(), datasetName, splittingName,overWriteReportFiles);
 			
-			String outputFolder = "data/reports/prediction reports upload";
+			String outputFolder = "data/reports/prediction reports upload"+File.separator +modelSetName;
+			File Folder=new File(outputFolder);
+			Folder.mkdirs();			
 			
-			String filepathExcel = outputFolder + File.separator +modelSetName+File.separator+ String.join("_", datasetName, splittingName)
-			+ ".xlsx";
+			String fileName=String.join("_", datasetName, splittingName)+".xlsx";
+			String filepathExcel = outputFolder + File.separator+fileName;
 			
 			if(!new File(filepathExcel).exists()) {
 				ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
@@ -1038,6 +1263,13 @@ public class PredictionStatisticsScript {
 			Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator
 					.calculateContinuousStatistics(testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
 
+			
+//			for (ModelPrediction mp:testSetPredictions) {
+//				if (prmm.qsarMethodName.contains("consensus") && mp.pred!=null)
+//					System.out.println(mp.exp+"\t"+mp.pred);
+//			}
+			
+			
 //			Map<String, Double> modelTrainingStatisticValues = ModelStatisticCalculator.calculateContinuousStatistics(
 //					trainingSetPredictions, meanExpTraining, DevQsarConstants.TAG_TRAINING);
 			
@@ -1160,24 +1392,50 @@ public class PredictionStatisticsScript {
 	}
 
 	
-	
+	void createSpreadsheetExample() {
+		File jsonFile = new File("data/reports/WebTEST2.0/HLC v1_PredictionReport_only_PFAS.json");
+
+		PredictionReport predictionReport=null;
+		
+		try {
+			predictionReport = Utilities.gson.fromJson(new FileReader(jsonFile), PredictionReport.class);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+
+		File folder=new File("data\\reports\\prediction reports upload\\WebTEST2.0");
+		folder.mkdirs();		
+		//		e.generate( predictionReport,folder.getAbsolutePath()+File.separator+"report.xlsx");
+		
+		ExcelPredictionReportGenerator e=new ExcelPredictionReportGenerator();
+		
+		e.generate(predictionReport, folder.getAbsolutePath()+File.separator+"sample_excel_less_decimal_places.xlsx");
+		
+		
+	}
 	
 	public static void main(String[] args) {
 		PredictionStatisticsScript ms=new PredictionStatisticsScript();
+//		ms.createSpreadsheetExample();
 		
 //		ms.createSummaryTableForMethod_Rnd_Representative();
 		
-		ms.createSummaryTableForMethod();
+//		ms.createSummaryTableForMethod();
 //		ms.createSummaryTableForSet();
+//		ms.createSummaryTableForSet2();
+		
+//		ms.createSummaryTableForMethod_PFAS();
+		
+//		ms.createSummaryTableForSet();
+//		ms.createSummaryTableForSetOPERA();
 		
 //		ms.createPredictionReportsExcelForJustPFAS();
-//		ms.createPredictionReportsExcelPFASOnlyModels();
+		ms.createPredictionReportsExcelPFASOnlyModels();
 		
 //		ms.createSummaryTableForMethodTEST();
-//		Double stat=ms.calcPredictionStatsForPFAS(816,"MAE_Test",null);
-		
 //		
 //		RecalcStatsScript.viewPredsForSplitSet(1111L);
 	}
 
 }
+
