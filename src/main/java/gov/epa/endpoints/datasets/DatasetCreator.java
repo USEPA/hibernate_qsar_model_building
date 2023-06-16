@@ -90,8 +90,8 @@ public class DatasetCreator {
 	
 	private String standardizerName;
 	
-	private Map<String, String> finalUnits;
-	private Map<String, String> contributorUnits;
+	private Map<String, String> finalUnitsNameMap;
+	private Map<String, String> contributorUnitsNameMap;
 
 	private Set<String> physchemPropertyNames;
 	private Set<String> acceptableAtoms;
@@ -105,7 +105,10 @@ public class DatasetCreator {
 	public static void main(String[] args) {
 		System.out.println("eclipse recognizes new code2");
 
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
+		String serverHost="https://hcd.rtpnc.epa.gov";
+		String workflow="qsar-ready";
+		
+		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,workflow,serverHost);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 //		creator.createExternalValidationSets("LLNA TEST", "LLNA from exp_prop, without eChemPortal");
 		
@@ -191,8 +194,8 @@ public class DatasetCreator {
 		
 //		this.gson = new GsonBuilder().disableHtmlEscaping().create();
 		this.acceptableAtoms = DevQsarConstants.getAcceptableAtomsSet();
-		this.finalUnits = DevQsarConstants.getDatasetFinalUnitsMap();
-		this.contributorUnits = DevQsarConstants.getContributorUnitsMap();
+		this.finalUnitsNameMap = DevQsarConstants.getDatasetFinalUnitsNameMap();
+		this.contributorUnitsNameMap = DevQsarConstants.getContributorUnitsNameMap();
 		
 		physchemPropertyNames = expPropPropertyService.findByPropertyCategoryName("Physchem").stream()
 				.map(p -> p.getName())
@@ -206,7 +209,7 @@ public class DatasetCreator {
 	private List<MappedPropertyValue> mapPropertyValuesToDsstoxRecords(List<PropertyValue> propertyValues, DatasetParams params,HashMap<String,String>hmCanonSmilesLookup) {
 		List<MappedPropertyValue> mappedPropertyValues = new ArrayList<MappedPropertyValue>();
 		
-		String finalUnitName = finalUnits.get(params.propertyName);
+		String finalUnitName = finalUnitsNameMap.get(params.propertyName);
 //		params.mappingParams.omitSalts = physchemPropertyNames.contains(params.propertyName); // Omit salts for physchem properties
 //		params.mappingParams.omitSalts = false;
 		
@@ -430,7 +433,7 @@ public class DatasetCreator {
 			
 			if (validateStructure) {//TODO we need to change it so that qsar ready smiles should stay a mixture instead of null when have multiple components
 				if (structure==null) {
-					System.out.println(mpv.id+": Skipped unification since QSAR Ready smiles was null");
+					System.out.println(mpv.id+": Skipped unification since QSAR Ready smiles was null, smiles="+mpv.compound.getSmiles());
 //					logger.info(mpv.id + ": Skipped unification due to missing structure");
 					continue;
 				}
@@ -729,10 +732,10 @@ public class DatasetCreator {
 		Property property = initializeProperty(propertyValues);
 		if (property.getId()==null) { return; }
 		
-		String finalUnitName = finalUnits.get(params.propertyName);		
+		String finalUnitName = finalUnitsNameMap.get(params.propertyName);		
 		Unit unit = initializeUnit(finalUnitName);
 		
-		String contributorUnitName=contributorUnits.get(params.propertyName);
+		String contributorUnitName=contributorUnitsNameMap.get(params.propertyName);
 		Unit unitDatapointContributor=initializeUnit(contributorUnitName);
 		
 		if (unit.getId()==null) { return; }
@@ -750,10 +753,7 @@ public class DatasetCreator {
 //		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit);redundant- we have excel and json
 		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit,createExcelFiles);
 		
-		
-		
-		
-		if(true) return;
+//		if(true) return;//stops creation of dataset in database
 		
 		Dataset dataset = new Dataset(params.datasetName, params.datasetDescription, property, unit, unitDatapointContributor, 
 				gson.toJson(params.mappingParams), lanId);
@@ -902,10 +902,10 @@ public class DatasetCreator {
 		Property property = initializeProperty(propertyValues);
 		if (property.getId()==null) { return; }
 		
-		String finalUnitName = finalUnits.get(params.propertyName);		
+		String finalUnitName = finalUnitsNameMap.get(params.propertyName);		
 		Unit unit = initializeUnit(finalUnitName);
 		
-		String contributorUnitName=contributorUnits.get(params.propertyName);
+		String contributorUnitName=contributorUnitsNameMap.get(params.propertyName);
 		Unit unitDatapointContributor=initializeUnit(contributorUnitName);
 		
 		if (unit.getId()==null) { return; }
