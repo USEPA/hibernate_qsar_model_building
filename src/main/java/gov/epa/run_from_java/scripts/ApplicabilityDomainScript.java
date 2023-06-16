@@ -54,28 +54,41 @@ public class ApplicabilityDomainScript {
 	
 	
 	public void runCaseStudyExpProp_All_Endpoints() {
+
+		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+		portModelBuilding=5004;
+//		serverModelBuilding=DevQsarConstants.SERVER_819;
+//		portModelBuilding=5014;
+
+		//*************************************************************************************************
+		
 		String modelSetName="WebTEST2.1";
 //		String modelSetName="WebTEST2.0";
 				
 		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 
 		
-//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Cosine;
+		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Cosine;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;		
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine; 		
-		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_local_index;
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_local_index;
 		
 		System.out.println("\t"+applicability_domain);
-//		System.out.println("datasetName\tR2_Test_Inside_AD\tFraction_inside_AD\tProduct\tR2_Test_Outside_AD");
-		System.out.println("datasetName\tR2_Inside\tR2_Outside");
 		
 		boolean storeNeighbors=false;
+		boolean includeFracInside=true;
 		
-		serverModelBuilding=DevQsarConstants.SERVER_819;
-		portModelBuilding=5014;
+
+		if (includeFracInside) {
+			System.out.println("Dataset\tR2_Inside\tFrac_Inside\tR2_Outside");	
+		} else {
+			System.out.println("datasetName\tR2_Inside\tR2_Outside");
+		}
+//		System.out.println("datasetName\tR2_Test_Inside_AD\tFraction_inside_AD\tProduct\tR2_Test_Outside_AD");
 		
-//		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
-//		portModelBuilding=5004;
+
+		
+		
 		
 		Unirest.config().connectTimeout(0).socketTimeout(0);
 		
@@ -83,14 +96,22 @@ public class ApplicabilityDomainScript {
 		
 		List<String>datasetNames=new ArrayList<>();
 
-		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("pKa_a from exp_prop and chemprop");
-		datasetNames.add("pKa_b from exp_prop and chemprop");
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("pKa_a from exp_prop and chemprop");
+//		datasetNames.add("pKa_b from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop");
+		
+		datasetNames.add("HLC v1");
+		datasetNames.add("VP v1");
+		datasetNames.add("BP v1");
+		datasetNames.add("WS v1");
+		datasetNames.add("LogP v1");
+		datasetNames.add("MP v1");
+
 		
 
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
@@ -106,8 +127,10 @@ public class ApplicabilityDomainScript {
 			if(datasetName.contains("LogP")) remove_log_p=true;
 			
 			CalculationInfo ci = new CalculationInfo();
-			ci.num_generations = 100;			
-			if (datasetName.contains("BP") || splitting.equals("T=all but PFAS, P=PFAS")) ci.num_generations=10;//takes too long to do 100			
+			ci.num_generations = 100;
+			
+			
+//			if (datasetName.contains("BP") || splitting.equals("T=all but PFAS, P=PFAS")) ci.num_generations=10;//takes too long to do 100			
 
 			ci.remove_log_p = remove_log_p;
 			ci.qsarMethodGA = qsarMethodGA;
@@ -160,34 +183,63 @@ public class ApplicabilityDomainScript {
 //			System.out.println(Utilities.gson.toJson(predictionReport.predictionReportModelMetadata.get(0)));
 			
 			PredictionStatisticsScript.getStatsInsideAD(predictionReport, adPredictions,null);			
-			String stats=getStatsInside(predictionReport);
+			String stats=getStatsInsideWithFrac(predictionReport);
 
 			PredictionStatisticsScript.getStatsOutsideAD(predictionReport, adPredictions,null);
 			String statsOutside=getStatsOutside(predictionReport);
 			
 
-			System.out.println(datasetName.replace(" from exp_prop and chemprop", "")+"\t"+stats+"\t"+statsOutside);
+//			System.out.println(datasetName.replace(" from exp_prop and chemprop", "")+"\t"+stats+"\t"+statsOutside);
 
-			
-			
-//			System.out.println(Utilities.gson.toJson(predictionReport.predictionReportModelMetadata.get(0)));
+//			System.out.println(datasetName+"\t"+getR2NoAD(predictionReport));
 		}
 	}
 	
+	
+	public void runCaseStudyExpProp_All_Endpoints_just_R2_NOAD() {
+		String modelSetName="WebTEST2.1";
+//		String modelSetName="WebTEST2.0";
+		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+
+		List<String>datasetNames=new ArrayList<>();
+		datasetNames.add("HLC v1");
+		datasetNames.add("VP v1");
+		datasetNames.add("BP v1");
+		datasetNames.add("WS v1");
+		datasetNames.add("LogP v1");
+		datasetNames.add("MP v1");
+		System.out.println("datasetName\tR2_NO_AD");
+
+		for (String datasetName:datasetNames) {
+			PredictionReport predictionReport=SampleReportWriter.getReport(modelSetName, datasetName, splitting);
+			System.out.println(datasetName+"\t"+getR2NoAD(predictionReport));
+		}
+	}
+	
+	
 	public void runCaseStudyExpProp_All_Endpoints_PFAS() {
 				
-//		String modelSetName="WebTEST2.0";
 		
 //		String modelSetName="WebTEST2.1 PFAS";
 //		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;
+
+//		String modelSetName="WebTEST2.1 All but PFAS";
+//		String splitting =SplittingGeneratorPFAS_Script.splittingAllButPFAS;
 		
-//		String modelSetName="WebTEST2.1";
+		String modelSetName="WebTEST2.1";
+		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+
+
+//		String modelSetName="WebTEST2.0 PFAS";
+//		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;
+
+//		String modelSetName="WebTEST2.0 All but PFAS";
+//		String splitting =SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+
+//		String modelSetName="WebTEST2.0";
 //		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 
-		String modelSetName="WebTEST2.1 All but PFAS";
-		String splitting =SplittingGeneratorPFAS_Script.splittingAllButPFAS;
-
-		
+				
 		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Cosine;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;		
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine; 		
@@ -199,11 +251,11 @@ public class ApplicabilityDomainScript {
 		
 		boolean storeNeighbors=false;
 		
-		serverModelBuilding=DevQsarConstants.SERVER_819;
-		portModelBuilding=5014;
+//		serverModelBuilding=DevQsarConstants.SERVER_819;
+//		portModelBuilding=5014;
 		
-//		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
-//		portModelBuilding=5004;
+		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+		portModelBuilding=5004;
 		
 		Unirest.config().connectTimeout(0).socketTimeout(0);
 		
@@ -217,12 +269,21 @@ public class ApplicabilityDomainScript {
 
 		List<String>datasetNames=new ArrayList<>();
 
-		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
 //		datasetNames.add("BP from exp_prop and chemprop");
+
+		datasetNames.add("HLC v1");
+		datasetNames.add("VP v1");
+		datasetNames.add("BP v1");
+		datasetNames.add("WS v1");
+		datasetNames.add("LogP v1");
+		datasetNames.add("MP v1");
+
+		
 		
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
@@ -238,7 +299,7 @@ public class ApplicabilityDomainScript {
 			
 			CalculationInfo ci = new CalculationInfo();
 			ci.num_generations = 100;			
-			if (datasetName.contains("BP") || splitting.equals("T=all but PFAS, P=PFAS")) ci.num_generations=10;//takes too long to do 100			
+//			if (datasetName.contains("BP") || splitting.equals("T=all but PFAS, P=PFAS")) ci.num_generations=10;//takes too long to do 100			
 
 			ci.remove_log_p = remove_log_p;
 			ci.qsarMethodGA = qsarMethodGA;
@@ -363,6 +424,21 @@ public class ApplicabilityDomainScript {
 		return null;
 		
 	}
+	
+	String getR2NoAD(PredictionReport report) {
+		DecimalFormat df=new DecimalFormat("0.000");
+		
+		for (PredictionReportModelMetadata prmm:report.predictionReportModelMetadata) {
+			if (!prmm.qsarMethodName.contains("consensus")) continue;
+			Double PearsonRSQ_Test=getStat(prmm.predictionReportModelStatistics,"PearsonRSQ_Test");
+			return(df.format(PearsonRSQ_Test));
+		}
+		return null;
+	}
+
+	
+	
+	
 	/**
 	 * For now look at consensus
 	 * 
@@ -469,7 +545,10 @@ public class ApplicabilityDomainScript {
 	public static void main(String[] args) {
 		ApplicabilityDomainScript ads=new ApplicabilityDomainScript();
 //		ads.runCaseStudyExpProp_All_Endpoints();
+//		ads.runCaseStudyExpProp_All_Endpoints_just_R2_NOAD();
+		
 		ads.runCaseStudyExpProp_All_Endpoints_PFAS();
+		
 	}
 
 }
