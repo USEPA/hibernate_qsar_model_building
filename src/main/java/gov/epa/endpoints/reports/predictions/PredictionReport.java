@@ -58,15 +58,18 @@ public class PredictionReport {
 			this.experimentalPropertyValue = dp.getQsarPropertyValue();
 			this.qsar_dtxcid=dp.getQsar_dtxcid();
 			
-			String []ids=dp.getQsar_exp_prop_id().split("\\|");
+//			String []ids=dp.getQsar_exp_prop_id().split("\\|");
+//			
+//			this.qsar_exp_prop_id="";
+//			
+//			for (int i=0;i<ids.length;i++) {
+//				String intId=Integer.parseInt(ids[i].replace("EXP", ""))+"";
+//				this.qsar_exp_prop_id+=intId;
+//				if (i<ids.length-1) this.qsar_exp_prop_id+="|";
+//			}
 			
-			this.qsar_exp_prop_id="";
 			
-			for (int i=0;i<ids.length;i++) {
-				String intId=Integer.parseInt(ids[i].replace("EXP", ""))+"";
-				this.qsar_exp_prop_id+=intId;
-				if (i<ids.length-1) this.qsar_exp_prop_id+="|";
-			}
+			this.qsar_exp_prop_property_values_id=dp.getQsar_exp_prop_property_values_id();
 			
 		}
 	}

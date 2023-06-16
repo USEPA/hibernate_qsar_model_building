@@ -520,7 +520,7 @@ public class ExcelPredictionReportGenerator {
 				
 				PredictionReportDataPoint dp=predictionReport.predictionReportDataPoints.get(i);
 				
-				Object[] row = new Object[] { dp.qsar_exp_prop_id,oc.dtxcid, oc.casrn, oc.preferredName, oc.smiles, oc.molWeight, canonQsarSmiles, dp.experimentalPropertyValue 
+				Object[] row = new Object[] { dp.qsar_exp_prop_property_values_id,oc.dtxcid, oc.casrn, oc.preferredName, oc.smiles, oc.molWeight, canonQsarSmiles, dp.experimentalPropertyValue 
 				};
 
 				if (predictionReport.predictionReportDataPoints.get(i).qsarPredictedValues.get(0).splitNum == DevQsarConstants.TRAIN_SPLIT_NUM) {
@@ -821,7 +821,10 @@ public class ExcelPredictionReportGenerator {
 
 			PredictionReportDataPoint dp=predictionReportDataPoints.get(i);
 			String compoundIdentifier = dp.canonQsarSmiles;
-			idHash.put(compoundIdentifier, dp.qsar_exp_prop_id);
+			
+//			System.out.println(compoundIdentifier+"\t"+dp.qsar_exp_prop_property_values_id);
+			
+			idHash.put(compoundIdentifier, dp.qsar_exp_prop_property_values_id);
 
 			if (hasPrediction(predictionReportDataPoints.get(i), methodID)) {
 

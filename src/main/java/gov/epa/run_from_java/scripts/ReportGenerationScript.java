@@ -44,7 +44,7 @@ public class ReportGenerationScript {
 //			System.out.println(file.getAbsolutePath());
 		}
 
-		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+		Gson gson = new GsonBuilder().setPrettyPrinting().serializeSpecialFloatingPointValues().disableHtmlEscaping().create();
 		try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
 			writer.write(gson.toJson(report));
 		} catch (IOException e) {

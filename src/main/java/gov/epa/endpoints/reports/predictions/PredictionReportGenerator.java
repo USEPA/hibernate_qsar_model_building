@@ -12,6 +12,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.qsar_datasets.dao.DataPointDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
@@ -89,7 +90,12 @@ public class PredictionReportGenerator extends ReportGenerator {
 				dataset.getUnit().getName(),
 				splittingName);
 		
-		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
+//		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
+		
+		DataPointDaoImpl dpdi=new DataPointDaoImpl();
+
+		List<DataPoint> dataPoints = dpdi.findByDatasetNameSql(datasetName);
+		
 		List<PredictionReportDataPoint> predictionReportData = dataPoints.stream()
 				.map(dp -> new PredictionReportDataPoint(dp))
 				.collect(Collectors.toList());
