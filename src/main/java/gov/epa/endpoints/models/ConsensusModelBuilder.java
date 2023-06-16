@@ -12,6 +12,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.qsar_datasets.dao.DataPointDao;
+import gov.epa.databases.dev_qsar.qsar_datasets.dao.DataPointDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
@@ -98,7 +100,9 @@ public class ConsensusModelBuilder extends ModelBuilder {
 			consensusMethod = methodService.create(consensusMethod);
 		}
 		
-		Model consensusModel = new Model(consensusMethod, DevQsarConstants.CONSENSUS, datasetName, splittingName, DevQsarConstants.SOURCE_WEBTEST,lanId);
+		String modelName="modelConsensus"+System.currentTimeMillis();//TODO maybe use dataset name and method name in modelName
+
+		Model consensusModel = new Model(modelName,consensusMethod, DevQsarConstants.CONSENSUS, datasetName, splittingName, DevQsarConstants.SOURCE_WEBTEST,lanId);
 		consensusModel = modelService.create(consensusModel);
 		
 		for (Model model:models) {
@@ -149,6 +153,8 @@ public class ConsensusModelBuilder extends ModelBuilder {
 	
 	
 	private void predict(Long consensusModelId) {
+		System.out.println("Enter predict");
+		
 		Model consensusModel = modelService.findById(consensusModelId);
 		if (consensusModel==null) {
 			System.out.println("Consensus model not found for ID " + consensusModelId);
@@ -156,13 +162,26 @@ public class ConsensusModelBuilder extends ModelBuilder {
 		}
 		
 		List<ModelInConsensusModel> modelsInConsensusModel = consensusModel.getModelsInConsensusModel();
+
+//		System.out.println("modelsInConsensusModel.size()="+modelsInConsensusModel.size());
+
 		
 		if (modelsInConsensusModel==null || modelsInConsensusModel.isEmpty()) {
 			System.out.println("No models assigned to consensus model with ID " + consensusModelId);
 		}
+
+		
+		//For some reason not working right now for postgres_testing
+//		List<DataPoint> dataPoints = 
+//				dataPointService.findByDatasetName(consensusModel.getDatasetName());
+		
+		DataPointDaoImpl dataPointDaoImpl = new DataPointDaoImpl();
 		
 		List<DataPoint> dataPoints = 
-				dataPointService.findByDatasetName(consensusModel.getDatasetName());
+				dataPointDaoImpl.findByDatasetNameSql(consensusModel.getDatasetName());
+
+		
+		System.out.println("dataPoints.size()="+dataPoints.size());
 
 		Map<String, Double> expMap = dataPoints.stream()
 				.collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp.getQsarPropertyValue()));
