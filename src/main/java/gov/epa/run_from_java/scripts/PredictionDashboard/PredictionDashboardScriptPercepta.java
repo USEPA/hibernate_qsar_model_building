@@ -1,12 +1,16 @@
 package gov.epa.run_from_java.scripts.PredictionDashboard;
 
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.AtomContainerSet;
 import org.openscience.cdk.interfaces.IAtomContainer;
+import org.openscience.cdk.smiles.SmiFlavor;
+import org.openscience.cdk.smiles.SmilesGenerator;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
@@ -62,7 +66,7 @@ public class PredictionDashboardScriptPercepta {
 	void createDatasets() {
 
 		//	HashMap<String, String>hmUnitsDataset=DevQsarConstants.getDatasetFinalUnitsMap();
-		HashMap<String, String>hmUnitsDatasetContributor=DevQsarConstants.getContributorUnitsMap();
+		HashMap<String, String>hmUnitsDatasetContributor=DevQsarConstants.getContributorUnitsNameMap();
 
 
 		for (String modelName:hmModelNameToPropertyName.keySet()) {
@@ -111,7 +115,7 @@ public class PredictionDashboardScriptPercepta {
 	}
 
 	void loadFromSDF(String filepathSDF,boolean skipMissingSID,int maxCount) {
-		
+		SmilesGenerator sg= new SmilesGenerator(SmiFlavor.Unique);
 		AtomContainerSet acs=RunDashboardPredictions.readSDFV3000(filepathSDF);
 		AtomContainerSet acs2 = RunDashboardPredictions.filterAtomContainerSet(acs, skipMissingSID, maxCount);
 
@@ -126,6 +130,11 @@ public class PredictionDashboardScriptPercepta {
 
 			int count=0;
 			
+			List<PredictionDashboard>predictions=new ArrayList<>();
+			
+			int batchSizePost=10000;
+			
+			
 			while (iterator.hasNext()) {
 				count++;
 				
@@ -136,7 +145,7 @@ public class PredictionDashboardScriptPercepta {
 				for (String modelName:hmModelNameToPropertyName.keySet()) {
 					String propertyNameDB=hmModelNameToPropertyName.get(modelName);
 					
-					System.out.println(modelName+"\t"+propertyNameDB);
+//					System.out.println(modelName+"\t"+propertyNameDB);
 					
 					if (ac.getProperty(modelName)==null) continue;
 					
@@ -156,15 +165,37 @@ public class PredictionDashboardScriptPercepta {
 					
 					pd.setModel(hmModels.get(modelName));
 
+					if (ac.getProperty(modelName).equals("Nan")) {
+						pd.setPredictionValue(Double.NaN);
+					} else {
+						double propertyValue=Double.parseDouble(ac.getProperty(modelName));
+						pd.setPredictionValue(propertyValue);
+					}
 					
-					double propertyValue=Double.parseDouble(ac.getProperty(modelName));
-					pd.setPredictionValue(propertyValue);
+					try {
+						String smiles=sg.create(ac);
+						if(smiles!=null) {
+							pd.setSmiles(smiles);
+						}
+					} catch (Exception ex) {
+						System.out.println("Error generating smiles for "+ac.getProperty("DTXCID"));
+					}
+					
 
-					System.out.println(modelName+"\t"+propertyNameDB+"\t"+propertyValue+"\t"+hmModels.get(modelName));
+//					System.out.println(predictions.size()+"\t"+modelName+"\t"+propertyNameDB+"\t"+propertyValue);
 
-					predictionDashboardService.create(pd);
+//					predictionDashboardService.create(pd);
+					predictions.add(pd);
+					
+					if(predictions.size()==batchSizePost) {
+						predictionDashboardService.createSQL(predictions);
+						predictions.clear();
+					}
+					
 				}
 			}
+			
+			
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -280,10 +311,13 @@ public class PredictionDashboardScriptPercepta {
 
 //		p.createDatasets();
 
-		
-		String filepathJson="data\\dsstox\\percepta\\snapshot_compounds1_PERCEPTA.SDF";
-		
-		p.loadFromSDF(filepathJson,true,2);
+//		for (int i=6;i<=6;i++) {
+		for (int i=1;i<=35;i++) {
+			String filename="snapshot_compounds"+i+"_PERCEPTA.SDF";
+			System.out.println(filename);
+			String filepathJson="data\\dsstox\\percepta\\"+filename;
+			p.loadFromSDF(filepathJson,true,-1);
+		}
 	}
 	
 
