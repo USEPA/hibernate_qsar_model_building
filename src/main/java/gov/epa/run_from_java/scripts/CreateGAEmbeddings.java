@@ -15,6 +15,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingService
 import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.models.WebServiceModelBuilder;
 import gov.epa.web_services.embedding_service.CalculationInfo;
+import gov.epa.web_services.embedding_service.CalculationInfoImportance;
 import gov.epa.web_services.embedding_service.CalculationResponse;
 import gov.epa.web_services.embedding_service.EmbeddingWebService2;
 import kong.unirest.HttpResponse;
@@ -37,7 +38,6 @@ public class CreateGAEmbeddings {
 		 * endpoints.add(DevQsarConstants.LC50);
 		 */
 
-		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
 		String lanId = "cramslan";
 		String descriptorSetName = "T.E.S.T. 5.1";
 		String splittingName = "OPERA";
@@ -47,14 +47,41 @@ public class CreateGAEmbeddings {
 
 		for (String endpoint : endpoints) {
 			String datasetName = endpoint + " OPERA";
-			runEmbeddings(endpoint, datasetName, lanId, descriptorSetName, splittingName, removeLogDescriptors, ews2);
+			runGA_Embedding(endpoint, datasetName, lanId, descriptorSetName, splittingName, removeLogDescriptors, ews2);
 		}
+	}
+
+	void runEmbedding() {
+
+//		String endpoint="LogBCF";
+		String endpoint=DevQsarConstants.WATER_SOLUBILITY;
+//		String endpoint=DevQsarConstants.MELTING_POINT;
+//		String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
+//		String endpoint = DevQsarConstants.LOG_KOC;
+
+		String lanId = "tmarti02";
+		String descriptorSetName = "WebTEST-default";
+		String splittingName = "OPERA";
+
+		Boolean removeLogDescriptors = false;
+
+		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL,
+				DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
+
+		String datasetName = endpoint + " OPERA";
+
+		String qsarMethod=DevQsarConstants.RF;
+//		String qsarMethod = DevQsarConstants.XGB;
+
+		runImportanceEmbedding(endpoint, datasetName, lanId, descriptorSetName, splittingName, removeLogDescriptors,
+				ews2, qsarMethod);
+
 	}
 
 	void lookAtEmbeddings() {
 		DescriptorEmbeddingServiceImpl descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 
-		List<String>datasetNames=new ArrayList<>();
+		List<String> datasetNames = new ArrayList<>();
 
 		datasetNames.add("HLC from exp_prop and chemprop");
 		datasetNames.add("WS from exp_prop and chemprop");
@@ -64,61 +91,60 @@ public class CreateGAEmbeddings {
 		datasetNames.add("BP from exp_prop and chemprop");
 //		datasetNames.add("pKa_a from exp_prop and chemprop");
 //		datasetNames.add("pKa_b from exp_prop and chemprop");
-		
+
 		String qsarMethodGA = DevQsarConstants.KNN;
-		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
-		
+		String descriptorSetName = DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+
 //		String splittingName=SplittingGeneratorPFAS_Script.splittingPFASOnly;
 //		String splittingName=SplittingGeneratorPFAS_Script.splittingAllButPFAS;
-		String splittingName=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+		String splittingName = DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 
-		
-		for (String datasetName:datasetNames) {
-			
+		for (String datasetName : datasetNames) {
+
 			boolean remove_log_p = false;
-			if(datasetName.contains("LogP")) remove_log_p=true;
-
+			if (datasetName.contains("LogP"))
+				remove_log_p = true;
 
 			CalculationInfo ci = new CalculationInfo();
-			ci.num_generations = 100;			
-			if (datasetName.contains("BP") || splittingName.equals("T=all but PFAS, P=PFAS")) ci.num_generations=10;//takes too long to do 100			
+			ci.num_generations = 100;
+			if (datasetName.contains("BP") || splittingName.equals("T=all but PFAS, P=PFAS"))
+				ci.num_generations = 10;// takes too long to do 100
 
 			ci.remove_log_p = remove_log_p;
 			ci.qsarMethodGA = qsarMethodGA;
-			ci.datasetName=datasetName;
-			ci.descriptorSetName=descriptorSetName;
-			ci.splittingName=splittingName;
-			ci.num_jobs=4;
+			ci.datasetName = datasetName;
+			ci.descriptorSetName = descriptorSetName;
+			ci.splittingName = splittingName;
+			ci.num_jobs = 4;
 
 			DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);
 
-			if (descriptorEmbedding==null) {//look for one of the ones made using offline python run:			
-				ci.num_jobs=2;//just takes slighter longer
-				ci.n_threads=16;//doesnt impact knn
-				descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);				
+			if (descriptorEmbedding == null) {// look for one of the ones made using offline python run:
+				ci.num_jobs = 2;// just takes slighter longer
+				ci.n_threads = 16;// doesnt impact knn
+				descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);
 			}
-			
+
 //			System.out.println(datasetName+"\t"+descriptorEmbedding.getEmbeddingTsv());
-			System.out.println(datasetName+"\t"+descriptorEmbedding.getEmbeddingTsv().split("\t").length);
-			
+			System.out.println(datasetName + "\t" + descriptorEmbedding.getEmbeddingTsv().split("\t").length);
+
 		}
-		
-	}
-	
-	
-	
-	
-	public static void main(String[] args) {
-		CreateGAEmbeddings c=new CreateGAEmbeddings();
-//		c.runEmbeddings();
-		c.lookAtEmbeddings();
+
 	}
 
-	private static void runEmbeddings(String propertyName, String datasetName, String lanId, String descriptorSetName,
+	public static void main(String[] args) {
+		CreateGAEmbeddings c = new CreateGAEmbeddings();
+//		c.runEmbeddings();
+		c.runEmbedding();
+//		c.lookAtEmbeddings();
+	}
+
+	private static void runGA_Embedding(String propertyName, String datasetName, String lanId, String descriptorSetName,
 			String splittingName, Boolean removeLogDescriptors, EmbeddingWebService2 ews2) {
-		String tsv = null;
+		ModelData modelData = null;
 		try {
-			tsv = retrieveTrainingData(datasetName, descriptorSetName, splittingName, removeLogDescriptors, lanId);
+			modelData = retrieveTrainingData(datasetName, descriptorSetName, splittingName, removeLogDescriptors,
+					lanId);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -126,14 +152,16 @@ public class CreateGAEmbeddings {
 		String name = propertyName + "_" + descriptorSetName + "_" + System.currentTimeMillis();
 
 		CalculationInfo ci = new CalculationInfo();
-		ci.tsv_training = tsv;
+		ci.tsv_training = modelData.trainingSetInstances;
+		ci.tsv_prediction = modelData.predictionSetInstances;
+
 		ci.remove_log_p = propertyName.equals(DevQsarConstants.LOG_KOW);
-		ci.qsarMethodGA = DevQsarConstants.KNN;
 		ci.num_generations = 10;
+		ci.qsarMethodGA = DevQsarConstants.KNN;
 		ci.datasetName = datasetName;
 		ci.descriptorSetName = descriptorSetName;
 
-		HttpResponse<String> response = ews2.findEmbedding(ci);
+		HttpResponse<String> response = ews2.findGA_Embedding(ci);
 		System.out.println(response.getStatus());
 
 		String data = response.getBody();
@@ -143,7 +171,7 @@ public class CreateGAEmbeddings {
 		CalculationResponse cr = gson.fromJson(data, CalculationResponse.class);
 		String embedding = cr.embedding.stream().map(Object::toString).collect(Collectors.joining("\t"));
 
-		DescriptorEmbedding desE = new DescriptorEmbedding(ci, lanId, embedding);
+		DescriptorEmbedding desE = new DescriptorEmbedding(ci, embedding,lanId);
 
 		Date date = new Date();
 		Timestamp timestamp2 = new Timestamp(date.getTime());
@@ -157,12 +185,80 @@ public class CreateGAEmbeddings {
 
 	}
 
-	public static String retrieveTrainingData(String datasetName, String descriptorSetName, String splittingName,
+	private static void runImportanceEmbedding(String propertyName, String datasetName, String lanId,
+			String descriptorSetName, String splittingName, Boolean removeLogDescriptors, EmbeddingWebService2 ews2,
+			String qsarMethod) {
+
+		ModelData modelData = null;
+		try {
+			modelData = retrieveTrainingData(datasetName, descriptorSetName, splittingName, removeLogDescriptors,
+					lanId);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		String name = propertyName + "_" + descriptorSetName + "_" + System.currentTimeMillis();
+
+		CalculationInfoImportance ci = new CalculationInfoImportance();
+		ci.tsv_training = modelData.trainingSetInstances;
+		ci.tsv_prediction = modelData.predictionSetInstances;
+		ci.remove_log_p = propertyName.equals(DevQsarConstants.LOG_KOW);
+
+		ci.qsarMethod = qsarMethod;
+		ci.descriptorSetName=descriptorSetName;
+		ci.datasetName=datasetName;
+		ci.splittingName=splittingName;
+
+		ci.n_threads = 20;
+
+		ci.num_generations = 1;
+		ci.use_permutative = true;
+		ci.run_rfe = true;
+		ci.min_descriptor_count = 12;// Might need to reduce it for T=PFAS training sets
+		ci.max_descriptor_count = 30;// Might need to reduce it for T=PFAS training sets
+
+		if (ci.qsarMethod.equals(DevQsarConstants.RF)) {
+			ci.fraction_of_max_importance = 0.25;
+		} else if (ci.qsarMethod.equals(DevQsarConstants.XGB)) {
+			ci.fraction_of_max_importance = 0.03;
+		} else {
+			System.out.println("Invalid QSAR method" + qsarMethod);
+			return;
+		}
+
+
+		HttpResponse<String> response = ews2.findImportanceEmbedding(ci);
+		System.out.println(response.getStatus());
+
+		String data = response.getBody();
+		System.out.println(data);
+
+		Gson gson = new Gson();
+		CalculationResponse cr = gson.fromJson(data, CalculationResponse.class);
+		String embedding = cr.embedding.stream().map(Object::toString).collect(Collectors.joining("\t"));
+
+		System.out.println(embedding);
+
+		DescriptorEmbedding desE = new DescriptorEmbedding(ci, embedding,lanId);//TODO
+
+		Date date = new Date();
+		Timestamp timestamp2 = new Timestamp(date.getTime());
+		desE.setCreatedAt(timestamp2);
+
+		if (true) {
+			DescriptorEmbeddingService deSer = new DescriptorEmbeddingServiceImpl();
+			deSer.create(desE);
+		}
+
+	}
+
+	public static ModelData retrieveTrainingData(String datasetName, String descriptorSetName, String splittingName,
 			Boolean removeLogDescriptors, String lanId) {
 		WebServiceModelBuilder wsmb = new WebServiceModelBuilder(null, lanId);
 		ModelData data = ModelData.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors,
 				false);
-		return data.trainingSetInstances;
+		return data;
 	}
 
 }

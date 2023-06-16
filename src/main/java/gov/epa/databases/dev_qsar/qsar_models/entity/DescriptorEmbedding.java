@@ -18,6 +18,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import gov.epa.web_services.embedding_service.CalculationInfo;
+import gov.epa.web_services.embedding_service.CalculationInfoImportance;
 
 @Entity
 @Table(name="descriptor_embeddings", indexes={@Index(name="embed_name_idx", columnList="name", unique=true)})
@@ -107,6 +108,24 @@ public class DescriptorEmbedding {
 		setSplittingName(ci.splittingName);
 
 	}
+	
+	
+	public DescriptorEmbedding(CalculationInfoImportance ci,String embedding,String lanId) {
+		setEmbeddingTsv(embedding);
+		setName(ci.datasetName + "_" + ci.descriptorSetName + "_" + System.currentTimeMillis());
+		setCreatedBy(lanId);
+		setImportanceTsv("not null importances");
+
+		setDescription(ci.toString());
+		setDescriptorSetName(ci.descriptorSetName);
+		setDatasetName(ci.datasetName);
+		setSplittingName(ci.splittingName);
+		setQsarMethod(ci.qsarMethod);
+		
+
+	}
+
+	
 
 	public Long getId() {
 		return id;

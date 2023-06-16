@@ -49,7 +49,7 @@ public class EmbeddingWebService2 extends WebService {
 			return null;
 		}
 
-		HttpResponse<String> response = ews2.findEmbedding(ci);
+		HttpResponse<String> response = ews2.findGA_Embedding(ci);
 		System.out.println("calculation response status=" + response.getStatus());
 
 		String data = response.getBody();
@@ -95,7 +95,7 @@ public class EmbeddingWebService2 extends WebService {
 //	}
 
 
-	public HttpResponse<String> findEmbedding(CalculationInfo calculationInfo) {
+	public HttpResponse<String> findGA_Embedding(CalculationInfo calculationInfo) {
 		System.out.println(this.address+ "/models/" + calculationInfo.qsarMethodGA +"/embedding");
 		//		System.out.println(calculationInfo.tsv);
 
@@ -111,6 +111,27 @@ public class EmbeddingWebService2 extends WebService {
 				.field("num_generations",String.valueOf(calculationInfo.num_generations))
 				.field("max_length",String.valueOf(calculationInfo.max_length))
 				.field("descriptor_coefficient",String.valueOf(calculationInfo.descriptor_coefficient))
+				.asString();
+
+		return response;
+	}
+	
+	public HttpResponse<String> findImportanceEmbedding(CalculationInfoImportance calculationInfo) {
+		System.out.println(this.address+ "/models/" + calculationInfo.qsarMethod +"/embedding_importance");
+				
+
+		HttpResponse<String> response = Unirest.post(this.address+ "/models/{qsar_method}/embedding_importance")
+				.routeParam("qsar_method", calculationInfo.qsarMethod)
+				.field("training_tsv",calculationInfo.tsv_training)
+				.field("remove_log_p",String.valueOf(calculationInfo.remove_log_p))
+				.field("prediction_tsv", calculationInfo.tsv_prediction)
+				.field("num_generations",String.valueOf(calculationInfo.num_generations))
+				.field("n_threads",String.valueOf(calculationInfo.n_threads))
+				.field("use_permutative", String.valueOf(calculationInfo.use_permutative))
+				.field("run_rfe", String.valueOf(calculationInfo.run_rfe))
+				.field("fraction_of_max_importance",String.valueOf(calculationInfo.fraction_of_max_importance))
+				.field("min_descriptor_count",String.valueOf(calculationInfo.min_descriptor_count))
+				.field("max_descriptor_count",String.valueOf(calculationInfo.max_descriptor_count))
 				.asString();
 
 		return response;
