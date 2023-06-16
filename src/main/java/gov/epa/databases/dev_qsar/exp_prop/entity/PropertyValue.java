@@ -194,8 +194,12 @@ public class PropertyValue {
 	}
 	
 	public ExplainedResponse validateValue() {
-		Double pointEstimate = getValuePointEstimate();
+		
+		
 		String propertyName = getProperty().getName();
+		
+		
+		Double pointEstimate = getValuePointEstimate();
 		Double value = null;
 		if (pointEstimate!=null) {
 			// If point estimate available, set as candidate value
@@ -228,8 +232,14 @@ public class PropertyValue {
 				return new ExplainedResponse(false, "Binary value indicated, but property value is not binary");
 			}
 		} else {
+			
+			Boolean unitsCheck=checkUnits(propertyName, unit.getName());
+			if(!unitsCheck) {
+				return new ExplainedResponse(false, "Invalid units for property");
+			}
+
 			// Check if property value (in original units) is realistic for property in question
-			Boolean realisticValueCheck = checkRealisticValueForProperty(value, propertyName, unitName);
+			Boolean realisticValueCheck = checkRealisticValueForProperty(value, propertyName, unit.getName());
 			if (realisticValueCheck==null || !realisticValueCheck) {
 				return new ExplainedResponse(false, "Unrealistic value for property");
 			}
@@ -238,6 +248,7 @@ public class PropertyValue {
 		return new ExplainedResponse(true, value, "Convertible QSAR property value available");
 	}
 	
+
 	public static Boolean checkRangeForProperty(double min, double max, String propertyName) {
 		if (propertyName.equals(DevQsarConstants.PKA) || propertyName.equals(DevQsarConstants.PKA_A) || propertyName.equals(DevQsarConstants.PKA_B)  
 				|| propertyName.equals(DevQsarConstants.LOG_KOW)
@@ -270,25 +281,54 @@ public class PropertyValue {
 		}
 	}
 	
+	
+	private Boolean checkUnits(String propertyName, String unitName) {
+		
+		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
+			return (unitName.equals("G_L") || unitName.equals("MOLAR"));
+		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
+			return unitName.equals("MMHG");
+		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
+			return unitName.equals("ATM_M3_MOL");
+		} else if (propertyName.equals(DevQsarConstants.MELTING_POINT) || propertyName.equals(DevQsarConstants.BOILING_POINT) || propertyName.equals(DevQsarConstants.FLASH_POINT)) {
+			return unitName.equals("DEG_C");
+		} else if (propertyName.equals(DevQsarConstants.LOG_KOW)) {
+			return unitName.equals("LOG_UNITS");
+		} else if (propertyName.equals(DevQsarConstants.LOG_BCF_FISH_WHOLEBODY)) {
+			return unitName.equals("LOG_L_KG");//LOG_UNITS is not 100% correct
+		} else {
+			System.out.println("Need to add code to PropertyValue.checkUnits() for "+propertyName);
+			return true;
+		}
+		
+	}
+	
+	
 	// Check if property value (in original units) is realistic for property in question
 	public static Boolean checkRealisticValueForProperty(Double candidateValue, String propertyName, String unitName) {
 
+		
 		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
-			if(unitName.equals(DevQsarConstants.G_L)) {
+			if(unitName.equals("G_L")) {
 				if(candidateValue>DevQsarConstants.MAX_WATER_SOLUBILITY_G_L || 
 						candidateValue<DevQsarConstants.MIN_WATER_SOLUBILITY_G_L) {
+					
+//					System.out.println(candidateValue+"\t"+DevQsarConstants.MIN_WATER_SOLUBILITY_G_L+"\t"+DevQsarConstants.MAX_WATER_SOLUBILITY_G_L+"\t"+unitAbbreviation);
 					return false;
 				} else {
 					return true;
 				}	
-			} else if (unitName.equals(DevQsarConstants.MOLAR)){
+			} else if (unitName.equals("MOLAR")){
 				if(candidateValue>DevQsarConstants.MAX_WATER_SOLUBILITY_MOLAR || 
 						candidateValue<DevQsarConstants.MIN_WATER_SOLUBILITY_MOLAR) {
-					return false;
+//					System.out.println(candidateValue+"\t"+DevQsarConstants.MIN_WATER_SOLUBILITY_MOLAR+"\t"+DevQsarConstants.MAX_WATER_SOLUBILITY_MOLAR+"\t"+unitAbbreviation);
+					return false;
 				} else {
 					return true;
 				}	
 			} else {
+//				System.out.println(candidateValue+"\t"+unitAbbreviation);
+
 				return false;
 			}
 
@@ -320,14 +360,14 @@ public class PropertyValue {
 			return candidateValue != 0.0;//Dont use if exactly zero due to toxval storing blanks as zeros TMM. Might lose a handful accidentally
 			
 		} else if (propertyName.equals(DevQsarConstants.MELTING_POINT)) {
-			if(unitName.equals(DevQsarConstants.DEG_C) && (candidateValue>DevQsarConstants.MAX_MELTING_POINT_C) ||
+			if(unitName.equals("DEG_C") && (candidateValue>DevQsarConstants.MAX_MELTING_POINT_C) ||
 					candidateValue<DevQsarConstants.MIN_MELTING_POINT_C) {
 				return false;
 			} else {
 				return true;
 			}			
 		} else if (propertyName.equals(DevQsarConstants.BOILING_POINT)) {
-			if(unitName.equals(DevQsarConstants.DEG_C) && (candidateValue>DevQsarConstants.MAX_BOILING_POINT_C) ||
+			if(unitName.equals("DEG_C") && (candidateValue>DevQsarConstants.MAX_BOILING_POINT_C) ||
 					candidateValue<DevQsarConstants.MIN_BOILING_POINT_C) {
 				return false;
 			} else {
