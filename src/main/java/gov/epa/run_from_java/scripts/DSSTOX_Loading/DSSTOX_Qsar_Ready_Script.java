@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
@@ -238,6 +240,66 @@ public class DSSTOX_Qsar_Ready_Script {
 			ex.printStackTrace();
 		}
 	}
+
+	public void compareQSARReady () {
+		
+		Connection conn=SqlUtilities.getConnectionDSSTOX();
+		
+		int limit=100000;
+		
+		String sql="select software_version, original_smiles, canonical_qsarr, "
+				+ "dtxsid, dtxcid from dsstox_qsar order by dtxcid, software_version limit "+limit;
+		
+		ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+		
+		Hashtable<String,DSSTOX_QSAR_Ready>htNew=new Hashtable<>();
+		Hashtable<String,DSSTOX_QSAR_Ready>htOld=new Hashtable<>();
+		
+		try {
+			while (rs.next()) {
+				DSSTOX_QSAR_Ready d=new DSSTOX_QSAR_Ready();
+				d.software_version=rs.getString(1);
+				d.original_smiles=rs.getString(2);
+				d.canonical_qsarr=rs.getString(3);
+				d.dtxsid=rs.getString(4);
+				d.dtxcid=rs.getString(5);
+				
+				if(d.software_version.equals("OPERA")) {
+					htOld.put(d.dtxcid, d);
+				} else {
+					htNew.put(d.dtxcid, d);
+				}
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		
+		for (String dtxcid:htNew.keySet()) {
+			
+			DSSTOX_QSAR_Ready dNew=htNew.get(dtxcid);
+			
+			if(htOld.get(dtxcid)==null) continue;
+			
+			DSSTOX_QSAR_Ready dOld=htOld.get(dtxcid);
+			
+//			if(!dNew.original_smiles.equals(dOld.original_smiles)) {
+//				System.out.println("original smiles mismatch\t"+dtxcid+"\t"+dNew.original_smiles+"\t"+dOld.original_smiles);
+//				continue;
+//			}
+			
+			if(!dNew.original_smiles.equals(dOld.original_smiles)) continue;
+			
+			if(!dNew.canonical_qsarr.equals(dOld.canonical_qsarr)) {
+				System.out.println("qsar smiles mismatch\t"+dtxcid+"\t"+dNew.canonical_qsarr+"\t"+dOld.canonical_qsarr);
+			}
+
+		}
+		
+		
+	}
+	
 	public void createSQL (List<DSSTOX_QSAR_Ready> recs) {
 
 		Connection conn=SqlUtilities.getConnectionDSSTOX();
@@ -312,7 +374,8 @@ public class DSSTOX_Qsar_Ready_Script {
 	
 	public static void main(String[] args) {
 		DSSTOX_Qsar_Ready_Script d=new DSSTOX_Qsar_Ready_Script();
-		d.loadQSAR_Ready();
-		d.randomlySampleResults();
+//		d.loadQSAR_Ready();
+//		d.randomlySampleResults();
+		d.compareQSARReady();
 	}
 }
