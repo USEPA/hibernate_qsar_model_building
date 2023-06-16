@@ -11,6 +11,7 @@ import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.AtomContainerSet;
 import org.openscience.cdk.DefaultChemObjectBuilder;
 import org.openscience.cdk.interfaces.IAtomContainer;
+import org.openscience.cdk.io.MDLV2000Reader;
 import org.openscience.cdk.io.MDLV3000Reader;
 import org.openscience.cdk.smiles.SmiFlavor;
 import org.openscience.cdk.smiles.SmilesGenerator;
@@ -137,7 +138,109 @@ public class DashboardPredictionUtilities {
 		}
 		return acs;
 	}
-	
+	public AtomContainerSet readSDFV2000(String sdfFilePath) {
+
+		MDLV2000Reader mr=new MDLV2000Reader();
+		SmilesParser sp  = new SmilesParser(DefaultChemObjectBuilder.getInstance());
+		SmilesGenerator sg= new SmilesGenerator(SmiFlavor.Unique);
+
+		AtomContainerSet acs = new AtomContainerSet();
+		
+		try {
+
+			FileInputStream fis=new FileInputStream(sdfFilePath);
+			BufferedReader br=new BufferedReader (new InputStreamReader(fis, "UTF-8"));
+
+			boolean stop=false;
+
+			while (true) {
+
+				String strStructure="";
+
+				while (true) {
+					String Line=br.readLine();
+
+					if(Line==null) {
+						stop=true;
+						break;
+					}
+
+					//				System.out.println(Line);
+					strStructure+=Line+"\r\n";
+					if(Line.contains("M  END"))break;
+				}
+
+				if(stop)break;
+
+
+				InputStream stream = new ByteArrayInputStream(strStructure.getBytes());
+				mr.setReader(stream);
+
+				IAtomContainer molecule=null;
+				
+				try {
+					molecule = mr.read(new AtomContainer());
+				} catch (Exception ex) {
+					molecule=new AtomContainer();
+				}
+
+				while (true) {
+					String Line=br.readLine();
+					//				System.out.println(Line);
+
+					if(Line.contains(">  <")) {
+						String field=Line.substring(Line.indexOf("<")+1,Line.length()-1);
+						String value=br.readLine();
+						molecule.setProperty(field, value);
+						//					System.out.println(field);
+					}
+
+					if(Line.contains("$$$"))break;
+				}
+
+				if(molecule.getAtomCount()==0) {
+				
+					AtomContainer molecule2=null;
+					
+					String smiles=molecule.getProperty("smiles");
+					
+					if (smiles!=null) {
+						try {
+							molecule2 = (AtomContainer)sp.parseSmiles(smiles);
+//						System.out.println(DTXCID+"\t"+smiles+"\t"+molecule2.getAtomCount());
+						} catch (Exception ex) {
+							molecule2=new AtomContainer();
+						}
+						
+					}else {
+						molecule2 = new AtomContainer();
+					}							
+						
+					molecule2.setProperties(molecule.getProperties());					
+					acs.addAtomContainer(molecule2);
+					
+				} else {
+					acs.addAtomContainer(molecule);
+
+					String smiles=molecule.getProperty("smiles");
+					
+					if(smiles==null) {
+						smiles=sg.create(molecule);
+						String DTXCID=molecule.getProperty("DTXCID");
+						molecule.setProperty("smiles", smiles);
+//						System.out.println(DTXCID+"\t"+smiles);
+					}
+				}
+				
+			}
+			
+			br.close();
+			mr.close();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return acs;
+	}
 	
 	public AtomContainerSet filterAtomContainerSet(AtomContainerSet acs, boolean skipMissingSID, int maxCount) {
 
