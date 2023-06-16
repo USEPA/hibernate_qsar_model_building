@@ -15,6 +15,7 @@ import com.google.gson.JsonObject;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.dao.DataPointDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
@@ -28,6 +29,7 @@ import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.run_from_java.scripts.OPERA.SqliteUtilities;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 
 public class DatasetCreatorScript {
@@ -44,28 +46,111 @@ public class DatasetCreatorScript {
 	static boolean omitSalts=true;
 	static boolean validateStructure=true;
 
+
+	static String workflow="qsar-ready";
+	static String serverHost="https://hcd.rtpnc.epa.gov";
+	static SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,workflow,serverHost);
+
+	
+	static void fixQsarExpPropIds() {
+		List<String>datasetNames=new ArrayList<>();
+
+//		datasetNames.add("HLC v1");
+//		datasetNames.add("VP v1");
+//		datasetNames.add("WS v1");
+//		datasetNames.add("BP v1");
+//		datasetNames.add("LogP v1");
+		datasetNames.add("MP v1");
+		
+		
+		for (String datasetName:datasetNames) {
+			DataPointDaoImpl d=new DataPointDaoImpl ();
+			List<DataPoint>dps=d.findByDatasetNameSql(datasetName);
+
+			Connection conn=SqlUtilities.getConnectionPostgres();
+
+			for (DataPoint dp:dps) {
+
+				String qsarExpPropID2 = fixQsarExpPropId(dp);
+				
+				System.out.println(dp.getQsar_exp_prop_property_values_id()+"\t"+qsarExpPropID2);
+				
+
+//				String sql="UPDATE qsar_datasets.data_points dp\r\n"
+//						+ "SET qsar_exp_prop_property_values_id = "+qsarExpPropID2+"\r\n"
+//						+ "WHERE id="+dp.getId()+";";
+//
+//				SqlUtilities.runSQLUpdate(conn, sql);
+//				System.out.println(qsarExpPropID2);
+			}
+
+		}
+		
+//		System.out.println(Utilities.gson.toJson(dps));
+
+	}
+
+
+	private static String fixQsarExpPropId(DataPoint dp) {
+		String qsarExpPropID2=dp.getQsar_exp_prop_property_values_id().replace("EXP", "");
+		String [] ids=qsarExpPropID2.split("\\|");
+		if (ids.length==1) {
+			qsarExpPropID2=Integer.parseInt(ids[0])+"";
+		} else if (ids.length==2) {
+			String id1=Integer.parseInt(ids[0])+"";
+			String id2=Integer.parseInt(ids[1])+"";
+			qsarExpPropID2=id1+"|"+id2;
+		}
+		return qsarExpPropID2;
+	}
+	
+	
 	public static void main(String[] args) {
 
+//		fixQsarExpPropIds();
+		
+//		DataPointServiceImpl dpsi=new DataPointServiceImpl();
+//		List<DataPoint>datapoints=dpsi.findByDatasetName("VP v1");
+//		List<DataPoint>datapoints=dpsi.findByDatasetName("HLC v1");
+//		System.out.println(datapoints.size());
+		
+//		DataPointDaoImpl d=new DataPointDaoImpl ();
+//		List<DataPoint>dps=d.findByDatasetNameSql("HLC v1");
+//		System.out.println(Utilities.gson.toJson(dps));
+//		System.out.println(dps.size());
+		
+		//*********************************************************************************************
+		
+
+//		Connection conn=SqlUtilities.getConnectionPostgres();
+//		String dataSetName="HLC";
+//		String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+dataSetName+"'";
+//		String datasetId=DatabaseLookup.runSQL(conn, sql);
+//		sql="select count(id) from qsar_datasets.data_points dp where dp.fk_dataset_id="+datasetId;			
+//		String countDatapoints=DatabaseLookup.runSQL(conn, sql);
+//		System.out.println(countDatapoints);
+
+		//*********************************************************************************************
+		
 //		getDatasetStats();//Get record counts for the papers
 //		getDatasetStatsUsingSql();//Get record counts for the papers
 //		getDatasetStatsForOneDataset();
 //		getMappedRecordCountsBySourceAndProperty();
 		
 //		
-		DatasetServiceImpl ds=new DatasetServiceImpl();
-		
-		for(int i=23;i<=24;i++) ds.deleteSQL(i);
+//		DatasetServiceImpl ds=new DatasetServiceImpl();
+//		for(int i=23;i<=24;i++) ds.deleteSQL(i);
 		
 //		for(int i=13;i<15;i++) ds.delete(i);
 		
-		createHLC();
+//		createHLC();
 //		createWS();
 		
 //		createVP2();
 //		createBP2();
 //		createMP2();
 //		createHLC2();
-//		createWS2();
+		createWS2();
 //		createLogP2();
 		
 //		String folder="data\\dev_qsar\\output\\";
@@ -94,12 +179,13 @@ public class DatasetCreatorScript {
 		
 		datasetNames.add("HLC v1");
 		datasetNames.add("VP v1");
-		datasetNames.add("WS v1");
 		datasetNames.add("BP v1");
+		datasetNames.add("WS v1");
 		datasetNames.add("LogP v1");
 		datasetNames.add("MP v1");
 
 
+		
 		DatasetServiceImpl datasetService=new DatasetServiceImpl(); 
 		
 		List<String>globalSourceList=new ArrayList<>();
@@ -109,7 +195,11 @@ public class DatasetCreatorScript {
 		
 		for (String datasetName:datasetNames) {	
 			
+			
 			Dataset dataset=datasetService.findByName(datasetName);
+			
+//			System.out.println(datasetName+"\t"+dataset.getName());
+			
 			Hashtable<String, Integer>htRaw=getRawRecordCountsBySource(dataset.getProperty().getName());			
 			Hashtable<String,Integer>htMapped=getMappedRecordsBySource(datasetName,htRaw);
 			
@@ -155,26 +245,31 @@ public class DatasetCreatorScript {
 		List<String>datasetNames=new ArrayList<>();
 		datasetNames.add("HLC v1");
 		datasetNames.add("WS v1");
-		datasetNames.add("VP v1");
 		datasetNames.add("BP v1");
+		datasetNames.add("VP v1");
 		datasetNames.add("LogP v1");
 		datasetNames.add("MP v1");
 		
 		
 		DatasetServiceImpl ds=new DatasetServiceImpl();
+		PropertyValueServiceImpl propertyValueService = new PropertyValueServiceImpl();
+		DataPointServiceImpl dpsi=new DataPointServiceImpl();
+
 		
 		for (int i=0;i<datasetNames.size();i++) {
 			
 //			String propertyName=propertyNames.get(i);
 			String dataSetName=datasetNames.get(i);
 			
-			String propertyName=ds.findByName(dataSetName).getProperty().getName();
+			Dataset dataset=ds.findByName(dataSetName);
 			
+			String propertyName=dataset.getProperty().getName();
 			
-			PropertyValueServiceImpl propertyValueService = new PropertyValueServiceImpl();
+//			System.out.println(dataset.getName()+"\t"+propertyName);
+			
 			List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(propertyName, true, true);
 			
-//			System.out.println("Number of raw records ="+propertyValues.size());
+			System.out.println("Number of raw records ="+propertyValues.size());
 
 			String folder="data\\dev_qsar\\output\\";
 			folder+=dataSetName+"\\";		
@@ -182,14 +277,13 @@ public class DatasetCreatorScript {
 			jsonPath=jsonPath.replace(" ", "_").replace("=", "_");
 			JsonArray mappedRecords=Utilities.getJsonArrayFromJsonFile(jsonPath);
 			
-//			System.out.println("Number of mapped records ="+mappedRecords.size());
+			System.out.println("Number of mapped records ="+mappedRecords.size());
 
 
 //			String sql="select count(id) from qsar_datasets.data_points dp where dp.fk_dataset_id="+90
 			
-			DataPointServiceImpl dpsi=new DataPointServiceImpl();
 			List<DataPoint>datapoints=dpsi.findByDatasetName(dataSetName);
-			//		System.out.println("Number of datapoints ="+datapoints.size());
+					System.out.println("Number of datapoints ="+datapoints.size());
 
 			System.out.println(propertyName+"\t"+propertyValues.size()+"\t"+mappedRecords.size()+"\t"+datapoints.size());
 		}
@@ -204,14 +298,23 @@ public class DatasetCreatorScript {
 		
 		List<String>datasetNames=new ArrayList<>();
 
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop v3");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("pKa_a from exp_prop and chemprop");
-		datasetNames.add("pKa_b from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop v3");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("pKa_a from exp_prop and chemprop");
+//		datasetNames.add("pKa_b from exp_prop and chemprop");
+		
+		
+		datasetNames.add("HLC v1");
+		datasetNames.add("VP v1");
+		datasetNames.add("BP v1");
+		datasetNames.add("WS v1");
+		datasetNames.add("LogP v1");
+		datasetNames.add("MP v1");
+
 		
 		for (int i=0;i<datasetNames.size();i++) {
 			
@@ -220,6 +323,9 @@ public class DatasetCreatorScript {
 			String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+dataSetName+"'";
 			String datasetId=DatabaseLookup.runSQL(conn, sql);
 
+//			System.out.println(datasetId);
+			
+			
 			sql="select fk_property_id from qsar_datasets.datasets d where d.\"name\" ='"+dataSetName+"'";
 			String propertyId_qsar_datasets=DatabaseLookup.runSQL(conn, sql);
 			
@@ -436,7 +542,6 @@ public class DatasetCreatorScript {
 	 */
 	public static void createWS() {
 		
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
 		String propertyName = DevQsarConstants.WATER_SOLUBILITY;
@@ -482,7 +587,6 @@ public class DatasetCreatorScript {
 	}
 	
 	public static void createWS2() {
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
 		String propertyName = DevQsarConstants.WATER_SOLUBILITY;
@@ -490,7 +594,7 @@ public class DatasetCreatorScript {
 		
 		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
 		BoundParameterValue pressureBound = new BoundParameterValue("Pressure", 740.0, 780.0, true);
-		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
+		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);//TODO can the chemical itself cause low pH? how do we know if records like in echemportal are due to added additional component which caused banding issue?
 		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
 		bounds.add(temperatureBound);
 		bounds.add(pressureBound);
@@ -500,7 +604,8 @@ public class DatasetCreatorScript {
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
 				omitOpsinAmbiguousNames, omitUvcbNames, null, omitSalts,validateStructure);
 		
-		String datasetName = "WS v1";
+//		String datasetName = "WS v1";
+		String datasetName = "WS v1 res_qsar";
 		String datasetDescription = "WS from exp_prop and chemprop where 1e-14 < WS(M) < 100, 1e-11 < WS(g/L) < 990, " 
 				+ "20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5, omit LookChem";
 				
@@ -524,7 +629,6 @@ public class DatasetCreatorScript {
 	// methods like these 
 	public static void createVP() {
 		// comment for diff
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 
 		String propertyName = DevQsarConstants.VAPOR_PRESSURE;
@@ -555,7 +659,6 @@ public class DatasetCreatorScript {
 	
 	public static void createVP2() {
 		// comment for diff
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
 		String propertyName = DevQsarConstants.VAPOR_PRESSURE;
@@ -595,7 +698,6 @@ public class DatasetCreatorScript {
 	
 	public static void create_pKA() {
 		// comment for diff
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 
 		String propertyName = DevQsarConstants.PKA;//pKA, pkAa, pkAb- TODO determine which sources use which
@@ -629,7 +731,6 @@ public class DatasetCreatorScript {
 //		if(true) return;
 		
 				// comment for diff
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 
 		String propertyName = DevQsarConstants.PKA_A;
@@ -658,7 +759,6 @@ public class DatasetCreatorScript {
 	
 	public static void createPKAb() {
 		// comment for diff
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 
 		String propertyName = DevQsarConstants.PKA_B;
@@ -690,7 +790,6 @@ public class DatasetCreatorScript {
 
 	public static void createLogP() {
 		// comment for diff
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 
 		String propertyName = DevQsarConstants.LOG_KOW;
@@ -727,7 +826,6 @@ public class DatasetCreatorScript {
 	
 	public static void createLogP2() {
 		// comment for diff
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
 		String propertyName = DevQsarConstants.LOG_KOW;
@@ -805,7 +903,6 @@ public class DatasetCreatorScript {
 
 
 	public static void createHLC() {
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
 		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
@@ -851,7 +948,6 @@ public class DatasetCreatorScript {
 	
 	
 	public static void createHLC2() {
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
 		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
@@ -900,7 +996,6 @@ public class DatasetCreatorScript {
 	 * create melting point dataset based on CAS registration
 	 */
 	public static void createMPRegisteredCAS() {
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 
 		String propertyName = DevQsarConstants.MELTING_POINT;
@@ -928,7 +1023,6 @@ public class DatasetCreatorScript {
 	 */
 	public static void createMP() {
 		
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 		
 		ArrayList<String> listNameArray = new ArrayList<String>();
@@ -981,7 +1075,6 @@ public class DatasetCreatorScript {
 	 */
 	public static void createMP2() {
 		
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 		
 		ArrayList<String> listNameArray = new ArrayList<String>();
@@ -1054,7 +1147,6 @@ public class DatasetCreatorScript {
 	 * creates Boiling point dataset using records from chemreg with CAS registration
 	 */
 	public static void createBPRegisteredCAS() {
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 
 		String propertyName = DevQsarConstants.BOILING_POINT;
@@ -1081,7 +1173,6 @@ public class DatasetCreatorScript {
 
 	public static void createLogPRegisteredCAS() {
 		// comment for diff
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 
 		String propertyName = DevQsarConstants.LOG_KOW;
@@ -1114,7 +1205,6 @@ public class DatasetCreatorScript {
 	 */
 	public static void createHLCRegisteredCAS() {
 		// comment for diff
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 
 		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
@@ -1143,7 +1233,6 @@ public class DatasetCreatorScript {
 	}
 
 	public static void createBCF() {
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "cramslan");
 
 		String propertyName = DevQsarConstants.LOG_BCF_FISH_WHOLEBODY;
@@ -1192,7 +1281,6 @@ public class DatasetCreatorScript {
 		listNameArray.add("ExpProp_BP_072522_Import_360001_to_363160");
 		
 		
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
 		String propertyName = DevQsarConstants.BOILING_POINT;
@@ -1255,7 +1343,6 @@ public class DatasetCreatorScript {
 		listNameArray.add("ExpProp_BP_072522_Import_360001_to_363160");
 		
 		
-		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY);
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
 		String propertyName = DevQsarConstants.BOILING_POINT;
