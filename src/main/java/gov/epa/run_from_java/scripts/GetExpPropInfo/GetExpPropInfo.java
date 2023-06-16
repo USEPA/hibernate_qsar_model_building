@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
+import javax.validation.ConstraintViolationException;
+
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -51,6 +53,8 @@ import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
+import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundServiceImpl;
 import gov.epa.databases.dsstox.DsstoxRecord;
 import gov.epa.databases.dsstox.entity.ChemicalList;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
@@ -62,6 +66,9 @@ import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.util.MathUtil;
 import gov.epa.util.wekalite.CSVLoader;
 import gov.epa.util.wekalite.Instances;
+import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
+import gov.epa.web_services.standardizers.Standardizer.StandardizeResponse;
+import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithStatus;
 
 
 public class GetExpPropInfo {
@@ -370,7 +377,7 @@ public class GetExpPropInfo {
 	 * @param folder
 	 * @param arrayPFAS_CIDs
 	 */
-	static void createCheckingSpreadsheet_PFAS_data(String dataSetName,Connection conn,Connection connDSSTOX,String folder,List<String>arrayPFAS_CIDs,String listName,Hashtable<String,String> htOperaReferences) {
+	static void createCheckingSpreadsheet_PFAS_data(String dataSetName,String folder,List<String>arrayPFAS_CIDs,String listName,Hashtable<String,String> htOperaReferences) {
 //		String dataSetName=getDataSetName(dataset_id, conn);
 
 		dataSetName=dataSetName.replace(" ", "_").replace("="," ");
@@ -417,7 +424,65 @@ public class GetExpPropInfo {
 		Hashtable<String,String>htDescriptions=ExcelCreator.getColumnDescriptions();
 		ExcelCreator.createExcel2(ja2, pathout,fieldsFinal,htDescriptions);
 				
-		String pathout2=folder+"//checking spreadsheets//"+listName+"_"+dataSetName+".xlsx";
+		String pathout2=folder+"//checking spreadsheets//"+listName+"_PFAS_"+dataSetName+".xlsx";
+		
+		try {
+			Files.copy(Paths.get(pathout), Paths.get(pathout2), StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+
+//		System.out.println("Excel file created:\t"+pathout);
+
+	}
+	
+	
+	/**
+	 * This method creates the checking spreadsheet using the json file that was
+	 * created during dataset creation rather than requerying the database
+	 * 
+	 * @param dataset_id
+	 * @param conn
+	 * @param folder
+	 * @param arrayPFAS_CIDs
+	 */
+	public static void createCheckingSpreadsheet(String dataSetName,String folder,Hashtable<String,String> htOperaReferences) {
+//		String dataSetName=getDataSetName(dataset_id, conn);
+
+		dataSetName=dataSetName.replace(" ", "_").replace("="," ");
+		
+		String jsonPath=folder+"//"+dataSetName+"//"+dataSetName+"_Mapped_Records.json";
+
+		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
+		
+		System.out.println(ja.size());
+		
+
+		ArrayList<String>arrayQSARSmiles=new ArrayList<>();
+
+		for (int i=0;i<ja.size();i++) {
+			JsonObject jo=ja.get(i).getAsJsonObject();
+			
+//			lookupInfoFromRID(connDSSTOX, jo);//dont need to- look at mapped_cas instead
+			
+			String dtxcid_original=jo.get("mapped_dtxcid").getAsString();
+			String dtxsid_original=jo.get("mapped_dtxsid").getAsString();
+			
+			if(htOperaReferences!=null && htOperaReferences.get(dtxsid_original)!=null) {
+				String operaReference=htOperaReferences.get(dtxsid_original);
+				jo.addProperty("source_description", operaReference);
+//				System.out.println(operaReference);
+			}
+		}
+		
+		String pathout=folder+"//"+dataSetName+"//"+dataSetName+".xlsx";
+
+		Hashtable<String,String>htDescriptions=ExcelCreator.getColumnDescriptions();
+		ExcelCreator.createExcel2(ja, pathout,fieldsFinal,htDescriptions);
+				
+		String pathout2=folder+"//checking spreadsheets//"+dataSetName+".xlsx";
 		
 		try {
 			Files.copy(Paths.get(pathout), Paths.get(pathout2), StandardCopyOption.REPLACE_EXISTING);
@@ -458,7 +523,7 @@ public class GetExpPropInfo {
 	 */
 	static void lookAtPFASChecking (String filepath) {
 
-		JsonArray ja=ExcelCreator.convertExcelToJsonArray(filepath,1);
+		JsonArray ja=ExcelCreator.convertExcelToJsonArray(filepath,1,"Records");
 
 		//		System.out.println(gson.toJson(ja));
 		System.out.println("number of records="+ja.size());
@@ -577,7 +642,7 @@ public class GetExpPropInfo {
 	 */
 	static void omitBadDataPointsFromExpProp (String filepath) {
 
-		JsonArray ja=ExcelCreator.convertExcelToJsonArray(filepath,1);
+		JsonArray ja=ExcelCreator.convertExcelToJsonArray(filepath,1,"Records");
 
 		//		System.out.println(gson.toJson(ja));
 		System.out.println("number of records="+ja.size());
@@ -640,7 +705,7 @@ public class GetExpPropInfo {
 	}
 
 
-	static List<DsstoxRecord> getChemicalsFromDSSTOXList(String listName) {
+	public static List<DsstoxRecord> getChemicalsFromDSSTOXList(String listName) {
 		ChemicalList chemicalList = listService.findByName(listName);
 		
 		if (chemicalList != null) {
@@ -660,12 +725,16 @@ public class GetExpPropInfo {
 		
 		List<String>datasetNames=new ArrayList<>();
 
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("HLC from exp_prop and chemprop");
+		
+		datasetNames.add("pKa_a from exp_prop and chemprop");
+		datasetNames.add("pKa_b from exp_prop and chemprop");
+
 		
 //		datasetNames.add("ExpProp_BCF_Fish_TMM");
 		
@@ -676,8 +745,8 @@ public class GetExpPropInfo {
 //		ArrayList<String>arrayPFAS_CIDs=getPFAS_CIDs("data\\dev_qsar\\dataset_files\\PFASSTRUCT"+version+"_qsar_ready_smiles.txt");
 
 
-		String listName="CCL5PFAS";
-//		String listName="PFASSTRUCTV4";
+//		String listName="CCL5PFAS";
+		String listName="PFASSTRUCTV4";
 //		String listName="PFASSTRUCTV5";
 		
 		//New way get it directly from list in DSSTOX:
@@ -698,10 +767,10 @@ public class GetExpPropInfo {
 			if (abbrev.equals("WS")) htOperaReferences=Utilities.createOpera_Reference_Lookup("WS","WS");
 			if (abbrev.equals("VP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("VP","VP");
 			if (abbrev.equals("HL")) htOperaReferences=Utilities.createOpera_Reference_Lookup("HL","HL");
+			if (abbrev.equals("MP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("MP","MP");
+			if (abbrev.equals("BP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("BP","BP");
 			
-			createCheckingSpreadsheet_PFAS_data(dataSetName,conn,connDSSTOX, folder,arrayPFAS_CIDs,listName,htOperaReferences);//create checking spreadsheet using json file for mapped records that was created when dataset was created
-			
-			
+			createCheckingSpreadsheet_PFAS_data(dataSetName,folder,arrayPFAS_CIDs,listName,htOperaReferences);//create checking spreadsheet using json file for mapped records that was created when dataset was created
 
 			
 			
@@ -711,9 +780,207 @@ public class GetExpPropInfo {
 	}
 	
 	
+	static void createPFAS_text_File() {
+		boolean standardize=true;
+
+		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,"qsar-ready","https://hcd.rtpnc.epa.gov");
+
+		CompoundServiceImpl compoundService=new CompoundServiceImpl();
+
+
+		String listName="PFASSTRUCTV4";
+//		String listName="PFASSTRUCTV5";
+		//		String listName="PFASSTRUCTV5";
+
+		//New way get it directly from list in DSSTOX:
+		List<DsstoxRecord>dsstoxRecords=getChemicalsFromDSSTOXList(listName);		
+
+		Connection conn=SqlUtilities.getConnectionPostgres();
+
+		String folder="data/dev_qsar/dataset_files/";
+		String filePath=folder+listName+"_qsar_ready_smiles.txt";
+
+		FileWriter fw;
+		try {
+			fw = new FileWriter(filePath);
+
+			fw.write("DTXCID\tcanon_qsar_smiles\tsmiles\n");
+
+			for (DsstoxRecord dr:dsstoxRecords) {
+
+				if(dr.smiles==null) continue;
+
+				String sql="select canon_qsar_smiles from qsar_descriptors.compounds c where \n"+
+						"c.smiles ='"+dr.smiles+"' and \n"+
+						"standardizer ='SCI_DATA_EXPERTS_QSAR_READY' and \n"+
+						"dtxcid ='"+dr.dsstoxCompoundId+"'";
+
+				String canonSmiles=SqlUtilities.runSQL(conn, sql);
+
+				if (canonSmiles==null && standardize) {
+					standardize(dr,standardizer,compoundService);
+				}
+
+				if (canonSmiles==null) {
+					//				System.out.println(dr.smiles);
+					continue;
+				}
+
+				if (canonSmiles.contains("F")) {
+					System.out.println(dr.dsstoxCompoundId+"\t"+canonSmiles+"\t"+dr.smiles);	
+					fw.write(dr.dsstoxCompoundId+"\t"+canonSmiles+"\t"+dr.smiles+"\n");
+					fw.flush();
+				} else {
+					System.out.println("Not PFAS\t"+dr.dsstoxCompoundId+"\t"+canonSmiles+dr.smiles);	
+				}
+
+
+
+			}
+			fw.close();
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+
+	}
+	
+	static void standardize(DsstoxRecord dr,SciDataExpertsStandardizer standardizer,CompoundServiceImpl compoundService) {
+
+		StandardizeResponseWithStatus standardizeResponse = standardizer.callStandardize(dr.smiles);
+		if (standardizeResponse.status==200) {
+			StandardizeResponse standardizeResponseData = standardizeResponse.standardizeResponse;
+
+			if (standardizeResponseData.success) {
+				//**************************************************************
+				//TMM 6/8/22 store in database:
+				Compound compound = new Compound(dr.dsstoxCompoundId,dr.smiles, standardizeResponseData.qsarStandardizedSmiles, standardizer.standardizerName, "tmarti02");
+				
+				try {
+					compound = compoundService.create(compound);
+					System.out.println("standardized:"+dr.dsstoxCompoundId+"\t"+dr.smiles+"\t"+standardizeResponseData.qsarStandardizedSmiles);
+				} catch (ConstraintViolationException e) {
+					System.out.println(e.getMessage());
+				}
+			} else {
+				System.out.println("Failed to standardize:"+dr.dsstoxCompoundId+"\t"+dr.smiles);
+			}
+		} 
+	}
+	static void createOPERALookupFile(String propertyAbbrev,String propertyAbbrev2) {
+		
+		
+		
+		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\ghs-data-gathering\\data\\experimental\\OPERA\\OPERA_SDFS\\";
+
+		
+		
+
+		try {
+			FileWriter fw=new FileWriter(folder+"OPERA "+propertyAbbrev+" references.txt");
+			
+			fw.write("CAS\tDTXSID\tpreferred_name\tReference\r\n");
+			
+			String filepath=folder+propertyAbbrev+"_QR.sdf";
+			
+			IteratingSDFReader mr = new IteratingSDFReader(new FileInputStream(filepath),DefaultChemObjectBuilder.getInstance());
+			while (mr.hasNext()) {
+				AtomContainer m=null;
+				try {
+					m = (AtomContainer)mr.next();
+				} catch (Exception e) {
+					e.printStackTrace();
+					break;
+				}
+				if (m==null) break;
+
+				String DTXSID=m.getProperty("dsstox_substance_id");
+				
+				if (m.getProperty(propertyAbbrev2+" Reference")==null) {
+					System.out.println(propertyAbbrev+"\t"+DTXSID+"\tref missing");
+					
+					continue;
+				}
+				
+				String CAS=m.getProperty("CAS");
+				String preferred_name=m.getProperty("preferred_name");
+				String Reference=m.getProperty(propertyAbbrev2+" Reference");
+				
+				fw.write(CAS+"\t"+DTXSID+"\t"+preferred_name+"\t"+Reference+"\r\n");
+				
+				
+			}		
+			
+			
+			fw.flush();
+			fw.close();
+			
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		
+		
+
+	}
+	
+	static void createEPISUITE_ISIS_Reference_Lookup(String propertyAbbrev,String model) {
+		
+		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\ghs-data-gathering\\data\\experimental\\EpisuiteISIS\\EPI_SDF_Data\\";
+		String filepath=folder+"EPI_"+model+"_Data_SDF.sdf";
+		
+		try {
+			
+			FileWriter fw=new FileWriter(folder+model+"_refs.txt");
+			
+			fw.write("CAS\tNAME\tReference\r\n");
+			
+			IteratingSDFReader mr = new IteratingSDFReader(new FileInputStream(filepath),DefaultChemObjectBuilder.getInstance());
+			while (mr.hasNext()) {
+				AtomContainer m=null;
+				try {
+					m = (AtomContainer)mr.next();
+				} catch (Exception e) {
+					e.printStackTrace();
+					break;
+				}
+				if (m==null) break;
+
+				String CAS=m.getProperty("CAS");
+				String NAME=m.getProperty("NAME");
+				
+				if (m.getProperty(propertyAbbrev+" Reference")==null) {
+					System.out.println(propertyAbbrev+"\t"+CAS+"\tref missing");
+					continue;
+				}
+				
+				String Reference=m.getProperty(propertyAbbrev+" Reference");
+				
+				while (CAS.substring(0, 1).equals("0")) CAS=CAS.substring(1,CAS.length());
+				
+				
+				fw.write(CAS+"\t"+NAME+"\t"+Reference+"\r\n");
+				
+		
+			}
+			fw.flush();
+			fw.close();
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+	}
+	
+	
 
 	public static void main(String[] args) {
 
+//		createPFAS_text_File();
+		
 		createCheckingSpreadsheets();
 		
 //		detectBadLogPvalues();
@@ -721,6 +988,8 @@ public class GetExpPropInfo {
 //		lookAtPFASChecking("C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\000000 PFAS data checking\\checking Water solubility PFAS records.xlsx");
 //		omitBadDataPointsFromExpProp("C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\000000 PFAS data checking\\checking Water solubility PFAS records.xlsx");
 
+//		createEPISUITE_ISIS_Reference_Lookup("Kow", "Kowwin");
+//		createOPERALookupFile("LogP","Kow");
 
 	}
 
