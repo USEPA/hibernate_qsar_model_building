@@ -1,8 +1,16 @@
 package gov.epa.util;
 
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Base64;
+
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
 
 import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.DefaultChemObjectBuilder;
@@ -74,4 +82,16 @@ public class StructureImageUtil {
    		String imgURL="data:image/png;base64, "+base64;
    		return imgURL;
 	}
+	
+	public static byte[] generateImageBytesFromSmiles(String smiles)  {
+		try {		
+			AtomContainer ac = (AtomContainer) parser.parseSmiles(smiles);
+			byte[] bytes=writeImageBytes(ac);
+
+			return bytes;
+		} catch (Exception ex) {
+			return null;
+		}	
+	}
+	
 }

@@ -43,6 +43,32 @@ public class StructureUtil {
 		
 		return inchikey;
 	}
+	
+	public static class Inchi {
+		public String inchi, inchiKey, inchiKey1,warning; 
+	}
+	
+	public static Inchi toInchiIndigo(String mol) {
+		try {
+			Indigo indigo = new Indigo();
+			indigo.setOption("ignore-stereochemistry-errors", true);
+
+			IndigoInchi indigoInchi = new IndigoInchi(indigo);
+
+			IndigoObject m = indigo.loadMolecule(mol);
+
+			Inchi inchi = new Inchi();
+			inchi.inchi = indigoInchi.getInchi(m);
+			inchi.inchiKey = indigoInchi.getInchiKey(inchi.inchi);
+			inchi.inchiKey1 = inchi.inchiKey != null ? inchi.inchiKey.substring(0, 14) : null;
+
+			return inchi;
+
+		} catch (IndigoException ex) {
+			//			log.error(ex.getMessage());
+			return null;
+		}
+	}
 
 	public static SimpleOpsinResult opsinSmilesFromChemicalName(String chemicalName) {
 		if (chemicalName==null) {
