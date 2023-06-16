@@ -61,9 +61,11 @@ import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.util.StructureUtil;
 import gov.epa.util.StructureUtil.SimpleOpsinResult;
+import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 import gov.epa.web_services.standardizers.Standardizer;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponse;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithStatus;
+import kong.unirest.HttpResponse;
 
 /**
  * Discards exp_prop records during dataset creation if
@@ -1127,31 +1129,74 @@ public class DsstoxMapper {
 		Compound compound = compoundService.findByDtxcidSmilesAndStandardizer(dr.dsstoxCompoundId, dr.smiles,standardizerName);
 		
 		if (compound==null) {
-			StandardizeResponseWithStatus standardizeResponse = standardizer.callStandardize(dr.smiles);
-			if (standardizeResponse.status==200) {
-				StandardizeResponse standardizeResponseData = standardizeResponse.standardizeResponse;
-				String standardizedSmiles = null;
-				if (standardizeResponseData.success) {
-					standardizedSmiles = standardizeResponseData.qsarStandardizedSmiles;
+
+			try {
+			
+				boolean full=false;
+				
+				HttpResponse<String>standardizeResponse=standardizer.callQsarReadyStandardizePost(dr.smiles,full);
+			
+				if (standardizeResponse.getStatus()==200) {
+					
+					String jsonResponse=SciDataExpertsStandardizer.getResponseBody(standardizeResponse, full);
+					String standardizedSmiles=SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse, full);
+
+//					StandardizeResponse standardizeResponseData = standardizeResponse.standardizeResponse;
+//					String standardizedSmiles = null;
+//					
+//					if (standardizeResponseData.success) {
+//						standardizedSmiles = standardizeResponseData.qsarStandardizedSmiles;
+//					} else {
+//						logger.warn(srcChemId + ": Standardization failed for SMILES: " + dr.smiles);
+//					}
+					
+					compound = new Compound(dr.dsstoxCompoundId, dr.smiles, standardizedSmiles, standardizerName, lanId);
+
+					System.out.println("From standardizerApi, for smiles="+dr.smiles+", qsarReadySmiles="+standardizedSmiles);
+					
+					try {
+						compoundService.create(compound);
+					} catch (ConstraintViolationException e) {
+						System.out.println(e.getMessage());
+					}
 				} else {
-					logger.warn(srcChemId + ": Standardization failed for SMILES: " + dr.smiles);
+					// In case there's a server error that prevents standardization, don't save the null standardization
+					// We want to try again later!
+					logger.warn(srcChemId + ": Standardizer HTTP response failed for SMILES: " 
+							+ dr.smiles + " with code " + standardizeResponse.getStatus());
+					
+					System.out.println("Failed to run standardize for:"+dr.smiles+", "+dr.dsstoxCompoundId);
+					compound = new Compound(dr.dsstoxCompoundId, dr.smiles, null, standardizerName, lanId);
+
+					try {
+						compoundService.create(compound);
+					} catch (ConstraintViolationException e) {
+						System.out.println(e.getMessage());
+					}
 				}
+			} catch (Exception ex) {
+				System.out.println("Failed to standardize:"+dr.smiles+", "+dr.dsstoxCompoundId);
 				
-				compound = new Compound(dr.dsstoxCompoundId, dr.smiles, standardizedSmiles, standardizerName, lanId);
-				
+				System.out.println("Failed to run standardize for:"+dr.smiles+", "+dr.dsstoxCompoundId);
+				compound = new Compound(dr.dsstoxCompoundId, dr.smiles, null, standardizerName, lanId);
+
 				try {
 					compoundService.create(compound);
 				} catch (ConstraintViolationException e) {
 					System.out.println(e.getMessage());
 				}
-			} else {
-				// In case there's a server error that prevents standardization, don't save the null standardization
-				// We want to try again later!
-				logger.warn(srcChemId + ": Standardizer HTTP response failed for SMILES: " 
-						+ dr.smiles + " with code " + standardizeResponse.status);
-				return null;
 			}
+
+//			StandardizeResponseWithStatus standardizeResponse = standardizer.callStandardize(dr.smiles);
+			
+
+		} else {
+			System.out.println("From db, for smiles="+dr.smiles+", qsarReadySmiles="+compound.getCanonQsarSmiles());
 		}
+		
+		
+		
+		
 //		System.out.println("From db:"+compound.getCanonQsarSmiles());
 		return compound.getCanonQsarSmiles();
 	}
