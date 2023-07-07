@@ -56,6 +56,7 @@ import gov.epa.endpoints.datasets.DatasetCreator;
 import gov.epa.endpoints.datasets.DatasetParams;
 import gov.epa.endpoints.datasets.ExplainedResponse;
 import gov.epa.endpoints.datasets.MappedPropertyValue;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
@@ -77,8 +78,8 @@ import kong.unirest.HttpResponse;
 	o contains UvcbKeywords (can be turned off)
 	o OPSIN ambiguous name (can be turned off)
 	o conflicts dont resolve to the same 2d structure
-	o is not authoritative "exact" match in terms of available identifiers	 
 - fails validate structure (there is option to turn off validation of structure for properties for dashboard)
+	o is not authoritative "exact" match in terms of available identifiers	 
 	o bad substanceType (Mineral/Composite, Mixture/Formulation, and Polymer)
 	o no smiles in DsstoxRecord
 	o omittedSalt
@@ -159,6 +160,9 @@ public class DsstoxMapper {
 	private static final Logger logger = LogManager.getLogger(DsstoxMapper.class);
 	
 	private static Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+	private static Gson gson2=new Gson();
+	
+
 	
 	private CompoundService compoundService;
 	
@@ -450,9 +454,11 @@ public class DsstoxMapper {
 			
 			if (dsstoxRecord.getConnectionReason().equals("DTXRID matched <b>SOURCE_DTXRID</b>")) {
 				//Get the original dsstoxRecord from the source chemicals dtxrid:
-				dsstoxRecord=DsstoxRecord.getDsstoxRecord(sourceChemical);//we need to backtrack to original record that chris created (not the one in the current chemreg list)
-//				System.out.println(Utilities.gson.toJson(dsstoxRecord));
+
 //				System.out.println(Utilities.gson.toJson(sourceChemical));
+//				System.out.println("Original record:"+Utilities.gson.toJson(dsstoxRecord));
+				dsstoxRecord=DsstoxRecord.getDsstoxRecord(sourceChemical);//we need to backtrack to original record that chris created (not the one in the current chemreg list)
+//				System.out.println("Back tracked record:"+Utilities.gson.toJson(dsstoxRecord));
 				
 				if (dsstoxRecord==null) {
 					unmappedPropertyValuesMap.put(id, propertyValues);
@@ -460,6 +466,20 @@ public class DsstoxMapper {
 					continue;
 				}
 				
+//				if(dsstoxRecord.getConnectionReason()==null) {
+//					String sql="select c.name from source_substances\n"+
+//					"join chemical_lists c on fk_chemical_list_id=c.id\n"+
+//					"where dsstox_record_id='"+dsstoxRecord.getDsstoxRecordId()+"'";
+//					
+//					String listName=SqlUtilities.runSQL(SqlUtilities.getConnectionDSSTOX(), sql);
+//					System.out.println("Connection reason is null, listName="+listName);
+//				}
+				
+				
+//				if(dsstoxRecord.getConnectionReason()!=null) {
+//					System.out.println("Source chemical:"+Utilities.gson.toJson(sourceChemical));
+//					System.out.println("Successfully backtracked record:"+Utilities.gson.toJson(dsstoxRecord));					
+//				}
 			}
 			
 			
@@ -540,7 +560,20 @@ public class DsstoxMapper {
 	
 	private ExplainedResponse acceptMapping(DsstoxRecord dr, SourceChemical sc) {
 		
-
+		if (dr.curatorValidated!=null && datasetParams.mappingParams.useCuratorValidation && dr.curatorValidated) {
+			// Always accept curator validated matches			
+			return new ExplainedResponse(true, "DSSTox mapping validated by curator");
+		}
+		
+		if (dr.curatorValidated!=null && datasetParams.mappingParams.requireCuratorValidation && !dr.curatorValidated) {
+			return new ExplainedResponse(false, "Curator validation required");
+		}
+				
+		if (dr.connectionReason==null) {
+//			System.out.println("Connection reason is null:\t"+gson2.toJson(dr));
+			return new ExplainedResponse(false, "Connection reason is null");
+		}
+		
 		String bin = dr.connectionReason.replaceAll("</?b>", "").replaceAll("<br/>", ", ");
 		bin = bin.replaceAll("</?b>", "").replaceAll("<br/>", ", ");
 		String binOriginal=bin;
@@ -566,14 +599,6 @@ public class DsstoxMapper {
 			return new ExplainedResponse(false, "No hit");
 		}
 		
-		if (datasetParams.mappingParams.useCuratorValidation && dr.curatorValidated) {
-			// Always accept curator validated matches
-			return new ExplainedResponse(true, "DSSTox mapping validated by curator");
-		}
-		
-		if (datasetParams.mappingParams.requireCuratorValidation && !dr.curatorValidated) {
-			return new ExplainedResponse(false, "Curator validation required");
-		}
 				
 //		if (bin.contains(DTXSID_MATCH) || bin.contains(DTXCID_MATCH) || bin.contains(DTXRID_MATCH)) {//[TMM] 11/23/22 added or for RID match
 		if (bin.contains(DTXSID_MATCH) || bin.contains(DTXCID_MATCH)) {//[TMM] 3/30/23 RID matches may not be curator validated so dont blindly accept it
@@ -1431,7 +1456,7 @@ public class DsstoxMapper {
 		List<DiscardedPropertyValue>values=new ArrayList<>();
 		values.addAll(discardedPropertyValues);
 				
-		String[] fields = { "reason_discarded", "exp_prop_id", "source_dtxrid", "source_dtxrid",
+		String[] fields = { "reason_discarded", "exp_prop_id", "source_dtxrid", 
 				"source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",				
 				"source_name", "source_description", "source_authors", "source_title", "source_doi", "source_url",
 				"source_type", "page_url", "notes", "qc_flag", "temperature_c", "pressure_mmHg", "pH",
