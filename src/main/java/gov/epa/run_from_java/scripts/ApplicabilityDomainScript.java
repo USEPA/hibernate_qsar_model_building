@@ -16,7 +16,7 @@ import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportMo
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelStatistic;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.web_services.ModelWebService;
-import gov.epa.web_services.embedding_service.CalculationInfo;
+import gov.epa.web_services.embedding_service.CalculationInfoGA;
 import kong.unirest.Unirest;
 
 public class ApplicabilityDomainScript {
@@ -30,7 +30,7 @@ public class ApplicabilityDomainScript {
 
 	static String descriptorSetName = DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 	
-	static String qsarMethodGA = DevQsarConstants.KNN;
+	static String qsarMethodEmbedding = DevQsarConstants.KNN;
 	
 	
 	static String strSampleResponse="{\"idTest\":\"OC(=O)C(F)(F)C(F)(F)F\",\"idNeighbor1\":\"OCC(F)(F)C(F)(F)F\",\"idNeighbor2\":\"OCC(F)(F)C(F)F\",\"idNeighbor3\":\"FC(F)(Cl)C(F)(F)C(F)Cl\",\"AD\":true}\r\n"
@@ -126,14 +126,14 @@ public class ApplicabilityDomainScript {
 			boolean remove_log_p = false;
 			if(datasetName.contains("LogP")) remove_log_p=true;
 			
-			CalculationInfo ci = new CalculationInfo();
+			CalculationInfoGA ci = new CalculationInfoGA();
 			ci.num_generations = 100;
 			
 			
 //			if (datasetName.contains("BP") || splitting.equals("T=all but PFAS, P=PFAS")) ci.num_generations=10;//takes too long to do 100			
 
 			ci.remove_log_p = remove_log_p;
-			ci.qsarMethodGA = qsarMethodGA;
+			ci.qsarMethodEmbedding = qsarMethodEmbedding;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=splitting;
@@ -297,12 +297,12 @@ public class ApplicabilityDomainScript {
 			boolean remove_log_p = false;
 			if(datasetName.contains("LogP")) remove_log_p=true;
 			
-			CalculationInfo ci = new CalculationInfo();
+			CalculationInfoGA ci = new CalculationInfoGA();
 			ci.num_generations = 100;			
 //			if (datasetName.contains("BP") || splitting.equals("T=all but PFAS, P=PFAS")) ci.num_generations=10;//takes too long to do 100			
 
 			ci.remove_log_p = remove_log_p;
-			ci.qsarMethodGA = qsarMethodGA;
+			ci.qsarMethodEmbedding = qsarMethodEmbedding;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=splitting;
@@ -477,7 +477,7 @@ public class ApplicabilityDomainScript {
 	
 	
 	
-	DescriptorEmbedding getEmbedding(CalculationInfo ci) {
+	DescriptorEmbedding getEmbedding(CalculationInfoGA ci) {
 		
 		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);
 		

@@ -89,8 +89,7 @@ public class SampleReportWriter {
 		
 		if (overwrite || !excelFile.exists()) {
 			ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
-			eprg.generate(predictionReport, filepath);
-			System.out.println("Excel report created at"+filepath);
+			eprg.generate(predictionReport, filepath,null);
 		} else {
 			System.out.println("Excel report already exists at"+filepath);
 		}

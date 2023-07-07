@@ -382,7 +382,14 @@ public class GetExpPropInfo {
 
 		dataSetName=dataSetName.replace(" ", "_").replace("="," ");
 		
-		String jsonPath=folder+"//"+dataSetName+"//"+dataSetName+"_Mapped_Records.json";
+		String jsonPath=folder+dataSetName+"/"+dataSetName+"_Mapped_Records.json";
+		
+		File fileJson=new File(jsonPath);
+		
+		if(!fileJson.exists()) {
+			System.out.println(jsonPath+" doesnt exist");
+		}
+		
 
 		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
 		JsonArray ja2=new JsonArray();
@@ -393,12 +400,27 @@ public class GetExpPropInfo {
 		for (int i=0;i<ja.size();i++) {
 			JsonObject jo=ja.get(i).getAsJsonObject();
 			
+//			System.out.println(Utilities.gson.toJson(jo));
+			
 //			lookupInfoFromRID(connDSSTOX, jo);//dont need to- look at mapped_cas instead
 			
+			String source_name=jo.get("source_name").getAsString();
 			String dtxcid_original=jo.get("mapped_dtxcid").getAsString();
 			String dtxsid_original=jo.get("mapped_dtxsid").getAsString();
 			
-			if(htOperaReferences!=null && htOperaReferences.get(dtxsid_original)!=null) {
+			
+			if (jo.get("page_url")!=null) {
+				String page_url=jo.get("page_url").getAsString().replace("http://satellite.mpic.de/henry/","https://www.henrys-law.org/henry/");
+				jo.addProperty("page_url", page_url);
+			}
+			
+			if (jo.get("source_url")!=null) {
+				String source_url=jo.get("source_url").getAsString().replace("http://satellite.mpic.de/henry/","https://www.henrys-law.org/henry/");
+				jo.addProperty("source_url", source_url);
+			}
+			
+			
+			if(htOperaReferences!=null && htOperaReferences.get(dtxsid_original)!=null && source_name.equals("OPERA")) {
 				String operaReference=htOperaReferences.get(dtxsid_original);
 				jo.addProperty("source_description", operaReference);
 //				System.out.println(operaReference);
@@ -719,21 +741,22 @@ public class GetExpPropInfo {
 	
 	static void createCheckingSpreadsheets() {
 		
-		String folder="data\\dev_qsar\\output\\";
+		String folder="data/dev_qsar/output/";
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		Connection connDSSTOX=SqlUtilities.getConnectionDSSTOX();					
 		
 		List<String>datasetNames=new ArrayList<>();
 
-//		datasetNames.add("MP from exp_prop and chemprop");
-//		datasetNames.add("BP from exp_prop and chemprop");
-//		datasetNames.add("WS from exp_prop and chemprop");
-//		datasetNames.add("LogP from exp_prop and chemprop");
-//		datasetNames.add("VP from exp_prop and chemprop");
-//		datasetNames.add("HLC from exp_prop and chemprop");
+		datasetNames.add("MP from exp_prop and chemprop");//Done
+		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("WS from exp_prop and chemprop");
+		datasetNames.add("VP from exp_prop and chemprop");
+		datasetNames.add("HLC from exp_prop and chemprop");//Done
+		datasetNames.add("LogP from exp_prop and chemprop");//DONE
+
 		
-		datasetNames.add("pKa_a from exp_prop and chemprop");
-		datasetNames.add("pKa_b from exp_prop and chemprop");
+//		datasetNames.add("pKa_a from exp_prop and chemprop");
+//		datasetNames.add("pKa_b from exp_prop and chemprop");
 
 		
 //		datasetNames.add("ExpProp_BCF_Fish_TMM");
@@ -767,8 +790,8 @@ public class GetExpPropInfo {
 			if (abbrev.equals("WS")) htOperaReferences=Utilities.createOpera_Reference_Lookup("WS","WS");
 			if (abbrev.equals("VP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("VP","VP");
 			if (abbrev.equals("HL")) htOperaReferences=Utilities.createOpera_Reference_Lookup("HL","HL");
-			if (abbrev.equals("MP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("MP","MP");
-			if (abbrev.equals("BP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("BP","BP");
+//			if (abbrev.equals("MP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("MP","MP");//Has no references
+//			if (abbrev.equals("BP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("BP","BP");//Has no references
 			
 			createCheckingSpreadsheet_PFAS_data(dataSetName,folder,arrayPFAS_CIDs,listName,htOperaReferences);//create checking spreadsheet using json file for mapped records that was created when dataset was created
 

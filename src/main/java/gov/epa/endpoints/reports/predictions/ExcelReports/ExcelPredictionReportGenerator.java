@@ -1,11 +1,16 @@
 package gov.epa.endpoints.reports.predictions.ExcelReports;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.*;
@@ -15,6 +20,7 @@ import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xddf.usermodel.*;
 import org.apache.poi.xddf.usermodel.chart.*;
 import org.apache.poi.xssf.usermodel.*;
+import org.json.CDL;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -185,7 +191,7 @@ public class ExcelPredictionReportGenerator {
 		File folder=new File("data/reports");
 		folder.mkdirs();		
 		//		e.generate( predictionReport,folder.getAbsolutePath()+File.separator+"report.xlsx");
-		e.generate(predictionReport, folder.getAbsolutePath()+File.separator+datasetName + "_report.xlsx");
+		e.generate(predictionReport, folder.getAbsolutePath()+File.separator+datasetName + "_report.xlsx",null);
 	}
 
 	
@@ -219,7 +225,9 @@ public class ExcelPredictionReportGenerator {
 		for (int i=0;i<ja.size();i++) {
 			JsonObject jo=ja.get(i).getAsJsonObject();
 			String smiles=jo.get("canon_qsar_smiles").getAsString();
-			if(!smilesList.contains(smiles)) {
+			
+			
+			if(smilesList!=null && !smilesList.contains(smiles)) {
 				ja.remove(i--);
 			}
 		}
@@ -238,7 +246,7 @@ public class ExcelPredictionReportGenerator {
 	 * @param report
 	 * @param filepathOut
 	 */
-	public void generate(PredictionReport report, String filepathOut) {
+	public void generate(PredictionReport report, String filepathOut,List<String>smiles) {
 		
 		Workbook wb = new XSSFWorkbook();
 		
@@ -255,8 +263,8 @@ public class ExcelPredictionReportGenerator {
 
 		
 		System.out.println("Generating prediction sheets");
-		for (int i = 0; i < report.predictionReportDataPoints.get(0).qsarPredictedValues.size(); i++) {
-			generatePredictionSheet2(report.predictionReportDataPoints, i, wb, isBinary, report.predictionReportMetadata.datasetProperty,report.predictionReportMetadata.datasetUnit);
+		for (int i = 0; i < report.predictionReportModelMetadata.size(); i++) {
+			generatePredictionSheet2(report, i, wb, isBinary, report.predictionReportMetadata.datasetProperty,report.predictionReportMetadata.datasetUnit);
 		}
 
 		columnResizing(wb);
@@ -266,7 +274,7 @@ public class ExcelPredictionReportGenerator {
 		if(new File(jsonPath).exists()) {
 			
 			System.out.println("Adding experimental mapped records sheet");
-			JsonArray ja=addExperimentalRecordsSheet(wb,jsonPath);	
+			JsonArray ja=addExperimentalRecordsSheet(wb,jsonPath,smiles);	
 			
 			Hashtable<String,Integer>htExp_Prop_ids=new Hashtable<>();			
 			
@@ -283,6 +291,18 @@ public class ExcelPredictionReportGenerator {
 			System.out.println("Cant add experimental records json is missing:"+jsonPath);
 		}
 		
+		
+//		for (int i = 0; i < report.predictionReportModelMetadata.size(); i++) {
+//			addEmbeddingDescriptors(report, i,wb);
+//		}
+
+		
+//		if(true) {
+//			System.out.println("Need to uncomment: 7878");
+//			return;
+//		}
+
+		
 		try {
 			FileOutputStream out = new FileOutputStream(filepathOut);
 			wb.write(out);
@@ -293,9 +313,9 @@ public class ExcelPredictionReportGenerator {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		System.out.println("Spreadsheet written successfully" );
 		
-		
+		System.out.println("Excel report created at"+filepathOut);
+
 
 //		System.out.println("***\t"+report.predictionReportMetadata.datasetName+"\t"+countTest+"\t"+countTestXgb);
 
@@ -308,59 +328,127 @@ public class ExcelPredictionReportGenerator {
 	 * @param report
 	 * @param filepathOut
 	 */
-	public void generate(PredictionReport report, String filepathOut,List<String>smiles) {
-		
-		Workbook wb = new XSSFWorkbook();
-		
-		boolean isBinary = report.predictionReportMetadata.datasetUnit.equalsIgnoreCase("binary") ? true : false;
-		generateCoverSheet2(report,wb, isBinary);
+//	public void generate(PredictionReport report, String filepathOut,List<String>smiles) {
+//		
+//		Workbook wb = new XSSFWorkbook();
+//		
+//		boolean isBinary = report.predictionReportMetadata.datasetUnit.equalsIgnoreCase("binary") ? true : false;
+//		generateCoverSheet2(report,wb, isBinary);
+//
+//		generateSummarySheet2(report, wb, isBinary);
+//		
+//		generateSplitSheet2(report, wb, isBinary);
+//
+////		for (int i = 0; i < report.predictionReportDataPoints.get(0).qsarPredictedValues.size(); i++) {
+//		for (int i = 0; i < report.predictionReportModelMetadata.size(); i++) {
+//			generatePredictionSheet2(report, i, wb, isBinary, report.predictionReportMetadata.datasetProperty,report.predictionReportMetadata.datasetUnit);
+//		}
+//
+//		columnResizing(wb);
+//		
+//		String jsonPath=getMappedJsonPath(report.predictionReportMetadata.datasetName);
+//		
+//		if(new File(jsonPath).exists()) {
+//			JsonArray ja=addExperimentalRecordsSheet(wb,jsonPath,smiles);
+//			
+//			Hashtable<String,Integer>htExp_Prop_ids=new Hashtable<>();//look up index of specific exp_prop_id			
+//			for (int i=0;i<ja.size();i++) {
+//				JsonObject jo=ja.get(i).getAsJsonObject();
+//				String exp_prop_id=jo.get("exp_prop_id").getAsString();
+//				htExp_Prop_ids.put(exp_prop_id, i);
+////				System.out.println("*"+exp_prop_id+"\t"+i);
+//			}
+//			
+//			addHyperlinksToRecords(report,wb,htExp_Prop_ids);
+//		} else {
+//			System.out.println("Cant add experimental records json is missing:"+jsonPath);
+//		}
+//		
+//		
+//		for (int i = 0; i < report.predictionReportModelMetadata.size(); i++) {
+//			addEmbeddingDescriptors(report, i,wb);
+//		}
+//		
+//		
+////		if(true) {
+////			System.out.println("Need to uncomment: 12433");
+////			return;
+////		}
+//		
+//		
+//		try {
+//			FileOutputStream out = new FileOutputStream(filepathOut);
+//			wb.write(out);
+//			wb.close();			
+//			out.close();
+//		} catch (FileNotFoundException e) {
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//		System.out.println("Excel report created at "+filepathOut );
+//		
+//		
+//
+////		System.out.println("***\t"+report.predictionReportMetadata.datasetName+"\t"+countTest+"\t"+countTestXgb);
+//
+//	}
 
-		generateSummarySheet2(report, wb, isBinary);
-		
-		generateSplitSheet2(report, wb, isBinary);
+	
+	void addEmbeddingDescriptors(PredictionReport r,int methodID,Workbook wb) {
 
-		for (int i = 0; i < report.predictionReportDataPoints.get(0).qsarPredictedValues.size(); i++) {
-			generatePredictionSheet2(report.predictionReportDataPoints, i, wb, isBinary, report.predictionReportMetadata.datasetProperty,report.predictionReportMetadata.datasetUnit);
+		String embedding=r.predictionReportModelMetadata.get(methodID).descriptorEmbeddingTsv;
+		if (embedding==null) return; 
+
+		String methodName=r.predictionReportModelMetadata.get(methodID).qsarMethodName;
+		
+		Sheet sheet=wb.getSheet(methodName);
+		if(sheet==null) sheet=wb.createSheet(methodName);
+		
+		System.out.println(methodName+"\t"+embedding);		
+
+		String [] descriptorNames=embedding.split("\t");
+
+		Hashtable<String,String>htDefinitions=getDescriptorDefinitionHashtable();
+		
+		int rowNum=0;
+		Row row=sheet.getRow(rowNum);
+
+		if(row==null) {
+			row=sheet.createRow(rowNum);
 		}
 
-		columnResizing(wb);
 		
-		String jsonPath=getMappedJsonPath(report.predictionReportMetadata.datasetName);
+		CellStyle boldstyle = wb.createCellStyle();//Create style
+		Font font = wb.createFont();;//Create font
+		font.setBold(true);//Make font bold
+		boldstyle.setFont(font);//set it to bold
+
 		
-		if(new File(jsonPath).exists()) {
-			JsonArray ja=addExperimentalRecordsSheet(wb,jsonPath,smiles);
-			
-			Hashtable<String,Integer>htExp_Prop_ids=new Hashtable<>();//look up index of specific exp_prop_id			
-			for (int i=0;i<ja.size();i++) {
-				JsonObject jo=ja.get(i).getAsJsonObject();
-				String exp_prop_id=jo.get("exp_prop_id").getAsString();
-				htExp_Prop_ids.put(exp_prop_id, i);
-//				System.out.println("*"+exp_prop_id+"\t"+i);
+		Cell cell = row.createCell(15);
+		cell.setCellValue("Model descriptor");
+		cell.setCellStyle(boldstyle);
+
+		cell = row.createCell(16);
+		cell.setCellValue("Definition");
+		cell.setCellStyle(boldstyle);
+
+		for (int i=0;i<descriptorNames.length;i++) {
+			rowNum++;
+			row=sheet.getRow(rowNum);
+			if(row==null) {
+				row=sheet.createRow(rowNum);
 			}
-			
-			addHyperlinksToRecords(report,wb,htExp_Prop_ids);
-		} else {
-			System.out.println("Cant add experimental records json is missing:"+jsonPath);
+			cell = row.createCell(15);
+			cell.setCellValue(descriptorNames[i]);
+			cell = row.createCell(16);
+			cell.setCellValue(htDefinitions.get(descriptorNames[i]));
 		}
 		
-		try {
-			FileOutputStream out = new FileOutputStream(filepathOut);
-			wb.write(out);
-			wb.close();			
-			out.close();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		System.out.println("Spreadsheet written successfully" );
-		
-		
-
-//		System.out.println("***\t"+report.predictionReportMetadata.datasetName+"\t"+countTest+"\t"+countTestXgb);
+//		sheet.autoSizeColumn(6);
+//		sheet.autoSizeColumn(7);
 
 	}
-
 
 	private void addHyperlinksToRecords(PredictionReport pr,Workbook wb,Hashtable <String,Integer>htExp_Prop_Ids) {
 
@@ -404,7 +492,13 @@ public class ExcelPredictionReportGenerator {
 			
 		for (int i=1;i<=sheet.getLastRowNum();i++) {
 			Row row=sheet.getRow(i);
+			
+			if(row==null) continue;
+			
 			Cell cell=row.getCell(colNumPred);
+			
+			if(cell==null) continue;
+			
 			addHyperlink(sheetRecords, createHelper, hlink_style, colNumRecords, cell,htExp_Prop_Ids);
 		}
 	}
@@ -450,7 +544,7 @@ public class ExcelPredictionReportGenerator {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		generate(report,outputFilePath);
+		generate(report,outputFilePath, null);
 	}
 
 	public void generateCoverSheet2(PredictionReport predictionReport, Workbook wb, boolean isBinary) {
@@ -804,7 +898,9 @@ public class ExcelPredictionReportGenerator {
 //
 //	}
 
-	private void generatePredictionSheet2(List<PredictionReportDataPoint> predictionReportDataPoints, int methodID, Workbook wb, Boolean isBinary, String propertyName, String units) {
+	private void generatePredictionSheet2(PredictionReport r, int methodID, Workbook wb, Boolean isBinary, String propertyName, String units) {
+		
+		
 		
 		Map < Integer, Object[] > spreadsheetMap = new TreeMap < Integer, Object[] >();
 		
@@ -815,28 +911,30 @@ public class ExcelPredictionReportGenerator {
 		Hashtable<String,Double> expHash = new Hashtable<String,Double>();
 		Hashtable<String,Double> predictionHash = new Hashtable<String,Double>();
 
-		String methodName = predictionReportDataPoints.get(0).qsarPredictedValues.get(methodID).qsarMethodName;
+		
+//		String methodName = r.predictionReportDataPoints.get(0).qsarPredictedValues.get(methodID).qsarMethodName;
+		String methodName = r.predictionReportModelMetadata.get(methodID).qsarMethodName;
+		
+		for (int i = 0; i < r.predictionReportDataPoints.size(); i++) {
 
-		for (int i = 0; i < predictionReportDataPoints.size(); i++) {
-
-			PredictionReportDataPoint dp=predictionReportDataPoints.get(i);
+			PredictionReportDataPoint dp=r.predictionReportDataPoints.get(i);
 			String compoundIdentifier = dp.canonQsarSmiles;
 			
 //			System.out.println(compoundIdentifier+"\t"+dp.qsar_exp_prop_property_values_id);
 			
 			idHash.put(compoundIdentifier, dp.qsar_exp_prop_property_values_id);
 
-			if (hasPrediction(predictionReportDataPoints.get(i), methodID)) {
+			if (hasPrediction(r.predictionReportDataPoints.get(i), methodID)) {
 
-				expHash.put(compoundIdentifier, predictionReportDataPoints.get(i).experimentalPropertyValue);
-				if (predictionReportDataPoints.get(i).qsarPredictedValues.get(methodID).qsarPredictedValue != null) {
-					predictionHash.put(compoundIdentifier, predictionReportDataPoints.get(i).qsarPredictedValues.get(methodID).qsarPredictedValue);
+				expHash.put(compoundIdentifier, r.predictionReportDataPoints.get(i).experimentalPropertyValue);
+				if (r.predictionReportDataPoints.get(i).qsarPredictedValues.get(methodID).qsarPredictedValue != null) {
+					predictionHash.put(compoundIdentifier, r.predictionReportDataPoints.get(i).qsarPredictedValues.get(methodID).qsarPredictedValue);
 				}
 			}
 
 		}
 
-		int i=1;
+		int rowNum=1;
 		for(String key:expHash.keySet()) {
 			String exp_prop_id=idHash.get(key);
 			Double exp=expHash.get(key);
@@ -846,14 +944,52 @@ public class ExcelPredictionReportGenerator {
 			if (predictionHash.get(key)!=null) {
 				pred=predictionHash.get(key);	
 			}
-			
-			
 			//TODO add AD here
-			
-			spreadsheetMap.put(i++, new Object[] {exp_prop_id, key, exp , pred, Math.abs(exp-pred) });
+			spreadsheetMap.put(rowNum++, new Object[] {exp_prop_id, key, exp , pred, Math.abs(exp-pred) });
 		}
 
 		populateSheet2(spreadsheetMap, wb, isBinary, methodName, propertyName, units);
+		
+		
+		addEmbeddingDescriptors(r, methodID, wb);
+
+		
+		
+	}
+
+	private Hashtable<String, String> getDescriptorDefinitionHashtable() {
+		try {
+
+			Hashtable<String, String> htDef = new Hashtable<>();
+
+			InputStream is = this.getClass().getClassLoader().getResourceAsStream("variable definitions.txt");
+			BufferedReader br = new BufferedReader(new InputStreamReader(is));
+
+			String header = br.readLine();
+
+			while (true) {
+				String line = br.readLine();
+				if (line == null)
+					break;
+
+				String[] vals = line.split("\t");
+
+				String variable = vals[0];
+				String definition = vals[1];
+				String descriptorClass = vals[2];
+
+				htDef.put(variable, definition);
+
+//				System.out.println(variable + "\t" + definition + "\t" + descriptorClass);
+			}
+			br.close();
+			return htDef;
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 
@@ -893,6 +1029,7 @@ public class ExcelPredictionReportGenerator {
         	XSSFSheet sheet = (XSSFSheet) wb.getSheetAt(i);
         	String sheetName = sheet.getSheetName();
         	if (!(sheetName.equals("Cover sheet") || sheetName.equals("Summary sheet") || sheetName.equals("Training set") || sheetName.equals("Test set"))) {
+        		System.out.println(sheetName);
         		sheet.setColumnWidth(eu.getColumnNumber(sheet, "Canonical QSAR Ready Smiles",0), 30 * 256);
         	}
         }
@@ -977,9 +1114,6 @@ public class ExcelPredictionReportGenerator {
 	}
 
 
-
-
-	
 
 	static class modelHashTables {
 		String modelName;
@@ -1070,7 +1204,12 @@ public class ExcelPredictionReportGenerator {
 			if (sheet==null) return -1;
 			Row row=sheet.getRow(rowNum);
 			
+			if(row==null) return -1;
+			
 			for (int i=0;i<row.getLastCellNum();i++) {
+				
+				if(row.getCell(i)==null) continue;
+				
 				if (row.getCell(i).getStringCellValue().equals(colName)) {
 					return i;
 				}

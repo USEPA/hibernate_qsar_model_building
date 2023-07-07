@@ -26,36 +26,44 @@ public class ModelSetScript {
 	
 	void createModelSets() {
 
+		
 		ModelSet ms=new ModelSet();
-		ms.setName("WebTEST2.1 Sample models");
-		ms.setDescription("Reduced feature set models based on TEST5.1 and OPERA 2.7 data sets using WebTEST-default descriptors");
+		ms.setName("WebTEST2.0");
+		ms.setDescription("Models based on new datasets derived from exp_prop database");
 		ms.setCreatedBy(lanId);
 		mss.create(ms);
 
 		
-//		ModelSet ms=new ModelSet();
-//		ms.setName("WebTEST2.0 PFAS");
-//		ms.setDescription("Models based on PFAS data in exp_prop database");
-//		ms.setCreatedBy(lanId);
-//		mss.create(ms);
-//
-//		ms=new ModelSet();
-//		ms.setName("WebTEST2.1 PFAS");
-//		ms.setDescription("Reduced feature models based on PFAS data in exp_prop database");
-//		ms.setCreatedBy(lanId);
-//		mss.create(ms);
-//
-//		ms=new ModelSet();
-//		ms.setName("WebTEST2.0 All but PFAS");
-//		ms.setDescription("Models based on all chemicals except PFAS in exp_prop database (for comparison purposes)");
-//		ms.setCreatedBy(lanId);
-//		mss.create(ms);
-//
-//		ms=new ModelSet();
-//		ms.setName("WebTEST2.1 All but PFAS");
-//		ms.setDescription("Reduced feature models based on all chemicals except PFAS derived from exp_prop (for comparison purposes)");
-//		ms.setCreatedBy(lanId);
-//		mss.create(ms);
+		ms=new ModelSet();
+		ms.setName("WebTEST2.1");
+		ms.setDescription("Models based on new datasets derived from exp_prop database using reduced feature sets");
+		ms.setCreatedBy(lanId);
+		mss.create(ms);
+
+		
+		ms=new ModelSet();
+		ms.setName("WebTEST2.0 PFAS");
+		ms.setDescription("Models based on PFAS data in exp_prop database");
+		ms.setCreatedBy(lanId);
+		mss.create(ms);
+
+		ms=new ModelSet();
+		ms.setName("WebTEST2.1 PFAS");
+		ms.setDescription("Reduced feature models based on PFAS data in exp_prop database");
+		ms.setCreatedBy(lanId);
+		mss.create(ms);
+
+		ms=new ModelSet();
+		ms.setName("WebTEST2.0 All but PFAS");
+		ms.setDescription("Models based on all chemicals except PFAS in exp_prop database (for comparison purposes)");
+		ms.setCreatedBy(lanId);
+		mss.create(ms);
+
+		ms=new ModelSet();
+		ms.setName("WebTEST2.1 All but PFAS");
+		ms.setDescription("Reduced feature models based on all chemicals except PFAS derived from exp_prop (for comparison purposes)");
+		ms.setCreatedBy(lanId);
+		mss.create(ms);
 		
 		
 		
@@ -74,12 +82,28 @@ public class ModelSetScript {
 	void assignModelsToModelSets() {		
 		
 		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add("HLC from exp_prop and chemprop");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop v2");
+		
+
+//		datasetNames.add("HLC v1");
+//		datasetNames.add("VP v1");
+//		datasetNames.add("WS v1");
+//		datasetNames.add("BP v1");
+//		datasetNames.add("LogP v1");
+//		datasetNames.add("MP v1");
+
+		datasetNames.add("WS v1 res_qsar");
+
+		
+//		datasetNames.add("pKa_a from exp_prop and chemprop");
+//		datasetNames.add("pKa_b from exp_prop and chemprop");
+
 
 		ModelSet2 ms1=new ModelSet2();
 		ms1.splitting="T=PFAS only, P=PFAS";
@@ -321,8 +345,8 @@ public class ModelSetScript {
 	
 	public static void main(String[] args) {
 		ModelSetScript ms=new ModelSetScript();
-//		ms.createModelSets();		
-		ms.assignModelsToModelSets();
+		ms.createModelSets();		
+//		ms.assignModelsToModelSets();
 //		ms.assignModelsToModelSetsOPERA();
 //		ms.assignModelsToModelSetsTEST();
 

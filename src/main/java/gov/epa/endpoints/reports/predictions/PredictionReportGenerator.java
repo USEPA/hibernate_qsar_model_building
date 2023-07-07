@@ -83,11 +83,19 @@ public class PredictionReportGenerator extends ReportGenerator {
 		this.predictionReport = new PredictionReport();
 		
 		Dataset dataset = datasetService.findByName(datasetName);
+		
+		String units="";
+		
+		if(dataset.getUnit().getAbbreviation()!=null) units=dataset.getUnit().getAbbreviation();
+		
+		
+		System.out.println(datasetName+"\t"+units);
+		
 		this.predictionReport.predictionReportMetadata = new PredictionReportMetadata(datasetName, 
 				dataset.getDescription(),
 				dataset.getProperty().getName(), 
 				dataset.getProperty().getDescription(),
-				dataset.getUnit().getName(),
+				units,
 				splittingName);
 		
 //		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);

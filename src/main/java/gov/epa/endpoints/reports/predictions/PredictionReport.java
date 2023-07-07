@@ -8,6 +8,11 @@ import gov.epa.endpoints.reports.ReportDataPoint;
 import gov.epa.endpoints.reports.ModelMetadata;
 
 public class PredictionReport {
+
+	public PredictionReportMetadata predictionReportMetadata;
+	public List<PredictionReportModelMetadata> predictionReportModelMetadata = new ArrayList<PredictionReportModelMetadata>();
+	public List<PredictionReportDataPoint> predictionReportDataPoints = new ArrayList<PredictionReportDataPoint>();
+
 	
 	public static class PredictionReportMetadata {
 		public String datasetName;
@@ -74,7 +79,4 @@ public class PredictionReport {
 		}
 	}
 	
-	public PredictionReportMetadata predictionReportMetadata;
-	public List<PredictionReportModelMetadata> predictionReportModelMetadata = new ArrayList<PredictionReportModelMetadata>();
-	public List<PredictionReportDataPoint> predictionReportDataPoints = new ArrayList<PredictionReportDataPoint>();
 }

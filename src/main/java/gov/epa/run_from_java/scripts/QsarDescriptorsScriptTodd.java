@@ -28,6 +28,11 @@ import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorSet;
+import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorValues;
+import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetService;
+import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesService;
+import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServiceImpl;
 import gov.epa.endpoints.datasets.descriptor_values.DescriptorValuesCalculator;
 import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValuesCalculator;
 import gov.epa.endpoints.datasets.descriptor_values.TestDescriptorValuesCalculator;
@@ -62,6 +67,42 @@ public class QsarDescriptorsScriptTodd {
 		calc.deleteDescriptorSetValuesForDataset(datasetName, descriptorSetName);
 	}
 	
+	void runSingleChemical() {
+		String lanId="tmarti02";
+		
+		String smiles="CCCCO";
+//		String smiles="COC(CNC(N)=O)C[Hg+2]Cl";
+//		String smiles="CN(C)CCC[n]1(=O)c2ccccc2[s]c2ccccc12";
+		
+		String descriptorSetName="WebTEST-default";
+		String server="https://hcd.rtpnc.epa.gov";
+		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
+
+		DescriptorSetService descriptorSetService = new DescriptorSetServiceImpl();
+		DescriptorSet descriptorSet = descriptorSetService.findByName(descriptorSetName);
+		if (descriptorSet==null) {
+			System.out.println("No such descriptor set: " + descriptorSetName);
+		}
+
+//		String tsvValues=calc.calculateDescriptors(smiles,descriptorSet);
+//		System.out.println(tsvValues);
+		
+		List<String>smilesList=new ArrayList<>();
+		smilesList.add(smiles);
+		
+		Map<String,String>mapDescriptors=new HashMap<>();
+		calc.calculateDescriptors(smilesList,descriptorSet,mapDescriptors);
+		System.out.println(mapDescriptors.get(smiles));
+		
+		
+//		DescriptorValues dv=new DescriptorValues(smiles,descriptorSet,tsvValues,lanId);
+//		DescriptorValuesService descriptorValuesService = new DescriptorValuesServiceImpl();
+//		descriptorValuesService.create(dv);
+		
+		
+	}
+	
+	
 	void generateDescriptorsForDatasets() {
 		
 		String descriptorSetName="WebTEST-default";
@@ -69,7 +110,8 @@ public class QsarDescriptorsScriptTodd {
 //		String descriptorSetName="RDKit-default";
 //		String descriptorSetName="PaDEL-default";
 //		
-		String server="https://ccte-cced.epa.gov/";
+//		String server="https://ccte-cced.epa.gov/";
+		String server="https://hcd.rtpnc.epa.gov/";
 		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
 		
 		List<String>datasetNames=new ArrayList<>();
@@ -87,12 +129,20 @@ public class QsarDescriptorsScriptTodd {
 //		datasetNames.add("WS from exp_prop and chemprop v2");
 //		datasetNames.add("BP from exp_prop and chemprop v3");
 		
-		datasetNames.add("HLC v1");
-		datasetNames.add("WS v1");
-		datasetNames.add("VP v1");
-		datasetNames.add("LogP v1");
-		datasetNames.add("BP v1");
-		datasetNames.add("MP v1");
+//		datasetNames.add("HLC v1");
+//		datasetNames.add("WS v1");
+//		datasetNames.add("VP v1");
+//		datasetNames.add("LogP v1");
+//		datasetNames.add("BP v1");
+//		datasetNames.add("MP v1");
+		
+		datasetNames.add("HLC v1 res_qsar");
+		datasetNames.add("WS v1 res_qsar");
+		datasetNames.add("VP v1 res_qsar");
+		datasetNames.add("LogP v1 res_qsar");
+		datasetNames.add("BP v1 res_qsar");
+		datasetNames.add("MP v1 res_qsar");
+
 		
 		int batchSize=1;//right now if one chemical in batch fails, the batch run fails, so run 1 at a time
 		for (String datasetName:datasetNames) {
@@ -187,10 +237,10 @@ public class QsarDescriptorsScriptTodd {
 
 	void calcSingleChemical() {
 		
-//		String descriptorSetName="WebTEST-default";
+		String descriptorSetName="WebTEST-default";
 //		String descriptorSetName="ToxPrints-default";
 //		String descriptorSetName="RDKit-default";
-		String descriptorSetName="PaDEL-default";
+//		String descriptorSetName="PaDEL-default";
 //		
 		String server="https://ccte-cced.epa.gov/";
 //		String server="https://hazard-dev.sciencedataexperts.com";
@@ -207,10 +257,11 @@ public class QsarDescriptorsScriptTodd {
 		
 		QsarDescriptorsScriptTodd q=new QsarDescriptorsScriptTodd();
 		
-		q.generateDescriptorsForDataset();
+//		q.generateDescriptorsForDataset();
 //		q.generateDescriptorsForDatasets();
 //		q.generateDescriptorsForDsstoxSDF();
 //		q.runChemicalsFromBatchSearchCSV();
+		q.runSingleChemical();
 		
 		//*********************************************************************************************************		
 //		q.calcSingleChemical();

@@ -196,8 +196,21 @@ public class SplittingGeneratorPFAS_Script {
 		
 		Splitting splitting = splittingService.findByName(splittingName);
 		
-		System.out.println(splitting.getId()+"\t"+splitting.getDescription());
+		if(splitting==null) {
+			System.out.println(splittingName+" is null, creating...");
+			if(splittingName.equals(splittingPFASOnly)) {
+				splitting=new Splitting(splittingName,"train using only PFAS",2,lanid);
+			} else if (splittingName.equals(splittingAllButPFAS)) {
+				splitting=new Splitting(splittingName,"train using all but PFAS",2,lanid);
+			} else {
+				System.out.println("Invalid splittingName:"+splittingName);
+				return;
+			}
+			splitting=splittingService.create(splitting);
+			System.out.println(splittingName+" created");
+		} 
 		
+		System.out.println(splitting.getId()+"\t"+splitting.getDescription());
 		
 		List<DataPointInSplitting>dpisList=new ArrayList<>();
 		
@@ -468,13 +481,20 @@ public class SplittingGeneratorPFAS_Script {
 //		datasetNames.add("BP from exp_prop and chemprop v3");
 //		datasetNames.add("MP from exp_prop and chemprop v2");
 		
-		datasetNames.add("HLC v1");
-		datasetNames.add("VP v1");
-		datasetNames.add("WS v1");
-		datasetNames.add("BP v1");
-		datasetNames.add("LogP v1");
-		datasetNames.add("MP v1");
-
+//		datasetNames.add("HLC v1");
+//		datasetNames.add("VP v1");
+//		datasetNames.add("WS v1");
+//		datasetNames.add("BP v1");
+//		datasetNames.add("LogP v1");
+//		datasetNames.add("MP v1");
+		
+		datasetNames.add("HLC v1 res_qsar");
+//		datasetNames.add("WS v1 res_qsar");
+		datasetNames.add("VP v1 res_qsar");
+		datasetNames.add("LogP v1 res_qsar");
+		datasetNames.add("BP v1 res_qsar");
+		datasetNames.add("MP v1 res_qsar");
+		
 		Connection conn = SqlUtilities.getConnectionPostgres();
 		
 //		for (String datasetName : datasetNames) {
@@ -512,7 +532,7 @@ public class SplittingGeneratorPFAS_Script {
 		String descriptorSetName = DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
 		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add("HLC from exp_prop and chemprop");		
+//		datasetNames.add("HLC from exp_prop and chemprop");		
 //		datasetNames.add("WS from exp_prop and chemprop");
 //		datasetNames.add("VP from exp_prop and chemprop");
 //		datasetNames.add("LogP from exp_prop and chemprop");
@@ -520,11 +540,19 @@ public class SplittingGeneratorPFAS_Script {
 //		datasetNames.add("BP from exp_prop and chemprop");
 //		datasetNames.add("ExpProp BCF Fish_TMM");
 		
-		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\datasets\\";
+		datasetNames.add("HLC v1 res_qsar");
+//		datasetNames.add("WS v1 res_qsar");
+		datasetNames.add("VP v1 res_qsar");
+		datasetNames.add("LogP v1 res_qsar");
+		datasetNames.add("BP v1 res_qsar");
+		datasetNames.add("MP v1 res_qsar");
+
+		
+		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets\\";
 
 		List<String>splittingNames=new ArrayList<>();
 		splittingNames.add(splittingPFASOnly);
-		splittingNames.add(splittingAll);
+		splittingNames.add(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE);
 		splittingNames.add(splittingAllButPFAS);
 		
 		for (String datasetName : datasetNames) {
@@ -592,12 +620,14 @@ public class SplittingGeneratorPFAS_Script {
 //		datasetNames.add("BP from exp_prop and chemprop v3");
 //		datasetNames.add("MP from exp_prop and chemprop v2");
 
-		datasetNames.add("HLC v1");
-		datasetNames.add("VP v1");
-		datasetNames.add("WS v1");
-		datasetNames.add("BP v1");
-		datasetNames.add("LogP v1");
-		datasetNames.add("MP v1");
+//		datasetNames.add("HLC v1");
+//		datasetNames.add("VP v1");
+//		datasetNames.add("WS v1");
+//		datasetNames.add("BP v1");
+//		datasetNames.add("LogP v1");
+//		datasetNames.add("MP v1");
+		
+		datasetNames.add("WS v1 res_qsar");
 
 		
 		Connection conn=SqlUtilities.getConnectionPostgres();
@@ -617,10 +647,10 @@ public class SplittingGeneratorPFAS_Script {
 	
 	public static void main(String[] args) {
 		SplittingGeneratorPFAS_Script p=new SplittingGeneratorPFAS_Script();
-		p.getCounts();
+//		p.getCounts();
 //		p.createSplittings();
 //		p.deleteSplittings();
-//		p.write_exp_prop_datasets();		
+		p.write_exp_prop_datasets();		
 //		p.createFiveFoldExternalSplittings(folder, datasetName,"T.E.S.T. 5.1", smilesArray);
 		
 	}

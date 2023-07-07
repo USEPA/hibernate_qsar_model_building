@@ -7,12 +7,16 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.endpoints.splittings.Splitter;
 import gov.epa.web_services.SplittingWebService;
 import kong.unirest.HttpResponse;
+import kong.unirest.Unirest;
 
 public class SplittingGeneratorScript {
 
 	private static void splitDatasets() {
 		String lanId = "tmarti02";
-		int portSplittingWS=5000;//matches value in dataset_splitting_ws.py if running local
+		int portSplittingWS=DevQsarConstants.PORT_REPRESENTATIVE_SPLIT;//matches value in dataset_splitting_ws.py if running local
+		
+		
+		Unirest.config().connectTimeout(0).socketTimeout(0);
 		
 		
 		SplittingWebService splittingWebService = new SplittingWebService(DevQsarConstants.SERVER_LOCAL, portSplittingWS, 
@@ -23,14 +27,28 @@ public class SplittingGeneratorScript {
 		List<String>datasetNames=new ArrayList<>();
 //		datasetNames.add("HLC from exp_prop and chemprop");
 //		datasetNames.add("ExpProp BCF Fish_TMM");
-//		datasetNames.add("WS from exp_prop and chemprop");
 //		datasetNames.add("VP from exp_prop and chemprop");
 //		datasetNames.add("LogP from exp_prop and chemprop");
-//		datasetNames.add("MP from exp_prop and chemprop");
 //		datasetNames.add("BP from exp_prop and chemprop");
-		datasetNames.add("pKa_a from exp_prop and chemprop");
-		datasetNames.add("pKa_b from exp_prop and chemprop");
+//		datasetNames.add("pKa_a from exp_prop and chemprop");
+//		datasetNames.add("pKa_b from exp_prop and chemprop");
+		
+//		datasetNames.add("HLC v1");
+//		datasetNames.add("VP v1");
+//		datasetNames.add("WS v1");
+//		datasetNames.add("BP v1");
+//		datasetNames.add("LogP v1");
+//		datasetNames.add("MP v1");
 
+		datasetNames.add("HLC v1 res_qsar");
+		datasetNames.add("VP v1 res_qsar");
+//		datasetNames.add("WS v1 res_qsar");
+		datasetNames.add("BP v1 res_qsar");
+		datasetNames.add("LogP v1 res_qsar");
+		datasetNames.add("MP v1 res_qsar");
+
+		
+		System.out.println(splittingWebService.address);
 		
 //		HttpResponse<String> bob=splittingWebService.callBob();
 //		System.out.println(bob.getBody());

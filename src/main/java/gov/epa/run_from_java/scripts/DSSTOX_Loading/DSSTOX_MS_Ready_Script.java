@@ -134,6 +134,7 @@ public class DSSTOX_MS_Ready_Script {
 				if (counter % batchSize == 0 && counter != 0) {
 					System.out.println(counter);
 					prep.executeBatch();
+					conn.commit();
 				}
 			}
 

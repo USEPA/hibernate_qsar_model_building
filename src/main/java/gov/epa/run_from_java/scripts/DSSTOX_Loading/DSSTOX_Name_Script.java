@@ -153,6 +153,7 @@ public class DSSTOX_Name_Script {
 				if (counter % batchSize == 0 && counter!=0) {
 					// System.out.println(counter);
 					prep.executeBatch();
+					conn.commit();
 				}
 			}
 

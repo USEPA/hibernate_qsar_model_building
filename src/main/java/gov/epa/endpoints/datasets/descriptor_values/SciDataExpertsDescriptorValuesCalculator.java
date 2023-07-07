@@ -265,6 +265,11 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 				
 		
 		System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");
+		
+		for (String smiles:canonQsarSmilesToCalculate) {
+			System.out.println(smiles);
+		}
+		
 
 //		//Run in batches(TMM):
 		runSmilesList(canonQsarSmilesToCalculate, batchSize, descriptorSet);
@@ -279,7 +284,7 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 	 * @param descriptorsMap
 	 * @param writeToDatabase
 	 */
-	private void calculateDescriptors(List<String> canonQsarSmilesToCalculate, DescriptorSet descriptorSet, 
+	public void calculateDescriptors(List<String> canonQsarSmilesToCalculate, DescriptorSet descriptorSet, 
 			Map<String, String> descriptorsMap) {
 		String descriptorService = descriptorSet.getDescriptorService();
 		String descriptorServiceOptionsStr = descriptorSet.getDescriptorServiceOptions();
@@ -293,6 +298,8 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 		
 		// Calculate descriptors
 		SciDataExpertsDescriptorResponse response = null;
+		
+		
 		if (descriptorServiceOptions.isEmpty()) {
 //			System.out.println("here1");
 			response = descriptorWebService.calculateDescriptors(canonQsarSmilesToCalculate, descriptorService).getBody();
@@ -365,6 +372,91 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 		
 	}
 
+	
+	
+	public String calculateDescriptors(String canonQsarSmiles, DescriptorSet descriptorSet) {
+		
+		String descriptorService = descriptorSet.getDescriptorService();
+		String descriptorServiceOptionsStr = descriptorSet.getDescriptorServiceOptions();
+		Map<String, Object> descriptorServiceOptions = new HashMap<String, Object>();
+		if (descriptorSet.getDescriptorServiceOptions()!=null) {
+			JsonObject jo = gson.fromJson(descriptorServiceOptionsStr, JsonObject.class);
+			for (String key:jo.keySet()) {
+				descriptorServiceOptions.put(key, jo.get(key));
+			}
+		}
+		
+		// Calculate descriptors
+		SciDataExpertsDescriptorResponse response = null;
+		if (descriptorServiceOptions.isEmpty()) {
+//			System.out.println("here1");
+			response = descriptorWebService.calculateDescriptors(canonQsarSmiles, descriptorService).getBody();
+		} else {
+			
+			if (descriptorSet.getHeadersTsv()==null && descriptorServiceOptions.containsKey("headers")) {
+				Map<String, Object> descriptorServiceOptionsWithHeaders = new HashMap<String, Object>(descriptorServiceOptions);
+				descriptorServiceOptionsWithHeaders.put("headers", true);
+//				descriptorServiceOptionsWithHeaders.put("stdizer-workflow", "qsar-ready");
+				System.out.println("here2");
+				
+				response = descriptorWebService
+						.calculateDescriptorsWithOptions(canonQsarSmiles, descriptorService, 
+								descriptorServiceOptionsWithHeaders).getBody();
+				
+				if (response.headers!=null) {
+					String headersTsv = String.join(TAB_DEL, response.headers);
+//					System.out.println(headersTsv);
+					descriptorSet.setHeadersTsv(headersTsv);
+					descriptorSet = descriptorSetService.update(descriptorSet);
+				}
+			} else {
+//				System.out.println("here3");
+				response = descriptorWebService
+						.calculateDescriptorsWithOptions(canonQsarSmiles, descriptorService, descriptorServiceOptions).getBody();
+			}
+		}
+		
+//		System.out.println(gson.toJson(response));
+		
+		// Store descriptors
+		if (response!=null) {
+			List<SciDataExpertsChemical> chemicals = response.chemicals;
+			if (chemicals!=null) {
+				for (SciDataExpertsChemical chemical:chemicals) {
+					String valuesTsv = null;
+					if (chemical.descriptors!=null) {
+						valuesTsv = String.join(TAB_DEL, chemical.descriptors.stream()
+								.map(d -> String.valueOf(d))
+								.collect(Collectors.toList()));
+						
+//						for(Double descriptor:chemical.descriptors) {
+//							System.out.println(chemical.smiles+"\t"+descriptor);
+//						}
+//						System.out.println("");
+												
+						if (valuesTsv.contains("Error")) {
+							System.out.println("error for\t"+chemical.smiles);
+							valuesTsv = null;
+						} 
+
+					} else {
+						System.out.println("null descriptors for\t"+chemical.smiles);
+					}
+					
+					// If descriptor calculation failed, set null so we can check easily when we try to use them later
+					return valuesTsv;
+					
+				}
+			} else {
+				System.out.println("chemical is null for "+canonQsarSmiles);
+			}
+		} else {
+			System.out.println("response is null for "+canonQsarSmiles);
+			
+		}
+		
+		return null;
+	}
 	
 
 	public void calculateDescriptors_useSqlToExcludeExisting(List<String>canonQsarSmilesToCalculate, String descriptorSetName,
