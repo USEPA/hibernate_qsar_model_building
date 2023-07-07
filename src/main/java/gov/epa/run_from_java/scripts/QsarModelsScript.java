@@ -1,16 +1,22 @@
 package gov.epa.run_from_java.scripts;
 
 import java.awt.Desktop;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import javax.validation.ConstraintViolationException;
@@ -40,6 +46,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.WebServiceModelBuilder;
+import gov.epa.run_from_java.scripts.RecalcStatsScript.SplitPredictions;
 import gov.epa.web_services.ModelWebService;
 import kong.unirest.Unirest;
 
@@ -198,6 +205,14 @@ public class QsarModelsScript {
 		return file;
 	}
 	
+	public byte[] writePMML(long modelID, String downloadFolder,boolean compressed) {
+		ModelBytes modelBytes=modelBytesService.findByModelId(modelID,compressed);
+		byte[] file = modelBytes.getBytes();
+		String saveToFilePath = downloadFolder + File.separator + String.join("_", "model_"+modelID+".pmml");
+		safelyWriteBytes(saveToFilePath, file, false);
+		return file;
+	}
+	
 	public void downloadAllReportsForModelSet(Long modelSetId, String downloadFolder) {
 		List<ModelSetReport> modelSetReports = modelSetReportService.findByModelSetId(modelSetId);
 		for (ModelSetReport msr:modelSetReports) {
@@ -303,7 +318,7 @@ public class QsarModelsScript {
 			if (model.getMethod().getName().contains("consensus")) continue;				
 			if (model.getMethod().getName().contains("_")) continue;
 
-			ModelBytes modelBytes=mb.findByModelId(model.getId());
+			ModelBytes modelBytes=mb.findByModelId(model.getId(),false);
 			
 			if(modelBytes==null) {
 				
@@ -318,9 +333,10 @@ public class QsarModelsScript {
 
 	void deleteModelsWithAttributes() {
 
-		String splitting=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+//		String splitting=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 //		String splitting="T=all but PFAS, P=PFAS";
 //		String splitting="T=PFAS only, P=PFAS";
+		String splitting="OPERA";
 
 		ModelServiceImpl ms=new ModelServiceImpl();
 
@@ -333,13 +349,29 @@ public class QsarModelsScript {
 		for (Long key:htModels.keySet()) {
 			Model model=htModels.get(key);
 			
-			if (!model.getSplittingName().equals(splitting)) continue;
-//			if(!model.getDatasetName().contains("LLNA from exp_prop, without eChemPortal")) continue;
+//			if (!model.getSplittingName().equals(splitting)) continue;
+			
+//			if(!model.getDatasetName().equals("Henry's law constant OPERA")) continue;
+			
+//			if(!model.getDatasetName().contains("from exp_prop and chemprop"))continue;
+			
+//			if(!model.getDescriptorSetName().equals("T.E.S.T. 5.1"))continue; 
+			
+//			if(!model.getMethod().getName().contains("consensus")) continue;
 			
 			boolean hasEmbedding=model.getDescriptorEmbedding()!=null;
+//			
+			if(hasEmbedding) continue;
+
+			if(!model.getDatasetName().contains("v1")) continue;
+			
+			if(!model.getMethod().getName().contains("consensus")) continue;
+			
+			
 			System.out.println(model.getId()+"\t"+model.getDatasetName()+"\t"+model.getMethod().getName()+"\t"+model.getSplittingName()+"\t"+model.getDescriptorSetName()+"\thasEmbedding="+hasEmbedding);
 						
-//			deleteModel(model);
+			
+			deleteModel(model);
 		}
 
 	}
@@ -358,12 +390,111 @@ public class QsarModelsScript {
 		
 	}
 	
-	public static ModelPrediction[] testExistingModel(Long existingModelId, String server, int port, String lanId) {
+	public void compareAPIPredictionsWithDB(Long existingModelId, String server, int port, String lanId,boolean use_pmml)  {
+		
+		ModelService msi=new ModelServiceImpl();
+		
+		Model model=msi.findById(existingModelId);
+		
+//		System.out.println(model.getDescriptorSetName());
+		
+		
 		ModelWebService ws = new ModelWebService(server, port);
 		WebServiceModelBuilder mb = new WebServiceModelBuilder(ws, lanId);
-		return mb.rerunExistingModelPredictions(existingModelId);
+
+				
+		ModelPrediction[] modelPredictions= mb.getModelPredictionsFromAPI(model, use_pmml);
+		Hashtable<String,ModelPrediction>htMP_new=new Hashtable<>();
+		
+		for (ModelPrediction mp:modelPredictions) {
+//			System.out.println(mp.id+"\t"+mp.pred);
+			htMP_new.put(mp.id, mp);
+		}
+//		System.out.println(modelPredictions.length+"\n");
+
+		SplitPredictions sp=RecalcStatsScript.SplitPredictions.getSplitPredictionsSql(model, model.getSplittingName());
+		
+//		System.out.println(sp.testSetPredictions.size());
+		
+		int errorCount=0;
+		
+		for (ModelPrediction mp:sp.testSetPredictions) {
+			
+			if(htMP_new.get(mp.id)==null) {
+				System.out.println("Dont have new prediction for "+mp.id+"\t"+mp.pred);
+				continue;
+			}
+			
+			ModelPrediction mpNew=htMP_new.get(mp.id);
+			
+			double diff=Math.abs(mp.pred-mpNew.pred);
+			
+			if (diff>1e-4) {
+				System.out.println(mp.id+"\t"+mp.exp+"\t"+mp.pred+"\t"+mpNew.pred);
+				errorCount++;
+			}
+		}
+		System.out.println("Number of diff preds="+errorCount);
+		
 	}
 	
+
+	public void compareSDE_API_PredictionsWithDB(Long existingModelId, String workflow, String server, int port, String lanId,boolean use_pmml)  {
+		
+		ModelService msi=new ModelServiceImpl();
+		Model model=msi.findById(existingModelId);
+		ModelWebService ws = new ModelWebService(server, port);
+		
+		ws.configUnirest(false);
+		
+		WebServiceModelBuilder mb = new WebServiceModelBuilder(ws, lanId);
+		
+		//Run predictions using SDE API:
+		ModelPrediction[] modelPredictions= mb.getModelPredictionsFromSDE_API(model, workflow);
+				
+//		if(true) return;
+		
+//		Hashtable<String,ModelPrediction>htMP_API=new Hashtable<>();
+//		
+//		for (ModelPrediction mp:modelPredictions) {
+////			System.out.println(mp.id+"\t"+mp.pred);
+//			htMP_API.put(mp.id, mp);
+//		}
+//		System.out.println(modelPredictions.length+"\n");
+
+		//Get predictions from the database:
+		SplitPredictions sp=RecalcStatsScript.SplitPredictions.getSplitPredictionsSql(model, model.getSplittingName());
+		
+//		System.out.println(sp.testSetPredictions.size());
+		
+		int errorCount=0;
+		
+		for (int i=0;i<sp.testSetPredictions.size();i++) {
+			
+//			if(htMP_API.get(mp.id)==null) {
+//				System.out.println("Dont have API prediction for "+mp.id+"\t"+mp.pred);
+//				continue;
+//			}
+//			ModelPrediction mpAPI=htMP_API.get(mp.id);
+			
+			//hopefully values are in exact same order (cant use hashtable approach since SDE changes the smiles)
+			ModelPrediction mp=sp.testSetPredictions.get(i);
+			ModelPrediction mpAPI=modelPredictions[i];
+			
+			double diff=Math.abs(mp.pred-mpAPI.pred);
+			
+			if (diff>1e-4) {
+				System.out.println(mp.id+"\t"+mp.exp+"\t"+mp.pred+"\t"+mpAPI.pred+"\tmismatch");
+				errorCount++;
+			} else {
+//				System.out.println(mp.id+"\t"+mp.exp+"\t"+mp.pred+"\t"+mpAPI.pred+"\tmatch");
+			}
+		}
+		System.out.println("Number of diff preds="+errorCount);
+		
+	}
+	
+
 	public void downloadAllModelBytes(String folderPath) {
 		File folder = new File(folderPath);
 		folder.mkdirs();
@@ -382,9 +513,10 @@ public class QsarModelsScript {
 		downloadModelBytes(model, folderPath);
 	}
 	
+	@Deprecated
 	public void downloadModelBytes(Model model, String folderPath) {
 		Long modelId = model.getId();
-		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
+		ModelBytes modelBytes = modelBytesService.findByModelId(modelId,false);
 		if (modelBytes==null) {
 			return;
 		}
@@ -445,7 +577,7 @@ public class QsarModelsScript {
 				continue;
 			}
 			
-			ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
+			ModelBytes modelBytes = modelBytesService.findByModelId(modelId,false);
 			if (modelBytes==null) {
 				continue;
 			}
@@ -471,35 +603,59 @@ public class QsarModelsScript {
 		return null;
 	}
 	
+	
+	
 	public static void main(String[] args) {
-//		System.out.println(getComptoxImgUrl("dtxcid"));
+		String lanId="tmarti02";
+
+		QsarModelsScript script = new QsarModelsScript(lanId);
+
+		//****************************************************************************************
+
+//		String modelWsServer=DevQsarConstants.SERVER_LOCAL;
+//		int modelWsPort=5004;
+//		
+//		Long modelId=351L;//HLC, RF, no embedding, RND_REPRESENTATIVE splitting
+//		boolean usePMML=false;
+//		
+//		Long modelId=457L;
+//		boolean usePMML=true;
+//		script.compareAPIPredictionsWithDB(modelId, modelWsServer,modelWsPort, lanId,usePMML);//non pmml based model
+
+		//****************************************************************************************
+//		Long modelId=291L;//HLC,RF,embedding, T=PFAS only, P=PFAS- all predictions are same- handles embedding wrong
+//		Long modelId=336L;//HLC,RF,no embedding, T=PFAS only, P=PFAS
+//		Long modelId=306L;//HLC,RF,embedding, RND_REPRESENTATIVE splitting- predictions are different!
+		Long modelId=351L;//HLC,RF,no embedding, RND_REPRESENTATIVE splitting
+		script.compareSDE_API_PredictionsWithDB(modelId,"qsar-ready", "http://localhost",8105, lanId,false);//non pmml based model
 		
-//		QsarModelsScript script = new QsarModelsScript("gsincl01");
+		//****************************************************************************************
+//		script.deleteModel(456L);
+//		for (int i=453;i>=428;i--) script.deleteModel(i);
+
+		//****************************************************************************************
 //		long[] modelIds = { 43, 45, 46, 137, 139, 140, 218, 219, 225, 226, 227, 232 };
 //		for (long l:modelIds) {
 //			script.downloadModelBytes(l, "data/dev_qsar/qsar_models/test_models");
 //		}
-		
-		QsarModelsScript script = new QsarModelsScript("tmarti02");
-		script.deleteModelsWithAttributes();
-		
-		
-		
+		//****************************************************************************************
+
+//		QsarModelsScript script = new QsarModelsScript("tmarti02");
+//		script.writePMML(411, "data/reports/pmml download",true);
+		//****************************************************************************************
+//		script.deleteModelsWithAttributes();
+		//****************************************************************************************
 //		script.removeModelFromSet(6L, 7L);
-		
+		//****************************************************************************************
 //		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 //		QsarModelsScript script = new QsarModelsScript("gsincl01");
 //		script.lookAtAllModelBytes();
+		//****************************************************************************************
 		
 //		script.addModelRangeToSet(145L, 148L, 2L);
 //		script.deletePredictionReport();
 		
-//		for (Long num=145L;num<=148L;num++) script.deleteModel(num);
-//		run.deleteModel(128L);
-		
-		
 //		for (Long num=145L;num<=148L;num++) script.removeModelFromSet(num, 2L);
-		
 		
 //		script.downloadModelQmrf(1L, "data/dev_qsar/model_qmrfs");
 //		script.downloadAllReportsForModelSet(1L, "data/dev_qsar/model_set_reports");
@@ -513,6 +669,8 @@ public class QsarModelsScript {
 //			e.printStackTrace();
 //		}
 //		
+		//****************************************************************************************
+
 //		try {
 //			script.uploadModelSetReport(1L, 
 //					"Henry's law constant OPERA",
@@ -523,6 +681,8 @@ public class QsarModelsScript {
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
+		//****************************************************************************************
+
 		
 //		SplittingService sServ = new SplittingServiceImpl();
 //		Splitting s = sServ.findByDatasetNameAndSplittingName("Water solubility OPERA", "Fake splitting!");
@@ -531,10 +691,7 @@ public class QsarModelsScript {
 //		} else {
 //			System.out.println(s.getName());
 //		}
-		
-		
 
-		
 	}
 
 }
