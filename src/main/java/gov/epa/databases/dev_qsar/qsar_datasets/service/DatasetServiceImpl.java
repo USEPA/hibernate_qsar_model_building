@@ -103,8 +103,15 @@ public class DatasetServiceImpl implements DatasetService {
 		
 	}
 	
+	/**
+	 * Runs much faster deletes using a series of SQL command
+	 * 
+	 * @param id
+	 */
 	public void deleteSQL(long id) {
 
+		System.out.println("Deleting dataset id="+id);
+		
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		
 		String sqlDID="delete from qsar_datasets.datasets_in_dashboard did\n"+ 
@@ -144,5 +151,7 @@ public class DatasetServiceImpl implements DatasetService {
 		t.rollback();
 		return dataset;
 	}
+	
+
 
 }

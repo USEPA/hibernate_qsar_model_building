@@ -8,9 +8,9 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 
 public interface ModelBytesService {
 	
-	public ModelBytes findByModelId(Long modelId);
+	public ModelBytes findByModelId(Long modelId,boolean decompress);
 	
-	public ModelBytes findByModelId(Long modelId, Session session);
+	public ModelBytes findByModelId(Long modelId, boolean decompress,Session session);
 	
 	public ModelBytes create(ModelBytes modelBytes) throws ConstraintViolationException;
 	
@@ -24,6 +24,8 @@ public interface ModelBytesService {
 
 	public void deleteByModelId(Long id, Session session);
 
-	public ModelBytes createSQL(ModelBytes modelBytes);
+	public ModelBytes createSQL(ModelBytes modelBytes,boolean compress);
 
+	
+	public byte [] getBytesSql(Long modelId,boolean decompress);
 }

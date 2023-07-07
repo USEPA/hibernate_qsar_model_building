@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
@@ -194,19 +195,20 @@ public static Connection getConnectionToxValV93() {
 	 * @param splittingName
 	 * @return
 	 */
-	public static Hashtable<String, Double> getHashtablePredValues(long modelId,String splittingName) {
+	public static LinkedHashMap<String, Double> getHashtablePredValues(long modelId,String splittingName) {
 		//Get pred values:
 
 		String sql="select p.canon_qsar_smiles,p.qsar_predicted_value, p.fk_splitting_id  from qsar_models.predictions p\n"+ 
 		"join qsar_models.models m on m.id=p.fk_model_id\n"+
 		"join qsar_datasets.splittings s on s.id=p.fk_splitting_id\n"+ 
-		"where fk_model_id="+modelId+" and s.\"name\"='"+splittingName+"';";
+		"where fk_model_id="+modelId+" and s.\"name\"='"+splittingName+"'"+
+		"order by p.canon_qsar_smiles;";
 		
 //		System.out.println(sql);
 		
 
 		ResultSet rs=runSQL2(getConnectionPostgres(), sql);
-		Hashtable<String,Double>htPred=new Hashtable<>();
+		LinkedHashMap<String,Double>htPred=new LinkedHashMap<>();
 		
 		try {
 			while (rs.next()) {				
@@ -257,6 +259,9 @@ public static Connection getConnectionToxValV93() {
 			while (rs.next()) {				
 				String ID=rs.getString(1);
 				Double exp=rs.getDouble(2);
+				
+//				System.out.println(ID+"\t"+exp);
+				
 				htExps.put(ID, exp);
 			}
 			

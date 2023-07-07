@@ -11,6 +11,7 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.DescriptorEmbeddingDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.DescriptorEmbeddingDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.web_services.embedding_service.CalculationInfo;
+import gov.epa.web_services.embedding_service.CalculationInfoGA;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;

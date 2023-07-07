@@ -17,7 +17,7 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import gov.epa.web_services.embedding_service.CalculationInfo;
+import gov.epa.web_services.embedding_service.CalculationInfoGA;
 import gov.epa.web_services.embedding_service.CalculationInfoImportance;
 
 @Entity
@@ -95,7 +95,7 @@ public class DescriptorEmbedding {
 		
 	}
 
-	public DescriptorEmbedding(CalculationInfo ci,String embedding,String lanId) {
+	public DescriptorEmbedding(CalculationInfoGA ci,String embedding,String lanId) {
 		setEmbeddingTsv(embedding);
 		setName(ci.datasetName + "_" + ci.descriptorSetName + "_" + System.currentTimeMillis());
 		setCreatedBy(lanId);
@@ -104,7 +104,7 @@ public class DescriptorEmbedding {
 		setDescription(ci.toString());
 		setDescriptorSetName(ci.descriptorSetName);
 		setDatasetName(ci.datasetName);
-		setQsarMethod(ci.qsarMethodGA);
+		setQsarMethod(ci.qsarMethodEmbedding);
 		setSplittingName(ci.splittingName);
 
 	}
@@ -120,7 +120,7 @@ public class DescriptorEmbedding {
 		setDescriptorSetName(ci.descriptorSetName);
 		setDatasetName(ci.datasetName);
 		setSplittingName(ci.splittingName);
-		setQsarMethod(ci.qsarMethod);
+		setQsarMethod(ci.qsarMethodEmbedding);
 		
 
 	}

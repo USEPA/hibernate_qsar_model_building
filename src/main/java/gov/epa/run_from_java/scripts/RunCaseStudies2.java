@@ -6,7 +6,7 @@ import java.util.List;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
-import gov.epa.web_services.embedding_service.CalculationInfo;
+import gov.epa.web_services.embedding_service.CalculationInfoGA;
 import gov.epa.web_services.embedding_service.EmbeddingWebService2;
 
 public class RunCaseStudies2 {
@@ -19,6 +19,7 @@ public class RunCaseStudies2 {
 	}
 	
 	public static void runCaseStudyWithoutLookChem(RunCaseStudies rcs) {
+		boolean use_pmml=false;
 		rcs.lanId="cramslan";		
 		boolean buildModels=true;
 		
@@ -49,12 +50,12 @@ public class RunCaseStudies2 {
 			boolean remove_log_p = false;
 			if(datasetName.contains("LogP")) remove_log_p=true;
 			
-			CalculationInfo ci = new CalculationInfo();
+			CalculationInfoGA ci = new CalculationInfoGA();
 			ci.num_generations = 40;			
 			if (datasetName.contains("BP") || splitting.equals("T=all but PFAS, P=PFAS")) ;//takes too long to do 100			
 
 			ci.remove_log_p = remove_log_p;
-			ci.qsarMethodGA = rcs.qsarMethodGA;
+			ci.qsarMethodEmbedding = rcs.qsarMethodGA;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=splitting;
@@ -72,7 +73,7 @@ public class RunCaseStudies2 {
 			}			
 
 			if (descriptorEmbedding == null) {
-				descriptorEmbedding = ews2.generateEmbedding(rcs.serverModelBuilding, rcs.portModelBuilding, rcs.lanId,ci);
+				descriptorEmbedding = ews2.generateGA_Embedding(rcs.lanId,ci);
 //				System.out.println("New embedding from web service:"+descriptorEmbedding.getEmbeddingTsv());
 //				System.out.println("Dont have existing embedding:"+ci.toString());
 				continue;
@@ -92,7 +93,7 @@ public class RunCaseStudies2 {
 
 			for (String method:methods) {
 				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(rcs.lanId,rcs.serverModelBuilding,rcs.portModelBuilding,method,descriptorEmbedding,ci);
+				ModelBuildingScript.buildModel(rcs.lanId,rcs.serverModelBuilding,rcs.portModelBuilding,method,descriptorEmbedding,ci,use_pmml);
 			}
 //			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methods.length);
 		}

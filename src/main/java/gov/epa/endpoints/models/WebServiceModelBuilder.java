@@ -35,6 +35,8 @@ import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingService
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServiceImpl;
@@ -43,8 +45,12 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.valery.SDE_Prediction_Response;
+import gov.epa.run_from_java.scripts.PredictionDashboard.valery.SDE_Prediction_Response.Prediction;
 import gov.epa.web_services.ModelWebService;
 import gov.epa.web_services.embedding_service.CalculationInfo;
+import gov.epa.web_services.embedding_service.CalculationInfoGA;
+import kong.unirest.HttpResponse;
 
 public class WebServiceModelBuilder extends ModelBuilder {
 	
@@ -58,6 +64,9 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	DataPointServiceImpl dataPointService=new DataPointServiceImpl();
 	DatasetServiceImpl datasetService=new DatasetServiceImpl();
 	
+//	boolean compressModelBytes=true;
+	
+	
 	public CrossValidate crossValidate=new CrossValidate();
 	
 	
@@ -68,43 +77,98 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		this.modelWebService = modelWebService;
 	}
 
-	public void listDescriptors(Long modelId) {
-		if (modelId==null) {
-//			logger.error("Model with supplied parameters has not been built");
-			return;
+//	public void listDescriptors(Long modelId) {
+//		if (modelId==null) {
+////			logger.error("Model with supplied parameters has not been built");
+//			return;
+//		}
+//		
+//		ModelBytes modelBytes = modelBytesService.findByModelId(modelId,compressModelBytes);
+//		if (modelBytes==null) {
+//			return;
+//		}
+//		
+//		byte[] bytes = modelBytes.getBytes();
+//		
+//		Model model = modelBytes.getModel();
+//		String fullMethodName = model.getMethod().getName();
+//		String methodName = fullMethodName.substring(0, fullMethodName.indexOf("_"));
+//		
+//		String strModelId = String.valueOf(modelId);
+//		String descriptors = modelWebService.callDescriptors(bytes, methodName, strModelId).getBody();
+//		
+//		String fileName = "data/descriptors/" + model.getDatasetName()
+//			+ "_" + model.getDescriptorSetName()
+//			+ "_" + model.getSplittingName()
+//			+ "_" + methodName + "_" + modelId + "_descriptors.txt";
+//		File file = new File(fileName);
+//		file.getParentFile().mkdirs();
+//		
+//		try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+//			bw.write(descriptors);
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//	}
+
+	
+	public ModelPrediction[] getModelPredictionsFromAPI(Model model,boolean use_pmml) {
+		
+		long model_id=model.getId();
+		
+		//Get training and test set instances as strings using TEST descriptors:
+		ModelData md=ModelData.initModelData(model.getDatasetName(), model.getDescriptorSetName(),model.getSplittingName(), false, false);
+//		System.out.print(md.predictionSetInstances);
+			
+		ModelBytes modelBytes = modelBytesService.findByModelId(model_id,use_pmml);//python can figure out the string even if the string bytes are compressed- so can send smaller bytes...
+//		System.out.println(modelBytes.getBytes().length);
+//		System.out.println(bytes.length);
+		
+				
+		String strModelId = String.valueOf(model_id);
+		
+		if (use_pmml) {
+			String details=new String(model.getDetails());
+			HttpResponse<String>response=modelWebService.callInitPmml(modelBytes.getBytes(), model_id+"", details);
+		} else {
+			HttpResponse<String>response=modelWebService.callInitPickle(modelBytes.getBytes(),model_id+"");
 		}
 		
-		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
-		if (modelBytes==null) {
-			return;
-		}
+		String predictResponse = modelWebService.callPredict(md.predictionSetInstances, strModelId).getBody();
+		System.out.println("predictResponse="+predictResponse);
 		
-		byte[] bytes = modelBytes.getBytes();
 		
-		Model model = modelBytes.getModel();
-		String fullMethodName = model.getMethod().getName();
-		String methodName = fullMethodName.substring(0, fullMethodName.indexOf("_"));
+		Gson gson=new Gson();
+		ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);
+		return modelPredictions;
+	}
+	
+
+	public ModelPrediction[] getModelPredictionsFromSDE_API(Model model,String workflow) {
 		
-		String strModelId = String.valueOf(modelId);
-		String descriptors = modelWebService.callDescriptors(bytes, methodName, strModelId).getBody();
+		long model_id=model.getId();
 		
-		String fileName = "data/descriptors/" + model.getDatasetName()
-			+ "_" + model.getDescriptorSetName()
-			+ "_" + model.getSplittingName()
-			+ "_" + methodName + "_" + modelId + "_descriptors.txt";
-		File file = new File(fileName);
-		file.getParentFile().mkdirs();
+		//Get training and test set instances as strings using TEST descriptors:
+		ModelData md=ModelData.initModelData(model.getDatasetName(), model.getDescriptorSetName(),model.getSplittingName(), false, false);
+//		System.out.print(md.predictionSetInstances);
+			
+		//TODO add a hibernate version of following:
+		String sql="select m.fk_model_set_id  from  qsar_models.models_in_model_sets m where fk_model_id="+model_id;
+		String strModelSetId=SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sql);		
 		
-		try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
-			bw.write(descriptors);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		DatasetServiceImpl dss=new DatasetServiceImpl();
+		String strDatasetId=dss.findByName(model.getDatasetName()).getId()+"";		
+		
+		String predictResponse = modelWebService.callPredictSDE(md.predictionSetInstances, strModelSetId,strDatasetId, workflow).getBody();
+//		System.out.println("predictResponse="+predictResponse);
+		
+		ModelPrediction[] modelPredictions = SDE_Prediction_Response.toModelPredictions(predictResponse,model.getMethod().getName());
+		return modelPredictions;
 	}
 
 
-	Method getDetails(String methodName,Model model,JsonObject joDetails) {
+	Method getMethodFromDetails(String methodName,Model model,JsonObject joDetails) {
 		
 		String version = joDetails.get("version").getAsString();
 		Boolean isBinary = joDetails.get("is_binary").getAsBoolean();				
@@ -115,11 +179,12 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		String description_url=joDetails.get("description_url").getAsString();
 		
 		Gson gson2 = new Gson();		
-		String hyperparameters=gson2.toJson(joDetails.get("hyperparameter_grid").getAsJsonObject());
+		String hyperparameter_grid=gson2.toJson(joDetails.get("hyperparameter_grid").getAsJsonObject());
 				
 		Method method = methodService.findByName(fullMethodName);
+		
 		if (method==null) {
-			method = new Method(fullMethodName, description, description_url,hyperparameters, isBinary, lanId);
+			method = new Method(fullMethodName, description, description_url,hyperparameter_grid, isBinary, lanId);
 			methodService.create(method);
 		} else {
 //			JsonParser parser = new JsonParser();
@@ -189,11 +254,11 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		if (descriptorEmbedding != null) {
 			modelWebService.callTrainWithPreselectedDescriptorsPythonStorage(data.trainingSetInstances, 
 				data.removeLogP_Descriptors, methodName, strModelId, descriptorEmbedding.getEmbeddingTsv()).getBody();
-			hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
+			hyperparameters = modelWebService.callDetails(strModelId).getBody();
 		} else {
 			modelWebService.callTrainPythonStorage(data.trainingSetInstances, 
 				data.removeLogP_Descriptors, methodName, strModelId);
-			hyperparameters = modelWebService.callDetails(methodName, strModelId).getBody();
+			hyperparameters = modelWebService.callDetails(strModelId).getBody();
 		}
 		String description = modelWebService.callInfo(methodName).getBody();
 		//TODO get description_url
@@ -211,7 +276,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			methodService.create(method);
 		} else {
 			JsonParser parser = new JsonParser();
-			if (!parser.parse(hyperparameters).equals(parser.parse(method.getHyperparameters()))) {
+			if (!parser.parse(hyperparameters).equals(parser.parse(method.getHyperparameter_grid()))) {
 //				logger.warn("Hyperparameters for " + fullMethodName + " have changed");
 			}
 		}
@@ -228,7 +293,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	 * @param params
 	 */
 	@SuppressWarnings("deprecation")
-	public Long trainWithPreselectedDescriptorsByEmbeddingName(ModelData data, String methodName, String descriptorEmbeddingName) 
+	public Long trainWithPreselectedDescriptorsByEmbeddingName(ModelData data, String methodName, String descriptorEmbeddingName,boolean use_pmml) 
 			throws ConstraintViolationException {
 		
 		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByName(descriptorEmbeddingName);
@@ -244,7 +309,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			return null;
 		}
 				
-		return trainWithPreselectedDescriptors(data, methodName, descriptorEmbedding);
+		return trainWithPreselectedDescriptors(data, methodName, descriptorEmbedding,use_pmml);
 	}
 	
 	/**
@@ -253,8 +318,8 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	 * @param params
 	 */
 	@SuppressWarnings("deprecation")
-	public Long train(ModelData data, String methodName) throws ConstraintViolationException {
-		return trainWithPreselectedDescriptors(data, methodName, null);
+	public Long train(ModelData data, String methodName,boolean use_pmml) throws ConstraintViolationException {
+		return trainWithPreselectedDescriptors(data, methodName, null,use_pmml);
 	}
 
 	
@@ -264,9 +329,15 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	 * @param params
 	 */
 	
-	public Long trainWithPreselectedDescriptors(ModelData data, String methodName, DescriptorEmbedding descriptorEmbedding) 
+	public Long trainWithPreselectedDescriptors(ModelData data, String methodName, DescriptorEmbedding descriptorEmbedding,boolean use_pmml) 
 			throws ConstraintViolationException {
 
+		boolean compressModelBytes=false;
+		if (use_pmml) {
+			compressModelBytes=true;
+		}
+		
+		
 		if (data.trainingSetInstances==null) {
 //			logger.error("Dataset instances were not initialized");
 			System.out.println("Dataset instances were not initialized");
@@ -301,39 +372,52 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		byte[] bytes=null;
 		
-		if (descriptorEmbedding!=null) {		
-			bytes = modelWebService.callTrainWithPreselectedDescriptors(data.trainingSetInstances, data.removeLogP_Descriptors, methodName, strModelId, descriptorEmbedding.getEmbeddingTsv()).getBody();
+		if (descriptorEmbedding != null) {
+			bytes = modelWebService
+					.callTrainWithPreselectedDescriptors(data.trainingSetInstances, data.removeLogP_Descriptors,
+							methodName, strModelId, descriptorEmbedding.getEmbeddingTsv(), use_pmml)
+					.getBody();
 		} else {
-			bytes = modelWebService.callTrain(data.trainingSetInstances,data.removeLogP_Descriptors, methodName, strModelId).getBody();
+			bytes = modelWebService
+					.callTrain(data.trainingSetInstances, data.removeLogP_Descriptors, methodName, strModelId, use_pmml)
+					.getBody();
 		}
+		
+//		String pmml = new String(bytes);
+//		System.out.println("pmml");
+//		System.out.println(pmml);
+		
 
 //		String description = modelWebService.callInfo(methodName).getBody();//can get from details call instead
 
-		String details = modelWebService.callDetails(methodName, model.getId()+"").getBody();			
+		String details = modelWebService.callDetails(model.getId()+"").getBody();			
 		
 		System.out.println(details);
 		
 		JsonObject joDetails = gson.fromJson(details, JsonObject.class);
 		
-		Method method=getDetails(methodName, model,joDetails);
+		Method method=getMethodFromDetails(methodName, model,joDetails);
 
 		//Call cross validate here:
 		
 //		createCV_Statistics(joDetails, model);//old way
 
 		Gson gson2=new Gson();//no pretty printing
+		
 		String hyperparameters=gson2.toJson(joDetails.get("hyperparameters").getAsJsonObject());
+		model.setHyperparameters(hyperparameters);		
 		
 		model.setMethod(method);
-		model.setHyperparameters(hyperparameters);		
+		model.setDetails(details.getBytes());
+		
 		modelService.update(model);
 
 		ModelBytes modelBytes = new ModelBytes(model, bytes, lanId);
 //		modelBytesService.create(modelBytes);
-		modelBytesService.createSQL(modelBytes);
+		modelBytesService.createSQL(modelBytes,compressModelBytes);
 		
 		
-		crossValidate.crossValidate(model,data.removeLogP_Descriptors,modelWebService.num_jobs, true);			
+		crossValidate.crossValidate(model,data.removeLogP_Descriptors,modelWebService.num_jobs, true,use_pmml);			
 
 		
 		return model.getId();
@@ -344,7 +428,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		int numSplits=5;
 		
 		
-		public void crossValidate(Model model, boolean remove_log_p, int num_jobs, boolean postPredictions) {
+		public void crossValidate(Model model, boolean remove_log_p, int num_jobs, boolean postPredictions,boolean use_pmml) {
 			
 			System.out.println(model.getSplittingName());
 						
@@ -368,7 +452,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 
 			if (descriptorEmbedding != null) System.out.println("Embedding="+descriptorEmbedding.getEmbeddingTsv());
 
-			calcCV_Folds(model, remove_log_p, num_jobs, expMap, postPredictions);
+			calcCV_Folds(model, remove_log_p, num_jobs, expMap, postPredictions,use_pmml);
 			
 		}
 		
@@ -501,7 +585,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			
 		}
 
-		void calcCV_Folds( Model model, boolean remove_log_p, int num_jobs,Map<String, Double> expMap,boolean postPredictions) {
+		void calcCV_Folds( Model model, boolean remove_log_p, int num_jobs,Map<String, Double> expMap,boolean postPredictions,boolean use_pmml) {
 			
 			double Q2_CV=0;
 			double R2_CV=0;
@@ -514,7 +598,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 				
 				System.out.println("running "+splittingNameCV);
 				
-				List<ModelPrediction>mpsTestSet=crossValidateWithPreselectedDescriptors(model, remove_log_p, splittingNameCV, num_jobs);
+				List<ModelPrediction>mpsTestSet=crossValidateWithPreselectedDescriptors(model, remove_log_p, splittingNameCV, num_jobs,use_pmml);
 				List<ModelPrediction>mpsTrainSet=getTrainingSetModelPredictions(dataPointInSplittingService, model.getDatasetName(), expMap, splittingNameCV);
 				
 				System.out.println("Fold "+fold+", P="+mpsTestSet.size()+"\tT="+mpsTrainSet.size());
@@ -576,7 +660,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 
 		}
 		
-		public List<ModelPrediction> crossValidateWithPreselectedDescriptors(Model model, boolean removeLogP,String splittingNameCV, int num_jobs)  {
+		public List<ModelPrediction> crossValidateWithPreselectedDescriptors(Model model, boolean removeLogP,String splittingNameCV, int num_jobs,boolean use_pmml)  {
 			
 			String qsarMethod=model.getMethod().getName();		
 			qsarMethod=qsarMethod.substring(0,qsarMethod.indexOf("_"));
@@ -595,10 +679,10 @@ public class WebServiceModelBuilder extends ModelBuilder {
 
 			if (model.getDescriptorEmbedding()==null) {
 				predictResponse=modelWebService.crossValidate(qsarMethod,data.trainingSetInstances, data.predictionSetInstances, 
-						removeLogP, num_jobs, model.getHyperparameters()).getBody();
+						removeLogP, num_jobs, model.getHyperparameters(),use_pmml).getBody();
 			} else {
 				predictResponse=modelWebService.crossValidate(qsarMethod,data.trainingSetInstances, data.predictionSetInstances, 
-						removeLogP, num_jobs, model.getDescriptorEmbedding().getEmbeddingTsv(), model.getHyperparameters()).getBody();			
+						removeLogP, num_jobs, model.getDescriptorEmbedding().getEmbeddingTsv(), model.getHyperparameters(),use_pmml).getBody();			
 			}
 						
 			ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);
@@ -771,7 +855,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	 * @param data
 	 * @param params
 	 */
-	public void predictPythonStorage(ModelData data, String methodName, Long modelId) throws ConstraintViolationException {
+	public void predictPythonStorage(ModelData data, String methodName, Long modelId,boolean use_pmml) throws ConstraintViolationException {
 		if (modelId==null) {
 //			logger.error("Model with supplied parameters has not been built");
 			System.out.println("Model with supplied parameters has not been built");
@@ -786,7 +870,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 //				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName 
 //				+ " (qsar_models ID = " + modelId + ")");
 		
-		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
+		ModelBytes modelBytes = modelBytesService.findByModelId(modelId,use_pmml);
 		Model model = modelBytes.getModel();
 		
 		String strModelId = String.valueOf(modelId);
@@ -816,7 +900,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	 * @param data
 	 * @param params
 	 */
-	public void predict(ModelData data, String methodName, Long modelId) throws ConstraintViolationException {
+	public void predict(ModelData data, String methodName, Long modelId,boolean use_pmml) throws ConstraintViolationException {
 		
 		System.out.println("Enter predict");
 		
@@ -832,18 +916,33 @@ public class WebServiceModelBuilder extends ModelBuilder {
 //				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName 
 //				+ " (qsar_models ID = " + modelId + ")");
 		
-		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
-		Model model = modelBytes.getModel();
-		byte[] bytes = modelBytes.getBytes();
+//		ModelBytes modelBytes = modelBytesService.findByModelId(modelId,compressModelBytes);
+//		Model model = modelBytes.getModel();
+		
+		Model model=modelService.findById(modelId);
+		
+//		byte[] bytes = modelBytes.getBytes();
+		byte[] bytes = modelBytesService.getBytesSql(modelId, use_pmml);
 		
 		String strModelId = String.valueOf(modelId);
-		modelWebService.callInit(bytes, methodName, strModelId).getBody();
+		
+		//Following may not be necessary if webservice hasnt been restarted:
+//		modelWebService.callInit(bytes, methodName, strModelId).getBody();
+		
+		if (use_pmml) {
+			String details=new String(model.getDetails());
+//			System.out.println(details);
+			HttpResponse<String>response=modelWebService.callInitPmml(bytes, strModelId, details);
+		} else {
+			HttpResponse<String>response=modelWebService.callInitPickle(bytes,strModelId);
+		}
+		
 		
 		Splitting splitting=splittingService.findByName(model.getSplittingName());
 		
 //		System.out.println("Splitting id = "+splitting.getId());
 				
-		String predictResponse = modelWebService.callPredict(data.predictionSetInstances, methodName, strModelId).getBody();
+		String predictResponse = modelWebService.callPredict(data.predictionSetInstances, strModelId).getBody();
 		ModelPrediction[] modelPredictionsArray = gson.fromJson(predictResponse, ModelPrediction[].class);
 		List<ModelPrediction>modelTestPredictions=Arrays.asList(modelPredictionsArray);			
 		for(ModelPrediction mp:modelTestPredictions) mp.split=DevQsarConstants.TEST_SPLIT_NUM;		
@@ -861,7 +960,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	 * @param data
 	 * @param params
 	 */
-	public void predictTraining(ModelData data, String methodName, Long modelId) throws ConstraintViolationException {
+	public void predictTraining(ModelData data, String methodName, Long modelId,boolean use_pmml) throws ConstraintViolationException {
 		
 		System.out.println("Enter predict");
 		
@@ -877,18 +976,26 @@ public class WebServiceModelBuilder extends ModelBuilder {
 //				+ ", splitting = " + data.splittingName + " using QSAR method = " + methodName 
 //				+ " (qsar_models ID = " + modelId + ")");
 		
-		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
+		ModelBytes modelBytes = modelBytesService.findByModelId(modelId,use_pmml);
 		Model model = modelBytes.getModel();
 		byte[] bytes = modelBytes.getBytes();
 		
 		String strModelId = String.valueOf(modelId);
-		modelWebService.callInit(bytes, methodName, strModelId).getBody();
+				
+		if (use_pmml) {
+			String details=new String(model.getDetails());
+			HttpResponse<String>response=modelWebService.callInitPmml(modelBytes.getBytes(),strModelId, details);
+		} else {
+			HttpResponse<String>response=modelWebService.callInitPickle(modelBytes.getBytes(),strModelId);
+		}
+
+		
 		
 		Splitting splitting=splittingService.findByName(model.getSplittingName());
 		
 //		System.out.println("Splitting id = "+splitting.getId());
 				
-		String predictResponse = modelWebService.callPredict(data.predictionSetInstances, methodName, strModelId).getBody();
+		String predictResponse = modelWebService.callPredict(data.predictionSetInstances, strModelId).getBody();
 //		ModelPrediction[] modelPredictionsArray = gson.fromJson(predictResponse, ModelPrediction[].class);
 //		List<ModelPrediction>modelTestPredictions=Arrays.asList(modelPredictionsArray);			
 //		for(ModelPrediction mp:modelTestPredictions) mp.split=DevQsarConstants.TEST_SPLIT_NUM;		
@@ -907,81 +1014,62 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			return null;
 		}
 		
-		String predictTrainingResponse = modelWebService.callPredict(data.trainingSetInstances, methodName, strModelId).getBody();
+		String predictTrainingResponse = modelWebService.callPredict(data.trainingSetInstances,strModelId).getBody();
 		ModelPrediction[] modelTrainingPredictions = gson.fromJson(predictTrainingResponse, ModelPrediction[].class);
 		return Arrays.asList(modelTrainingPredictions);
 	}
 
 	public Long build(String datasetName, String descriptorSetName, String splittingName, boolean removeLogP_Descriptors,
-			String methodName) throws ConstraintViolationException {
+			String methodName,boolean use_pmml) throws ConstraintViolationException {
 		ModelData data = ModelData.initModelData(datasetName, descriptorSetName, splittingName, removeLogP_Descriptors,false);
 		
-		Long modelId = train(data, methodName);
-		predict(data, methodName, modelId);
+		Long modelId = train(data, methodName,use_pmml);
+		predict(data, methodName, modelId,use_pmml);
 		
 		return modelId;
 	}
 	
 	public Long buildWithPythonStorage(String datasetName, String descriptorSetName, String splittingName, 
-			boolean removeLogDescriptors, String methodName, String descriptorEmbeddingName) throws ConstraintViolationException {
+			boolean removeLogDescriptors, String methodName, String descriptorEmbeddingName,boolean use_pmml) throws ConstraintViolationException {
 		ModelData data = ModelData.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors,false);
 		
 		Long modelId = trainWithPythonStorage(data, methodName, descriptorEmbeddingName);
-		predictPythonStorage(data, methodName, modelId);
+		predictPythonStorage(data, methodName, modelId,use_pmml);
 		
 		return modelId;
 	}
 
 
 	public Long buildWithPreselectedDescriptors(String datasetName, String descriptorSetName, String splittingName, 
-			boolean removeLogDescriptors, String methodName, String descriptorEmbeddingName) throws ConstraintViolationException {
+			boolean removeLogDescriptors, String methodName, String descriptorEmbeddingName,boolean use_pmml) throws ConstraintViolationException {
 		ModelData data =ModelData.initModelData(datasetName, descriptorSetName, splittingName, removeLogDescriptors,false);
 		
-		Long modelId = trainWithPreselectedDescriptorsByEmbeddingName(data, methodName, descriptorEmbeddingName);
-		predict(data, methodName, modelId);
+		Long modelId = trainWithPreselectedDescriptorsByEmbeddingName(data, methodName, descriptorEmbeddingName,use_pmml);
+		predict(data, methodName, modelId,use_pmml);
 		
 		return modelId;
 	}
 	
 	
-	public Long buildWithPreselectedDescriptors(String methodName,CalculationInfo ci, DescriptorEmbedding descriptorEmbedding) throws ConstraintViolationException {
+	public Long buildWithPreselectedDescriptors(String methodName,CalculationInfo ci, DescriptorEmbedding descriptorEmbedding,boolean use_pmml) throws ConstraintViolationException {
 		ModelData data = ModelData.initModelData(ci.datasetName, ci.descriptorSetName, ci.splittingName, ci.remove_log_p,false);
 		
-		Long modelId = trainWithPreselectedDescriptors(data, methodName, descriptorEmbedding);
-		predict(data, methodName, modelId);
+		Long modelId = trainWithPreselectedDescriptors(data, methodName, descriptorEmbedding,use_pmml);
+		predict(data, methodName, modelId,use_pmml);
 		
 		return modelId;
 	}
 	
 	
-
-	public ModelPrediction[] rerunExistingModelPredictions(Long modelId) {
-		ModelBytes modelBytes = modelBytesService.findByModelId(modelId);
-		Model model = modelBytes.getModel();
-		
-		ModelData data = ModelData.initModelData(model.getDatasetName(), model.getDescriptorSetName(), model.getSplittingName(), false,false);
-		
-		byte[] bytes = modelBytes.getBytes();
-		String methodName = model.getMethod().getName();
-		String pythonMethodName = methodName.substring(0, methodName.indexOf("_"));
-		String strModelId = String.valueOf(modelId);
-		
-		modelWebService.callInit(bytes, pythonMethodName, strModelId).getBody();
-		String predictResponse = modelWebService.callPredict(data.predictionSetInstances, pythonMethodName, strModelId).getBody();
-		ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);
-		
-		return modelPredictions;
-	}
-
-	public long build(String methodName, CalculationInfo ci){
+	public long build(String methodName, CalculationInfo ci,boolean use_pmml){
 		
 		ModelData data = ModelData.initModelData(ci,false);
 		
 //		System.out.println(data.trainingSetInstances);
 		
-		Long modelId = train(data, methodName);
+		Long modelId = train(data, methodName,use_pmml);
 		
-		predict(data, methodName, modelId);
+		predict(data, methodName, modelId,use_pmml);
 		
 		return modelId;
 	}

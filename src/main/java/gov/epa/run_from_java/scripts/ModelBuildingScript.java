@@ -14,6 +14,7 @@ import gov.epa.endpoints.models.ConsensusModelBuilder;
 import gov.epa.endpoints.models.WebServiceModelBuilder;
 import gov.epa.web_services.ModelWebService;
 import gov.epa.web_services.embedding_service.CalculationInfo;
+import gov.epa.web_services.embedding_service.CalculationInfoGA;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
@@ -73,7 +74,7 @@ public class ModelBuildingScript {
 	 */
 	public static void buildModel(String modelWsServer,int modelWsPort,String datasetName,String descriptorSetName,
 			String splittingName, boolean removeLogDescriptors,String methodName,String lanId, String descriptorEmbeddingName,
-			boolean pythonStorage) {
+			boolean pythonStorage,boolean usePMML) {
 
 		System.out.println("Building "+methodName+" model for "+datasetName + "with" + descriptorSetName + "descriptors");
 
@@ -85,13 +86,13 @@ public class ModelBuildingScript {
 		WebServiceModelBuilder mb = new WebServiceModelBuilder(modelWs, lanId);
 		
 		if (pythonStorage) {
-			Long modelId = mb.buildWithPythonStorage(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName, descriptorEmbeddingName);
+			Long modelId = mb.buildWithPythonStorage(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName, descriptorEmbeddingName,usePMML);
 		}
 		else {
 			if (descriptorEmbeddingName == null) {
-				Long modelId = mb.build(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName);
+				Long modelId = mb.build(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName,usePMML);
 			} else {
-				Long modelID = mb.buildWithPreselectedDescriptors(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName, descriptorEmbeddingName);
+				Long modelID = mb.buildWithPreselectedDescriptors(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName, descriptorEmbeddingName,usePMML);
 			}
 		}
 
@@ -115,7 +116,7 @@ public class ModelBuildingScript {
 	 * @param lanId
 	 */
 	public static void buildModel(String lanId,String modelWsServer,int modelWsPort,String methodName,
-			DescriptorEmbedding de,CalculationInfo ci) {
+			DescriptorEmbedding de,CalculationInfo ci,boolean usePMML) {
 
 		System.out.println("\nBuilding "+methodName+" model for "+ci.datasetName + "with" + ci.descriptorSetName + "descriptors");
 
@@ -129,9 +130,9 @@ public class ModelBuildingScript {
 		long modelID=-1;
 		
 		if (de==null) {
-			modelID = mb.build(methodName, ci);
+			modelID = mb.build(methodName, ci,usePMML);
 		} else {
-			modelID = mb.buildWithPreselectedDescriptors(methodName, ci, de);	
+			modelID = mb.buildWithPreselectedDescriptors(methodName, ci, de,usePMML);	
 		}
 //		System.out.println("modelID="+modelID);
 		
@@ -143,20 +144,6 @@ public class ModelBuildingScript {
 
 	}
 
-	static void testInit(String modelWsServer,int modelWsPort,String methodName,long modelID) {
-
-		ModelBytesService modelBytesService = new ModelBytesServiceImpl();
-
-		ModelBytes modelBytes = modelBytesService.findByModelId(modelID);
-		Model model = modelBytes.getModel();
-		byte[] bytes = modelBytes.getBytes();
-
-		System.out.println("bytes.length loaded from db="+bytes.length);
-
-		ModelWebService modelWs = new ModelWebService(modelWsServer, modelWsPort);
-		modelWs.callInit(bytes, methodName, modelID+"").getBody();
-
-	}
 
 	public static Long buildUnweightedConsensusModel(Set<Long> modelIds, String lanId) {
 		ConsensusModelBuilder cmb = new ConsensusModelBuilder(lanId);
@@ -251,14 +238,13 @@ public class ModelBuildingScript {
 		String embeddingName="Henry's law constant OPERA_1671052729185";
 
 		ModelBuildingScript.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-				splittingName, removeLogDescriptors,methodName,lanId, embeddingName, false);
+				splittingName, removeLogDescriptors,methodName,lanId, embeddingName, false,false);
 		//
 		//		run.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
 		//				splittingName, removeLogDescriptors,methodName,lanId);
 
 
 		//*****************************************************************************************
-		//		d.testInit(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING, methodName, 104L);
 	}
 
 }

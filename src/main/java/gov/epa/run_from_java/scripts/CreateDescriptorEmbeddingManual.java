@@ -21,7 +21,7 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
-import gov.epa.web_services.embedding_service.CalculationInfo;
+import gov.epa.web_services.embedding_service.CalculationInfoGA;
 
 public class CreateDescriptorEmbeddingManual {
 
@@ -53,11 +53,11 @@ public class CreateDescriptorEmbeddingManual {
 		String set="OPERA";
 		String datasetName=property+" "+set;
 		
-		CalculationInfo ci = new CalculationInfo();
+		CalculationInfoGA ci = new CalculationInfoGA();
 		ci.num_generations = 100;
 		ci.threshold=1;
 		ci.remove_log_p = false;
-		ci.qsarMethodGA = "knn";
+		ci.qsarMethodEmbedding = "knn";
 		ci.datasetName=datasetName;
 		ci.descriptorSetName=descriptorSetName;
 		
@@ -103,10 +103,10 @@ public class CreateDescriptorEmbeddingManual {
 			String datasetName=property+" "+set;
 			String embedding = convertEmbeddingJsonToTsv(jo);
 			
-			CalculationInfo ci = new CalculationInfo();
+			CalculationInfoGA ci = new CalculationInfoGA();
 			ci.num_generations = 100;
 			ci.threshold=1;			
-			ci.qsarMethodGA = "knn";
+			ci.qsarMethodEmbedding = "knn";
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			
@@ -142,7 +142,7 @@ public class CreateDescriptorEmbeddingManual {
 				String description=rs.getString(2);
 				if (!description.contains("\n")) continue;
 
-				CalculationInfo ci=gson.fromJson(description, CalculationInfo.class);
+				CalculationInfoGA ci=gson.fromJson(description, CalculationInfoGA.class);
 //				System.out.println(ci.toString());
 				
 				String sqlUpdate="UPDATE qsar_models.descriptor_embeddings\n"+ 
@@ -165,9 +165,9 @@ public class CreateDescriptorEmbeddingManual {
 
 		String sampleSource = "OPERA";
 
-		CalculationInfo ci=new CalculationInfo();	
+		CalculationInfoGA ci=new CalculationInfoGA();	
 		ci.threshold=null;
-		ci.qsarMethodGA = DevQsarConstants.KNN;
+		ci.qsarMethodEmbedding = DevQsarConstants.KNN;
 		ci.datasetName = endpoint +" "+sampleSource;
 		ci.descriptorSetName = "T.E.S.T. 5.1";		
 		ci.splittingName="OPERA";
@@ -214,11 +214,11 @@ public class CreateDescriptorEmbeddingManual {
 				
 				DescriptorEmbedding deNew = Utilities.gson.fromJson(line, DescriptorEmbedding.class);
 
-				CalculationInfo ci=gson.fromJson(deNew.getDescription(), CalculationInfo.class);				
+				CalculationInfoGA ci=gson.fromJson(deNew.getDescription(), CalculationInfoGA.class);				
 				ci.datasetName=deNew.getDatasetName();
 				ci.splittingName=deNew.getSplittingName();
 				ci.descriptorSetName=deNew.getDescriptorSetName();
-				ci.qsarMethodGA=deNew.getQsarMethod();
+				ci.qsarMethodEmbedding=deNew.getQsarMethod();
 				
 				DescriptorEmbedding deDB=desi.findByGASettings(ci);
 

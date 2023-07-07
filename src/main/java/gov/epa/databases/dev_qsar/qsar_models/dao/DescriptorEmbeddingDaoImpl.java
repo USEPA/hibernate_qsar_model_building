@@ -29,11 +29,14 @@ public class DescriptorEmbeddingDaoImpl implements DescriptorEmbeddingDao {
 	public DescriptorEmbedding findByGASettings(CalculationInfo ci, Session session) {
 		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
 		Query query = session.createQuery(HQL_BY_FIELDS);		
-		query.setParameter("qsar_method", ci.qsarMethodGA);
+		query.setParameter("qsar_method", ci.qsarMethodEmbedding);
 		query.setParameter("dataset_name", ci.datasetName);
 		query.setParameter("descriptor_set_name",ci.descriptorSetName);
 		query.setParameter("description",ci.toString());
-		query.setParameter("splitting_name",ci.splittingName);		
+		query.setParameter("splitting_name",ci.splittingName);	
+		
+		System.out.println(ci.toString());
+		
 		return (DescriptorEmbedding) query.uniqueResult();
 		
 	}

@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -107,11 +108,17 @@ public class RecalcStatsScript {
 			DatasetServiceImpl datasetService=new DatasetServiceImpl();
 			Dataset dataset=datasetService.findByName(model.getDatasetName());
 			
-			Hashtable<String, Double>htPreds=SqlUtilities.getHashtablePredValues(model.getId(),splittingName);
+			LinkedHashMap<String, Double>htPreds=SqlUtilities.getHashtablePredValues(model.getId(),splittingName);
 			Hashtable<String, Double>expMap=SqlUtilities.getHashtableExp(dataset);
 			Hashtable<String, Integer>htSplitNum=SqlUtilities.getHashtableSplitNum(model.getDatasetName(), splittingName);
 			
-			for (String smiles:htPreds.keySet()) {			
+			for (String smiles:htPreds.keySet()) {	
+				
+				if(expMap.get(smiles)==null) {
+//					System.out.println("Dont have exp for "+smiles);
+					continue;
+				}
+				
 				double exp=expMap.get(smiles);
 				double pred=htPreds.get(smiles);
 				int splitNum=htSplitNum.get(smiles); 			
@@ -510,7 +517,18 @@ public class RecalcStatsScript {
 	
 
 	public static void main(String[] args) {
-		writeExcelComparisons();
+//		writeExcelComparisons();
+
+		Model model = modelService.findById(285L);
+//		Splitting splitting=splittingService.findByName("RND_REPRESENTATIVE");
+		
+		SplitPredictions sp=RecalcStatsScript.SplitPredictions.getSplitPredictionsSql(model, "RND_REPRESENTATIVE");
+		
+		for (int i=0;i<sp.testSetPredictions.size();i++) {
+			ModelPrediction mp=sp.testSetPredictions.get(i);
+			System.out.println(mp.id+"\t"+mp.exp+"\t"+mp.pred);
+		}
+		
 	}
 
 }

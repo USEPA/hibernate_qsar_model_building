@@ -46,8 +46,8 @@ public class Method {
 	@Column(name="description_url", length=2047)
 	private String description_url;
 	
-	@Column(name="hyperparameters", length=2047)
-	private String hyperparameters;
+	@Column(name="hyperparameter_grid", length=2047)
+	private String hyperparameter_grid;
 	
 	@NotNull(message="Method type required")
 	@Column(name="is_binary")
@@ -72,11 +72,11 @@ public class Method {
 	
 	public Method() {}
 	
-	public Method(String name, String description,String description_url, String hyperparameters, Boolean isBinary, String createdBy) {
+	public Method(String name, String description,String description_url, String hyperparameter_grid, Boolean isBinary, String createdBy) {
 		this.setName(name);
 		this.setDescription(description);
 		this.setDescription_url(description_url);
-		this.setHyperparameters(hyperparameters);
+		this.setHyperparameter_grid(hyperparameter_grid);
 		this.setIsBinary(isBinary);
 		this.setCreatedBy(createdBy);
 		
@@ -106,12 +106,12 @@ public class Method {
 		this.description = description;
 	}
 
-	public String getHyperparameters() {
-		return hyperparameters;
+	public String getHyperparameter_grid() {
+		return hyperparameter_grid;
 	}
 
-	public void setHyperparameters(String hyperparameters) {
-		this.hyperparameters = hyperparameters;
+	public void setHyperparameter_grid(String hyperparameter_grid) {
+		this.hyperparameter_grid = hyperparameter_grid;
 	}
 
 	public Date getUpdatedAt() {

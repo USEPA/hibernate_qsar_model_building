@@ -22,6 +22,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.web_services.embedding_service.CalculationInfo;
+import gov.epa.web_services.embedding_service.CalculationInfoGA;
 
 /**
  * Class defining the data to be used for a particular model
@@ -39,6 +40,9 @@ public class ModelData {
 	public String trainingSetInstances;
 	public String predictionSetInstances;
 	public boolean useDTXCIDs;
+	
+	public int countTraining;
+	public int countPrediction;
 	
 	static SplittingServiceImpl splittingService=new SplittingServiceImpl();
 	static DatasetServiceImpl datasetService=new DatasetServiceImpl();
@@ -120,7 +124,9 @@ public class ModelData {
 		Dataset dataset=datasetService.findByName(datasetName);
 		Splitting splitting=splittingService.findByName(splittingName);
 		DescriptorSet descriptorSet=descriptorSetService.findByName(descriptorSetName);
-				
+		
+//		System.out.println("descriptorSetName"+descriptorSetName);
+		
 		String sql="select headers_tsv from qsar_descriptors.descriptor_sets d\n"+					
 					"where d.\"name\"='"+descriptorSetName+"';";
 		String instanceHeader="ID\tProperty\t"+SqlUtilities.runSQL(conn, sql)+"\r\n";
@@ -129,7 +135,8 @@ public class ModelData {
 		sql="select dp."+idField+", dp.qsar_property_value, dv.values_tsv, dpis.split_num from qsar_datasets.data_points dp\n"+ 
 		"join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
 		"join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
-		"where dp.fk_dataset_id="+dataset.getId()+" and dv.fk_descriptor_set_id="+descriptorSet.getId()+" and dpis.fk_splitting_id="+splitting.getId()+";";
+		"where dp.fk_dataset_id="+dataset.getId()+" and dv.fk_descriptor_set_id="+descriptorSet.getId()+" and dpis.fk_splitting_id="+splitting.getId()+
+		"order by dp."+idField+";";
 		
 //		System.out.println("\n"+sql);
 
@@ -186,6 +193,9 @@ public class ModelData {
 		
 		this.trainingSetInstances = sbTraining.toString();
 		this.predictionSetInstances = sbPrediction.toString();
+		this.countTraining=counterTrain;
+		this.countPrediction=counterTest;
+		
 	}
 	
 	

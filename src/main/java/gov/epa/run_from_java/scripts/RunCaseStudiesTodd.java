@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,8 @@ import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.run_from_java.scripts.ModelSetScript.ModelSet2;
 import gov.epa.web_services.ModelWebService;
 import gov.epa.web_services.embedding_service.CalculationInfo;
+import gov.epa.web_services.embedding_service.CalculationInfoGA;
+import gov.epa.web_services.embedding_service.CalculationInfoImportance;
 import gov.epa.web_services.embedding_service.EmbeddingWebService2;
 
 public class RunCaseStudiesTodd {
@@ -51,11 +54,11 @@ public class RunCaseStudiesTodd {
 	
 	static int portModelBuilding=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
 
-//	static String serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
-	static String serverModelBuilding=DevQsarConstants.SERVER_819;
+	static String serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+//	static String serverModelBuilding=DevQsarConstants.SERVER_819;
 //	static String serverModelBuilding="10.140.73.169";
 	
-	static String qsarMethodGA = DevQsarConstants.KNN;
+	static String qsarMethodEmbedding = DevQsarConstants.KNN;
 
 	static String descriptorSetName = DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 	//  ""T.E.S.T. 5.1",	"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default",
@@ -64,8 +67,12 @@ public class RunCaseStudiesTodd {
 			DevQsarConstants.SVM };
 	
 	static String[] methodsConsensusNoKNN = { DevQsarConstants.RF, DevQsarConstants.XGB,DevQsarConstants.SVM };
+
+	static String[] methodsConsensusRF_XGB = { DevQsarConstants.RF, DevQsarConstants.XGB};
+
 	
 	public static void runCaseStudyOPERA() {
+		boolean use_pmml=false;
 		
 		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
@@ -92,10 +99,10 @@ public class RunCaseStudiesTodd {
 		String datasetName = endpoint +" "+sampleSource;
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 		
-		CalculationInfo ci = new CalculationInfo();
+		CalculationInfoGA ci = new CalculationInfoGA();
 		ci.num_generations = 100;
 		ci.remove_log_p = removeLogDescriptors;
-		ci.qsarMethodGA = qsarMethodGA;
+		ci.qsarMethodEmbedding = qsarMethodEmbedding;
 		ci.datasetName=datasetName;
 		ci.descriptorSetName=descriptorSetName;
 		ci.splittingName=sampleSource;
@@ -109,7 +116,7 @@ public class RunCaseStudiesTodd {
 //		}
 		
 		if (descriptorEmbedding == null) {
-			descriptorEmbedding = ews2.generateEmbedding(serverModelBuilding, portModelBuilding, lanId,ci);
+			descriptorEmbedding = ews2.generateGA_Embedding(lanId,ci);
 			System.out.println("New embedding from web service:"+descriptorEmbedding.getEmbeddingTsv());
 		} else {
 			System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
@@ -121,7 +128,7 @@ public class RunCaseStudiesTodd {
 
 		for (String method:methods) {
 			System.out.println(method + "descriptor" + descriptorSetName);
-			ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
+			ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci, use_pmml);
 		}
 		
 		buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName, methodsConsensus);
@@ -130,7 +137,7 @@ public class RunCaseStudiesTodd {
 	
 	
 	public static void runCaseStudyTest_All_Endpoints() {
-		
+		boolean use_pmml=false;
 		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
 		portModelBuilding=5004;
 
@@ -156,10 +163,10 @@ public class RunCaseStudiesTodd {
 			String datasetName = endpoint +" "+sampleSource;
 			boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 
-			CalculationInfo ci = new CalculationInfo();
+			CalculationInfoGA ci = new CalculationInfoGA();
 			ci.num_generations = 1;
 			ci.remove_log_p = removeLogDescriptors;
-			ci.qsarMethodGA = qsarMethodGA;
+			ci.qsarMethodEmbedding = qsarMethodEmbedding;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=sampleSource;
@@ -167,7 +174,7 @@ public class RunCaseStudiesTodd {
 			DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);
 
 			if (descriptorEmbedding == null) {
-				descriptorEmbedding = ews2.generateEmbedding(serverModelBuilding, portModelBuilding, lanId,ci);
+				descriptorEmbedding = ews2.generateGA_Embedding(lanId,ci);
 				System.out.println("New embedding from web service:"+descriptorEmbedding.getEmbeddingTsv());
 			} else {
 				System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
@@ -179,7 +186,7 @@ public class RunCaseStudiesTodd {
 
 			for (String method:methods) {
 				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml);
 			}
 
 			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methodsConsensus);
@@ -190,7 +197,7 @@ public class RunCaseStudiesTodd {
 	
 	public static void runCaseStudyTest() {
 		lanId="tmarti02";
-		
+		boolean use_pmml=false;
 		boolean buildModel=true;
 		
 		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
@@ -205,10 +212,10 @@ public class RunCaseStudiesTodd {
 		String datasetName = endpoint +" "+sampleSource;
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 
-		CalculationInfo ci = new CalculationInfo();
+		CalculationInfoGA ci = new CalculationInfoGA();
 		ci.num_generations = 100;
 		ci.remove_log_p = removeLogDescriptors;
-		ci.qsarMethodGA = qsarMethodGA;
+		ci.qsarMethodEmbedding = qsarMethodEmbedding;
 		ci.datasetName=datasetName;
 		ci.descriptorSetName=descriptorSetName;
 		ci.splittingName=sampleSource;
@@ -216,7 +223,7 @@ public class RunCaseStudiesTodd {
 		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);
 
 		if (descriptorEmbedding == null) {
-			descriptorEmbedding = ews2.generateEmbedding(serverModelBuilding, portModelBuilding, lanId,ci);
+			descriptorEmbedding = ews2.generateGA_Embedding(lanId,ci);
 			System.out.println("New embedding from web service:"+descriptorEmbedding.getEmbeddingTsv());
 		} else {
 			System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
@@ -225,7 +232,7 @@ public class RunCaseStudiesTodd {
 		if (!buildModel) return;//skip model building
 
 		System.out.println(method + "descriptor" + descriptorSetName);
-		ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
+		ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml);
 
 
 	}
@@ -233,7 +240,7 @@ public class RunCaseStudiesTodd {
 	
 
 	public static void runCaseStudyExpProp_All_Endpoints() {
-		
+		boolean use_pmml=false;
 		lanId="tmarti02";		
 		boolean buildModels=false;
 		
@@ -257,12 +264,14 @@ public class RunCaseStudiesTodd {
 //		datasetNames.add("BP from exp_prop and chemprop v3");
 //		datasetNames.add("MP from exp_prop and chemprop v2");
 
-		datasetNames.add("HLC v1");
-		datasetNames.add("VP v1");
-		datasetNames.add("WS v1");
-		datasetNames.add("BP v1");
-		datasetNames.add("LogP v1");
-		datasetNames.add("MP v1");
+//		datasetNames.add("HLC v1");
+//		datasetNames.add("VP v1");
+//		datasetNames.add("WS v1");
+//		datasetNames.add("BP v1");
+//		datasetNames.add("LogP v1");
+//		datasetNames.add("MP v1");
+		
+		datasetNames.add("WS v1 res_qsar");
 
 		
 //		datasetNames.add("pKa_a from exp_prop and chemprop");
@@ -281,20 +290,19 @@ public class RunCaseStudiesTodd {
 			boolean remove_log_p = false;
 			if(datasetName.contains("LogP")) remove_log_p=true;
 			
-			CalculationInfo ci = new CalculationInfo();
+			CalculationInfoGA ci = new CalculationInfoGA();
 			ci.num_generations = 100;			
 			
 //			if (datasetName.contains("BP") && !splitting.equals(SplittingGeneratorPFAS_Script.splittingPFASOnly))
 //				ci.num_generations = 10;// takes too long to do 100
 
 			ci.remove_log_p = remove_log_p;
-			ci.qsarMethodGA = qsarMethodGA;
+			ci.qsarMethodEmbedding = qsarMethodEmbedding;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=splitting;
 //			ci.num_jobs=4;
 			
-					
 			System.out.println("\n***"+datasetName+"\t"+splitting+"\t"+"num_generations="+ci.num_generations+"***");
 			
 			DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);
@@ -307,7 +315,7 @@ public class RunCaseStudiesTodd {
 
 			if (descriptorEmbedding == null) {
 				System.out.println("Dont have existing embedding:"+ci.toString());
-				descriptorEmbedding = ews2.generateEmbedding(serverModelBuilding, portModelBuilding, lanId,ci);
+				descriptorEmbedding = ews2.generateGA_Embedding(lanId,ci);
 				System.out.println("New embedding from web service:"+descriptorEmbedding.getEmbeddingTsv());
 //				continue;
 			} else {
@@ -324,7 +332,7 @@ public class RunCaseStudiesTodd {
 			
 			for (String method:methods) {
 				System.out.println(method + "\t"+ descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml);
 			}
 						
 			List<Long>modelIds=buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methodsConsensus);
@@ -334,6 +342,130 @@ public class RunCaseStudiesTodd {
 		}
 
 	}
+	
+	
+
+	
+	/**
+	 * This method uses embedding built specifically for the qsar method
+	 * 
+	 */
+	public static void runCaseStudyExpProp_All_Endpoints2() {
+//		boolean use_pmml=false;
+		boolean use_pmml=true;
+		
+		
+		lanId="tmarti02";		
+		boolean buildModels=true;
+		boolean buildConsensus=false;
+		
+//		serverModelBuilding=DevQsarConstants.SERVER_819;
+//		portModelBuilding=5014;
+
+		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+		portModelBuilding=5004;
+		
+		ModelWebService.num_jobs=8;
+		
+		EmbeddingWebService2 ews2 = new EmbeddingWebService2(serverModelBuilding, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
+
+		List<String>datasetNames=new ArrayList<>();
+
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("WS from exp_prop and chemprop v2");
+//		datasetNames.add("BP from exp_prop and chemprop v3");
+//		datasetNames.add("MP from exp_prop and chemprop v2");
+
+//		datasetNames.add("HLC v1");
+//		datasetNames.add("VP v1");
+//		datasetNames.add("WS v1");
+//		datasetNames.add("BP v1");
+//		datasetNames.add("LogP v1");
+//		datasetNames.add("MP v1");
+		
+		datasetNames.add("HLC v1 res_qsar");
+//		datasetNames.add("WS v1 res_qsar");
+//		datasetNames.add("VP v1 res_qsar");
+//		datasetNames.add("BP v1 res_qsar");
+//		datasetNames.add("LogP v1 res_qsar");
+//		datasetNames.add("MP v1 res_qsar");
+		
+//		datasetNames.add("pKa_a from exp_prop and chemprop");
+//		datasetNames.add("pKa_b from exp_prop and chemprop");
+
+		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;		
+//		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+//		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+
+		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		
+//		System.out.println("\n*** portNumber="+portModelBuilding+" ***");
+		
+		for (String datasetName:datasetNames) {
+						
+			boolean remove_log_p = false;
+			if(datasetName.contains("LogP")) remove_log_p=true;
+			
+			List<String>methods=new ArrayList<>();			
+			methods.add(DevQsarConstants.RF);
+//			methods.add(DevQsarConstants.XGB);
+			
+//			methods.add(DevQsarConstants.KNN);//takes forever to run GA
+//			methods.add(DevQsarConstants.SVM);//*** We dont have way yet to make embedding based on this method unless use GA
+			
+			for (String method:methods) {
+				
+				if (!buildModels) continue;
+
+				CalculationInfo ci = new CalculationInfo();
+				ci.remove_log_p = remove_log_p;
+				ci.qsarMethodEmbedding = qsarMethodEmbedding;
+				ci.datasetName=datasetName;
+				ci.descriptorSetName=descriptorSetName;
+				ci.splittingName=splitting;
+				ci.qsarMethodEmbedding=method;
+
+				System.out.println("\n***********************\n"+ci.toString2());
+				
+				DescriptorEmbedding descriptorEmbedding=null;
+				
+				if(method.equals(DevQsarConstants.KNN)) {
+					descriptorEmbedding=ews2.getEmbeddingGA(ci,lanId);
+				} else if (method.equals(DevQsarConstants.RF) || method.equals(DevQsarConstants.XGB)) {
+					descriptorEmbedding=ews2.generateImportanceEmbedding(ci,lanId,true,true);
+				}
+				
+//				if(true) continue;
+
+				System.out.println(method+"\t"+descriptorEmbedding.getEmbeddingTsv());
+
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml);
+			}
+						
+			
+			if(!buildConsensus) return;
+			
+//			String[] methodsConsensus = { DevQsarConstants.KNN, DevQsarConstants.RF, DevQsarConstants.XGB};
+			
+
+			List<Long>modelIds=buildConsensusModelForEmbeddedModels2(datasetName, methodsConsensusRF_XGB,splitting);
+			
+			if(modelIds!=null) assignModelSetWithEmbedding(splitting, modelIds);
+			
+		}
+
+	}
+	
+
+
+
+	
+
+	
+	
+	
 
 	public static void printEmbeddings() {
 		
@@ -365,10 +497,10 @@ public class RunCaseStudiesTodd {
 			boolean remove_log_p = false;
 			if(datasetName.contains("LogP")) remove_log_p=true;
 			
-			CalculationInfo ci = new CalculationInfo();
+			CalculationInfoGA ci = new CalculationInfoGA();
 			ci.num_generations = 100;			
 			ci.remove_log_p = remove_log_p;
-			ci.qsarMethodGA = qsarMethodGA;
+			ci.qsarMethodEmbedding = qsarMethodEmbedding;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=splitting;
@@ -393,7 +525,7 @@ public class RunCaseStudiesTodd {
 
 
 	public static void runCaseStudyExpProp_All_Endpoints_No_Embedding() {
-		
+		boolean use_pmml=false;
 		lanId="tmarti02";		
 		
 		ModelWebService.num_jobs=8;
@@ -448,9 +580,9 @@ public class RunCaseStudiesTodd {
 			boolean remove_log_p = false;
 			if(datasetName.contains("LogP")) remove_log_p=true;
 						
-			CalculationInfo ci=new CalculationInfo();
+			CalculationInfoGA ci=new CalculationInfoGA();
 			ci.remove_log_p = remove_log_p;
-			ci.qsarMethodGA = qsarMethodGA;
+			ci.qsarMethodEmbedding = qsarMethodEmbedding;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=splitting;
@@ -475,7 +607,7 @@ public class RunCaseStudiesTodd {
 
 			for (String method:methods) {
 				System.out.println(method + "\t" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci,use_pmml);
 			}
 			
 			buildConsensusModel(datasetName,splitting,descriptorSetName,methodsConsensus);
@@ -513,9 +645,9 @@ public class RunCaseStudiesTodd {
 			boolean remove_log_p = false;
 			if(datasetName.contains("LogP")) remove_log_p=true;
 						
-			CalculationInfo ci=new CalculationInfo();
+			CalculationInfoGA ci=new CalculationInfoGA();
 			ci.remove_log_p = remove_log_p;
-			ci.qsarMethodGA = qsarMethodGA;
+			ci.qsarMethodEmbedding = qsarMethodEmbedding;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=splitting;
@@ -536,76 +668,9 @@ public class RunCaseStudiesTodd {
 	
 	
 	public static void runCaseStudyExpProp_All_Endpoints_No_Embedding_Omit_kNN() {
-		
-		boolean buildIndividualModels=false;
-
-		lanId="tmarti02";		
-		ModelWebService.num_jobs=8;
-
-		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
-		portModelBuilding=5004;
-		
-//		serverModelBuilding=DevQsarConstants.SERVER_819;
-//		portModelBuilding=5014;
-
-		List<String>datasetNames=new ArrayList<>();
-
-		datasetNames.add("HLC v1");
-		datasetNames.add("VP v1");
-		datasetNames.add("WS v1");
-		datasetNames.add("BP v1");
-		datasetNames.add("LogP v1");
-		datasetNames.add("MP v1");
-
-
-//		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;
-		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;		
-//		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
-
-		System.out.println("\n*** portNumber="+portModelBuilding+" ***");
-		
-		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
-		
-		for (String datasetName:datasetNames) {
-						
-			boolean remove_log_p = false;
-			if(datasetName.contains("LogP")) remove_log_p=true;
-						
-			CalculationInfo ci=new CalculationInfo();
-			ci.remove_log_p = remove_log_p;
-			ci.qsarMethodGA = qsarMethodGA;
-			ci.datasetName=datasetName;
-			ci.descriptorSetName=descriptorSetName;
-			ci.splittingName=splitting;
-					
-			System.out.println("\n***"+datasetName+"\t"+splitting+"***");
-
-			if (buildIndividualModels) {
-				
-				List<String>methods=new ArrayList<>();			
-				
-				methods.add(DevQsarConstants.RF);
-				methods.add(DevQsarConstants.XGB);
-				methods.add(DevQsarConstants.SVM);
-
-				for (String method:methods) {
-					System.out.println(method + "\t" + descriptorSetName);
-					ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci);
-				}
-			}
-			
-			List<Long>modelIds=buildConsensusModel2(datasetName,splitting,descriptorSetName,methodsConsensusNoKNN);
-
-			assignModelSetNoEmbedding(splitting, modelIds);
-			
-		}
-
-	}
-	
-
-	public static void runCaseStudyExpProp_All_Endpoints_No_Embedding_Include_kNN() {
-		
+		boolean use_pmml=false;
 		boolean buildIndividualModels=true;
+		boolean buildConsensusModels=false;
 
 		lanId="tmarti02";		
 		ModelWebService.num_jobs=8;
@@ -625,8 +690,13 @@ public class RunCaseStudiesTodd {
 //		datasetNames.add("LogP v1");
 //		datasetNames.add("MP v1");
 
+//		datasetNames.add("HLC v1 res_qsar");
 		datasetNames.add("WS v1 res_qsar");
-		
+//		datasetNames.add("VP v1 res_qsar");
+//		datasetNames.add("BP v1 res_qsar");
+//		datasetNames.add("LogP v1 res_qsar");
+//		datasetNames.add("MP v1 res_qsar");
+
 
 //		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;
 		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;		
@@ -641,9 +711,83 @@ public class RunCaseStudiesTodd {
 			boolean remove_log_p = false;
 			if(datasetName.contains("LogP")) remove_log_p=true;
 						
-			CalculationInfo ci=new CalculationInfo();
+			CalculationInfoGA ci=new CalculationInfoGA();
 			ci.remove_log_p = remove_log_p;
-			ci.qsarMethodGA = qsarMethodGA;
+			ci.qsarMethodEmbedding = qsarMethodEmbedding;
+			ci.datasetName=datasetName;
+			ci.descriptorSetName=descriptorSetName;
+			ci.splittingName=splitting;
+					
+			System.out.println("\n***"+datasetName+"\t"+splitting+"***");
+
+			if (buildIndividualModels) {
+				
+				List<String>methods=new ArrayList<>();			
+				
+//				methods.add(DevQsarConstants.KNN);
+				methods.add(DevQsarConstants.RF);
+				methods.add(DevQsarConstants.XGB);
+//				methods.add(DevQsarConstants.SVM);
+
+				for (String method:methods) {
+					System.out.println(method + "\t" + descriptorSetName);
+					ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci,use_pmml);
+				}
+			}
+			
+			if (buildConsensusModels) {
+//				List<Long>modelIds=buildConsensusModel2(datasetName,splitting,descriptorSetName,methodsConsensusNoKNN);
+				List<Long>modelIds=buildConsensusModel2(datasetName,splitting,descriptorSetName,methodsConsensusRF_XGB);
+				assignModelSetNoEmbedding(splitting, modelIds);
+			}
+			
+		}
+
+	}
+	
+
+	public static void runCaseStudyExpProp_All_Endpoints_No_Embedding_Include_kNN() {
+		boolean use_pmml=false;
+		boolean buildIndividualModels=true;
+		boolean buildConsensus=false;
+
+		lanId="tmarti02";		
+		ModelWebService.num_jobs=8;
+
+		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+		portModelBuilding=5004;
+		
+//		serverModelBuilding=DevQsarConstants.SERVER_819;
+//		portModelBuilding=5014;
+
+		List<String>datasetNames=new ArrayList<>();
+
+		datasetNames.add("HLC v1 res_qsar");
+//		datasetNames.add("VP v1");
+//		datasetNames.add("WS v1");
+//		datasetNames.add("BP v1");
+//		datasetNames.add("LogP v1");
+//		datasetNames.add("MP v1");
+
+//		datasetNames.add("WS v1 res_qsar");
+		
+
+		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;
+//		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;		
+//		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+
+		System.out.println("\n*** portNumber="+portModelBuilding+" ***");
+		
+		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		
+		for (String datasetName:datasetNames) {
+						
+			boolean remove_log_p = false;
+			if(datasetName.contains("LogP")) remove_log_p=true;
+						
+			CalculationInfoGA ci=new CalculationInfoGA();
+			ci.remove_log_p = remove_log_p;
+			ci.qsarMethodEmbedding = qsarMethodEmbedding;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=splitting;
@@ -661,9 +805,11 @@ public class RunCaseStudiesTodd {
 
 				for (String method:methods) {
 					System.out.println(method + "\t" + descriptorSetName);
-					ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci);
+					ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci,use_pmml);
 				}
 			}
+			
+			if(!buildConsensus) return;
 			
 			List<Long>modelIds=buildConsensusModel2(datasetName,splitting,descriptorSetName,methodsConsensus);
 
@@ -737,6 +883,9 @@ public class RunCaseStudiesTodd {
 		
 		long modelId=1702L;
 		String qsarMethod=DevQsarConstants.KNN;
+		
+		boolean use_pmml=false;
+		
 								
 		boolean remove_log_p = false;
 		
@@ -748,18 +897,19 @@ public class RunCaseStudiesTodd {
 		Model model=modelService.findById(modelId);
 		
 		//Run cross validation:
-		mb.crossValidate.crossValidate(model, remove_log_p, ModelWebService.num_jobs, postPredictions);
+		mb.crossValidate.crossValidate(model, remove_log_p, ModelWebService.num_jobs, postPredictions,use_pmml);
 		
 		ModelData modelData = ModelData.initModelData(model.getDatasetName(), model.getDescriptorSetName(), model.getSplittingName(), remove_log_p,false);
 
 		//Run test set predictions:
-		mb.predict(modelData, qsarMethod, modelId);
+		mb.predict(modelData, qsarMethod, modelId,use_pmml);
 				
 //		mb.predictTraining(modelData, qsarMethod, modelId);
 	}
 	
 	
 	public static void runCaseStudyOPERA_All_Endpoints() {
+		boolean use_pmml=false;
 		String server=DevQsarConstants.SERVER_LOCAL;
 		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(server, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
@@ -779,10 +929,10 @@ public class RunCaseStudiesTodd {
 			String datasetName = endpoint +" "+sampleSource;
 			boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 
-			CalculationInfo ci = new CalculationInfo();
+			CalculationInfoGA ci = new CalculationInfoGA();
 			ci.num_generations = 100;
 			ci.remove_log_p = removeLogDescriptors;
-			ci.qsarMethodGA = qsarMethodGA;
+			ci.qsarMethodEmbedding = qsarMethodEmbedding;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=sampleSource;
@@ -790,7 +940,7 @@ public class RunCaseStudiesTodd {
 			DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);
 
 			if (descriptorEmbedding == null) {
-				descriptorEmbedding = ews2.generateEmbedding(server, portModelBuilding, lanId,ci);
+				descriptorEmbedding = ews2.generateGA_Embedding(lanId,ci);
 				System.out.println("New embedding from web service:"+descriptorEmbedding.getEmbeddingTsv());
 			} else {
 				System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
@@ -803,7 +953,7 @@ public class RunCaseStudiesTodd {
 
 			for (String method:methods) {
 				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,server,portModelBuilding,method,descriptorEmbedding,ci);
+				ModelBuildingScript.buildModel(lanId,server,portModelBuilding,method,descriptorEmbedding,ci,use_pmml);
 			}
 
 			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methodsConsensus);
@@ -973,10 +1123,85 @@ public class RunCaseStudiesTodd {
 		
 	}
 
+	
+	private static List<Long> buildConsensusModelForEmbeddedModels2(String datasetName, String[] methodsConsensus,String splittingName) {
+		ModelServiceImpl modelService=new ModelServiceImpl();
+		List<Model>models=modelService.findByDatasetName(datasetName);
+		
+		Set<Long> consensusModelIDs = new HashSet<Long>();
+		
+		List<String>remainingMethodsToInclude=new ArrayList<>();
+		for (String method:methodsConsensus) remainingMethodsToInclude.add(method);
+		
+//		System.out.println(remainingMethodsToInclude.size());
+		
+		
+		for (Model model:models) {
+
+			if (!model.getMethod().getName().contains("_")) continue;
+			if (!model.getSplittingName().equals(splittingName)) continue;
+
+			String modelAbbrev=model.getMethod().getName();
+			modelAbbrev=modelAbbrev.substring(0,modelAbbrev.indexOf("_"));
+
+			if (model.getDescriptorEmbedding()==null) continue;//this will skip consensus models			
+			
+			if(!modelAbbrev.equals(model.getDescriptorEmbedding().getQsarMethod())) {
+				continue;
+			}
+			
+			boolean methodInConsensusList=false;
+			for (String methodAbbrev:methodsConsensus) {
+				if(modelAbbrev.equals(methodAbbrev)) {
+					methodInConsensusList=true;
+					break;
+				}
+			}				
+			if(!methodInConsensusList) continue;
+
+			System.out.println(model.getId()+"\t"+model.getMethod().getName()+"\t"+model.getDescriptorEmbedding().getQsarMethod());
+			remainingMethodsToInclude.remove(modelAbbrev);
+			consensusModelIDs.add(model.getId());
+		}
+		
+		
+//		System.out.println(remainingMethodsToInclude.size());
+		
+		if (remainingMethodsToInclude.size()>0) {
+			System.out.println("Havent created all required methods for consensus");
+			return null;
+		}
+		
+		boolean OK=areModelsOKForConsensus(methodsConsensus, consensusModelIDs);
+		
+		if(OK) {
+			System.out.println("ok to build consensus");	
+		} else {
+			return null;
+		}
+		
+		
+//		if(true) {
+//			System.out.println("Need to uncomment 1234");
+//			return null;
+//		}
+		
+		Long modelIdConsensus=ModelBuildingScript.buildUnweightedConsensusModel(consensusModelIDs, lanId);
+		
+		System.out.println("model built");
+		
+		List<Long>modelIds=new ArrayList<>();//model ids including consensus model
+		for (Long id:consensusModelIDs) {
+			modelIds.add(id);
+		}
+		modelIds.add(modelIdConsensus);
+		return modelIds;
+		
+	}
 
 	private static boolean areModelsOKForConsensus(String [] methodsConsensus, Set<Long> consensusModelIDs) {
 
-		System.out.println("Enter areModelsOKForConsensus");
+//		System.out.println("Enter areModelsOKForConsensus");
 		
 		
 		if(methodsConsensus.length !=consensusModelIDs.size()) {
@@ -994,7 +1219,7 @@ public class RunCaseStudiesTodd {
 			String sql="select count(id) from qsar_models.predictions p where p.fk_model_id="+modelID+";";
 			String result=SqlUtilities.runSQL(conn, sql);
 			counts.add(Integer.parseInt(result));
-			System.out.println(modelID+"\t"+result);
+//			System.out.println(modelID+"\t"+result);
 		}
 		
 		int count0=counts.get(0);
@@ -1011,7 +1236,7 @@ public class RunCaseStudiesTodd {
 		}
 		
 		if(!allMatch) {
-			System.out.println("mismatch in prediction size");
+			System.out.println("mismatch in predictions size for methods in consensus");
 			return false;
 		}
 		
@@ -1081,12 +1306,15 @@ public class RunCaseStudiesTodd {
 //		printDataSetSize();
 //		printEmbeddings();
 		
-//		runCaseStudyExpProp_All_Endpoints();		
-//		runCaseStudyExpProp_All_Endpoints_No_Embedding();
-//		runCaseStudyExpProp_All_Endpoints_No_Embedding_Omit_kNN();
-		runCaseStudyExpProp_All_Endpoints_No_Embedding_Include_kNN();
-//		runCV_and_Predict_for_Model();
+//		runCaseStudyExpProp_All_Endpoints();
 		
+		runCaseStudyExpProp_All_Endpoints2();
+//		runCaseStudyExpProp_All_Endpoints_No_Embedding_Omit_kNN();
+		
+//		runCaseStudyExpProp_All_Endpoints_No_Embedding();
+//		runCaseStudyExpProp_All_Endpoints_No_Embedding_Include_kNN();
+		
+//		runCV_and_Predict_for_Model();
 		
 	}
 	

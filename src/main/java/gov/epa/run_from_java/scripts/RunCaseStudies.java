@@ -30,7 +30,7 @@ import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.ModelStatisticCalculator;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
-import gov.epa.web_services.embedding_service.CalculationInfo;
+import gov.epa.web_services.embedding_service.CalculationInfoGA;
 import gov.epa.web_services.embedding_service.EmbeddingWebService2;
 
 public class RunCaseStudies {
@@ -51,7 +51,7 @@ public class RunCaseStudies {
 
 	
 	public static void runCaseStudyOPERA() {
-		
+		boolean use_pmml=false;
 		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
 
@@ -77,10 +77,10 @@ public class RunCaseStudies {
 		String datasetName = endpoint +" "+sampleSource;
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 		
-		CalculationInfo ci = new CalculationInfo();
+		CalculationInfoGA ci = new CalculationInfoGA();
 		ci.num_generations = 100;
 		ci.remove_log_p = removeLogDescriptors;
-		ci.qsarMethodGA = qsarMethodGA;
+		ci.qsarMethodEmbedding = qsarMethodGA;
 		ci.datasetName=datasetName;
 		ci.descriptorSetName=descriptorSetName;
 		ci.splittingName=sampleSource;
@@ -94,7 +94,7 @@ public class RunCaseStudies {
 //		}
 		
 		if (descriptorEmbedding == null) {
-			descriptorEmbedding = ews2.generateEmbedding(serverModelBuilding, portModelBuilding, lanId,ci);
+			descriptorEmbedding = ews2.generateGA_Embedding(lanId,ci);
 			System.out.println("New embedding from web service:"+descriptorEmbedding.getEmbeddingTsv());
 		} else {
 			System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
@@ -106,7 +106,7 @@ public class RunCaseStudies {
 
 		for (String method:methods) {
 			System.out.println(method + "descriptor" + descriptorSetName);
-			ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
+			ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,false);
 		}
 		
 		buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName, methods.length);
@@ -115,7 +115,7 @@ public class RunCaseStudies {
 	
 	
 	public static void runCaseStudyTest_All_Endpoints() {
-		
+		boolean use_pmml=false;
 		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
 
@@ -134,10 +134,10 @@ public class RunCaseStudies {
 			String datasetName = endpoint +" "+sampleSource;
 			boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 
-			CalculationInfo ci = new CalculationInfo();
+			CalculationInfoGA ci = new CalculationInfoGA();
 			ci.num_generations = 100;
 			ci.remove_log_p = removeLogDescriptors;
-			ci.qsarMethodGA = qsarMethodGA;
+			ci.qsarMethodEmbedding = qsarMethodGA;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=sampleSource;
@@ -145,7 +145,7 @@ public class RunCaseStudies {
 			DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);
 
 			if (descriptorEmbedding == null) {
-				descriptorEmbedding = ews2.generateEmbedding(serverModelBuilding, portModelBuilding, lanId,ci);
+				descriptorEmbedding = ews2.generateGA_Embedding(lanId,ci);
 				System.out.println("New embedding from web service:"+descriptorEmbedding.getEmbeddingTsv());
 			} else {
 				System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
@@ -157,7 +157,7 @@ public class RunCaseStudies {
 
 			for (String method:methods) {
 				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml);
 			}
 
 			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methods.length);
@@ -167,6 +167,7 @@ public class RunCaseStudies {
 	}
 	
 	public static void runCaseStudyTest() {
+		boolean use_pmml=false;
 		lanId="tmarti02";
 		
 		boolean buildModel=true;
@@ -183,10 +184,10 @@ public class RunCaseStudies {
 		String datasetName = endpoint +" "+sampleSource;
 		boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 
-		CalculationInfo ci = new CalculationInfo();
+		CalculationInfoGA ci = new CalculationInfoGA();
 		ci.num_generations = 100;
 		ci.remove_log_p = removeLogDescriptors;
-		ci.qsarMethodGA = qsarMethodGA;
+		ci.qsarMethodEmbedding = qsarMethodGA;
 		ci.datasetName=datasetName;
 		ci.descriptorSetName=descriptorSetName;
 		ci.splittingName=sampleSource;
@@ -194,7 +195,7 @@ public class RunCaseStudies {
 		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);
 
 		if (descriptorEmbedding == null) {
-			descriptorEmbedding = ews2.generateEmbedding(serverModelBuilding, portModelBuilding, lanId,ci);
+			descriptorEmbedding = ews2.generateGA_Embedding(lanId,ci);
 			System.out.println("New embedding from web service:"+descriptorEmbedding.getEmbeddingTsv());
 		} else {
 			System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
@@ -203,7 +204,7 @@ public class RunCaseStudies {
 		if (!buildModel) return;//skip model building
 
 		System.out.println(method + "descriptor" + descriptorSetName);
-		ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
+		ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml);
 
 
 	}
@@ -211,7 +212,7 @@ public class RunCaseStudies {
 	
 
 	public static void runCaseStudyExpProp_All_Endpoints() {
-		
+		boolean use_pmml=false;
 		lanId="cramslan";		
 		boolean buildModels=true;
 		
@@ -242,12 +243,12 @@ public class RunCaseStudies {
 			boolean remove_log_p = false;
 			if(datasetName.contains("LogP")) remove_log_p=true;
 			
-			CalculationInfo ci = new CalculationInfo();
+			CalculationInfoGA ci = new CalculationInfoGA();
 			ci.num_generations = 100;			
 			if (datasetName.contains("BP") || splitting.equals("T=all but PFAS, P=PFAS")) ci.num_generations=10;//takes too long to do 100			
 
 			ci.remove_log_p = remove_log_p;
-			ci.qsarMethodGA = qsarMethodGA;
+			ci.qsarMethodEmbedding = qsarMethodGA;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=splitting;
@@ -284,7 +285,7 @@ public class RunCaseStudies {
 
 			for (String method:methods) {
 				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml);
 			}
 //			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methods.length);
 		}
@@ -293,7 +294,7 @@ public class RunCaseStudies {
 	
 	
 	public static void runCaseStudyExpProp_All_Endpoints_No_Embedding() {
-		
+		boolean use_pmml=false;
 		lanId="cramslan";		
 		
 		serverModelBuilding=DevQsarConstants.SERVER_819;
@@ -322,9 +323,9 @@ public class RunCaseStudies {
 			boolean remove_log_p = false;
 			if(datasetName.contains("LogP")) remove_log_p=true;
 						
-			CalculationInfo ci=new CalculationInfo();
+			CalculationInfoGA ci=new CalculationInfoGA();
 			ci.remove_log_p = remove_log_p;
-			ci.qsarMethodGA = qsarMethodGA;
+			ci.qsarMethodEmbedding = qsarMethodGA;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=splitting;
@@ -341,7 +342,7 @@ public class RunCaseStudies {
 
 			for (String method:methods) {
 				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci,use_pmml);
 			}
 			
 			buildConsensusModel(datasetName,splitting,descriptorSetName,methods.length);
@@ -352,6 +353,7 @@ public class RunCaseStudies {
 	
 	
 	public static void runCaseStudyOPERA_All_Endpoints() {
+		boolean use_pmml=false;
 		String server=DevQsarConstants.SERVER_819;
 		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(server, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
@@ -373,10 +375,10 @@ public class RunCaseStudies {
 			String datasetName = endpoint +" "+sampleSource;
 			boolean removeLogDescriptors=endpoint.equals(DevQsarConstants.LOG_KOW);
 
-			CalculationInfo ci = new CalculationInfo();
+			CalculationInfoGA ci = new CalculationInfoGA();
 			ci.num_generations = 100;
 			ci.remove_log_p = removeLogDescriptors;
-			ci.qsarMethodGA = qsarMethodGA;
+			ci.qsarMethodEmbedding = qsarMethodGA;
 			ci.datasetName=datasetName;
 			ci.descriptorSetName=descriptorSetName;
 			ci.splittingName=sampleSource;
@@ -384,7 +386,7 @@ public class RunCaseStudies {
 			DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ci);
 
 			if (descriptorEmbedding == null) {
-				descriptorEmbedding = ews2.generateEmbedding(server, portModelBuilding, lanId,ci);
+				descriptorEmbedding = ews2.generateGA_Embedding( lanId,ci);
 				System.out.println("New embedding from web service:"+descriptorEmbedding.getEmbeddingTsv());
 			} else {
 				System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
@@ -396,7 +398,7 @@ public class RunCaseStudies {
 
 			for (String method:methods) {
 				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,server,portModelBuilding,method,descriptorEmbedding,ci);
+				ModelBuildingScript.buildModel(lanId,server,portModelBuilding,method,descriptorEmbedding,ci,false);
 			}
 
 			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methods.length);

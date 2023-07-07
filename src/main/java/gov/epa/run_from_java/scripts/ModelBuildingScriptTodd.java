@@ -13,7 +13,8 @@ public class ModelBuildingScriptTodd {
 
 
 	void buildPostgresModel() {
-
+		boolean use_pmml=false;
+		
 		String lanId="tmarti02";
 
 		String methodName=DevQsarConstants.RF;
@@ -43,7 +44,7 @@ public class ModelBuildingScriptTodd {
 		String embeddingName=null;
 		
 		ModelBuildingScript.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-				splittingName, removeLogDescriptors,methodName,lanId,embeddingName,usePythonStorage);
+				splittingName, removeLogDescriptors,methodName,lanId,embeddingName,usePythonStorage,use_pmml);
 		
 		
 //		Long[] sourceArray = { 182L,183L,184L,185L };
@@ -62,6 +63,7 @@ public class ModelBuildingScriptTodd {
 	}
 
 	void buildSampleSetModel() {
+		boolean use_pmml=false;
 		String lanId="tmarti02";
 		String sampleSource="OPERA";
 //		String sampleSource="TEST";
@@ -106,7 +108,7 @@ public class ModelBuildingScriptTodd {
 
 		//	
 		ModelBuildingScript.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-				splittingName, removeLogDescriptors,methodName,lanId,embeddingName,usePythonStorage);
+				splittingName, removeLogDescriptors,methodName,lanId,embeddingName,usePythonStorage,use_pmml);
 		
 		long modelSetID=1L;
 		

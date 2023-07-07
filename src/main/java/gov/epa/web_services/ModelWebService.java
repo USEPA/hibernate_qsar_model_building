@@ -3,8 +3,31 @@ package gov.epa.web_services;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-import gov.epa.web_services.embedding_service.CalculationInfo;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.valery.SDE_Prediction_Request;
+import gov.epa.web_services.embedding_service.CalculationInfoGA;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
@@ -21,9 +44,10 @@ public class ModelWebService extends WebService {
 		super(server, port);
 	}
 
-	public HttpResponse<byte[]> callTrain(String trainingSet, Boolean removeLogDescriptors, String qsarMethod, String modelId) {
+	public HttpResponse<byte[]> callTrain(String trainingSet, Boolean removeLogDescriptors, String qsarMethod, String modelId,boolean use_pmml) {
 		HttpResponse<byte[]> response = Unirest.post(address+"/models/{qsar_method}/train")
 				.routeParam("qsar_method", qsarMethod)
+				.field("use_pmml", use_pmml)
 				.field("training_tsv", trainingSet)
 				.field("num_jobs", String.valueOf(num_jobs))
 				.field("model_id", modelId)
@@ -33,9 +57,52 @@ public class ModelWebService extends WebService {
 		return response;
 	}
 	
+
+	public void configUnirest(boolean turnOffLogging) {
+		
+		try {//Need to suppress logging because it slows things down when have big data sets...
+
+			if (turnOffLogging) {
+				Set<String> artifactoryLoggers = new HashSet<String>(Arrays.asList("org.apache.http", "groovyx.net.http"));
+				for(String log:artifactoryLoggers) {
+					ch.qos.logback.classic.Logger artLogger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(log);
+					artLogger.setLevel(ch.qos.logback.classic.Level.INFO);
+					artLogger.setAdditive(false);
+				}
+			}
+			
+			Unirest.config()
+	        .followRedirects(true)   
+			.socketTimeout(000)
+	           .connectTimeout(000);
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	
+	public HttpResponse<byte[]> callTrainWithPreselectedDescriptors(String trainingSet, Boolean removeLogDescriptors, 
+			String qsarMethod, String modelId, String embeddingTsv,boolean use_pmml) {
+		HttpResponse<byte[]> response = Unirest.post(address+"/models/{qsar_method}/train")
+				.routeParam("qsar_method", qsarMethod)
+				.field("use_pmml", use_pmml)
+				.field("training_tsv", trainingSet)
+				.field("model_id", modelId)
+				.field("num_jobs", String.valueOf(num_jobs))
+				.field("embedding_tsv", embeddingTsv)
+				.field("remove_log_p", String.valueOf(removeLogDescriptors))
+				.asBytes();
+		
+		return response;
+	}
+
+	
 	public HttpResponse<String> callTrainPythonStorage(String trainingSet, Boolean removeLogPDescriptors, String qsarMethod, String modelId) {
 		HttpResponse<String> response = Unirest.post(address + "/models/{qsar_method}/trainsa")
-				.routeParam("qsar_method", qsarMethod)
+				.routeParam("qsar_method", qsarMethod)				
 				.field("training_tsv", trainingSet)
 				.field("embedding_tsv", "")
 				.field("model_id", modelId)
@@ -61,19 +128,6 @@ public class ModelWebService extends WebService {
 		return response;
 	}
 	
-	public HttpResponse<byte[]> callTrainWithPreselectedDescriptors(String trainingSet, Boolean removeLogDescriptors, 
-			String qsarMethod, String modelId, String embeddingTsv) {
-		HttpResponse<byte[]> response = Unirest.post(address+"/models/{qsar_method}/train")
-				.routeParam("qsar_method", qsarMethod)
-				.field("training_tsv", trainingSet)
-				.field("model_id", modelId)
-				.field("num_jobs", String.valueOf(num_jobs))
-				.field("embedding_tsv", embeddingTsv)
-				.field("remove_log_p", String.valueOf(removeLogDescriptors))
-				.asBytes();
-		
-		return response;
-	}
 	
 	public HttpResponse<String> callPredictionApplicabilityDomain(String trainingSet,String testSet, Boolean removeLogDescriptors,
 			String embeddingTsv, String applicability_domain) {
@@ -100,42 +154,43 @@ public class ModelWebService extends WebService {
 
 	
 	public HttpResponse<String> crossValidate(String qsarMethod,String training_tsv,String prediction_tsv,
-			boolean remove_log_p, int num_jobs,String embeddingTsv,String params) {
+			boolean remove_log_p, int num_jobs,String embeddingTsv,String params,boolean use_pmml) {
 
 //		System.out.println(this.address+ "/models/" + qsarMethod +"/cross_validate");
 
 		HttpResponse<String> response = Unirest.post(this.address+ "/models/{qsar_method}/cross_validate")
 				.routeParam("qsar_method", qsarMethod)
+				.field("use_pmml",use_pmml)
 				.field("training_tsv",training_tsv)
 				.field("prediction_tsv", prediction_tsv)
 				.field("remove_log_p",String.valueOf(remove_log_p))
 				.field("num_jobs",String.valueOf(num_jobs))
 				.field("embedding_tsv", embeddingTsv)
-				.field("params", params)
+				.field("hyperparameters", params)
 				.asString();
 		return response;
 	}
 
 	public HttpResponse<String> crossValidate(String qsarMethod,String training_tsv,String prediction_tsv,
-			boolean remove_log_p, int num_jobs,String params) {
+			boolean remove_log_p, int num_jobs,String params,boolean use_pmml) {
 
 //		System.out.println(this.address+ "/models/" + qsarMethod +"/cross_validate");
 
 		HttpResponse<String> response = Unirest.post(this.address+ "/models/{qsar_method}/cross_validate")
 				.routeParam("qsar_method", qsarMethod)
+				.field("use_pmml",use_pmml)
 				.field("training_tsv",training_tsv)
 				.field("prediction_tsv", prediction_tsv)
 				.field("remove_log_p",String.valueOf(remove_log_p))
 				.field("num_jobs",String.valueOf(num_jobs))
-				.field("params", params)
+				.field("hyperparameters", params)
 				.asString();
 		return response;
 	}
 	
-	public HttpResponse<String> callDetails(String qsarMethod, String modelId) {
-		System.out.println(address+"/models/" + qsarMethod + "/" + modelId);
-		HttpResponse<String> response = Unirest.get(address+"/models/{qsar_method}/{model_id}")
-				.routeParam("qsar_method", qsarMethod)
+	public HttpResponse<String> callDetails(String modelId) {
+		System.out.println(address+"/models/" + modelId);
+		HttpResponse<String> response = Unirest.get(address+"/models/{model_id}")
 				.routeParam("model_id", modelId)
 				.asString();
 		
@@ -150,26 +205,120 @@ public class ModelWebService extends WebService {
 		return response;
 	}
 
-	public HttpResponse<String> callInit(byte[] modelBytes, String qsarMethod, String modelId) {
+	static class InitRequest {
+		public String model_id;
+		
+	}
+	
+	public HttpResponse<String> callInitPickle(byte[] modelBytes, String modelId) {
 		InputStream model = new BufferedInputStream(new ByteArrayInputStream(modelBytes));
-		HttpResponse<String> response = Unirest.post(address+"/models/{qsar_method}/init")
-				.routeParam("qsar_method", qsarMethod)
+		
+		HttpResponse<String> response = Unirest.post(address+"/models/initPickle")
 				.field("model_id", modelId)
 				.field("model", model, "model.bin")
 				.asString();
 		
+		System.out.println("Status of init call = "+response.getStatus());
+		
 		return response;
 	}
+	
+	
+	
+	
+	public HttpResponse<String> callInitPmml(byte[] modelBytes, String modelId,String details) {
+		Gson gson=new Gson();
+//		System.out.println(details);
 
-	public HttpResponse<String> callPredict(String predictionSet, String qsarMethod, String modelId) {
-		HttpResponse<String> response = Unirest.post(address+"/models/{qsar_method}/predict")
-				.routeParam("qsar_method", qsarMethod)
+		JsonObject jo=gson.fromJson(details, JsonObject.class);
+		String model=new String (modelBytes);
+//		System.out.println(model);
+		jo.addProperty("model_id", modelId);
+		jo.addProperty("model", model);
+		String body=gson.toJson(jo);
+		
+		HttpResponse<String> response = Unirest.post(address+"/models/initPMML")
+				.header("Content-Type", "application/json")
+				.body(body)				
+				.asString();
+		
+		System.out.println("Status of init call = "+response.getStatus());
+		return response;
+
+	}
+	
+	void testCallInit() {
+		
+		Unirest.config()
+        .followRedirects(true)   
+		.socketTimeout(000)
+        .connectTimeout(000);
+
+		Long model_id=457L;
+		boolean use_pmml=true;
+				
+//		Long model_id=272L;
+//		boolean use_pmml=false;
+				
+		ModelService modelService = new ModelServiceImpl();
+		ModelBytesService modelBytesService = new ModelBytesServiceImpl();
+		Model model=modelService.findById(model_id);
+
+		System.out.print("Getting model bytes...");
+//		byte[]modelBytes=modelBytesService.findByModelId(model_id,decompress).getBytes();
+		
+		byte[]modelBytes=modelBytesService.getBytesSql(model_id,use_pmml);
+		System.out.println("Got "+ modelBytes.length +" bytes");		
+		
+		if (use_pmml) {
+			String details=new String(model.getDetails());
+			String result=callInitPmml(modelBytes,model_id+"", details).getBody().toString();
+			System.out.print("result="+result);
+		} else {
+			String result=callInitPickle(modelBytes,model_id+"").getBody().toString();
+			System.out.print("result="+result);
+		}
+	}
+ 	
+	public static void main(String[] args) {
+		
+		ModelWebService m=new ModelWebService("http://localhost",5004);
+		m.testCallInit();
+	}
+
+	public HttpResponse<String> callPredict(String predictionSet, String modelId) {
+		HttpResponse<String> response = Unirest.post(address+"/models/predict")
 				.field("prediction_tsv", predictionSet)
 				.field("model_id", modelId)
 				.asString();
 		
 		return response;
 	}
+	
+	
+	
+	public HttpResponse<String> callPredictSDE(String predictionSet, String modelSetId,String datasetId, String workflow) {
+		
+		SDE_Prediction_Request request=new SDE_Prediction_Request();
+		
+		request.getFromTSV(predictionSet,modelSetId,datasetId, workflow);
+
+		Gson gson=new Gson();
+		String body=gson.toJson(request);
+		
+		System.out.println(body);
+		
+		HttpResponse<String> response = Unirest.post(address+"/api/predictor/predict")
+				.header("Content-Type", "application/json")
+				.body(body)				
+				.asString();
+		
+		System.out.println(response.getBody());
+		
+		
+		return response;
+	}
+
 	
 	public HttpResponse<String> callPredictSQLAlchemy(String predictionSet, String qsarMethod, String modelId) {
 		HttpResponse<String> response = Unirest.post(address+"/models/{qsar_method}/predictsa")
@@ -182,16 +331,16 @@ public class ModelWebService extends WebService {
 	}
 
 	
-	public HttpResponse<String> callDescriptors(byte[] modelBytes, String qsarMethod, String modelId) {
-		InputStream model = new BufferedInputStream(new ByteArrayInputStream(modelBytes));
-		HttpResponse<String> response = Unirest.post(address+"/models/{qsar_method}/descriptors")
-				.routeParam("qsar_method", qsarMethod)
-				.field("model_id", modelId)
-				.field("model", model, "model.bin")
-				.asString();
-		
-		return response;
-	}
+//	public HttpResponse<String> callDescriptors(byte[] modelBytes, String qsarMethod, String modelId) {
+//		InputStream model = new BufferedInputStream(new ByteArrayInputStream(modelBytes));
+//		HttpResponse<String> response = Unirest.post(address+"/models/{qsar_method}/descriptors")
+//				.routeParam("qsar_method", qsarMethod)
+//				.field("model_id", modelId)
+//				.field("model", model, "model.bin")
+//				.asString();
+//		
+//		return response;
+//	}
 
 
 }

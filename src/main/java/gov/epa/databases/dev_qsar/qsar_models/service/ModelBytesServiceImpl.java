@@ -4,12 +4,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -22,6 +25,7 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
+import gov.epa.util.CompressionUtilities;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -37,12 +41,43 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 		this.validator = DevQsarValidator.getValidator();
 	}
 	
-	public ModelBytes findByModelId(Long modelId) {
+	public ModelBytes findByModelId(Long modelId,boolean decompress) {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
-		return findByModelId(modelId, session);
+		return findByModelId(modelId, decompress,session);
 	}
 	
-	public ModelBytes findByModelId(Long modelId, Session session) {
+	
+	public byte [] getBytesSql(Long modelId,boolean decompress) {
+		String sql="select bytes from qsar_models.model_bytes where fk_model_id="+modelId+" order by id";
+		Connection conn=SqlUtilities.getConnectionPostgres();
+
+		
+		try {
+			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
+			
+			int counter=1;
+			while (rs.next()) {
+//				System.out.println(counter++);
+				outputStream.write(rs.getBytes(1));
+			}
+
+			if (decompress) {
+				return CompressionUtilities.decompress(outputStream.toByteArray(), false);
+			} else {
+				return outputStream.toByteArray();
+			}
+		
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+
+	}
+	
+	public ModelBytes findByModelId(Long modelId,boolean decompress, Session session) {
 		Transaction t = session.beginTransaction();
 		ModelBytesDao modelBytesDao = new ModelBytesDaoImpl();
 		List<ModelBytes> modelBytesList = modelBytesDao.findByModelId(modelId, session);
@@ -61,7 +96,21 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 				e.printStackTrace();
 			}
 		}
-		modelBytes.setBytes(outputStream.toByteArray());
+		
+		if (decompress) {
+			try {		
+				byte[] decompressedBytes=CompressionUtilities.decompress(outputStream.toByteArray(), false);
+				modelBytes.setBytes(decompressedBytes);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return null;
+			}
+
+		} else {
+			modelBytes.setBytes(outputStream.toByteArray());
+		}
+		
 		t.rollback();
 		return modelBytes;
 	}
@@ -73,8 +122,22 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 	}
 
 	@Override
-	public ModelBytes createSQL (ModelBytes modelBytes) {
+	public ModelBytes createSQL (ModelBytes modelBytes,boolean compress) {
 
+		if(compress) {
+			try {
+				byte[] compressedBytes=CompressionUtilities.compress(modelBytes.getBytes(), Deflater.BEST_COMPRESSION,false);
+			    System.out.println("Uncompressed model bytes: " + modelBytes.getBytes().length);
+			    System.out.println("Compressed model bytes: " + compressedBytes.length);
+				modelBytes.setBytes(compressedBytes);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return null;
+			}
+		}
+		
+		
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		
 		List<byte[]> partitions = divideArray(modelBytes.getBytes(), chunkSize);
@@ -275,5 +338,6 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 		}
 		t.commit();
 	}
+
 
 }

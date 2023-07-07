@@ -63,6 +63,10 @@ public class Model {
 	
 	@Column(name="hyperparameters")
 	private String hyperparameters;
+
+	@Column(name="details")
+	private byte[] details;
+
 	
 	@Column(name="updated_at")
 	@UpdateTimestamp
@@ -229,6 +233,14 @@ public class Model {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public byte[] getDetails() {
+		return details;
+	}
+
+	public void setDetails(byte[] details) {
+		this.details = details;
 	}
 
 }
