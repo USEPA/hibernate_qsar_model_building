@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,17 +13,23 @@ import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropUnit;
 import gov.epa.databases.dev_qsar.exp_prop.entity.LiteratureSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.Parameter;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterAcceptableUnit;
+import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyAcceptableParameter;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyAcceptableUnit;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyCategory;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyInCategory;
+import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
+import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
 import gov.epa.databases.dev_qsar.exp_prop.service.ExpPropPropertyService;
 import gov.epa.databases.dev_qsar.exp_prop.service.ExpPropPropertyServiceImpl;
 import gov.epa.databases.dev_qsar.exp_prop.service.ExpPropUnitService;
@@ -43,11 +50,16 @@ import gov.epa.databases.dev_qsar.exp_prop.service.PropertyInCategoryService;
 import gov.epa.databases.dev_qsar.exp_prop.service.PropertyInCategoryServiceImpl;
 import gov.epa.databases.dev_qsar.exp_prop.service.PublicSourceService;
 import gov.epa.databases.dev_qsar.exp_prop.service.PublicSourceServiceImpl;
+import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalService;
+import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalServiceImpl;
 import gov.epa.databases.dsstox.entity.SourceSubstance;
 import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class ExperimentalRecordLoader {
+	static boolean loadSourceChemicalMap=true;
+	boolean debug=false;
 	
 	static final Pattern STRING_COLUMN_PATTERN = Pattern.compile("([~><=]{1,2})?(-?[0-9\\.]+)([-~])?(-?[0-9\\.]+)?");
 	
@@ -58,6 +70,8 @@ public class ExperimentalRecordLoader {
 	private ExpPropUnitService expPropUnitService = new ExpPropUnitServiceImpl();
 	LiteratureSourceService literatureSourceService = new LiteratureSourceServiceImpl();
 	PublicSourceService publicSourceService = new PublicSourceServiceImpl();
+	SourceChemicalService sourceChemicalService=new SourceChemicalServiceImpl(); 
+	
 	
 	ParameterAcceptableUnitService parameterAcceptableUnitService=new ParameterAcceptableUnitServiceImpl();
 	PropertyAcceptableUnitService propertyAcceptableUnitService=new PropertyAcceptableUnitServiceImpl();  
@@ -70,6 +84,9 @@ public class ExperimentalRecordLoader {
 	Map<String, PublicSource> publicSourcesMap = new HashMap<String, PublicSource>();
 	Map<String, ExpPropUnit> unitsMap = new HashMap<String, ExpPropUnit>();
 	Map<String, PropertyCategory> propertyCategoryMap = new HashMap<String, PropertyCategory>();
+	
+	Map<String, SourceChemical> sourceChemicalMap = new HashMap<String, SourceChemical>();
+	
 	
 	List<ParameterAcceptableUnit>parameterAcceptableUnits=null;
 	List<PropertyAcceptableUnit>propertyAcceptableUnits=null;
@@ -129,6 +146,14 @@ public class ExperimentalRecordLoader {
 			propertyCategoryMap.put(pc.getName(), pc);
 		}
 		
+		if (loadSourceChemicalMap) {
+			System.out.print("Loading sourceChemical map...");
+			List<SourceChemical> sourceChemicals = sourceChemicalService.findAll();
+			for (SourceChemical sourceChemical:sourceChemicals) {
+				sourceChemicalMap.put(sourceChemical.getKey(),sourceChemical);
+			}
+			System.out.println("Done");
+		}
 		
 	}
 	
@@ -159,114 +184,138 @@ public class ExperimentalRecordLoader {
 		return records;
 	}
 	
-	public void load(List<ExperimentalRecord> records, String type, boolean createLiteratureSources) {
-		List<ExperimentalRecord> failedRecords = new ArrayList<ExperimentalRecord>();
-		int countSuccess = 0;
-		int countFailure = 0;
-		int countTotal = 0;
-		for (ExperimentalRecord rec:records) {
-			try {
-				boolean success = false;
-				if (type.contains("physchem")) {
-					PhyschemExpPropData expPropData = new PhyschemExpPropData(this);
-					expPropData.getValues(rec);
-					expPropData.constructPropertyValue(createLiteratureSources);
-					success = expPropData.postPropertyValue();
-				} else if (type.contains("tox")) {
-					ToxExpPropData expPropData = new ToxExpPropData(this);
-					expPropData.getValues(rec);
-					expPropData.constructPropertyValue(createLiteratureSources);
-					
-					success = expPropData.postPropertyValue();
-				}
-				
-				if (success) {
-					countSuccess++;
-				} else {
-					failedRecords.add(rec);
-//					logger.warn(rec.id_physchem + ": Loading failed");
-					countFailure++;
-				}
-			} catch (Exception e) {
-				failedRecords.add(rec);
-//				logger.warn(rec.id_physchem + ": Loading failed with exception: " + e.getMessage());
-				countFailure++;
-			}
-			
-			countTotal++;
-			if (countTotal % 1000 == 0) {
-				System.out.println("Attempted to load " + countTotal + " property values: " 
-						+ countSuccess + " successful; " 
-						+ countFailure + " failed");
-			}
-		}
-		System.out.println("Finished attempt to load " + countTotal + " property values: " 
-				+ countSuccess + " successful; " 
-				+ countFailure + " failed");
+//	public void load(List<ExperimentalRecord> records, String type, boolean createDBEntries) {
+//		List<ExperimentalRecord> failedRecords = new ArrayList<ExperimentalRecord>();
+//		List<ExperimentalRecord> loadedRecords = new ArrayList<ExperimentalRecord>();
+//		int countSuccess = 0;
+//		int countFailure = 0;
+//		int countTotal = 0;
+//		for (ExperimentalRecord rec:records) {
+//			try {
+//				
+//				
+//				boolean success = false;
+//				
+//				ExpPropData expPropData=null;
+//				
+//				if (type.contains("physchem")) {
+//					expPropData = new PhyschemExpPropData(this);
+//				} else if (type.contains("tox")) {
+//					expPropData = new ToxExpPropData(this);
+//				}
+//				expPropData.getValues(rec);
+//
+//				if(createDBEntries) {
+//					expPropData.constructPropertyValue(createDBEntries);
+//					success = expPropData.postPropertyValue();
+//				} else {
+//					success=true;
+//				}
+//				
+//				if (success) {
+//					countSuccess++;
+//					loadedRecords.add(rec);
+//				} else {
+//					failedRecords.add(rec);
+////					logger.warn(rec.id_physchem + ": Loading failed");
+//					countFailure++;
+//				}
+//			} catch (Exception e) {
+//				failedRecords.add(rec);
+////				logger.warn(rec.id_physchem + ": Loading failed with exception: " + e.getMessage());
+//				countFailure++;
+//			}
+//			
+//			countTotal++;
+//			if (countTotal % 1000 == 0) {
+//				System.out.println("Attempted to load " + countTotal + " property values: " 
+//						+ countSuccess + " successful; " 
+//						+ countFailure + " failed");
+//			}
+//		}
+//		System.out.println("Finished attempt to load " + countTotal + " property values: " 
+//				+ countSuccess + " successful; " 
+//				+ countFailure + " failed");
+//		
+//		if (!failedRecords.isEmpty()) {
+//			ExperimentalRecord recSample = failedRecords.iterator().next();
+//			String publicSourceName = recSample.source_name;
+//			String failedFilePath = "data/dev_qsar/exp_prop/" + type + "/"
+//					+ publicSourceName + "/" + publicSourceName + " Experimental Records-Failed.json";
+//			
+//			writeRecordsToFile(failedRecords, failedFilePath);
+//		}
+//		
+//		if (!loadedRecords.isEmpty()) {
+//			ExperimentalRecord recSample = loadedRecords.iterator().next();
+//			String loadedRecordsFilePath = "data/dev_qsar/exp_prop/" + type + "/"
+//					+ recSample.source_name + "/" + recSample.property_name + " Experimental Records-Loaded.json";
+//			
+//			writeRecordsToFile(loadedRecords, loadedRecordsFilePath);
+//		}
+//
+//	}
+	
+	
+	public void load(List<ExperimentalRecord> records, String type, boolean createDBEntries) {
+		List<ExperimentalRecord> failedRecords = new ArrayList<>();
+		List<ExperimentalRecord> loadedRecords = new ArrayList<>();
+		List<PropertyValue> loadedPropertyValues = new ArrayList<>();
 		
-		if (!failedRecords.isEmpty()) {
-			ExperimentalRecord recSample = failedRecords.iterator().next();
-			String publicSourceName = recSample.source_name;
-			String failedFilePath = "data/dev_qsar/exp_prop/" + type + "/"
-					+ publicSourceName + "/" + publicSourceName + " Experimental Records-Failed.json";
-			
-			File failedFile = new File(failedFilePath);
-			if (failedFile.getParentFile()!=null) { failedFile.getParentFile().mkdirs(); }
-			try (BufferedWriter bw = new BufferedWriter(new FileWriter(failedFilePath))) {
-				bw.write(gson.toJson(failedRecords));
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-	
-	
-	public void load2(List<ExperimentalRecord> records, String type, boolean createLiteratureSources) {
-		List<ExperimentalRecord> failedRecords = new ArrayList<ExperimentalRecord>();
 		int countSuccess = 0;
 		int countFailure = 0;
 		int countTotal = 0;
 		
 		int counter=0;
 		
+		PropertyValueCreator propValCreator=new PropertyValueCreator(this);
+		ParameterValueCreator paramValCreator=new ParameterValueCreator(this);
+		
 		for (ExperimentalRecord rec:records) {
 			counter++;
 			
+//			System.out.println(counter);
+			
 			try {
 				boolean success = false;
-				if (type.equals(typePhyschem)) {
-					PhyschemExpPropData expPropData = new PhyschemExpPropData(this);
-					expPropData.getValues(rec);
-					expPropData.constructPropertyValue(createLiteratureSources);
-					success = expPropData.postPropertyValue();
-				} else if (type.equals(typeTox)) {
-					ToxExpPropData expPropData = new ToxExpPropData(this);
-					expPropData.getValues(rec);
-					expPropData.constructPropertyValue(createLiteratureSources);					
-					success = expPropData.postPropertyValue();
-				} else  if (type.equals(typeOther)){
-					
-					ExpPropData expPropData = new ExpPropData(this);
-					expPropData.getValues(rec);
-					expPropData.constructPropertyValue(createLiteratureSources);
-					
-//					System.out.println("constructPropertyValue done");
-					
-//					System.out.println(Utilities.gson.toJson(expPropData.propertyValue));//this is infinite loop					
-//					System.out.println(++countSuccess+"\t"+(t2-t1)+"\t"+(t3-t2));
-					success = expPropData.postPropertyValue();
-					
-					System.out.println(counter+"\t"+success+"\t"+expPropData.propertyValue.getLiteratureSource().getName()+"\t"+expPropData.propertyValue.getSourceChemical().getSourceChemicalName());
-				} else {
-					System.out.println("Invalid type:"+type);
-					return;
+				
+				PropertyValue pv=propValCreator.createPropertyValue(rec, createDBEntries);
+				
+				if (pv.getUnit()==null) {
+					failedRecords.add(rec);
+					rec.keep=false;
+					rec.reason="Units not in database";
+//					logger.warn(rec.id_physchem + ": Loading failed");
+					countFailure++;
+					continue;
 				}
-
+				
+				
+				if (type.equals(typePhyschem)) {
+					paramValCreator.addPhyschemParameterValues(rec, pv);
+				} else if (type.equals(typeTox)) {
+					paramValCreator.addToxParameterValues(rec, pv);
+				} else {
+					//do nothing
+				}
+				
+				paramValCreator.addGenericParametersValues(rec,pv);
+				
+				if (createDBEntries) {
+					success = propValCreator.postPropertyValue(pv);//TODO add batch insert instead	
+				} else {
+					success=true;
+				}
+				
+				
+//				JsonObject jo = createJsonObjectFromPropertyValue(pv);
+//				System.out.println(gson.toJson(jo));
+//				System.out.println(counter+"\t"+success+"\t"+expPropData.propertyValue.getLiteratureSource().getName()+"\t"+expPropData.propertyValue.getSourceChemical().getSourceChemicalName());
 				
 				if (success) {
 					countSuccess++;
-
+					loadedRecords.add(rec);
+					loadedPropertyValues.add(pv);
 				} else {
 					failedRecords.add(rec);
 //					logger.warn(rec.id_physchem + ": Loading failed");
@@ -283,7 +332,11 @@ public class ExperimentalRecordLoader {
 				System.out.println("Attempted to load " + countTotal + " property values: " 
 						+ countSuccess + " successful; " 
 						+ countFailure + " failed");
+				
 			}
+			
+//			if(true) break;
+
 		}
 		System.out.println("Finished attempt to load " + countTotal + " property values: " 
 				+ countSuccess + " successful; " 
@@ -291,20 +344,43 @@ public class ExperimentalRecordLoader {
 		
 		if (!failedRecords.isEmpty()) {
 			ExperimentalRecord recSample = failedRecords.iterator().next();
-			
-			//TODO output path should be based on property name and source name...
-			
-			String failedFilePath = "data/dev_qsar/exp_prop/" + type + "/"
+			String failedRecordsFilePath = "data/dev_qsar/exp_prop/" + type + "/"
 					+ recSample.source_name + "/" + recSample.property_name + " Experimental Records-Failed.json";
 			
-			File failedFile = new File(failedFilePath);
-			if (failedFile.getParentFile()!=null) { failedFile.getParentFile().mkdirs(); }
-			try (BufferedWriter bw = new BufferedWriter(new FileWriter(failedFilePath))) {
-				bw.write(gson.toJson(failedRecords));
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			writeRecordsToFile(failedRecords, failedRecordsFilePath);
+		}
+		
+		if (!loadedRecords.isEmpty()) {
+			ExperimentalRecord recSample = records.iterator().next();
+			
+			String loadedRecordsFilePath = "data/dev_qsar/exp_prop/" + type + "/"
+					+ recSample.source_name + "/" + recSample.property_name + " ExperimentalRecords-Loaded.json";
+			writeRecordsToFile(loadedRecords, loadedRecordsFilePath);
+			
+			
+			JsonArray ja=new JsonArray();
+			for (PropertyValue pv:loadedPropertyValues) {
+				JsonObject jo = pv.createJsonObjectFromPropertyValue();
+				ja.add(jo);
+//				System.out.println(gson.toJson(jo));
 			}
+
+			String loadedPropertyValuesFilePath = "data/dev_qsar/exp_prop/" + type + "/"
+					+ recSample.source_name + "/" + recSample.property_name + " PropertyValues-Loaded.json";
+			writeRecordsToFile(ja, loadedPropertyValuesFilePath);
+		}
+
+	}
+
+
+	private void writeRecordsToFile(Object records, String filePath) {
+		File failedFile = new File(filePath);
+		if (failedFile.getParentFile()!=null) { failedFile.getParentFile().mkdirs(); }
+		try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
+			bw.write(gson.toJson(records));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
@@ -330,7 +406,7 @@ public class ExperimentalRecordLoader {
 		ExpPropProperty property=propertiesMap.get(name);
 		
 		if (property!=null) {
-//			System.out.println("already have property in db: "+property.getName()+"\t"+property.getDescription());
+			if (debug) System.out.println("already have property in db: "+property.getName()+"\t"+property.getDescription());
 			return property;
 		}
 		
@@ -347,7 +423,7 @@ public class ExperimentalRecordLoader {
 		ExpPropUnit unit=unitsMap.get(name);
 		
 		if (unit!=null) {
-//			System.out.println("already have unit in db: "+unit.getName()+"\t"+unit.getAbbreviation());
+			if (debug) System.out.println("already have unit in db: "+unit.getName()+"\t"+unit.getAbbreviation());
 			return unit;
 		}
 		
@@ -364,7 +440,7 @@ public class ExperimentalRecordLoader {
 		Parameter parameter=parametersMap.get(name);
 		
 		if (parameter!=null) {
-//			System.out.println("already have parameter in db: "+parameter.getName()+"\t"+parameter.getDescription());
+			if (debug) System.out.println("already have parameter in db: "+parameter.getName()+"\t"+parameter.getDescription());
 			return parameter;
 		}
 		
@@ -459,7 +535,7 @@ public class ExperimentalRecordLoader {
 		PropertyCategory propertyCategory=propertyCategoryMap.get(name);
 		
 		if (propertyCategory!=null) {
-//			System.out.println("already have PropertyCategory in db: "+propertyCategory.getName()+"\t"+propertyCategory.getDescription());
+			if (debug) System.out.println("already have PropertyCategory in db: "+propertyCategory.getName()+"\t"+propertyCategory.getDescription());
 			return propertyCategory;
 		}
 		
@@ -473,8 +549,13 @@ public class ExperimentalRecordLoader {
 	
 	void loadAcuteAquaticToxicityData() {
 
+		debug=true;//prints values loaded from database like property
+		
+		boolean createDBEntries=true;
+		
+		
 		String sourceName="ToxVal_V93";
-		String propertyName="96 hr Fathead Minnow LC50";
+		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
 		
 		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\ghs-data-gathering\\";
 		String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+" "+propertyName+" Experimental Records.json";
@@ -485,14 +566,13 @@ public class ExperimentalRecordLoader {
 		
 		//**********************************************************************************************
 		//Add entries for properties_acceptable_units:
-		addPropertyAcceptableUnit(getUnit("g/L","g/L"), property);
-		addPropertyAcceptableUnit(getUnit("M","M"), property);
-		addPropertyAcceptableUnit(getUnit("ppm","ppm"), property);
-		addPropertyAcceptableUnit(getUnit("%v","%v"), property);
-		
+		addPropertyAcceptableUnit(getUnit("G_L","g/L"), property);
+		addPropertyAcceptableUnit(getUnit("MOLAR","M"), property);
+
 		addPropertyAcceptableParameter(getParameter("toxval_id","toxval_id field in toxval table in ToxVal database"),property);
-		addPropertyAcceptableParameter(getParameter("lifestage","lifestage field in toxval table in ToxVal database"),property);
-		addPropertyAcceptableParameter(getParameter("exposure_route","exposure route field in toxval table in ToxVal database"),property);
+		addPropertyAcceptableParameter(getParameter("Lifestage","lifestage field in toxval table in ToxVal database"),property);
+		addPropertyAcceptableParameter(getParameter("Exposure route","exposure route field in toxval table in ToxVal database"),property);
+		addPropertyAcceptableParameter(getParameter("Reliability","Reliability"),property);
 		
 		addPropertyInCategory(getPropertyCategory("Acute aquatic toxicity", "Acute aquatic toxicity"), property);
 		
@@ -503,8 +583,9 @@ public class ExperimentalRecordLoader {
 
 		ExperimentalRecords records=ExperimentalRecords.loadFromJson(filePath, gson);
 //		printUniqueUnitsListInExperimentalRecords(records);
-		System.out.println(records.size());
-		load2(records, typeOther, true);
+		System.out.println("experimentalRecords.size()="+records.size());
+		
+		load(records, typeOther, createDBEntries);
 		
 	}
 
@@ -520,71 +601,45 @@ public class ExperimentalRecordLoader {
 		}
 	}
 	
+	static void deleteExpPropData() {
+
+		Connection conn=SqlUtilities.getConnectionPostgres();
+
+		int propertyId=22;
+		int public_source_id=79;
+		
+		String sqlParameters="delete from exp_prop.parameter_values pv2 using exp_prop.property_values pv\n"+
+				"where pv2.fk_property_value_id=pv.id and pv.fk_property_id="+propertyId;
+
+//		-- delete property values for fhm lc50 endpoint
+		String sqlPropertyValues="delete from exp_prop.property_values pv where fk_property_id="+propertyId;
+		
+//	-- Delete source chemicals that came from toxvalv93:
+		String sqlSourceCHemicals="delete from exp_prop.source_chemicals sc where sc.fk_public_source_id="+public_source_id;
+
+		//Literature sources
+		String sqlLiteratureSources="delete from exp_prop.literature_sources where created_by='tmarti02'";
+
+		SqlUtilities.runSQLUpdate(conn, sqlParameters);
+		SqlUtilities.runSQLUpdate(conn, sqlPropertyValues);
+		SqlUtilities.runSQLUpdate(conn, sqlSourceCHemicals);
+		SqlUtilities.runSQLUpdate(conn, sqlLiteratureSources);
+				
+	}
+	
 	
 	
 	public static void main(String[] args) {
 //		loadBCF();
 	
+		deleteExpPropData();
 		
-		
-		
-		
+		ExperimentalRecordLoader.loadSourceChemicalMap=true;
 		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("tmarti02");
-
 		loader.loadAcuteAquaticToxicityData();
 		
 		
-//		ExperimentalRecords records = new ExperimentalRecords();
-//		File failedFolder = new File("data/dev_qsar/exp_prop/loaded_with_failures");
-//		File[] failedFiles = failedFolder.listFiles();
-//		for (File file:failedFiles) {
-//			String sourceName = file.getName();
-//			if (!sourceName.contains(".")) {
-//				ExperimentalRecords failedRecords = getPublicSourceFailedRecords(sourceName);
-//				records.addAll(failedRecords);
-//			}
-//		}
 		
-//		ExperimentalRecords nameTooLong = new ExperimentalRecords();
-//		ExperimentalRecords smilesTooLong = new ExperimentalRecords();
-//		ExperimentalRecords other = new ExperimentalRecords();
-//		for (ExperimentalRecord rec:records) {
-//			boolean explained = false;
-//			if (rec.chemical_name!=null && rec.chemical_name.length() > 255) {
-//				nameTooLong.add(rec);
-//				explained = true;
-//			}
-//			
-//			if (rec.smiles!=null && rec.smiles.length() > 255) {
-//				smilesTooLong.add(rec);
-//				explained = true;
-//			}
-//			
-//			if (!explained) {
-//				other.add(rec);
-//			}
-//		}
-//		
-//		try (BufferedWriter writer = new BufferedWriter(new FileWriter("data/dev_qsar/exp_prop/loaded_with_failures/name_too_long.json"))) {
-//			writer.write(gson.toJson(nameTooLong));
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		
-//		try (BufferedWriter writer = new BufferedWriter(new FileWriter("data/dev_qsar/exp_prop/loaded_with_failures/smiles_too_long.json"))) {
-//			writer.write(gson.toJson(smilesTooLong));
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		
-//		try (BufferedWriter writer = new BufferedWriter(new FileWriter("data/dev_qsar/exp_prop/loaded_with_failures/other_failures.json"))) {
-//			writer.write(gson.toJson(other));
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
 	}
 
 }

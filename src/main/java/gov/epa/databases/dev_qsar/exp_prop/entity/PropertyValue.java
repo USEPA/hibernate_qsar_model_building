@@ -26,6 +26,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.endpoints.datasets.ExplainedResponse;
@@ -57,6 +58,13 @@ public class PropertyValue {
 	@JoinColumn(name="fk_public_source_id")
 	@JsonManagedReference
 	private PublicSource publicSource;
+
+	
+	@ManyToOne
+	@JoinColumn(name="fk_public_source_original_id")
+	@JsonManagedReference
+	private PublicSource publicSourceOriginal;
+
 	
 	@ManyToOne
 	@JoinColumn(name="fk_literature_source_id")
@@ -193,191 +201,14 @@ public class PropertyValue {
 		return null;
 	}
 	
-	public ExplainedResponse validateValue() {
-		
-		
-		String propertyName = getProperty().getName();
-		
-		
-		Double pointEstimate = getValuePointEstimate();
-		Double value = null;
-		if (pointEstimate!=null) {
-			// If point estimate available, set as candidate value
-			value = pointEstimate;
-		} else {
-			// If min and max exist...
-			Double max = getValueMax();
-			Double min = getValueMin();
-			
-			if (max==null && min==null) {
-				return new ExplainedResponse(false, "No numerical data");
-			} else if (max==null || min==null) {
-				return new ExplainedResponse(false, "Range with null max or min");
-			}
-		
-			// ...and are within defined tolerance...
-			Boolean rangeCheck = checkRangeForProperty(min, max, propertyName);
-			if (rangeCheck==null || !rangeCheck) {
-				return new ExplainedResponse(false, "Range width outside tolerance");
-			}
-		
-			// ...then set mean as candidate value
-			value = (min + max) / 2.0;
-		}
-		
-		String unitName = getUnit().getName();
-		if (unitName.equals(DevQsarConstants.BINARY)) {
-			// Check if binary value is actually binary
-			if (!(value==1 || value==0)) {
-				return new ExplainedResponse(false, "Binary value indicated, but property value is not binary");
-			}
-		} else {
-			
-			Boolean unitsCheck=checkUnits(propertyName, unit.getName());
-			if(!unitsCheck) {
-				return new ExplainedResponse(false, "Invalid units for property");
-			}
 
-			// Check if property value (in original units) is realistic for property in question
-			Boolean realisticValueCheck = checkRealisticValueForProperty(value, propertyName, unit.getName());
-			if (realisticValueCheck==null || !realisticValueCheck) {
-				return new ExplainedResponse(false, "Unrealistic value for property");
-			}
-		}
-		
-		return new ExplainedResponse(true, value, "Convertible QSAR property value available");
-	}
-	
 
-	public static Boolean checkRangeForProperty(double min, double max, String propertyName) {
-		if (propertyName.equals(DevQsarConstants.PKA) || propertyName.equals(DevQsarConstants.PKA_A) || propertyName.equals(DevQsarConstants.PKA_B)  
-				|| propertyName.equals(DevQsarConstants.LOG_KOW)
-				|| propertyName.equals(DevQsarConstants.LOG_BCF_FISH_WHOLEBODY)) {
-			return isRangeWithinTolerance(min, max, DevQsarConstants.LOG_RANGE_TOLERANCE);
-		} else if (propertyName.equals(DevQsarConstants.MELTING_POINT) 
-				|| propertyName.equals(DevQsarConstants.BOILING_POINT) 
-				|| propertyName.equals(DevQsarConstants.FLASH_POINT)) {
-			return isRangeWithinTolerance(min, max, DevQsarConstants.TEMP_RANGE_TOLERANCE);
-		} else if (propertyName.equals(DevQsarConstants.DENSITY)) {
-			return isRangeWithinTolerance(min, max, DevQsarConstants.DENSITY_RANGE_TOLERANCE);
-		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE) 
-				|| propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT) 
-				|| propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
-			return isRangeWithinLogTolerance(min, max, DevQsarConstants.LOG_RANGE_TOLERANCE, DevQsarConstants.ZERO_TOLERANCE);
-		} else {
-			return null;
-		}
-	}
-	
-	private static boolean isRangeWithinTolerance(double min, double max, double rangeTolerance) {
-		return max - min <= rangeTolerance;
-	}
-	
-	private static boolean isRangeWithinLogTolerance(double min, double max, double logRangeTolerance, double zeroTolerance) {
-		if (Math.abs(min) > zeroTolerance) {
-			return Math.log10(max / min) <= logRangeTolerance;
-		} else {
-			return false;
-		}
-	}
 	
 	
-	private Boolean checkUnits(String propertyName, String unitName) {
-		
-		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
-			return (unitName.equals("G_L") || unitName.equals("MOLAR"));
-		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
-			return unitName.equals("MMHG");
-		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
-			return unitName.equals("ATM_M3_MOL");
-		} else if (propertyName.equals(DevQsarConstants.MELTING_POINT) || propertyName.equals(DevQsarConstants.BOILING_POINT) || propertyName.equals(DevQsarConstants.FLASH_POINT)) {
-			return unitName.equals("DEG_C");
-		} else if (propertyName.equals(DevQsarConstants.LOG_KOW)) {
-			return unitName.equals("LOG_UNITS");
-		} else if (propertyName.equals(DevQsarConstants.LOG_BCF_FISH_WHOLEBODY)) {
-			return unitName.equals("LOG_L_KG");//LOG_UNITS is not 100% correct
-		} else {
-			System.out.println("Need to add code to PropertyValue.checkUnits() for "+propertyName);
-			return true;
-		}
-		
-	}
 	
 	
-	// Check if property value (in original units) is realistic for property in question
-	public static Boolean checkRealisticValueForProperty(Double candidateValue, String propertyName, String unitName) {
-
-		
-		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
-			if(unitName.equals("G_L")) {
-				if(candidateValue>DevQsarConstants.MAX_WATER_SOLUBILITY_G_L || 
-						candidateValue<DevQsarConstants.MIN_WATER_SOLUBILITY_G_L) {
-					
-//					System.out.println(candidateValue+"\t"+DevQsarConstants.MIN_WATER_SOLUBILITY_G_L+"\t"+DevQsarConstants.MAX_WATER_SOLUBILITY_G_L+"\t"+unitAbbreviation);
-					return false;
-				} else {
-					return true;
-				}	
-			} else if (unitName.equals("MOLAR")){
-				if(candidateValue>DevQsarConstants.MAX_WATER_SOLUBILITY_MOLAR || 
-						candidateValue<DevQsarConstants.MIN_WATER_SOLUBILITY_MOLAR) {
-//					System.out.println(candidateValue+"\t"+DevQsarConstants.MIN_WATER_SOLUBILITY_MOLAR+"\t"+DevQsarConstants.MAX_WATER_SOLUBILITY_MOLAR+"\t"+unitAbbreviation);
-					return false;
-				} else {
-					return true;
-				}	
-			} else {
-//				System.out.println(candidateValue+"\t"+unitAbbreviation);
-
-				return false;
-			}
-
-		} else if (propertyName.equals(DevQsarConstants.LOG_KOW)) {
-			//TODO should we try to fix the ones where the value is actually P instead of logP (especially echemportal)?
-			if(candidateValue>DevQsarConstants.MAX_LOG_KOW || 
-				candidateValue<DevQsarConstants.MIN_LOG_KOW) {//Assumes all values are log values
-				return false;
-			} else {
-				return true;
-			}			
-		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
-			if(candidateValue>DevQsarConstants.MAX_HENRYS_LAW_CONSTANT_ATM_M3_MOL || 
-				candidateValue<DevQsarConstants.MIN_HENRYS_LAW_CONSTANT_ATM_M3_MOL) {
-				return false;
-			} else {
-				return true;
-			}	
-		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
-
-			if(candidateValue>DevQsarConstants.MAX_VAPOR_PRESSURE_MMHG ||
-				candidateValue<DevQsarConstants.MIN_VAPOR_PRESSURE_MMHG) {
-				return false;
-			} else {
-				return true;
-			}			
-		} else if (propertyName.equals(DevQsarConstants.LOG_BCF_FISH_WHOLEBODY)) {
-			
-			return candidateValue != 0.0;//Dont use if exactly zero due to toxval storing blanks as zeros TMM. Might lose a handful accidentally
-			
-		} else if (propertyName.equals(DevQsarConstants.MELTING_POINT)) {
-			if(unitName.equals("DEG_C") && (candidateValue>DevQsarConstants.MAX_MELTING_POINT_C) ||
-					candidateValue<DevQsarConstants.MIN_MELTING_POINT_C) {
-				return false;
-			} else {
-				return true;
-			}			
-		} else if (propertyName.equals(DevQsarConstants.BOILING_POINT)) {
-			if(unitName.equals("DEG_C") && (candidateValue>DevQsarConstants.MAX_BOILING_POINT_C) ||
-					candidateValue<DevQsarConstants.MIN_BOILING_POINT_C) {
-				return false;
-			} else {
-				return true;
-			}			
-		} else {
-			// TBD
-			return true;
-		}
-	}
+	
+	
 	
 	public ParameterValue getParameterValue(String parameterName) {
 		if (parameterValues==null || parameterValues.size()==0) {
@@ -625,6 +456,60 @@ public class PropertyValue {
 
 	public void setQcNotes(String qcNotes) {
 		this.qcNotes = qcNotes;
+	}
+
+	public PublicSource getPublicSourceOriginal() {
+		return publicSourceOriginal;
+	}
+
+	public void setPublicSourceOriginal(PublicSource publicSourceOriginal) {
+		this.publicSourceOriginal = publicSourceOriginal;
+	}
+
+	public JsonObject createJsonObjectFromPropertyValue() {
+		JsonObject jo=new JsonObject();
+		
+//				jo.addProperty("created_by", pv.getCreatedBy());
+		jo.addProperty("sourceChemicalName", getSourceChemical().getSourceChemicalName());
+		jo.addProperty("sourceChemicalCASRN",getSourceChemical().getSourceCasrn());
+		jo.addProperty("sourceChemicalDTXSID",getSourceChemical().getSourceDtxsid());
+		
+		for (ParameterValue parameterValue:getParameterValues()) {
+			if (parameterValue.getValueText()!=null) {
+				jo.addProperty("parameter_"+parameterValue.getParameter().getName(),parameterValue.getValueText());	
+			} else if (parameterValue.getValuePointEstimate()!=null) {
+				jo.addProperty("parameter_"+parameterValue.getParameter().getName(),parameterValue.getValuePointEstimate());
+			}
+			
+			
+		}
+		
+		jo.addProperty("notes", getNotes());
+		jo.addProperty("page_url", getPageUrl());
+		
+		jo.addProperty("publicSourceName", getPublicSource().getName());
+		jo.addProperty("publicSourceURL", getPublicSource().getUrl());
+		
+		jo.addProperty("publicSourceNameOriginal", getPublicSourceOriginal().getName());
+		jo.addProperty("publicSourceOriginalURL", getPublicSourceOriginal().getUrl());
+		
+		if(literatureSource!=null) {
+			jo.addProperty("literatureSourceName", getLiteratureSource().getName());
+			jo.addProperty("literatureSourceCitation", getLiteratureSource().getCitation());
+			jo.addProperty("literatureSourceDOI", getLiteratureSource().getDoi());
+		}
+		 
+		
+		jo.addProperty("propertyName", getProperty().getName());
+		jo.addProperty("valueQualifier", getValueQualifier());
+		jo.addProperty("valuePointEstimate", getValuePointEstimate());
+		jo.addProperty("unitsAbbreviation", getUnit().getAbbreviation());
+		jo.addProperty("keep", getKeep());
+		jo.addProperty("keep_reason", getKeepReason());
+		
+		jo.addProperty("page_url", getPageUrl());
+		
+		return jo;
 	}
 
 }

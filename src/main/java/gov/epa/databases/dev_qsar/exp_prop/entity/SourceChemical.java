@@ -16,8 +16,10 @@ import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.NotBlank;
 
+import org.hibernate.Criteria;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.criterion.Restrictions;
 import org.hibernate.validator.constraints.Length;
 
 @Entity
@@ -191,5 +193,20 @@ public class SourceChemical {
 
 	public void setSourceDtxrid(String sourceDtxrid) {
 		this.sourceDtxrid = sourceDtxrid;
+	}
+
+	public String getKey() {
+		
+		Long publicSourceID=null;
+		if (publicSource!=null) publicSourceID=publicSource.getId();
+		
+		Long literatureSourceID=null;
+		if (literatureSource!=null) literatureSourceID=literatureSource.getId();
+		
+
+		String key=sourceCasrn+"\t"+sourceSmiles+"\t"+sourceChemicalName+"\t"+sourceDtxsid+"\t"+sourceDtxcid+"\t"+
+				sourceDtxrid+"\t"+publicSourceID+"\t"+literatureSourceID;
+
+		return key;
 	}
 }

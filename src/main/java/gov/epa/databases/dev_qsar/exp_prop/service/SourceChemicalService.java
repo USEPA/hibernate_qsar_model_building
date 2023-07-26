@@ -1,5 +1,7 @@
 package gov.epa.databases.dev_qsar.exp_prop.service;
 
+import java.util.List;
+
 import javax.validation.ConstraintViolationException;
 
 import org.hibernate.Session;
@@ -15,5 +17,9 @@ public interface SourceChemicalService {
 	public SourceChemical create(SourceChemical sourceChemical) throws ConstraintViolationException;
 	
 	public SourceChemical create(SourceChemical sourceChemical, Session session) throws ConstraintViolationException;
+
+	public List<SourceChemical> findAll();
+
+	public List<SourceChemical> findAll(Session session);
 
 }

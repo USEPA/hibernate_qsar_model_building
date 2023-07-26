@@ -33,8 +33,8 @@ public class SourceDetail {
 		LiteratureSource s =  new LiteratureSource();
 		s.setName(this.name);
 		s.setTitle(this.title);
-		s.setAuthors(this.authors);
-		s.setDescription(this.short_description);
+		s.setAuthor(this.authors);
+		s.setCitation(this.short_description);
 		s.setUrl(this.url);
 		s.setNotes(this.qc_notes);
 		s.setCreatedBy(createdBy);

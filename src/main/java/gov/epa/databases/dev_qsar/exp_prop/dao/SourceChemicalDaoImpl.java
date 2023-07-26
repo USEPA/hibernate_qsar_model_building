@@ -1,8 +1,11 @@
 package gov.epa.databases.dev_qsar.exp_prop.dao;
 
+import java.util.List;
+
 import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.criterion.Restrictions;
+import org.hibernate.query.Query;
 
 import gov.epa.databases.dev_qsar.exp_prop.ExpPropSession;
 import gov.epa.databases.dev_qsar.exp_prop.entity.LiteratureSource;
@@ -11,6 +14,9 @@ import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
 
 public class SourceChemicalDaoImpl implements SourceChemicalDao {
 	
+	private static final String HQL_ALL = "from SourceChemical";
+	
+	@Override
 	public SourceChemical findMatch(SourceChemical sc, Session session) {
 		if (session==null) { session = ExpPropSession.getSessionFactory().getCurrentSession(); }
 		
@@ -35,6 +41,13 @@ public class SourceChemicalDaoImpl implements SourceChemicalDao {
 		crit.add(ls == null ? Restrictions.isNull("literatureSource") : Restrictions.eq("literatureSource.id", ls.getId()));
 		
 		return (SourceChemical) crit.uniqueResult();
+	}
+
+	@Override
+	public List<SourceChemical> findAll(Session session) {
+		if (session==null) { session = ExpPropSession.getSessionFactory().getCurrentSession(); }
+		Query query = session.createQuery(HQL_ALL);
+		return (List<SourceChemical>) query.list();
 	}
 
 }

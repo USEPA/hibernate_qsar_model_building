@@ -37,11 +37,31 @@ public class LiteratureSource {
 	@Column(name="title")
 	private String title;
 	
-	@Column(name="authors")
-	private String authors;
+	@Column(name="author")
+	private String author;
 	
-	@Column(name="description", length=1000)
-	private String description;
+	@Column(name="citation", length=1000)
+	private String citation;
+
+
+	@Column(name="journal")
+	private String journal;
+
+	@Column(name="year")
+	private String year;
+
+	
+	@Column(name="volume")
+	private String volume;
+
+	@Column(name="issue")
+	private String issue;
+
+	@Column(name="pages")
+	private String pages;
+
+//	@Column(name="document_name")
+//	public String documentName;
 	
 	@Column(name="url")
 	private String url;
@@ -75,9 +95,9 @@ public class LiteratureSource {
 	
 	public LiteratureSource() {}
 	
-	public LiteratureSource(String name, String description, String createdBy) {
+	public LiteratureSource(String name, String citation, String createdBy) {
 		this.name = name;
-		this.description = description;
+		this.citation = citation;
 		this.createdBy = createdBy;
 	}
 
@@ -105,13 +125,6 @@ public class LiteratureSource {
 		this.title = name;
 	}
 
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
-		this.description = description;
-	}
 
 	public String getUrl() {
 		return url;
@@ -170,11 +183,68 @@ public class LiteratureSource {
 		this.updatedBy = updatedBy;
 	}
 
-	public String getAuthors() {
-		return authors;
+	public String getAuthor() {
+		return author;
 	}
 
-	public void setAuthors(String authors) {
-		this.authors = authors;
+	public void setAuthor(String author) {
+		this.author = author;
 	}
+
+	public String getYear() {
+		return year;
+	}
+
+	public void setYear(String year) {
+		this.year = year;
+	}
+
+	public String getJournal() {
+		return journal;
+	}
+
+	public void setJournal(String journal) {
+		this.journal = journal;
+	}
+
+	public String getVolume() {
+		return volume;
+	}
+
+	public void setVolume(String volume) {
+		this.volume = volume;
+	}
+
+	public String getIssue() {
+		return issue;
+	}
+
+	public void setIssue(String issue) {
+		this.issue = issue;
+	}
+
+	public String getPages() {
+		return pages;
+	}
+
+	public void setPages(String pages) {
+		this.pages = pages;
+	}
+
+	public String getCitation() {
+		return citation;
+	}
+
+	public void setCitation(String citation) {
+		this.citation = citation;
+	}
+
+//	public String getDocumentName() {
+//		return documentName;
+//	}
+//
+//	public void setDocumentName(String documentName) {
+//		this.documentName = documentName;
+//	}
+
 }

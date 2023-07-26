@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.exp_prop.service;
 
+import java.util.List;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
@@ -11,8 +12,11 @@ import org.hibernate.Transaction;
 
 import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.exp_prop.ExpPropSession;
+import gov.epa.databases.dev_qsar.exp_prop.dao.ParameterDao;
+import gov.epa.databases.dev_qsar.exp_prop.dao.ParameterDaoImpl;
 import gov.epa.databases.dev_qsar.exp_prop.dao.SourceChemicalDao;
 import gov.epa.databases.dev_qsar.exp_prop.dao.SourceChemicalDaoImpl;
+import gov.epa.databases.dev_qsar.exp_prop.entity.Parameter;
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
 
 public class SourceChemicalServiceImpl implements SourceChemicalService {
@@ -69,6 +73,20 @@ public class SourceChemicalServiceImpl implements SourceChemicalService {
 		return sourceChemical;
 	}
 	
+	@Override
+	public List<SourceChemical> findAll() {
+		Session session = ExpPropSession.getSessionFactory().getCurrentSession();
+		return findAll(session);
+	}
 	
+	@Override
+	public List<SourceChemical> findAll(Session session) {
+		Transaction t = session.beginTransaction();
+		SourceChemicalDao sourceChemicalDao = new SourceChemicalDaoImpl();
+		List<SourceChemical> parameters = sourceChemicalDao.findAll(session);
+		t.rollback();
+		return parameters;
+	}
+
 
 }

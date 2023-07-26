@@ -25,7 +25,7 @@ public class PropertyValueDaoImpl implements PropertyValueDao {
 			+ "and (pv.valueQualifier is null or pv.valueQualifier = '~')";
 	private static final String HQL_WHERE_BY_PROPERTY_NAME_USE_KEEP_AND_OMIT_VALUE_QUALIFIERS = "where pv.property.name = :propertyName "
 			+ "and pv.keep = true "
-			+ "and (pv.valueQualifier is null or pv.valueQualifier = '~')";
+			+ "and (pv.valueQualifier is null or pv.valueQualifier ='' or pv.valueQualifier = '~')";//when loading into database we shouldnt load blank value qualifiers- should load null values- but this makes sure it always works
 
 
 	@Override
