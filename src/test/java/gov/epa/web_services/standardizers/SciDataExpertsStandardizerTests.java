@@ -231,8 +231,8 @@ public class SciDataExpertsStandardizerTests {
 
 							if (smilesFrag.length()<9999) {
 
-								StandardizeResponseWithStatus s=SciDataExpertsStandardizer.callQsarReadyStandardize(serverEPA, workflow, smilesFrag);
-								String smilesFrag2=s.standardizeResponse.qsarStandardizedSmiles;
+								String smilesFrag2=SciDataExpertsStandardizer.runStandardize(smilesFrag,serverEPA, workflow, false).qsarReadySmiles;
+
 								String inchiKeyFrag2=toInchiKey(smilesFrag2);								
 
 								if (inchiKeyFrag2==null || !inchiKeyFrag2.equals(inchiKeySmilesOpera)) {

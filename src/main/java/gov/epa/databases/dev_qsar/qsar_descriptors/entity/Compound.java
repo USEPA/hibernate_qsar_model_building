@@ -83,6 +83,10 @@ public class Compound {
 		return id;
 	}
 
+	public String getKey() {
+		return getDtxcid()+"\t"+getSmiles()+"\t"+getStandardizer();
+	}
+	
 	public void setId(Long id) {
 		this.id = id;
 	}

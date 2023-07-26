@@ -9,6 +9,7 @@ import java.util.Vector;
 //import org.apache.log4j.Logger;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.PropertyValueValidator;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 
 public class PropertyValueMerger {
@@ -92,7 +93,7 @@ public class PropertyValueMerger {
 			MappedPropertyValue mpv2 = mappedPropertyValues.get(size / 2);
 			Double v1 = mpv1.qsarPropertyValue;
 			Double v2 = mpv2.qsarPropertyValue;
-			if (PropertyValue.checkRangeForProperty(v1, v2, propertyName)) {
+			if (PropertyValueValidator.checkRangeForProperty(v1, v2, propertyName)) {
 				return (v1 + v2) / 2.0;
 			} else {
 				System.out.println(mappedPropertyValues.iterator().next().standardizedSmiles + ": Range too wide to calculate consensus value");
@@ -127,7 +128,7 @@ public class PropertyValueMerger {
 			Double v1 = mpv1.qsarPropertyValue;
 			Double v2 = mpv2.qsarPropertyValue;
 			
-			if (PropertyValue.checkRangeForProperty(v1, v2, propertyName)) {
+			if (PropertyValueValidator.checkRangeForProperty(v1, v2, propertyName)) {
 				finalValue= (v1 + v2) / 2.0;
 
 //				if (mpv1.compound.getDtxcid().equals(mpv2.compound.getDtxcid())) {

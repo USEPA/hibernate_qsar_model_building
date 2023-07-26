@@ -44,6 +44,19 @@ public class StructureUtil {
 		return inchikey;
 	}
 	
+	
+	public static Double molWeightFromSmiles(String smiles) throws IndigoException {
+
+		Indigo indigo = new Indigo();
+		indigo.setOption("ignore-stereochemistry-errors", true);
+		
+		try {
+			IndigoObject molecule = indigo.loadMolecule(smiles);
+			return molecule.molecularWeight();
+		} catch (Exception ex) {
+			return null;
+		}
+	}
 	public static class Inchi {
 		public String inchi, inchiKey, inchiKey1,warning; 
 	}
@@ -81,4 +94,9 @@ public class StructureUtil {
 		return SimpleOpsinResult.fromOpsinResult(or);
 	}
 
+	
+	public static void main(String[] args) {
+		String inchiKey=indigoInchikeyFromSmiles("ClC1=C(Cl)[C@]2(Cl)[C@@H]3[C@@H]4CC(C=C4)[C@@H]3C1(Cl)C2(Cl)Cl");
+		System.out.println(inchiKey);
+	}
 }

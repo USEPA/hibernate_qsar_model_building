@@ -21,6 +21,8 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
@@ -50,6 +52,7 @@ public class DataPoint {
 	private Boolean outlier;
 	
 	@ManyToOne
+//	@NotFound(action=NotFoundAction.IGNORE)//https://edwin.baculsoft.com/2013/02/a-weird-hibernate-exception-org-hibernate-objectnotfoundexception-no-row-with-the-given-identifier-exists/
 	@NotNull(message="Dataset required")
 	@JoinColumn(name="fk_dataset_id")
 	private Dataset dataset;

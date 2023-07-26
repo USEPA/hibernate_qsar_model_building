@@ -34,6 +34,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.PropertyValueValidator;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
@@ -147,10 +148,10 @@ public class DsstoxMapper {
 //	private boolean omitSalts;
 	private String lanId;
 	
-	private Standardizer standardizer;
+	private SciDataExpertsStandardizer standardizer;
 	private String standardizerName;
 	
-	 HashMap<String,String>hmCanonSmilesLookup;
+	 HashMap<String,Compound>hmCanonSmilesLookup;
 	
 	private Map<String, List<PropertyValue>> propertyValuesMap;
 	private Map<String, DsstoxRecord> dsstoxRecordsMap;
@@ -173,7 +174,7 @@ public class DsstoxMapper {
 	
 	
 	
-	public DsstoxMapper(DatasetParams datasetParams, Standardizer standardizer, HashMap<String,String>hmCanonSmilesLookup,String finalUnitName, 
+	public DsstoxMapper(DatasetParams datasetParams, SciDataExpertsStandardizer standardizer, HashMap<String,Compound>hmCanonSmilesLookup,String finalUnitName, 
 			 Set<String> acceptableAtoms, String lanId) throws IOException {
 		this.compoundService = new CompoundServiceImpl();
 		
@@ -280,6 +281,7 @@ public class DsstoxMapper {
 		initPropertyValuesMap(propertyValues);
 		List<DsstoxRecord> dsstoxRecords = null;
 		String checkChemicalList = null;
+
 		if (datasetParams.mappingParams.isNaive) {	
 			// For naive mapping strategies (CASRN, DTXSID, DTXCID), pull the DSSTox records and map them directly
 			dsstoxRecords = getDsstoxRecords(propertyValuesMap.keySet(), datasetParams.mappingParams.dsstoxMappingId);
@@ -452,7 +454,7 @@ public class DsstoxMapper {
 			
 			SourceChemical sourceChemical = propertyValues.iterator().next().getSourceChemical();
 			
-			if (dsstoxRecord.getConnectionReason().equals("DTXRID matched <b>SOURCE_DTXRID</b>")) {
+			if (dsstoxRecord.getConnectionReason()!=null && dsstoxRecord.getConnectionReason().equals("DTXRID matched <b>SOURCE_DTXRID</b>")) {
 				//Get the original dsstoxRecord from the source chemicals dtxrid:
 
 //				System.out.println(Utilities.gson.toJson(sourceChemical));
@@ -524,7 +526,21 @@ public class DsstoxMapper {
 			
 			
 			for (PropertyValue pv:propertyValues) {
-				ExplainedResponse validValue = pv.validateValue();
+
+				if(dsstoxRecord.molWeight==null) {
+					if(dsstoxRecord.smiles!=null) {
+						dsstoxRecord.molWeight=StructureUtil.molWeightFromSmiles(dsstoxRecord.smiles);
+						System.out.println(dsstoxRecord.dsstoxSubstanceId+"\tCalculated mw="+dsstoxRecord.molWeight);
+					}
+					
+					if (dsstoxRecord.molWeight==null) {
+						discardedPropertyValues.add(new DiscardedPropertyValue(pv, dsstoxRecord, "Can't calculate molecular weight"));
+						continue;
+					}
+				}
+				
+				ExplainedResponse validValue = PropertyValueValidator.validatePropertyValue(pv,dsstoxRecord);//TODO convert units before validating value?
+
 				if (!validValue.response) {
 					discardedPropertyValues.add(new DiscardedPropertyValue(pv, dsstoxRecord, validValue.reason));
 					continue;
@@ -928,10 +944,12 @@ public class DsstoxMapper {
 		//TODO- code needs to be augmented when have salts since qsar ready smiles might be null
 		
 		if (conflict.bestDsstoxRecord.qsarReadySmiles!=null && !conflict.bestDsstoxRecord.qsarReadySmiles.isBlank()) {
+			//If already have a qsar ready smiles in dsstox use that. 
 			drQsarReadySmiles = conflict.bestDsstoxRecord.qsarReadySmiles;
 		} else if (standardizer!=null && conflict.bestDsstoxRecord.isWellDefined()) {
 			needStandardizer = true;
-			conflict.bestStandardizedSmiles = standardizeSmiles(srcChemId, conflict.bestDsstoxRecord);
+//			conflict.bestStandardizedSmiles = standardizeSmiles(srcChemId, conflict.bestDsstoxRecord);
+			conflict.bestStandardizedSmiles = DatasetCreator.getCompound(hmCanonSmilesLookup, false, conflict.bestDsstoxRecord, standardizer).getCanonQsarSmiles();
 		}
 		
 		if (drQsarReadySmiles==null && conflict.bestStandardizedSmiles==null) {
@@ -961,7 +979,8 @@ public class DsstoxMapper {
 			if (needStandardizer || dcr.qsarReadySmiles==null || dcr.qsarReadySmiles.isBlank()) {
 				if (dcr.isWellDefined()) {
 					// If conflict record has a structure, standardize it
-					dsstoxConflictRecord.standardizedSmiles = standardizeSmiles(srcChemId, dcr);
+//					dsstoxConflictRecord.standardizedSmiles = standardizeSmiles(srcChemId, dcr);
+					dsstoxConflictRecord.standardizedSmiles = DatasetCreator.getCompound(hmCanonSmilesLookup, false, dcr, standardizer).getCanonQsarSmiles();
 				} else {
 					// Otherwise, it's a no-structure record; move on
 					continue;
@@ -978,7 +997,8 @@ public class DsstoxMapper {
 				// If best record hasn't already been standardized, do it
 				// Relatively rarely necessary, so better to do it here than to repeat it for every single conflict "just in case"
 				if (conflict.bestStandardizedSmiles==null && conflict.bestDsstoxRecord.isWellDefined()) {
-					conflict.bestStandardizedSmiles = standardizeSmiles(srcChemId, conflict.bestDsstoxRecord);
+//					conflict.bestStandardizedSmiles = standardizeSmiles(srcChemId, conflict.bestDsstoxRecord);
+					conflict.bestStandardizedSmiles = DatasetCreator.getCompound(hmCanonSmilesLookup, false, conflict.bestDsstoxRecord, standardizer).getCanonQsarSmiles();
 				}
 				
 				// Check if standardization worked
@@ -1143,88 +1163,90 @@ public class DsstoxMapper {
 	
 	
 	
-	private String standardizeSmiles(String srcChemId, DsstoxRecord dr) {
-		
-		if(hmCanonSmilesLookup.containsKey(dr.smiles)) {
-//			System.out.println(dr.smiles+"\t"+hmCanonSmilesLookup.get(dr.smiles));
-			return hmCanonSmilesLookup.get(dr.smiles);
-		}
-		
-		// Check (by DTXCID) if compound already has a standardization
-		Compound compound = compoundService.findByDtxcidSmilesAndStandardizer(dr.dsstoxCompoundId, dr.smiles,standardizerName);
-		
-		if (compound==null) {
-
-			try {
-			
-				boolean full=false;
-				
-				HttpResponse<String>standardizeResponse=standardizer.callQsarReadyStandardizePost(dr.smiles,full);
-			
-				if (standardizeResponse.getStatus()==200) {
-					
-					String jsonResponse=SciDataExpertsStandardizer.getResponseBody(standardizeResponse, full);
-					String standardizedSmiles=SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse, full);
-
-//					StandardizeResponse standardizeResponseData = standardizeResponse.standardizeResponse;
-//					String standardizedSmiles = null;
+//	private String standardizeSmiles(String srcChemId, DsstoxRecord dr) {
+//		
+//		String key=dr.smiles+"\t"+dr.dsstoxCompoundId+"\t"+standardizerName;
+//		
+//		if(hmCanonSmilesLookup.containsKey(key)) {
+//			System.out.println("Here1, found key in map:"+dr.smiles+"\t"+hmCanonSmilesLookup.get(dr.smiles));
+//			return hmCanonSmilesLookup.get(key).getCanonQsarSmiles();
+//		}
+//		
+//		// Check (by DTXCID) if compound already has a standardization
+//		Compound compound = compoundService.findByDtxcidSmilesAndStandardizer(dr.dsstoxCompoundId, dr.smiles,standardizerName);
+//		
+//		if (compound==null) {
+//
+//			try {
+//			
+//				boolean full=false;
+//				
+//				HttpResponse<String>standardizeResponse=standardizer.callQsarReadyStandardizePost(dr.smiles,full);
+//			
+//				if (standardizeResponse.getStatus()==200) {
 //					
-//					if (standardizeResponseData.success) {
-//						standardizedSmiles = standardizeResponseData.qsarStandardizedSmiles;
-//					} else {
-//						logger.warn(srcChemId + ": Standardization failed for SMILES: " + dr.smiles);
+//					String jsonResponse=SciDataExpertsStandardizer.getResponseBody(standardizeResponse, full);
+//					String standardizedSmiles=SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse, full);
+//
+////					StandardizeResponse standardizeResponseData = standardizeResponse.standardizeResponse;
+////					String standardizedSmiles = null;
+////					
+////					if (standardizeResponseData.success) {
+////						standardizedSmiles = standardizeResponseData.qsarStandardizedSmiles;
+////					} else {
+////						logger.warn(srcChemId + ": Standardization failed for SMILES: " + dr.smiles);
+////					}
+//					
+//					compound = new Compound(dr.dsstoxCompoundId, dr.smiles, standardizedSmiles, standardizerName, lanId);
+//
+//					System.out.println("From standardizerApi, for smiles="+dr.smiles+", qsarReadySmiles="+standardizedSmiles);
+//					
+//					try {
+//						compoundService.create(compound);
+//					} catch (ConstraintViolationException e) {
+//						System.out.println(e.getMessage());
 //					}
-					
-					compound = new Compound(dr.dsstoxCompoundId, dr.smiles, standardizedSmiles, standardizerName, lanId);
-
-					System.out.println("From standardizerApi, for smiles="+dr.smiles+", qsarReadySmiles="+standardizedSmiles);
-					
-					try {
-						compoundService.create(compound);
-					} catch (ConstraintViolationException e) {
-						System.out.println(e.getMessage());
-					}
-				} else {
-					// In case there's a server error that prevents standardization, don't save the null standardization
-					// We want to try again later!
-					logger.warn(srcChemId + ": Standardizer HTTP response failed for SMILES: " 
-							+ dr.smiles + " with code " + standardizeResponse.getStatus());
-					
-					System.out.println("Failed to run standardize for:"+dr.smiles+", "+dr.dsstoxCompoundId);
-					compound = new Compound(dr.dsstoxCompoundId, dr.smiles, null, standardizerName, lanId);
-
-					try {
-						compoundService.create(compound);
-					} catch (ConstraintViolationException e) {
-						System.out.println(e.getMessage());
-					}
-				}
-			} catch (Exception ex) {
-				System.out.println("Failed to standardize:"+dr.smiles+", "+dr.dsstoxCompoundId);
-				
-				System.out.println("Failed to run standardize for:"+dr.smiles+", "+dr.dsstoxCompoundId);
-				compound = new Compound(dr.dsstoxCompoundId, dr.smiles, null, standardizerName, lanId);
-
-				try {
-					compoundService.create(compound);
-				} catch (ConstraintViolationException e) {
-					System.out.println(e.getMessage());
-				}
-			}
-
-//			StandardizeResponseWithStatus standardizeResponse = standardizer.callStandardize(dr.smiles);
-			
-
-		} else {
-			System.out.println("From db, for smiles="+dr.smiles+", qsarReadySmiles="+compound.getCanonQsarSmiles());
-		}
-		
-		
-		
-		
-//		System.out.println("From db:"+compound.getCanonQsarSmiles());
-		return compound.getCanonQsarSmiles();
-	}
+//				} else {
+//					// In case there's a server error that prevents standardization, don't save the null standardization
+//					// We want to try again later!
+//					logger.warn(srcChemId + ": Standardizer HTTP response failed for SMILES: " 
+//							+ dr.smiles + " with code " + standardizeResponse.getStatus());
+//					
+//					System.out.println("Failed to run standardize for:"+dr.smiles+", "+dr.dsstoxCompoundId);
+//					compound = new Compound(dr.dsstoxCompoundId, dr.smiles, null, standardizerName, lanId);
+//
+//					try {
+//						compoundService.create(compound);
+//					} catch (ConstraintViolationException e) {
+//						System.out.println(e.getMessage());
+//					}
+//				}
+//			} catch (Exception ex) {
+//				System.out.println("Failed to standardize:"+dr.smiles+", "+dr.dsstoxCompoundId);
+//				
+//				System.out.println("Failed to run standardize for:"+dr.smiles+", "+dr.dsstoxCompoundId);
+//				compound = new Compound(dr.dsstoxCompoundId, dr.smiles, null, standardizerName, lanId);
+//
+//				try {
+//					compoundService.create(compound);
+//				} catch (ConstraintViolationException e) {
+//					System.out.println(e.getMessage());
+//				}
+//			}
+//
+////			StandardizeResponseWithStatus standardizeResponse = standardizer.callStandardize(dr.smiles);
+//			
+//
+//		} else {
+//			System.out.println("From db, for smiles="+dr.smiles+", qsarReadySmiles="+compound.getCanonQsarSmiles());
+//		}
+//		
+//		
+//		
+//		
+////		System.out.println("From db:"+compound.getCanonQsarSmiles());
+//		return compound.getCanonQsarSmiles();
+//	}
 
 	private void writeChemRegImportFile(Map<String, List<PropertyValue>> propertyValuesMap) {
 		String importFilePath = datasetFolderPath + File.separator + datasetParams.mappingParams.chemicalListName + "_ChemRegImport.txt";

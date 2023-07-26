@@ -69,11 +69,14 @@ import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponse.
 import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponseWithStatus;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponse;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithStatus;
+import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
 public class DatasetCreator {
 	
-	private CompoundService compoundService;
+	public static boolean postToDB=false;
+	
+	private static CompoundService compoundService;
 	
 	private UnitService unitService;
 	private PropertyService propertyService;
@@ -85,8 +88,9 @@ public class DatasetCreator {
 	private ExpPropUnitService expPropUnitService;
 	private PropertyValueService propertyValueService;
 
-	private String lanId;
-	private Standardizer standardizer;
+	private static String lanId;
+//	private Standardizer standardizer;
+	private SciDataExpertsStandardizer standardizer;
 	
 	private String standardizerName;
 	
@@ -97,12 +101,12 @@ public class DatasetCreator {
 	private Set<String> acceptableAtoms;
 
 	
-	
+	boolean useFullStandardize=false;
 	
 	
 	public static boolean createExcelFiles=true;//whether to create excel files for discarded and mapped records in addition to the json files
 	
-	public static void main(String[] args) {
+	private static void testDatasetCreation() {
 		System.out.println("eclipse recognizes new code2");
 
 		String serverHost="https://hcd.rtpnc.epa.gov";
@@ -152,13 +156,17 @@ public class DatasetCreator {
 
 //		creator.createPropertyDataset(casrnMappedParams);
 		creator.createPropertyDataset(listMappedParams, false);
-		
-
 	}
 	
 	
 	
-	public DatasetCreator(Standardizer standardizer, String lanId) 
+	public static void main(String[] args) {
+		testDatasetCreation();
+	}
+	
+	
+	
+	public DatasetCreator(SciDataExpertsStandardizer standardizer, String lanId) 
 			throws ConstraintViolationException {
 		this.compoundService = new CompoundServiceImpl();
 		
@@ -206,7 +214,7 @@ public class DatasetCreator {
 		this(null, lanId); // If initialized without a standardizer web service, uses DSSTox QSAR-ready SMILES
 	}
 	
-	private List<MappedPropertyValue> mapPropertyValuesToDsstoxRecords(List<PropertyValue> propertyValues, DatasetParams params,HashMap<String,String>hmCanonSmilesLookup) {
+	private List<MappedPropertyValue> mapPropertyValuesToDsstoxRecords(List<PropertyValue> propertyValues, DatasetParams params,HashMap<String,Compound>hmCanonSmilesLookup) {
 		List<MappedPropertyValue> mappedPropertyValues = new ArrayList<MappedPropertyValue>();
 		
 		String finalUnitName = finalUnitsNameMap.get(params.propertyName);
@@ -240,177 +248,151 @@ public class DatasetCreator {
 	
 	
 	
-	private void standardize(List<MappedPropertyValue> mappedPropertyValues, HashMap<String, String> hmQsarSmilesLookup) {
+	private void standardizeMappedPropertyValues(List<MappedPropertyValue> mappedPropertyValues, HashMap<String, Compound> hmQsarSmilesLookup,boolean useFullStandardize) {
 		// Go through all compounds retrieved from DSSTox
-		List<String> smilesToBatchStandardize = new ArrayList<String>();
-		
 		int counter=0;
-		
-		//TODO make a batch based method to get the standardized smiles to speed it up
-		
-		
+
 		for (MappedPropertyValue mpv:mappedPropertyValues) {
 			counter++;
-
 			DsstoxRecord dr = mpv.dsstoxRecord;
-
-//			if (mpv.propertyValue.getSourceChemical().getSourceChemicalName()!=null) {
-//				if (mpv.propertyValue.getSourceChemical().getSourceChemicalName().equals("radon")) {
-//					System.out.println("*** For smiles ="+dr.smiles+",qsarSmiles="+mpv.standardizedSmiles);	
-//				}
-//			}
-			
 			if(counter%1000==0) System.out.println(counter+ " of "+mappedPropertyValues.size());
-			
-			
-			if(hmQsarSmilesLookup.containsKey(dr.smiles)) {
-				mpv.standardizedSmiles = hmQsarSmilesLookup.get(dr.smiles);
-				mpv.isStandardized = true;
-				mpv.compound = new Compound(dr.dsstoxCompoundId,dr.smiles, mpv.standardizedSmiles, standardizerName, lanId);
-				
-				
-//				System.out.println("For smiles = "+dr.smiles+",qsarSmiles="+mpv.standardizedSmiles);
-				continue;
-			}
-			
-
-			// Check (by DTXCID) if compound already has a standardization
-			Compound compound = compoundService.findByDtxcidSmilesAndStandardizer(dr.dsstoxCompoundId, dr.smiles,standardizerName);
-
-			if (compound!=null) {
-				System.out.println("Standardization in db:"+compound.getDtxcid()+"\t"+compound.getSmiles()+"\t"+compound.getCanonQsarSmiles());
-				
-				// If already standardized, set standardization and mark record as standardized
-				// Additionally store mapped compound so we don't have to query it later
-				mpv.compound = compound;
-				mpv.standardizedSmiles = compound.getCanonQsarSmiles();
-				mpv.isStandardized = true;
-//				logger.trace(mpv.id + ": Found existing standardization: " + dr.smiles + " -> " + mpv.standardizedSmiles);
-			} else if (standardizer==null) {
-				// If using DSSTox QSAR-ready SMILES, just set it and mark standardized
-				mpv.standardizedSmiles = dr.qsarReadySmiles;
-				mpv.isStandardized = true;
-//				logger.debug(mpv.id + ": Found DSSTox standardization: " + dr.smiles + " -> " + mpv.standardizedSmiles);
-			} else {
-				if (standardizer.useBatchStandardize) {
-					// Add SMILES to list for batch standardization
-					smilesToBatchStandardize.add(dr.smiles);
-				} else {
-					// Standardize one at a time
-					StandardizeResponseWithStatus standardizeResponse = standardizer.callStandardize(dr.smiles);
-					
-					
-//					if (mpv.propertyValue.getSourceChemical().getSourceChemicalName()!=null) {
-//						if (mpv.propertyValue.getSourceChemical().getSourceChemicalName().equals("radon")) {
-//							System.out.println("***radon status="+standardizeResponse.status);
-//						}
-//					}
-					
-					if (standardizeResponse.status==200) {
-						
-						StandardizeResponse standardizeResponseData = standardizeResponse.standardizeResponse;
-						
-						if (standardizeResponseData.success) {
-							mpv.standardizedSmiles = standardizeResponseData.qsarStandardizedSmiles;
-							mpv.isStandardized = true;
-							
-							//**************************************************************
-							//TMM 6/8/22 store in database:
-							compound = new Compound(dr.dsstoxCompoundId,dr.smiles, mpv.standardizedSmiles, standardizerName, lanId);
-							
-							System.out.println("standardized:"+dr.dsstoxCompoundId+"\t"+dr.smiles+"\t"+mpv.standardizedSmiles);
-							
-							//TODO check if this addition causes duplication error message...
-							try {
-								mpv.compound = compoundService.create(compound);
-							} catch (ConstraintViolationException e) {
-								System.out.println(e.getMessage());
-							}
-							//**************************************************************
-							
-							
-//							logger.debug(mpv.id + ": Standardized: " + dr.smiles + " -> " + mpv.standardizedSmiles);
-						} else {
-//							logger.warn(mpv.id + ": Standardization failed for SMILES: " + dr.smiles);
-//							System.out.println(mpv.id + ": Standardization failed for SMILES: " + dr.smiles);
-						}
-					
-					} else if (standardizeResponse.status==404) {
-
-						mpv.standardizedSmiles=null;
-						compound = new Compound(dr.dsstoxCompoundId,dr.smiles, mpv.standardizedSmiles, standardizerName, lanId);
-						System.out.println("standardized:"+dr.dsstoxCompoundId+"\t"+dr.smiles+"\t"+mpv.standardizedSmiles);
-						
-						//TODO check if this addition causes duplication error message...
-						try {
-							mpv.compound = compoundService.create(compound);
-						} catch (ConstraintViolationException e) {
-							System.out.println(e.getMessage());
-						}
-						
-					} else {
-//						logger.warn(mpv.id + ": Standardizer HTTP response failed for SMILES: " 
-//								+ dr.smiles + " with code " + standardizeResponse.status);
-					}
-				}
-			}
+			standardize(hmQsarSmilesLookup, useFullStandardize, mpv, dr);
 		}
+	}
+
+
+	private void standardize(HashMap<String, Compound> hmQsarSmilesLookup, boolean useFullStandardize,
+			MappedPropertyValue mpv, DsstoxRecord dr) {
+
 		
-		if (standardizer==null || smilesToBatchStandardize.isEmpty()) { 
-			// Don't call web service if using DSSTox QSAR-ready SMILES
-			// Don't call web service if no SMILES to standardize
-			return;
-		}
-		
-		// Send list through batch standardization and get output as a map from input SMILES to standardized SMILES
-		Map<String, String> standardizedSmilesMap = batchStandardizeSmiles(smilesToBatchStandardize);
-		// If standardization failed, don't try to get results
-		if (standardizedSmilesMap.isEmpty()) { return; }
-		
-		for (MappedPropertyValue mpv:mappedPropertyValues) {
-			// Skip records without structure or already standardized
-			DsstoxRecord dr = mpv.dsstoxRecord;
-			if (dr.smiles==null || dr.smiles.isBlank()) { continue; }
-			if (mpv.isStandardized) { continue; }
+//		if(!dr.smiles.equals("CC(C)(C1=CC=C(O)C=C1)C1=CC=C(O)C=C1")) return;
 			
-			// Get standardization from map
-			mpv.standardizedSmiles = standardizedSmilesMap.get(dr.smiles);
+		mpv.compound=getCompound(hmQsarSmilesLookup, useFullStandardize, dr, standardizer);
+		
+		if(mpv.compound!=null && mpv.compound.getCanonQsarSmiles()!=null) {
 			mpv.isStandardized = true;
-			
-			if (mpv.standardizedSmiles!=null && mpv.standardizedSmiles.isBlank()) {
-				mpv.standardizedSmiles = null;
-			}
-			
-			Compound compound = new Compound(dr.dsstoxCompoundId, dr.smiles, mpv.standardizedSmiles, standardizerName, lanId);
-			
-			try {
-				mpv.compound = compoundService.create(compound);
-			} catch (ConstraintViolationException e) {
-				System.out.println(e.getMessage());
-			}
+			mpv.standardizedSmiles = mpv.compound.getCanonQsarSmiles();
+		} else {
+			mpv.isStandardized = false;
+			mpv.standardizedSmiles = null;
 		}
+		
+	}
+	
+	public static Compound getCompound(HashMap<String, Compound> hmQsarSmilesLookup, boolean useFullStandardize,
+			DsstoxRecord dr,SciDataExpertsStandardizer standardizer) {
+
+		boolean storeInDB=true;//TODO pass as parameter?
+		
+		if (standardizer == null) {
+			// If using DSSTox QSAR-ready SMILES, just set it and mark standardized
+			Compound c=new Compound();
+			if(dr.getDsstoxCompoundId()!=null)	c.setDtxcid(dr.getDsstoxCompoundId());
+			if(dr.getSmiles()!=null) c.setSmiles(dr.smiles);
+			if(dr.getQsarReadySmiles()!=null) c.setCanonQsarSmiles(dr.getQsarReadySmiles());//just use what comes from dsstox
+			return c;
+		}
+
+		String key = dr.getDsstoxCompoundId()+"\t"+dr.smiles+"\t" + standardizer.standardizerName;
+//		System.out.println(key);
+		
+		if (hmQsarSmilesLookup.containsKey(key)) {
+//			System.out.println("match in db for "+dr.dsstoxCompoundId+"\t"+hmQsarSmilesLookup.get(key).getCanonQsarSmiles());
+			return hmQsarSmilesLookup.get(key);
+		} 
+			
+		//Standardize via post API call:
+		HttpResponse<String> standardizeResponse = standardizer.callQsarReadyStandardizePost(dr.smiles, false);
+
+//		System.out.println("status=" + standardizeResponse.getStatus());
+
+		if (standardizeResponse.getStatus() == 200) {
+			String jsonResponse = SciDataExpertsStandardizer.getResponseBody(standardizeResponse, useFullStandardize);
+			String qsarSmiles=SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse, useFullStandardize);
+			
+			System.out.println(dr.dsstoxCompoundId+"\t"+dr.smiles+"\t"+qsarSmiles);
+			
+			Compound compound = new Compound(dr.dsstoxCompoundId, dr.smiles, qsarSmiles, standardizer.standardizerName,
+						lanId);
+
+			if (storeInDB) {
+				try {
+					compound = compoundService.create(compound);
+				} catch (Exception e) {
+					System.out.println("Failed to store record in compounds table in db:"+dr.dsstoxCompoundId+"\t"+dr.smiles);
+					e.printStackTrace();
+					return null;
+				}
+			}
+
+			hmQsarSmilesLookup.put(key, compound);// store in map
+			return compound;
+		} 
+
+		System.out.println("Standardize response status = "+standardizeResponse.getStatus()+" for "+dr.dsstoxCompoundId+"\t"+dr.smiles);
+		return null;
 	}
 
-	private Map<String, String> batchStandardizeSmiles(List<String> smilesToBatchStandardize) {
-		Map<String, String> standardizedSmilesMap = new HashMap<String, String>();
-		BatchStandardizeResponseWithStatus batchStandardizeResponse = standardizer.callBatchStandardize(smilesToBatchStandardize);
-		
-		if (batchStandardizeResponse.status==200) {
-			BatchStandardizeResponse batchStandardizeResponseData = batchStandardizeResponse.batchStandardizeResponse;
-			if (batchStandardizeResponseData.success) {
-				List<Standardization> standardizations = batchStandardizeResponseData.standardizations;
-				for (Standardization standardization:standardizations) {
-					standardizedSmilesMap.put(standardization.smiles, standardization.standardizedSmiles);
-				}
-			} else {
-//				logger.error("Batch standardization failed");
-			}
-		} else {
-//			logger.error("Batch standardizer HTTP response failed with code " + batchStandardizeResponse.status);
-		}
-		
-		return standardizedSmilesMap;
-	}
+	
+//	/**
+//	 * Note: batch standardize not implemented yet in SDE standardizer
+//	 * 
+//	 * @param smilesToBatchStandardize
+//	 * @param mappedPropertyValues
+//	 */
+//	private void  batchStandardizeSmiles(List<String> smilesToBatchStandardize,List<MappedPropertyValue> mappedPropertyValues) {
+//
+//		if (standardizer==null || smilesToBatchStandardize.isEmpty()) { 
+//			// Don't call web service if using DSSTox QSAR-ready SMILES
+//			// Don't call web service if no SMILES to standardize
+//			return;
+//		}
+//
+//		
+//		Map<String, String> standardizedSmilesMap = new HashMap<String, String>();
+//		BatchStandardizeResponseWithStatus batchStandardizeResponse = standardizer.callBatchStandardize(smilesToBatchStandardize);
+//		
+//		if (batchStandardizeResponse.status==200) {
+//			BatchStandardizeResponse batchStandardizeResponseData = batchStandardizeResponse.batchStandardizeResponse;
+//			if (batchStandardizeResponseData.success) {
+//				List<Standardization> standardizations = batchStandardizeResponseData.standardizations;
+//				for (Standardization standardization:standardizations) {
+//					standardizedSmilesMap.put(standardization.smiles, standardization.standardizedSmiles);
+//				}
+//			} else {
+////				logger.error("Batch standardization failed");
+//			}
+//		} else {
+////			logger.error("Batch standardizer HTTP response failed with code " + batchStandardizeResponse.status);
+//		}
+//		
+//		
+//		if (standardizedSmilesMap.isEmpty()) return; 
+//		
+//		for (MappedPropertyValue mpv:mappedPropertyValues) {
+//			// Skip records without structure or already standardized
+//			DsstoxRecord dr = mpv.dsstoxRecord;
+//			if (dr.smiles==null || dr.smiles.isBlank()) { continue; }
+//			if (mpv.isStandardized) { continue; }
+//			
+//			// Get standardization from map
+//			mpv.standardizedSmiles = standardizedSmilesMap.get(dr.smiles);
+//			mpv.isStandardized = true;
+//			
+//			if (mpv.standardizedSmiles!=null && mpv.standardizedSmiles.isBlank()) {
+//				mpv.standardizedSmiles = null;
+//			}
+//			
+//			Compound compound = new Compound(dr.dsstoxCompoundId, dr.smiles, mpv.standardizedSmiles, standardizerName, lanId);
+//			
+//			try {
+//				mpv.compound = compoundService.create(compound);
+//			} catch (ConstraintViolationException e) {
+//				System.out.println(e.getMessage());
+//			}
+//		}
+//
+//	}
 	
 	
 	
@@ -433,7 +415,13 @@ public class DatasetCreator {
 			
 			if (validateStructure) {//TODO we need to change it so that qsar ready smiles should stay a mixture instead of null when have multiple components
 				if (structure==null) {
-					System.out.println(mpv.id+": Skipped unification since QSAR Ready smiles was null, smiles="+mpv.compound.getSmiles());
+					
+					if(mpv.compound==null) {
+						System.out.println(mpv.id+": Skipped unification since compound is null");
+					} else {
+						System.out.println(mpv.id+": Skipped unification since QSAR Ready smiles was null, smiles="+mpv.compound.getSmiles());
+					}
+					
 //					logger.info(mpv.id + ": Skipped unification due to missing structure");
 					continue;
 				}
@@ -680,21 +668,24 @@ public class DatasetCreator {
 
 	public void createPropertyDataset(DatasetParams params, boolean useStdevFilter) {
 		List<String>excludedSources=new ArrayList<>();
-		createPropertyDataset(params, useStdevFilter, excludedSources);
+		createPropertyDatasetExcludeSources(params, useStdevFilter, excludedSources);
 	}
 	
-	public void createPropertyDataset(DatasetParams params, boolean useStdevFilter,List<String>excludedSources) {
+	/**
+	 * Creates a dataset but omits excluded sources
+	 * 
+	 * @param params
+	 * @param useStdevFilter
+	 * @param excludedSources
+	 */
+	public void createPropertyDatasetExcludeSources(DatasetParams params, boolean useStdevFilter,List<String>excludedSources) {
 //		System.out.println("enter createPropertyDataset with excluded sources");
 
-		HashMap<String,String>hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
-				
 		Dataset datasetDB = datasetService.findByName(params.datasetName);
 		if(datasetDB!=null) {
 			System.out.println("already have "+params.datasetName+" in db");
 			return;
 		}
-		
-		Gson gson = new Gson();
 		
 		System.out.println("Selecting experimental property data for " + params.propertyName + "...");
 		long t5 = System.currentTimeMillis();
@@ -705,12 +696,20 @@ public class DatasetCreator {
 		System.out.println("Raw records:"+propertyValues.size());		
 		excludePropertyValues(excludedSources, propertyValues);
 		if (excludedSources.size()>0) System.out.println("Raw records after source exclusion:"+propertyValues.size());
+
+		convertPropertyValuesToDatapoints(propertyValues,params,useStdevFilter);
+
+	}
+	
+	private void convertPropertyValuesToDatapoints(List<PropertyValue> propertyValues, DatasetParams params, boolean useStdevFilter) {
 		
 		if (propertyValues==null || propertyValues.isEmpty()) {
 //			logger.error(params.datasetName + ": Experimental property data unavailable");
 			System.out.println(params.datasetName + ": Experimental property data unavailable");
 			return;
 		}
+		
+		HashMap<String,Compound>hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
 		
 		System.out.println("Retrieving DSSTox structure data...");
 		List<MappedPropertyValue> mappedPropertyValues = null;
@@ -742,7 +741,7 @@ public class DatasetCreator {
 				
 		System.out.println("Standardizing structures using " + standardizerName + "...");
 		long t1 = System.currentTimeMillis();
-		standardize(mappedPropertyValues,hmQsarSmilesLookup);
+		standardizeMappedPropertyValues(mappedPropertyValues,hmQsarSmilesLookup,useFullStandardize);
 		long t2 = System.currentTimeMillis();
 		System.out.println("Standardization time: " + (t2 - t1)/1000.0 + " s");
 		
@@ -753,7 +752,10 @@ public class DatasetCreator {
 //		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit);redundant- we have excel and json
 		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit,createExcelFiles);
 		
-//		if(true) return;//stops creation of dataset in database
+		
+		if(!postToDB) return;//stops creation of dataset in database
+		
+		Gson gson=new Gson();
 		
 		Dataset dataset = new Dataset(params.datasetName, params.datasetDescription, property, unit, unitDatapointContributor, 
 				gson.toJson(params.mappingParams), lanId);
@@ -780,21 +782,24 @@ public class DatasetCreator {
 		if (dataset==null) {
 			System.out.println("*** Warning dataset already exists! New dataset not created ***"); 
 		} 
-
 	}
 
 
 
-	private HashMap<String,String> getQsarSmilesLookupFromDB() {
-		HashMap<String,String>htQsarSmiles=new HashMap<>();
+	private HashMap<String,Compound> getQsarSmilesLookupFromDB() {
+		HashMap<String,Compound>htQsarSmiles=new HashMap<>();
 
 		List<Compound>standardizedCompounds=compoundService.findAllWithStandardizerSmilesNotNull(standardizerName);
 		
 		System.out.println("Number of standardized compounds in db:"+standardizedCompounds.size());
 		
 		for (Compound compound:standardizedCompounds) {
-//			System.out.println(compound.getSmiles()+"\t"+compound.getCanonQsarSmiles());
-			htQsarSmiles.put(compound.getSmiles(), compound.getCanonQsarSmiles());
+			if (!compound.getStandardizer().equals(standardizer.standardizerName)) {
+//				System.out.println("skip "+compound.getStandardizer()+"\t"+standardizer.standardizerName);
+				continue;
+			}
+//			System.out.println(compound.getKey());
+			htQsarSmiles.put(compound.getKey(), compound);
 		}
 		return htQsarSmiles;
 		
@@ -856,17 +861,15 @@ public class DatasetCreator {
 	
 	
 	public void createPropertyDatasetWithSpecifiedSources(DatasetParams params, boolean useStdevFilter,List<String>includedSources) {
-	
-		HashMap<String,String>hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
+		HashMap<String, Compound> hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
 		
 		System.out.println("Enter createPropertyDatasetWithSpecifiedSources");
 		Dataset datasetDB = datasetService.findByName(params.datasetName);
+
 		if(datasetDB!=null) {
 			System.out.println("already have "+params.datasetName+" in db");
 			return;
 		}
-		
-		Gson gson = new Gson();
 		
 		System.out.println("Selecting experimental property data for " + params.propertyName + "...");
 		long t5 = System.currentTimeMillis();
@@ -878,82 +881,18 @@ public class DatasetCreator {
 		excludePropertyValues2(includedSources, propertyValues);
 		if (includedSources.size()>0) System.out.println("Raw records after source exclusion:"+propertyValues.size());
 		
-		if (propertyValues==null || propertyValues.isEmpty()) {
-//			logger.error(params.datasetName + ": Experimental property data unavailable");
-			System.out.println(params.datasetName + ": Experimental property data unavailable");
-			return;
-		}
-		
-		System.out.println("Retrieving DSSTox structure data...");
-		List<MappedPropertyValue> mappedPropertyValues = null;
-		try {
-			mappedPropertyValues = mapPropertyValuesToDsstoxRecords(propertyValues, params,hmQsarSmilesLookup);
-		} catch (Exception e) {
-//			logger.error("Failed DSSTox query: " + e.getMessage());
-			e.printStackTrace();
-			return;
-		}
-		
-		if (mappedPropertyValues==null || mappedPropertyValues.isEmpty()) {
-				System.out.println(params.datasetName + ": DSSTox structure data unavailable");
-			return;
-		}
-		
-		Property property = initializeProperty(propertyValues);
-		if (property.getId()==null) { return; }
-		
-		String finalUnitName = finalUnitsNameMap.get(params.propertyName);		
-		Unit unit = initializeUnit(finalUnitName);
-		
-		String contributorUnitName=contributorUnitsNameMap.get(params.propertyName);
-		Unit unitDatapointContributor=initializeUnit(contributorUnitName);
-		
-		if (unit.getId()==null) { return; }
-		
-		Dataset dataset = new Dataset(params.datasetName, params.datasetDescription, property, unit,unitDatapointContributor, 
-				gson.toJson(params.mappingParams), lanId);
-		
-		Dataset dataset2=dataset;//used to look at datapoints later
-		
-		dataset = initializeDataset(dataset);
-		
-		
-		System.out.println("Standardizing structures using " + standardizerName + "...");
-		long t1 = System.currentTimeMillis();
-		standardize(mappedPropertyValues,hmQsarSmilesLookup);
-		long t2 = System.currentTimeMillis();
-		System.out.println("Standardization time: " + (t2 - t1)/1000.0 + " s");
-		
-		System.out.println("Unifying structures...");
-		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, useStdevFilter,params.mappingParams.validateStructure);
-		
-		System.out.println("Saving unification data to examine...");
-//		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit);redundant- we have excel and json
-		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit,createExcelFiles);
-		
-		System.out.println("Posting final merged values...");
-		long t7 = System.currentTimeMillis();
-		
-		if (dataset!=null) {//We can post:
-//			postDataPoints(unifiedPropertyValues, dataset);//old method doesnt have CIDs or exp_prop_ids 
-			postDataPointsWithCIDs(unifiedPropertyValues, dataset,unitDatapointContributor);
-		
-		} else {//Data set already exists lets look at datapoints:
-			lookatDataPoints(unifiedPropertyValues, dataset2);		
-		}
-		
-		long t8 = System.currentTimeMillis();
-		System.out.println("Time to post: " + (t8 - t7)/1000.0 + " s");
-		
-		
-		if (dataset==null) {
-			System.out.println("*** Warning dataset already exists! New dataset not created ***"); 
-		} 
+		convertPropertyValuesToDatapoints(propertyValues,params,useStdevFilter);
 
 	}
 
 
 
+	/**
+	 * Exclude property values that came from excluded sources
+	 * 
+	 * @param excludedSources
+	 * @param propertyValues
+	 */
 	private void excludePropertyValues(List<String> excludedSources, List<PropertyValue> propertyValues) {
 	
 		if(excludedSources.size()==0) return;
@@ -965,6 +904,12 @@ public class DatasetCreator {
 				if(excludedSources.contains(pv.getPublicSource().getName())) 
 					propertyValues.remove(i--);				
 			}
+			
+			if(pv.getPublicSourceOriginal()!=null) {
+				if(excludedSources.contains(pv.getPublicSourceOriginal().getName())) 
+					propertyValues.remove(i--);				
+			}
+
 			
 			if(pv.getLiteratureSource()!=null) {
 				if(excludedSources.contains(pv.getLiteratureSource().getName())) 
@@ -1053,10 +998,13 @@ public class DatasetCreator {
 		String[] fields = { "canon_qsar_smiles","exp_prop_id", 
 				"source_chemical_id","source_dtxrid","source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",
 				"mapped_dtxcid", "mapped_dtxsid", "mapped_chemical_name", "mapped_cas", "mapped_smiles", "mapped_molweight","mapped_connection_reason",
-				"source_name", "source_description", "source_authors", "source_title", "source_doi", "source_url",
-				"source_type", "page_url", "notes", "qc_flag", "temperature_c", "pressure_mmHg", "pH",
+				"public_source_name", "public_source_description", "public_source_url", 
+				"public_source_original_name", "public_source_original_description", "public_source_original_url",
+				"literature_source_citation","literature_source_doi",
+				"page_url", "notes", "qc_flag", "temperature_c", "pressure_mmHg", "pH",
 				"value_qualifier", "value_original", "value_text","value_max", "value_min", "value_point_estimate",
 				"value_units","qsar_property_value","qsar_property_units" };
+		
 
 		List<String>keys=new ArrayList<>();
 		
@@ -1152,19 +1100,26 @@ public class DatasetCreator {
 
 		if (pv.getLiteratureSource()!=null) {
 			LiteratureSource ls=pv.getLiteratureSource();
-			jo.addProperty("source_name", ls.getName());
-			jo.addProperty("source_description", ls.getDescription());
-			jo.addProperty("source_authors", ls.getAuthors());
-			jo.addProperty("source_title", ls.getTitle());
-			jo.addProperty("source_doi", ls.getDoi());
-			jo.addProperty("source_url", ls.getUrl());
-		} else if (pv.getPublicSource()!=null) { 
+			jo.addProperty("literature_source_citation", ls.getCitation());
+			jo.addProperty("literature_source_doi", ls.getDoi());
+		} 
+		
+		if (pv.getPublicSource()!=null) { 
 			PublicSource ps=pv.getPublicSource();
-			jo.addProperty("source_name", ps.getName());
-			jo.addProperty("source_description", ps.getDescription());
-			jo.addProperty("source_type", ps.getType());
-			jo.addProperty("source_url", ps.getUrl());
+			jo.addProperty("public_source_name", ps.getName());
+			jo.addProperty("public_source_description", ps.getDescription());
+			jo.addProperty("public_source_url", ps.getUrl());
 		}
+		
+		if (pv.getPublicSourceOriginal()!=null) { 
+			PublicSource ps=pv.getPublicSourceOriginal();
+			jo.addProperty("public_source_original_name", ps.getName());
+			jo.addProperty("public_source_original_description", ps.getDescription());
+			jo.addProperty("public_source_original_url", ps.getUrl());
+		}
+
+		
+		
 		jo.addProperty("page_url", pv.getPageUrl());
 		jo.addProperty("notes", pv.getNotes());
 		

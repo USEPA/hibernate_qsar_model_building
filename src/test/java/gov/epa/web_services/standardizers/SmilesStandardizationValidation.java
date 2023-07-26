@@ -51,6 +51,7 @@ import com.google.gson.JsonObject;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer.SciDataExpertsStandardization;
+import gov.epa.web_services.standardizers.SciDataExpertsStandardizer.StandardizeResult;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithStatus;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -108,8 +109,11 @@ public class SmilesStandardizationValidation {
 				String QSAR_Ready_InchiKey_OPERA = values.get(htCols.get("InChI Key_QSARr"));// we recalculate it
 				// anyways
 
-				String json = runStandardize(Original_SMILES, server, workFlow);
+//	        	String QSAR_Ready_SMILES_SDE = runStandardize(Original_SMILES, server, workFlow,false);
 
+	        	String QSAR_Ready_SMILES_SDE = SciDataExpertsStandardizer.runStandardize(Original_SMILES, server, workFlow,false).qsarReadySmiles;
+	        	
+	        	
 				try {
 					JsonObject jo = new JsonObject();
 					jo.addProperty("DSSTOX_COMPOUND_ID", DSSTOX_COMPOUND_ID);
@@ -124,55 +128,19 @@ public class SmilesStandardizationValidation {
 						jo.addProperty("inchiKey_OPERA", "N/A");
 					}
 
-					if (json.equals("[]")) {
+					if (QSAR_Ready_SMILES_SDE==null) {
 						jo.addProperty("QSAR_Ready_SMILES_SDE", "N/A");
 						jo.addProperty("inchiKey_SDE", "N/A");
 						// System.out.println(gson.toJson(jo));
 					} else {
-						//						JsonArray joArray=gson.fromJson(json, JsonArray.class);
-						//						JsonObject joResult=null;
-						//						boolean useFirstComponent=false;
-						//						
-						//						if (useFirstComponent || joArray.size()==1) {
-						//							joResult=gson.fromJson(json, JsonArray.class).get(0).getAsJsonObject();
-						//						} else {//use biggest
-						//							
-						//							int maxAtomCount=0;
-						//							int index=-1;
-						//							
-						//							for (int i=0;i<joArray.size();i++) {
-						//								JsonObject joResultCurrent=joArray.get(i).getAsJsonObject();
-						//								String QSAR_Ready_SMILES_SDE=joResultCurrent.get("canonicalSmiles").getAsString();
-						//								AtomContainer ac=StructureImageUtil.generateAtomContainerFromSmiles(QSAR_Ready_SMILES_SDE);
-						//								
-						//								if (ac.getAtomCount()>maxAtomCount) {//TODO should we check exclusion list instead of picking larger one? 
-						//									maxAtomCount=ac.getAtomCount();
-						//									index=i;
-						//								}
-						//								//TODO need to check if smaller ones are in the exclusion list!
-						//							}
-						//							joResult=joArray.get(index).getAsJsonObject();
-						//						}
-
-						JsonArray joArray = gson.fromJson(json, JsonArray.class);
-
-						if (joArray.size() == 1) {
-							JsonObject joResult = gson.fromJson(json, JsonArray.class).get(0).getAsJsonObject();
-							String QSAR_Ready_SMILES_SDE = joResult.get("canonicalSmiles").getAsString();
-							String inchiKey_SDE_Canonical_Indigo = toInchiIndigo(QSAR_Ready_SMILES_SDE).inchiKey;
-							jo.addProperty("QSAR_Ready_SMILES_SDE", QSAR_Ready_SMILES_SDE);
-							jo.addProperty("inchiKey_SDE", inchiKey_SDE_Canonical_Indigo);
-						} else {
-							jo.addProperty("QSAR_Ready_SMILES_SDE", "N/A");
-							jo.addProperty("inchiKey_SDE", "N/A");
-						}
-
+						String inchiKey_SDE_Canonical_Indigo = toInchiIndigo(QSAR_Ready_SMILES_SDE).inchiKey;
+						jo.addProperty("QSAR_Ready_SMILES_SDE", QSAR_Ready_SMILES_SDE);
+						jo.addProperty("inchiKey_SDE", inchiKey_SDE_Canonical_Indigo);
 					}
 
 					jaResults.add(jo);
 
 				} catch (Exception ex) {
-					System.out.println(json);
 					ex.printStackTrace();
 					continue;
 				}
@@ -301,9 +269,8 @@ public class SmilesStandardizationValidation {
 					boolean full=false;
 
 					HttpResponse<String>response=standardizer.callQsarReadyStandardizePost(Original_SMILES,full);
-					String jsonResponse=SciDataExpertsStandardizer.getResponseBody(response, full);
-					String qsarSmiles=SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse, full);
-
+					String jsonResponse=standardizer.getResponseBody(response, full);
+					String qsarSmiles=standardizer.getQsarReadySmilesFromPostJson(jsonResponse, full);
 					
 					if (qsarSmiles==null) {
 						jo.addProperty("QSAR_Ready_SMILES_SDE", "N/A");
@@ -490,8 +457,9 @@ public class SmilesStandardizationValidation {
 						SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,workflow,server);
 
 						HttpResponse<String>response=standardizer.callQsarReadyStandardizePost(Original_SMILES,full);
-						String jsonResponse=SciDataExpertsStandardizer.getResponseBody(response, full);
-						String qsarSmiles=SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse, full);
+						String jsonResponse=standardizer.getResponseBody(response, full);
+						String qsarSmiles=standardizer.getQsarReadySmilesFromPostJson(jsonResponse, full);
+
 						
 						if (qsarSmiles==null) {
 							jo.addProperty("QSAR_Ready_SMILES_"+workflow, "N/A");
@@ -585,7 +553,10 @@ public class SmilesStandardizationValidation {
 				String QSAR_Ready_SMILES_OPERA = values.get(htCols.get("Canonical_QSARr"));
 				String QSAR_Ready_InchiKey_OPERA = values.get(htCols.get("InChI Key_QSARr"));
 
-				String json = runStandardize(Original_SMILES, server, workFlow);
+				//				String json = runStandardize(Original_SMILES, server, workFlow,false);
+
+				String QSAR_Ready_SMILES_SDE = SciDataExpertsStandardizer.runStandardize(Original_SMILES, server, workFlow,false).qsarReadySmiles;
+
 
 				try {
 					JsonObject jo = new JsonObject();
@@ -601,35 +572,20 @@ public class SmilesStandardizationValidation {
 						jo.addProperty("inchiKey_OPERA", "N/A");
 					}
 
-					if (json.equals("[]")) {
+					if (QSAR_Ready_SMILES_SDE!=null) {
+						jo.addProperty("QSAR_Ready_SMILES_SDE", QSAR_Ready_SMILES_SDE);
+						Inchi inchiSDE = toInchiIndigo(QSAR_Ready_SMILES_SDE);
+						if (inchiSDE != null)
+							jo.addProperty("inchiKey_SDE", inchiSDE.inchiKey);
+
+					} else {
 						jo.addProperty("QSAR_Ready_SMILES_SDE", "N/A");
 						jo.addProperty("inchiKey_SDE", "N/A");
-						// System.out.println(gson.toJson(jo));
-					} else {
-						JsonArray joArray = gson.fromJson(json, JsonArray.class);
-
-						if (joArray.size() == 1) {
-							JsonObject joResultCurrent = joArray.get(0).getAsJsonObject();
-							String QSAR_Ready_SMILES_SDE = joResultCurrent.get("canonicalSmiles").getAsString();
-							jo.addProperty("QSAR_Ready_SMILES_SDE", QSAR_Ready_SMILES_SDE);
-							Inchi inchiSDE = toInchiIndigo(QSAR_Ready_SMILES_SDE);
-							if (inchiSDE != null)
-								jo.addProperty("inchiKey_SDE", inchiSDE.inchiKey);
-						} else {
-							JsonArray jaQSAR_Ready_SMILES_SDE = new JsonArray();
-							for (int i = 0; i < joArray.size(); i++) {
-								JsonObject joResultCurrent = joArray.get(i).getAsJsonObject();
-								jaQSAR_Ready_SMILES_SDE.add(joResultCurrent.get("canonicalSmiles").getAsString());
-							}
-							jo.add("jaQSAR_Ready_SMILES_SDE", jaQSAR_Ready_SMILES_SDE);
-						}
-
 					}
 
 					jaResults.add(jo);
 
 				} catch (Exception ex) {
-					System.out.println(json);
 					ex.printStackTrace();
 					continue;
 				}
@@ -681,15 +637,7 @@ public class SmilesStandardizationValidation {
 		}
 	}
 
-	public static String runStandardize(String smiles, String server, String workFlow) {
-		//		System.out.println(server+"/api/stdizer/?workflow="+workFlow);
-
-		HttpResponse<String> response = Unirest.get(server + "/api/stdizer/?workflow=" + workFlow)
-				.queryString("smiles", smiles).asString();
-
-		return response.getBody();
-
-	}
+	
 
 	void goThroughResults(String server, String workFlow, String folder, int start, int stop) {
 		File folder2 = new File(folder + "//results_"
@@ -1345,7 +1293,10 @@ public class SmilesStandardizationValidation {
 		return ja;
 	}
 	void rerunChemicalsInJsonFile() {
-		String serverEPA = "https://ccte-cced.epa.gov/api/stdizer/";
+		
+		boolean full=false;
+		
+		String serverEPA="https://hcd.rtpnc.epa.gov/api/stdizer";
 		String folder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 qsar ready standardizer\\results_819_QSAR-ready_CNL_edits_TMM\\";
 		String filepathJson=folder+"results_rnd100000.json";
 		Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
@@ -1393,11 +1344,18 @@ public class SmilesStandardizationValidation {
 				inchiKeys.add(jo.get("inchiKey_OPERA").getAsString());
 				
 				for (String workflow:workflows) {
-					StandardizeResponseWithStatus s=SciDataExpertsStandardizer.callQsarReadyStandardize(serverEPA, workflow, originalSmiles);
-					jo.addProperty("QSAR_Ready_SMILES_"+workflow, s.standardizeResponse.qsarStandardizedSmiles);
+//					StandardizeResponseWithStatus s=SciDataExpertsStandardizer.callQsarReadyStandardizeGet(serverEPA, workflow, originalSmiles);
 					
-					if (s.standardizeResponse.qsarStandardizedSmiles!=null) {
-						String inchiKey_SDE_Canonical_Indigo = toInchiIndigo(s.standardizeResponse.qsarStandardizedSmiles).inchiKey;
+					
+					HttpResponse<String>response=SciDataExpertsStandardizer.callQsarReadyStandardizePost(originalSmiles,full,workflow,serverEPA);
+					String jsonResponse=SciDataExpertsStandardizer.getResponseBody(response, full);
+					String qsarSmiles=SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse, full);
+
+					
+					jo.addProperty("QSAR_Ready_SMILES_"+workflow, qsarSmiles);
+					
+					if (qsarSmiles!=null) {
+						String inchiKey_SDE_Canonical_Indigo = toInchiIndigo(qsarSmiles).inchiKey;
 						jo.addProperty("QSAR_Ready_inchiKey_"+workflow, inchiKey_SDE_Canonical_Indigo);
 						inchiKeys.add(inchiKey_SDE_Canonical_Indigo);
 					}
@@ -1506,16 +1464,9 @@ public class SmilesStandardizationValidation {
 	        	
 	        	String SmilesOpera=row.getCell(htColNames.get(colNameOperaSmiles)).getStringCellValue();
 //	        	String SmilesSDE_old=row.getCell(htColNames.get("SDE_QSAR_READY")).getStringCellValue();	        		        
-	        	String json = runStandardize(Original_SMILES, server, workflowNew);	        	
-	    		JsonArray joArray = gson.fromJson(json, JsonArray.class);
-	    		
-	    		String SmilesSDE_new="N/A";
-	    		
-				if (joArray.size() == 1) {
-					JsonObject joResult = gson.fromJson(json, JsonArray.class).get(0).getAsJsonObject();
-					SmilesSDE_new = joResult.get("canonicalSmiles").getAsString();
-//					String inchiKey_SDE_Canonical_Indigo = toInchiIndigo(SmilesSDE_new).inchiKey;
-				}
+
+	        	StandardizeResult smilesResult=SciDataExpertsStandardizer.runStandardize(Original_SMILES, server, workflowNew,false);
+	        	String SmilesSDE_new = smilesResult.qsarReadySmiles;	        	
 								
 	        	JsonObject jo=new JsonObject();	        	
 	        	jo.addProperty("DSSTOX_COMPOUND_ID", DTXCID);

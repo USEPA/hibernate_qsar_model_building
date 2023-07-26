@@ -1,15 +1,13 @@
 package gov.epa.databases.dev_qsar;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
-import gov.epa.web_services.embedding_service.CalculationInfo;
 
 
 public class DevQsarConstants {
@@ -36,8 +34,8 @@ public class DevQsarConstants {
 	
 	// Max realistic water solubility (in g/L)
 
-	public static final Double MIN_WATER_SOLUBILITY_MOLAR = 1.0E-14;
-	public static final Double MAX_WATER_SOLUBILITY_MOLAR = 1.0e2;
+//	public static final Double MIN_WATER_SOLUBILITY_MOLAR = 1.0E-14;
+//	public static final Double MAX_WATER_SOLUBILITY_MOLAR = 1.0e2;
 	
 	public static final Double MIN_WATER_SOLUBILITY_G_L = 1.0E-11;
 	public static final Double MAX_WATER_SOLUBILITY_G_L = 990.0;
@@ -71,8 +69,8 @@ public class DevQsarConstants {
 	public static final int PORT_TEST_DESCRIPTORS = 5002;
 	public static final int PORT_JAVA_MODEL_BUILDING = 5003;
 	public static final int PORT_PYTHON_MODEL_BUILDING = 5004;
-	public static final int PORT_REPRESENTATIVE_SPLIT = 5005;
 	public static final int PORT_OUTLIER_DETECTION = 5006;
+	public static final int PORT_REPRESENTATIVE_SPLIT = 5005;
 	public static final int PORT_STANDARDIZER_JAVA = 5010;
 	
 	// DSSTox mapping strategies
@@ -123,6 +121,9 @@ public class DevQsarConstants {
 	public static final String DIELECTRIC_CONSTANT = "Dielectric constant";
 	public static final String LogD_pH_7_4 = "LogD at pH=7.4";
 	
+	public static final String APPEARANCE = "Appearance";
+	
+	
 	
 	public static final String ESTROGEN_RECEPTOR_BINDING = "Estrogen receptor binding";
 	public static final String ESTROGEN_RECEPTOR_RBA = "Estrogen receptor relative binding affinity";
@@ -141,7 +142,7 @@ public class DevQsarConstants {
 	public static final String LOG_KOA = "LogKOA";
 	public static final String LOG_BCF_FISH_WHOLEBODY = "LogBCF_Fish_WholeBody";
 
-	//Old versions
+	//Old versions for building sample models
 	public static final String MUTAGENICITY ="Mutagenicity";
 	public static final String LC50 ="LC50";
 	public static final String LC50DM ="LC50DM";
@@ -149,17 +150,28 @@ public class DevQsarConstants {
 	public static final String LD50 ="LD50";
 	public static final String LLNA ="LLNA";
 	public static final String DEV_TOX ="DevTox";
+
+	public static final String SKIN_IRRITATION = "Skin irritation";//TODO This needs to be more specific
+	public static final String EYE_IRRITATION = "Eye irritation";//TODO This needs to be more specific
+	public static final String EYE_CORROSION = "Eye corrosion";//TODO This needs to be more specific
+	
 	
 	
 	//New versions for dashboard
-	public static final String FORTY_EIGHT_HR_IGC50 ="48 hour Tetrahymena pyriformis IGC50";
-	public static final String NINETY_SIX_HOUR_LC50 ="96 hour fathead minnow LC50";
-	public static final String FORTY_EIGHT_HR_DM_LC50 ="48 hour Daphnia magna LC50";
+	public static final String NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50 ="96 hour fathead minnow LC50";
+	public static final String FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50 ="48 hour Daphnia magna LC50";
+	public static final String FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50 ="48 hour Tetrahymena pyriformis IGC50";
 	public static final String ORAL_RAT_LD50="Oral rat LD50";
 	public static final String AMES_MUTAGENICITY ="Ames Mutagenicity";
 	public static final String DEVELOPMENTAL_TOXICITY ="Developmental toxicity";
 	public static final String LOCAL_LYMPH_NODE_ASSAY ="Local lymph node assay";
+	
 
+
+	public static final String [] TEST_SOFTWARE_PROPERTIES = {NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50,FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50,
+			FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50, ORAL_RAT_LD50,BCF, AMES_MUTAGENICITY,DEVELOPMENTAL_TOXICITY,
+			ESTROGEN_RECEPTOR_BINDING,ESTROGEN_RECEPTOR_RBA,BOILING_POINT,MELTING_POINT,FLASH_POINT,
+			VAPOR_PRESSURE,DENSITY, SURFACE_TENSION,THERMAL_CONDUCTIVITY, VISCOSITY,WATER_SOLUBILITY};	
 	
 	// Unit names
 	public static final String DIMENSIONLESS = "Dimensionless";
@@ -177,6 +189,76 @@ public class DevQsarConstants {
 	public static final String MOL_KG = "mol/kg";
 	public static final String LOG_L_KG = "log10(L/kg)";
 	public static final String G_CM3 = "g/cm3";
+	public static final String PPM = "ppm";
+	
+	public static final String PCT_VOLUME="%v";
+	public static final String PCT_WEIGHT="%w";
+	
+	public static final String TEXT="Text";
+	
+	//ghs data gathering constants for reference (a lot of these get converted in ghs data gathering and dont make it into units table):
+//	public static final String str_mg_m3="mg/m^3";
+//	public static final String str_g_m3="g/m^3";
+//	public static final String str_mL_m3="mL/m^3";
+//	public static final String str_mg_mL="mg/mL";
+//	public static final String str_g_L="g/L";
+//	public static final String str_ug_L="ug/L";
+//	public static final String str_ug_mL="ug/mL";
+//	public static final String str_g_100mL="g/100mL";
+//	public static final String str_mg_100mL="mg/100mL";
+//	public static final String str_ng_ml="ng/mL";
+//	public static final String str_g_cm3="g/cm3";
+//	public static final String str_kg_m3="kg/m3";
+//	public static final String str_g_mL="g/mL";
+//	public static final String str_kg_dm3="kg/dm3";
+//	public static final String str_C="C";
+//	public static final String str_F="F";
+//	public static final String str_K="K";
+
+
+//	public static final String str_atm_m3_mol="atm-m3/mol";
+//	public static final String str_mol_m3_atm = "mol/m3-Pa";
+//	public static final String str_Pa_m3_mol="Pa-m3/mol";
+//	public static final String str_mmHg="mmHg";
+//	public static final String str_atm="atm";
+//	public static final String str_kpa="kPa";
+//	public static final String str_hpa="hPa";
+//	public static final String str_pa="Pa";
+//	public static final String str_mbar="mbar";
+//	public static final String str_bar="bar";
+//	public static final String str_torr="Torr";
+//	public static final String str_psi="psi";
+//	public static final String str_M="M";
+//	public static final String str_mM="mM";
+//	public static final String str_nM="nM";
+//	public static final String str_uM="uM";
+//	public static final String str_log_M="log10(M)";
+//	public static final String str_log_mg_L="log10(mg/L)";
+//	public static final String str_log_mmHg="log10(mmHg)";
+//	public static final String str_log_atm_m3_mol="log10(atm-m3/mol)";
+//	public static final String str_dimensionless_H="dimensionless H";
+//	public static final String str_dimensionless_H_vol="dimensionless H (volumetric)";
+//	public static final String str_mg_kg="mg/kg";
+//	public static final String str_g_kg="g/kg";
+//	public static final String str_mL_kg="mL/kg";
+//	public static final String str_iu_kg="iu/kg";
+//	public static final String str_units_kg="units/kg";
+//	public static final String str_mg="mg";
+//	public static final String str_mg_kg_H20="mg/kg H2O";
+//	public static final String str_g_Mg_H20="g/Mg H2O";
+//	public static final String str_g_100g="g/100g";
+//	public static final String str_mg_100g="mg/100g";
+//	public static final String str_mol_m3_H20="mol/m3 H2O";
+//	public static final String str_mol_kg_H20="mol/kg H2O";
+//	public static final String str_kg_kg_H20="kg/kg H2O";
+//	public static final String str_g_kg_H20="g/kg H2O";
+//	public static final String str_ug_g_H20 ="ug/g H2O";
+//	public static final String str_ug_100mL = "ug/100mL";
+//	public static final String str_mg_10mL = "mg/10mL";
+//	public static final String str_g_10mL = "g/10mL";
+//	public static final String str_oz_gal = "oz/gal";
+//	public static final String str_pii="PII";
+	
 	
 	public static final String CM3 = "cm^3";
 	public static final String CUBIC_ANGSTROM = "Å^3";
@@ -254,6 +336,7 @@ public class DevQsarConstants {
 
 	public static final String SOURCE_WEBTEST = "WebTEST2.0";
 
+
 	
 
 
@@ -264,7 +347,12 @@ public class DevQsarConstants {
 		return new HashSet<String>(list);
 	}
 	
-	// Final modeling unit names for each property name
+
+	/**
+	 * Assigns desired units for datapoint used in modeling 
+	 * 
+	 * @return
+	 */
 	public static HashMap<String, String> getDatasetFinalUnitsNameMap() {
 		HashMap<String, String> map = new HashMap<String, String>();
 		map.put(MELTING_POINT, "DEG_C");
@@ -296,9 +384,9 @@ public class DevQsarConstants {
 		map.put(AMES_MUTAGENICITY,"BINARY");
 		map.put(DEVELOPMENTAL_TOXICITY,"BINARY");
 		
-		map.put(NINETY_SIX_HOUR_LC50, "NEG_LOG_M");
-		map.put(FORTY_EIGHT_HR_DM_LC50, "NEG_LOG_M");
-		map.put(FORTY_EIGHT_HR_IGC50, "NEG_LOG_M");
+		map.put(NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50, "NEG_LOG_M");
+		map.put(FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50, "NEG_LOG_M");
+		map.put(FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50, "NEG_LOG_M");
 		map.put(ORAL_RAT_LD50, "NEG_LOG_MOL_KG");
 		map.put(BCF, "LOG_L_KG");
 		
@@ -311,11 +399,11 @@ public class DevQsarConstants {
 
 	public static String getPropertyDescription(String propertyNameDB) {
 		
-		if (propertyNameDB.equals(DevQsarConstants.NINETY_SIX_HOUR_LC50)) {
+		if (propertyNameDB.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)) {
 			return "The concentration of the test chemical in water that causes 50% of fathead minnow to die after 96 hours";
-		} else if (propertyNameDB.equals(DevQsarConstants.FORTY_EIGHT_HR_DM_LC50)) {
+		} else if (propertyNameDB.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)) {
 			return("The concentration of the test chemical in water that causes 50% of Daphnia magna to die after 48 hours");
-		} else if (propertyNameDB.equals(DevQsarConstants.FORTY_EIGHT_HR_IGC50)) {
+		} else if (propertyNameDB.equals(DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50)) {
 			return("The concentration of the test chemical in water that causes 50% growth inhibition to Tetrahymena pyriformis after 48 hours");
 		} else if (propertyNameDB.equals(DevQsarConstants.ORAL_RAT_LD50)) {
 			return("The amount of chemical that causes 50% of rats to die after oral ingestion");
@@ -372,7 +460,11 @@ public class DevQsarConstants {
 	}
 	
 	
-	
+	/**
+	 * Assigns desired units for raw experimental data 
+	 * 
+	 * @return
+	 */
 	public static HashMap<String, String> getContributorUnitsNameMap() {
 		HashMap<String, String> map = new HashMap<String, String>();
 		map.put(MELTING_POINT, "DEG_C");//Changed it to add quotes around the unit names so it stores the unit name and not the abbreviation (TMM, 6/2/23)
@@ -408,9 +500,9 @@ public class DevQsarConstants {
 		map.put(LOG_BCF_FISH_WHOLEBODY, "LOG_L_KG");//TODO is this right?
 		map.put(BCF, "L_KG");
 		map.put(LOCAL_LYMPH_NODE_ASSAY, "BINARY");
-		map.put(NINETY_SIX_HOUR_LC50,"MOLAR");
-		map.put(FORTY_EIGHT_HR_DM_LC50,"MOLAR");
-		map.put(FORTY_EIGHT_HR_IGC50, "MOLAR");
+		map.put(NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50,"MOLAR");
+		map.put(FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50,"MOLAR");
+		map.put(FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50, "MOLAR");
 		map.put(ORAL_RAT_LD50, "MOL_KG");
 		map.put(AMES_MUTAGENICITY,"BINARY");
 		map.put(DEVELOPMENTAL_TOXICITY,"BINARY");
@@ -421,6 +513,96 @@ public class DevQsarConstants {
 		return map;
 	}
 
+	/*
+	 * Returns the name of the units entry in the units table in the exp_prop schema
+	 * 
+	 * For example, for water solubility it should return G_L if the unitsAbbreviation is "g/L";
+	 * 
+	 * TODO should we just look this up from the database?
+	 * 
+	 * @param propertyName
+	 * @param unitsAbbreviation
+	 * @return
+	 */
+	public static String getExpPropUnitName(String propertyName,String unitsAbbreviation) {
+
+		switch (propertyName) {
+		
+		// Properties with abbreviations that can be used to find units name by reflection of the constants in this class:
+		case HENRYS_LAW_CONSTANT:
+		case WATER_SOLUBILITY:
+		case BOILING_POINT:
+		case MELTING_POINT:			
+		case THERMAL_CONDUCTIVITY:
+		case SURFACE_TENSION:
+		case FLASH_POINT:
+		case VAPOR_PRESSURE:	
+		case VISCOSITY:
+		case DENSITY:
+		case NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50:
+		case FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50:
+		case FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50:
+			
+			return getUnitNameByReflection(unitsAbbreviation);
+			
+
+		// BINARY properties:
+		case LOCAL_LYMPH_NODE_ASSAY:
+		case EYE_IRRITATION:
+		case EYE_CORROSION:
+		case SKIN_IRRITATION:
+			return "BINARY";
+
+		// LOG_UNITS:
+		case PKA:
+		case PKA_A:
+		case PKA_B:
+		case LOG_KOW:
+		case LOG_OH:
+		case LOG_KOC:
+		case LOG_KOA:
+		case LOG_HALF_LIFE:
+		case LOG_KM_HL:
+			return "LOG_UNITS";
+
+		case LOG_BCF_FISH_WHOLEBODY:
+		case LOG_BCF:
+			return "LOG_L_KG";
+		case APPEARANCE:
+			return "TEXT";
+
+		default:
+			System.out.println("Unknown units in ExpPropData.getValues() for "+propertyName+"\t"+unitsAbbreviation);
+			return "MISSING";
+		}
+	}
 	
-//	public final String GeneticAlgorithmDefaults = gson.toJson(CalculationInfo.createDefault());
+	/**
+	 * Looks up the name of the Unit based on the value of the abbreviation from DevQsarConstants
+	 * For example, if unitsAbbreviation="g/L", this method returns "G_L"
+	 * 
+	 * @param rec
+	 * @return
+	 */
+	private static String getUnitNameByReflection(String unitsAbbreviation) {
+		DevQsarConstants d=new DevQsarConstants();
+		Field[] fields= d.getClass().getDeclaredFields();
+		
+		
+		for(Field f : fields){
+			if(!f.getType().getName().equals("java.lang.String")) continue;
+			try {
+				String value= (String) f.get(d);
+				
+				if(value.equals(unitsAbbreviation)) {
+//					System.out.println(f.getName()+"\t"+value);
+					return f.getName();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	
+		return "MISSING";
+	}
 }

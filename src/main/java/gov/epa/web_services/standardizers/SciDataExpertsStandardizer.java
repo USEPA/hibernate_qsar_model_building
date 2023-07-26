@@ -23,11 +23,11 @@ import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
-import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponseWithStatus;
+//import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponseWithStatus;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
-public class SciDataExpertsStandardizer extends Standardizer {
+public class SciDataExpertsStandardizer {
 
 	public static class SciDataExpertsStandardization {
 		public String id;
@@ -59,87 +59,118 @@ public class SciDataExpertsStandardizer extends Standardizer {
 
 	String workflow;
 	String serverHost;
+	public String standardizerName;
+	private boolean useBatchStandardize;
+	private String standardizerType;
 	
 	
 	public SciDataExpertsStandardizer(String standardizerType,String workflow,String serverHost) {
 		this.standardizerName = DevQsarConstants.STANDARDIZER_SCI_DATA_EXPERTS + "_" + standardizerType;
 		this.standardizerType = standardizerType;
 		this.useBatchStandardize = false;
-		
 		this.workflow=workflow;
 		this.serverHost=serverHost;
-		
 	}
 	
 	
 
-	@Override
-	public StandardizeResponseWithStatus callStandardize(String smiles) {
-		StandardizeResponseWithStatus response = null;
-		switch (standardizerType) {
-		case DevQsarConstants.QSAR_READY:
-			response = callQsarReadyStandardize(smiles);
-			break;
-		case DevQsarConstants.MS_READY:
-			response = callMsReadyStandardize(smiles);
-			break;
-		}
-
-		//		if (response.standardizeResponse.msStandardizedSmiles!=null 
-		//				&& response.standardizeResponse.msStandardizedSmiles.size() > 1) {
-		//			System.out.println(gson.toJson(response));
-		//		}
-
-		return response;
-	}
+//	@Override
+//	public StandardizeResponseWithStatus callStandardize(String smiles) {
+//		
+//		System.out.println("enter call standardize, worflow="+workflow);
+//		
+//		StandardizeResponseWithStatus response = null;
+//		switch (standardizerType) {
+//
+//		case DevQsarConstants.QSAR_READY:
+//			response = callQsarReadyStandardizePost(smiles,false);
+//			break;
+//		case DevQsarConstants.MS_READY:
+//			response = callMsReadyStandardize(smiles);
+//			break;
+//		}
+//
+//		//		if (response.standardizeResponse.msStandardizedSmiles!=null 
+//		//				&& response.standardizeResponse.msStandardizedSmiles.size() > 1) {
+//		//			System.out.println(gson.toJson(response));
+//		//		}
+//
+//		return response;
+//	}
 
 	//TODO get doesnt work for standardize anymore...
-	public StandardizeResponseWithStatus callQsarReadyStandardize(String smiles) {
-		long t0 = System.currentTimeMillis();
-		HttpResponse<SciDataExpertsStandardization[]> response = Unirest.get(SCI_DATA_EXPERTS_API_URL)
-				.queryString("workflow", QSAR_READY_WORKFLOW)
-				.queryString("smiles", smiles)				
-				.asObject(SciDataExpertsStandardization[].class);
-		long t = System.currentTimeMillis();
+//	public StandardizeResponseWithStatus callQsarReadyStandardizeGet(String smiles) {
+//
+//		
+//		System.out.println("Enter callQsarReadyStandardize (get API)");
+//		
+//		long t0 = System.currentTimeMillis();
+//		HttpResponse<SciDataExpertsStandardization[]> response = Unirest.get(serverHost)
+//				.queryString("workflow", workflow)
+//				.queryString("smiles", smiles)				
+//				.asObject(SciDataExpertsStandardization[].class);
+//		long t = System.currentTimeMillis();
+//
+//		String time = (t-t0)/1000.0 + " s";
+//		StandardizeResponseWithStatus responseWithStatus = 
+//				getQsarResponseWithStatusFromHttpResponse(response, smiles, time);
+//
+//		return responseWithStatus;
+//	}
 
-		String time = (t-t0)/1000.0 + " s";
-		StandardizeResponseWithStatus responseWithStatus = 
-				getQsarResponseWithStatusFromHttpResponse(response, smiles, time);
+	
+//	public StandardizeResponseWithStatus callQsarReadyStandardizeGet(String url, String workflow, String smiles) {
+//		long t0 = System.currentTimeMillis();
+//
+//		System.out.println(url);
+//
+//		HttpResponse<SciDataExpertsStandardization[]> response = Unirest.get(url)
+//				.queryString("workflow", workflow)
+//				.queryString("smiles", smiles)				
+//				.asObject(SciDataExpertsStandardization[].class);
+//		long t = System.currentTimeMillis();
+//
+//		String time = (t-t0)/1000.0 + " s";
+//		StandardizeResponseWithStatus responseWithStatus = 
+//				getQsarResponseWithStatusFromHttpResponse(response, smiles, time);
+//
+//		return responseWithStatus;
+//	}
+	
+//	public StandardizeResponseWithStatus callQsarReadyStandardize(String url, String workflow, 
+//			String smiles,Vector<String>inchiKeyExclude) {
+//		long t0 = System.currentTimeMillis();
+//		HttpResponse<SciDataExpertsStandardization[]> response = Unirest.get(url)
+//				.queryString("workflow", workflow)
+//				.queryString("smiles", smiles)				
+//				.asObject(SciDataExpertsStandardization[].class);
+//		long t = System.currentTimeMillis();
+//
+//		String time = (t-t0)/1000.0 + " s";
+//		StandardizeResponseWithStatus responseWithStatus = 
+//				getQsarResponseWithStatusFromHttpResponse(response, smiles, time,inchiKeyExclude);
+//
+//		return responseWithStatus;
+//	}
 
-		return responseWithStatus;
-	}
-
-
-	public static StandardizeResponseWithStatus callQsarReadyStandardize(String url, String workflow, String smiles) {
-		long t0 = System.currentTimeMillis();
-
-		System.out.println(url);
-
-		HttpResponse<SciDataExpertsStandardization[]> response = Unirest.get(url)
-				.queryString("workflow", workflow)
-				.queryString("smiles", smiles)				
-				.asObject(SciDataExpertsStandardization[].class);
-		long t = System.currentTimeMillis();
-
-		String time = (t-t0)/1000.0 + " s";
-		StandardizeResponseWithStatus responseWithStatus = 
-				getQsarResponseWithStatusFromHttpResponse(response, smiles, time);
-
-		return responseWithStatus;
-	}
 
 
 	public static String getQsarReadySmilesFromPostJson(String json,boolean full) {
 
 		if (full) {
-			return handleFullOutput(json);
+			return handleFullOutputSingleChemical(json);
 		} else {
-			return handleSimpleOutput(json);
+			return handleSimpleOutputSingleChemical(json);
 		}
 
 	}
 
-	private static String handleFullOutput(String json) {
+	
+	private static String handleFullOutputBatch(String json) {
+		return "TODO";
+	}
+	
+	private static String handleFullOutputSingleChemical(String json) {
 		JsonObject jo=Utilities.gson.fromJson(json, JsonObject.class);
 
 		JsonArray records=jo.get("records").getAsJsonArray();
@@ -254,7 +285,7 @@ public class SciDataExpertsStandardizer extends Standardizer {
 		return smiles_i;
 	}
 
-	private static String handleSimpleOutput(String json) {
+	private static String handleSimpleOutputSingleChemical(String json) {
 		JsonArray results=Utilities.gson.fromJson(json, JsonArray.class);
 
 		if (results.size()==0) {
@@ -274,25 +305,75 @@ public class SciDataExpertsStandardizer extends Standardizer {
 		}
 	}
 
+	/*
+	 * Makes the json pretty (easy to read)
+	 */
 	public static String getResponseBody(HttpResponse<String> response, boolean full) {
-		
-		Object responseBody=null;
-
-		if (full) {
-			responseBody=Utilities.gson.fromJson(response.getBody(), JsonObject.class);
-		} else {
-			responseBody=Utilities.gson.fromJson(response.getBody(), JsonArray.class);
-		}
-
-//		System.out.println(response.getStatus());
-		
+		Object responseBody=Utilities.gson.fromJson(response.getBody(), Object.class);
 		return Utilities.gson.toJson(responseBody);//convert back and forth to get prettyprinting
 	}
 
 
+	class PostBody {
+		
+		boolean full;
+		Options options=new Options();
+		List<Chemical>chemicals=new ArrayList<>();
+		
+		PostBody(boolean full,String workflow,String smiles) {
+			this.full=full;
+			options.workflow=workflow;
+			Chemical chemical=new Chemical();
+			chemical.smiles=smiles;
+			chemicals.add(chemical);
+		}
+		
+		class Chemical {
+			String smiles;
+		}
+		
+		class Options {
+			String workflow;			
+		}
+		
+	}
+	
+	/**
+	 * Version that uses json objects directly 
+	 */
 	public HttpResponse<String> callQsarReadyStandardizePost(String smiles,boolean full) {
 		//		Unirest.setTimeouts(0, 0);
+		JsonObject joBody=new JsonObject();
 
+		joBody.addProperty("full", full);
+
+		JsonObject joOptions=new JsonObject();
+		joOptions.addProperty("workflow", workflow);
+		joBody.add("options", joOptions);
+
+		JsonArray chemicals=new JsonArray();
+		JsonObject chemical=new JsonObject();
+		chemical.addProperty("smiles", smiles);
+		chemicals.add(chemical);
+		joBody.add("chemicals", chemicals);
+
+		//		System.out.println(Utilities.gson.toJson(joBody));
+
+		HttpResponse<String> response = Unirest.post(serverHost+"/api/stdizer/chemicals")
+				.header("Content-Type", "application/json")
+				.body(Utilities.gson.toJson(joBody))
+				.asString();
+
+		return response;
+		
+
+	}
+	
+	/**
+	 * Version that uses json objects directly 
+	 */
+	public static HttpResponse<String> callQsarReadyStandardizePost(String smiles,boolean full,String workflow,String serverHost) {
+		//		Unirest.setTimeouts(0, 0);
 		JsonObject joBody=new JsonObject();
 
 		joBody.addProperty("full", full);
@@ -320,7 +401,64 @@ public class SciDataExpertsStandardizer extends Standardizer {
 	}
 
 	
-	public HttpResponse<String> callQsarReadyStandardizePost(String host, String workflow, List<String>smilesList,boolean full) {
+	/**
+	 * Version that uses classes for post body
+	 * 
+	 * @param smiles
+	 * @param full
+	 * @return
+	 */
+	public HttpResponse<String> callQsarReadyStandardizePost2(String smiles,boolean full) {
+		//		Unirest.setTimeouts(0, 0);
+
+		PostBody postBody=new PostBody(full,workflow,smiles);
+		HttpResponse<String> response = Unirest.post(serverHost+"/api/stdizer/chemicals")
+				.header("Content-Type", "application/json")
+				.body(Utilities.gson.toJson(postBody))
+				.asString();
+
+		return response;
+
+	}
+	
+	
+
+
+	
+//	public HttpResponse<String> callQsarReadyStandardizePost(String host, String workflow, List<String>smilesList,boolean full) {
+//		//		Unirest.setTimeouts(0, 0);
+//
+//		JsonObject joBody=new JsonObject();
+//
+//		joBody.addProperty("full", full);
+//
+//		JsonObject joOptions=new JsonObject();
+//		joOptions.addProperty("workflow", workflow);
+//		joBody.add("options", joOptions);
+//
+//		JsonArray chemicals=new JsonArray();
+//		
+//		for (String smiles:smilesList) {
+//			JsonObject chemical=new JsonObject();
+//			chemical.addProperty("smiles", smiles);
+//			chemicals.add(chemical);
+//		}
+//		
+//		joBody.add("chemicals", chemicals);
+//
+//		//		System.out.println(Utilities.gson.toJson(joBody));
+//
+//		HttpResponse<String> response = Unirest.post(host+"/api/stdizer/chemicals")
+//				.header("Content-Type", "application/json")
+//				.body(Utilities.gson.toJson(joBody))
+//				.asString();
+//
+//		return response;
+//		
+//
+//	}
+	
+	public HttpResponse<String> callQsarReadyStandardizePost(List<String>smilesList,boolean full) {
 		//		Unirest.setTimeouts(0, 0);
 
 		JsonObject joBody=new JsonObject();
@@ -343,7 +481,7 @@ public class SciDataExpertsStandardizer extends Standardizer {
 
 		//		System.out.println(Utilities.gson.toJson(joBody));
 
-		HttpResponse<String> response = Unirest.post(host+"/api/stdizer/chemicals")
+		HttpResponse<String> response = Unirest.post(serverHost+"/api/stdizer/chemicals")
 				.header("Content-Type", "application/json")
 				.body(Utilities.gson.toJson(joBody))
 				.asString();
@@ -358,39 +496,25 @@ public class SciDataExpertsStandardizer extends Standardizer {
 
 
 
-	public static StandardizeResponseWithStatus callQsarReadyStandardize(String url, String workflow, 
-			String smiles,Vector<String>inchiKeyExclude) {
-		long t0 = System.currentTimeMillis();
-		HttpResponse<SciDataExpertsStandardization[]> response = Unirest.get(url)
-				.queryString("workflow", workflow)
-				.queryString("smiles", smiles)				
-				.asObject(SciDataExpertsStandardization[].class);
-		long t = System.currentTimeMillis();
-
-		String time = (t-t0)/1000.0 + " s";
-		StandardizeResponseWithStatus responseWithStatus = 
-				getQsarResponseWithStatusFromHttpResponse(response, smiles, time,inchiKeyExclude);
-
-		return responseWithStatus;
-	}
 
 
 
 
-	public StandardizeResponseWithStatus callMsReadyStandardize(String smiles) {
-		long t0 = System.currentTimeMillis();
-		HttpResponse<SciDataExpertsStandardization[]> response = Unirest.get(SCI_DATA_EXPERTS_API_URL)
-				.queryString("workflow", MS_READY_WORKFLOW)
-				.queryString("smiles", smiles)				
-				.asObject(SciDataExpertsStandardization[].class);
-		long t = System.currentTimeMillis();
 
-		String time = (t-t0)/1000.0 + " s";
-		StandardizeResponseWithStatus responseWithStatus = 
-				getMsResponseWithStatusFromHttpResponse(response, smiles, time);
-
-		return responseWithStatus;
-	}
+//	public StandardizeResponseWithStatus callMsReadyStandardize(String smiles) {
+//		long t0 = System.currentTimeMillis();
+//		HttpResponse<SciDataExpertsStandardization[]> response = Unirest.get(SCI_DATA_EXPERTS_API_URL)
+//				.queryString("workflow", workflow)
+//				.queryString("smiles", smiles)				
+//				.asObject(SciDataExpertsStandardization[].class);
+//		long t = System.currentTimeMillis();
+//
+//		String time = (t-t0)/1000.0 + " s";
+//		StandardizeResponseWithStatus responseWithStatus = 
+//				getMsResponseWithStatusFromHttpResponse(response, smiles, time);
+//
+//		return responseWithStatus;
+//	}
 
 	public static String getStringFromURL(String strUrl) {
 		try {
@@ -412,140 +536,148 @@ public class SciDataExpertsStandardizer extends Standardizer {
 	}
 
 
-	private static StandardizeResponseWithStatus getQsarResponseWithStatusFromHttpResponse(
-			HttpResponse<SciDataExpertsStandardization[]> response, String smiles, String time) {
-		StandardizeResponseWithStatus responseWithStatus = new StandardizeResponseWithStatus();
-		responseWithStatus.status = response.getStatus();
+//	/**
+//	 * Used with get API call which isn't available
+//	 * 
+//	 * @param response
+//	 * @param smiles
+//	 * @param time
+//	 * @return
+//	 */
+//	private static StandardizeResponseWithStatus getQsarResponseWithStatusFromHttpResponse(
+//			HttpResponse<SciDataExpertsStandardization[]> response, String smiles, String time) {
+//		StandardizeResponseWithStatus responseWithStatus = new StandardizeResponseWithStatus();
+//		responseWithStatus.status = response.getStatus();
+//
+//		StandardizeResponse standardizeResponse = new StandardizeResponse();
+//		standardizeResponse.smiles = smiles;
+//		standardizeResponse.time = time;
+//
+//		if (responseWithStatus.status!=200 || response.getBody()==null || response.getBody().length==0) {
+//			standardizeResponse.success = false;
+//
+//			//			System.out.println("failed");
+//
+//		} else {
+//			List<SciDataExpertsStandardization> standardizations = Arrays.asList(response.getBody());
+//
+//			//TMM: 1/7/23, if have multiple structures in response, the qsar smiles is now a "." delimited mixture
+//
+//			if (standardizations.size()>1 || standardizations.size()==0) {
+//
+//				//				standardizeResponse.qsarStandardizedSmiles = null;
+//				standardizeResponse.qsarStandardizedSmiles = "";
+//
+//				for (int i=0;i<standardizations.size();i++) {
+//					standardizeResponse.qsarStandardizedSmiles+=standardizations.get(i).canonicalSmiles;
+//					//					System.out.println(i+"\t"+standardizations.get(i).canonicalSmiles);
+//					if(i<standardizations.size()-1) standardizeResponse.qsarStandardizedSmiles+="."; 
+//				}
+//
+//			} else if (standardizations.size()==1) {
+//				standardizeResponse.qsarStandardizedSmiles = standardizations.get(0).canonicalSmiles;
+//			} 
+//
+//			standardizeResponse.success = standardizeResponse.qsarStandardizedSmiles!=null 
+//					&& !standardizeResponse.qsarStandardizedSmiles.isBlank();
+//		}
+//
+//		responseWithStatus.standardizeResponse = standardizeResponse;
+//		return responseWithStatus;
+//	}
 
-		StandardizeResponse standardizeResponse = new StandardizeResponse();
-		standardizeResponse.smiles = smiles;
-		standardizeResponse.time = time;
-
-		if (responseWithStatus.status!=200 || response.getBody()==null || response.getBody().length==0) {
-			standardizeResponse.success = false;
-
-			//			System.out.println("failed");
-
-		} else {
-			List<SciDataExpertsStandardization> standardizations = Arrays.asList(response.getBody());
-
-			//TMM: 1/7/23, if have multiple structures in response, the qsar smiles is now a "." delimited mixture
-
-			if (standardizations.size()>1 || standardizations.size()==0) {
-
-				//				standardizeResponse.qsarStandardizedSmiles = null;
-				standardizeResponse.qsarStandardizedSmiles = "";
-
-				for (int i=0;i<standardizations.size();i++) {
-					standardizeResponse.qsarStandardizedSmiles+=standardizations.get(i).canonicalSmiles;
-					//					System.out.println(i+"\t"+standardizations.get(i).canonicalSmiles);
-					if(i<standardizations.size()-1) standardizeResponse.qsarStandardizedSmiles+="."; 
-				}
-
-			} else if (standardizations.size()==1) {
-				standardizeResponse.qsarStandardizedSmiles = standardizations.get(0).canonicalSmiles;
-			} 
-
-			standardizeResponse.success = standardizeResponse.qsarStandardizedSmiles!=null 
-					&& !standardizeResponse.qsarStandardizedSmiles.isBlank();
-		}
-
-		responseWithStatus.standardizeResponse = standardizeResponse;
-		return responseWithStatus;
-	}
-
-	/**
-	 * Method added by TMM that will manually exclude structures on the excluisions list
-	 * 
-	 * @param response
-	 * @param smiles
-	 * @param time
-	 * @param inchiKeyExclude
-	 * @return
-	 */
-	private static StandardizeResponseWithStatus getQsarResponseWithStatusFromHttpResponse(
-			HttpResponse<SciDataExpertsStandardization[]> response, String smiles, String time,Vector<String>inchiKeyExclude) {
-		StandardizeResponseWithStatus responseWithStatus = new StandardizeResponseWithStatus();
-		responseWithStatus.status = response.getStatus();
-
-		StandardizeResponse standardizeResponse = new StandardizeResponse();
-		standardizeResponse.smiles = smiles;
-		standardizeResponse.time = time;
-
-
-		if (responseWithStatus.status!=200 || response.getBody()==null || response.getBody().length==0) {
-			standardizeResponse.success = false;			
-			System.out.println(smiles+"\tfailed");
-
-		} else {
-			ArrayList<SciDataExpertsStandardization> standardizations = new ArrayList(Arrays.asList(response.getBody()));
-
-			//TMM: Added if block 9/21/22 so that mixtures don't have QSAR ready smiles
-			if (standardizations.size()>1 || standardizations.size()==0) {
-
-				for (int i=0;i<standardizations.size();i++) {					
-					String inchiKey=toInchiKey(standardizations.get(i).canonicalSmiles);					
-					//					System.out.println(standardizations.get(i).canonicalSmiles+"\t"+inchiKey);
-
-					if (inchiKeyExclude.contains(inchiKey)) {						
-						System.out.println(smiles+"\t"+i+"\t"+standardizations.get(i).canonicalSmiles+"\tExcluded");
-						standardizations.remove(i--);						
-					}
-				}
-				if (standardizations.size()==1) {
-					standardizeResponse.qsarStandardizedSmiles = standardizations.get(0).canonicalSmiles;	
-				} else {
-					standardizeResponse.qsarStandardizedSmiles = null;
-				}
-
-			} else if (standardizations.size()==1) {				
-				System.out.println(smiles+"\tsize=1");				
-				standardizeResponse.qsarStandardizedSmiles = standardizations.get(0).canonicalSmiles;
-			} 
-
-
-			standardizeResponse.success = standardizeResponse.qsarStandardizedSmiles!=null 
-					&& !standardizeResponse.qsarStandardizedSmiles.isBlank();
-		}
-
-		responseWithStatus.standardizeResponse = standardizeResponse;
-		return responseWithStatus;
-	}
-
-
-	private StandardizeResponseWithStatus getMsResponseWithStatusFromHttpResponse(
-			HttpResponse<SciDataExpertsStandardization[]> response, String smiles, String time) {
-		StandardizeResponseWithStatus responseWithStatus = new StandardizeResponseWithStatus();
-		responseWithStatus.status = response.getStatus();
-
-		StandardizeResponse standardizeResponse = new StandardizeResponse();
-		standardizeResponse.smiles = smiles;
-		standardizeResponse.time = time;
-
-		if (responseWithStatus.status!=200 || response.getBody()==null) {
-			standardizeResponse.success = false;
-		} else {
-			List<SciDataExpertsStandardization> standardizations = Arrays.asList(response.getBody());
-			standardizeResponse.msStandardizedSmiles = 
-					standardizations.stream().map(std -> std.canonicalSmiles).collect(Collectors.toList());
-			standardizeResponse.success = standardizeResponse.msStandardizedSmiles!=null 
-					&& !standardizeResponse.msStandardizedSmiles.isEmpty();
-		}
-
-		responseWithStatus.standardizeResponse = standardizeResponse;
-		return responseWithStatus;
-	}
+//	/**
+//	 * Method added by TMM that will manually exclude structures on the excluisions list
+//	 * 
+//	 * @param response
+//	 * @param smiles
+//	 * @param time
+//	 * @param inchiKeyExclude
+//	 * @return
+//	 */
+//	private static StandardizeResponseWithStatus getQsarResponseWithStatusFromHttpResponse(
+//			HttpResponse<SciDataExpertsStandardization[]> response, String smiles, String time,Vector<String>inchiKeyExclude) {
+//		StandardizeResponseWithStatus responseWithStatus = new StandardizeResponseWithStatus();
+//		responseWithStatus.status = response.getStatus();
+//
+//		StandardizeResponse standardizeResponse = new StandardizeResponse();
+//		standardizeResponse.smiles = smiles;
+//		standardizeResponse.time = time;
+//
+//
+//		if (responseWithStatus.status!=200 || response.getBody()==null || response.getBody().length==0) {
+//			standardizeResponse.success = false;			
+//			System.out.println(smiles+"\tfailed");
+//
+//		} else {
+//			ArrayList<SciDataExpertsStandardization> standardizations = new ArrayList(Arrays.asList(response.getBody()));
+//
+//			//TMM: Added if block 9/21/22 so that mixtures don't have QSAR ready smiles
+//			if (standardizations.size()>1 || standardizations.size()==0) {
+//
+//				for (int i=0;i<standardizations.size();i++) {					
+//					String inchiKey=toInchiKey(standardizations.get(i).canonicalSmiles);					
+//					//					System.out.println(standardizations.get(i).canonicalSmiles+"\t"+inchiKey);
+//
+//					if (inchiKeyExclude.contains(inchiKey)) {						
+//						System.out.println(smiles+"\t"+i+"\t"+standardizations.get(i).canonicalSmiles+"\tExcluded");
+//						standardizations.remove(i--);						
+//					}
+//				}
+//				if (standardizations.size()==1) {
+//					standardizeResponse.qsarStandardizedSmiles = standardizations.get(0).canonicalSmiles;	
+//				} else {
+//					standardizeResponse.qsarStandardizedSmiles = null;
+//				}
+//
+//			} else if (standardizations.size()==1) {				
+//				System.out.println(smiles+"\tsize=1");				
+//				standardizeResponse.qsarStandardizedSmiles = standardizations.get(0).canonicalSmiles;
+//			} 
+//
+//
+//			standardizeResponse.success = standardizeResponse.qsarStandardizedSmiles!=null 
+//					&& !standardizeResponse.qsarStandardizedSmiles.isBlank();
+//		}
+//
+//		responseWithStatus.standardizeResponse = standardizeResponse;
+//		return responseWithStatus;
+//	}
 
 
-	@Override
-	public BatchStandardizeResponseWithStatus callBatchStandardize(String filePath) {
-		throw new IllegalArgumentException("Batch mode not implemented in SciDataExperts standardizer");
-	}
-	
-	@Override
-	public BatchStandardizeResponseWithStatus callBatchStandardize(List<String> smiles) {
-		throw new IllegalArgumentException("Batch mode not implemented in SciDataExperts standardizer");
-	}
+//	private StandardizeResponseWithStatus getMsResponseWithStatusFromHttpResponse(
+//			HttpResponse<SciDataExpertsStandardization[]> response, String smiles, String time) {
+//		StandardizeResponseWithStatus responseWithStatus = new StandardizeResponseWithStatus();
+//		responseWithStatus.status = response.getStatus();
+//
+//		StandardizeResponse standardizeResponse = new StandardizeResponse();
+//		standardizeResponse.smiles = smiles;
+//		standardizeResponse.time = time;
+//
+//		if (responseWithStatus.status!=200 || response.getBody()==null) {
+//			standardizeResponse.success = false;
+//		} else {
+//			List<SciDataExpertsStandardization> standardizations = Arrays.asList(response.getBody());
+//			standardizeResponse.msStandardizedSmiles = 
+//					standardizations.stream().map(std -> std.canonicalSmiles).collect(Collectors.toList());
+//			standardizeResponse.success = standardizeResponse.msStandardizedSmiles!=null 
+//					&& !standardizeResponse.msStandardizedSmiles.isEmpty();
+//		}
+//
+//		responseWithStatus.standardizeResponse = standardizeResponse;
+//		return responseWithStatus;
+//	}
+//
+//
+//	@Override
+//	public BatchStandardizeResponseWithStatus callBatchStandardize(String filePath) {
+//		throw new IllegalArgumentException("Batch mode not implemented in SciDataExperts standardizer");
+//	}
+//	
+//	@Override
+//	public BatchStandardizeResponseWithStatus callBatchStandardize(List<String> smiles) {
+//		throw new IllegalArgumentException("Batch mode not implemented yet- need to use full and then parse output carefully");
+//	}
 
 
 	/**
@@ -591,68 +723,150 @@ public class SciDataExpertsStandardizer extends Standardizer {
 			return null;
 		}
 	}
+	
+	
+	private static String getSampleSmiles() {
+		// String smiles="CI.CCCC";
+// String smiles="CI.CCCC.Cl.[Ag+].ClCCl";
+// String
+// smiles="[Na+].[OH-][B+3]([C-]=1C=CC=CC1)([C-]=2C=CC=CC2)[C-]=3C=CC=CC3";
+// String smiles="CCCCCCCCCCCCOS(O)(=O)=O.OCCN(CCO)CCO";
+//		String smiles="CCCCCCCCCCCCOS(O)(=O)=O.OCCN(CCO)CCO.c1ccccc1";
+//				String smiles="CCCC";
+//				String smiles="c1ccccc1";
+// String smiles="c1ccccc1.Cl";
+// String smiles="CCCCCCCCCCCCOS(O)(=O)=O";
+//		String smiles="CCC(C)[N+]([O-])(O)C1C=CC(=CC=1)NC1C=CC=CC=1";
+//		String smiles="ON=C1C2=C(C=C(C=C2)Cl)N(O)C=C1";
+//		String smiles="[I-].CN(C)C(=[S+]C1C=C(Br)C=CC=1)N(C)Cc1ccccc1";
+//		String smiles="XXX";
+//		String smiles="[OH-].[OH-].[Mg+2].NC1=NC(=O)C(O1)C1C=CC=CC=1";
+//		String smiles="bobert";
+//		String smiles="CC1=C2N=C3C(NC(=N)N=C3O)=NCC2C2CNC3NC(=N)N=C(O)C=3N12";//fails standardization
+//		String smiles="CCCC.bobert";
+//				String smiles="CCCC.Cl";
+		String smiles="CCCC.CCCCO";
+//		String smiles="[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC[C@]4([H])C[C@H](O)CC[C@]4(C)[C@@]3([H])C[C@H](O)[C@]12C)[C@H](C)CCC(O)=O";
+//		String smiles="CI";
+//		String smiles="[Ag+].[C-]#[N+][O-]";
+		return smiles;
+	}
+
 
 	public static void main(String[] args) {
 		//		String url="https://ccte-cced.epa.gov/api/stdizer/";
 //		String url="https://hcd.rtpnc.epa.gov/api/stdizer/";
 		String serverHost="https://hcd.rtpnc.epa.gov";
-
-		String workflow="QSAR-ready_CNL_edits_TMM_2";
-		//		String workflow="qsar-ready";
-		//		String workflow="QSAR-ready_CNL_edits";
-
-		//		String smiles="CI.CCCC";
-		//		String smiles="CI.CCCC.Cl.[Ag+].ClCCl";
-		//		String smiles="[Na+].[OH-][B+3]([C-]=1C=CC=CC1)([C-]=2C=CC=CC2)[C-]=3C=CC=CC3";
-
-		//		String smiles="CCCCCCCCCCCCOS(O)(=O)=O.OCCN(CCO)CCO";
-//		String smiles="CCCCCCCCCCCCOS(O)(=O)=O.OCCN(CCO)CCO.c1ccccc1";
-//				String smiles="CCCC";
-//				String smiles="c1ccccc1";
-		//		String smiles="c1ccccc1.Cl";
-		//		String smiles="CCCCCCCCCCCCOS(O)(=O)=O";
-//		String smiles="CCC(C)[N+]([O-])(O)C1C=CC(=CC=1)NC1C=CC=CC=1";
+		String type=DevQsarConstants.QSAR_READY;
 		
-//		String smiles="ON=C1C2=C(C=C(C=C2)Cl)N(O)C=C1";
+//		String workflow="QSAR-ready_CNL_edits_TMM_2";
+		String workflow=QSAR_READY_WORKFLOW;
+//		String workflow="QSAR-ready_CNL_edits";
 		
-//		String smiles="[I-].CN(C)C(=[S+]C1C=C(Br)C=CC=1)N(C)Cc1ccccc1";
-//		String smiles="XXX";
-//		String smiles="[OH-].[OH-].[Mg+2].NC1=NC(=O)C(O1)C1C=CC=CC=1";
-		
-		//		String smiles="bobert";
-		//		String smiles="CC1=C2N=C3C(NC(=N)N=C3O)=NCC2C2CNC3NC(=N)N=C(O)C=3N12";//fails standardization
-		//		String smiles="CCCC.bobert";
-
-				String smiles="CCCC";
-		//		String smiles="CI";
-		//		String smiles="[Ag+].[C-]#[N+][O-]";
-
-		//		Vector<String>inchiKeyExclude=getInchiExclusions("http://v2626umcth819.rtord.epa.gov:443/api/stdizer/groups/qsar-ready-exclusions_TMM");
-		//		StandardizeResponseWithStatus responseWithStatus=callQsarReadyStandardize(url, workflow, smiles,inchiKeyExclude);
-
-		//		StandardizeResponseWithStatus responseWithStatus=callQsarReadyStandardize(url, workflow, smiles);
-
-		//		System.out.println(responseWithStatus.standardizeResponse.qsarStandardizedSmiles);
-
 		boolean full=true;
-		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,workflow,serverHost);
 
-		HttpResponse<String>response=standardizer.callQsarReadyStandardizePost(smiles,full);
-		String jsonResponse=getResponseBody(response, full);
-		
+
+		String smiles = getSampleSmiles();
+
+		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(type,workflow,serverHost);
+		HttpResponse<String>response=standardizer.callQsarReadyStandardizePost2(smiles,full);
+		System.out.println(response.getStatus());
+
+		String jsonResponse=standardizer.getResponseBody(response, full);
 		System.out.println(jsonResponse);
 		
-		String qsarSmiles=getQsarReadySmilesFromPostJson(jsonResponse, full);
+		String qsarSmiles=standardizer.getQsarReadySmilesFromPostJson(jsonResponse, full);
 		
-		String changes=getChangesApplied(jsonResponse);
+		if (full) {
+			String changes=getChangesApplied(jsonResponse);
+			System.out.println(changes);
+		}
 		
-		System.out.println(qsarSmiles);
-		System.out.println(changes);
-
+		System.out.println("qsarSmiles="+qsarSmiles);
 	}
 
 
+//	@Override
+//	public StandardizeResponseWithStatus callStandardize(String smiles) {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
 
 	
+	public static class StandardizeResult {
+		public int status;
+		public String qsarReadySmiles;
+	}
 
+	/**
+	 * 
+	 * Convenience method for tests
+	 * 
+	 * @param smiles
+	 * @param server
+	 * @param workFlow
+	 * @param full
+	 * @return
+	 */
+	public static StandardizeResult runStandardize(String smiles, String server, String workFlow,boolean full) {
+		//		System.out.println(server+"/api/stdizer/?workflow="+workFlow);
+
+//		HttpResponse<String> response = Unirest.get(server + "/api/stdizer/?workflow=" + workFlow)
+//				.queryString("smiles", smiles).asString();
+//
+//		return response.getBody();
+		
+		HttpResponse<String>response=SciDataExpertsStandardizer.callQsarReadyStandardizePost(smiles,full,workFlow,server);
+
+//		System.out.println(response.getStatus());
+
+		String jsonResponse=SciDataExpertsStandardizer.getResponseBody(response, full);
+//		System.out.println(jsonResponse);
+
+		StandardizeResult sr=new StandardizeResult();
+		
+		sr.status=response.getStatus();
+
+		if (response.getStatus()==200) {
+			sr.qsarReadySmiles=SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse, full);
+		}
+		return sr;
+
+	}
+	
+	/**
+	 * 
+	 * Convenience method for tests
+	 * 
+	 * @param smiles
+	 * @param server
+	 * @param workFlow
+	 * @param full
+	 * @return
+	 */
+	public StandardizeResult runStandardize(String smiles, boolean full) {
+		//		System.out.println(server+"/api/stdizer/?workflow="+workFlow);
+
+//		HttpResponse<String> response = Unirest.get(server + "/api/stdizer/?workflow=" + workFlow)
+//				.queryString("smiles", smiles).asString();
+//
+//		return response.getBody();
+		
+		HttpResponse<String>response=callQsarReadyStandardizePost(smiles,full);
+
+//		System.out.println(response.getStatus());
+
+		String jsonResponse=SciDataExpertsStandardizer.getResponseBody(response, full);
+//		System.out.println(jsonResponse);
+
+		StandardizeResult sr=new StandardizeResult();
+		
+		sr.status=response.getStatus();
+
+		if (response.getStatus()==200) {
+			sr.qsarReadySmiles=SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse, full);
+		}
+		return sr;
+
+	}
 }
