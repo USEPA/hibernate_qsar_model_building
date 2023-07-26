@@ -2,7 +2,12 @@ package gov.epa.databases.dev_qsar.qsar_models.service;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 
@@ -13,6 +18,8 @@ import javax.validation.Validator;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
+import com.google.gson.JsonObject;
+
 import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.qsar_descriptors.QsarDescriptorsSession;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
@@ -21,6 +28,7 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.Bob;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class PredictionDashboardServiceImpl implements PredictionDashboardService {
 	Validator validator;
@@ -29,6 +37,8 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		this.validator = DevQsarValidator.getValidator();
 	}
 
+	
+	
 	
 	@Override
 	public PredictionDashboard create(PredictionDashboard predictionDashboard) throws ConstraintViolationException {
@@ -64,8 +74,8 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 	@Override
 	public List<PredictionDashboard> createBatch(List<PredictionDashboard> predictionDashboard)
 			throws org.hibernate.exception.ConstraintViolationException {
-		// TODO Auto-generated method stub
-		return null;
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return createBatch(predictionDashboard, session);
 	}
 
 
@@ -100,9 +110,9 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		
-		String [] fieldNames= {"smiles", "canon_qsar_smiles", "dtxcid", "dtxsid",
-				"fk_model_id", "prediction_value", "prediction_string", "prediction_error",
-				 "updated_by", "created_by", "created_at"};
+		String [] fieldNames= {"canon_qsar_smiles", "fk_dsstox_records_id",	"fk_model_id", 
+				"prediction_value", "prediction_string", "prediction_error",
+				  "created_by", "created_at"};
 
 		int batchSize=1000;
 		
@@ -128,23 +138,25 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 
 			for (int counter = 0; counter < predictionDashboards.size(); counter++) {
 				PredictionDashboard p=predictionDashboards.get(counter);
-				prep.setString(1, p.getSmiles());
-				prep.setString(2, p.getCanonQsarSmiles());
-				prep.setString(3, p.getDtxcid());
-				prep.setString(4, p.getDtxsid());
-				prep.setLong(5, p.getModel().getId());
-				prep.setDouble(6, p.getPredictionValue());
-				prep.setString(7, p.getPredictionString());
-				prep.setString(8, p.getPredictionError());
-				prep.setString(9, p.getUpdatedBy());
-				prep.setString(10, p.getCreatedBy());
+				prep.setString(1, p.getCanonQsarSmiles());
+				prep.setLong(2, p.getFk_dsstox_records_id());
+				prep.setLong(3, p.getModel().getId());
 				
+				if (p.getPredictionValue()==null) {
+					prep.setNull(4,Types.DOUBLE);
+				} else {
+					prep.setDouble(4, p.getPredictionValue());	
+				}
 				
+				prep.setString(5, p.getPredictionString());
+				prep.setString(6, p.getPredictionError());
+				prep.setString(7, p.getCreatedBy());
 				prep.addBatch();
 				
 				if (counter % batchSize == 0 && counter!=0) {
 					// System.out.println(counter);
 					prep.executeBatch();
+					conn.commit();
 				}
 			}
 
@@ -158,5 +170,68 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		}
 	}			
 
+	
+	/**
+	 * Use cross schema query so can get precise property name from dataset
+	 * 
+	 * @param dtxcid
+	 * @param propertyName
+	 * @param modelSource
+	 * @return
+	 */
+	public String getPredictionDashboardAsJson(String dtxsid, String propertyName, String modelSource) {
+		
+		String sql="select p.\"name\" as property, m.\"source\",m.\"name\" as model_name,"
+				+ "pd.canon_qsar_smiles, pd.smiles, pd.dtxsid, pd.dtxcid,"
+				+ "pd.prediction_value as prediction_value,"
+				+ "u.abbreviation as prediction_units, "
+				+ "pd.prediction_string as prediction_string, "
+				+ "pd.prediction_error as prediction_error"
+				+ " from qsar_models.predictions_dashboard pd\n"+
+		"join qsar_models.models m on m.id=pd.fk_model_id\n"+
+		"join qsar_datasets.datasets d on d.\"name\" =m.dataset_name\n"+
+		"join qsar_datasets.properties p on p.id=d.fk_property_id\n"+
+		"join qsar_datasets.units u on u.id=d.fk_unit_id_contributor\n"+
+		"where m.\"source\" ='"+modelSource+"' and dtxsid='"+dtxsid+"' and p.\"name\"='"+propertyName+"'";
+		
+//		System.out.println(sql);
+		
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+		
+		try {
+			
+			JsonObject jo=new JsonObject();
+			
+			ResultSetMetaData metadata=rs.getMetaData();	
+			
+//			System.out.println(metadata.getColumnCount());			
+			
+			while (rs.next()) {
+				
+				for (int i=1;i<=metadata.getColumnCount();i++) {
+					jo.addProperty(metadata.getColumnLabel(i),rs.getString(i));
+					
+//					System.out.println(i+"\t"+metadata.getColumnLabel(i)+"\t"+rs.getString(i));
+				}
+				return Utilities.gson.toJson(jo);
+			}
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return "error getting report";
+		
+	}
+	
+	public static void main(String[] args) {
+		PredictionDashboardServiceImpl p=new PredictionDashboardServiceImpl();
+		String dtxsid="DTXSID80177704";
+		String propertyName="Water solubility";
+		String modelSource="TEST5.1.3";
+		String json=p.getPredictionDashboardAsJson(dtxsid, "Water solubility", modelSource);
+		System.out.println(json);
+	}
+	
 
 }

@@ -439,7 +439,7 @@ public class QsarModelsScript {
 	}
 	
 
-	public void compareSDE_API_PredictionsWithDB(Long existingModelId, String workflow, String server, int port, String lanId,boolean use_pmml)  {
+	public void compareSDE_API_PredictionsWithDB(Long existingModelId, String workflow, String server, int port, String lanId,boolean use_pmml, boolean use_cache)  {
 		
 		ModelService msi=new ModelServiceImpl();
 		Model model=msi.findById(existingModelId);
@@ -450,7 +450,7 @@ public class QsarModelsScript {
 		WebServiceModelBuilder mb = new WebServiceModelBuilder(ws, lanId);
 		
 		//Run predictions using SDE API:
-		ModelPrediction[] modelPredictions= mb.getModelPredictionsFromSDE_API(model, workflow);
+		ModelPrediction[] modelPredictions= mb.getModelPredictionsFromSDE_API(model, workflow, use_cache);
 				
 //		if(true) return;
 		
@@ -627,7 +627,8 @@ public class QsarModelsScript {
 //		Long modelId=336L;//HLC,RF,no embedding, T=PFAS only, P=PFAS
 //		Long modelId=306L;//HLC,RF,embedding, RND_REPRESENTATIVE splitting- predictions are different!
 		Long modelId=351L;//HLC,RF,no embedding, RND_REPRESENTATIVE splitting
-		script.compareSDE_API_PredictionsWithDB(modelId,"qsar-ready", "http://localhost",8105, lanId,false);//non pmml based model
+		boolean use_cache=false;
+		script.compareSDE_API_PredictionsWithDB(modelId,"qsar-ready", "http://localhost",8105, lanId,false,use_cache);//non pmml based model
 		
 		//****************************************************************************************
 //		script.deleteModel(456L);

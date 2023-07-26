@@ -21,29 +21,23 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 
 @Entity()
-@Table(name = "predictions_dashboard", uniqueConstraints={@UniqueConstraint(columnNames = {"canon_qsar_smiles","smiles", "dtxcid", "dtxsid", "fk_model_id"})})
+@Table(name = "predictions_dashboard", uniqueConstraints={@UniqueConstraint(columnNames = {"canon_qsar_smiles","fk_dsstox_records_id", "fk_model_id"})})
 public class PredictionDashboard {
 
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 	
-	@Column(name="smiles")
-	private String smiles;
-
 	@NotBlank(message="Canonical QSAR-ready SMILES required")
 	@Column(name="canon_qsar_smiles")
 	private String canonQsarSmiles;
-	
-	@NotBlank(message="dtxcid required")
-	@Column(name="dtxcid")
-	private String dtxcid;
-	
-	
-	@NotBlank(message="dtxsid required")
-	@Column(name="dtxsid")
-	private String dtxsid;
 
+
+	@NotNull(message="fk_dsstox_records_id required")
+	@Column(name="fk_dsstox_records_id")
+	private Long fk_dsstox_records_id;
+
+	
 	@ManyToOne
 	@NotNull(message="Model required")
 	@JoinColumn(name="fk_model_id")
@@ -75,22 +69,20 @@ public class PredictionDashboard {
 	@NotBlank(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
+	
+	public String getKey() {
+		return canonQsarSmiles+"\t"+fk_dsstox_records_id+"\t"+model.getId();
+	}
 
 	public Long getId() {
 		return id;
 	}
 
+	
 	public void setId(Long id) {
 		this.id = id;
 	}
 
-	public String getSmiles() {
-		return smiles;
-	}
-
-	public void setSmiles(String smiles) {
-		this.smiles = smiles;
-	}
 
 	public String getCanonQsarSmiles() {
 		return canonQsarSmiles;
@@ -100,21 +92,6 @@ public class PredictionDashboard {
 		this.canonQsarSmiles = canonQsarSmiles;
 	}
 
-	public String getDtxcid() {
-		return dtxcid;
-	}
-
-	public void setDtxcid(String dtxcid) {
-		this.dtxcid = dtxcid;
-	}
-
-	public String getDtxsid() {
-		return dtxsid;
-	}
-
-	public void setDtxsid(String dtxsid) {
-		this.dtxsid = dtxsid;
-	}
 
 	public Model getModel() {
 		return model;
@@ -178,6 +155,16 @@ public class PredictionDashboard {
 
 	public void setCreatedBy(String createdBy) {
 		this.createdBy = createdBy;
+	}
+
+
+	public Long getFk_dsstox_records_id() {
+		return fk_dsstox_records_id;
+	}
+
+
+	public void setFk_dsstox_records_id(Long fk_dsstox_records_id) {
+		this.fk_dsstox_records_id = fk_dsstox_records_id;
 	}
 
 }

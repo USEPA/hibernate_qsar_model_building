@@ -3,6 +3,7 @@ package gov.epa.run_from_java.scripts.PredictionDashboard;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 
@@ -14,8 +15,11 @@ import org.openscience.cdk.smiles.SmilesGenerator;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DsstoxSnapshot;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DsstoxRecordServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DsstoxSnapshotServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
@@ -115,6 +119,12 @@ public class PredictionDashboardScriptPercepta {
 	}
 
 	void loadFromSDF(String filepathSDF,boolean skipMissingSID,int maxCount) {
+
+		DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
+		DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
+		DsstoxRecordServiceImpl dsstoxRecordService=new  DsstoxRecordServiceImpl();
+		Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot);
+		
 		SmilesGenerator sg= new SmilesGenerator(SmiFlavor.Unique);
 		AtomContainerSet acs=RunDashboardPredictions.readSDFV3000(filepathSDF);
 		AtomContainerSet acs2 = RunDashboardPredictions.filterAtomContainerSet(acs, skipMissingSID, maxCount);
@@ -152,16 +162,10 @@ public class PredictionDashboardScriptPercepta {
 					PredictionDashboard pd=new PredictionDashboard();
 					
 					pd.setCreatedBy(lanId);
-					pd.setSmiles(ac.getProperty("smiles"));
 					pd.setCanonQsarSmiles("N/A");
 					
-					if (ac.getProperty("DTXCID")!=null) {
-						pd.setDtxcid(ac.getProperty("DTXCID"));	
-					}
-					
-					if (ac.getProperty("DTXSID")!=null) {
-						pd.setDtxsid(ac.getProperty("DTXSID"));
-					}
+					String dtxcid=ac.getProperty("DTXCID");
+					pd.setFk_dsstox_records_id(htCIDtoDsstoxRecordId.get(dtxcid));
 					
 					pd.setModel(hmModels.get(modelName));
 
@@ -172,18 +176,7 @@ public class PredictionDashboardScriptPercepta {
 						pd.setPredictionValue(propertyValue);
 					}
 					
-					try {
-						String smiles=sg.create(ac);
-						if(smiles!=null) {
-							pd.setSmiles(smiles);
-						}
-					} catch (Exception ex) {
-						System.out.println("Error generating smiles for "+ac.getProperty("DTXCID"));
-					}
-					
-
 //					System.out.println(predictions.size()+"\t"+modelName+"\t"+propertyNameDB+"\t"+propertyValue);
-
 //					predictionDashboardService.create(pd);
 					predictions.add(pd);
 					
@@ -191,10 +184,10 @@ public class PredictionDashboardScriptPercepta {
 						predictionDashboardService.createSQL(predictions);
 						predictions.clear();
 					}
-					
 				}
 			}
 			
+			predictionDashboardService.createSQL(predictions);
 			
 			
 		} catch (Exception e) {

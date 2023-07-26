@@ -1,25 +1,38 @@
 package gov.epa.run_from_java.scripts.PredictionDashboard;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Vector;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 
 import ToxPredictor.Application.model.PredictionResults;
 import ToxPredictor.Application.model.PredictionResultsPrimaryTable;
+import ToxPredictor.Application.model.SimilarChemical;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DsstoxSnapshot;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DsstoxRecordServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DsstoxSnapshotServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
@@ -27,6 +40,7 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport;
 import gov.epa.databases.dev_qsar.qsar_models.service.MethodServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionReportServiceImpl;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 
@@ -38,7 +52,10 @@ public class PredictionDashboardScriptTEST  {
 	MethodServiceImpl methodService=new MethodServiceImpl();
 	PredictionDashboardServiceImpl predictionDashboardService=new PredictionDashboardServiceImpl();
 	PredictionReportServiceImpl predictionReportService=new PredictionReportServiceImpl();
-
+	DsstoxRecordServiceImpl dsstoxRecordService=new  DsstoxRecordServiceImpl();
+	
+	
+	
 	String lanId="tmarti02";
 	String version="5.1.3";
 
@@ -66,12 +83,17 @@ public class PredictionDashboardScriptTEST  {
 			
 //			if(true)return;
 			
+			DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
+			DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
+			Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot);
+
+			
 			for (String DTXSID:htResultsAll.keySet()) {
 				
 				List<PredictionResults>listPredictionResults=htResultsAll.get(DTXSID);
 				
 				for (PredictionResults pr:listPredictionResults) {
-					PredictionDashboard pd=convertPredictionResultsToPredictionDashboard(pr,hmModels,true);
+					PredictionDashboard pd=convertPredictionResultsToPredictionDashboard(pr,hmModels,true,htCIDtoDsstoxRecordId);
 					predictionDashboardService.create(pd);
 //					System.out.println(Utilities.gson.toJson(pd));
 				}
@@ -84,6 +106,11 @@ public class PredictionDashboardScriptTEST  {
 	}
 	
 	void runFromSampleJsonFile(String filepathJson) {
+		
+		DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
+		DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
+		Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot);
+
 		
 		Type listOfMyClassObject = new TypeToken<List<PredictionResults>>() {}.getType();
 		
@@ -100,7 +127,7 @@ public class PredictionDashboardScriptTEST  {
 //			if(true)return;
 			
 			for (PredictionResults pr:resultsAll) {
-				PredictionDashboard pd=convertPredictionResultsToPredictionDashboard(pr,hmModels,true);
+				PredictionDashboard pd=convertPredictionResultsToPredictionDashboard(pr,hmModels,true,htCIDtoDsstoxRecordId);
 				predictionDashboardService.create(pd);
 //				System.out.println(Utilities.gson.toJson(pd));
 			}
@@ -112,10 +139,16 @@ public class PredictionDashboardScriptTEST  {
 	}
 	
 	
-	void runFromDashboardJsonFile(String filepathJson) {
-		
+
+	void runFromDashboardJsonFileBatchPost(String filepathJson) {
 		
 		try {
+			
+			System.out.println(filepathJson);
+			
+			DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
+			DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
+			Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot);
 			
 			//TODO add code to create automatically new methods if they arent in the methods table in db
 			HashMap<String,Method> hmMethods=new HashMap<>();
@@ -126,39 +159,173 @@ public class PredictionDashboardScriptTEST  {
 			
 			BufferedReader br=new BufferedReader(new FileReader(filepathJson));
 			
-			int count=0;
+			int counter=0;
+			int countToPost=10000;
+			
+			List<PredictionDashboard>predictions=new ArrayList<>();
+			List<PredictionReport>predictionReports=new ArrayList<>();
+						
+			//Get list of prediction dashboard keys already in the database:
+			HashSet<String> pd_keys = getPredictionsDashboardKeysInDB();
 
-//			for (String line:lines) {
+			int countAlreadyHave=0;
+			Gson gson=new Gson();
+			
 			while (true) {
+				
+//				System.out.println("start loop");
+				
 				String strPredictionResults=br.readLine();
 				if(strPredictionResults==null) break;
-				count++;
+				counter++;
+				
+//				System.out.println(strPredictionResults);
+								
+				if(counter%countToPost==0) System.out.println(counter);
 				
 				PredictionResults predictionResults=Utilities.gson.fromJson(strPredictionResults,PredictionResults.class);
-//				System.out.println(Utilities.gson.toJson(pr));
 				
-				PredictionDashboard pd=convertPredictionResultsToPredictionDashboard(predictionResults,hmModels,true);
-				pd=predictionDashboardService.create(pd);
-
+				fixPredictionResults(predictionResults);//fixes error where CAS was set to the SID for the test chemical in the similar chemicals table
+//				System.out.println(Utilities.gson.toJson(predictionResults));
+				
+				//Store fixed report as string:
+				String strPredictionResults2=gson.toJson(predictionResults);
+								
+				PredictionDashboard pd=convertPredictionResultsToPredictionDashboard(predictionResults,hmModels,true,htCIDtoDsstoxRecordId);
+//				pd=predictionDashboardService.create(pd);				
+				
+				//See if prediction is already in the database:
+				if(pd_keys.contains(pd.getKey())) {
+					countAlreadyHave++;
+//					System.out.println("Already have in db ("+countAlreadyHave+"):"+pd.getKey());
+					continue;
+				}
+				
+				predictions.add(pd);
+				
 //				if(predictionDashboard.getPredictionError()!=null) continue;//For testing
 				
 //				byte[] bytes=PredictionReport.compress(strPredictionResults);
 //				byte[] bytes=strPredictionResults.getBytes(StandardCharsets.ISO_8859_1);
-				byte[] bytes=strPredictionResults.getBytes();
-				
+				byte[] bytes=strPredictionResults2.getBytes();
 //				String line2=PredictionReport.decompress(bytes);
 //				System.out.println("Decompressed:"+line2);
 				
-				
-				System.out.println(pd.getDtxcid()+"\t"+pd.getModel().getName()+"\t"+pd.getPredictionValue()+"\t"+pd.getPredictionString()+"\t"+pd.getPredictionError());
+//				System.out.println(pd.getDtxcid()+"\t"+pd.getModel().getName()+"\t"+pd.getPredictionValue()+"\t"+pd.getPredictionString()+"\t"+pd.getPredictionError());
 
 				PredictionReport predictionReport=new PredictionReport(pd, bytes, lanId);
-				predictionReportService.create(predictionReport);
+//				predictionReportService.create(predictionReport);
+								
+				predictionReports.add(predictionReport);
+				
+				if(predictions.size()==countToPost) {
+					
+//					System.out.println(counter);
+					
+					predictionDashboardService.createSQL(predictions);
+					predictions.clear();
+					
+					predictionReportService.createSQL(predictionReports);
+					predictionReports.clear();
+
+				}
 				
 //				if(true) break;
+			}
+			br.close();
+			
+			System.out.println("exited main loop");
+			
+			predictionDashboardService.createSQL(predictions);
+			predictionReportService.createSQL(predictionReports);
+			
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		} 
+		
+	}
+
+	private HashSet<String> getPredictionsDashboardKeysInDB() throws SQLException {
+		HashSet<String> pd_keys=new HashSet<>();
+
+		String sql="select canon_qsar_smiles, fk_dsstox_records_id, fk_model_id from qsar_models.predictions_dashboard pd\n"+
+				"where fk_model_id>=223 and fk_model_id<=240";
+				
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+					
+		while (rs.next()) {
+			String canon_qsar_smiles=rs.getString(1);
+			Long fk_dsstox_records_id=rs.getLong(2);
+			String fk_model_id=rs.getString(3);
+			String key=canon_qsar_smiles+"\t"+fk_dsstox_records_id+"\t"+fk_model_id;
+//				System.out.println(key);
+			pd_keys.add(key);
+		}
+		
+		System.out.println("Got keys for test predictions in predictions dashboard:"+pd_keys.size());
+		
+		return pd_keys;
+	}
+	
+	
+
+	/**
+	 * TODO this method needs to be updated based on latest schema for predictions_dashboard table
+	 * 
+	 * @param filepathJson
+	 */
+	void findMissingPredictions(String filepathJson) {
+		
+		try {
+			
+			BufferedReader br=new BufferedReader(new FileReader(filepathJson));
+			HashSet<String> sidsJsonFile=new HashSet<>();
+			
+			while (true) {
+				String strPredictionResults=br.readLine();
+				if(strPredictionResults==null) break;
+				
+				PredictionResults predictionResults=Utilities.gson.fromJson(strPredictionResults,PredictionResults.class);
+				
+				if (!sidsJsonFile.contains(predictionResults.getDTXSID())) {
+					sidsJsonFile.add(predictionResults.getDTXSID());	
+//					System.out.println(predictionResults.getDTXSID());
+//					if (sidsJsonFile.size()==100) break;
+					
+					if (sidsJsonFile.size()%1000==0) {
+						System.out.println("\t"+sidsJsonFile.size());
+					}
+					
+				}
 				
 			}
+			br.close();
 			
+			
+			System.out.println("Unique sids in json file="+sidsJsonFile.size());
+			
+			HashSet<String> sidsDB=new HashSet<>();
+			
+			String sql="select dtxsid from qsar_models.predictions_dashboard pd where fk_model_id=223";
+			
+			ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+			
+			while (rs.next()) {
+				String sid=rs.getString(1);
+//				System.out.println(sid);
+				sidsDB.add(sid);
+			}
+			
+			int countMissing=0;
+			for (String sidJsonFile:sidsJsonFile) {
+				if(!sidsDB.contains(sidJsonFile)) {
+					countMissing++;
+				}
+			}
+			System.out.println("Unique sids in db for TEST models="+sidsDB.size());
+			
+			System.out.println("countMissing="+countMissing);
 			
 			
 		} catch (Exception e) {
@@ -168,6 +335,113 @@ public class PredictionDashboardScriptTEST  {
 	}
 	
 	
+	
+
+	void uploadMissingReports(String filepathJson) {
+		
+		try {
+			
+			HashSet<String> pd_keys = getPredictionDashboardKeysMissingReports();
+			System.out.println("Number of predictions missing a report="+pd_keys.size());
+			
+			DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
+			DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
+			Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot);
+
+			
+			HashMap<String,Method> hmMethods=new HashMap<>();
+			hmMethods.put("consensus_regressor",methodService.findByName("consensus_regressor"));
+			hmMethods.put("consensus_classifier",methodService.findByName("consensus_classifier"));
+			HashMap<String, Model> hmModels = createModels(hmMethods);
+			
+			BufferedReader br=new BufferedReader(new FileReader(filepathJson));
+								
+			int countOK=0;
+			
+			List<PredictionReport>missingReports=new ArrayList<>();
+			
+			int counter=0;
+			
+			while (true) {
+			
+				
+				String strPredictionResults=br.readLine();
+				if(strPredictionResults==null) break;
+				
+				counter++;
+				if(counter%1000==0) System.out.println(counter);
+				
+				PredictionResults predictionResults=Utilities.gson.fromJson(strPredictionResults,PredictionResults.class);
+				
+				long t3=System.currentTimeMillis();
+				
+//				if(!predictionResults.getDTXSID().equals("DTXSID10976888")) continue;
+				
+				PredictionDashboard pd=convertPredictionResultsToPredictionDashboard(predictionResults,hmModels,true,htCIDtoDsstoxRecordId);
+
+				//Using key of all the main variables is faster than trying to do a database look up for each predictionDashboard record:
+//				String pd_id=predictionReportService.getPredictionDashboardId(SqlUtilities.getConnectionPostgres(), pd);
+				String pd_key=pd.getKey();
+				
+//				String strSQL="select id from qsar_models.prediction_reports pr where pr.fk_prediction_dashboard_id="+pd_id;
+//				String pr_id=SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), strSQL);
+				
+				if(pd_keys.contains(pd_key)) {
+					byte[] bytes=strPredictionResults.getBytes();
+					PredictionReport predictionReport=new PredictionReport(pd, bytes, lanId);
+					missingReports.add(predictionReport);
+					System.out.println(missingReports.size()+" Missing\tpd_key="+pd_key);	
+				}else {
+					countOK++;
+//					System.out.println(countOK+" In DB: pd_id="+ pd_key);
+				}
+				
+				if (missingReports.size()==pd_keys.size()) {
+					System.out.println("Exiting loop, found all the missing reports");
+					break;
+				}
+			}
+			
+			System.out.println("missingReports.size()="+missingReports.size());
+			
+			predictionReportService.createSQL(missingReports);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		} 
+		
+	}
+
+	private HashSet<String> getPredictionDashboardKeysMissingReports() throws SQLException {
+		HashSet<String> pd_keys=new HashSet<>();
+		
+
+		String sql="select canon_qsar_smiles, fk_dsstox_records_id ,fk_model_id from qsar_models.predictions_dashboard pd\n"+
+				"left join qsar_models.prediction_reports pr on pd.id = pr.fk_prediction_dashboard_id\n"+
+				"where fk_model_id>=223 and fk_model_id<=240 and pr.file is null";
+				
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+		
+		
+		while (rs.next()) {
+			String canon_qsar_smiles=rs.getString(1);
+			Long fk_dsstox_records_id=rs.getLong(2);
+			String fk_model_id=rs.getString(3);
+			String key=canon_qsar_smiles+"\t"+fk_dsstox_records_id+"\t"+fk_model_id;
+			
+//				System.out.println(key);
+			pd_keys.add(key);
+		}
+		return pd_keys;
+	}
+	
+	/**
+	 * Gets records for a specific dtxcid in a json file
+	 * 
+	 * @param filepathJson
+	 * @param filepathOutput
+	 * @param dtxcid
+	 */
 	void extractRecords(String filepathJson,String filepathOutput,String dtxcid) {
 		
 		try {
@@ -208,7 +482,43 @@ public class PredictionDashboardScriptTEST  {
 
 
 	
+	void extractRecords2(String filepathJson,String filepathOutput,String dtxsid) {
+		
+		try {
+			
+			
+			BufferedReader br=new BufferedReader(new FileReader(filepathJson));
+			FileWriter fw=new FileWriter(filepathOutput);
+			
+			int count=0;
+			
+			Gson gson=new Gson();
+			
 
+//			for (String line:lines) {
+			while (true) {
+				String line=br.readLine();
+				if(line==null) break;
+				count++;
+				PredictionResults pr=Utilities.gson.fromJson(line,PredictionResults.class);
+				
+				if (pr.getDTXSID().equals(dtxsid)) {
+					System.out.println(Utilities.gson.toJson(pr));
+					fw.write(gson.toJson(pr)+"\r\n");
+					fw.flush();
+				}
+				
+				
+			}
+			fw.close();
+			br.close();
+			
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		} 
+		
+	}
 
 
 	private HashMap<String, Model> createModels(HashMap<String, Method> hmMethods) {
@@ -249,11 +559,11 @@ public class PredictionDashboardScriptTEST  {
 	String getDatasetDescription(String propertyNameDB) {
 		
 		
-		if (propertyNameDB.equals(DevQsarConstants.NINETY_SIX_HOUR_LC50)) {
+		if (propertyNameDB.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)) {
 			return "96 hour fathead minnow LC50 data compiled from ECOTOX for the TEST software";
-		} else if (propertyNameDB.equals(DevQsarConstants.FORTY_EIGHT_HR_DM_LC50)) {
+		} else if (propertyNameDB.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)) {
 			return("48 hour Daphnia magna LC50 data compiled from ECOTOX for the TEST software");
-		} else if (propertyNameDB.equals(DevQsarConstants.FORTY_EIGHT_HR_IGC50)) {
+		} else if (propertyNameDB.equals(DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50)) {
 			return("48 hour T. pyriformis IGC50 data compiled from Schultz et al for the TEST software");
 		} else if (propertyNameDB.equals(DevQsarConstants.ORAL_RAT_LD50)) {
 			return("Oral rat LD50 data compiled from ChemIDplus for the TEST software");
@@ -294,11 +604,11 @@ public class PredictionDashboardScriptTEST  {
 	String getPropertyNameDB(String propertyName) {
 		
 		if (propertyName.equals("Fathead minnow LC50 (96 hr)")) {
-			return DevQsarConstants.NINETY_SIX_HOUR_LC50;
+			return DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
 		} else if (propertyName.equals("Daphnia magna LC50 (48 hr)")) {
-			return DevQsarConstants.FORTY_EIGHT_HR_DM_LC50;
+			return DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50;
 		} else if (propertyName.equals("T. pyriformis IGC50 (48 hr)")) {
-			return DevQsarConstants.FORTY_EIGHT_HR_IGC50;
+			return DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50;
 		} else if (propertyName.equals("Oral rat LD50")) {
 			return DevQsarConstants.ORAL_RAT_LD50;
 		} else if (propertyName.equals("Developmental Toxicity")) {
@@ -371,8 +681,10 @@ public class PredictionDashboardScriptTEST  {
 	
 
 	
-	PredictionDashboard convertPredictionResultsToPredictionDashboard(PredictionResults pr,HashMap<String,Model>htModels,boolean convertPredictionMolarUnits) {
+	PredictionDashboard convertPredictionResultsToPredictionDashboard(PredictionResults pr,HashMap<String,Model>htModels,boolean convertPredictionMolarUnits,Hashtable<String,Long> htCIDtoDsstoxRecordId) {
 
+		if(pr.getSmiles()==null) pr.setSmiles("N/A");
+		
 		PredictionDashboard pd=new PredictionDashboard();
 		
 		try {
@@ -390,12 +702,14 @@ public class PredictionDashboardScriptTEST  {
 				pd.setModel(htModels.get(modelName));
 				
 //				System.out.println("here");
-				
-				
+								
 				pd.setCanonQsarSmiles("N/A");
-				pd.setDtxsid(pr.getDTXSID());
-				pd.setDtxcid(pr.getDTXCID());
-				pd.setSmiles(pr.getSmiles());
+				pd.setFk_dsstox_records_id(htCIDtoDsstoxRecordId.get(pr.getDTXCID()));
+				
+//				pd.setDtxsid(pr.getDTXSID());
+//				pd.setDtxcid(pr.getDTXCID());
+//				pd.setSmiles(pr.getSmiles());
+				
 				pd.setCreatedBy(lanId);
 
 				if (pr.getError()!=null && !pr.getError().isBlank()) {
@@ -461,9 +775,9 @@ public class PredictionDashboardScriptTEST  {
 		String modelName=pd.getModel().getName();
 		String name=modelName.replace(" "+pd.getModel().getSource(), "");
 		
-		if (name.equals(DevQsarConstants.NINETY_SIX_HOUR_LC50)
-				|| name.equals(DevQsarConstants.FORTY_EIGHT_HR_DM_LC50)
-				|| name.equals(DevQsarConstants.FORTY_EIGHT_HR_IGC50)
+		if (name.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)
+				|| name.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)
+				|| name.equals(DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50)
 				|| name.contains(DevQsarConstants.WATER_SOLUBILITY)) {
 			pd.setPredictionValue(Math.pow(10.0,-Double.parseDouble(pt.getPredToxValue())));
 //			pd.prediction_units="M";
@@ -492,8 +806,8 @@ public class PredictionDashboardScriptTEST  {
 
 	void createDatasets() {
 		
-		HashMap<String, String>hmUnitsDataset=DevQsarConstants.getDatasetFinalUnitsMap();
-		HashMap<String, String>hmUnitsDatasetContributor=DevQsarConstants.getContributorUnitsMap();
+		HashMap<String, String>hmUnitsDataset=DevQsarConstants.getDatasetFinalUnitsNameMap();
+		HashMap<String, String>hmUnitsDatasetContributor=DevQsarConstants.getContributorUnitsNameMap();
 		
 		for (String propertyName:propertyNames) {
 			
@@ -554,13 +868,161 @@ public class PredictionDashboardScriptTEST  {
 	}
 	
 	
+	void checkReportsForChemical() {
+
+		String dtxsid="DTXSID00223252";
+		String sql="select pr.id, pr.file from qsar_models.predictions_dashboard pd\n"
+				+ "join qsar_datasets.dsstox_records dr on pd.fk_dsstox_records_id=dr.id\n"
+				+ "join qsar_models.models m on m.id=pd.fk_model_id\n"
+				+ "join qsar_models.prediction_reports pr on pd.id = pr.fk_prediction_dashboard_id\n"
+				+ "where dr.dtxsid='"+dtxsid+"' and m.\"source\" ='TEST5.1.3'";
+				
+		
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		
+		try {
+			
+			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+			
+			while (rs.next()) {
+				
+				Long id=rs.getLong(1);
+				String strPredictionReport=new String(rs.getBytes(2));
+				
+				if (strPredictionReport.contains("test chemical")) {
+					JsonObject jo=Utilities.gson.fromJson(strPredictionReport, JsonObject.class);
+					System.out.println(id+"\t"+Utilities.gson.toJson(jo));
+					break;
+				}
+				
+			}
+			
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+
+	}
+	
+	
+	/**
+	 * Fixes issue where the DTXSID was stored in the cas field for the test chemical in the similar chemicals tables
+	 */
+	void fixReportsInDB() {
+		
+//		String sql="select file from qsar_models.pred"
+
+		int batchSize=1000;
+		int batch=0;
+		int counter=0;
+		
+		List<PredictionReport>updatedReports=new ArrayList<>();
+		
+		while (true) {
+			
+			List<PredictionReport>reports=this.predictionReportService.getNonUpdatedPredictionReportsBySQL(batch*batchSize, batchSize);
+
+			if (reports.size()==0) break;
+			
+			Gson gson=new Gson();
+			
+			for (PredictionReport report:reports) {
+				
+				counter++;
+				
+				if(counter%1000==0) System.out.println(counter);
+				
+				String strPredictionResults=new String(report.getFile());
+				
+				if (!strPredictionResults.contains("(test chemical)")) {
+//					System.out.println("Doesnt have \"(test chemical)\", skipping");
+					continue;
+				} 
+				
+				
+				PredictionResults pr=gson.fromJson(strPredictionResults, PredictionResults.class);
+				
+				fixPredictionResults(pr);
+				
+//				if (counter==1) {
+//					System.out.println(report.getId());
+//					System.out.println(Utilities.gson.toJson(pr));
+//					String strPredictionResults2=gson.toJson(pr);
+//					report.setFile(strPredictionResults2.getBytes());
+////					this.predictionReportService.updateSQL(report);
+//					updatedReports.add(report);
+//					if(updatedReports.size()==batchSize) {
+//						this.predictionReportService.updateSQL(updatedReports);
+//						updatedReports.clear();
+//					}
+////					if(true) break;
+////					this.predictionReportService.create(report)
+//				}
+				
+				String strPredictionResults2=gson.toJson(pr);
+				report.setFile(strPredictionResults2.getBytes());
+				report.setUpdatedBy(lanId);
+				updatedReports.add(report);
+				
+//				if (counter==1) {
+//					System.out.println(report.getId());
+//					this.predictionReportService.updateSQL(report);
+//				}
+				
+				
+				if(updatedReports.size()==batchSize) {
+					this.predictionReportService.updateSQL(updatedReports);
+					updatedReports.clear();
+				}
+					
+//				if(true) break;
+				
+			}//end loop over reports from sql query
+			
+			batch++;//update which batch to return in main sql query
+			
+			
+//			if(true) break;
+			
+		}//end while true
+				
+		this.predictionReportService.updateSQL(updatedReports);//update any remaining reports
+		
+		
+	}
+	
 
 	public static void main(String[] args) {
 		PredictionDashboardScriptTEST pds=new PredictionDashboardScriptTEST();
-
-		pds.version="5.1.3";
 		
 //		pds.createDatasets();//TODO need to add the datapoints
+
+		pds.version="5.1.3";
+
+//		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\sample.json";
+		
+
+//		int num=27;
+//		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";//		
+////		String filePathJson="C:\\Users\\TMARTI02\\Documents\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";
+//		pds.runFromDashboardJsonFileBatchPost(filePathJson);
+
+		
+		for (int num=12;num<=14;num++) {
+//			String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";//		
+			String filePathJson="C:\\Users\\TMARTI02\\Documents\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";
+			pds.runFromDashboardJsonFileBatchPost(filePathJson);
+		}
+		
+		
+		
+//		pds.findMissingPredictions(filePathJson);
+//		pds.uploadMissingReports(filePathJson);
+
+		//*********************************************************************
+				
+//		pds.fixReportsInDB();
+//		pds.checkReportsForChemical();
 
 //		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\TEST_2020_03_18\\reports\\sample_predictions.json";
 //		pds.runFromSampleJsonFileHashtable(filePathJson,SoftwareVersion);
@@ -568,22 +1030,116 @@ public class PredictionDashboardScriptTEST  {
 //		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\TEST_2020_03_18\\reports\\TEST_results_all_endpoints_snapshot_compounds1.json";
 //		pds.runFromSampleJsonFile(filePathJson);
 
-		
-//		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\TEST_results_all_endpoints_snapshot_compounds4.json";
-		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\sample.json";
-//		pds.runFromDashboardJsonFile(filePathJson);
-		
-		pds.testRetrievePredictionReport();
-				
 
-//		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\TEST_results_all_endpoints_snapshot_compounds4.json";
-//		String filePathJson2="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\sample.json";
-//		pds.extractRecords(filePathJson,filePathJson2,"DTXCID0080822");
+		//*********************************************************************
+//		pds.predictionReportService.getHashtableLookupPredictionDashboardId();
 		
-		//TODO create createSQL (List<PredictionDashboard> predictions)- this way you can create predictions which arent in the models table
-		//TODO make SQL query to assemble the results for displaying on dashboard...
+		//*********************************************************************
+//		pds.lookAtValuesInDatabase();
+//		pds.fixReportInDatabase();
+		//*********************************************************************
+
+//		String dtxsid="DTXSID10976888";
+//		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\TEST_results_all_endpoints_snapshot_compounds1.json";
+//		String filePathJson2="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\"+dtxsid+".json";
+//		pds.extractRecords2(filePathJson,filePathJson2,dtxsid);
+		
+
 	}
 
+	private void lookAtValuesInDatabase() {
+//		String dtxsid="DTXSID80177704";//N-Methyl-N'-(4-methylphenyl)-N-nitrosourea
+		String dtxsid="DTXSID40177523";
+		
+		String modelSource="TEST5.1.3";
+//		String propertyName=DevQsarConstants.WATER_SOLUBILITY;
+
+		File folder=new File("reports/"+dtxsid);
+		folder.mkdirs();
+
+		
+		for (String propertyName: DevQsarConstants.TEST_SOFTWARE_PROPERTIES) {
+		
+			String report=predictionReportService.getReport(dtxsid, propertyName,modelSource);
+//			String report=pds.predictionReportService.getReport(dtxsid, "Boiling point TEST5.1.3");
+			PredictionResults pr=Utilities.gson.fromJson(report, PredictionResults.class);
+			
+//			String report2=Utilities.gson.toJson(pr);
+			
+//			System.out.println(Utilities.gson.toJson(pr));
+				
+			String json=predictionDashboardService.getPredictionDashboardAsJson(dtxsid, propertyName, modelSource);
+//			System.out.println(json);
+			
+						
+			try {
+				FileWriter fw = new FileWriter(folder.getAbsolutePath()+File.separator+propertyName+".json");
+				fw.write(report);
+				fw.flush();
+				fw.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+
+		}
+	}
+	
+	private void fixReportInDatabase() {
+		String dtxsid="DTXSID80177704";//N-Methyl-N'-(4-methylphenyl)-N-nitrosourea
+		String modelSource="TEST5.1.3";
+		String propertyName=DevQsarConstants.WATER_SOLUBILITY;
+
+		
+		String report=predictionReportService.getReport(dtxsid, propertyName,modelSource);
+//		String report=pds.predictionReportService.getReport(dtxsid, "Boiling point TEST5.1.3");
+		PredictionResults pr=Utilities.gson.fromJson(report, PredictionResults.class);
+				
+		fixPredictionResults(pr);
+		
+//		System.out.println(Utilities.gson.toJson(similarChemicals0));
+//		System.out.println(Utilities.gson.toJson(similarChemicals1));
+		System.out.println(Utilities.gson.toJson(pr));
+		
+	}
+
+	/**
+	 * Fixes error where CAS was set to the SID for the test chemical in the similar chemicals table
+	 * 
+	 * @param pr
+	 */
+	private void fixPredictionResults(PredictionResults pr) {
+				
+		if (pr.getSimilarChemicals().size()==0) {
+//			System.out.println(Utilities.gson.toJson(pr));
+			return;
+		}
+		
+		Vector<SimilarChemical>similarChemicals0=pr.getSimilarChemicals().get(0).getSimilarChemicalsList();
+		Vector<SimilarChemical>similarChemicals1=pr.getSimilarChemicals().get(1).getSimilarChemicalsList();
+						
+		if (pr.getCAS()==null) {
+//			System.out.println("CAS is null for "+pr.getDTXSID());
+		} else {
+			if (!pr.getCAS().contains("-")) {
+//				System.out.println("CAS="+pr.getCAS());
+			}
+		}
+		
+		if(similarChemicals0.size()>0) {
+			SimilarChemical sc0_0=similarChemicals0.get(0);
+			if(pr.getCAS()!=null) sc0_0.setCAS(pr.getCAS());
+			else sc0_0.setCAS("N/A");
+		}
+		
+		if(similarChemicals1.size()>0) {
+			SimilarChemical sc1_0=similarChemicals1.get(0);
+			if(pr.getCAS()!=null) sc1_0.setCAS(pr.getCAS());
+			else sc1_0.setCAS("N/A");
+		}
+	}
 	
 
 }
+
