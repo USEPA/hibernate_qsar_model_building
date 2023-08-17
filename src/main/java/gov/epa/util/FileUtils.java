@@ -1,6 +1,10 @@
 package gov.epa.util;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,5 +40,32 @@ public class FileUtils {
 	{
 	    Path path = Paths.get(filePath);
 	    Files.write(path, textToAppend.getBytes(), StandardOpenOption.APPEND);
+	}
+	
+	
+	
+	public static int copyFile(File SrcFile, File DestFile) {
+
+		try {
+
+//			System.out.println(SrcFile.getAbsolutePath());
+//			System.out.println(DestFile.getAbsolutePath());
+
+			DestFile.getParentFile().mkdirs();
+			FileChannel in = new FileInputStream(SrcFile).getChannel();
+
+			FileChannel out = new FileOutputStream(DestFile).getChannel();
+
+			in.transferTo(0, (int) in.size(), out);
+			in.close();
+			out.close();
+
+			return 0;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return -1;
+		}
+
 	}
 }

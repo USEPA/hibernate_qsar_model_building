@@ -1,4 +1,4 @@
-package gov.epa.web_services.standardizers;
+package gov.epa.util;
 
 import java.util.*;
 import java.util.List;
@@ -12,7 +12,7 @@ import javax.swing.border.*;
 
 import java.util.zip.*;
 
-public class Utilities {
+public class ParseStringUtils {
 
   public static Cursor waitCursor = Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR);
   public static Cursor defaultCursor = Cursor.getPredefinedCursor(Cursor.
@@ -323,29 +323,10 @@ public class Utilities {
 		return -1;
 	}
   
-  public static int CopyFile(File SrcFile, File DestFile) {
-
-    try {
-
-      FileChannel in = new FileInputStream(SrcFile).getChannel();
-
-      FileChannel out = new FileOutputStream(DestFile).getChannel();
-
-      in.transferTo(0, (int) in.size(), out);
-      in.close();
-      out.close();
-
-      return 0;
-
-    } catch (Exception e) {
-    	e.printStackTrace();
-    	return -1;
-    }
-
-  }
+  
 
   public static int FindFieldNumber(String Line, String field) {
-    java.util.List<String> myList = Utilities.Parse(Line, "\t");
+    java.util.List<String> myList = ParseStringUtils.Parse(Line, "\t");
 
     for (int i = 0; i <= myList.size() - 1; i++) {
     	if (field.equals(myList.get(i))) {
@@ -358,7 +339,7 @@ public class Utilities {
   }
   
   public static int FindFieldNumber(String Line, String field,String del) {
-	    java.util.List<String> myList = Utilities.Parse3(Line, del);
+	    java.util.List<String> myList = ParseStringUtils.Parse3(Line, del);
 
 	    for (int i = 0; i <= myList.size() - 1; i++) {
 	      if (field.equals( (String) myList.get(i))) {
@@ -499,7 +480,7 @@ public class Utilities {
 	 
 	 String Line="581-12-4,\"Chemidpl,,,,us3DMolFile\",350,\"2-Pentanone, 1-(5-(3-furyl)-2-methyl-tetrahydro-2-furyl)-4-methyl-,\",1234";
 	 
-	 java.util.List<String>l=Utilities.Parse3(Line, ",");
+	 java.util.List<String>l=ParseStringUtils.Parse3(Line, ",");
 	 
 	 System.out.println(Line+"\n");
 //	 
