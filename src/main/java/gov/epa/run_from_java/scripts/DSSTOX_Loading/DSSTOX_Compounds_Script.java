@@ -52,6 +52,13 @@ public class DSSTOX_Compounds_Script {
 
 	Connection conn=SqlUtilities.getConnectionDSSTOX();
 
+	/** 
+	 * This script also gets the CASRN if available
+	 * 
+	 * @param offset
+	 * @param limit
+	 * @return
+	 */
 	List<DsstoxCompound> getCompoundsBySQL2(int offset,int limit) {
 
 		List<DsstoxCompound>compounds=new ArrayList<>();
@@ -504,16 +511,41 @@ public class DSSTOX_Compounds_Script {
 
 	}
 
+	
+	void lookatRecordsWithInchiKey() {
+	
+		
+		String sql="select smiles from compounds where indigo_inchi_key='HQAXQLUVPWIKNO-LPBINRMYSA-N'";
+		
+
+		ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+
+		try {
+			while (rs.next()) {
+				String smiles=rs.getString(1);
+				System.out.println(smiles);				
+
+				
+				
+			}
+		
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+			
+
+		
+	}
+	
 
 	public static void main(String[] args) {
 		DSSTOX_Compounds_Script d=new DSSTOX_Compounds_Script();
 //			d.compoundsToJsonFiles();
 //		d.convertJsonsToSDFs();
 		
-//			d.compoundsToTSV_File();
+			d.compoundsToTSV_File();
+//		d.lookatRecordsWithInchiKey();
 		
-		
-		d.compoundsToInchiKey_File();
 	}
 
 }

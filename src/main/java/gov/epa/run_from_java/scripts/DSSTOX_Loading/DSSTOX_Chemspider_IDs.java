@@ -23,6 +23,7 @@ import org.json.CDL;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.entity.GenericSubstance;
 import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
@@ -31,12 +32,15 @@ import gov.epa.run_from_java.scripts.SqlUtilities;
 //import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.DSSTOX_Loading.DSSTOX_Name_Script.DSSTOX_Name;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import net.bytebuddy.jar.asm.Type;
 
 /**
  * @author TMARTI02
  */
 public class DSSTOX_Chemspider_IDs {
 
+	String lanId="tmarti02";
+	
 	List<DsstoxCompound> getCompoundsBySQL(int offset, int limit) {
 
 		Connection conn = SqlUtilities.getConnectionDSSTOX();
@@ -423,13 +427,88 @@ public class DSSTOX_Chemspider_IDs {
 
 	}
 
+	void nullOutOldChemspiderIds() {
+
+		String version1 = "v1";
+		String version2 = "v2";
+
+		Connection conn = SqlUtilities.getConnectionDSSTOX();
+		
+		Hashtable<String, Long> htChemspider1 = getHashtableIds(version1,conn);
+		Hashtable<String, Long> htChemspider2 = getHashtableIds(version2,conn);
+		
+		List<String>dtxcids=new ArrayList<>();
+		int countToNull=0;
+		
+		for (String dtxcid:htChemspider1.keySet()) {
+		
+			if(htChemspider2.get(dtxcid)==null) {
+				countToNull++;
+				System.out.println(countToNull+"\t"+dtxcid);
+				dtxcids.add(dtxcid);
+				
+//				if(true)break;
+			}
+		}
+		
+		nullOutChemSpiderIds(dtxcids,conn);
+	}
+	
+	
+	public void nullOutChemSpiderIds(List<String> dtxcids,Connection conn) {
+
+		//DTXCID30814652
+		
+		
+		int batchSize=100;
+		
+		try {
+			conn.setAutoCommit(false);
+
+			PreparedStatement prep = conn.prepareStatement(
+					"UPDATE compounds SET chemspider_id = ?, updated_by = ?, updated_at=current_timestamp WHERE dsstox_compound_id = ?");
+
+			long t1=System.currentTimeMillis();
+
+			for (int counter = 0; counter < dtxcids.size(); counter++) {
+				
+				String dtxcid=dtxcids.get(counter);
+				
+				prep.setNull(1,Type.LONG);
+				prep.setString(2,lanId);
+				prep.setString(3,dtxcid);
+				prep.addBatch();
+				
+				
+				if (counter % batchSize == 0 && counter!=0) {
+					System.out.println("\t"+counter);
+					prep.executeBatch();
+					conn.commit();
+				}
+			}
+
+			int[] count = prep.executeBatch();// do what's left
+			long t2=System.currentTimeMillis();
+			System.out.println("time to post "+dtxcids.size()+" using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
+			conn.commit();
+//			conn.setAutoCommit(true);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		
+	}
+	
+	
 	void compareVersions() {
 
 		String version1 = "v1";
 		String version2 = "v2";
 
-		Hashtable<String, Long> htChemspider1 = getHashtableIds(version1);
-		Hashtable<String, Long> htChemspider2 = getHashtableIds(version2);
+		Connection conn = SqlUtilities.getConnectionDSSTOX();
+
+		Hashtable<String, Long> htChemspider1 = getHashtableIds(version1,conn);
+		Hashtable<String, Long> htChemspider2 = getHashtableIds(version2,conn);
 
 		HashSet<String> allCids = new HashSet<>();
 
@@ -483,12 +562,11 @@ public class DSSTOX_Chemspider_IDs {
 
 	}
 
-	private Hashtable<String, Long> getHashtableIds(String version1) {
+	private Hashtable<String, Long> getHashtableIds(String version1,Connection conn) {
 		Hashtable<String, Long> htChemspider = new Hashtable<>();
 
 		String sql = "select dsstox_compound_id, chemspider_id from chemspider_ids where version='" + version1 + "'";
 
-		Connection conn = SqlUtilities.getConnectionDSSTOX();
 
 		ResultSet rs = SqlUtilities.runSQL2(conn, sql);
 
@@ -513,11 +591,12 @@ public class DSSTOX_Chemspider_IDs {
 		DSSTOX_Chemspider_IDs d = new DSSTOX_Chemspider_IDs();
 		// d.goThroughCompoundsTable();
 		// d.goThroughCsvFile();
-		// d.updateCompoundsTableUsingCsvFile();
+		 d.updateCompoundsTableUsingCsvFile();
 
 		// d.getCIDsInChemSpiderTable(0, 999999999,"v2");
 
 		d.compareVersions();
+//		d.nullOutOldChemspiderIds();
 
 	}
 

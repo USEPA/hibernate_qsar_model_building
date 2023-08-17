@@ -375,7 +375,7 @@ public class DSSTOX_Qsar_Ready_Script {
 	
 	public static void main(String[] args) {
 		DSSTOX_Qsar_Ready_Script d=new DSSTOX_Qsar_Ready_Script();
-//		d.loadQSAR_Ready();
+		d.loadQSAR_Ready();
 //		d.randomlySampleResults();
 		d.compareQSARReady();
 	}
