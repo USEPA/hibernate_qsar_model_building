@@ -14,6 +14,8 @@ public class ModelBuildingScriptTodd {
 
 	void buildPostgresModel() {
 		boolean use_pmml=false;
+		boolean include_standardization_in_pmml=true;
+		boolean use_sklearn2pmml=false;
 		
 		String lanId="tmarti02";
 
@@ -44,7 +46,7 @@ public class ModelBuildingScriptTodd {
 		String embeddingName=null;
 		
 		ModelBuildingScript.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-				splittingName, removeLogDescriptors,methodName,lanId,embeddingName,usePythonStorage,use_pmml);
+				splittingName, removeLogDescriptors,methodName,lanId,embeddingName,usePythonStorage,use_pmml, include_standardization_in_pmml, use_sklearn2pmml);
 		
 		
 //		Long[] sourceArray = { 182L,183L,184L,185L };
@@ -64,6 +66,9 @@ public class ModelBuildingScriptTodd {
 
 	void buildSampleSetModel() {
 		boolean use_pmml=false;
+		boolean include_standardization_in_pmml=true;
+		boolean use_sklearn2pmml=false;
+		
 		String lanId="tmarti02";
 		String sampleSource="OPERA";
 //		String sampleSource="TEST";
@@ -108,7 +113,7 @@ public class ModelBuildingScriptTodd {
 
 		//	
 		ModelBuildingScript.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-				splittingName, removeLogDescriptors,methodName,lanId,embeddingName,usePythonStorage,use_pmml);
+				splittingName, removeLogDescriptors,methodName,lanId,embeddingName,usePythonStorage,use_pmml, include_standardization_in_pmml, use_sklearn2pmml);
 		
 		long modelSetID=1L;
 		

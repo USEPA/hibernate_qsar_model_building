@@ -37,6 +37,7 @@ import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.ModelStatisticCalculator;
 import gov.epa.endpoints.models.WebServiceModelBuilder;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.ModelSetScript.ModelSet2;
 import gov.epa.web_services.ModelWebService;
 import gov.epa.web_services.embedding_service.CalculationInfo;
@@ -73,6 +74,9 @@ public class RunCaseStudiesTodd {
 	
 	public static void runCaseStudyOPERA() {
 		boolean use_pmml=false;
+		boolean include_standardization_in_pmml=true;
+		boolean use_sklearn2pmml=false;
+		
 		
 		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
@@ -128,7 +132,7 @@ public class RunCaseStudiesTodd {
 
 		for (String method:methods) {
 			System.out.println(method + "descriptor" + descriptorSetName);
-			ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci, use_pmml);
+			ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci, use_pmml, include_standardization_in_pmml,use_sklearn2pmml);
 		}
 		
 		buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName, methodsConsensus);
@@ -138,6 +142,9 @@ public class RunCaseStudiesTodd {
 	
 	public static void runCaseStudyTest_All_Endpoints() {
 		boolean use_pmml=false;
+		boolean include_standardization_in_pmml=true;
+		boolean use_sklearn2pmml=false;
+		
 		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
 		portModelBuilding=5004;
 
@@ -186,7 +193,7 @@ public class RunCaseStudiesTodd {
 
 			for (String method:methods) {
 				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml, include_standardization_in_pmml,use_sklearn2pmml);
 			}
 
 			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methodsConsensus);
@@ -198,6 +205,9 @@ public class RunCaseStudiesTodd {
 	public static void runCaseStudyTest() {
 		lanId="tmarti02";
 		boolean use_pmml=false;
+		boolean include_standardization_in_pmml=true;
+		boolean use_sklearn2pmml=false;
+		
 		boolean buildModel=true;
 		
 		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
@@ -232,7 +242,7 @@ public class RunCaseStudiesTodd {
 		if (!buildModel) return;//skip model building
 
 		System.out.println(method + "descriptor" + descriptorSetName);
-		ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml);
+		ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml, include_standardization_in_pmml,use_sklearn2pmml);
 
 
 	}
@@ -241,6 +251,9 @@ public class RunCaseStudiesTodd {
 
 	public static void runCaseStudyExpProp_All_Endpoints() {
 		boolean use_pmml=false;
+		boolean include_standardization_in_pmml=true;
+		boolean use_sklearn2pmml=false;
+		
 		lanId="tmarti02";		
 		boolean buildModels=false;
 		
@@ -332,7 +345,7 @@ public class RunCaseStudiesTodd {
 			
 			for (String method:methods) {
 				System.out.println(method + "\t"+ descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml, include_standardization_in_pmml,use_sklearn2pmml);
 			}
 						
 			List<Long>modelIds=buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methodsConsensus);
@@ -350,14 +363,15 @@ public class RunCaseStudiesTodd {
 	 * This method uses embedding built specifically for the qsar method
 	 * 
 	 */
-	public static void runCaseStudyExpProp_All_Endpoints2() {
-//		boolean use_pmml=false;
+	public static void runCaseStudyExpProp_All_Endpoints_method_specific_embedding() {
+
 		boolean use_pmml=true;
-		
+		boolean include_standardization_in_pmml=true;//if false can have descriptor scaling saved in pmml
+		boolean use_sklearn2pmml=false;
 		
 		lanId="tmarti02";		
 		boolean buildModels=true;
-		boolean buildConsensus=false;
+		boolean buildConsensus=true;
 		
 //		serverModelBuilding=DevQsarConstants.SERVER_819;
 //		portModelBuilding=5014;
@@ -371,33 +385,17 @@ public class RunCaseStudiesTodd {
 
 		List<String>datasetNames=new ArrayList<>();
 
-//		datasetNames.add("HLC from exp_prop and chemprop");
-//		datasetNames.add("VP from exp_prop and chemprop");
-//		datasetNames.add("LogP from exp_prop and chemprop");
-//		datasetNames.add("WS from exp_prop and chemprop v2");
-//		datasetNames.add("BP from exp_prop and chemprop v3");
-//		datasetNames.add("MP from exp_prop and chemprop v2");
-
-//		datasetNames.add("HLC v1");
-//		datasetNames.add("VP v1");
-//		datasetNames.add("WS v1");
-//		datasetNames.add("BP v1");
-//		datasetNames.add("LogP v1");
-//		datasetNames.add("MP v1");
+		datasetNames.add("HLC v1 modeling");
+		datasetNames.add("WS v1 modeling");
+		datasetNames.add("VP v1 modeling");
+		datasetNames.add("BP v1 modeling");
+		datasetNames.add("LogP v1 modeling");
+		datasetNames.add("MP v1 modeling");
 		
-		datasetNames.add("HLC v1 res_qsar");
-//		datasetNames.add("WS v1 res_qsar");
-//		datasetNames.add("VP v1 res_qsar");
-//		datasetNames.add("BP v1 res_qsar");
-//		datasetNames.add("LogP v1 res_qsar");
-//		datasetNames.add("MP v1 res_qsar");
-		
-//		datasetNames.add("pKa_a from exp_prop and chemprop");
-//		datasetNames.add("pKa_b from exp_prop and chemprop");
 
-		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;		
+//		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;		
 //		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
-//		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
 
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
@@ -410,7 +408,7 @@ public class RunCaseStudiesTodd {
 			
 			List<String>methods=new ArrayList<>();			
 			methods.add(DevQsarConstants.RF);
-//			methods.add(DevQsarConstants.XGB);
+			methods.add(DevQsarConstants.XGB);
 			
 //			methods.add(DevQsarConstants.KNN);//takes forever to run GA
 //			methods.add(DevQsarConstants.SVM);//*** We dont have way yet to make embedding based on this method unless use GA
@@ -421,11 +419,15 @@ public class RunCaseStudiesTodd {
 
 				CalculationInfo ci = new CalculationInfo();
 				ci.remove_log_p = remove_log_p;
-				ci.qsarMethodEmbedding = qsarMethodEmbedding;
+				
+//				ci.qsarMethodEmbedding="rf";//**For testing purposes, just use rf embedding for both rf and xgb
+				ci.qsarMethodEmbedding=method;//unique embedding for each method
+				
+				
 				ci.datasetName=datasetName;
 				ci.descriptorSetName=descriptorSetName;
 				ci.splittingName=splitting;
-				ci.qsarMethodEmbedding=method;
+				
 
 				System.out.println("\n***********************\n"+ci.toString2());
 				
@@ -439,13 +441,13 @@ public class RunCaseStudiesTodd {
 				
 //				if(true) continue;
 
-				System.out.println(method+"\t"+descriptorEmbedding.getEmbeddingTsv());
+//				System.out.println(method+"\t"+descriptorEmbedding.getEmbeddingTsv());
 
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml, include_standardization_in_pmml,use_sklearn2pmml);
 			}
 						
 			
-			if(!buildConsensus) return;
+			if(!buildConsensus) continue;
 			
 //			String[] methodsConsensus = { DevQsarConstants.KNN, DevQsarConstants.RF, DevQsarConstants.XGB};
 			
@@ -459,12 +461,6 @@ public class RunCaseStudiesTodd {
 	}
 	
 
-
-
-	
-
-	
-	
 	
 
 	public static void printEmbeddings() {
@@ -526,6 +522,9 @@ public class RunCaseStudiesTodd {
 
 	public static void runCaseStudyExpProp_All_Endpoints_No_Embedding() {
 		boolean use_pmml=false;
+		boolean include_standardization_in_pmml=true;
+		boolean use_sklearn2pmml=false;
+		
 		lanId="tmarti02";		
 		
 		ModelWebService.num_jobs=8;
@@ -607,7 +606,7 @@ public class RunCaseStudiesTodd {
 
 			for (String method:methods) {
 				System.out.println(method + "\t" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci,use_pmml);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci,use_pmml, include_standardization_in_pmml,use_sklearn2pmml);
 			}
 			
 			buildConsensusModel(datasetName,splitting,descriptorSetName,methodsConsensus);
@@ -667,10 +666,13 @@ public class RunCaseStudiesTodd {
 	}
 	
 	
-	public static void runCaseStudyExpProp_All_Endpoints_No_Embedding_Omit_kNN() {
-		boolean use_pmml=false;
+	public static void runCaseStudyExpProp_All_Endpoints_No_Embedding_RF_XGB() {
+		boolean use_pmml=true;
+		boolean include_standardization_in_pmml=true;
+		boolean use_sklearn2pmml=false;
+
 		boolean buildIndividualModels=true;
-		boolean buildConsensusModels=false;
+		boolean buildConsensusModels=true;
 
 		lanId="tmarti02";		
 		ModelWebService.num_jobs=8;
@@ -690,17 +692,16 @@ public class RunCaseStudiesTodd {
 //		datasetNames.add("LogP v1");
 //		datasetNames.add("MP v1");
 
-//		datasetNames.add("HLC v1 res_qsar");
-		datasetNames.add("WS v1 res_qsar");
-//		datasetNames.add("VP v1 res_qsar");
-//		datasetNames.add("BP v1 res_qsar");
-//		datasetNames.add("LogP v1 res_qsar");
-//		datasetNames.add("MP v1 res_qsar");
-
+		datasetNames.add("HLC v1 modeling");
+		datasetNames.add("WS v1 modeling");
+		datasetNames.add("VP v1 modeling");
+		datasetNames.add("BP v1 modeling");
+		datasetNames.add("LogP v1 modeling");
+		datasetNames.add("MP v1 modeling");
 
 //		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;
-		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;		
-//		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+//		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;		
+		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
 
 		System.out.println("\n*** portNumber="+portModelBuilding+" ***");
 		
@@ -723,24 +724,19 @@ public class RunCaseStudiesTodd {
 			if (buildIndividualModels) {
 				
 				List<String>methods=new ArrayList<>();			
-				
-//				methods.add(DevQsarConstants.KNN);
 				methods.add(DevQsarConstants.RF);
 				methods.add(DevQsarConstants.XGB);
-//				methods.add(DevQsarConstants.SVM);
 
 				for (String method:methods) {
 					System.out.println(method + "\t" + descriptorSetName);
-					ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci,use_pmml);
+					ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci,use_pmml, include_standardization_in_pmml,use_sklearn2pmml);
 				}
 			}
 			
 			if (buildConsensusModels) {
-//				List<Long>modelIds=buildConsensusModel2(datasetName,splitting,descriptorSetName,methodsConsensusNoKNN);
 				List<Long>modelIds=buildConsensusModel2(datasetName,splitting,descriptorSetName,methodsConsensusRF_XGB);
 				assignModelSetNoEmbedding(splitting, modelIds);
 			}
-			
 		}
 
 	}
@@ -748,6 +744,9 @@ public class RunCaseStudiesTodd {
 
 	public static void runCaseStudyExpProp_All_Endpoints_No_Embedding_Include_kNN() {
 		boolean use_pmml=false;
+		boolean include_standardization_in_pmml=true;
+		boolean use_sklearn2pmml=false;
+		
 		boolean buildIndividualModels=true;
 		boolean buildConsensus=false;
 
@@ -805,7 +804,7 @@ public class RunCaseStudiesTodd {
 
 				for (String method:methods) {
 					System.out.println(method + "\t" + descriptorSetName);
-					ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci,use_pmml);
+					ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci,use_pmml, include_standardization_in_pmml,use_sklearn2pmml);
 				}
 			}
 			
@@ -885,7 +884,7 @@ public class RunCaseStudiesTodd {
 		String qsarMethod=DevQsarConstants.KNN;
 		
 		boolean use_pmml=false;
-		
+		boolean include_standardization_in_pmml=true;
 								
 		boolean remove_log_p = false;
 		
@@ -902,7 +901,7 @@ public class RunCaseStudiesTodd {
 		ModelData modelData = ModelData.initModelData(model.getDatasetName(), model.getDescriptorSetName(), model.getSplittingName(), remove_log_p,false);
 
 		//Run test set predictions:
-		mb.predict(modelData, qsarMethod, modelId,use_pmml);
+		mb.predict(modelData, qsarMethod, modelId,use_pmml,include_standardization_in_pmml);
 				
 //		mb.predictTraining(modelData, qsarMethod, modelId);
 	}
@@ -910,6 +909,9 @@ public class RunCaseStudiesTodd {
 	
 	public static void runCaseStudyOPERA_All_Endpoints() {
 		boolean use_pmml=false;
+		boolean include_standardization_in_pmml=true;
+		boolean use_sklearn2pmml=false;
+		
 		String server=DevQsarConstants.SERVER_LOCAL;
 		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(server, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
@@ -953,7 +955,7 @@ public class RunCaseStudiesTodd {
 
 			for (String method:methods) {
 				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,server,portModelBuilding,method,descriptorEmbedding,ci,use_pmml);
+				ModelBuildingScript.buildModel(lanId,server,portModelBuilding,method,descriptorEmbedding,ci,use_pmml, include_standardization_in_pmml,use_sklearn2pmml);
 			}
 
 			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methodsConsensus);
@@ -1138,6 +1140,8 @@ public class RunCaseStudiesTodd {
 		
 		for (Model model:models) {
 
+//			if(model.getId()<721) continue;
+			
 			if (!model.getMethod().getName().contains("_")) continue;
 			if (!model.getSplittingName().equals(splittingName)) continue;
 
@@ -1308,8 +1312,8 @@ public class RunCaseStudiesTodd {
 		
 //		runCaseStudyExpProp_All_Endpoints();
 		
-		runCaseStudyExpProp_All_Endpoints2();
-//		runCaseStudyExpProp_All_Endpoints_No_Embedding_Omit_kNN();
+		runCaseStudyExpProp_All_Endpoints_method_specific_embedding();
+		runCaseStudyExpProp_All_Endpoints_No_Embedding_RF_XGB();
 		
 //		runCaseStudyExpProp_All_Endpoints_No_Embedding();
 //		runCaseStudyExpProp_All_Endpoints_No_Embedding_Include_kNN();

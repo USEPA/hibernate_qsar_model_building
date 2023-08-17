@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -51,6 +52,9 @@ import gov.epa.databases.dev_qsar.qsar_models.service.StatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.ModelStatisticCalculator;
+import gov.epa.endpoints.reports.predictions.PredictionReport;
+import gov.epa.endpoints.reports.predictions.QsarPredictedValue;
+import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.RecalcStatsScript.SplitPredictions;
@@ -64,12 +68,12 @@ public class RecalcStatsScript {
 		List<ModelPrediction> trainingSetPredictions = new ArrayList<ModelPrediction>();
 		List<ModelPrediction> testSetPredictions = new ArrayList<ModelPrediction>();
 			
-		public void removeNonPFAS(List<String>smilesArrayPFAS) {
+		public void removeNonPFAS(HashSet<String>smilesArrayPFAS) {
 			removeNonPFAS(smilesArrayPFAS, trainingSetPredictions);
 			removeNonPFAS(smilesArrayPFAS, testSetPredictions);
 		}
 
-		private void removeNonPFAS(List<String> smilesArrayPFAS, List<ModelPrediction> mps) {
+		private void removeNonPFAS(HashSet<String> smilesArrayPFAS, List<ModelPrediction> mps) {
 			for(int j=0;j<mps.size();j++) {
 				ModelPrediction mp=mps.get(j);
 				if(!smilesArrayPFAS.contains(mp.id)) {
@@ -154,6 +158,32 @@ public class RecalcStatsScript {
 			
 //			System.out.println("***"+splitPredictions.testSetPredictions.size()+"\t"+splitPredictions.trainingSetPredictions.size());
 			return splitPredictions;
+		}
+		
+		static SplitPredictions getSplitPredictions(PredictionReport predictionReport,String methodName, HashSet<String> smilesArray) {
+			SplitPredictions sp=new SplitPredictions();
+			sp.testSetPredictions=new ArrayList<>();
+			sp.trainingSetPredictions=new ArrayList<>();
+
+			for (int i=0;i<predictionReport.predictionReportDataPoints.size();i++) {				
+				PredictionReportDataPoint dp=predictionReport.predictionReportDataPoints.get(i);
+				for (QsarPredictedValue qpv:dp.qsarPredictedValues) {
+//					if(!qpv.qsarMethodName.contains(methodName)) continue;
+					if(!qpv.qsarMethodName.equals(methodName)) continue;
+
+					if(smilesArray!=null && !smilesArray.contains(dp.canonQsarSmiles)) continue;
+					
+					ModelPrediction mp=new ModelPrediction(dp.canonQsarSmiles,dp.experimentalPropertyValue,qpv.qsarPredictedValue,qpv.splitNum);
+					
+					if(qpv.splitNum==DevQsarConstants.TEST_SPLIT_NUM) {
+						sp.testSetPredictions.add(mp);
+					} else if (qpv.splitNum==DevQsarConstants.TRAIN_SPLIT_NUM) {
+						sp.trainingSetPredictions.add(mp);
+					}
+				}
+			}
+			
+			return sp;
 		}
 		
 		

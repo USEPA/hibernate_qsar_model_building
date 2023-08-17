@@ -102,7 +102,7 @@ public class ModelBuilder {
 	}
 	
 	protected void calculateAndPostModelStatistics(List<ModelPrediction> trainingSetPredictions, List<ModelPrediction> testSetPredictions,
-			Model model) {
+			Model model,boolean postPredictions) {
 		
 		
 		double meanExpTraining= ModelStatisticCalculator.calcMeanExpTraining(trainingSetPredictions);
@@ -126,14 +126,30 @@ public class ModelBuilder {
 					ModelStatisticCalculator.calculateContinuousStatistics(testSetPredictions, 
 							meanExpTraining,
 							DevQsarConstants.TAG_TEST);
+			
+//			double Q2_TEST=modelTestStatisticValues.get(DevQsarConstants.Q2_TEST);
+			
+			double Q2_F3_TEST=ModelStatisticCalculator.calculateQ2_F3(trainingSetPredictions, testSetPredictions);
+			modelTestStatisticValues.put(DevQsarConstants.Q2_F3_TEST,Q2_F3_TEST);
+			
+//			System.out.println("Q2_TEST="+Q2_TEST);
+//			System.out.println("Q2_Consonni="+Q2_Consonni);
+			
+			
 			modelTrainingStatisticValues = 
 					ModelStatisticCalculator.calculateContinuousStatistics(trainingSetPredictions, 
 							meanExpTraining,
 							DevQsarConstants.TAG_TRAINING);
+			
+			
 		}
 		
-		postModelStatistics(modelTestStatisticValues, model);
-		postModelStatistics(modelTrainingStatisticValues, model);
+		if(postPredictions) {
+			System.out.print("Posting stats:");
+			postModelStatistics(modelTestStatisticValues, model);
+			postModelStatistics(modelTrainingStatisticValues, model);
+			System.out.println("done");
+		}
 	}
 
 	/**

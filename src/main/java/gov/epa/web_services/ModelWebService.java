@@ -44,10 +44,12 @@ public class ModelWebService extends WebService {
 		super(server, port);
 	}
 
-	public HttpResponse<byte[]> callTrain(String trainingSet, Boolean removeLogDescriptors, String qsarMethod, String modelId,boolean use_pmml) {
+	public HttpResponse<byte[]> callTrain(String trainingSet, Boolean removeLogDescriptors, String qsarMethod, String modelId,
+			boolean use_pmml,boolean include_standardization_in_pmml) {
 		HttpResponse<byte[]> response = Unirest.post(address+"/models/{qsar_method}/train")
 				.routeParam("qsar_method", qsarMethod)
-				.field("use_pmml", use_pmml)
+				.field("use_pmml", use_pmml+"")
+				.field("include_standardization_in_pmml", include_standardization_in_pmml+"")
 				.field("training_tsv", trainingSet)
 				.field("num_jobs", String.valueOf(num_jobs))
 				.field("model_id", modelId)
@@ -85,10 +87,11 @@ public class ModelWebService extends WebService {
 
 	
 	public HttpResponse<byte[]> callTrainWithPreselectedDescriptors(String trainingSet, Boolean removeLogDescriptors, 
-			String qsarMethod, String modelId, String embeddingTsv,boolean use_pmml) {
+			String qsarMethod, String modelId, String embeddingTsv,boolean use_pmml,boolean include_standardization_in_pmml) {
 		HttpResponse<byte[]> response = Unirest.post(address+"/models/{qsar_method}/train")
 				.routeParam("qsar_method", qsarMethod)
-				.field("use_pmml", use_pmml)
+				.field("use_pmml", use_pmml+"")
+				.field("include_standardization_in_pmml", include_standardization_in_pmml+"")
 				.field("training_tsv", trainingSet)
 				.field("model_id", modelId)
 				.field("num_jobs", String.valueOf(num_jobs))
@@ -226,7 +229,7 @@ public class ModelWebService extends WebService {
 	
 	
 	
-	public HttpResponse<String> callInitPmml(byte[] modelBytes, String modelId,String details) {
+	public HttpResponse<String> callInitPmml(byte[] modelBytes, String modelId,String details,boolean use_sklearn2pmml) {
 		Gson gson=new Gson();
 //		System.out.println(details);
 
@@ -235,6 +238,7 @@ public class ModelWebService extends WebService {
 //		System.out.println(model);
 		jo.addProperty("model_id", modelId);
 		jo.addProperty("model", model);
+		jo.addProperty("use_sklearn2pmml", use_sklearn2pmml);
 		String body=gson.toJson(jo);
 		
 		HttpResponse<String> response = Unirest.post(address+"/models/initPMML")
@@ -256,6 +260,7 @@ public class ModelWebService extends WebService {
 
 		Long model_id=457L;
 		boolean use_pmml=true;
+		boolean include_standardization_in_pmml=true;
 				
 //		Long model_id=272L;
 //		boolean use_pmml=false;
@@ -272,7 +277,7 @@ public class ModelWebService extends WebService {
 		
 		if (use_pmml) {
 			String details=new String(model.getDetails());
-			String result=callInitPmml(modelBytes,model_id+"", details).getBody().toString();
+			String result=callInitPmml(modelBytes,model_id+"", details, include_standardization_in_pmml).getBody().toString();
 			System.out.print("result="+result);
 		} else {
 			String result=callInitPickle(modelBytes,model_id+"").getBody().toString();
@@ -297,11 +302,12 @@ public class ModelWebService extends WebService {
 	
 	
 	
-	public HttpResponse<String> callPredictSDE(String predictionSet, String modelSetId,String datasetId, String workflow) {
+	public HttpResponse<String> callPredictSDE(String predictionSet, String modelSetId,String datasetId, String workflow,boolean use_cache) {
 		
 		SDE_Prediction_Request request=new SDE_Prediction_Request();
 		
-		request.getFromTSV(predictionSet,modelSetId,datasetId, workflow);
+		request.getFromTSV(predictionSet,modelSetId,datasetId, workflow,use_cache);
+		
 
 		Gson gson=new Gson();
 		String body=gson.toJson(request);
@@ -314,8 +320,7 @@ public class ModelWebService extends WebService {
 				.asString();
 		
 		System.out.println(response.getBody());
-		
-		
+				
 		return response;
 	}
 

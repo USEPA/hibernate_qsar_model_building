@@ -32,6 +32,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
+import gov.epa.run_from_java.scripts.SplittingGeneratorPFAS_Script;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInConsensusMethodServiceImpl;
 
 public class ConsensusModelBuilder extends ModelBuilder {
@@ -152,7 +153,7 @@ public class ConsensusModelBuilder extends ModelBuilder {
 //	}
 	
 	
-	private void predict(Long consensusModelId) {
+	private void predict(Long consensusModelId,boolean postPredictions) {
 		System.out.println("Enter predict");
 		
 		Model consensusModel = modelService.findById(consensusModelId);
@@ -187,10 +188,10 @@ public class ConsensusModelBuilder extends ModelBuilder {
 				.collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp.getQsarPropertyValue()));
 
 						
-		predictModelSplitting(consensusModel, modelsInConsensusModel, expMap);
+		predictModelSplitting(consensusModel, modelsInConsensusModel, expMap,postPredictions);
 		
 							
-		predictCV(consensusModel, modelsInConsensusModel, expMap,true);
+		predictCV(consensusModel, modelsInConsensusModel, expMap,postPredictions);
 				
 	}
 	
@@ -200,7 +201,7 @@ public class ConsensusModelBuilder extends ModelBuilder {
 	 * @param consensusModel
 	 * @param modelsInConsensusModel
 	 */
-	private void predictModelSplitting(Model consensusModel,List<ModelInConsensusModel> modelsInConsensusModel,Map<String, Double> expMap) {
+	private void predictModelSplitting(Model consensusModel,List<ModelInConsensusModel> modelsInConsensusModel,Map<String, Double> expMap,boolean postPredictions) {
 		
 		String splittingName=modelsInConsensusModel.get(0).getConsensusModel().getSplittingName();
 		
@@ -215,17 +216,18 @@ public class ConsensusModelBuilder extends ModelBuilder {
 
 		List<ModelPrediction> trainPreds = computeConsensusPredictions(modelsInConsensusModel,splittingMap,expMap, DevQsarConstants.TRAIN_SPLIT_NUM,splitting,datasetName);
 //		System.out.println(trainPreds.size());
-				
-		System.out.print("Posting predictions...");
-		postPredictions(trainPreds, consensusModel,splitting);
-		System.out.print("done\n");
-				
 		List<ModelPrediction> testPreds = computeConsensusPredictions(modelsInConsensusModel, splittingMap,expMap,DevQsarConstants.TEST_SPLIT_NUM,splitting,datasetName);
-		postPredictions(testPreds, consensusModel,splitting);
 
-		System.out.print("Posting stats...");
-		calculateAndPostModelStatistics(trainPreds, testPreds, consensusModel);
-		System.out.print("done\n");
+		
+		if (postPredictions) {
+			System.out.print("Posting predictions...");
+			postPredictions(trainPreds, consensusModel,splitting);
+			postPredictions(testPreds, consensusModel,splitting);
+			System.out.print("done\n");
+		}
+		
+		calculateAndPostModelStatistics(trainPreds, testPreds, consensusModel,postPredictions);
+		
 	}
 	
 	/**
@@ -237,8 +239,11 @@ public class ConsensusModelBuilder extends ModelBuilder {
 		Model model0=modelService.findById(micm.get(0).getModel().getId());
 		String datasetName=model0.getDatasetName();
 		
-		double Q2_CV=0;
-		double R2_CV=0;
+		double Q2_CV_AVG=0;
+		double R2_CV_AVG=0;
+		
+		
+		List<ModelPrediction> mpsTestSetPooled=new ArrayList<>();
 		
 		for (int i=1;i<=5;i++) {
 			
@@ -252,6 +257,8 @@ public class ConsensusModelBuilder extends ModelBuilder {
 
 			List<ModelPrediction> mpsTestSet = computeConsensusPredictions(micm,splittingMapCV,expMap, DevQsarConstants.TEST_SPLIT_NUM,splittingCV,datasetName);				
 						
+			mpsTestSetPooled.addAll(mpsTestSet);
+			
 			if (postPredictions) {
 				System.out.print("Posting CV predictions Split "+i+" ");
 				postPredictions(mpsTestSet, consensusModel, splittingCV);
@@ -270,36 +277,47 @@ public class ConsensusModelBuilder extends ModelBuilder {
 								
 				mpsTrainSet.add(new ModelPrediction(id, exp, pred, DevQsarConstants.TRAIN_SPLIT_NUM));
 			}
-							
-			double Q2_CV_i=ModelStatisticCalculator.calculateQ2(mpsTrainSet, mpsTestSet);
-			Q2_CV+=Q2_CV_i;
+
+			//Following calculates Q2_CV_F3 by Consonni et al- TODO should we just use Q2=1-ss/SStotal instead?
+			double Q2_CV_i=ModelStatisticCalculator.calculateQ2_F3(mpsTrainSet, mpsTestSet);
+			Q2_CV_AVG+=Q2_CV_i;
 			
 			double YbarTrain=ModelStatisticCalculator.calcMeanExpTraining(mpsTrainSet);				
 			Map<String, Double>mapStats=ModelStatisticCalculator.calculateContinuousStatistics(mpsTestSet, YbarTrain, DevQsarConstants.TAG_TEST);				
 			double R2_CV_i=mapStats.get(DevQsarConstants.PEARSON_RSQ + DevQsarConstants.TAG_TEST);
-			R2_CV+=R2_CV_i;
+			R2_CV_AVG+=R2_CV_i;
+			
+//			System.out.println(Q2_CV_i+"\t"+mapStats.get(DevQsarConstants.Q2_TEST)+"\t"+R2_CV_i);
 
-		}		
+		}
+
+		R2_CV_AVG/=5.0;
+		Q2_CV_AVG/=5.0;
+
+		Map<String, Double>mapStats=ModelStatisticCalculator.calculateContinuousStatistics(mpsTestSetPooled, 0.0, DevQsarConstants.TAG_TEST);
+		double R2_CV_pooled=mapStats.get(DevQsarConstants.PEARSON_RSQ + DevQsarConstants.TAG_TEST);
+
+		double R2_CV=R2_CV_pooled;//Note R2_CV_AVG is virtually identical to R2_CV_Pooled for large sets
 		
-		R2_CV/=5.0;
-		Q2_CV/=5.0;
+//		System.out.println(R2_CV_AVG+"\t"+R2_CV_pooled);
 
+		
 		if (postPredictions) {			
-			System.out.println("storing R2_CV_Training="+R2_CV);
-			Statistic statistic=statisticService.findByName("R2_CV_Training");					
+			System.out.println("storing "+DevQsarConstants.PEARSON_RSQ_CV_TRAINING+"="+R2_CV);
+			Statistic statistic=statisticService.findByName(DevQsarConstants.PEARSON_RSQ_CV_TRAINING);					
 			ModelStatistic modelStatistic=new ModelStatistic(statistic, consensusModel, R2_CV, lanId);
 			modelStatistic=modelStatisticService.create(modelStatistic);
 				
-			System.out.println("storing Q2_CV_Training="+Q2_CV);
+			System.out.println("storing Q2_CV_Training="+Q2_CV_AVG);
 			statistic=statisticService.findByName("Q2_CV_Training");					
-			modelStatistic=new ModelStatistic(statistic, consensusModel, Q2_CV, lanId);
+			modelStatistic=new ModelStatistic(statistic, consensusModel, Q2_CV_AVG, lanId);
 			modelStatistic=modelStatisticService.create(modelStatistic);
 		} else {
-			System.out.println("R2_CV_Training="+R2_CV);
-			System.out.println("Q2_CV_Training="+Q2_CV);
+			System.out.println(DevQsarConstants.PEARSON_RSQ+"_CV_Training"+"="+R2_CV);
+			System.out.println("Q2_CV_Training="+Q2_CV_AVG);
 		}
 
-		double [] results={R2_CV,Q2_CV};
+		double [] results={R2_CV,Q2_CV_AVG};
 		return results;
 		
 	}
@@ -337,7 +355,7 @@ public class ConsensusModelBuilder extends ModelBuilder {
 			
 //			System.out.println(mpNew.id+"\t"+mpNew.exp+"\t"+"\t"+mpNew.pred+"\t"+mps.size());
 		}
-		System.out.println("");
+//		System.out.println("");
 		
 		
 		return consensusPreds;
@@ -415,13 +433,13 @@ public class ConsensusModelBuilder extends ModelBuilder {
 	
 	public Long buildUnweighted(Set<Long> modelIds) {
 		Long consensusModelId = createUnweighted(modelIds);
-		predict(consensusModelId);
+		predict(consensusModelId,true);
 		return consensusModelId;
 	}
 	
 	public void buildWeighted(Map<Long, Double> modelIdsWithWeights) {
 		Long consensusModelId = createWeighted(modelIdsWithWeights);
-		predict(consensusModelId);
+		predict(consensusModelId,true);
 	}
 	
 	
@@ -494,12 +512,20 @@ public class ConsensusModelBuilder extends ModelBuilder {
 		}
 		System.out.println("");
 	}
+	
+	
+	
+	
 
 	public static void main(String[] args) {
 		ConsensusModelBuilder cmb = new ConsensusModelBuilder("tmarti02");
-		List<Long> consensusModelIDs = new ArrayList<Long>();
-		for (Long i=1143L;i<=1146L;i++) consensusModelIDs.add(i);
-		cmb.testCalcConsensus(consensusModelIDs);
+//		List<Long> consensusModelIDs = new ArrayList<Long>();
+//		for (Long i=1143L;i<=1146L;i++) consensusModelIDs.add(i);
+//		cmb.testCalcConsensus(consensusModelIDs);
+		cmb.predict(776L, false);
+//		cmb.predict(740L, false);
+		
+		
 		
 	}
 

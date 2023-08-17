@@ -71,10 +71,11 @@ public class ModelBuildingScript {
 	 * @param removeLogDescriptors
 	 * @param methodName
 	 * @param lanId
+	 * @param include_standardization_in_pmml 
 	 */
 	public static void buildModel(String modelWsServer,int modelWsPort,String datasetName,String descriptorSetName,
 			String splittingName, boolean removeLogDescriptors,String methodName,String lanId, String descriptorEmbeddingName,
-			boolean pythonStorage,boolean usePMML) {
+			boolean pythonStorage,boolean usePMML, boolean include_standardization_in_pmml,boolean use_sklearn2pmml) {
 
 		System.out.println("Building "+methodName+" model for "+datasetName + "with" + descriptorSetName + "descriptors");
 
@@ -90,9 +91,9 @@ public class ModelBuildingScript {
 		}
 		else {
 			if (descriptorEmbeddingName == null) {
-				Long modelId = mb.build(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName,usePMML);
+				Long modelId = mb.build(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName,usePMML,include_standardization_in_pmml,use_sklearn2pmml);
 			} else {
-				Long modelID = mb.buildWithPreselectedDescriptors(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName, descriptorEmbeddingName,usePMML);
+				Long modelID = mb.buildWithPreselectedDescriptors(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName, descriptorEmbeddingName,usePMML,include_standardization_in_pmml,use_sklearn2pmml);
 			}
 		}
 
@@ -114,9 +115,10 @@ public class ModelBuildingScript {
 	 * @param removeLogDescriptors
 	 * @param methodName
 	 * @param lanId
+	 * @param include_standardization_in_pmml 
 	 */
 	public static void buildModel(String lanId,String modelWsServer,int modelWsPort,String methodName,
-			DescriptorEmbedding de,CalculationInfo ci,boolean usePMML) {
+			DescriptorEmbedding de,CalculationInfo ci,boolean usePMML, boolean include_standardization_in_pmml,boolean use_sklearn2pmml) {
 
 		System.out.println("\nBuilding "+methodName+" model for "+ci.datasetName + "with" + ci.descriptorSetName + "descriptors");
 
@@ -130,9 +132,9 @@ public class ModelBuildingScript {
 		long modelID=-1;
 		
 		if (de==null) {
-			modelID = mb.build(methodName, ci,usePMML);
+			modelID = mb.build(methodName, ci,usePMML,include_standardization_in_pmml,use_sklearn2pmml);
 		} else {
-			modelID = mb.buildWithPreselectedDescriptors(methodName, ci, de,usePMML);	
+			modelID = mb.buildWithPreselectedDescriptors(methodName, ci, de,usePMML,include_standardization_in_pmml,use_sklearn2pmml);	
 		}
 //		System.out.println("modelID="+modelID);
 		
@@ -238,7 +240,7 @@ public class ModelBuildingScript {
 		String embeddingName="Henry's law constant OPERA_1671052729185";
 
 		ModelBuildingScript.buildModel(modelWsServer,modelWsPort,datasetName,descriptorSetName,
-				splittingName, removeLogDescriptors,methodName,lanId, embeddingName, false,false);
+				splittingName, removeLogDescriptors,methodName,lanId, embeddingName, false,false,false,false);
 		//
 		//		run.buildModel("http://localhost","8080", modelWsServer,modelWsPort,datasetName,descriptorSetName,
 		//				splittingName, removeLogDescriptors,methodName,lanId);
