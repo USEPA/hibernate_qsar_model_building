@@ -58,13 +58,14 @@ public class ModelStatisticCalculator {
 	}
 	
 	/**
-	 * Calculates Q2
+	 * 
+	 * Calculates Q2_F3 see eqn 2 of Consonni et al, 2019 (https://onlinelibrary.wiley.com/doi/full/10.1002/minf.201800029)
 	 * 
 	 * @param trainMP
 	 * @param testMP
 	 * @return
 	 */
-	public static double calculateQ2(List<ModelPrediction> trainMP, List<ModelPrediction> testMP) {		
+	public static double calculateQ2_F3(List<ModelPrediction> trainMP, List<ModelPrediction> testMP) {		
 		
 		double YbarTrain=calcMeanExpTraining(trainMP);
 		double numerator= calcAvgSumSqError(testMP);
@@ -249,7 +250,7 @@ public class ModelStatisticCalculator {
 			// Update MAE
 			mae += Math.abs(mp.exp - mp.pred);
 			
-			// Update terms for Person RSQ
+			// Update terms for Pearson RSQ
 			termXY += (mp.exp - meanExp) * (mp.pred - meanPred);
 			termXX += (mp.exp - meanExp) * (mp.exp - meanExp);
 			termYY += (mp.pred - meanPred) * (mp.pred - meanPred);

@@ -7,6 +7,7 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 
 import gov.epa.databases.dev_qsar.DevQsarValidator;
+import gov.epa.databases.dev_qsar.exp_prop.ExpPropSession;
 import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelStatisticDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelStatisticDaoImpl;
@@ -73,6 +74,37 @@ public class ModelStatisticServiceImpl implements ModelStatisticService {
 		
 		try {
 			session.save(modelStatistic);
+			session.flush();
+			session.refresh(modelStatistic);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		}
+		
+		return modelStatistic;
+	}
+	
+	
+	@Override
+	public ModelStatistic update(ModelStatistic modelStatistic) throws ConstraintViolationException {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return update(modelStatistic, session);
+	}
+
+	@Override
+	public ModelStatistic update(ModelStatistic modelStatistic, Session session) throws ConstraintViolationException {
+		Set<ConstraintViolation<ModelStatistic>> violations = validator.validate(modelStatistic);
+		if (!violations.isEmpty()) {
+			throw new ConstraintViolationException(violations);
+		}
+		
+		Transaction t=session.getTransaction();
+		if (!t.isActive()) session.beginTransaction();
+		
+		try {
+			session.clear();
+			session.update(modelStatistic);
 			session.flush();
 			session.refresh(modelStatistic);
 			t.commit();

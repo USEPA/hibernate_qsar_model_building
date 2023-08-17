@@ -319,9 +319,10 @@ public class DevQsarConstants {
 	public static final String CONSENSUS = "consensus";
 	
 	// Statistic names in qsar_models database
-	public static final String Q2_TEST = "Q2_Test";
-	public static final String R2_TRAINING = "R2_Training";
-	public static final String COVERAGE = "Coverage";
+	
+	public static final String R2 = "R2";
+	public static final String Q2 = "Q2";
+	
 	public static final String MAE = "MAE";
 	public static final String RMSE = "RMSE";
 	public static final String BALANCED_ACCURACY = "BA";
@@ -336,9 +337,22 @@ public class DevQsarConstants {
 
 	public static final String SOURCE_WEBTEST = "WebTEST2.0";
 
+	public static final String R2_TEST = R2+TAG_TEST;
+	public static final String Q2_TEST = Q2+TAG_TEST;
+	
+	public static final String Q2_F3_TEST ="Q2_F3"+TAG_TEST;
+	public static final String MAE_TEST = MAE+TAG_TEST;
+	public static final String RMSE_TEST = RMSE+TAG_TEST;
+
+	public static final String MAE_CV_TRAINING=MAE+"_CV"+TAG_TRAINING;
+	public static final String PEARSON_RSQ_CV_TRAINING=PEARSON_RSQ+"_CV"+TAG_TRAINING;
+	public static final String PEARSON_RSQ_TRAINING=PEARSON_RSQ+TAG_TRAINING;
+	public static final String PEARSON_RSQ_TEST=PEARSON_RSQ+TAG_TEST;
 
 	
-
+	public static final String R2_TRAINING = "R2"+TAG_TRAINING;
+	public static final String COVERAGE = "Coverage";
+	
 
 	
 	// Acceptable atoms in structures for modeling
