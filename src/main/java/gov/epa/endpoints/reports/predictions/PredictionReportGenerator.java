@@ -4,6 +4,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -43,6 +45,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionService;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
+import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.reports.ReportGenerator;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportMetadata;
@@ -59,10 +62,11 @@ public class PredictionReportGenerator extends ReportGenerator {
 	private ModelService modelService;
 	private ModelStatisticService modelStatisticService;
 	private ModelSetService modelSetService;
+	private SplittingServiceImpl splittingService;
 	
 	private PredictionReport predictionReport;
 	private Map<String, Integer> splittingMap;
-	SplittingServiceImpl splittingService;
+
 	
 	
 	public PredictionReportGenerator() {
@@ -134,6 +138,9 @@ public class PredictionReportGenerator extends ReportGenerator {
 				.filter(m -> m.getDatasetName().equals(predictionReport.predictionReportMetadata.datasetName))
 				.filter(m -> m.getSplittingName().equals(predictionReport.predictionReportMetadata.splittingName))
 				.collect(Collectors.toList());
+				
+		Collections.sort(models, (o1, o2) -> (int)(o1.getId() - o2.getId()));//sort in order so consensus last and also so can get the descriptor set name from the first model
+		
 		for (Model model:models) {
 			
 			System.out.println(model.getId()+"\t"+model.getMethod().getName());
@@ -208,13 +215,33 @@ public class PredictionReportGenerator extends ReportGenerator {
 	}
 	
 	public PredictionReport generateForModelSetPredictions(String datasetName, String splittingName,
-			String modelSetName) {
+			String modelSetName,boolean includeDescriptors) {
 		initPredictionReport(datasetName, splittingName);
 		addOriginalCompounds(predictionReport.predictionReportDataPoints);
+		
 		addModelSetPredictions(modelSetName);
+		
+		if(includeDescriptors) addDescriptors(datasetName,splittingName, modelSetName);
+		
 		return predictionReport;
 	}
 	
+	private void addDescriptors(String datasetName, String splittingName, String modelSetName) {
+		
+		String descriptorSetName=predictionReport.predictionReportModelMetadata.get(0).descriptorSetName;
+		
+		System.out.println(descriptorSetName);
+		
+		Hashtable<String,String>htDescriptors=ModelData.generateDescriptorHashtable(datasetName, descriptorSetName, false);
+
+		for (PredictionReportDataPoint dp:predictionReport.predictionReportDataPoints) {
+			dp.descriptorValues=htDescriptors.get(dp.canonQsarSmiles);
+		}
+		
+		
+		
+	}
+
 	public PredictionReport generateForModelPredictions(Long modelId) {
 		Model model = modelService.findById(modelId);
 		initPredictionReport(model.getDatasetName(), model.getSplittingName());

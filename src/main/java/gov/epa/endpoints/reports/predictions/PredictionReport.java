@@ -5,10 +5,13 @@ import java.util.List;
 
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.endpoints.reports.ReportDataPoint;
+import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.reports.ModelMetadata;
 
 public class PredictionReport {
 
+	public Boolean hasAD=false;
+	
 	public PredictionReportMetadata predictionReportMetadata;
 	public List<PredictionReportModelMetadata> predictionReportModelMetadata = new ArrayList<PredictionReportModelMetadata>();
 	public List<PredictionReportDataPoint> predictionReportDataPoints = new ArrayList<PredictionReportDataPoint>();
