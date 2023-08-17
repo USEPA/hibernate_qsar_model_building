@@ -4,14 +4,17 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
+import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.reports.WebTEST.GenerateWebTestReport;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable.ModelSetTableRow;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelPredictionReportGenerator;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class SampleReportWriter {
 
@@ -22,20 +25,21 @@ public class SampleReportWriter {
 	ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
 
 	public PredictionReport createPredictionReport(String modelSetName, String datasetName, 
-			String splittingName,boolean overWriteJsonReport) {
+			String splittingName,boolean overWriteJsonReport, boolean includeDescriptors) {
 		
 		PredictionReport predictionReport = null;
 
 		String filepathReport = "data/reports/" + modelSetName +"/"+ datasetName + "_PredictionReport.json";
 		File reportFile = new File(filepathReport);
 
-		if (reportFile.exists() && !overWriteJsonReport) {
-			System.out.println("JSON report exists:" + filepathReport);
-			predictionReport = GenerateWebTestReport.loadDataSetFromJson(filepathReport);
-		} else {
-			System.out.println("JSON report doesnt exist, creating it at:\n" + filepathReport + "\n");
+		
+		if(!reportFile.exists() || overWriteJsonReport) {
 			predictionReport = ReportGenerationScript.reportAllPredictions(datasetName, splittingName, modelSetName,
-					true);
+					true,includeDescriptors);
+			System.out.println("Created:" + filepathReport);
+		} else {
+			predictionReport = GenerateWebTestReport.loadDataSetFromJson(filepathReport);
+			System.out.println("Loaded:" + filepathReport);
 		}
 
 		return predictionReport;
@@ -56,20 +60,62 @@ public class SampleReportWriter {
 		}
 	}
 	
+	public static PredictionReport getReport(String modelSetName, String datasetName, String splittingName,boolean limitToPFAS) {
+		String filepathReport;
+		
+		if (limitToPFAS) {
+			filepathReport = "data/reports/" + modelSetName + "/" + datasetName + "_PredictionReport_only_PFAS.json";
+		} else {
+			filepathReport = "data/reports/" + modelSetName + "/" + datasetName + "_PredictionReport.json";
+		}
+		
+		File reportFile = new File(filepathReport);
+
+		if (reportFile.exists()) {
+			return GenerateWebTestReport.loadDataSetFromJson(filepathReport);
+		} else {
+			System.out.println("JSON report doesnt exist at "+filepathReport); 
+			return null;
+		}
+	}
+	
+	public static PredictionReport getReport(String filepathReport) {
+		
+		File reportFile = new File(filepathReport);
+
+		if (reportFile.exists()) {
+			return GenerateWebTestReport.loadDataSetFromJson(filepathReport);
+		} else {
+			System.out.println("JSON report doesnt exist at "+filepathReport); 
+			return null;
+		}
+	}
+	
+	public static void writeReportWithAD(String modelSetName, String datasetName, String splittingName,boolean limitToPFAS,PredictionReport pr) {
+		String filepathReport;
+		if (limitToPFAS) {
+			filepathReport = "data/reports/" + modelSetName + "/" + datasetName + "_PredictionReport_only_PFAS_with_AD.json";
+		} else {
+			filepathReport = "data/reports/" + modelSetName + "/" + datasetName + "_PredictionReport_with_AD.json";
+		}
+		Utilities.saveJson(pr, filepathReport);
+	}
+
+
+	
 	public PredictionReport createPredictionReport(long modelSetID, String datasetName, 
-			String splittingName,boolean overWriteJsonReport) {
+			String splittingName,boolean overWriteJsonReport,boolean includeDescriptors) {
 		ModelSetServiceImpl m = new ModelSetServiceImpl();
 		String modelSetName = m.findById(modelSetID).getName();		
-		return createPredictionReport(modelSetName, datasetName, splittingName,overWriteJsonReport);
+		return createPredictionReport(modelSetName, datasetName, splittingName,overWriteJsonReport,includeDescriptors);
 	}
 	
 	public void generateSamplePredictionReports(long modelSetID, boolean upload, boolean deleteExistingReportInDatabase) {
 
 		ModelSetTable table = SampleModelQmrfWriter.getModelsInModelSet(modelSetID);
 		
-		for (ModelSetTableRow msRow : table.modelSetTableRows) {
-			
-			generateSamplePredictionReport(modelSetID, msRow.datasetName, msRow.splittingName, upload, deleteExistingReportInDatabase, false);
+		for (ModelSetTableRow msRow : table.modelSetTableRows) {			
+			generateSamplePredictionReport(modelSetID, msRow.datasetName, msRow.splittingName, upload, deleteExistingReportInDatabase, false,false,false);
 		}
 	}
 	
@@ -101,11 +147,13 @@ public class SampleReportWriter {
 
 
 	public void generateSamplePredictionReport(long modelSetID, String datasetName, String splittingName,
-			boolean upload,boolean deleteExistingReportInDatabase,boolean overWriteReportFiles) {
+			boolean upload, boolean deleteExistingReportInDatabase, 
+			boolean overWriteReportFiles, boolean overWriteExcelFiles, boolean includeDescriptors) {
 		
-		PredictionReport predictionReport=createPredictionReport(modelSetID, datasetName, splittingName,overWriteReportFiles);
+		PredictionReport predictionReport=createPredictionReport(modelSetID, datasetName, splittingName,overWriteReportFiles,includeDescriptors);
 				
-		String excelFilePath=createExcelReport(modelSetID, datasetName, splittingName, predictionReport,overWriteReportFiles);
+		
+		String excelFilePath=createExcelReport(modelSetID, datasetName, splittingName, predictionReport,overWriteExcelFiles);
 						
 		ModelSetReport msr = msrs.findByModelSetIdAndModelData(modelSetID, datasetName, splittingName);
 

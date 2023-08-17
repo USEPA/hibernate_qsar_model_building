@@ -363,7 +363,7 @@ public class GenerateWebTestReport {
 	private static void generateWebPageReport(String modelSetName, String splittingName, String datasetName) {
 
 		//Get prediction report from database:
-		PredictionReport predictionReport = getPredictionReport(modelSetName, splittingName, datasetName);
+		PredictionReport predictionReport = getPredictionReport(modelSetName, splittingName, datasetName,false);
 		if(predictionReport==null) return;
 		
 		//Get training and test set instances as strings from database:
@@ -458,7 +458,7 @@ public class GenerateWebTestReport {
 		return md;
 	}
 
-	private static PredictionReport getPredictionReport(String modelSetName, String splittingName, String datasetName) {
+	private static PredictionReport getPredictionReport(String modelSetName, String splittingName, String datasetName,boolean includeDescriptors) {
 		PredictionReport predictionReport=null;
 		String filepathReport="data/reports/"+datasetName+"_PredictionReport.json";		
 		if (new File(filepathReport).exists()) {
@@ -466,7 +466,7 @@ public class GenerateWebTestReport {
 			predictionReport=loadDataSetFromJson(filepathReport);
 		} else {
 			//Create report as json file by querying the postgres db: (takes time- should use storeDataSetData to cache it)
-			predictionReport=ReportGenerationScript.reportAllPredictions(datasetName, splittingName,modelSetName,true);
+			predictionReport=ReportGenerationScript.reportAllPredictions(datasetName, splittingName,modelSetName,true,includeDescriptors);
 		}
 		
 		if(predictionReport==null) {

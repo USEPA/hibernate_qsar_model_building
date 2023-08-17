@@ -66,10 +66,10 @@ public class ReportGenerationScript {
 	}
 
 
-	public static PredictionReport reportAllPredictions(String datasetName,String splittingName,String modelSetName,boolean deleteMissingSplitting) {
+	public static PredictionReport reportAllPredictions(String datasetName,String splittingName,String modelSetName,boolean deleteMissingSplitting,boolean includeDescriptors) {
 
 		long t1=System.currentTimeMillis();
-		PredictionReport report=gen.generateForModelSetPredictions(datasetName, splittingName, modelSetName);
+		PredictionReport report=gen.generateForModelSetPredictions(datasetName, splittingName, modelSetName,includeDescriptors);
 		long t2=System.currentTimeMillis();
 
 		if (deleteMissingSplitting) {
@@ -95,7 +95,7 @@ public class ReportGenerationScript {
 
 	public static void reportAllPredictions(Vector<String> datasetNames,String splittingName,String modelSetName) {
 		for (String datasetName:datasetNames) {
-			reportAllPredictions(datasetName, splittingName,modelSetName,true);
+			reportAllPredictions(datasetName, splittingName,modelSetName,true,false);
 		}
 	}
 
@@ -138,7 +138,7 @@ public class ReportGenerationScript {
 				String descriptorSetName = "Mordred-default";
 				String endpoint=DevQsarConstants.HENRYS_LAW_CONSTANT;
 				String datasetName = endpoint+" OPERA";
-		ReportGenerationScript.reportAllPredictions(datasetName,"OPERA", "Sample models Mordred descriptors",false);		
+		ReportGenerationScript.reportAllPredictions(datasetName,"OPERA", "Sample models Mordred descriptors",false,false);		
 
 		//*****************************************************************************************	
 		//		run.reportAllPredictions(getSampleDataSets(false,true), descriptorSetName);
