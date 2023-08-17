@@ -586,24 +586,30 @@ public class ExcelCreator {
 		htDescriptions.put("exp_prop_id","raw property id number in our database");
 		htDescriptions.put("canon_qsar_smiles","qsar_ready_smiles associated with the mapped smiles");
 		htDescriptions.put("page_url","url that the property value is associated with");
-		htDescriptions.put("source_url","main url for the source");
-		htDescriptions.put("source_doi","doi url for the source");
-		htDescriptions.put("source_name","name of the source");
-		htDescriptions.put("source_description","description of the source");
-		htDescriptions.put("source_type","type of the source (values our team scraped or from ChemProp)");
-		htDescriptions.put("source_authors","authors of journal article");
-		htDescriptions.put("source_title","title of a journal article");
+
+
+		htDescriptions.put("public_source_name","name of the public source");
+		htDescriptions.put("public_source_url","url of the public source");
+
+		htDescriptions.put("public_source_original_name","name of the original public source");
+		htDescriptions.put("public_source_original_url","url of the original public source");
+		
+		htDescriptions.put("literature_source_citation","citation for the literature source");
+		htDescriptions.put("literature_source_doi","doi url for the literature source");
+		
 		htDescriptions.put("source_dtxrid","DSSTOX record id with the source chemical");
 		htDescriptions.put("source_dtxsid","DSSTOX substance id associated with the source chemical");
 		htDescriptions.put("source_casrn","source chemical CASRN");
 		htDescriptions.put("source_chemical_name","source chemical name");
 		htDescriptions.put("source_smiles","source chemical SMILES");
+		
 		htDescriptions.put("mapped_dtxcid","DSSTOX compound id for the record mapped to the source chemical");
 		htDescriptions.put("mapped_dtxsid","DSSTOX substance id for the record  mapped to the source chemical");
 		htDescriptions.put("mapped_cas","DSSTOX CASRN  for the record mapped to the source chemical");
 		htDescriptions.put("mapped_chemical_name","DSSTOX chemical name for the record mapped to the source chemical");
 		htDescriptions.put("mapped_smiles","DSSTOX SMILES  for the record mapped to the source chemical");
 		htDescriptions.put("mapped_molweight","DSSTOX molecular weight  for the record mapped to the source chemical");
+		
 		htDescriptions.put("value_original","Original property value from the source");
 		htDescriptions.put("value_max","Original maximum property value from the source");
 		htDescriptions.put("value_min","Original minimum property value from the source");
