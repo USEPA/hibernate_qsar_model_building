@@ -292,6 +292,54 @@ public class ModelData {
 	}
 	
 	
+	public static Hashtable<String,String> generateDescriptorHashtable(String datasetName,String descriptorSetName,boolean useDTXCIDs) {
+		
+		Hashtable<String,String>htDescriptors=new Hashtable<>();
+		
+		
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		
+		Dataset dataset=datasetService.findByName(datasetName);
+		DescriptorSet descriptorSet=descriptorSetService.findByName(descriptorSetName);
+				
+		String idField="canon_qsar_smiles";
+		if(useDTXCIDs) idField="qsar_dtxcid";
+
+		String sql="select headers_tsv from qsar_descriptors.descriptor_sets d where d.id="+descriptorSet.getId();
+		String instanceHeader="ID\tProperty\t"+SqlUtilities.runSQL(conn, sql)+"\r\n";
+				
+		
+		sql="select dp."+idField+", dp.qsar_property_value, dv.values_tsv from qsar_datasets.data_points dp\n"+ 
+		"inner join qsar_descriptors.descriptor_values dv\n"+ 
+		"on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
+		"where dp.fk_dataset_id="+dataset.getId()+" and dv.fk_descriptor_set_id="+descriptorSet.getId();
+		
+//		System.out.println("\n"+sql+"\n");
+		
+		try {
+			
+			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+
+			int counter=0;
+			
+			while (rs.next()) {
+				counter++;
+				String id=rs.getString(1);
+				String qsar_property_value=rs.getString(2);
+				String descriptors=rs.getString(3);
+				if(descriptors!=null) htDescriptors.put(id, descriptors);
+//				if(counter==100) break; 
+			}
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		return htDescriptors;
+
+	}
+	
+	
 	public void generateInstancesNotinOperaPredictionSet() {
 		
 		Connection conn=SqlUtilities.getConnectionPostgres();
