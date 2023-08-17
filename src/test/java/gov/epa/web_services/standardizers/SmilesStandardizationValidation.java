@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedList;
@@ -50,6 +51,7 @@ import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
+import gov.epa.util.ParseStringUtils;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer.SciDataExpertsStandardization;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer.StandardizeResult;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithStatus;
@@ -76,7 +78,7 @@ public class SmilesStandardizationValidation {
 			// Key_QSARr","Salt_Solvent_ID"
 
 			String[] fields = header.split(",");
-			LinkedList<String> headers = Utilities.Parse3(header, ",");
+			LinkedList<String> headers = ParseStringUtils.Parse3(header, ",");
 			Hashtable<String, Integer> htCols = new Hashtable<>();
 			for (int i = 0; i < headers.size(); i++) {
 				htCols.put(fields[i], Integer.valueOf(i));
@@ -101,7 +103,7 @@ public class SmilesStandardizationValidation {
 				if (currentLine > stop)
 					break;
 
-				LinkedList<String> values = Utilities.Parse3(line, ",");
+				LinkedList<String> values = ParseStringUtils.Parse3(line, ",");
 
 				String DSSTOX_COMPOUND_ID = values.get(htCols.get("DSSTOX_COMPOUND_ID"));
 				String Original_SMILES = values.get(htCols.get("Original_SMILES"));
@@ -207,7 +209,7 @@ public class SmilesStandardizationValidation {
 			// Key_QSARr","Salt_Solvent_ID"
 
 			String[] fields = header.split(",");
-			LinkedList<String> headers = Utilities.Parse3(header, ",");
+			LinkedList<String> headers = ParseStringUtils.Parse3(header, ",");
 			Hashtable<String, Integer> htCols = new Hashtable<>();
 			for (int i = 0; i < headers.size(); i++) {
 				htCols.put(fields[i], Integer.valueOf(i));
@@ -240,7 +242,7 @@ public class SmilesStandardizationValidation {
 				if (jaResults.size() % 10 == 0)
 					System.out.println(jaResults.size());
 
-				LinkedList<String> values = Utilities.Parse3(line, ",");
+				LinkedList<String> values = ParseStringUtils.Parse3(line, ",");
 
 				String DSSTOX_COMPOUND_ID = values.get(htCols.get("DSSTOX_COMPOUND_ID"));
 				String Original_SMILES = values.get(htCols.get("Original_SMILES"));
@@ -360,7 +362,7 @@ public class SmilesStandardizationValidation {
 
 			//TODO add code to check if output file exists- then have it skip ahead appropriately so dont have to rerun if gets stuck
 			
-			Vector<Integer> indices = new Vector<>();
+			HashSet<Integer> indices = new HashSet<>();
 
 			int max = 1095917;
 			
@@ -377,7 +379,7 @@ public class SmilesStandardizationValidation {
 				}
 			}
 
-			Collections.sort(indices);
+//			Collections.sort(indices);
 
 			//			for (Integer index:indices) {
 			//				System.out.println(index);
@@ -394,7 +396,7 @@ public class SmilesStandardizationValidation {
 			// Key_QSARr","Salt_Solvent_ID"
 
 			String[] fields = header.split(",");
-			LinkedList<String> headers = Utilities.Parse3(header, ",");
+			LinkedList<String> headers = ParseStringUtils.Parse3(header, ",");
 			Hashtable<String, Integer> htCols = new Hashtable<>();
 			for (int i = 0; i < headers.size(); i++) {
 				htCols.put(fields[i], Integer.valueOf(i));
@@ -427,7 +429,7 @@ public class SmilesStandardizationValidation {
 				if (jaResults.size() % 10 == 0)
 					System.out.println(jaResults.size());
 
-				LinkedList<String> values = Utilities.Parse3(line, ",");
+				LinkedList<String> values = ParseStringUtils.Parse3(line, ",");
 
 				String DSSTOX_COMPOUND_ID = values.get(htCols.get("DSSTOX_COMPOUND_ID"));
 				String Original_SMILES = values.get(htCols.get("Original_SMILES"));
@@ -521,7 +523,7 @@ public class SmilesStandardizationValidation {
 			// Key_QSARr","Salt_Solvent_ID"
 
 			String[] fields = header.split(",");
-			LinkedList<String> headers = Utilities.Parse3(header, ",");
+			LinkedList<String> headers = ParseStringUtils.Parse3(header, ",");
 			Hashtable<String, Integer> htCols = new Hashtable<>();
 			for (int i = 0; i < headers.size(); i++) {
 				htCols.put(fields[i], Integer.valueOf(i));
@@ -546,7 +548,7 @@ public class SmilesStandardizationValidation {
 				if (currentLine > stop)
 					break;
 
-				LinkedList<String> values = Utilities.Parse3(line, ",");
+				LinkedList<String> values = ParseStringUtils.Parse3(line, ",");
 
 				String DSSTOX_COMPOUND_ID = values.get(htCols.get("DSSTOX_COMPOUND_ID"));
 				String Original_SMILES = values.get(htCols.get("Original_SMILES"));
