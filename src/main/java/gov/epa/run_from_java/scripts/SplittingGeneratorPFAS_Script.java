@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -40,6 +41,7 @@ import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
 import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValuesCalculator;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
+import gov.epa.web_services.standardizers.SciDataExpertsStandardizer.StandardizeResult;
 import gov.epa.web_services.standardizers.Standardizer;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponse;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithStatus;
@@ -136,7 +138,15 @@ public class SplittingGeneratorPFAS_Script {
 		return dpis;
 	}
 	
-	private String standardize(DsstoxRecord dr,Standardizer standardizer, int counter) {
+	/**
+	 * Todo this needs to be fixed to use code in datasetcreator for standardization
+	 * 
+	 * @param dr
+	 * @param standardizer
+	 * @param counter
+	 * @return
+	 */
+	private String standardize(DsstoxRecord dr,SciDataExpertsStandardizer standardizer, int counter) {
 
 		//		System.out.println(dr.dsstoxCompoundId+"\t"+standardizer.standardizerName);
 		Compound compound = compoundService.findByDtxcidSmilesAndStandardizer(dr.dsstoxCompoundId, dr.smiles,standardizer.standardizerName);
@@ -149,43 +159,31 @@ public class SplittingGeneratorPFAS_Script {
 		} else {
 			//			System.out.println(dr.dsstoxCompoundId+"\tNeed to standardize="+dr.smiles);
 
-			StandardizeResponseWithStatus standardizeResponse = standardizer.callStandardize(dr.smiles);
-			if (standardizeResponse.status==200) {
-				StandardizeResponse standardizeResponseData = standardizeResponse.standardizeResponse;
-
-				if (standardizeResponseData.success) {
+			StandardizeResult standardizeResult = standardizer.runStandardize(dr.smiles,false);
+			
+			if (standardizeResult.status==200) {
 					
-					if (standardizeResponseData.qsarStandardizedSmiles.length()>255) {
-						System.out.println(dr.dsstoxCompoundId+"\tsmiles too long="+dr.smiles);
-						return "error: smiles too long to store in db";
-					}
-					
-					compound = new Compound(dr.dsstoxCompoundId, dr.smiles, standardizeResponseData.qsarStandardizedSmiles, standardizer.standardizerName, "tmarti02");
-					System.out.println(counter+"\t"+dr.dsstoxCompoundId+"\tSDE qsar ready smiles="+compound.getCanonQsarSmiles());
+				compound = new Compound(dr.dsstoxCompoundId, dr.smiles, standardizeResult.qsarReadySmiles, standardizer.standardizerName, "tmarti02");
+				System.out.println(counter+"\t"+dr.dsstoxCompoundId+"\tSDE qsar ready smiles="+compound.getCanonQsarSmiles());
 
-					try {
-						compoundService.create(compound);
-						return standardizeResponseData.qsarStandardizedSmiles;
-					} catch (ConstraintViolationException e) {
-						System.out.println(e.getMessage());
-						return "error: constraint violation";
-					}
-
-				} else {
-					System.out.println(dr.dsstoxCompoundId+"\tCan't standardize="+dr.smiles);
-					return "error: can't standardize";
-					//					logger.warn(mpv.id + ": Standardization failed for SMILES: " + dr.smiles);
+				try {
+					compoundService.create(compound);
+					return standardizeResult.qsarReadySmiles;
+				} catch (ConstraintViolationException e) {
+					System.out.println(e.getMessage());
+					return "error: constraint violation";
 				}
+
 			} else {
 				System.out.println(": Standardizer HTTP response failed for SMILES: "
-						+ dr.smiles + " with code " + standardizeResponse.status);
-				return "error: "+standardizeResponse.status;
+						+ dr.smiles + " with code " + standardizeResult.status);
+				return "error: "+standardizeResult.status;
 			}
 
 		}
 	}
 	
-	 void createSplitting(String datasetName, String splittingName, ArrayList<String>smilesArray) {
+	 void createSplitting(String datasetName, String splittingName, HashSet<String>smilesArray) {
 		String lanid="tmarti02";
 		
 		
@@ -305,19 +303,19 @@ public class SplittingGeneratorPFAS_Script {
 		}		
 	}
 	
-	 boolean isPFAS(ArrayList<String>smilesArray,DataPointInSplitting dpis) {
+	 boolean isPFAS(HashSet<String>smilesArray,DataPointInSplitting dpis) {
 		return smilesArray.contains(dpis.getDataPoint().getCanonQsarSmiles());
 	}
 	
 	
 
-	public static ArrayList<String> getPFASSmiles(String filepath) {
+	public static HashSet<String> getPFASSmiles(String filepath) {
 
 		try {
 			
 			List<String> Lines = Files.readAllLines(Paths.get(filepath));
 		
-			ArrayList<String>smilesArray=new ArrayList<>();
+			HashSet<String>smilesArray=new HashSet<>();
 			
 			for (String Line:Lines) {
 				String [] values=Line.split("\t");
@@ -449,7 +447,7 @@ public class SplittingGeneratorPFAS_Script {
 
 	}
 	
-	static int getCount(Connection conn, String datasetName,String splitting, int splitNum) {
+	public static int getCount(Connection conn, String datasetName,String splitting, int splitNum) {
 		
 		String sql="select count(dp.id) from qsar_datasets.data_points dp\n"+  
 		"inner join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+
@@ -457,6 +455,8 @@ public class SplittingGeneratorPFAS_Script {
 		"join qsar_datasets.splittings s on s.id = dpis.fk_splitting_id\n"+ 
 		"where d.\"name\"='"+datasetName.replace("'","''")+"'\n"
 		+ "and s.\"name\"='"+splitting+"' and dpis.split_num = "+splitNum+";";
+		
+		//TODO add descriptorSetName because can have null descriptors...
 		
 //		System.out.println(sql+"\n");
 		
@@ -488,12 +488,12 @@ public class SplittingGeneratorPFAS_Script {
 //		datasetNames.add("LogP v1");
 //		datasetNames.add("MP v1");
 		
-		datasetNames.add("HLC v1 res_qsar");
-//		datasetNames.add("WS v1 res_qsar");
-		datasetNames.add("VP v1 res_qsar");
-		datasetNames.add("LogP v1 res_qsar");
-		datasetNames.add("BP v1 res_qsar");
-		datasetNames.add("MP v1 res_qsar");
+//		datasetNames.add("HLC v1 modeling");
+//		datasetNames.add("WS v1 modeling");
+		datasetNames.add("VP v1 modeling");
+		datasetNames.add("LogP v1 modeling");
+		datasetNames.add("BP v1 modeling");
+		datasetNames.add("MP v1 modeling");
 		
 		Connection conn = SqlUtilities.getConnectionPostgres();
 		
@@ -513,7 +513,7 @@ public class SplittingGeneratorPFAS_Script {
 		
 //		p.generateQSAR_ReadyPFAS_STRUCT(listName,filePath);		
 		
-		ArrayList<String>smilesArray=getPFASSmiles(filePath);
+		HashSet<String>smilesArray=getPFASSmiles(filePath);
 		
 		for (String datasetName : datasetNames) {
 			for (String splittingName : splittingNames) {
@@ -627,14 +627,24 @@ public class SplittingGeneratorPFAS_Script {
 //		datasetNames.add("LogP v1");
 //		datasetNames.add("MP v1");
 		
-		datasetNames.add("WS v1 res_qsar");
+		datasetNames.add("HLC v1 modeling");
+		datasetNames.add("WS v1 modeling");
+		datasetNames.add("VP v1 modeling");
+		datasetNames.add("BP v1 modeling");
+		datasetNames.add("LogP v1 modeling");
+		datasetNames.add("MP v1 modeling");
+
 
 		
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		
+		
+		
+		
 //		String splittingName=splittingPFASOnly;
-//		String splittingName=splittingAllButPFAS;
-		String splittingName=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+//		String splittingName=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+		String splittingName=splittingAllButPFAS;
+
 		
 		for (String datasetName:datasetNames) {			
 			int countTR=getCount(conn, datasetName, splittingName, 0);
@@ -647,10 +657,10 @@ public class SplittingGeneratorPFAS_Script {
 	
 	public static void main(String[] args) {
 		SplittingGeneratorPFAS_Script p=new SplittingGeneratorPFAS_Script();
-//		p.getCounts();
+		p.getCounts();
 //		p.createSplittings();
 //		p.deleteSplittings();
-		p.write_exp_prop_datasets();		
+//		p.write_exp_prop_datasets();		
 //		p.createFiveFoldExternalSplittings(folder, datasetName,"T.E.S.T. 5.1", smilesArray);
 		
 	}

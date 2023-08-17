@@ -40,13 +40,12 @@ public class SplittingGeneratorScript {
 //		datasetNames.add("LogP v1");
 //		datasetNames.add("MP v1");
 
-		datasetNames.add("HLC v1 res_qsar");
-		datasetNames.add("VP v1 res_qsar");
-//		datasetNames.add("WS v1 res_qsar");
-		datasetNames.add("BP v1 res_qsar");
-		datasetNames.add("LogP v1 res_qsar");
-		datasetNames.add("MP v1 res_qsar");
-
+//		datasetNames.add("HLC v1 modeling");
+//		datasetNames.add("WS v1 modeling");
+		datasetNames.add("VP v1 modeling");
+		datasetNames.add("LogP v1 modeling");
+		datasetNames.add("BP v1 modeling");
+		datasetNames.add("MP v1 modeling");
 		
 		System.out.println(splittingWebService.address);
 		
