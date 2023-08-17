@@ -110,7 +110,7 @@ public class DatasetServiceImpl implements DatasetService {
 	 */
 	public void deleteSQL(long id) {
 
-		System.out.println("Deleting dataset id="+id);
+		System.out.println("\nDeleting dataset id="+id);
 		
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		

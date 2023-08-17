@@ -587,7 +587,7 @@ public class DsstoxMapper {
 				
 		if (dr.connectionReason==null) {
 //			System.out.println("Connection reason is null:\t"+gson2.toJson(dr));
-			return new ExplainedResponse(false, "Connection reason is null");
+			return new ExplainedResponse(false, "Connection reason is null");//a lot of the chemprop data is like this especially for dsstox lists like BP_UNCURATED
 		}
 		
 		String bin = dr.connectionReason.replaceAll("</?b>", "").replaceAll("<br/>", ", ");

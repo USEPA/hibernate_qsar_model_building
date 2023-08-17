@@ -56,25 +56,23 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundServiceImpl;
 import gov.epa.databases.dsstox.DsstoxRecord;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
-import gov.epa.endpoints.datasets.dsstox_mapping.DiscardedPropertyValue;
 import gov.epa.endpoints.datasets.dsstox_mapping.DsstoxMapper;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.util.MathUtil;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
-import gov.epa.web_services.standardizers.Standardizer;
-import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponse;
-import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponse.Standardization;
-import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponseWithStatus;
-import gov.epa.web_services.standardizers.Standardizer.StandardizeResponse;
-import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithStatus;
+//import gov.epa.web_services.standardizers.Standardizer;
+//import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponse;
+//import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponse.Standardization;
+//import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponseWithStatus;
+//import gov.epa.web_services.standardizers.Standardizer.StandardizeResponse;
+//import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithStatus;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
 public class DatasetCreator {
 	
-	public static boolean postToDB=false;
+	public static boolean postToDB=true;//stops creation of dataset in database but allows recreation of json and excel files for dataset
 	
 	private static CompoundService compoundService;
 	
@@ -163,7 +161,6 @@ public class DatasetCreator {
 	public static void main(String[] args) {
 		testDatasetCreation();
 	}
-	
 	
 	
 	public DatasetCreator(SciDataExpertsStandardizer standardizer, String lanId) 
@@ -581,7 +578,7 @@ public class DatasetCreator {
 			}
 			
 			if (values==null) {
-				System.out.println(structure + ": Skipped posting data point due to invalid flattened value");
+//				System.out.println(structure + ": Skipped posting data point due to invalid flattened value");
 				continue;
 			}
 
@@ -682,7 +679,8 @@ public class DatasetCreator {
 //		System.out.println("enter createPropertyDataset with excluded sources");
 
 		Dataset datasetDB = datasetService.findByName(params.datasetName);
-		if(datasetDB!=null) {
+
+		if(datasetDB!=null && postToDB) {
 			System.out.println("already have "+params.datasetName+" in db");
 			return;
 		}
@@ -702,6 +700,8 @@ public class DatasetCreator {
 	}
 	
 	private void convertPropertyValuesToDatapoints(List<PropertyValue> propertyValues, DatasetParams params, boolean useStdevFilter) {
+		
+		System.out.println("\npostToDb="+postToDB+"\n");
 		
 		if (propertyValues==null || propertyValues.isEmpty()) {
 //			logger.error(params.datasetName + ": Experimental property data unavailable");
@@ -776,7 +776,7 @@ public class DatasetCreator {
 		}
 		
 		long t8 = System.currentTimeMillis();
-		System.out.println("Time to post: " + (t8 - t7)/1000.0 + " s");
+		System.out.println("Time to post: " + (t8 - t7)/1000.0 + " s\n");
 		
 		
 		if (dataset==null) {

@@ -35,7 +35,7 @@ public class DescriptorEmbeddingDaoImpl implements DescriptorEmbeddingDao {
 		query.setParameter("description",ci.toString());
 		query.setParameter("splitting_name",ci.splittingName);	
 		
-		System.out.println(ci.toString());
+//		System.out.println(ci.toString());
 		
 		return (DescriptorEmbedding) query.uniqueResult();
 		

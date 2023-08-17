@@ -28,7 +28,7 @@ import com.google.gson.JsonObject;
 
 public class Utilities {
 
-	public static Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+	public static Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().serializeSpecialFloatingPointValues().create();
 
 
 	/**

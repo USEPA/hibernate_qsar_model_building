@@ -339,5 +339,15 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 		t.commit();
 	}
 
+	public static void main(String[] args) {
+		ModelBytesServiceImpl m=new ModelBytesServiceImpl();
+		ModelBytes mb= m.findByModelId(766L, true);
+		
+		String pmml=new String(mb.getBytes());
+		
+		System.out.println(pmml);
+		
+		
+	}
 
 }
