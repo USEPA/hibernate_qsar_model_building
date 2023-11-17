@@ -12,6 +12,12 @@
 
 	<dependencies>
 	
+		<!-- https://mvnrepository.com/artifact/com.opencsv/opencsv -->
+		<dependency>
+    		<groupId>com.opencsv</groupId>
+    		<artifactId>opencsv</artifactId>
+    		<version>5.8</version>
+		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
 		<dependency>
     		<groupId>org.apache.commons</groupId>
@@ -145,18 +151,21 @@
 			<version>4.1.2</version>
 		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/com.openhtmltopdf/openhtmltopdf-core -->
+		
+		
 		<dependency>
-			<groupId>com.openhtmltopdf</groupId>
-			<artifactId>openhtmltopdf-core</artifactId>
-			<version>0.0.1-RC11</version>
+    		<groupId>com.openhtmltopdf</groupId>
+    		<artifactId>openhtmltopdf-core</artifactId>
+		    <version>1.0.10</version>
 		</dependency>
+				
 		<dependency>
 			<groupId>com.openhtmltopdf</groupId>
 			<artifactId>openhtmltopdf-pdfbox</artifactId>
-			<version>0.0.1-RC11</version>
+			<version>1.0.10</version>
 		</dependency>
-
-
+				
 		<dependency>
 			<groupId>xerces</groupId>
 			<artifactId>xercesImpl</artifactId>
