@@ -30,8 +30,9 @@ import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
-import gov.epa.run_from_java.scripts.OPERA.SqliteUtilities;
+import gov.epa.run_from_java.scripts.OPERA_Old.SqliteUtilities;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
+import kong.unirest.HttpResponse;
 
 public class DatasetCreatorScript {
 
@@ -152,27 +153,25 @@ public class DatasetCreatorScript {
 	
 	
 	public static void main(String[] args) {
-		DatasetCreatorScript dcs=new DatasetCreatorScript();
+//		DatasetCreatorScript dcs=new DatasetCreatorScript();
+//		dcs.testStandardize();
 		
 		DatasetServiceImpl ds=new DatasetServiceImpl();
-//		for(int i=23;i<=24;i++) ds.deleteSQL(i);
+//		for(int i=109;i<=112;i++) ds.deleteSQL(i);		
 //		for(int i=13;i<15;i++) ds.delete(i);//slowwww when on vpn
 //		ds.deleteSQL(95L);
-//		ds.deleteSQL(99L);
-
-//		createHLC2();//done
-//		createWS2();//done
-//		createVP2();//done
-//		createBP2();//done
-//		createLogP2();
-//		createMP2();
-		
+		ds.deleteSQL(26L);		
+//		if(true)return;
 		
 //		dcs.createFHM_LC50();
 //		dcs.createWS();
-		dcs.createWS_modeling();
 
-		
+//		dcs.createHLC_modeling();
+//		dcs.createWS_modeling();
+//		dcs.createMP_modeling();
+//		dcs.createVP_modeling();
+//		dcs.createBP_modeling();
+//		dcs.createLogP_modeling();
 		
 //		fixQsarExpPropIds();
 		
@@ -200,10 +199,10 @@ public class DatasetCreatorScript {
 
 		//*********************************************************************************************
 		
-//		getDatasetStats();//Get record counts for the papers
-//		getDatasetStatsUsingSql();//Get record counts for the papers
+//		dcs.getDatasetStats();//Get record counts for the papers
+//		dcs.getDatasetStatsUsingSql();//Get record counts for the papers
 //		getDatasetStatsForOneDataset();
-//		getMappedRecordCountsBySourceAndProperty();
+//		dcs.getMappedRecordCountsBySourceAndProperty();
 		
 //		
 		
@@ -213,8 +212,31 @@ public class DatasetCreatorScript {
 //		System.out.println("fix this error in datasetcreator before running again");
 //		GetExpPropInfo.createCheckingSpreadsheet("pKa_a from exp_prop and chemprop", folder, null);
 		
-		
 	}
+	
+	void testStandardize() {
+
+		String workflow="qsar-ready";
+		String serverHost="https://hcd.rtpnc.epa.gov";
+		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,workflow,serverHost);
+
+		
+		String smiles="CC(=O)N[C@H]1[C@H](O[C@H]2[C@@H](O)[C@@H](CO)O[C@@H](O[C@H]3[C@H](O)[C@@H](O)C(O)O[C@@H]3CO)[C@@H]2O)O[C@H](CO)[C@@H](O)[C@@H]1O[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O";
+		boolean useFullStandardize=false;
+		
+				
+		HttpResponse<String> standardizeResponse = sciDataExpertsStandardizer.callQsarReadyStandardizePost(smiles, false);
+
+		System.out.println("status=" + standardizeResponse.getStatus());
+
+		if (standardizeResponse.getStatus() == 200) {
+			String jsonResponse = SciDataExpertsStandardizer.getResponseBody(standardizeResponse, useFullStandardize);
+			String qsarSmiles=SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse, useFullStandardize);
+			System.out.println(smiles+"\t"+qsarSmiles);
+		} 
+
+	}
+
 	
 	private void getMappedRecordCountsBySourceAndProperty() {
 		
@@ -229,12 +251,19 @@ public class DatasetCreatorScript {
 //		datasetNames.add("pKa_a from exp_prop and chemprop");
 //		datasetNames.add("pKa_b from exp_prop and chemprop");
 		
-		datasetNames.add("HLC v1");
-		datasetNames.add("VP v1");
-		datasetNames.add("BP v1");
-		datasetNames.add("WS v1");
-		datasetNames.add("LogP v1");
-		datasetNames.add("MP v1");
+//		datasetNames.add("HLC v1");
+//		datasetNames.add("VP v1");
+//		datasetNames.add("BP v1");
+//		datasetNames.add("WS v1");
+//		datasetNames.add("LogP v1");
+//		datasetNames.add("MP v1");
+
+		datasetNames.add("HLC v1 modeling");
+		datasetNames.add("WS v1 modeling");
+		datasetNames.add("VP v1 modeling");
+		datasetNames.add("BP v1 modeling");
+		datasetNames.add("LogP v1 modeling");
+		datasetNames.add("MP v1 modeling");
 
 
 		
@@ -252,8 +281,8 @@ public class DatasetCreatorScript {
 			
 //			System.out.println(datasetName+"\t"+dataset.getName());
 			
-			Hashtable<String, Integer>htRaw=getRawRecordCountsBySource(dataset.getProperty().getName());			
-			Hashtable<String,Integer>htMapped=getMappedRecordsBySource(datasetName,htRaw);
+//			Hashtable<String, Integer>htRaw=getRawRecordCountsBySource(dataset.getProperty().getName());			
+			Hashtable<String,Integer>htMapped=getMappedRecordsBySource(datasetName);
 			
 			for (String key:htMapped.keySet()) {
 				if(!globalSourceList.contains(key)) globalSourceList.add(key);
@@ -267,7 +296,7 @@ public class DatasetCreatorScript {
 		
 		System.out.print("Source\t");
 		for (String key:htAllSets.keySet()) {
-			System.out.print(key.replace(" from exp_prop and chemprop", "")+"\t");
+			System.out.print(key.replace(" v1 modeling", "")+"\t");
 		}
 		System.out.print("\n");
 		
@@ -279,7 +308,7 @@ public class DatasetCreatorScript {
 				if (htAllSets.get(key).get(source)!=null) {
 					System.out.print(htAllSets.get(key).get(source)+"\t");	
 				} else {
-					System.out.print("N/A\t");
+					System.out.print("0\t");
 				}
 				
 				
@@ -367,19 +396,29 @@ public class DatasetCreatorScript {
 //		datasetNames.add("LogP v1");
 //		datasetNames.add("MP v1");
 
-		datasetNames.add("HLC v1 res_qsar");
-		datasetNames.add("VP v1 res_qsar");
-		datasetNames.add("BP v1 res_qsar");
-		datasetNames.add("WS v1 res_qsar");
-		datasetNames.add("LogP v1 res_qsar");
-		datasetNames.add("MP v1 res_qsar");
+//		datasetNames.add("HLC v1 res_qsar");
+//		datasetNames.add("VP v1 res_qsar");
+//		datasetNames.add("BP v1 res_qsar");
+//		datasetNames.add("WS v1 res_qsar");
+//		datasetNames.add("LogP v1 res_qsar");
+//		datasetNames.add("MP v1 res_qsar");
 
+		datasetNames.add("HLC v1 modeling");
+		datasetNames.add("WS v1 modeling");
+		datasetNames.add("VP v1 modeling");
+		datasetNames.add("BP v1 modeling");
+		datasetNames.add("LogP v1 modeling");
+		datasetNames.add("MP v1 modeling");
+
+		String descriptorSetName="WebTEST-default";
+		String sql="select id from qsar_descriptors.descriptor_sets where name='"+descriptorSetName+"';";
+		String descriptorSetId=DatabaseLookup.runSQL(conn, sql);
 		
 		for (int i=0;i<datasetNames.size();i++) {
 			
 			String dataSetName=datasetNames.get(i);
 			
-			String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+dataSetName+"'";
+			sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+dataSetName+"'";
 			String datasetId=DatabaseLookup.runSQL(conn, sql);
 
 //			System.out.println(datasetId);
@@ -415,7 +454,15 @@ public class DatasetCreatorScript {
 			String countMapped=mappedRecords.size()+"";
 //			System.out.println("Number of mapped records ="+countMapped);
 
-			sql="select count(id) from qsar_datasets.data_points dp where dp.fk_dataset_id="+datasetId;			
+			//Following gets datapoint count but ignores whether descriptors are available:
+//			sql="select count(id) from qsar_datasets.data_points dp where dp.fk_dataset_id="+datasetId;			
+			
+			//To get datapoint counts, need to also check if selected descriptors are available for each datapoint
+			sql="select count(dp.id) from qsar_datasets.data_points dp\n"+
+			"join qsar_datasets.datasets on dp.fk_dataset_id = datasets.id\n"+
+			"join qsar_descriptors.descriptor_values dv on dv.canon_qsar_smiles=dp.canon_qsar_smiles\n"+
+			"where dp.fk_dataset_id="+datasetId+" and dv.fk_descriptor_set_id="+descriptorSetId+" and dv.values_tsv is not null;";
+
 			String countDatapoints=DatabaseLookup.runSQL(conn, sql);
 //			System.out.println("Number of datapoints ="+countDatapoints);
 						
@@ -454,7 +501,7 @@ public class DatasetCreatorScript {
 
 	}
 
-	private Hashtable<String,Integer> getMappedRecordsBySource(String dataSetName,Hashtable<String, Integer>htRaw) {
+	private Hashtable<String,Integer> getMappedRecordsBySource(String dataSetName) {
 		
 		Hashtable<String,Integer>htCountsMapped=new Hashtable<>();
 		String folder="data\\dev_qsar\\output\\";
@@ -463,15 +510,25 @@ public class DatasetCreatorScript {
 		jsonPath=jsonPath.replace(" ", "_").replace("=", "_");
 		JsonArray mappedRecords=Utilities.getJsonArrayFromJsonFile(jsonPath);
 		
-		Set<String>rawSources=htRaw.keySet();
+//		Set<String>rawSources=htRaw.keySet();
 		
-		for (String source:rawSources) htCountsMapped.put(source, 0);
+//		for (String source:rawSources) htCountsMapped.put(source, 0);
 		
 		System.out.println(dataSetName+"\t"+mappedRecords.size());
 		
 		for (int i=0;i<mappedRecords.size();i++) {
 			JsonObject jo=mappedRecords.get(i).getAsJsonObject();
-			String sourceName=jo.get("source_name").getAsString();
+			
+			String sourceName;
+			
+			if(jo.get("public_source_name")==null) {
+				sourceName=jo.get("literature_source_citation").getAsString();	
+			} else {
+				sourceName=jo.get("public_source_name").getAsString();	
+			}
+			
+//			System.out.println(sourceName);
+			
 			if(htCountsMapped.get(sourceName)==null) {
 				htCountsMapped.put(sourceName,1);
 			} else {
@@ -559,6 +616,12 @@ public class DatasetCreatorScript {
 
 	}
 
+	/**
+	 * This method assumes a property value has either a public source or a literature source
+	 * 
+	 * @param propertyName
+	 * @return
+	 */
 	private Hashtable<String, Integer> getRawRecordCountsBySource(String propertyName) {
 		PropertyValueServiceImpl propertyValueService = new PropertyValueServiceImpl();
 		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(propertyName, true, true);
@@ -646,6 +709,9 @@ public class DatasetCreatorScript {
 	
 	public void createWS_modeling() {
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		
+		creator.postToDB=false;
+		
 
 		String propertyName = DevQsarConstants.WATER_SOLUBILITY;
 		String listName = "ExpProp_WaterSolubility_WithChemProp_120121";
@@ -664,14 +730,14 @@ public class DatasetCreatorScript {
 		
 //		String datasetName = "WS v1";
 //		String datasetName = "WS v1 res_qsar";
-		String datasetName = "WS v1 res_qsar_check";
+		String datasetName = "WS v1 modeling";
 		
 //		String datasetDescription = "WS from exp_prop and chemprop where 1e-14 < WS(M) < 100, 1e-11 < WS(g/L) < 990, " 
 //				+ "20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5, omit LookChem";
 				
 		String datasetDescription = "WS from exp_prop and chemprop where "+
 		DevQsarConstants.MIN_WATER_SOLUBILITY_G_L+" < WS(g/L) < "+DevQsarConstants.MAX_WATER_SOLUBILITY_G_L+", " 
-				+ "20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5, omit LookChem, Angus, and OFMPub";
+				+ "20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5, omit LookChem, OFMPub, and Angus";
 		
 		DatasetParams listMappedParams = new DatasetParams(datasetName, 
 				datasetDescription, 
@@ -721,7 +787,7 @@ public class DatasetCreatorScript {
 
 	}
 	
-	public void createVP2() {
+	public void createVP_modeling() {
 		// comment for diff
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
@@ -738,9 +804,11 @@ public class DatasetCreatorScript {
 
 		
 //		String datasetName = "VP v1";
-		String datasetName = "VP v1 res_qsar";
+//		String datasetName = "VP v1 res_qsar";
+		String datasetName = "VP v1 modeling";
 		
-		String datasetDescription = "VP from exp_prop and chemprop where 1e-14 < VP(mmHg) < 1e6 and 20 < T(C) < 30";
+		String datasetDescription = "VP from exp_prop and chemprop where 1e-14 < VP(mmHg) < 1e6 and 20 < T(C) < 30 and "+
+		"omit eChemPortalAPI, PubChem, OFMPub, ChemicalBook and Angus sources";
 		
 
 		List<String>excludedSources=new ArrayList<>();
@@ -751,7 +819,6 @@ public class DatasetCreatorScript {
 		excludedSources.add("ChemicalBook");// chemical company
 		excludedSources.add("ANGUS Chemical Company (Chemical company)");// chemical company
 
-				
 		DatasetParams listMappedParams = new DatasetParams(datasetName, 
 				datasetDescription, 
 				propertyName,
@@ -761,8 +828,6 @@ public class DatasetCreatorScript {
 
 
 	}
-	
-	
 	
 	
 	public void create_pKA() {
@@ -893,7 +958,7 @@ public class DatasetCreatorScript {
 		
 	}
 	
-	public void createLogP2() {
+	public void createLogP_modeling() {
 		// comment for diff
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
@@ -917,8 +982,11 @@ public class DatasetCreatorScript {
 				omitOpsinAmbiguousNames, omitUvcbNames, listNameArray, omitSalts,validateStructure);
 
 //		String datasetName = "LogP v1";
-		String datasetName = "LogP v1 res_qsar";
-		String datasetDescription = "LogP from exp_prop and chemprop with -6 < LogKow < 11 and 20 < T(C) < 30";
+//		String datasetName = "LogP v1 res_qsar";
+		String datasetName = "LogP v1 modeling";
+
+		String datasetDescription = "LogP from exp_prop and chemprop with -6 < LogKow < 11 and 20 < T(C) < 30 and "
+				+ "omit eChemPortalAPI, PubChem, OFMPub and Angus sources";
 		
 		DatasetParams listMappedParams = new DatasetParams(datasetName, 
 				datasetDescription, 
@@ -1017,7 +1085,7 @@ public class DatasetCreatorScript {
 	}
 	
 	
-	public void createHLC2() {
+	public void createHLC_modeling() {
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
 		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
@@ -1040,10 +1108,12 @@ public class DatasetCreatorScript {
 
 		
 //		String datasetName = "HLC v1";
-		String datasetName = "HLC v1 res_qsar";
+//		String datasetName = "HLC v1 res_qsar";
+		String datasetName = "HLC v1 modeling";
 		
 		String datasetDescription = "HLC from exp_prop and chemprop where "
-				+ "1e-13 < HLC (atm m^3/mol) < 1e2 , 20 < T (C) < 30, 6.5 < pH < 7.5";
+				+ "1e-13 < HLC (atm m^3/mol) < 1e2 , 20 < T (C) < 30, 6.5 < pH < 7.5 and "
+				+ "omit echemPortalAPI and OChem";
 
 
 		DatasetParams listMappedParams = new DatasetParams(datasetName, 
@@ -1144,7 +1214,7 @@ public class DatasetCreatorScript {
 	 * TODO there are a lot of no hits in DSSTOX
 	 * 
 	 */
-	public void createMP2() {
+	public void createMP_modeling() {
 		
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 		
@@ -1173,9 +1243,12 @@ public class DatasetCreatorScript {
 
 				
 //		String datasetName = "MP v1";
-		String datasetName = "MP v1 res_qsar";
+//		String datasetName = "MP v1 res_qsar";
+		String datasetName = "MP v1 modeling";
+		
 		String datasetDescription = "MP from exp_prop and chemprop where "+DevQsarConstants.MIN_MELTING_POINT_C+
-				" < MP < "+DevQsarConstants.MAX_MELTING_POINT_C+" and 740 < P < 780, omit Lookchem";
+				" < MP < "+DevQsarConstants.MAX_MELTING_POINT_C+" and 740 < P < 780, and "
+						+ "omit OFMPub, CSDeposition Service, ONSChallenge, and chemical company sources";
 
 		DatasetParams listMappedParams = new DatasetParams(datasetName, 
 				datasetDescription, 
@@ -1391,7 +1464,7 @@ public class DatasetCreatorScript {
 	/**
 	 * create boiling point dataset based on chemreg lists
 	 */
-	public void createBP2() {
+	public void createBP_modeling() {
 		
 		ArrayList<String> listNameArray = new ArrayList<String>();
 		listNameArray.add("ExpProp_BP_072522_Import_1_to_20000");
@@ -1429,10 +1502,12 @@ public class DatasetCreatorScript {
 
 
 //		String datasetName = "BP v1";
-		String datasetName = "BP v1 res_qsar";
+//		String datasetName = "BP v1 res_qsar";
+		String datasetName = "BP v1 modeling";
 		
 		String datasetDescription = "BP from exp_prop and chemprop where "+DevQsarConstants.MIN_BOILING_POINT_C+
-				" < BP < "+DevQsarConstants.MAX_BOILING_POINT_C+" and 740 < P < 780, omit Lookchem";
+				" < BP < "+DevQsarConstants.MAX_BOILING_POINT_C+" and 740 < P < 780, and "
+						+ "omit eChemPortalAPI, PubChem, Oxford University Chemical Safety Data, OFMPub and chemical company sources";
 
 		
 		DatasetParams listMappedParams = new DatasetParams(datasetName, 

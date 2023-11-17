@@ -15,17 +15,21 @@ import org.openscience.cdk.smiles.SmilesGenerator;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.DsstoxSnapshot;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DsstoxRecordServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DsstoxSnapshotServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Source;
+import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxRecordServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxSnapshotServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.MethodServiceImpl;
 
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.SourceService;
+import gov.epa.databases.dev_qsar.qsar_models.service.SourceServiceImpl;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 /**
@@ -47,10 +51,13 @@ public class PredictionDashboardScriptPercepta {
 	
 	private HashMap<String, Model> createModels(String version, HashMap<String, Method> hmMethods) {
 		
-		String source="Percepta "+version;
+		String sourceName="Percepta"+version;
 		String descriptorSetName="Percepta "+version;
 		String splittingName="Percepta";
 		String methodName="percepta";
+
+		SourceService ss=new SourceServiceImpl();
+		Source source=ss.findByName(sourceName);
 
 		
 		HashMap<String,Model> hmModels=new HashMap<>();
@@ -126,8 +133,11 @@ public class PredictionDashboardScriptPercepta {
 		Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot);
 		
 		SmilesGenerator sg= new SmilesGenerator(SmiFlavor.Unique);
-		AtomContainerSet acs=RunDashboardPredictions.readSDFV3000(filepathSDF);
-		AtomContainerSet acs2 = RunDashboardPredictions.filterAtomContainerSet(acs, skipMissingSID, maxCount);
+		
+		DashboardPredictionUtilities dpu = new DashboardPredictionUtilities();
+
+		AtomContainerSet acs=dpu.readSDFV3000(filepathSDF);
+		AtomContainerSet acs2 = dpu.filterAtomContainerSet(acs, skipMissingSID, maxCount);
 
 		try {
 			
@@ -165,7 +175,10 @@ public class PredictionDashboardScriptPercepta {
 					pd.setCanonQsarSmiles("N/A");
 					
 					String dtxcid=ac.getProperty("DTXCID");
-					pd.setFk_dsstox_records_id(htCIDtoDsstoxRecordId.get(dtxcid));
+					
+					DsstoxRecord dr=new DsstoxRecord();
+					dr.setId(htCIDtoDsstoxRecordId.get(dtxcid));
+					pd.setDsstoxRecord(dr);
 					
 					pd.setModel(hmModels.get(modelName));
 

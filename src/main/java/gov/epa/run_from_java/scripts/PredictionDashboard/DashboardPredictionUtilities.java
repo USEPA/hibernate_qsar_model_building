@@ -5,7 +5,9 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.AtomContainerSet;
@@ -81,13 +83,24 @@ public class DashboardPredictionUtilities {
 					molecule=new AtomContainer();
 				}
 
+				
 				while (true) {
 					String Line=br.readLine();
 					//				System.out.println(Line);
 
 					if(Line.contains(">  <")) {
+						
 						String field=Line.substring(Line.indexOf("<")+1,Line.length()-1);
-						String value=br.readLine();
+						
+						String value="";
+						
+						while(true) {//read until blank line to get value for the field (sometimes value can have carriage return)
+							String lineMeta=br.readLine();
+							if(lineMeta.trim().isEmpty()) break;
+							value+=lineMeta;
+						}
+						
+//						System.out.println(field+"\t"+value);
 						molecule.setProperty(field, value);
 						//					System.out.println(field);
 					}
@@ -95,6 +108,13 @@ public class DashboardPredictionUtilities {
 					if(Line.contains("$$$"))break;
 				}
 
+//				if (molecule.getProperty("DTXCID").equals("DTXCID10197031")) {
+//					System.out.println(molecule.getProperty("IUPAC_Name")+"");
+//					return null;
+//				} else {
+////				System.out.println(molecule.getProperty("IUPAC_Name")+"");
+//				}
+				
 				if(molecule.getAtomCount()==0) {
 				
 					AtomContainer molecule2=null;

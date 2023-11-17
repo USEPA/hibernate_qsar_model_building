@@ -623,6 +623,7 @@ public class ExcelCreator {
 		htDescriptions.put("notes","notes on the record");
 		htDescriptions.put("qc_flag","whether or not a quality control flag has been issued");
 
+		htDescriptions.put("ICF_duplicate","Duplicate exp_prop_id");
 		htDescriptions.put("ICF_chemical_matches","Does the chemical in the primary source match the source chemical (see source_casrn, source_chemical_name, and source_smiles) ?  Yes/No/?");
 		htDescriptions.put("ICF_is_experimental","Was the property value experimentally determined? Yes/No/?");
 		htDescriptions.put("ICF_source_url","URL/doi for the source used to validate the record");

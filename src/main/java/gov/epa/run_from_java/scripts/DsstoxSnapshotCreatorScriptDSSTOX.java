@@ -33,16 +33,16 @@ import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.DsstoxRecord;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.DsstoxSnapshot;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DsstoxRecordServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DsstoxSnapshotServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport;
+import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxRecordServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxSnapshotServiceImpl;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.entity.GenericSubstance;
 import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
@@ -85,7 +85,7 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		List<DsstoxCompound>compounds=new ArrayList<>();
 
 		String sql="SELECT dsstox_compound_id, mol_file, smiles, "
-				+ "gs.dsstox_substance_id, gs.casrn, c.id\n";  
+				+ "gs.dsstox_substance_id, gs.casrn, c.id, c.mol_weight, gs.preferred_name, length(c.mol_image_png)\n";  
 		sql+="FROM compounds c\n";
 		sql+="left join generic_substance_compounds gsc on gsc.fk_compound_id =c.id\n";
 		sql+="left join generic_substances gs on gs.id=gsc.fk_generic_substance_id\n"; 
@@ -111,7 +111,11 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 				if (rs.getString(3)!=null)
 					compound.setSmiles(rs.getString(3));
 
-
+				if (rs.getInt(9)>0) {
+					compound.setMolImagePNGAvailable(true);
+				}
+				
+				
 				if (rs.getString(4)!=null) {
 					GenericSubstanceCompound gsc=new GenericSubstanceCompound();
 					GenericSubstance gs=new GenericSubstance(); 
@@ -121,7 +125,15 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 
 					if (rs.getString(5)!=null) {
 						gs.setCasrn(rs.getString(5));
+//						System.out.println("CAS="+rs.getString(5));
 					}
+					
+					if (rs.getString(8)!=null) {
+						gs.setPreferredName(rs.getString(8));
+//						System.out.println("preferredName="+rs.getString(8));
+
+					}
+
 
 				} else {
 //					System.out.println("Missing sid"+compound.getDsstoxCompoundId());
@@ -129,6 +141,7 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 				}
 
 				compound.setId(rs.getLong(6));
+				compound.setMolWeight(rs.getDouble(7));
 				
 //				System.out.println(compound.getDsstoxCompoundId()+"\t"+compound.getSmiles());
 				
@@ -209,7 +222,7 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 	
 	HashSet<String> getCidsAlreadyInSnapshot(DsstoxSnapshot snapshot) {
 		
-		String sql2="select dtxcid from qsar_datasets.dsstox_records where fk_dsstox_snapshot_id="+snapshot.getId();
+		String sql2="select dtxcid from qsar_models.dsstox_records where fk_dsstox_snapshot_id="+snapshot.getId();
 
 		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql2);
 		
@@ -230,6 +243,7 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 	
 	
 	void createDsstoxRecordsUsingCompoundsRecords() {
+		
 		boolean requireSID=true;
 		
 		int batchSize=10000;
@@ -254,7 +268,7 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 			for (int i=0;i<dsstoxCompounds.size();i++) {
 				DsstoxCompound dsstoxCompound=dsstoxCompounds.get(i);
 
-				if(cids.contains(dsstoxCompounds.get(i).getDsstoxCompoundId())) {//already have in db so remove it
+				if(cids.contains(dsstoxCompound.getDsstoxCompoundId())) {//already have in db so remove it
 					dsstoxCompounds.remove(i--);
 				} else {
 					addSmiles(dsstoxCompound);
@@ -318,6 +332,85 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		}
 	}
 	
+	void updateMolWeightUsingCompoundsRecords() {
+		boolean requireSID=true;
+		
+		int batchSize=10000;
+		
+		int batch=0;//where to start loading from db
+		
+		int totalCount=0;
+		
+		
+		DsstoxSnapshot snapshot=getSnapshot();
+		
+					
+		while (true) {
+		
+			List<DsstoxCompound>dsstoxCompounds=getCompoundsBySQL(batch*batchSize, batchSize,requireSID);
+
+			if (dsstoxCompounds.size()==0) break;
+			
+//			System.out.println(dsstoxCompounds.size());
+
+			totalCount+=dsstoxCompounds.size();
+
+			List<DsstoxRecord> records = DsstoxRecord.getRecords(dsstoxCompounds, snapshot,lanId);
+			try {
+				dsstoxRecordService.updateMolWeightBatchSQL(records, lanId);
+			} catch (Exception ex) {
+				System.out.println(ex.getMessage());
+			}
+			
+//			if(true)break;
+
+			batch++;
+			System.out.println(batch+"\t"+batch*batchSize+"\t"+totalCount);
+
+//			if(true) break;
+		}
+	}
+	
+	
+	
+	void updatePreferredNameCASRNUsingCompoundsRecords() {
+		boolean requireSID=true;
+		
+		int batchSize=10000;
+		
+		int batch=0;//where to start loading from db
+		
+		int totalCount=0;
+		
+		
+		DsstoxSnapshot snapshot=getSnapshot();
+		
+					
+		while (true) {
+		
+			List<DsstoxCompound>dsstoxCompounds=getCompoundsBySQL(batch*batchSize, batchSize,requireSID);
+
+			if (dsstoxCompounds.size()==0) break;
+			
+//			System.out.println(dsstoxCompounds.size());
+
+			totalCount+=dsstoxCompounds.size();
+
+			List<DsstoxRecord> records = DsstoxRecord.getRecords(dsstoxCompounds, snapshot,lanId);
+			try {
+				dsstoxRecordService.updatePreferredNameCASRNBatchSQL(records, lanId);
+			} catch (Exception ex) {
+				System.out.println(ex.getMessage());
+			}
+			
+//			if(true)break;
+
+			batch++;
+			System.out.println(batch+"\t"+batch*batchSize+"\t"+totalCount);
+
+//			if(true) break;
+		}
+	}
 
 	void standardize(List<DsstoxCompound>compounds,HashMap<String,String>hmStandardized) {
 		
@@ -487,8 +580,10 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		
 //		List<DsstoxCompound>compounds=d.getCompoundsBySQL(0, 10,true);
 		
-//		 d.createDsstoxRecordsUsingCompoundsRecords();
-		 d.updateFkCompoundIdUsingCompoundsRecords();
+		 d.createDsstoxRecordsUsingCompoundsRecords();
+//		 d.updateFkCompoundIdUsingCompoundsRecords();
+//		 d.updateMolWeightUsingCompoundsRecords();
+//		d.updatePreferredNameCASRNUsingCompoundsRecords();
 		
 //		d.getRecordIdHashtable(d.getSnapshot());
 		

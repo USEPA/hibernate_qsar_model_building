@@ -28,18 +28,22 @@ import ToxPredictor.Application.model.PredictionResultsPrimaryTable;
 import ToxPredictor.Application.model.SimilarChemical;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.DsstoxSnapshot;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DsstoxRecordServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DsstoxSnapshotServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Source;
+import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxRecordServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxSnapshotServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.MethodServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionReportServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.SourceService;
+import gov.epa.databases.dev_qsar.qsar_models.service.SourceServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
@@ -524,8 +528,13 @@ public class PredictionDashboardScriptTEST  {
 	private HashMap<String, Model> createModels(HashMap<String, Method> hmMethods) {
 		HashMap<String,Model> hmModels=new HashMap<>();
 		
+		String sourceName=getSoftwareName();
+		
+		SourceService ss=new SourceServiceImpl();
+		Source source=ss.findByName(sourceName);
+
+		
 		for (String propertyName:propertyNames) {
-			String source=getSoftwareName();
 			String descriptorSetName=getSoftwareName();
 
 			String splittingName="TEST";
@@ -704,8 +713,11 @@ public class PredictionDashboardScriptTEST  {
 //				System.out.println("here");
 								
 				pd.setCanonQsarSmiles("N/A");
-				pd.setFk_dsstox_records_id(htCIDtoDsstoxRecordId.get(pr.getDTXCID()));
 				
+				DsstoxRecord dr=new DsstoxRecord();
+				dr.setId(htCIDtoDsstoxRecordId.get(pr.getDTXCID()));
+				pd.setDsstoxRecord(dr);
+
 //				pd.setDtxsid(pr.getDTXSID());
 //				pd.setDtxcid(pr.getDTXCID());
 //				pd.setSmiles(pr.getSmiles());
@@ -872,7 +884,7 @@ public class PredictionDashboardScriptTEST  {
 
 		String dtxsid="DTXSID00223252";
 		String sql="select pr.id, pr.file from qsar_models.predictions_dashboard pd\n"
-				+ "join qsar_datasets.dsstox_records dr on pd.fk_dsstox_records_id=dr.id\n"
+				+ "join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id=dr.id\n"
 				+ "join qsar_models.models m on m.id=pd.fk_model_id\n"
 				+ "join qsar_models.prediction_reports pr on pd.id = pr.fk_prediction_dashboard_id\n"
 				+ "where dr.dtxsid='"+dtxsid+"' and m.\"source\" ='TEST5.1.3'";
@@ -1002,17 +1014,17 @@ public class PredictionDashboardScriptTEST  {
 //		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\sample.json";
 		
 
-//		int num=27;
-//		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";//		
+		int num=35;
+		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";//		
 ////		String filePathJson="C:\\Users\\TMARTI02\\Documents\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";
-//		pds.runFromDashboardJsonFileBatchPost(filePathJson);
+		pds.runFromDashboardJsonFileBatchPost(filePathJson);
 
 		
-		for (int num=12;num<=14;num++) {
-//			String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";//		
-			String filePathJson="C:\\Users\\TMARTI02\\Documents\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";
-			pds.runFromDashboardJsonFileBatchPost(filePathJson);
-		}
+//		for (int num=15;num<=18;num++) {
+////			String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";//		
+//			String filePathJson="C:\\Users\\TMARTI02\\Documents\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";
+//			pds.runFromDashboardJsonFileBatchPost(filePathJson);
+//		}
 		
 		
 		

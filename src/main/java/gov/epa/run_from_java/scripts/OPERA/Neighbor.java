@@ -10,24 +10,25 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import gov.epa.databases.dsstox.DsstoxRecord;
+import gov.epa.run_from_java.scripts.OPERA_Old.RecordOpera;
 
 public class Neighbor {
 	
-	Integer num;//Neighbor number (e.g. 1,2,3,4,5) 
-	String exp;
+	public Integer num;//Neighbor number (e.g. 1,2,3,4,5) 
+	public String exp;
 	
-	String pred;
-	String CAS;
-	String SID;
+	public String pred;
+	public String CAS;
+	public String SID;
 	public String CID;
-	String InChiKey;
+	public String InChiKey;
 	
-	DsstoxRecord dsstoxRecord;
-	String mapping;
+	public DsstoxRecord dsstoxRecord;
+	public String mapping;
 	
-	static Gson gson = new GsonBuilder().setPrettyPrinting().create();
+	public static Gson gson = new GsonBuilder().setPrettyPrinting().create();
 	
-	String getGlobalKey() {
+	public String getGlobalKey() {
 		String globalKey=CAS+"\t"+SID;
 		return globalKey;
 	}

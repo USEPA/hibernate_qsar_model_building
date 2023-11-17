@@ -1,33 +1,18 @@
 package gov.epa.run_from_java.scripts.OPERA;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.lang.reflect.Field;
-import java.lang.reflect.Type;
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.Vector;
 
-import org.hibernate.Hibernate;
 
 import com.epam.indigo.Indigo;
 import com.epam.indigo.IndigoObject;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 import com.opencsv.CSVReader;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
@@ -48,20 +33,15 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedADEstimate;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedNeighbor;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Source;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
-import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxRecordServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.MethodADServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionReportServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.QsarPredictedADEstimateServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.QsarPredictedNeighborServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.SourceService;
 import gov.epa.databases.dev_qsar.qsar_models.service.SourceServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
-import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.CreatorScript;
 

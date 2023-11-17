@@ -3,6 +3,7 @@ package gov.epa.run_from_java.scripts.PredictionDashboard;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 
@@ -16,8 +17,12 @@ import com.google.gson.Gson;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
+import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxRecordServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxSnapshotServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardService;
@@ -51,20 +56,22 @@ public class PredictionResultsWebTest2Script {
 	
 	DashboardPredictionUtilities dpu = new DashboardPredictionUtilities();
 	
-
+	DsstoxRecordServiceImpl dsstoxRecordService=new  DsstoxRecordServiceImpl();
+	
 	public static void main(String[] args) {
 //		r.runChemical("DTXSID3039242");
 		PredictionResultsWebTest2Script script = new PredictionResultsWebTest2Script();
-		// script.runPredictionSnapshot();
-		WebTEST2PredictionResponse predictSingleChemical = script.valery.predictSingleChemical("Br[Ga](Br)Br", "31", "2");
+		 script.runPredictionSnapshot();
+//		WebTEST2PredictionResponse predictSingleChemical = script.valery.predictSingleChemical("Br[Ga](Br)Br", "31", "2");
 	}
 	
 	private void runPredictionSnapshot() {
 		int maxCount=20;//number of chemicals to run
 		boolean skipMissingSID=false;//skip entries without an SDF
 		
-		String folderSrc="C:\\Users\\cramslan\\Documents\\code\\java\\hibernate_qsar_modelbuilding\\data\\dsstox\\sdf\\";
-		String fileName="snapshot_compounds7";
+//		String folderSrc="C:\\Users\\cramslan\\Documents\\code\\java\\hibernate_qsar_modelbuilding\\data\\dsstox\\sdf\\";
+		String folderSrc="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\hibernate_qsar_model_building\\data\\dsstox\\sdf\\";
+		String fileName="snapshot_compounds1";
 		String fileNameSDF = fileName + ".sdf";
 		String filepathSDF=folderSrc+fileNameSDF;
 		
@@ -74,14 +81,22 @@ public class PredictionResultsWebTest2Script {
 		String outputFileName= fileName + "-" + propertyAbbreviation + ".json";
 		String destJsonPath=strOutputFolder+File.separator+outputFileName;
 		
-		ArrayList<String> datasetIds = new ArrayList<String>();
+		DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
+		DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
+		Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot);
+
+		
 		//31 WS, 44 LLNA
 
-		datasetIds.add("31");
+		long datasetId=31;
+		
 		// datasetIds.add("44");
 		String modelSetId = "2";
+		
+		 gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset dataset=datasetService.findById(datasetId);
+		
 
-		ArrayList<PredictionDashboard> predictionDashboards = runSDF(filepathSDF, destJsonPath, skipMissingSID, maxCount, datasetIds, modelSetId);
+		ArrayList<PredictionDashboard> predictionDashboards = runSDF(filepathSDF, destJsonPath, skipMissingSID, maxCount, dataset, modelSetId,htCIDtoDsstoxRecordId);
 		
 		DashboardPredictionUtilities dpu = new DashboardPredictionUtilities();
 		PredictionDashboardService predictionDashboardService = new PredictionDashboardServiceImpl();
@@ -97,27 +112,35 @@ public class PredictionResultsWebTest2Script {
 
 
 	// provide it 
-	public ArrayList<PredictionDashboard> createPredictionDashboard(WebTEST2PredictionResponse valeryResponse, Boolean isSalt) {
+	public ArrayList<PredictionDashboard> createPredictionDashboard(WebTEST2PredictionResponse valeryResponse, Boolean isSalt,gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset dataset,String dtxcid, Hashtable<String,Long> htCIDtoDsstoxRecordId) {
 		ArrayList<PredictionDashboard> predictionDashboards = new ArrayList<>();
-		PredictionDashboard p = new PredictionDashboard();
-		p.setCreatedBy("cramslan");
-		p.setSmiles(valeryResponse.predictions.get(0).chemical.originalSmiles);
-		p.setCanonQsarSmiles(valeryResponse.predictions.get(0).chemical.smiles);
-		p.setDtxcid(valeryResponse.predictions.get(0).chemical.dtxcid);
-		p.setDtxsid(valeryResponse.predictions.get(0).chemical.dtxsid);
+		PredictionDashboard pd = new PredictionDashboard();
+		pd.setCreatedBy("cramslan");
+		
+		
+		DsstoxRecord dr=new DsstoxRecord();
+		dr.setId(htCIDtoDsstoxRecordId.get(dtxcid));
+		pd.setDsstoxRecord(dr);
+
+		
+		pd.setCanonQsarSmiles(valeryResponse.predictions.get(0).chemical.smiles);
+		
+//		p.setSmiles(valeryResponse.predictions.get(0).chemical.originalSmiles);
+//		p.setDtxcid(valeryResponse.predictions.get(0).chemical.dtxcid);
+//		p.setDtxsid(valeryResponse.predictions.get(0).chemical.dtxsid);
 		String datasetName = valeryResponse.dataset.dataset_name;
 		String unit = valeryResponse.dataset.unit;
 
 		if (isSalt) {
-			p.setPredictionError("salt compound");
-			predictionDashboards.add(p);
+			pd.setPredictionError("salt compound");
+			predictionDashboards.add(pd);
 			return predictionDashboards;
 		}
 		String valuesJSON = dpu.gson.toJson(valeryResponse.predictions.get(0).values);
 		JSONObject valuesJO = new JSONObject(valuesJSON);
 		System.out.println("methods size=" + valeryResponse.dataset.methods.size());
 		for (int i = 0; i < valeryResponse.dataset.methods.size(); i++) {			
-			PredictionDashboard p1 = p;
+			PredictionDashboard p1 = pd;
 			String methodName = valeryResponse.dataset.methods.get(i).name;
 			if (methodName.equals("consensus")) {
 				methodName = "avg";
@@ -132,7 +155,10 @@ public class PredictionResultsWebTest2Script {
 				continue;
 			}
 			Double predictionValueOriginalUnits = valuesJO.getDouble(methodName);
-			Double predictionValueConverted = convertUnits(datasetName, predictionValueOriginalUnits);
+			
+			
+			
+			Double predictionValueConverted = convertUnits(dataset, predictionValueOriginalUnits);
 			p1.setPredictionString(String.valueOf(predictionValueConverted) + " " + unit);
 			p1.setPredictionValue(predictionValueConverted);			
 			predictionDashboards.add(p1);
@@ -186,7 +212,7 @@ public class PredictionResultsWebTest2Script {
 	
 	
 	public ArrayList<PredictionDashboard> runSDF(String SDFFilePath, String destJsonPath,boolean skipMissingSID,int maxCount,
-			ArrayList<String> datasetIds, String modelSetId) {
+			gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset dataset, String modelSetId,Hashtable<String,Long> htCIDtoDsstoxRecordId) {
 		ArrayList<PredictionDashboard> predictionDashboards = new ArrayList<>();
 		DashboardPredictionUtilities dpu = new DashboardPredictionUtilities();
 		
@@ -196,6 +222,9 @@ public class PredictionResultsWebTest2Script {
 
 		Iterator<IAtomContainer> iterator= acs2.atomContainers().iterator();
 
+		ArrayList<String> datasetIds = new ArrayList<String>();
+		datasetIds.add(dataset.getId()+"");
+		
 		// if datasets were linked up, this is where we'd get dataset from		
 		
 		System.out.println(acs2.getAtomContainerCount());
@@ -236,12 +265,14 @@ public class PredictionResultsWebTest2Script {
 			System.out.print("response body=" + response.getBody());
 			WebTEST2PredictionResponse[] vr = dpu.gson.fromJson(response.getBody(), WebTEST2PredictionResponse[].class);
 			WebTEST2PredictionResponse valeryResponse = vr[0];
-			valeryResponse.predictions.get(0).chemical.dtxcid = dtxcid;
+			
+			//Following block might not be needed since we can just pass dtxcid to createPredictionDashboard method:
 			valeryResponse.predictions.get(0).chemical.dtxsid = dtxsid;
+			valeryResponse.predictions.get(0).chemical.dtxcid = dtxcid;
 			valeryResponse.predictions.get(0).chemical.originalSmiles = smiles;
 
-			ArrayList<PredictionDashboard> chemicalPredictionDashboard = createPredictionDashboard(valeryResponse, isSalt);
-			
+			ArrayList<PredictionDashboard> chemicalPredictionDashboard = createPredictionDashboard(valeryResponse, isSalt,dataset,dtxcid, htCIDtoDsstoxRecordId);
+			predictionDashboards.addAll(chemicalPredictionDashboard);	
 		}
 
 //		System.out.println(Utilities.gson.toJson(allResults));
@@ -249,13 +280,24 @@ public class PredictionResultsWebTest2Script {
 		return predictionDashboards;
 	}
 	
-	private static Double convertUnits(String dataset, Double predictionValue) {
+	private static Double convertUnits(gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset dataset, Double predictionValue) {
 		Double convertedValue;
-		if (dataset.toLowerCase().contains("water")) {
-			convertedValue = (Math.pow(10.0, predictionValue));
+		
+		String unitName=dataset.getUnit().getName();
+		String unitName2=dataset.getUnitContributor().getName();
+		
+		
+		if (unitName.equals("NEG_LOG_M") && unitName2.equals("MOLAR")) {
+			convertedValue = (Math.pow(10.0, -predictionValue));
 			return convertedValue;
+		} else if (unitName.equals(unitName2)) {
+			return predictionValue;
+		} else {
+			System.out.println("Unknown conversion:"+dataset.getUnit().getName()+" to "+dataset.getUnitContributor().getName());
+			return null;
 		}
-		return predictionValue;
+		
+		
 	}
 	
 	

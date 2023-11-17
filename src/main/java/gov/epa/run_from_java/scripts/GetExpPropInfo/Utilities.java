@@ -139,7 +139,7 @@ public class Utilities {
 	
 	static Hashtable<String,String> createOpera_Reference_Lookup(String propertyAbbrev,String propertyAbbrev2) {
 		Hashtable<String,String>ht=new Hashtable<>();
-		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\ghs-data-gathering\\data\\experimental\\OPERA\\OPERA_SDFS\\";
+		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\OPERA\\OPERA_SDFS\\";
 		String filepath=folder+propertyAbbrev+"_QR.sdf";
 		
 		try {
