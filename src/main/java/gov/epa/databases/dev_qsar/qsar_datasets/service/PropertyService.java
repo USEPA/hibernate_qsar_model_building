@@ -1,5 +1,7 @@
 package gov.epa.databases.dev_qsar.qsar_datasets.service;
 
+import java.util.List;
+
 import javax.validation.ConstraintViolationException;
 
 import org.hibernate.Session;
@@ -15,5 +17,9 @@ public interface PropertyService {
 	public Property create(Property property) throws ConstraintViolationException;
 	
 	public Property create(Property property, Session session) throws ConstraintViolationException;
+
+	public List<Property> findAll();
+
+	public List<Property> findAll(Session session);
 
 }

@@ -1,11 +1,11 @@
-package gov.epa.databases.dev_qsar.qsar_datasets.dao;
+package gov.epa.databases.dev_qsar.qsar_models.dao;
 
 import org.hibernate.Session;
 import org.hibernate.query.Query;
 
 import gov.epa.databases.dev_qsar.qsar_datasets.QsarDatasetsSession;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.DsstoxSnapshot;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
 
 public class DsstoxSnapshotDaoImpl  {
 	

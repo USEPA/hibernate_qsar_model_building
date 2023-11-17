@@ -33,12 +33,16 @@ public class DsstoxSession {
         	config.addAnnotatedClass(gov.epa.databases.dsstox.entity.OtherCasrn.class);
         	
         	config.setProperty("hibernate.connection.driver_class", "com.mysql.jdbc.Driver");
-        	
+
             config.setProperty("hibernate.connection.url","jdbc:mysql://"+System.getenv("DSSTOX_HOST")
             	+ ":" + System.getenv("DSSTOX_PORT")
-            	+ "/prod_dsstox");
+            	+ "/"+System.getenv("DSSTOX_DATABASE")+"?useSSL=false&amp;autoReconnect=true");//TMM 1/7/23 to suppress SSL warning
+            
+            
             config.setProperty("hibernate.connection.username", System.getenv("DSSTOX_USER"));
             config.setProperty("hibernate.connection.password", System.getenv("DSSTOX_PASS"));
+            
+//            System.out.println( System.getenv("DSSTOX_DATABASE"));
             
         	config.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQL5Dialect");
         	config.setProperty("hibernate.current_session_context_class", "thread");

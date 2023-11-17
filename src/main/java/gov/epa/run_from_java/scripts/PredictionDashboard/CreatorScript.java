@@ -32,10 +32,10 @@ public class CreatorScript {
 	static DatasetServiceImpl datasetService=new DatasetServiceImpl();
 
 	
-	public static Unit createUnit(String unitAbbrev,String lanId) {
+	public static Unit createUnit(String unitName,String lanId) {
 		
-		
-		String unitName=getFieldName(unitAbbrev);
+//		String unitName=getFieldName(unitAbbrev);
+		String unitAbbrev=getFieldValue(unitName);
 		
 		Unit unit=unitService.findByName(unitName);
 		
@@ -47,7 +47,7 @@ public class CreatorScript {
 			if (unitExpProp!=null) {
 //					System.out.println("we have exp_prop property="+propertyNameDB);
 				unit=Unit.fromExpPropUnit(unitExpProp, lanId);
-				unitService.create(unit);
+				unit=unitService.create(unit);
 			} else {
 				System.out.print("Creating unit for "+unitName+"...");
 				unit=new Unit(unitName,unitAbbrev,lanId);
@@ -59,13 +59,17 @@ public class CreatorScript {
 	}
 	
 	
-	public static void createDataset(Dataset dataset) {
-		if (datasetService.findByName(dataset.getName())!=null) 
-			return;
+	public static Dataset createDataset(Dataset dataset) {
+		
+		Dataset datasetDB=datasetService.findByName(dataset.getName());
+
+		if (datasetDB!=null) 
+			return datasetDB;
 
 		System.out.print("Need to create dataset for "+dataset.getName()+"...");
-		datasetService.create(dataset);
 		System.out.println("done");
+		return datasetService.create(dataset);
+		
 
 	}
 
@@ -79,13 +83,12 @@ public class CreatorScript {
 //			if(!currentModel.getDatasetName().equals(model.getDatasetName())) continue;
 //			if(!currentModel.getSplittingName().equals(model.getSplittingName())) continue;
 //			if(!currentModel.getSource().equals(model.getSource())) continue;
-
 			
 			if(currentModel.getName()==null) continue;
-					
-			if(!currentModel.getName().equals(model.getName()))continue; 
 			
-			if(!currentModel.getSource().equals(model.getSource()))continue;
+			//If have same name and source id then we have a match:
+			if(!currentModel.getName().equals(model.getName()))continue; 
+			if(!currentModel.getSource().getId().equals(model.getSource().getId()))continue;
 			return currentModel;
 		}
 		
@@ -112,6 +115,19 @@ public class CreatorScript {
 		return "?";
 		
 	}
+	
+	public static String getFieldValue(String fieldName)  {
+		try {
+			DevQsarConstants d=new DevQsarConstants();
+			Field field=d.getClass().getField(fieldName);
+			return (String) field.get(d);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} 
+		System.out.println("Unknown value for "+fieldName);
+		return "?";
+	}
+
 
 	
 	

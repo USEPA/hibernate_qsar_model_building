@@ -59,6 +59,21 @@ public class DsstoxCompoundDaoImpl implements DsstoxCompoundDao {
 		Query query = session.createQuery(HQL_FIND_ALL);
 		return (List<DsstoxCompound>) query.list();
 	}
+	
+	@Override
+	public List<DsstoxCompound> findAll(Session session,int offset,int limit) {
+		if (session==null) { session = DsstoxSession.getSessionFactory().getCurrentSession(); }
+		
+		String sql=HQL_FIND_ALL+" order by c.dsstoxCompoundId";
+//		System.out.println(sql);
+		Query query = session.createQuery(sql);
+		query.setFirstResult(offset);
+		query.setMaxResults(limit);
+		
+		
+		return (List<DsstoxCompound>) query.list();
+	}
+
 
 	
 	@Override

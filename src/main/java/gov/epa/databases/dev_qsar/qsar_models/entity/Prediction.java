@@ -70,8 +70,8 @@ public class Prediction {
 	
 //	@OneToOne
 //	@NotNull(message="Splitting required")  //TODO later add this when we redo it
-	@JoinColumn(name="fk_splitting_id")
 //	private Splitting splitting;
+	@JoinColumn(name="fk_splitting_id")
 	private Long fk_splitting_id;
 
 

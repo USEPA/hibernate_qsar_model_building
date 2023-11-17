@@ -12,4 +12,6 @@ public interface ModelStatisticDao {
 
 	public List<ModelStatistic> findByModelId(Long modelId, Session session);
 
+	public List<ModelStatistic> getAll(Session session);
+
 }

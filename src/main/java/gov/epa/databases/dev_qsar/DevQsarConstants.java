@@ -14,6 +14,7 @@ public class DevQsarConstants {
 	
 
 
+
 	public Gson gson;
 	
 	// Numerical constants for processing and modeling
@@ -101,13 +102,13 @@ public class DevQsarConstants {
 
 	
 	// Property names
-	public static final String WATER_SOLUBILITY = "Water solubility";
-	public static final String HENRYS_LAW_CONSTANT = "Henry's law constant";
-	public static final String MELTING_POINT = "Melting point";
-	public static final String LOG_KOW = "Octanol water partition coefficient";
-	public static final String VAPOR_PRESSURE = "Vapor pressure";
+	public static final String WATER_SOLUBILITY = "Water solubility";//OPERA
+	public static final String HENRYS_LAW_CONSTANT = "Henry's law constant";//OPERA
+	public static final String MELTING_POINT = "Melting point";//OPERA
+	public static final String LOG_KOW = "Octanol water partition coefficient";//OPERA
+	public static final String VAPOR_PRESSURE = "Vapor pressure";//OPERA
 	public static final String DENSITY = "Density";
-	public static final String BOILING_POINT = "Boiling point";
+	public static final String BOILING_POINT = "Boiling point";//OPERA
 	public static final String FLASH_POINT = "Flash point";
 	public static final String VISCOSITY = "Viscosity";
 	public static final String SURFACE_TENSION = "Surface tension";
@@ -119,28 +120,46 @@ public class DevQsarConstants {
 	public static final String PARACHOR = "Parachor";
 	public static final String INDEX_OF_REFRACTION = "Index of refraction";
 	public static final String DIELECTRIC_CONSTANT = "Dielectric constant";
-	public static final String LogD_pH_7_4 = "LogD at pH=7.4";
 	
 	public static final String APPEARANCE = "Appearance";
-	
-	
-	
-	public static final String ESTROGEN_RECEPTOR_BINDING = "Estrogen receptor binding";
+		
 	public static final String ESTROGEN_RECEPTOR_RBA = "Estrogen receptor relative binding affinity";
+	public static final String ESTROGEN_RECEPTOR_BINDING = "Estrogen receptor binding";//OPERA
+	public static final String ESTROGEN_RECEPTOR_AGONIST = "Estrogen receptor agonist";//OPERA
+	public static final String ESTROGEN_RECEPTOR_ANTAGONIST = "Estrogen receptor antagonist";//OPERA
+
+	public static final String ANDROGEN_RECEPTOR_AGONIST = "Androgen receptor agonist";//OPERA
+	public static final String ANDROGEN_RECEPTOR_ANTAGONIST = "Androgen receptor antagonist";//OPERA
+	public static final String ANDROGEN_RECEPTOR_BINDING = "Androgen receptor binding";//OPERA
+	
 	
 	public static final String PKA = "pKa";
-	public static final String PKA_A = "pKa_a";
-	public static final String PKA_B = "pKa_b";
 
-	public static final String BCF = "Bioconcentration factor";
+	public static final String BCF = "Bioconcentration factor";//OPERA
 	public static final String LOG_BCF = "Log10(Bioconcentration factor)";
 	
-	public static final String LOG_OH = "LogOH";
-	public static final String LOG_KOC = "LogKOC";
-	public static final String LOG_HALF_LIFE = "LogHalfLife";
+	public static final String LOG_OH = "LogOH";//OLD OPERA
+	public static final String LOG_KOC = "LogKOC";//OLD OPERA
+	public static final String LOG_HALF_LIFE = "LogHalfLife";//OLD OPERA
+	
 	public static final String LOG_KM_HL = "LogKmHL";
-	public static final String LOG_KOA = "LogKOA";
+	public static final String LOG_KOA = "Octanol air partition coefficient";//OPERA
 	public static final String LOG_BCF_FISH_WHOLEBODY = "LogBCF_Fish_WholeBody";
+	
+	//Additional OPERA properties:
+	public static final String KOC = "Soil Adsorption Coefficient (Koc)";//OPERA
+	public static final String KM = "Fish biotransformation half-life (Km)";//OPERA
+	public static final String OH = "Atmospheric hydroxylation rate";//OPERA
+	public static final String BIODEG_HL_HC = "Biodegradation half-life for hydrocarbons";//OPERA
+	public static final String RBIODEG = "Ready biodegradability";//OPERA
+	public static final String FUB = "Fraction unbound in human plasma";//OPERA
+	public static final String RT = "Liquid chromatography retention time";//OPERA
+	public static final String CLINT = "Human hepatic intrinsic clearance";//OPERA
+	public static final String CACO2 = "Caco-2 permeability (logPapp)";//OPERA
+	public static final String LogD_pH_7_4 = "LogD at pH=7.4";//OPERA
+	public static final String LogD_pH_5_5 = "LogD at pH=5.5";//OPERA
+	public static final String PKA_A = "Strongest acidic acid dissociation constant";//OPERA
+	public static final String PKA_B = "Strongest basic acid dissociation constant";//OPERA
 
 	//Old versions for building sample models
 	public static final String MUTAGENICITY ="Mutagenicity";
@@ -156,12 +175,11 @@ public class DevQsarConstants {
 	public static final String EYE_CORROSION = "Eye corrosion";//TODO This needs to be more specific
 	
 	
-	
 	//New versions for dashboard
 	public static final String NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50 ="96 hour fathead minnow LC50";
 	public static final String FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50 ="48 hour Daphnia magna LC50";
 	public static final String FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50 ="48 hour Tetrahymena pyriformis IGC50";
-	public static final String ORAL_RAT_LD50="Oral rat LD50";
+	public static final String ORAL_RAT_LD50="Oral rat LD50";//OPERA
 	public static final String AMES_MUTAGENICITY ="Ames Mutagenicity";
 	public static final String DEVELOPMENTAL_TOXICITY ="Developmental toxicity";
 	public static final String LOCAL_LYMPH_NODE_ASSAY ="Local lymph node assay";
@@ -190,6 +208,9 @@ public class DevQsarConstants {
 	public static final String LOG_L_KG = "log10(L/kg)";
 	public static final String G_CM3 = "g/cm3";
 	public static final String PPM = "ppm";
+	
+
+
 	
 	public static final String PCT_VOLUME="%v";
 	public static final String PCT_WEIGHT="%w";
@@ -277,8 +298,17 @@ public class DevQsarConstants {
 	public static final String LOG_DAYS = "log10(days)";
 	public static final String DAYS = "days";
 	public static final String HOUR = "hr";
+	public static final String MINUTES = "min";
+	
 	public static final String LOG_CM3_MOLECULE_SEC="log10(cm3/molecule-sec)";
 	public static final String CM3_MOLECULE_SEC="cm3/molecule-sec";
+	
+	public static final String LOG_CM_SEC="log10(cm/sec)";
+	public static final String CM_SEC="cm/sec";
+	
+	public static final String UL_MIN_1MM_CELLS="ul/min/10^6 cells";
+
+	
 	
 	public static final String MW_MK="mW/mK";
 	public static final String DYN_CM="dyn/cm";
@@ -335,7 +365,7 @@ public class DevQsarConstants {
 	public static final String TAG_TEST = "_Test";
 	public static final String TAG_TRAINING = "_Training";
 
-	public static final String SOURCE_WEBTEST = "WebTEST2.0";
+	public static final String SOURCE_CHEMINFORMATICS_MODULES = "Cheminformatics Modules";
 
 	public static final String R2_TEST = R2+TAG_TEST;
 	public static final String Q2_TEST = Q2+TAG_TEST;
@@ -344,16 +374,34 @@ public class DevQsarConstants {
 	public static final String MAE_TEST = MAE+TAG_TEST;
 	public static final String RMSE_TEST = RMSE+TAG_TEST;
 
-	public static final String MAE_CV_TRAINING=MAE+"_CV"+TAG_TRAINING;
-	public static final String PEARSON_RSQ_CV_TRAINING=PEARSON_RSQ+"_CV"+TAG_TRAINING;
+	private static final String TAG_CV = "_CV";
+
+	public static final String MAE_CV_TRAINING=MAE+TAG_CV+TAG_TRAINING;
+	public static final String PEARSON_RSQ_CV_TRAINING=PEARSON_RSQ+TAG_CV+TAG_TRAINING;
+	public static final String RMSE_CV_TRAINING=RMSE+TAG_CV+TAG_TRAINING;
+	
 	public static final String PEARSON_RSQ_TRAINING=PEARSON_RSQ+TAG_TRAINING;
 	public static final String PEARSON_RSQ_TEST=PEARSON_RSQ+TAG_TEST;
 
 	
-	public static final String R2_TRAINING = "R2"+TAG_TRAINING;
+	public static final String R2_TRAINING = R2+TAG_TRAINING;
+	public static final String RMSE_TRAINING = RMSE+TAG_TRAINING;
+
 	public static final String COVERAGE = "Coverage";
 	
+	public static final String BA_TRAINING=BALANCED_ACCURACY+TAG_TRAINING;
+	public static final String SN_TRAINING=SENSITIVITY+TAG_TRAINING;
+	public static final String SP_TRAINING=SPECIFICITY+TAG_TRAINING;
 
+	public static final String BA_CV_TRAINING=BALANCED_ACCURACY+TAG_CV+TAG_TRAINING;
+	public static final String SN_CV_TRAINING=SENSITIVITY+TAG_CV+TAG_TRAINING;
+	public static final String SP_CV_TRAINING=SPECIFICITY+TAG_CV+TAG_TRAINING;
+
+	public static final String BA_TEST=BALANCED_ACCURACY+TAG_TEST;
+	public static final String SN_TEST=SENSITIVITY+TAG_TEST;
+	public static final String SP_TEST=SPECIFICITY+TAG_TEST;
+
+			
 	
 	// Acceptable atoms in structures for modeling
 	public static HashSet<String> getAcceptableAtomsSet() {
@@ -410,6 +458,55 @@ public class DevQsarConstants {
 		return map;
 	}
 	
+	/**
+	 * Assigns desired units for datapoint used in modeling 
+	 * 
+	 * @return
+	 */
+	public static HashMap<String, String> getDatasetFinalUnitsNameMapOPERA() {
+		HashMap<String, String> map = new HashMap<String, String>();
+
+		map.put(WATER_SOLUBILITY, "LOG_M");
+		map.put(HENRYS_LAW_CONSTANT, "LOG_ATM_M3_MOL");//TODO
+		map.put(MELTING_POINT, "DEG_C");
+		map.put(BOILING_POINT, "DEG_C");
+		map.put(VAPOR_PRESSURE, "LOG_MMHG");
+		map.put(DENSITY, "G_CM3");
+
+		map.put(LOG_KOW, "LOG_UNITS");
+		map.put(LOG_KOA, "LOG_UNITS");
+		map.put(LogD_pH_5_5, "LOG_UNITS");
+		map.put(LogD_pH_7_4, "LOG_UNITS");
+		map.put(PKA, "LOG_UNITS");
+		map.put(PKA_A, "LOG_UNITS");
+		map.put(PKA_B, "LOG_UNITS");
+
+		map.put(BCF, "LOG_L_KG");
+		map.put(KOC, "LOG_L_KG");
+
+		map.put(RBIODEG, "BINARY");
+		map.put(BIODEG_HL_HC, "LOG_DAYS");
+		map.put(FUB, "DIMENSIONLESS");
+		map.put(RT, "MINUTES");
+		map.put(KM, "LOG_DAYS");
+		map.put(OH, "LOG_CM3_MOLECULE_SEC");
+		map.put(CACO2, "LOG_CM_SEC");
+		map.put(CLINT, "UL_MIN_1MM_CELLS");
+		
+		
+		map.put(ESTROGEN_RECEPTOR_AGONIST,"BINARY");
+		map.put(ESTROGEN_RECEPTOR_ANTAGONIST,"BINARY");
+		map.put(ESTROGEN_RECEPTOR_BINDING,"BINARY");
+		
+		map.put(ANDROGEN_RECEPTOR_AGONIST,"BINARY");
+		map.put(ANDROGEN_RECEPTOR_ANTAGONIST,"BINARY");
+		map.put(ANDROGEN_RECEPTOR_BINDING,"BINARY");
+		
+		map.put(ORAL_RAT_LD50, "MG_KG");
+		
+		return map;
+	}
+	
 
 	public static String getPropertyDescription(String propertyNameDB) {
 		
@@ -441,6 +538,8 @@ public class DevQsarConstants {
 			return "The pressure exerted by a vapor in thermodynamic equilibrium with the liquid phase in a closed system at a given temperature";
 		} else if (propertyNameDB.equals(DevQsarConstants.LOG_KOW)) {
 			return "Log10 of the the ratio of the concentration of a chemical in n-octanol and water at equilibrium at a specified temperature";
+		} else if (propertyNameDB.equals(DevQsarConstants.LOG_KOA)) {
+			return "Log10 of the the ratio of the concentration of a chemical in n-octanol and air at equilibrium at a specified temperature";
 		} else if (propertyNameDB.equals(DevQsarConstants.DENSITY)) {
 			return "The mass per unit volume";
 		} else if (propertyNameDB.equals(DevQsarConstants.SURFACE_TENSION)) {
@@ -465,12 +564,48 @@ public class DevQsarConstants {
 			return "The tendency of matter, when subjected to an electric field, to acquire an electric dipole moment in proportion to that applied field";
 		} else if (propertyNameDB.equals(DevQsarConstants.PARACHOR)) {
 			return "The molecular weight of the liquid multiplied by the fourth root of its surface tension divided by the difference between the densities of the liquid and the vapour in equilibrium with it";
-		} else if (propertyNameDB.equals(DevQsarConstants.LogD_pH_7_4)) {
-			return "Octanol water parition coefficient at a pH of 7.4";
-
+		} else if(propertyNameDB.equals(FUB)) {
+			return "Human plasma fraction unbound";
+		} else if(propertyNameDB.equals(RT)) {
+			return "HPLC retention time";
+		} else if(propertyNameDB.equals(CLINT)) {
+			return "Human hepatic intrinsic clearance";
+		} else if(propertyNameDB.equals(CACO2)) {
+			return "Caco-2 permeability (logPapp)";
+		} else if(propertyNameDB.equals(LogD_pH_7_4)) {
+			return "Octanol water partition coefficient at pH=7.4";
+		} else if(propertyNameDB.equals(LogD_pH_5_5)) {
+			return "Octanol water partition coefficient at pH=5.5";
+		} else if(propertyNameDB.equals(PKA_A)) {
+			return "strongest acidic acid dissociation constant";
+		} else if(propertyNameDB.equals(PKA_B)) {
+			return "strongest basic acid dissociation constant";
+		} else if(propertyNameDB.equals(KM)) {
+			return "The whole body primary biotransformation rate (half-life) constant for organic chemicals in fish";
+		} else if(propertyNameDB.equals(KOC)) {
+			return "soil adsorption coefficient of organic compounds";
+		} else if(propertyNameDB.equals(OH)) {
+			return "OH rate constant for the atmospheric, gas-phase reaction between photochemically produced hydroxyl radicals and organic chemicals";
+		} else if(propertyNameDB.equals(RBIODEG)) {
+			return "Ready biodegradability of organic chemicals";
+		} else if(propertyNameDB.equals(BIODEG_HL_HC)) {
+			return "biodegradation half-life for compounds containing only carbon and hydrogen";
+		} else if (propertyNameDB.equals(DevQsarConstants.ESTROGEN_RECEPTOR_BINDING)) {
+			return "Estrogen receptor binding";
+		} else if (propertyNameDB.equals(DevQsarConstants.ESTROGEN_RECEPTOR_AGONIST)) {
+			return "Estrogen receptor agonist";
+		} else if (propertyNameDB.equals(DevQsarConstants.ESTROGEN_RECEPTOR_ANTAGONIST)) {
+			return "Estrogen receptor antagonist";
+		} else if (propertyNameDB.equals(DevQsarConstants.ANDROGEN_RECEPTOR_BINDING)) {
+			return "Androgen receptor binding";
+		} else if (propertyNameDB.equals(DevQsarConstants.ANDROGEN_RECEPTOR_AGONIST)) {
+			return "Androgen receptor agonist";
+		} else if (propertyNameDB.equals(DevQsarConstants.ANDROGEN_RECEPTOR_ANTAGONIST)) {
+			return "Androgen receptor antagonist";
 		} else {
 			return "*"+propertyNameDB;
-		} 
+		}
+		
 	}
 	
 	
@@ -481,48 +616,74 @@ public class DevQsarConstants {
 	 */
 	public static HashMap<String, String> getContributorUnitsNameMap() {
 		HashMap<String, String> map = new HashMap<String, String>();
+		
 		map.put(MELTING_POINT, "DEG_C");//Changed it to add quotes around the unit names so it stores the unit name and not the abbreviation (TMM, 6/2/23)
 		map.put(BOILING_POINT, "DEG_C");
 		map.put(FLASH_POINT, "DEG_C");
-		
-		map.put(LOG_KOW, "LOG_UNITS");
 		map.put(WATER_SOLUBILITY, "MOLAR");//**
 		map.put(HENRYS_LAW_CONSTANT, "ATM_M3_MOL");//***
 		map.put(VAPOR_PRESSURE, "MMHG");//***
 		map.put(DENSITY, "G_CM3");
 		map.put(THERMAL_CONDUCTIVITY,"MW_MK");
+		map.put(SURFACE_TENSION,"CP");
 		map.put(VISCOSITY,"CP");
+		
+		map.put(LOG_KOW, "LOG_UNITS");
+		map.put(LOG_KOA, "LOG_UNITS");
+		map.put(LogD_pH_5_5, "LOG_UNITS");
+		map.put(LogD_pH_7_4, "LOG_UNITS");
 		map.put(PKA, "LOG_UNITS");
 		map.put(PKA_A, "LOG_UNITS");
 		map.put(PKA_B, "LOG_UNITS");
-		map.put(SURFACE_TENSION,"CP");
+		
+		map.put(FUB, "DIMENSIONLESS");
+		map.put(RT, "MINUTES");
+		map.put(RBIODEG, "BINARY");
+		map.put(BIODEG_HL_HC, "DAYS");
+		map.put(KM, "DAYS");
+		map.put(BCF, "L_KG");
+		map.put(KOC, "L_KG");
+		map.put(LOG_BCF_FISH_WHOLEBODY, "LOG_L_KG");//TODO is this right? Property should just be BCF_FISH_WHOLEBODY
+		map.put(OH, "CM3_MOLECULE_SEC");
+		map.put(CACO2, "CM_SEC");
+		map.put(CLINT, "UL_MIN_1MM_CELLS");
+		
+		//*********************************************************************************
+		//Tox endpoints
 
+		map.put(LOCAL_LYMPH_NODE_ASSAY, "BINARY");
+		
+		map.put(NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50,"MOLAR");
+		map.put(FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50,"MOLAR");
+		map.put(FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50, "MOLAR");		
+		map.put(ORAL_RAT_LD50, "MOL_KG");
+
+		
+		map.put(AMES_MUTAGENICITY,"BINARY");
+		map.put(DEVELOPMENTAL_TOXICITY,"BINARY");
+		
+		map.put(ESTROGEN_RECEPTOR_RBA,"DIMENSIONLESS");
+
+		map.put(ESTROGEN_RECEPTOR_AGONIST,"BINARY");
+		map.put(ESTROGEN_RECEPTOR_ANTAGONIST,"BINARY");
+		map.put(ESTROGEN_RECEPTOR_BINDING,"BINARY");
+		
+		map.put(ANDROGEN_RECEPTOR_AGONIST,"BINARY");
+		map.put(ANDROGEN_RECEPTOR_ANTAGONIST,"BINARY");
+		map.put(ANDROGEN_RECEPTOR_BINDING,"BINARY");
+
+		
 		//Percepta properties:
 		map.put(MOLAR_VOLUME, "CM3");
 		map.put(MOLAR_REFRACTIVITY, "CM3");
-		
 		map.put(INDEX_OF_REFRACTION, "DIMENSIONLESS");
 		map.put(POLARIZABILITY, "CUBIC_ANGSTROM");
-		map.put(LogD_pH_7_4, "LOG_UNITS");
-		
+
+
 		//https://www.sciencedirect.com/topics/chemistry/parachor#:~:text=The%20conventional%20numerical%20values%20of,(cm3%2Fmol).
 		//(erg/cm2)1/4 × (cm3/mol)
 		map.put(PARACHOR, "DIMENSIONLESS");//null in prod_chemprop, see https://www.epj-conferences.org/articles/epjconf/pdf/2015/11/epjconf_efm2014_02054.pdf
 		map.put(DIELECTRIC_CONSTANT, "DIMENSIONLESS");//https://byjus.com/physics/dielectric-constant/#what-is-dielectric-constant		
-
-		
-		map.put(LOG_BCF_FISH_WHOLEBODY, "LOG_L_KG");//TODO is this right?
-		map.put(BCF, "L_KG");
-		map.put(LOCAL_LYMPH_NODE_ASSAY, "BINARY");
-		map.put(NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50,"MOLAR");
-		map.put(FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50,"MOLAR");
-		map.put(FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50, "MOLAR");
-		map.put(ORAL_RAT_LD50, "MOL_KG");
-		map.put(AMES_MUTAGENICITY,"BINARY");
-		map.put(DEVELOPMENTAL_TOXICITY,"BINARY");
-		map.put(ESTROGEN_RECEPTOR_RBA,"DIMENSIONLESS");
-		map.put(ESTROGEN_RECEPTOR_BINDING,"BINARY");
-		
 		
 		return map;
 	}
@@ -620,3 +781,4 @@ public class DevQsarConstants {
 		return "MISSING";
 	}
 }
+

@@ -24,6 +24,10 @@ import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.qsar_descriptors.QsarDescriptorsSession;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
 import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
+import gov.epa.databases.dev_qsar.qsar_models.dao.PredictionDao;
+import gov.epa.databases.dev_qsar.qsar_models.dao.PredictionDaoImpl;
+import gov.epa.databases.dev_qsar.qsar_models.dao.PredictionDashboardDao;
+import gov.epa.databases.dev_qsar.qsar_models.dao.PredictionDashboardDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Bob;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
@@ -37,8 +41,21 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		this.validator = DevQsarValidator.getValidator();
 	}
 
-	
-	
+	@Override
+	public PredictionDashboard findByIds(Long modelID,Long dsstoxRecordId) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return findByIds(modelID, dsstoxRecordId, session);
+	}
+
+	@Override
+	public PredictionDashboard findByIds(Long modelId,Long dsstoxRecordId, Session session) {
+		Transaction t = session.beginTransaction();
+		PredictionDashboardDao predictionDao = new PredictionDashboardDaoImpl();
+		PredictionDashboard predictionsDashboard = predictionDao.findByIds(modelId, dsstoxRecordId, session);
+		t.rollback();
+		return predictionsDashboard;
+	}
+
 	
 	@Override
 	public PredictionDashboard create(PredictionDashboard predictionDashboard) throws ConstraintViolationException {
@@ -84,21 +101,28 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 			throws org.hibernate.exception.ConstraintViolationException {
 		Transaction tx = session.beginTransaction();
 		try {
-		for (int i = 0; i < predictionDashboards.size(); i++) {
-			PredictionDashboard predictionDashboard = predictionDashboards.get(i);
-			session.save(predictionDashboard);
-		    if ( i % 20 == 0 ) { //20, same as the JDBC batch size
-		        //flush a batch of inserts and release memory:
-		        session.flush();
-		        session.clear();
-		    }
-		}
+			for (int i = 0; i < predictionDashboards.size(); i++) {
+				PredictionDashboard predictionDashboard = predictionDashboards.get(i);
+				session.save(predictionDashboard);
+				if ( i % 1000 == 0 ) { //20, same as the JDBC batch size
+					//flush a batch of inserts and release memory:
+					session.flush();
+					session.clear();
+				}
+			}
+
+			session.flush();//do the remaining ones
+			session.clear();
+
+
 		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			e.printStackTrace();
 			tx.rollback();
 		}
-		
+
 		tx.commit();
 		session.close();
+		
 		return predictionDashboards;
 	}
 	
@@ -139,7 +163,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 			for (int counter = 0; counter < predictionDashboards.size(); counter++) {
 				PredictionDashboard p=predictionDashboards.get(counter);
 				prep.setString(1, p.getCanonQsarSmiles());
-				prep.setLong(2, p.getFk_dsstox_records_id());
+				prep.setLong(2, p.getDsstoxRecord().getId());
 				prep.setLong(3, p.getModel().getId());
 				
 				if (p.getPredictionValue()==null) {

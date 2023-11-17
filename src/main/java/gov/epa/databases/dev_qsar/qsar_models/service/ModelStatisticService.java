@@ -28,4 +28,8 @@ public interface ModelStatisticService {
 
 	public ModelStatistic update(ModelStatistic modelStatistic, Session session) throws ConstraintViolationException;
 
+	public List<ModelStatistic> getAll();
+
+	public List<ModelStatistic> getAll(Session session);
+
 }

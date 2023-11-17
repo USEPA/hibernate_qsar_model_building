@@ -23,8 +23,6 @@ public class QsarDatasetsSession {
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.PropertyCategory.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.PropertyInCategory.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.DatasetInDashboard.class);
-        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.DsstoxSnapshot.class);
-        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_datasets.entity.DsstoxRecord.class);
         	
         	config.setProperty("hibernate.connection.driver_class", "org.postgresql.Driver");
         	

@@ -66,6 +66,14 @@ public class DsstoxCompound {
 	@Column(name="indigo_inchi_key")
 	private String indigoInchikey;
 
+	
+	@Column(name="jchem_inchi")
+	private String jchemInchi;
+
+	@Column(name="indigo_inchi")
+	private String indigoInchi;
+
+	
 	@Lob @Basic(fetch=FetchType.LAZY)
 	@Column(name="mol_file")
 	private String molFile;
@@ -80,6 +88,10 @@ public class DsstoxCompound {
 	@Lob @Basic(fetch=FetchType.LAZY)
 	@Column(name="mol_image_png")
 	private byte[] molImage;
+
+	
+	@Column(name="mol_image_png_available")
+	private boolean molImagePNGAvailable;
 
 	@Column(name="mol_weight")
 	private Double molWeight;
@@ -421,4 +433,31 @@ public class DsstoxCompound {
 	public void setPredecessorRelationships(List<CompoundRelationship> predecessorRelationships) {
 		this.predecessorRelationships = predecessorRelationships;
 	}
+
+	public String getJchemInchi() {
+		return jchemInchi;
+	}
+
+	public void setJchemInchi(String jchemInchi) {
+		this.jchemInchi = jchemInchi;
+	}
+
+	public String getIndigoInchi() {
+		return indigoInchi;
+	}
+
+	public void setIndigoInchi(String indigoInchi) {
+		this.indigoInchi = indigoInchi;
+	}
+
+	public boolean isMolImagePNGAvailable() {
+		return molImagePNGAvailable;
+	}
+
+	public void setMolImagePNGAvailable(boolean molImagePNGAvailable) {
+		this.molImagePNGAvailable = molImagePNGAvailable;
+	}
+
+
+
 }

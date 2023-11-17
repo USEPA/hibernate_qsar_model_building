@@ -1,23 +1,31 @@
 package gov.epa.databases.dev_qsar.qsar_models.entity;
 
 import java.util.Date;
+import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointContributor;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
 
 
 @Entity()
@@ -33,9 +41,17 @@ public class PredictionDashboard {
 	private String canonQsarSmiles;
 
 
+//	@NotNull(message="fk_dsstox_records_id required")
+//	@Column(name="fk_dsstox_records_id")
+//	private Long fk_dsstox_records_id;//alternatively can just store DTXCID and/or smiles in this table
+//
+//	@Transient
+//	private DsstoxRecord dsstoxRecord;//temp storage for convenience (dont have in table because in different schema)- maybe move to this schema 
+
+	@ManyToOne
 	@NotNull(message="fk_dsstox_records_id required")
-	@Column(name="fk_dsstox_records_id")
-	private Long fk_dsstox_records_id;
+	@JoinColumn(name="fk_dsstox_records_id")
+	private DsstoxRecord dsstoxRecord;//temp storage for convenience (dont have in table because in different schema)- maybe move to this schema 
 
 	
 	@ManyToOne
@@ -43,6 +59,11 @@ public class PredictionDashboard {
 	@JoinColumn(name="fk_model_id")
 	private Model model;
 	
+	@Column(name="experimental_value")
+	private Double experimentalValue;
+	
+	@Column(name="experimental_string")
+	private String experimentalString;
 	
 	@Column(name="prediction_value")
 	private Double predictionValue;
@@ -71,9 +92,16 @@ public class PredictionDashboard {
 	private String createdBy;
 	
 	public String getKey() {
-		return canonQsarSmiles+"\t"+fk_dsstox_records_id+"\t"+model.getId();
+		return canonQsarSmiles+"\t"+getDsstoxRecord().getId()+"\t"+model.getId();
 	}
 
+	@OneToMany(mappedBy="predictionDashboard", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	private List<QsarPredictedNeighbor> qsarPredictedNeighbors;
+	
+	@OneToMany(mappedBy="predictionDashboard", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	private List<QsarPredictedADEstimate> qsarPredictedADEstimates;
+	
+		
 	public Long getId() {
 		return id;
 	}
@@ -158,13 +186,51 @@ public class PredictionDashboard {
 	}
 
 
-	public Long getFk_dsstox_records_id() {
-		return fk_dsstox_records_id;
+
+	public Double getExperimentalValue() {
+		return experimentalValue;
+	}
+
+	public void setExperimentalValue(Double experimentalValue) {
+		this.experimentalValue = experimentalValue;
+	}
+
+	public String getExperimentalString() {
+		return experimentalString;
+	}
+
+	public void setExperimentalString(String experimentalString) {
+		this.experimentalString = experimentalString;
 	}
 
 
-	public void setFk_dsstox_records_id(Long fk_dsstox_records_id) {
-		this.fk_dsstox_records_id = fk_dsstox_records_id;
+	public List<QsarPredictedNeighbor> getQsarPredictedNeighbors() {
+		return qsarPredictedNeighbors;
+	}
+
+
+	public void setQsarPredictedNeighbors(List<QsarPredictedNeighbor> qsarPredictedNeighbors) {
+		this.qsarPredictedNeighbors = qsarPredictedNeighbors;
+	}
+
+
+	public List<QsarPredictedADEstimate> getQsarPredictedADEstimates() {
+		return qsarPredictedADEstimates;
+	}
+
+
+	public void setQsarPredictedADEstimates(List<QsarPredictedADEstimate> qsarPredictedADEstimates) {
+		this.qsarPredictedADEstimates = qsarPredictedADEstimates;
+	}
+
+
+	public DsstoxRecord getDsstoxRecord() {
+		return dsstoxRecord;
+	}
+
+
+	public void setDsstoxRecord(DsstoxRecord dsstoxRecord) {
+		this.dsstoxRecord = dsstoxRecord;
 	}
 
 }

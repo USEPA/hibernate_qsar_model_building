@@ -14,7 +14,9 @@ public class QsarModelsSession {
         	Configuration config = new Configuration();
         	
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Bob.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Config.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Method.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.MethodAD.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Model.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet.class);
@@ -26,9 +28,13 @@ public class QsarModelsSession {
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelQmrf.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelInConsensusModel.class);
-        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Config.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedADEstimate.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedNeighbor.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Source.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot.class);
 
         	
         	config.setProperty("hibernate.connection.driver_class", "org.postgresql.Driver");

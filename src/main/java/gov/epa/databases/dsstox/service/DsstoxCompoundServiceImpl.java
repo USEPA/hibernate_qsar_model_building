@@ -13,6 +13,7 @@ import gov.epa.databases.dsstox.DsstoxSession;
 import gov.epa.databases.dsstox.dao.DsstoxCompoundDao;
 import gov.epa.databases.dsstox.dao.DsstoxCompoundDaoImpl;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class DsstoxCompoundServiceImpl implements DsstoxCompoundService {
 
@@ -53,14 +54,29 @@ public class DsstoxCompoundServiceImpl implements DsstoxCompoundService {
 		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
 		return findAll(session);
 	}
-
 	
+	@Override
+	public List<DsstoxCompound> findAll(int offset,int limit) {
+		Session session = DsstoxSession.getSessionFactory().getCurrentSession();
+		return findAll(session,offset,limit);
+	}
+
 	
 	@Override
 	public List<DsstoxCompound> findAll(Session session) {
 		Transaction t = session.beginTransaction();
 		DsstoxCompoundDao compoundDao = new DsstoxCompoundDaoImpl();
 		List<DsstoxCompound> compounds = compoundDao.findAll(session);
+		t.rollback();
+		return compounds;
+	}
+	
+	
+	@Override
+	public List<DsstoxCompound> findAll(Session session,int offset,int limit) {
+		Transaction t = session.beginTransaction();
+		DsstoxCompoundDao compoundDao = new DsstoxCompoundDaoImpl();
+		List<DsstoxCompound> compounds = compoundDao.findAll(session,offset,limit);
 		t.rollback();
 		return compounds;
 	}
@@ -186,30 +202,47 @@ public class DsstoxCompoundServiceImpl implements DsstoxCompoundService {
 	}
 	
 	public static void main(String[] args) {
+//		DsstoxCompoundServiceImpl d=new DsstoxCompoundServiceImpl();
+		
+//		System.out.println("here");
+		
+//		List<String> dtxcids=new ArrayList<>();
+//		dtxcids.add("DTXCID501515091");
+//		dtxcids.add("DTXCID301515095");
+//		dtxcids.add("DTXCID201323318");
+//		dtxcids.add("DTXCID901475302");
+//		dtxcids.add("DTXCID701508652");
+//		dtxcids.add("DTXCID701508769");
+//		dtxcids.add("DTXCID101509002");
+//		dtxcids.add("DTXCID001508651");
+//		dtxcids.add("DTXCID201508807");
+//		dtxcids.add("DTXCID801766110");
+//		dtxcids.add("DTXCID501506236");
+//		dtxcids.add("DTXCID401513880");
+//		dtxcids.add("DTXCID30509096");//not markush
+		
+		
+//		List<DsstoxRecord>recs=d.findAsDsstoxRecordsByDtxcidIn(dtxcids);
+//		for (DsstoxRecord rec:recs) {
+//		System.out.println(rec.dsstoxCompoundId+"\t"+rec.qsarReadySmiles);
+		//	}
+		
+		
 		DsstoxCompoundServiceImpl d=new DsstoxCompoundServiceImpl();
-		List<String> dtxcids=new ArrayList<>();
+
+//		String dtxcid="DTXCID20135";
+//		List<DsstoxRecord>recs=d.findAsDsstoxRecordsByDtxcid(dtxcid);
+//		System.out.println(Utilities.gson.toJson(recs));
+//		
+//		DsstoxCompound c=d.findByDtxcid(dtxcid);
+//		System.out.println(c.getChemspiderId());
 		
-		dtxcids.add("DTXCID501515091");
-		dtxcids.add("DTXCID301515095");
-		dtxcids.add("DTXCID201323318");
-		dtxcids.add("DTXCID901475302");
-		dtxcids.add("DTXCID701508652");
-		dtxcids.add("DTXCID701508769");
-		dtxcids.add("DTXCID101509002");
-		dtxcids.add("DTXCID001508651");
-		dtxcids.add("DTXCID201508807");
-		dtxcids.add("DTXCID801766110");
-		dtxcids.add("DTXCID501506236");
-		dtxcids.add("DTXCID401513880");
-		dtxcids.add("DTXCID30509096");//not markush
+		List<DsstoxCompound>compounds=d.findAll(0, 1);
+		DsstoxCompound c=compounds.get(0);
+		System.out.println(c.getDsstoxCompoundId());
 		
 		
-		List<DsstoxRecord>recs=d.findAsDsstoxRecordsByDtxcidIn(dtxcids);
 		
-		for (DsstoxRecord rec:recs) {
-			System.out.println(rec.dsstoxCompoundId+"\t"+rec.qsarReadySmiles);
-			
-		}
 	}
 
 }

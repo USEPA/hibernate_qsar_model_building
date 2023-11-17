@@ -1,4 +1,4 @@
-package gov.epa.databases.dev_qsar.qsar_datasets.entity;
+package gov.epa.databases.dev_qsar.qsar_models.entity;
 
 /**
 * @author TMARTI02

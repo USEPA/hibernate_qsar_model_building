@@ -54,4 +54,8 @@ public interface DsstoxCompoundService {
 
 	public List<DsstoxCompound> findAll();
 
+	public List<DsstoxCompound> findAll(Session session, int offset, int limit);
+
+	public List<DsstoxCompound> findAll(int offset, int limit);
+
 }

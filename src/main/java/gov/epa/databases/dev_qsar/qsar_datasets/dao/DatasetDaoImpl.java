@@ -1,5 +1,7 @@
 package gov.epa.databases.dev_qsar.qsar_datasets.dao;
 
+import java.util.List;
+
 import org.hibernate.Session;
 import org.hibernate.query.Query;
 
@@ -11,6 +13,10 @@ public class DatasetDaoImpl implements DatasetDao {
 	private static final String HQL_BY_ID = "from Dataset d where d.id = :datasetId";
 	private static final String HQL_BY_NAME = 
 			"from Dataset d where d.name = :datasetName";
+	
+	private static final String HQL_ALL = 
+			"from Dataset";
+
 	
 	@Override
 	public Dataset findByName(String datasetName, Session session) {
@@ -27,5 +33,13 @@ public class DatasetDaoImpl implements DatasetDao {
 		query.setParameter("datasetId", datasetId);
 		return (Dataset) query.uniqueResult();
 	}
+	
+	@Override
+	public List<Dataset> findAll(Session session) {
+		if (session==null) { session = QsarDatasetsSession.getSessionFactory().getCurrentSession(); }
+		Query query = session.createQuery(HQL_ALL);
+		return query.list();
+	}
+
 
 }

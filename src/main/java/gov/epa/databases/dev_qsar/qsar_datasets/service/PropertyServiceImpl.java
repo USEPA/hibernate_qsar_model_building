@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_datasets.service;
 
+import java.util.List;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
@@ -10,6 +11,10 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 
 import gov.epa.databases.dev_qsar.DevQsarValidator;
+import gov.epa.databases.dev_qsar.exp_prop.ExpPropSession;
+import gov.epa.databases.dev_qsar.exp_prop.dao.ExpPropPropertyDao;
+import gov.epa.databases.dev_qsar.exp_prop.dao.ExpPropPropertyDaoImpl;
+import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
 import gov.epa.databases.dev_qsar.qsar_datasets.QsarDatasetsSession;
 import gov.epa.databases.dev_qsar.qsar_datasets.dao.PropertyDao;
 import gov.epa.databases.dev_qsar.qsar_datasets.dao.PropertyDaoImpl;
@@ -63,5 +68,21 @@ public class PropertyServiceImpl implements PropertyService {
 		
 		return property;
 	}
+	
+	@Override
+	public List<Property> findAll() {
+		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
+		return findAll(session);
+	}
+	
+	@Override
+	public List<Property> findAll(Session session) {
+		Transaction t = session.beginTransaction();
+		PropertyDao propertyDao = new PropertyDaoImpl();
+		List<Property> propertys = propertyDao.findAll(session);
+		t.rollback();
+		return propertys;
+	}
+
 
 }

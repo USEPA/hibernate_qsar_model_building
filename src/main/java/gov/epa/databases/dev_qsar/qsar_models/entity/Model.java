@@ -49,9 +49,13 @@ public class Model {
 	@Column(name="descriptor_set_name")
 	private String descriptorSetName;
 
-	@Column(name="source")
-	private String source;
+//	@Column(name="source")
+//	private String source;
 	
+	@ManyToOne
+	@JoinColumn(name="fk_source_id")
+	private Source source;
+
 	
 	@NotNull(message="Dataset name required")
 	@Column(name="dataset_name")
@@ -85,7 +89,11 @@ public class Model {
 	@Column(name="created_by")
 	private String createdBy;
 	
+	@Column(name="url_scatter_plot")
+	private String urlScatterPlot;
 	
+	@Column(name="url_histogram")
+	private String urlHistogram;
 	
 	
 //	@OneToOne(mappedBy="model", cascade=CascadeType.ALL, fetch=FetchType.LAZY, optional=false)
@@ -94,18 +102,18 @@ public class Model {
 	@OneToMany(mappedBy="model", cascade=CascadeType.ALL)
 	private List<ModelInModelSet> modelInModelSets;
 	
-	@OneToMany(mappedBy="model", cascade=CascadeType.ALL)
+	@OneToMany(mappedBy="model", fetch=FetchType.EAGER,cascade=CascadeType.ALL)
 	private List<ModelStatistic> modelStatistics;
 	
 	@OneToMany(mappedBy="model", cascade=CascadeType.ALL)
 	private List<Prediction> predictions;
 	
-	@OneToMany(mappedBy="consensusModel", fetch=FetchType.EAGER, cascade=CascadeType.ALL)
+	@OneToMany(mappedBy="consensusModel", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	private List<ModelInConsensusModel> modelsInConsensusModel;
 	
 	public Model() {}
 	
-	public Model(String name, Method method, String descriptorSetName, String datasetName, String splittingName, String source, String createdBy) {
+	public Model(String name, Method method, String descriptorSetName, String datasetName, String splittingName, Source source, String createdBy) {
 		this.setName(name);
 		this.setMethod(method);
 		this.setDescriptorSetName(descriptorSetName);
@@ -116,7 +124,7 @@ public class Model {
 	}
 	
 	public Model(String name, Method method, DescriptorEmbedding descriptorEmbedding, 
-			String descriptorSetName, String datasetName, String splittingName, String source,String createdBy) {
+			String descriptorSetName, String datasetName, String splittingName, Source source,String createdBy) {
 		this.setName(name);
 		this.setMethod(method);
 		this.setDescriptorEmbedding(descriptorEmbedding);
@@ -219,11 +227,11 @@ public class Model {
 		this.hyperparameters = hyperparameters;
 	}
 
-	public String getSource() {
+	public Source getSource() {
 		return source;
 	}
 
-	public void setSource(String source) {
+	public void setSource(Source source) {
 		this.source = source;
 	}
 
@@ -241,6 +249,30 @@ public class Model {
 
 	public void setDetails(byte[] details) {
 		this.details = details;
+	}
+
+	public List<ModelStatistic> getModelStatistics() {
+		return modelStatistics;
+	}
+
+	public void setModelStatistics(List<ModelStatistic> modelStatistics) {
+		this.modelStatistics = modelStatistics;
+	}
+
+	public String getUrlScatterPlot() {
+		return urlScatterPlot;
+	}
+
+	public void setUrlScatterPlot(String urlScatterPlot) {
+		this.urlScatterPlot = urlScatterPlot;
+	}
+
+	public String getUrlHistogram() {
+		return urlHistogram;
+	}
+
+	public void setUrlHistogram(String urlHistogram) {
+		this.urlHistogram = urlHistogram;
 	}
 
 }

@@ -11,8 +11,11 @@ import org.hibernate.Transaction;
 
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
+import gov.epa.databases.dev_qsar.qsar_models.dao.ModelDao;
+import gov.epa.databases.dev_qsar.qsar_models.dao.ModelDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.dao.StatisticDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.StatisticDaoImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 
@@ -84,6 +87,21 @@ public class StatisticServiceImpl implements StatisticService {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-	}	
+	}
+
+	@Override
+	public List<Statistic> getAll() {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return getAll(session);
+	}
+
+	@Override
+	public List<Statistic> getAll(Session session) {
+		Transaction t = session.beginTransaction();
+		StatisticDao dao = new StatisticDaoImpl();
+		List<Statistic> statistics = dao.getAll(session);
+		t.rollback();
+		return statistics;
+	}
 
 }

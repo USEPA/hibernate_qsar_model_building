@@ -18,6 +18,10 @@ import gov.epa.databases.dev_qsar.qsar_datasets.dao.DatasetDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointContributor;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
+import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
+import gov.epa.databases.dev_qsar.qsar_models.dao.MethodADDao;
+import gov.epa.databases.dev_qsar.qsar_models.dao.MethodADDaoImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.MethodAD;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 
 public class DatasetServiceImpl implements DatasetService {
@@ -152,6 +156,22 @@ public class DatasetServiceImpl implements DatasetService {
 		return dataset;
 	}
 	
+	
+	@Override
+	public List<Dataset> findAll() {
+		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();
+		return findAll(session);
+	}
+	
+	@Override
+	public List<Dataset> findAll(Session session) {
+		Transaction t = session.beginTransaction();
+		DatasetDao dao = new DatasetDaoImpl();
+		List<Dataset> datasets = dao.findAll(session);
+		t.rollback();
+		return datasets;
+	}
+
 
 
 }

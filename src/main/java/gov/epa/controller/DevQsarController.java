@@ -42,7 +42,7 @@ public class DevQsarController {
 		
 		ModelWebService modelWs = new ModelWebService(modelWsServer, modelWsPort);
 		WebServiceModelBuilder mb = new WebServiceModelBuilder(modelWs, lanId);
-		Long modelId = mb.build(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName,false);
+		Long modelId = mb.build(datasetName, descriptorSetName, splittingName, removeLogDescriptors, methodName,false,false, false);
 		
 		PredictionReportGenerator gen = new PredictionReportGenerator();
 		return gen.generateForModelPredictions(modelId);

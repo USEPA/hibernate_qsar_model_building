@@ -1,4 +1,4 @@
-package gov.epa.databases.dev_qsar.qsar_datasets.entity;
+package gov.epa.databases.dev_qsar.qsar_models.entity;
 
 import java.util.ArrayList;
 
@@ -27,6 +27,8 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 
 @Entity
@@ -37,8 +39,8 @@ public class DsstoxRecord {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name="fk_compounds_id")
-	private Long fk_compounds_id;
+	@Column(name="cid")
+	private Long cid;
 	
 	@NotBlank(message="smiles required")
 	@Column(name="smiles")
@@ -49,7 +51,17 @@ public class DsstoxRecord {
 
 	@Column(name="dtxsid")
 	private String dtxsid;
+
+	@Column(name="casrn")
+	private String casrn;
 	
+	@Column(name="preferred_name")
+	private String preferredName;
+	
+	//These should all be true for the records with both sid and cid
+	@Column(name="mol_image_png_available")
+	private Boolean molImagePNGAvailable;
+
 	
 	@ManyToOne
 	@NotNull(message="DsstoxSnapshot required")
@@ -73,7 +85,11 @@ public class DsstoxRecord {
 	@NotBlank(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
+
 	
+	@Column(name="mol_weight")
+	private Double molWeight;
+
 	public DsstoxRecord() {}
 	
 	
@@ -83,22 +99,37 @@ public class DsstoxRecord {
 		
 		for (DsstoxCompound c:compounds) {
 			String dtxsid=null;
+			String casrn=null;
+			String preferredName=null;
+			
 			if(c.getGenericSubstanceCompound()!=null) {
 				dtxsid=c.getGenericSubstanceCompound().getGenericSubstance().getDsstoxSubstanceId();
+				casrn=c.getGenericSubstanceCompound().getGenericSubstance().getCasrn();
+				preferredName=c.getGenericSubstanceCompound().getGenericSubstance().getPreferredName();
 			}
-			DsstoxRecord record=new DsstoxRecord(snapshot, c.getId(),  dtxsid, c.getDsstoxCompoundId(),c.getSmiles(),lanId);
+			
+			DsstoxRecord record=new DsstoxRecord(snapshot, c.getMolWeight(), c.getId(),  dtxsid, c.getDsstoxCompoundId(),c.getSmiles(),c.isMolImagePNGAvailable(),casrn,preferredName,lanId);
+			
+			if (!c.isMolImagePNGAvailable())
+				System.out.println(dtxsid+"\t"+c.isMolImagePNGAvailable());
+			
+			
 			records.add(record);
 		}
 		return records;
 	}
 	
-	public DsstoxRecord(DsstoxSnapshot dsstoxSnapshot,Long fk_compounds_id, String DTXSID,String DTXCID, String smiles, String createdBy) {
-		this.fk_compounds_id=fk_compounds_id;
+	public DsstoxRecord(DsstoxSnapshot dsstoxSnapshot,Double mol_weight, Long fk_compounds_id, String DTXSID,String DTXCID, String smiles,boolean isMolImageAvailable, String casrn, String preferredName, String createdBy) {
+		this.molWeight=mol_weight;
+		this.cid=fk_compounds_id;
 		this.dsstoxSnapshot=dsstoxSnapshot;
 		this.dtxcid=DTXCID;
 		this.dtxsid=DTXSID;
 		this.smiles=smiles;
 		this.createdBy=createdBy;
+		this.casrn=casrn;
+		this.preferredName=preferredName;
+		this.setMolImagePNGAvailable(isMolImageAvailable);
 	}
 
 
@@ -192,14 +223,58 @@ public class DsstoxRecord {
 	}
 
 
-	public Long getFk_compounds_id() {
-		return fk_compounds_id;
+
+
+	public Double getMolWeight() {
+		return molWeight;
 	}
 
 
-	public void setFk_compounds_id(Long fk_compounds_id) {
-		this.fk_compounds_id = fk_compounds_id;
+	public void setMolWeight(Double molWeight) {
+		this.molWeight = molWeight;
 	}
+
+
+	public String getPreferredName() {
+		return preferredName;
+	}
+
+
+	public void setPreferredName(String preferredName) {
+		this.preferredName = preferredName;
+	}
+
+
+	public String getCasrn() {
+		return casrn;
+	}
+
+
+	public void setCasrn(String casrn) {
+		this.casrn = casrn;
+	}
+
+
+	public Boolean isMolImagePNGAvailable() {
+		return molImagePNGAvailable;
+	}
+
+
+	public void setMolImagePNGAvailable(boolean molImagePNGAvailable) {
+		this.molImagePNGAvailable = molImagePNGAvailable;
+	}
+
+
+	public Long getCid() {
+		return cid;
+	}
+
+
+	public void setCid(Long cid) {
+		this.cid = cid;
+	}
+
+
 
 
 }

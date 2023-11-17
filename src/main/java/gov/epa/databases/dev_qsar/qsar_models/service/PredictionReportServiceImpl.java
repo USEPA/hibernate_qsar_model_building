@@ -19,6 +19,7 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.PredictionReportDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.PredictionReportDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport;
+import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedNeighbor;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.entity.GenericSubstance;
 import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
@@ -75,6 +76,41 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 		}
 		
 		return predictionReport;
+	}
+	
+	@Override
+	public List<PredictionReport> createBatch(List<PredictionReport> reports) throws ConstraintViolationException {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return createBatch(reports, session);
+	}
+
+	@Override
+	public List<PredictionReport> createBatch(List<PredictionReport> reports, Session session)
+			throws ConstraintViolationException {
+
+		Transaction tx = session.beginTransaction();
+		try {
+			for (int i = 0; i < reports.size(); i++) {
+				PredictionReport report = reports.get(i);
+				session.save(report);
+				if ( i % 1000 == 0 ) { //50, same as the JDBC batch size
+					//flush a batch of inserts and release memory:
+					session.flush();
+					session.clear();
+				}
+			}
+
+			session.flush();//do the remaining ones
+			session.clear();
+
+
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			tx.rollback();
+		}
+
+		tx.commit();
+		session.close();
+		return reports;
 	}
 
 	@Override
@@ -324,7 +360,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 		long t1a=System.currentTimeMillis();
 		String sql2="select id from qsar_models.predictions_dashboard where\n"+
 				"canon_qsar_smiles='"+pd.getCanonQsarSmiles()+"'\n"+
-				"and fk_dsstox_records_id="+pd.getFk_dsstox_records_id()+"\n"+
+				"and fk_dsstox_records_id="+pd.getDsstoxRecord().getId()+"\n"+
 				"and fk_model_id="+pd.getModel().getId()+";";
 		
 //				System.out.println(sql2);		

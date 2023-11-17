@@ -1,4 +1,4 @@
-package gov.epa.databases.dev_qsar.qsar_datasets.service;
+package gov.epa.databases.dev_qsar.qsar_models.service;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -7,22 +7,17 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
 import gov.epa.databases.dev_qsar.DevQsarValidator;
-import gov.epa.databases.dev_qsar.qsar_datasets.QsarDatasetsSession;
-import gov.epa.databases.dev_qsar.qsar_datasets.dao.DataPointDao;
-import gov.epa.databases.dev_qsar.qsar_datasets.dao.DataPointDaoImpl;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.DsstoxRecord;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.DsstoxSnapshot;
+import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
+import gov.epa.databases.dev_qsar.qsar_models.dao.DsstoxRecordDaoImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 
 public class DsstoxRecordServiceImpl  {
@@ -127,7 +122,7 @@ public class DsstoxRecordServiceImpl  {
 		String [] fieldNames= {"dtxcid","dtxsid","smiles","fk_dsstox_snapshot_id","created_by","created_at"};
 		int batchSize=1000;
 		
-		String sql="INSERT INTO qsar_datasets.dsstox_records (";
+		String sql="INSERT INTO qsar_models.dsstox_records (";
 		
 		for (int i=0;i<fieldNames.length;i++) {
 			sql+=fieldNames[i];
@@ -178,7 +173,7 @@ public class DsstoxRecordServiceImpl  {
 	
 	public Hashtable<String,Long> getRecordIdHashtable(DsstoxSnapshot snapshot) {
 		
-		String sql2="select dtxcid, id from qsar_datasets.dsstox_records "
+		String sql2="select dtxcid, id from qsar_models.dsstox_records "
 				+ "where fk_dsstox_snapshot_id="+snapshot.getId();
 
 		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql2);
@@ -209,7 +204,7 @@ public class DsstoxRecordServiceImpl  {
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		
 		
-		String SQL_UPDATE = "UPDATE qsar_datasets.dsstox_records SET fk_compounds_id=?, updated_by=?, updated_at=current_timestamp WHERE dtxcid=?";
+		String SQL_UPDATE = "UPDATE qsar_models.dsstox_records SET cid=?, updated_by=?, updated_at=current_timestamp WHERE dtxcid=?";
 		int batchSize=1000;
 		
 		try {
@@ -222,11 +217,53 @@ public class DsstoxRecordServiceImpl  {
 				DsstoxRecord record=records.get(counter);
 				
 				
-				prep.setLong(1, record.getFk_compounds_id());
+				prep.setLong(1, record.getCid());
 				prep.setString(2, lanId);
 				prep.setString(3, record.getDtxcid());
 				prep.addBatch();
 
+				if (counter % batchSize == 0 && counter!=0) {
+					// System.out.println(counter);
+					prep.executeBatch();
+					conn.commit();
+				}
+				
+//				if(true) break;
+				
+			}
+
+			int[] count = prep.executeBatch();// do what's left
+			long t2=System.currentTimeMillis();
+			System.out.println("time to post "+records.size()+" records using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
+			conn.commit();
+//			conn.setAutoCommit(true);
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public void updateMolWeightBatchSQL(List<DsstoxRecord> records,String lanId) {
+
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		
+		
+		String SQL_UPDATE = "UPDATE qsar_models.dsstox_records SET mol_weight=?, updated_by=?, updated_at=current_timestamp WHERE dtxcid=?";
+		int batchSize=1000;
+		
+		try {
+			conn.setAutoCommit(false);
+			PreparedStatement prep = conn.prepareStatement(SQL_UPDATE);
+			prep.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+			long t1=System.currentTimeMillis();
+
+			for (int counter = 0; counter < records.size(); counter++) {
+				DsstoxRecord record=records.get(counter);
+				
+				prep.setDouble(1, record.getMolWeight());
+				prep.setString(2, lanId);
+				prep.setString(3, record.getDtxcid());
 				prep.addBatch();
 				
 				if (counter % batchSize == 0 && counter!=0) {
@@ -250,6 +287,69 @@ public class DsstoxRecordServiceImpl  {
 		}
 		
 	}
+	public void updatePreferredNameCASRNBatchSQL(List<DsstoxRecord> records, String lanId) {
+Connection conn=SqlUtilities.getConnectionPostgres();
+		
+		
+		String SQL_UPDATE = "UPDATE qsar_models.dsstox_records SET preferred_name=?, casrn=?, updated_by=?, updated_at=current_timestamp WHERE dtxcid=?";
+		int batchSize=1000;
+		
+		try {
+			conn.setAutoCommit(false);
+			PreparedStatement prep = conn.prepareStatement(SQL_UPDATE);
+			prep.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+			long t1=System.currentTimeMillis();
+
+			for (int counter = 0; counter < records.size(); counter++) {
+				DsstoxRecord record=records.get(counter);
+				
+				
+//				System.out.println(record.getPreferredName()+"\t"+record.getCasrn());
+				
+				prep.setString(1, record.getPreferredName());
+				prep.setString(2, record.getCasrn());
+				prep.setString(3, lanId);
+				prep.setString(4, record.getDtxcid());
+				prep.addBatch();
+				
+				if (counter % batchSize == 0 && counter!=0) {
+					// System.out.println(counter);
+					prep.executeBatch();
+					conn.commit();
+				}
+				
+//				if(true) break;
+				
+			}
+
+			int[] count = prep.executeBatch();// do what's left
+			long t2=System.currentTimeMillis();
+			System.out.println("time to post "+records.size()+" records using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
+			conn.commit();
+//			conn.setAutoCommit(true);
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+
+
+	public List<DsstoxRecord> findAll() {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return findAll(session);
+	}
+	
+
+	
+	public List<DsstoxRecord> findAll(Session session) {
+		Transaction t = session.beginTransaction();
+		DsstoxRecordDaoImpl dao = new DsstoxRecordDaoImpl();
+		List<DsstoxRecord> recs = dao.findAll(session);
+		t.rollback();
+		return recs;
+	}
+
 
 	
 

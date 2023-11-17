@@ -9,8 +9,11 @@ import org.hibernate.Transaction;
 import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.exp_prop.ExpPropSession;
 import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
+import gov.epa.databases.dev_qsar.qsar_models.dao.ModelDao;
+import gov.epa.databases.dev_qsar.qsar_models.dao.ModelDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelStatisticDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelStatisticDaoImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 
 import javax.validation.ConstraintViolation;
@@ -116,5 +119,21 @@ public class ModelStatisticServiceImpl implements ModelStatisticService {
 		return modelStatistic;
 	}
 
+	
+	
+	@Override
+	public List<ModelStatistic> getAll() {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return getAll(session);
+	}
+
+	@Override
+	public List<ModelStatistic> getAll(Session session) {
+		Transaction t = session.beginTransaction();
+		ModelStatisticDao modelDao = new ModelStatisticDaoImpl();
+		List<ModelStatistic> modelStatistics = modelDao.getAll(session);
+		t.rollback();
+		return modelStatistics;
+	}
 
 }

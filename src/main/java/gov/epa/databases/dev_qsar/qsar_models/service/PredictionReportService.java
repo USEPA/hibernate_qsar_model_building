@@ -1,5 +1,7 @@
 package gov.epa.databases.dev_qsar.qsar_models.service;
 
+import java.util.List;
+
 import javax.validation.ConstraintViolationException;
 
 import org.hibernate.Session;
@@ -19,5 +21,10 @@ public interface PredictionReportService {
 	public void delete(PredictionReport predictionReport);
 	
 	public void delete(PredictionReport predictionReport, Session session);
+
+	public List<PredictionReport> createBatch(List<PredictionReport> reports) throws ConstraintViolationException;
+
+	public 	List<PredictionReport> createBatch(List<PredictionReport> reports, Session session)
+			throws ConstraintViolationException;
 
 }

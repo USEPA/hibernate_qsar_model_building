@@ -17,6 +17,10 @@ public interface PredictionDashboardService {
 
 	public void createSQL(List<PredictionDashboard> predictionDashboards);
 
+	public PredictionDashboard findByIds(Long fk_model_id, Long fk_dsstox_record_id);
+
+	public PredictionDashboard findByIds(Long fk_model_id, Long fk_dsstox_record_id, Session session);
+
 
 }
 

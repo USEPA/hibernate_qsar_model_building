@@ -14,4 +14,8 @@ public interface StatisticService {
 
 	void createBatchSQL(List<Statistic> statistics);
 
+	public List<Statistic> getAll();
+
+	public List<Statistic> getAll(Session session);
+
 }

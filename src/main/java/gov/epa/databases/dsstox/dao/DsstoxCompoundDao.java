@@ -30,6 +30,8 @@ public interface DsstoxCompoundDao {
 
 	public List<DsstoxRecord> findAsDsstoxRecordsByInChiKeyIn(Collection<String> inChiKeys, Session session);
 
-	List<DsstoxCompound> findAll(Session session);
+	public List<DsstoxCompound> findAll(Session session);
+
+	public List<DsstoxCompound> findAll(Session session, int offset, int limit);
 
 }
