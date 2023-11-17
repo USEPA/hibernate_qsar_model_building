@@ -65,4 +65,39 @@ public class Endpoint {
 		System.out.println("Got " + hm.size() + " distinct records from " + tableName);
 		return hm;
 	}
+	
+	/**
+	 * This method uses json files created from DataGrip which outputs a json array
+	 * 
+	 * @param jsonFolderPath
+	 * @return
+	 */
+	public static HashMap<Long, Endpoint> getTableFromJsonFiles2(String jsonFolderPath) {
+		Gson gson = new Gson();
+		HashMap<Long, Endpoint> hm = new HashMap<Long, Endpoint>();
+		File jsonFolder = new File(jsonFolderPath);
+		String[] jsonFileNames = jsonFolder.list();
+		
+		for (String fileName:jsonFileNames) {
+			if (!fileName.startsWith(tableName) || !fileName.endsWith("json")) { continue; }
+			
+			String filePath = jsonFolderPath + File.separator + fileName;
+			Endpoint[] table = null;
+			try {
+				table = gson.fromJson(new FileReader(filePath), Endpoint[].class);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			
+			if (table==null || table.length==0) { continue; }
+			
+			for (Endpoint t:table) {
+				hm.put(t.id, t);
+			}
+		}
+		
+		System.out.println("Got " + hm.size() + " distinct records from " + tableName);
+		return hm;
+	}
+
 }

@@ -96,4 +96,38 @@ public class MeasuredProperty {
 		System.out.println("Got " + hm.size() + " distinct records from " + tableName);
 		return hm;
 	}
+	
+	/**
+	 * This method uses json files created from DataGrip which outputs a json array
+	 * 
+	 * @param jsonFolderPath
+	 * @return
+	 */
+	public static HashMap<Long, MeasuredProperty> getTableFromJsonFiles2(String jsonFolderPath) {
+		Gson gson = new Gson();
+		HashMap<Long, MeasuredProperty> hm = new HashMap<Long, MeasuredProperty>();
+		File jsonFolder = new File(jsonFolderPath);
+		String[] jsonFileNames = jsonFolder.list();
+		
+		for (String fileName:jsonFileNames) {
+			if (!fileName.startsWith(tableName) || !fileName.endsWith("json")) { continue; }
+			
+			String filePath = jsonFolderPath + File.separator + fileName;
+			MeasuredProperty[] table = null;
+			try {
+				table = gson.fromJson(new FileReader(filePath), MeasuredProperty[].class);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+			if (table==null || table.length==0) { continue; }
+			
+			for (MeasuredProperty t:table) {
+				hm.put(t.id, t);
+			}
+		}
+		
+		System.out.println("Got " + hm.size() + " distinct records from " + tableName);
+		return hm;
+	}
 }

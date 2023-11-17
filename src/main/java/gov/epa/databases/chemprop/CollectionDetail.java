@@ -7,6 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
@@ -73,6 +74,41 @@ public class CollectionDetail {
 			
 			for (CollectionDetail t:table) {
 				hm.put(t.id, t);
+			}
+		}
+		
+		System.out.println("Got " + hm.size() + " distinct records from " + tableName);
+		return hm;
+	}
+	
+	/**
+	 * This method uses json files created from DataGrip which outputs a json array
+	 * 
+	 * @param jsonFolderPath
+	 * @return
+	 */
+	public static HashMap<Long, CollectionDetail> getTableFromJsonFiles2(String jsonFolderPath) {
+		Gson gson = new Gson();
+		HashMap<Long, CollectionDetail> hm = new HashMap<Long, CollectionDetail>();
+		File jsonFolder = new File(jsonFolderPath);
+		String[] jsonFileNames = jsonFolder.list();
+		
+		for (String fileName:jsonFileNames) {
+			if (!fileName.startsWith(tableName) || !fileName.endsWith("json")) { continue; }
+			
+			String filePath = jsonFolderPath + File.separator + fileName;
+			CollectionDetail[] table = null;
+			try {
+				table = gson.fromJson(new FileReader(filePath), CollectionDetail[].class);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			
+			if (table==null || table.length==0) continue; 
+			
+			for (CollectionDetail t:table) {
+				hm.put(t.id, t);
+//				System.out.println(gson.toJson(t));
 			}
 		}
 		

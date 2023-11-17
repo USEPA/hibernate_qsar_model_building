@@ -74,4 +74,32 @@ public class SourceDetail {
 		System.out.println("Got " + hm.size() + " distinct records from " + tableName);
 		return hm;
 	}
+	
+	public static HashMap<Long, SourceDetail> getTableFromJsonFiles2(String jsonFolderPath) {
+		Gson gson = new Gson();
+		HashMap<Long, SourceDetail> hm = new HashMap<Long, SourceDetail>();
+		File jsonFolder = new File(jsonFolderPath);
+		String[] jsonFileNames = jsonFolder.list();
+		
+		for (String fileName:jsonFileNames) {
+			if (!fileName.startsWith(tableName) || !fileName.endsWith("json")) { continue; }
+			
+			String filePath = jsonFolderPath + File.separator + fileName;
+			SourceDetail[] table = null;
+			try {
+				table = gson.fromJson(new FileReader(filePath), SourceDetail[].class);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			
+			if (table==null || table.length==0) { continue; }
+			
+			for (SourceDetail t:table) {
+				hm.put(t.id, t);
+			}
+		}
+		
+		System.out.println("Got " + hm.size() + " distinct records from " + tableName);
+		return hm;
+	}
 }

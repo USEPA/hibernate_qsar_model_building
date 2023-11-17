@@ -605,8 +605,13 @@ public class ExperimentalRecordLoader {
 
 		Connection conn=SqlUtilities.getConnectionPostgres();
 
-		int propertyId=22;
-		int public_source_id=79;
+//		int propertyId=22;
+//		int public_source_id=79;
+		
+		int propertyId=19;
+		int public_source_id=73;//ToxValBCF
+//		int public_source_id=74;//Burkhard_BCF
+		
 		
 		String sqlParameters="delete from exp_prop.parameter_values pv2 using exp_prop.property_values pv\n"+
 				"where pv2.fk_property_value_id=pv.id and pv.fk_property_id="+propertyId;
@@ -621,9 +626,9 @@ public class ExperimentalRecordLoader {
 		String sqlLiteratureSources="delete from exp_prop.literature_sources where created_by='tmarti02'";
 
 		SqlUtilities.runSQLUpdate(conn, sqlParameters);
-		SqlUtilities.runSQLUpdate(conn, sqlPropertyValues);
-		SqlUtilities.runSQLUpdate(conn, sqlSourceCHemicals);
-		SqlUtilities.runSQLUpdate(conn, sqlLiteratureSources);
+//		SqlUtilities.runSQLUpdate(conn, sqlPropertyValues);
+//		SqlUtilities.runSQLUpdate(conn, sqlSourceCHemicals);
+//		SqlUtilities.runSQLUpdate(conn, sqlLiteratureSources);
 				
 	}
 	
@@ -634,9 +639,9 @@ public class ExperimentalRecordLoader {
 	
 		deleteExpPropData();
 		
-		ExperimentalRecordLoader.loadSourceChemicalMap=true;
-		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("tmarti02");
-		loader.loadAcuteAquaticToxicityData();
+//		ExperimentalRecordLoader.loadSourceChemicalMap=true;
+//		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("tmarti02");
+//		loader.loadAcuteAquaticToxicityData();
 		
 		
 		

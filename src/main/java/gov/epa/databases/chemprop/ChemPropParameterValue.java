@@ -62,4 +62,38 @@ public class ChemPropParameterValue {
 		System.out.println("Got " + hm.size() + " distinct records from " + tableName);
 		return hm;
 	}
+	
+	/**
+	 * This method uses json files created from DataGrip which outputs a json array
+	 * 
+	 * @param jsonFolderPath
+	 * @return
+	 */
+	public static HashMap<Long, ChemPropParameterValue> getTableFromJsonFiles2(String jsonFolderPath) {
+		Gson gson = new Gson();
+		HashMap<Long, ChemPropParameterValue> hm = new HashMap<Long, ChemPropParameterValue>();
+		File jsonFolder = new File(jsonFolderPath);
+		String[] jsonFileNames = jsonFolder.list();
+		
+		for (String fileName:jsonFileNames) {
+			if (!fileName.startsWith(tableName) || !fileName.endsWith("json")) { continue; }
+			
+			String filePath = jsonFolderPath + File.separator + fileName;
+			ChemPropParameterValue[] table = null;
+			try {
+				table = gson.fromJson(new FileReader(filePath), ChemPropParameterValue[].class);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			
+			if (table==null || table.length==0) { continue; }
+			
+			for (ChemPropParameterValue t:table) {
+				hm.put(t.id, t);
+			}
+		}
+		
+		System.out.println("Got " + hm.size() + " distinct records from " + tableName);
+		return hm;
+	}
 }

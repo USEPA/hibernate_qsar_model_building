@@ -91,7 +91,7 @@ public class ChemPropLoader {
 			};
 	
 	public ChemPropLoader() {
-		init();
+//		init();
 	}
 	
 	private void init() {
@@ -343,6 +343,183 @@ public class ChemPropLoader {
 		return failedMeasuredProperties;
 	}
 	
+	public List<MeasuredProperty> testLoadAllTables(String restrictEndpointName, String lanId) {
+		HashMap<Long, CollectionDetail> collectionDetails = CollectionDetail.getTableFromJsonFiles2(JSON_FOLDER_PATH);
+		HashMap<Long, Endpoint> endpoints = Endpoint.getTableFromJsonFiles2(JSON_FOLDER_PATH);
+		HashMap<Long, MeasuredProperty> measuredProperties = MeasuredProperty.getTableFromJsonFiles2(JSON_FOLDER_PATH);
+		HashMap<Long, ChemPropParameter> originalParameters = ChemPropParameter.getTableFromJsonFiles2(JSON_FOLDER_PATH);
+		HashMap<Long, ChemPropParameterValue> originalParameterValues = ChemPropParameterValue.getTableFromJsonFiles2(JSON_FOLDER_PATH);
+		HashMap<Long, SourceDetail> sourceDetails = SourceDetail.getTableFromJsonFiles2(JSON_FOLDER_PATH);
+		
+		if(true) return null;
+
+		
+		List<String> badCollectionNamesList = Arrays.asList(ignoreCollectionNames);
+
+		List<MeasuredProperty> failedMeasuredProperties = new ArrayList<MeasuredProperty>();
+		int count = 0;
+		
+		for (Long id:measuredProperties.keySet()) {
+			if (count < 867) {//TODO why are these skipped? TMM
+				count++;
+				continue;
+			}
+			
+			MeasuredProperty measuredProperty = measuredProperties.get(id);
+			
+			// It's labeled "measurement method" but keyed to "collection detail"--Chris, why?!
+			Long collectionDetailId = measuredProperty.fk_measurement_method_id;
+			CollectionDetail collectionDetail = collectionDetails.get(collectionDetailId);
+			
+			if (collectionDetail!=null && collectionDetail.collection_type!=null && collectionDetail.collection_type.equals("ECHA")) {
+				continue;
+			} else if (collectionDetail!=null && badCollectionNamesList.contains(collectionDetail.name)) {
+				continue;
+			}
+			
+			Long endpointId = measuredProperty.fk_endpoint_id;
+			Endpoint endpoint = endpoints.get(endpointId);
+			
+			if (endpoint==null || !endpoint.name.equals(restrictEndpointName)) {
+				continue; // Just load one endpoint at a time for now
+			}
+			
+			Long sourceDetailId = measuredProperty.fk_source_detail_id;
+			SourceDetail sourceDetail = sourceDetails.get(sourceDetailId);
+			
+			String propertyName = correctPropertyName(endpoint.name);
+			String unitName = correctUnitName(endpoint.standard_unit, endpoint.name);
+
+			ExpPropProperty property = propertiesMap.get(propertyName);
+			if (property==null) {
+				property = new ExpPropProperty(propertyName, endpoint.description, lanId);
+				property = expPropPropertyService.create(property);
+				propertiesMap.put(propertyName, property);
+			}
+			
+			ExpPropUnit unit = unitsMap.get(unitName);
+			if (unit==null) {
+				unit = new ExpPropUnit(unitName, unitName, lanId);
+				unit = expPropUnitService.create(unit);
+				unitsMap.put(unitName, unit);
+			}
+			
+			Set<String> acceptableUnits = propertyAcceptableUnitsMap.get(propertyName);
+			if (!acceptableUnits.contains(unitName)) {
+				PropertyAcceptableUnit pau = new PropertyAcceptableUnit(property, unit, lanId);
+				propertyAcceptableUnitService.create(pau);
+				acceptableUnits.add(unitName);
+				propertyAcceptableUnitsMap.put(propertyName, acceptableUnits);
+			}
+			
+			PropertyValue propertyValue = measuredProperty.asPropertyValue(lanId);
+			propertyValue.setProperty(property);
+			propertyValue.setUnit(unit);
+			
+			SourceChemical sourceChemical = getSourceChemical(measuredProperty, lanId);
+			
+			if (collectionDetail!=null) {
+				PublicSource ps = publicSourcesMap.get(collectionDetail.name);
+				if (ps==null) {
+					ps = collectionDetail.asPublicSource(lanId);
+					ps = publicSourceService.create(ps);
+					publicSourcesMap.put(ps.getName(), ps);
+				}
+				propertyValue.setPublicSource(ps);
+				sourceChemical.setPublicSource(ps);
+			}
+			
+			if (sourceDetail!=null) {
+				LiteratureSource ls = literatureSourcesMap.get(sourceDetail.name);
+				if (ls==null) {
+					ls = sourceDetail.asLiteratureSource(lanId);
+					ls = literatureSourceService.create(ls);
+					literatureSourcesMap.put(ls.getName(), ls);
+				}
+				propertyValue.setLiteratureSource(ls);
+				sourceChemical.setLiteratureSource(ls);
+			}
+			
+			SourceChemical dbSourceChemical = sourceChemicalService.findMatch(sourceChemical);
+			if (dbSourceChemical==null) {
+				try {
+					sourceChemical = sourceChemicalService.create(sourceChemical);
+				} catch (ConstraintViolationException e) {
+					failedMeasuredProperties.add(measuredProperty);
+					continue;
+				}
+			} else {
+				sourceChemical = dbSourceChemical;
+			}
+			propertyValue.setSourceChemical(sourceChemical);
+			
+			for (Long opvId:originalParameterValues.keySet()) {
+				ChemPropParameterValue opv = originalParameterValues.get(opvId);
+				if (opv.fk_parameter_set_id==measuredProperty.fk_parameter_set_id) {
+					ParameterValue pv = opv.asParameterValue(lanId);
+					
+					ChemPropParameter op = originalParameters.get(opv.fk_parameter_id);
+					Parameter p = parametersMap.get(op.name);
+					if (p==null) {
+						p = new Parameter(op.name, op.description, lanId);
+						p = parameterService.create(p);
+						parametersMap.put(op.name, p);
+					}
+					
+					Set<String> acceptableParameters = propertyAcceptableParametersMap.get(propertyName);
+					if (!acceptableParameters.contains(p.getName())) {
+						PropertyAcceptableParameter pap = new PropertyAcceptableParameter(property, p, lanId);
+						propertyAcceptableParameterService.create(pap);
+						acceptableParameters.add(p.getName());
+						propertyAcceptableParametersMap.put(propertyName, acceptableParameters);
+					}
+					
+					ExpPropUnit u = unitsMap.get(op.standard_unit);
+					if (u==null) {
+						u = new ExpPropUnit(op.standard_unit, op.standard_unit, lanId);
+						u = expPropUnitService.create(u);
+						unitsMap.put(op.standard_unit, u);
+					}
+					
+					Set<String> parAcceptableUnits = parameterAcceptableUnitsMap.get(p.getName());
+					if (!parAcceptableUnits.contains(u.getName())) {
+						ParameterAcceptableUnit par_au = new ParameterAcceptableUnit(p, u, lanId);
+						parameterAcceptableUnitService.create(par_au);
+						parAcceptableUnits.add(u.getName());
+						parameterAcceptableUnitsMap.put(p.getName(), parAcceptableUnits);
+					}
+					
+					pv.setParameter(p);
+					pv.setUnit(u);
+					
+					propertyValue.addParameterValue(pv);
+				}
+			}
+			
+			try {
+				propertyValue = propertyValueService.create(propertyValue);
+			} catch (ConstraintViolationException e) {
+				failedMeasuredProperties.add(measuredProperty);
+				continue;
+			}
+			
+			if (propertyValue.getId()==null) {
+				failedMeasuredProperties.add(measuredProperty);
+			} else {
+				count++;
+			}
+			
+			if (count % 1000==0) {
+				System.out.println("Loaded " + count + " records");
+			}
+		}
+		
+		System.out.println("Loaded " + count + " records");
+		System.out.println("Failed to load " + failedMeasuredProperties.size() + " records");
+		
+		return failedMeasuredProperties;
+	}
+	
 	private static String correctUnitName(String unitName, String endpointName) {
 		if (unitName==null) {
 			if (endpointName.contains("Log") || endpointName.contains("pKa")) {
@@ -426,8 +603,7 @@ public class ChemPropLoader {
 		return endpointName;
 	}
 	
-	public static void main(String[] args) {
-		String[] endpoints = { "LogKow: Octanol-Water" };
+	void runEndpoints(String [] endpoints) {
 		for (String endpoint:endpoints) {
 			ChemPropLoader loader = new ChemPropLoader();
 			List<MeasuredProperty> failedMeasuredProperties = loader.loadAllTables(endpoint, "gsincl01");
@@ -441,5 +617,31 @@ public class ChemPropLoader {
 				}
 			}
 		}
+		
+		
+	}
+	
+	void testRunEndpoints(String [] endpoints) {
+		for (String endpoint:endpoints) {
+			List<MeasuredProperty> failedMeasuredProperties = testLoadAllTables(endpoint, "gsincl01");
+			
+//			if (!failedMeasuredProperties.isEmpty()) {
+//				try (BufferedWriter bw = new BufferedWriter(new FileWriter(JSON_FOLDER_PATH + "/failed/" + endpoint + "_021622.json"))) {
+//					Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+//					bw.write(gson.toJson(failedMeasuredProperties));
+//				} catch (IOException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+		}
+	}
+
+	
+	public static void main(String[] args) {
+		ChemPropLoader c=new ChemPropLoader();
+		String[] endpoints = { "LogKow: Octanol-Water" };
+//		c.runEndpoints(endpoints);
+		c.testRunEndpoints(endpoints);
 	}
 }
