@@ -10,29 +10,30 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 
 @Entity
-@Table(name="dsstox_records", uniqueConstraints={@UniqueConstraint(columnNames = {"dtxcid", "fk_dsstox_snapshot_id"})})
+@Table(name="dsstox_records", uniqueConstraints={@UniqueConstraint(columnNames = {"dtxcid","dtxsid","fk_dsstox_snapshot_id"})})
 public class DsstoxRecord {
 
 	@Id
@@ -61,7 +62,6 @@ public class DsstoxRecord {
 	//These should all be true for the records with both sid and cid
 	@Column(name="mol_image_png_available")
 	private Boolean molImagePNGAvailable;
-
 	
 	@ManyToOne
 	@NotNull(message="DsstoxSnapshot required")
@@ -89,6 +89,11 @@ public class DsstoxRecord {
 	
 	@Column(name="mol_weight")
 	private Double molWeight;
+
+	//TODO cascade not working	
+//	@OneToMany(mappedBy="dsstoxRecord", cascade=CascadeType.ALL, fetch=FetchType.EAGER)
+	@Transient
+	private List<DsstoxOtherCASRN> otherCasrns=new ArrayList<>();
 
 	public DsstoxRecord() {}
 	
@@ -272,6 +277,27 @@ public class DsstoxRecord {
 
 	public void setCid(Long cid) {
 		this.cid = cid;
+	}
+
+
+	public Boolean getMolImagePNGAvailable() {
+		return molImagePNGAvailable;
+	}
+
+
+	public void setMolImagePNGAvailable(Boolean molImagePNGAvailable) {
+		this.molImagePNGAvailable = molImagePNGAvailable;
+	}
+
+
+
+	public List<DsstoxOtherCASRN> getOtherCasrns() {
+		return otherCasrns;
+	}
+
+
+	public void setOtherCasrns(List<DsstoxOtherCASRN> otherCasrns) {
+		this.otherCasrns = otherCasrns;
 	}
 
 

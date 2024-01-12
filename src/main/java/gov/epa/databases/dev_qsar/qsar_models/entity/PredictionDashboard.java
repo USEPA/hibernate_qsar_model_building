@@ -54,6 +54,8 @@ public class PredictionDashboard {
 	private DsstoxRecord dsstoxRecord;//temp storage for convenience (dont have in table because in different schema)- maybe move to this schema 
 
 	
+	private String dtxcid;//needed for storing cases where there is no matching dsstoxRecord
+	
 	@ManyToOne
 	@NotNull(message="Model required")
 	@JoinColumn(name="fk_model_id")
@@ -231,6 +233,16 @@ public class PredictionDashboard {
 
 	public void setDsstoxRecord(DsstoxRecord dsstoxRecord) {
 		this.dsstoxRecord = dsstoxRecord;
+	}
+
+
+	public String getDtxcid() {
+		return dtxcid;
+	}
+
+
+	public void setDtxcid(String dtxcid) {
+		this.dtxcid = dtxcid;
 	}
 
 }

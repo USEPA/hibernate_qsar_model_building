@@ -89,11 +89,11 @@ public class Model {
 	@Column(name="created_by")
 	private String createdBy;
 	
-	@Column(name="url_scatter_plot")
-	private String urlScatterPlot;
-	
-	@Column(name="url_histogram")
-	private String urlHistogram;
+//	@Column(name="url_scatter_plot")
+//	private String urlScatterPlot;
+//	
+//	@Column(name="url_histogram")
+//	private String urlHistogram;
 	
 	
 //	@OneToOne(mappedBy="model", cascade=CascadeType.ALL, fetch=FetchType.LAZY, optional=false)
@@ -259,20 +259,20 @@ public class Model {
 		this.modelStatistics = modelStatistics;
 	}
 
-	public String getUrlScatterPlot() {
-		return urlScatterPlot;
-	}
-
-	public void setUrlScatterPlot(String urlScatterPlot) {
-		this.urlScatterPlot = urlScatterPlot;
-	}
-
-	public String getUrlHistogram() {
-		return urlHistogram;
-	}
-
-	public void setUrlHistogram(String urlHistogram) {
-		this.urlHistogram = urlHistogram;
-	}
+//	public String getUrlScatterPlot() {
+//		return urlScatterPlot;
+//	}
+//
+//	public void setUrlScatterPlot(String urlScatterPlot) {
+//		this.urlScatterPlot = urlScatterPlot;
+//	}
+//
+//	public String getUrlHistogram() {
+//		return urlHistogram;
+//	}
+//
+//	public void setUrlHistogram(String urlHistogram) {
+//		this.urlHistogram = urlHistogram;
+//	}
 
 }

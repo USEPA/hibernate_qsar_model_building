@@ -2,24 +2,22 @@ package gov.epa.run_from_java.scripts.OPERA;
 
 import java.awt.Desktop;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
+import com.fasterxml.jackson.databind.ser.std.StdKeySerializers.Default;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedADEstimate;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedNeighbor;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 
 /**
 * @author TMARTI02
@@ -28,6 +26,10 @@ public class OPERA_Report {
 
 	String urlHistogramAPI="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/histo-graph/by-modelid/";
 	String urlScatterPlotAPI="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/scatter-graph/by-modelid/";
+	
+	String urlHistogramAPIOld="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/histo-graph/by-dtxsid/DTXSID3039242/";
+	String urlScatterPlotAPIOld="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/scatter-graph/by-dtxsid/DTXSID3039242/";
+	
 	String urlQMRF_API="https://comptox.epa.gov/dashboard-api/ccdapp1/qmrfdata/file/by-modelid/";
 	
 	ChemicalIdentifiers chemicalIdentifiers=new ChemicalIdentifiers();
@@ -46,11 +48,14 @@ public class OPERA_Report {
 	class ModelDetails {
 		long modelId;
 		String modelName;
+		String modelSource;
 		String propertyName;
+		String propertyDescription;
 		String dataAccessability;
 		String category;
 		String source;
 		int hasQmrfPdf;
+		int hasPlots;
 		String qmrfReportUrl;
 		String description;
 		String urlHistogram;
@@ -59,8 +64,12 @@ public class OPERA_Report {
 	
 	class ModelResults {
 
-		String predicted;
 		String experimental;
+		String experimentalConclusion;
+
+		String predicted;
+		String predictedConclusion;
+
 		String operaVersion;
 		String standardUnit;
 		
@@ -130,35 +139,46 @@ public class OPERA_Report {
 		int neighborNumber;//done
 		String measured;//done
 		String predicted;//done
-		String dtxcid;
+//		String dtxcid;
 		String dtxsid;
 		String casrn;
-		long cid;
-		String gsid;//needed?
-		String preferredName; //SCDCD had this as preferred_name which is inconsistent with naming scheme of other classes
-		boolean molImagePNGAvailable;//default is false
+		
+//		long cid;
+//		String gsid;//needed?
+//		String preferredName; //SCDCD had this as preferred_name which is inconsistent with naming scheme of other classes
+//		boolean molImagePNGAvailable;//default is false
+		
+		DsstoxRecord dsstoxRecord;
+		String matchBy;
+		
 
 		public Neighbor(QsarPredictedNeighbor n) {
 			this.neighborNumber=n.getNeighborNumber();
 			this.measured=n.getExp();
 			this.predicted=n.getPred();
+			this.matchBy=n.getMatchBy();
 
 			if(n.getDtxsid()!=null) this.dtxsid=n.getDtxsid();
-			if(n.getDtxcid()!=null) this.dtxcid=n.getDtxcid();
 			if(n.getCasrn()!=null)this.casrn=n.getCasrn();
-			if(n.getCid()!=null) this.cid=n.getCid();
-			if(n.getPreferredName()!=null) this.preferredName=n.getPreferredName();
-			if(n.isMolImagePNGAvailable()!=null) this.molImagePNGAvailable=n.isMolImagePNGAvailable();
+			
+			if(n.getDsstoxRecord()!=null) this.dsstoxRecord=n.getDsstoxRecord();
+			
+//			if(n.getDtxcid()!=null) this.dtxcid=n.getDtxcid();
+//			if(n.getCid()!=null) this.cid=n.getCid();
+//			if(n.getPreferredName()!=null) this.preferredName=n.getPreferredName();
+//			if(n.isMolImagePNGAvailable()!=null) this.molImagePNGAvailable=n.isMolImagePNGAvailable();
 		}
 
 	}
 	
 	
-	public OPERA_Report(PredictionDashboard pd, String unitAbbreviation,boolean useModelGraphAPI) {
+	public OPERA_Report(PredictionDashboard pd, Property property, String unitAbbreviation,boolean useLatestModelIds) {
 		setChemicalIdentifiers(pd);
-		setModelDetails(pd,useModelGraphAPI);
-		setModelResults(pd, unitAbbreviation);
+		setModelDetails(pd,property,useLatestModelIds);
+		setModelResults(pd, unitAbbreviation,property);
 		setNeighbors(pd);
+		
+//		System.out.println(this.modelDetails.description);
 	}
 
 	private void setNeighbors(PredictionDashboard pd) {
@@ -168,13 +188,19 @@ public class OPERA_Report {
 	}
 
 	private void setChemicalIdentifiers(PredictionDashboard pd) {
+		
+		if(pd.getDsstoxRecord()==null) {
+			return;
+		}
+		
 		this.chemicalIdentifiers.dtxsid=pd.getDsstoxRecord().getDtxsid();
 		this.chemicalIdentifiers.dtxcid=pd.getDsstoxRecord().getDtxcid();
 		this.chemicalIdentifiers.casrn=pd.getDsstoxRecord().getCasrn();
 		this.chemicalIdentifiers.preferredName=pd.getDsstoxRecord().getPreferredName();
 	}
 
-	private void setModelResults(PredictionDashboard pd,String unitAbbreviation) {
+	
+	private void setModelResults(PredictionDashboard pd,String unitAbbreviation,Property property) {
 		String strGlobalAD="OPERA global applicability domain";
 		String strLocalAD="OPERA local applicability domain";
 		String strConfidenceIndex="OPERA confidence index";
@@ -184,16 +210,53 @@ public class OPERA_Report {
 		if (modelResults.standardUnit!=null && modelResults.standardUnit.equals("Binary")) modelResults.standardUnit="";
 		if (modelResults.standardUnit==null) modelResults.standardUnit="";
 		
-		if (pd.getExperimentalString()!=null)
+		if (pd.getExperimentalString()!=null) {
 			modelResults.experimental=pd.getExperimentalString();
-		else if (pd.getExperimentalValue()!=null)
+		} else if (pd.getExperimentalValue()!=null) {
 			modelResults.experimental=pd.getExperimentalValue()+"";
+
+			String id=null;
+			
+			if(pd.getDsstoxRecord()!=null) {
+				id=pd.getDsstoxRecord().getDtxcid();
+			}
+			
+			modelResults.experimentalConclusion=getConclusion(property, pd.getExperimentalValue(),id);
+			
+		} 
 		
-		
-		if (pd.getPredictionString()!=null)
+		if (pd.getPredictionString()!=null) {
 			modelResults.predicted=pd.getPredictionString();
-		else if (pd.getPredictionValue()!=null)
+			
+		} else if (pd.getPredictionValue()!=null) {
 			modelResults.predicted=pd.getPredictionValue()+"";
+			
+			String id="";
+
+			if(pd.getDsstoxRecord()!=null) {
+				if(pd.getDsstoxRecord().getDtxcid()!=null) {
+					id=pd.getDsstoxRecord().getDtxcid();
+				}
+			}
+			
+			modelResults.predictedConclusion=getConclusion(property, pd.getPredictionValue(),id);
+			
+//			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_VERY_TOXIC)) {
+//				if(pd.getPredictionValue()==0) modelResults.predictedConclusion="Not very toxic: oral rat LD50 > 50 mg/kg";
+//				else modelResults.predictedConclusion="Very toxic: oral rat LD50 ≤ 50 mg/kg";
+//			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_NON_TOXIC)) {
+//				if(pd.getPredictionValue()==1) modelResults.predictedConclusion="Nontoxic: oral rat LD50 > 2000 mg/kg";
+//				else modelResults.predictedConclusion="Not nontoxic: oral rat LD50 ≤ 2000 mg/kg";
+//			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_EPA_CATEGORY)) {
+//				modelResults.predictedConclusion=getConclusionEPA(pd.getPredictionValue());
+//			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_GHS_CATEGORY)) {
+//				modelResults.predictedConclusion=getConclusionGHS(pd.getPredictionValue());		
+//			}
+			
+		}
+		
+		
+		
 				
 		for (QsarPredictedADEstimate ad:pd.getQsarPredictedADEstimates()) {
 
@@ -253,30 +316,101 @@ public class OPERA_Report {
 		}
 	}
 
-	private void setModelDetails(PredictionDashboard pd, boolean useModelGraphAPI) {
+	String getConclusion(Property property,double value,String id) {
+		if(property.getName().equals(DevQsarConstants.RBIODEG)) {
+			if(value==0) return "Not readily biodegradable";
+			else return "Readily biodegradable";
+		} else if (property.getName().contains("receptor")) {
+			if(value==0) {
+				return "Inactive";
+			} else {
+//				System.out.println(id);
+				return "Active";
+			}
+		} else {
+			return null;
+		}
+	}
+	private void setModelDetails(PredictionDashboard pd,Property property, boolean useLatestModelIds) {
 		this.modelDetails.modelId=pd.getModel().getId();
-		String datasetName=pd.getModel().getDatasetName();
-		this.modelDetails.propertyName=datasetName.substring(0,datasetName.indexOf(" OPERA"));
+
+//		String datasetName=pd.getModel().getDatasetName();
+//		this.modelDetails.propertyName=datasetName.substring(0,datasetName.indexOf(" OPERA"));
+
+		this.modelDetails.propertyName=property.getName();
+		this.modelDetails.propertyDescription=property.getDescription();
+		
+		
 		this.modelDetails.dataAccessability=getDataAccessibility(pd);
 		this.modelDetails.modelName=pd.getModel().getName();
+		this.modelDetails.modelSource=pd.getModel().getSource().getName();
+		
+		
 		this.modelDetails.category="QSAR";
 		this.modelDetails.source=pd.getModel().getSource().getName();
 		this.modelDetails.hasQmrfPdf=hasQMRF(pd);
-		this.modelDetails.description=pd.getModel().getSource().getDescription();
-
-
-		this.modelDetails.qmrfReportUrl=urlQMRF_API+pd.getModel().getId();
+		this.modelDetails.hasPlots=hasPlots(pd);
 		
-		if (useModelGraphAPI) {
-			this.modelDetails.urlHistogram=urlHistogramAPI+pd.getModel().getId();
-			this.modelDetails.urlScatterPlot=urlScatterPlotAPI+pd.getModel().getId();
+		this.modelDetails.description=pd.getModel().getSource().getDescription();
+		
+		if (useLatestModelIds) {
+			if(this.modelDetails.hasPlots==1) {
+				this.modelDetails.urlHistogram=urlHistogramAPI+pd.getModel().getId();				
+				this.modelDetails.urlScatterPlot=urlScatterPlotAPI+pd.getModel().getId();
+			}
+			if(modelDetails.hasQmrfPdf==1) this.modelDetails.qmrfReportUrl=urlQMRF_API+pd.getModel().getId();//these need to be available from Asif's API for that model Id
+		
 		} else {
-			this.modelDetails.urlHistogram=pd.getModel().getUrlHistogram();
-			this.modelDetails.urlScatterPlot=pd.getModel().getUrlScatterPlot();		
+			int modelID_old=getOldModelID(property);
+			
+			if(modelID_old==-1) modelDetails.hasQmrfPdf=0;//we dont have oral rat ld50 qmrf available 
+			
+			if (modelID_old!=-1 && modelDetails.hasPlots==1)  {
+				this.modelDetails.urlHistogram=urlHistogramAPIOld+modelID_old;
+				this.modelDetails.urlScatterPlot=urlScatterPlotAPIOld+modelID_old;
+			}
+			if(modelDetails.hasQmrfPdf==1) this.modelDetails.qmrfReportUrl=urlQMRF_API+modelID_old;//these need to be available from Asif's API for that model Id
 		}
 		
+	}
+	
+	
+	int getOldModelID(Property property) {
+		switch (property.getName()) {
+			case DevQsarConstants.BOILING_POINT:
+				return 27;
+			case DevQsarConstants.HENRYS_LAW_CONSTANT:
+				return 19;
+			case DevQsarConstants.LOG_KOA:
+				return 26;
+			case DevQsarConstants.LOG_KOW:
+				return 22;
+			case DevQsarConstants.MELTING_POINT:
+				return 18;
+			case DevQsarConstants.VAPOR_PRESSURE:
+				return 30;
+			case DevQsarConstants.WATER_SOLUBILITY:
+				return 24;
+			case DevQsarConstants.OH:
+				return 29;
+			case DevQsarConstants.BIODEG_HL_HC:
+				return 17;
+			case DevQsarConstants.RBIODEG:
+				return 20;
+			case DevQsarConstants.KM:
+				return 28;
+			case DevQsarConstants.KOC:
+				return 25;
+			case DevQsarConstants.BCF:
+				return 23;
+
+			default:
+				return -1;
+		
+		}
 		
 	}
+	
 	
 	/**
 	 * Whether or not to expose to dashboard- should this be stored in the database somewhere?
@@ -321,6 +455,10 @@ public class OPERA_Report {
 
 		switch (n) {
 		case DevQsarConstants.ORAL_RAT_LD50:
+		case DevQsarConstants.ORAL_RAT_NON_TOXIC:
+		case DevQsarConstants.ORAL_RAT_VERY_TOXIC:
+		case DevQsarConstants.ORAL_RAT_GHS_CATEGORY:
+		case DevQsarConstants.ORAL_RAT_EPA_CATEGORY:			
 		case DevQsarConstants.MELTING_POINT:
 		case DevQsarConstants.BOILING_POINT:
 		case DevQsarConstants.WATER_SOLUBILITY:
@@ -340,6 +478,32 @@ public class OPERA_Report {
 		}
 	}
 
+	int hasPlots(PredictionDashboard pd) {
+		
+//		System.out.println(pd.getModel().getName());
+		
+		String n=pd.getModel().getDatasetName();
+		n=n.substring(0,n.indexOf(" OPERA"));
+
+		switch (n) {
+//		case DevQsarConstants.ORAL_RAT_LD50://For right now not available
+		case DevQsarConstants.MELTING_POINT:
+		case DevQsarConstants.BOILING_POINT:
+		case DevQsarConstants.WATER_SOLUBILITY:
+		case DevQsarConstants.VAPOR_PRESSURE:
+		case DevQsarConstants.LOG_KOW:
+		case DevQsarConstants.LOG_KOA:
+		case DevQsarConstants.HENRYS_LAW_CONSTANT:
+		case DevQsarConstants.OH:
+		case DevQsarConstants.BIODEG_HL_HC:
+		case DevQsarConstants.BCF:
+		case DevQsarConstants.KOC:
+		case DevQsarConstants.KM:
+			return 1;
+		default:
+			return 0;
+		}
+	}
 
 	String toJson() {
 		return Utilities.gson.toJson(this);
@@ -428,5 +592,5 @@ public class OPERA_Report {
             ex.printStackTrace();
         }
 	}
-
+	
 }

@@ -35,6 +35,7 @@ public class QsarModelsSession {
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Source.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxOtherCASRN.class);
 
         	
         	config.setProperty("hibernate.connection.driver_class", "org.postgresql.Driver");

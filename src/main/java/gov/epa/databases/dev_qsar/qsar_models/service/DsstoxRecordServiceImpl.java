@@ -113,6 +113,11 @@ public class DsstoxRecordServiceImpl  {
 	
 
 
+	/**
+	 * TODO fix this method to add all the columns that are currently in the table
+	 * 
+	 * @param records
+	 */
 	public void createBatchSQL (List<DsstoxRecord> records) {
 
 		Connection conn=SqlUtilities.getConnectionPostgres();
@@ -151,6 +156,67 @@ public class DsstoxRecordServiceImpl  {
 				prep.setString(3, record.getSmiles());				
 				prep.setLong(4,record.getDsstoxSnapshot().getId());
 				prep.setString(5, record.getCreatedBy());
+				prep.addBatch();
+				
+				if (counter % batchSize == 0 && counter!=0) {
+					// System.out.println(counter);
+					prep.executeBatch();
+					conn.commit();
+				}
+			}
+
+			int[] count = prep.executeBatch();// do what's left
+			long t2=System.currentTimeMillis();
+			System.out.println("time to post "+records.size()+" records using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
+			conn.commit();
+//			conn.setAutoCommit(true);
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}	
+	
+	public void createBatchSQLNoCompound (List<DsstoxRecord> records) {
+
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		
+		Long fk_snapshot_id=records.get(0).getDsstoxSnapshot().getId();
+		
+		String [] fieldNames= {"dtxsid","casrn","preferred_name","mol_image_png_available","fk_dsstox_snapshot_id","created_by","created_at"};
+
+		int batchSize=1000;
+		
+		String sql="INSERT INTO qsar_models.dsstox_records (";
+		
+		for (int i=0;i<fieldNames.length;i++) {
+			sql+=fieldNames[i];
+			if (i<fieldNames.length-1)sql+=",";
+			else sql+=") VALUES (";
+		}
+		
+		for (int i=0;i<fieldNames.length-1;i++) {
+			sql+="?";
+			if (i<fieldNames.length-1)sql+=",";			 		
+		}
+		sql+="current_timestamp)";	
+//		System.out.println(sql);
+		
+		try {
+			conn.setAutoCommit(false);
+			PreparedStatement prep = conn.prepareStatement(sql);
+			prep.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+			long t1=System.currentTimeMillis();
+
+			for (int counter = 0; counter < records.size(); counter++) {
+				DsstoxRecord record=records.get(counter);
+				
+				prep.setString(1, record.getDtxsid());
+				prep.setString(2, record.getCasrn());
+				prep.setString(3, record.getPreferredName());
+				prep.setBoolean(4, false);
+				prep.setLong(5,record.getDsstoxSnapshot().getId());
+				prep.setString(6, record.getCreatedBy());
+				
 				prep.addBatch();
 				
 				if (counter % batchSize == 0 && counter!=0) {

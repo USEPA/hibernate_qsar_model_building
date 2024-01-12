@@ -15,6 +15,7 @@ import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 
 import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.GenerationTime;
@@ -90,7 +91,8 @@ public class DsstoxCompound {
 	private byte[] molImage;
 
 	
-	@Column(name="mol_image_png_available")
+//	@Column(name="mol_image_png_available")
+	@Transient
 	private boolean molImagePNGAvailable;
 
 	@Column(name="mol_weight")

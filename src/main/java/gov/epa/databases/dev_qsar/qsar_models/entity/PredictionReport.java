@@ -33,7 +33,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
-@Table(name = "prediction_reports", uniqueConstraints={@UniqueConstraint(columnNames = {"fk_prediction_dashboard_id"})})
+@Table(name = "prediction_reports", uniqueConstraints={@UniqueConstraint(columnNames = {"fk_predictions_dashboard_id"})})
 
 public class PredictionReport {
 	
@@ -43,7 +43,7 @@ public class PredictionReport {
 	
 	@NotNull(message="PredictionDashboard required")
 	@OneToOne
-	@JoinColumn(name="fk_prediction_dashboard_id")
+	@JoinColumn(name="fk_predictions_dashboard_id")
 	private PredictionDashboard predictionDashboard;
 	
 	@Column(name="file", length=32767)

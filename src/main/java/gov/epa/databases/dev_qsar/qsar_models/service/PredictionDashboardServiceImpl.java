@@ -100,14 +100,18 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 	public List<PredictionDashboard> createBatch(List<PredictionDashboard> predictionDashboards, Session session)
 			throws org.hibernate.exception.ConstraintViolationException {
 		Transaction tx = session.beginTransaction();
+		
+		int batchSize=20;
+		
 		try {
 			for (int i = 0; i < predictionDashboards.size(); i++) {
 				PredictionDashboard predictionDashboard = predictionDashboards.get(i);
 				session.save(predictionDashboard);
-				if ( i % 1000 == 0 ) { //20, same as the JDBC batch size
+				if ( i % batchSize == 0 ) { //20, same as the JDBC batch size
 					//flush a batch of inserts and release memory:
 					session.flush();
 					session.clear();
+					System.out.println(i);
 				}
 			}
 

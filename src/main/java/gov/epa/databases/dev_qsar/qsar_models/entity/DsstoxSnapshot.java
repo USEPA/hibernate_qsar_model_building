@@ -45,8 +45,8 @@ public class DsstoxSnapshot {
 	private String description;
 	
 	
-	@OneToMany(mappedBy="dsstoxSnapshot", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
-	private List<DsstoxRecord> dsstoxRecords;
+//	@OneToMany(mappedBy="dsstoxSnapshot", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+//	private List<DsstoxRecord> dsstoxRecords;
 	
 	@Column(name="updated_at")
 	@UpdateTimestamp

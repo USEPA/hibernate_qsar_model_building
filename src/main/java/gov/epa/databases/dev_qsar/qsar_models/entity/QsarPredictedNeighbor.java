@@ -1,5 +1,7 @@
 package gov.epa.databases.dev_qsar.qsar_models.entity;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -11,6 +13,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -21,8 +24,7 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-
-
+import gov.epa.run_from_java.scripts.OPERA.HTML_Report_Creator_From_OPERA_Report;
 import gov.epa.run_from_java.scripts.OPERA.OPERA_lookups;
 
 @Entity
@@ -38,14 +40,14 @@ public class QsarPredictedNeighbor {
 	private Integer neighborNumber;
 
 
-	@Column(name="preferred_name")
-	private String preferredName;
+//	@Column(name="preferred_name")
+//	private String preferredName;
 
-	@Column(name="cid")
-	private Long cid;
+//	@Column(name="cid")
+//	private Long cid;
 
-	@Column(name="mol_image_png_available")
-	private Boolean molImagePNGAvailable;
+//	@Column(name="mol_image_png_available")
+//	private Boolean molImagePNGAvailable;
 
 	
 //	@NotNull(message="QsarPredictedProperty required")
@@ -60,7 +62,21 @@ public class QsarPredictedNeighbor {
 	public PredictionDashboard predictionDashboard;//the prediction that all n neighbors are associated with, the prediction for the neighbor itself is retrieved from the cid
 
 	
+	@OneToOne
+	@JoinColumn(name="fk_dsstox_records_id")
+	private DsstoxRecord dsstoxRecord;//temp storage for convenience (dont have in table because in different schema)- maybe move to this schema 
 
+	@Column(name="dtxsid")
+	private String dtxsid;//in OPERA neighbors can be a mixture of completely different substances separated by | 
+	
+	@Column(name="casrn")
+	private  String casrn;//in OPERA neighbors can be a mixture of completely different substances separated by |
+
+	@Column(name="inchi_key_qsar_ready")//these are probably qsar ready inchi keys because sometimes salts are stored in same neighbor as parent
+	private String inchiKey;////used to checking match to OPERA values from sqlite database
+
+	@Column(name="match_by")
+	private String matchBy;////used to checking match to OPERA values from sqlite database
 	
 //	@NotNull(message="data_point required")
 //	@JoinColumn(name="fk_data_point_id")
@@ -76,24 +92,16 @@ public class QsarPredictedNeighbor {
 //	private QsarPredictedProperty qsarPredictedPropertyNeighbor;
 	
 	
-	@Column(name="dtxcid")
-	private String dtxcid;
+//	@Column(name="dtxcid")
+//	private String dtxcid;
 
-	@Column(name="dtxsid")
-	private String dtxsid;//in OPERA neighbors can be a mixture of completely different substances separated by | 
-	
-	@Column(name="casrn")
-	private  String casrn;//in OPERA neighbors can be a mixture of completely different substances separated by |
 	
 	@Column(name="exp")
 	private String exp;//in opera the neighbor can be a mixture so need to store the experimental value for the mixture
 	
 	@Column(name="pred")
 	private String pred;////used to checking match to OPERA values from sqlite database
-		
 
-	@Column(name="inchiKey")
-	private String inchiKey;////used to checking match to OPERA values from sqlite database
 
 	
 	@Column(name="updated_at")
@@ -115,10 +123,13 @@ public class QsarPredictedNeighbor {
 	
 	public QsarPredictedNeighbor() {}
 	
-	public QsarPredictedNeighbor(int neighborNumber,String casrn,String dtxsid,String exp,String pred, String user,PredictionDashboard pd) {
+	public QsarPredictedNeighbor(int neighborNumber,String casrn,String dtxsid,String inchiKey, String exp,String pred, String user,PredictionDashboard pd) {
+		
 		this.neighborNumber=neighborNumber;
 		this.casrn=casrn;
 		this.dtxsid=dtxsid;
+		this.inchiKey=inchiKey;
+
 		this.exp=exp;
 		this.pred=pred;
 		this.createdBy=user;
@@ -198,37 +209,37 @@ public class QsarPredictedNeighbor {
 		this.inchiKey = inchiKey;
 	}
 
-	public String getPreferredName() {
-		return preferredName;
-	}
+//	public String getPreferredName() {
+//		return preferredName;
+//	}
+//
+//	public void setPreferredName(String preferredName) {
+//		this.preferredName = preferredName;
+//	}
 
-	public void setPreferredName(String preferredName) {
-		this.preferredName = preferredName;
-	}
+//	public Long getCid() {
+//		return cid;
+//	}
+//
+//	public void setCid(Long cid) {
+//		this.cid = cid;
+//	}
 
-	public Long getCid() {
-		return cid;
-	}
+//	public String getDtxcid() {
+//		return dtxcid;
+//	}
+//
+//	public void setDtxcid(String dtxcid) {
+//		this.dtxcid = dtxcid;
+//	}
 
-	public void setCid(Long cid) {
-		this.cid = cid;
-	}
-
-	public String getDtxcid() {
-		return dtxcid;
-	}
-
-	public void setDtxcid(String dtxcid) {
-		this.dtxcid = dtxcid;
-	}
-
-	public Boolean isMolImagePNGAvailable() {
-		return molImagePNGAvailable;
-	}
-
-	public void setMolImagePNGAvailable(Boolean molImagePNGAvailable) {
-		this.molImagePNGAvailable = molImagePNGAvailable;
-	}
+//	public Boolean isMolImagePNGAvailable() {
+//		return molImagePNGAvailable;
+//	}
+//
+//	public void setMolImagePNGAvailable(Boolean molImagePNGAvailable) {
+//		this.molImagePNGAvailable = molImagePNGAvailable;
+//	}
 
 	public Date getUpdatedAt() {
 		return updatedAt;
@@ -257,6 +268,12 @@ public class QsarPredictedNeighbor {
 //		
 //	}
 
+	/**
+	 * Removes neighbors with no sid or casrn
+	 * TODO are there ones with just inchikey?
+	 * 
+	 * @param neighbors
+	 */
 	public static void removeEmptyNeighbors(List<QsarPredictedNeighbor> neighbors) {
 		for (int i=0;i<neighbors.size();i++) {
 			QsarPredictedNeighbor n=neighbors.get(i);
@@ -267,39 +284,68 @@ public class QsarPredictedNeighbor {
 	}
 	
 
-	public static void cloneNeighbors(List<QsarPredictedNeighbor> neighbors, String propertyAbbrevOPERA,OPERA_lookups lookups) {
+	/**
+	 * If a neighbor has multiple SIDs/casrns make them separate neighbors with same neighbor number
+	 * 
+	 * @param neighbors
+	 * @param propertyName - used for print statements
+	 * @param lookups
+	 */
+	public static void cloneNeighbors(List<QsarPredictedNeighbor> neighbors, String propertyName,OPERA_lookups lookups) {
 		
 		for (int i=0;i<neighbors.size();i++) {
 		
 			QsarPredictedNeighbor n=neighbors.get(i);
 			
+						
 			if(n.getDtxsid()!=null && n.getDtxsid().contains("|")) {
 
-				String [] sids=n.getDtxsid().split("\\|");
-				String [] casrns=n.getCasrn().split("\\|");
-
-				if (sids.length!=casrns.length) {//mismatch in length of arrays, look up CAS from SID in DB
-					//						System.out.println(propertyAbbrevOPERA+"\t"+n.getPredictionDashboard().getDsstoxRecord().getDtxcid()+"\t"+n.getNeighborNumber()+"\tmismatch on sid and cas");
+				String [] sidsArray=n.getDtxsid().split("\\|");
+				String [] casrnsArray=n.getCasrn().split("\\|");
+				
+				List<String>sids=new ArrayList<>();
+				List<String>casrns=new ArrayList<>();
+				
+				for (String sid:sidsArray) {
+					sid=sid.trim();
+					if(sid.equals("?") || sid.equals("NoID") || sid.isEmpty()) continue;
+					sids.add(sid);
+				}
+				
+				for (String casrn:casrnsArray) {
+					casrn=casrn.trim();
+					if(casrn.equals("?") || casrn.equals("NoID") || casrn.isEmpty()) continue;
+					casrns.add(casrn);
+				}
+				
+				if (sids.size()!=casrns.size()) {//mismatch in length of arrays, look up CAS from SID in DB
+					//						System.out.println(propertyName+"\t"+n.getPredictionDashboard().getDsstoxRecord().getDtxcid()+"\t"+n.getNeighborNumber()+"\tmismatch on sid and cas");
 
 					neighbors.remove(i);
-					for (int j=sids.length-1;j>=0;j--) {//go in reverse order to preserve order
-						String dtxsid=sids[j].trim();
+					for (int j=sids.size()-1;j>=0;j--) {//go in reverse order to preserve order
+						String dtxsid=sids.get(j);
+						
 						String casrnDB=null;
 						if (lookups.mapDsstoxRecordsBySID.get(dtxsid)!=null) {
 							casrnDB=lookups.mapDsstoxRecordsBySID.get(dtxsid).getCasrn();
 //							System.out.println("Found casrn from db:"+casrnDB);
 						}
-						QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),casrnDB,dtxsid,n.getExp(),n.getPred(), n.getCreatedBy(),n.getPredictionDashboard());
+						
+//						System.out.println("unequal array sizes:"+j+"\t"+dtxsid+"\t"+casrnDB);
+						
+						QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),casrnDB,dtxsid,n.getInchiKey(),n.getExp(),n.getPred(), n.getCreatedBy(),n.getPredictionDashboard());
 						neighbors.add(i,nnew);
 					}
 
 				} else {
 					neighbors.remove(i);
-					for (int j=sids.length-1;j>=0;j--) {//go in reverse order to preserve order
-						String dtxsid=sids[j].trim();
-						String casrn=casrns[j].trim();
+					for (int j=sids.size()-1;j>=0;j--) {//go in reverse order to preserve order
+						String dtxsid=sids.get(j);
+						String casrn=casrns.get(j);
+						
+//						System.out.println("equal array sizes:"+j+"\t"+dtxsid+"\t"+casrn);
 
-						QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),casrn,dtxsid,n.getExp(),n.getPred(), n.getCreatedBy(),n.getPredictionDashboard());
+						QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),casrn,dtxsid,n.getInchiKey(),n.getExp(),n.getPred(), n.getCreatedBy(),n.getPredictionDashboard());
 						neighbors.add(i,nnew);
 					}
 
@@ -307,82 +353,115 @@ public class QsarPredictedNeighbor {
 
 
 			} else if (n.getDtxsid()==null && n.getCasrn().contains("|")) {
-				String [] casrns=n.getCasrn().split("\\|");
+				String [] casrnsArray=n.getCasrn().split("\\|");
+				
+				List<String>casrns=Arrays.asList(casrnsArray);
+				
 				neighbors.remove(i);
-				for (int j=casrns.length-1;j>=0;j--) {//go in reverse order to preserve order
-					String casrn=casrns[j].trim();
-					QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),casrn,null,n.getExp(),n.getPred(), n.getCreatedBy(),n.getPredictionDashboard());
+				for (int j=casrns.size()-1;j>=0;j--) {//go in reverse order to preserve order
+					String casrn=casrns.get(j).trim();
+					QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),casrn,null,n.getInchiKey(),n.getExp(),n.getPred(), n.getCreatedBy(),n.getPredictionDashboard());
 					neighbors.add(i,nnew);
 				}
 			} else {
-				//Do nothing
+				if(n.getDtxsid()!=null && (n.getDtxsid().equals("?") || n.getDtxsid().equals("NoID"))) {
+					n.setDtxsid(null);
+				}
+				//Dont need to clone neighbors
 			}
 			
-			
 		}
-		
 	}
 
 	
 
-	public static void addNeighborMetadata(OPERA_lookups lookups, String propertyAbbrevOPERA, List<QsarPredictedNeighbor> neighbors) {
-		
-		
+	/**
+	 * Attempts to add DSSTOX metadata to neighbors
+	 * TODO might need to update the info later due to changes in DSSTOX
+	 * 
+	 * @param lookups
+	 * @param propertyName - used for print statements
+	 * @param neighbors
+	 */
+	public static void addNeighborMetadata(OPERA_lookups lookups, String propertyName, List<QsarPredictedNeighbor> neighbors) {
+
+//		String matchBy="";
+
 		for (QsarPredictedNeighbor n:neighbors) {
 
 			DsstoxRecord dr=null;
-			
-			if(n.getDtxsid()==null) {
-				if(lookups.mapDsstoxRecordsByCAS.get(n.getCasrn())!=null) {
-					dr=lookups.mapDsstoxRecordsByCAS.get(n.getCasrn());
-//					System.out.println("Retrieved by CAS\t"+n.getCasrn());
-					
-//					System.out.println(propertyAbbrevOPERA+"\t"+n.getCasrn()+"\t"+n.getDtxsid()+"\tCAS mapping");
-				} else {
-					if(lookups.mapDsstoxRecordsByOtherCAS.get(n.getCasrn())!=null) {
-						dr=lookups.mapDsstoxRecordsByOtherCAS.get(n.getCasrn());
-//						System.out.println("Retrieved by other CAS\t"+n.getCasrn());
 
-//						System.out.println(propertyAbbrevOPERA+"\t"+n.getCasrn()+"\t"+n.getDtxsid()+"\tOtherCAS mapping");
-					} else {
-						
-						if(lookups.mapDsstoxRecordsByCAS_NoCompound.get(n.getCasrn())!=null) {
-							dr=lookups.mapDsstoxRecordsByCAS_NoCompound.get(n.getCasrn());
-//							System.out.println("Retrieved by CAS No compound\t"+n.getCasrn());
-						} else {
-							if (!n.getCasrn().contains("CHEMBL") && !n.getCasrn().contains("SRC")) {
-								System.out.println("cant get sid from "+n.getCasrn());
+			if(n.getDtxsid()==null || lookups.mapDsstoxRecordsBySID.get(n.getDtxsid())==null) {
+
+				if(n.getCasrn()!=null) {
+
+					if(lookups.mapDsstoxRecordsByCAS.get(n.getCasrn())!=null) {
+						dr=lookups.mapDsstoxRecordsByCAS.get(n.getCasrn());
+
+						if(dr.getCasrn().equals(n.getCasrn())) {
+							n.setMatchBy("CASRN");
+						}
+
+						if(dr.getOtherCasrns().size()>0) {
+							for(DsstoxOtherCASRN oc:dr.getOtherCasrns()) {
+								if(oc.getCasrn().equals(n.getCasrn())) {
+									n.setMatchBy("Other CASRN");
+								}
 							}
 						}
+
 					}
+					
+					if(n.getMatchBy()==null && !HTML_Report_Creator_From_OPERA_Report.isCAS_OK(n.getCasrn()))
+						n.setMatchBy("Invalid CASRN");
+
+				} else {
+					n.setMatchBy("None");
 				}
-				
+
+
 			} else {
-				
+
 				if(lookups.mapDsstoxRecordsBySID.get(n.getDtxsid())!=null) {
 					dr=lookups.mapDsstoxRecordsBySID.get(n.getDtxsid());
-//					System.out.println("Retrieved by SID\t"+n.getDtxsid());
-				} else if (lookups.mapDsstoxRecordsBySID_NoCompound.get(n.getDtxsid())!=null) {
-					dr=lookups.mapDsstoxRecordsBySID_NoCompound.get(n.getDtxsid());
-//					System.out.println("Retrieved by SID no compound\t"+n.getDtxsid());
+					n.setMatchBy("DTXSID");
 				} else {
-					System.out.println("Couldnt retrieve by sid\t"+n.getDtxsid());
+					n.setMatchBy("N/A DTXSID");
 				}
-				
 			}
-			
+
 			if (dr!=null) {
 				if(dr.getDtxsid()!=null) n.setDtxsid(dr.getDtxsid());
-				n.setPreferredName(dr.getPreferredName());
-				if(dr.getCid()!=null) n.setCid(dr.getCid());
-				if(dr.getDtxcid()!=null) n.setDtxcid(dr.getDtxcid());
-				n.setMolImagePNGAvailable(dr.isMolImagePNGAvailable());
+				n.setDsstoxRecord(dr);
 			} else {
-				n.setMolImagePNGAvailable(false);
+				//n.setMolImagePNGAvailable(false);
 			}
-			
-			
+
+//			if(!matchBy.contains("Neighbor match by sid")) {
+//				System.out.println(matchBy);
+//			} 
+
 		}//end loop over neighbors
 	}
+
+	public DsstoxRecord getDsstoxRecord() {
+		return dsstoxRecord;
+	}
+
+	public void setDsstoxRecord(DsstoxRecord dsstoxRecord) {
+		this.dsstoxRecord = dsstoxRecord;
+	}
+
+	public String getMatchBy() {
+		return matchBy;
+	}
+
+	public void setMatchBy(String matchBy) {
+		this.matchBy = matchBy;
+	}
+
+//	public Boolean getMolImagePNGAvailable() {
+//		return molImagePNGAvailable;
+//	}
 	
 }

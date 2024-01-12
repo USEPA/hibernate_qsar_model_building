@@ -2,6 +2,7 @@ package gov.epa.databases.dev_qsar.qsar_models.service;
 
 import java.util.List;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -15,6 +16,7 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.ModelStatisticDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelStatisticDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -28,6 +30,7 @@ public class ModelStatisticServiceImpl implements ModelStatisticService {
 		this.validator = DevQsarValidator.getValidator();
 	}
 
+	
 	@Override
 	public ModelStatistic findByModelId(Long modelId, Long statisticId) {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
@@ -63,6 +66,17 @@ public class ModelStatisticServiceImpl implements ModelStatisticService {
 	@Override
 	public ModelStatistic create(ModelStatistic modelStatistic) throws ConstraintViolationException {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		
+		Model model=modelStatistic.getModel();
+		
+		for (ModelStatistic ms:model.getModelStatistics()) {
+			if(ms.getStatistic().getName().equals(modelStatistic.getStatistic().getName())) {
+//				System.out.println("Already have statistic "+ms.getStatistic().getName()+ " for "+model.getName());
+				return ms;
+			}
+		}
+
+		System.out.println("Creating statistic "+modelStatistic.getStatistic().getName()+ " for "+model.getName());
 		return create(modelStatistic, session);
 	}
 

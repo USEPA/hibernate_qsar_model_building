@@ -2,6 +2,7 @@ package gov.epa.databases.dev_qsar;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -179,7 +180,13 @@ public class DevQsarConstants {
 	public static final String NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50 ="96 hour fathead minnow LC50";
 	public static final String FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50 ="48 hour Daphnia magna LC50";
 	public static final String FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50 ="48 hour Tetrahymena pyriformis IGC50";
+
 	public static final String ORAL_RAT_LD50="Oral rat LD50";//OPERA
+	public static final String ORAL_RAT_VERY_TOXIC = "Oral rat very toxic binary";
+	public static final String ORAL_RAT_NON_TOXIC = "Oral rat nontoxic binary";
+	public static final String ORAL_RAT_EPA_CATEGORY = "Oral rat EPA hazard category";
+	public static final String ORAL_RAT_GHS_CATEGORY = "Oral rat GHS hazard category";
+	
 	public static final String AMES_MUTAGENICITY ="Ames Mutagenicity";
 	public static final String DEVELOPMENTAL_TOXICITY ="Developmental toxicity";
 	public static final String LOCAL_LYMPH_NODE_ASSAY ="Local lymph node assay";
@@ -401,6 +408,7 @@ public class DevQsarConstants {
 	public static final String SN_TEST=SENSITIVITY+TAG_TEST;
 	public static final String SP_TEST=SPECIFICITY+TAG_TEST;
 
+
 			
 	
 	// Acceptable atoms in structures for modeling
@@ -412,6 +420,7 @@ public class DevQsarConstants {
 
 	/**
 	 * Assigns desired units for datapoint used in modeling 
+	 * Final units are the units that the QSAR models output
 	 * 
 	 * @return
 	 */
@@ -459,7 +468,8 @@ public class DevQsarConstants {
 	}
 	
 	/**
-	 * Assigns desired units for datapoint used in modeling 
+	 * This method sets the units that match the units in the opera prediction csv 
+	 * Final units are the units that the QSAR models output
 	 * 
 	 * @return
 	 */
@@ -467,7 +477,7 @@ public class DevQsarConstants {
 		HashMap<String, String> map = new HashMap<String, String>();
 
 		map.put(WATER_SOLUBILITY, "LOG_M");
-		map.put(HENRYS_LAW_CONSTANT, "LOG_ATM_M3_MOL");//TODO
+		map.put(HENRYS_LAW_CONSTANT, "LOG_ATM_M3_MOL");
 		map.put(MELTING_POINT, "DEG_C");
 		map.put(BOILING_POINT, "DEG_C");
 		map.put(VAPOR_PRESSURE, "LOG_MMHG");
@@ -503,10 +513,54 @@ public class DevQsarConstants {
 		map.put(ANDROGEN_RECEPTOR_BINDING,"BINARY");
 		
 		map.put(ORAL_RAT_LD50, "MG_KG");
+		map.put(ORAL_RAT_VERY_TOXIC, "BINARY");
+		map.put(ORAL_RAT_NON_TOXIC, "BINARY");
+		map.put(ORAL_RAT_EPA_CATEGORY, "DIMENSIONLESS");
+		map.put(ORAL_RAT_GHS_CATEGORY, "DIMENSIONLESS");
+		
 		
 		return map;
 	}
 	
+	
+	/**
+	 * Assigns desired units for datapoint used in modeling 
+	 * 
+	 * @return
+	 */
+	public static List<String> getOPERA_PropertyNames() {
+		List<String>propertyNames = new ArrayList<>();
+		
+		propertyNames.add(DevQsarConstants.OH);
+		propertyNames.add(DevQsarConstants.BCF);
+		propertyNames.add(DevQsarConstants.HENRYS_LAW_CONSTANT);
+		propertyNames.add(DevQsarConstants.LOG_KOA);
+		propertyNames.add(DevQsarConstants.KOC);
+		propertyNames.add(DevQsarConstants.KM);
+		propertyNames.add(DevQsarConstants.RBIODEG);
+		propertyNames.add(DevQsarConstants.BIODEG_HL_HC);
+		propertyNames.add(DevQsarConstants.BOILING_POINT);
+		propertyNames.add(DevQsarConstants.RT);
+		propertyNames.add(DevQsarConstants.WATER_SOLUBILITY);
+		propertyNames.add(DevQsarConstants.VAPOR_PRESSURE);
+		propertyNames.add(DevQsarConstants.LOG_KOW);
+		propertyNames.add(DevQsarConstants.ESTROGEN_RECEPTOR_BINDING);
+		propertyNames.add(DevQsarConstants.ESTROGEN_RECEPTOR_AGONIST);
+		propertyNames.add(DevQsarConstants.ESTROGEN_RECEPTOR_ANTAGONIST);
+		propertyNames.add(DevQsarConstants.ANDROGEN_RECEPTOR_BINDING);
+		propertyNames.add(DevQsarConstants.ANDROGEN_RECEPTOR_AGONIST);
+		propertyNames.add(DevQsarConstants.ANDROGEN_RECEPTOR_ANTAGONIST);
+		propertyNames.add(DevQsarConstants.CACO2);
+		propertyNames.add(DevQsarConstants.CLINT);
+		propertyNames.add(DevQsarConstants.FUB);
+		propertyNames.add(DevQsarConstants.MELTING_POINT);
+//		propertyNames.add(DevQsarConstants.ORAL_RAT_VERY_TOXIC);
+//		propertyNames.add(DevQsarConstants.ORAL_RAT_NON_TOXIC);
+//		propertyNames.add(DevQsarConstants.ORAL_RAT_EPA_CATEGORY);
+//		propertyNames.add(DevQsarConstants.ORAL_RAT_GHS_CATEGORY);
+		propertyNames.add(DevQsarConstants.ORAL_RAT_LD50);
+		return propertyNames;
+	}
 
 	public static String getPropertyDescription(String propertyNameDB) {
 		
@@ -518,6 +572,14 @@ public class DevQsarConstants {
 			return("The concentration of the test chemical in water that causes 50% growth inhibition to Tetrahymena pyriformis after 48 hours");
 		} else if (propertyNameDB.equals(DevQsarConstants.ORAL_RAT_LD50)) {
 			return("The amount of chemical that causes 50% of rats to die after oral ingestion");
+		} else if (propertyNameDB.equals(DevQsarConstants.ORAL_RAT_NON_TOXIC)) {
+			return("Whether or not the chemical is nontoxic (oral rat LD50 > 2000 mg/kg)");
+		} else if (propertyNameDB.equals(DevQsarConstants.ORAL_RAT_VERY_TOXIC)) {
+			return("Whether or not the chemical is very toxic (oral rat LD50 ≤ 50 mg/kg)");
+		} else if (propertyNameDB.equals(DevQsarConstants.ORAL_RAT_GHS_CATEGORY)) {
+			return("Hazard category based on GHS scoring system for oral rat LD50");
+		} else if (propertyNameDB.equals(DevQsarConstants.ORAL_RAT_EPA_CATEGORY)) {
+			return("Hazard category based on EPA's scoring system for oral rat LD50");
 		} else if (propertyNameDB.equals(DevQsarConstants.BCF)) {
 			return "Bioconcentration factor: the ratio of the chemical concentration in fish as a result of absorption via the respiratory surface to that in water at steady state";
 		} else if (propertyNameDB.equals(DevQsarConstants.DEVELOPMENTAL_TOXICITY)) {
@@ -610,7 +672,8 @@ public class DevQsarConstants {
 	
 	
 	/**
-	 * Assigns desired units for raw experimental data 
+	 * Assigns desired units for reporting raw experimental data or qsar predictions
+	 * on the Chemicals Dashboard
 	 * 
 	 * @return
 	 */
@@ -656,7 +719,12 @@ public class DevQsarConstants {
 		map.put(NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50,"MOLAR");
 		map.put(FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50,"MOLAR");
 		map.put(FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50, "MOLAR");		
-		map.put(ORAL_RAT_LD50, "MOL_KG");
+
+		map.put(ORAL_RAT_LD50, "MG_KG");
+		map.put(ORAL_RAT_VERY_TOXIC, "BINARY");
+		map.put(ORAL_RAT_NON_TOXIC, "BINARY");
+		map.put(ORAL_RAT_EPA_CATEGORY, "DIMENSIONLESS");
+		map.put(ORAL_RAT_GHS_CATEGORY, "DIMENSIONLESS");
 
 		
 		map.put(AMES_MUTAGENICITY,"BINARY");

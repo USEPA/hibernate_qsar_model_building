@@ -19,11 +19,14 @@ import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.PropertyServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxOtherCASRN;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.databases.dev_qsar.qsar_models.entity.MethodAD;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
+import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxRecordOtherCASRNServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxRecordServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.MethodADServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticService;
@@ -38,19 +41,20 @@ import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 */
 public class OPERA_lookups {
 
-	public TreeMap<String,DsstoxRecord>mapDsstoxRecordsByCID=new TreeMap<>();
-	public TreeMap<String,DsstoxRecord>mapDsstoxRecordsBySID=new TreeMap<>();
+	public static TreeMap<String,DsstoxRecord>mapDsstoxRecordsByCID=new TreeMap<>();
+	public static TreeMap<String,DsstoxRecord>mapDsstoxRecordsBySID=new TreeMap<>();
+	public static TreeMap<String,DsstoxRecord>mapDsstoxRecordsByCAS=new TreeMap<>();
 	
-	public TreeMap<String,DsstoxRecord>mapDsstoxRecordsBySID_NoCompound=new TreeMap<>();
-	public TreeMap<String,DsstoxRecord>mapDsstoxRecordsByCAS_NoCompound=new TreeMap<>();
+	//No longer need following maps because added records with no dtxcids to the DsstoxRecord table (and json export)
+//	public TreeMap<String,DsstoxRecord>mapDsstoxRecordsBySID_NoCompound=new TreeMap<>();
+//	public TreeMap<String,DsstoxRecord>mapDsstoxRecordsByCAS_NoCompound=new TreeMap<>();
 
-	public TreeMap<String,DsstoxRecord>mapDsstoxRecordsByCAS=new TreeMap<>();
-	public TreeMap<String,DsstoxRecord>mapDsstoxRecordsByOtherCAS=new TreeMap<>();
+//	public static TreeMap<String,DsstoxRecord>mapDsstoxRecordsByOtherCAS=new TreeMap<>();//TODO do we need to have this as separate map or just store in the map above?
 	
-	public List<DsstoxRecord>dsstoxRecords=null;
-	public List<DsstoxRecord>dsstoxRecordsNoCompound=null;
+	public static List<DsstoxRecord>dsstoxRecords=null;
+//	public List<DsstoxRecord>dsstoxRecordsNoCompound=null;
 	
-	public TreeMap<String,String>htPropNameOperaAbbrevToPropNameDB=null;
+//	public TreeMap<String,String>htPropNameOperaAbbrevToPropNameDB=null;
 	
 	public TreeMap<String,Property>mapProperties=null;
 	public TreeMap<String, Dataset>mapDatasets=null;
@@ -59,38 +63,23 @@ public class OPERA_lookups {
 	
 	public TreeMap<String, Statistic>mapStatistics=null;
 	
+//	Following files are used to fix the neighbors which are missing dtxsids- but might need to pull info from prod_dsstox instead???
+	static File fileJsonDsstoxRecords=new File("data\\dsstox\\json\\2023_04_snapshot_dsstox_records_2024_01_09.json");
+	static File fileJsonOtherCAS=new File("data\\dsstox\\json\\2023_04_snapshot_other_casrn lookup.json");
+
+	
 	class OtherCAS {
 		String casrn;
 		String dsstox_substance_id;
 	}
 	
-	OPERA_lookups() {
+	OPERA_lookups(boolean useJsonForDsstoxRecords) {
 		
-		htPropNameOperaAbbrevToPropNameDB=createOperaPropertyAbbreviationToDatabasePropertyNameHashtable();
-
-		getDsstoxRecordsFromJsonExport();
-		getDsstoxRecordsFromGenericSubstancesNoCompound();
-		
-		for (DsstoxRecord rec:dsstoxRecords) mapDsstoxRecordsByCID.put(rec.getDtxcid(),rec);
-		for (DsstoxRecord rec:dsstoxRecords) {
-			mapDsstoxRecordsBySID.put(rec.getDtxsid(),rec);
-//			if(rec.getDtxsid().equals("DTXSID3045304")) {
-//				System.out.println("Found DTXSID3045304");
-//			}
-		}
-		for (DsstoxRecord rec:dsstoxRecords) mapDsstoxRecordsByCAS.put(rec.getCasrn(),rec);	
-		
-		for (DsstoxRecord rec:dsstoxRecordsNoCompound) {
-			if(rec==null || rec.getDtxsid()==null) continue;
-			mapDsstoxRecordsBySID_NoCompound.put(rec.getDtxsid(),rec);
-		}
-		
-		for (DsstoxRecord rec:dsstoxRecordsNoCompound) {
-			if(rec.getCasrn()==null) continue;
-			mapDsstoxRecordsByCAS_NoCompound.put(rec.getCasrn(),rec);
-		}
-		
-		getOtherCASMap(); 
+		if (useJsonForDsstoxRecords) {
+			getDsstoxRecordsFromJsonExport();//loads from fileJsonDsstoxRecords
+		} else {
+			getDsstoxRecordsFromDatabase();	
+		}		
 
 //		DsstoxRecord dr=mapDsstoxRecordsByCAS.get("71-43-2");
 //		System.out.println(dr.getDtxsid());
@@ -101,7 +90,7 @@ public class OPERA_lookups {
 		System.out.println("Getting maps");
 		
 		System.out.println("Getting property map");
-		mapProperties=getPropertyMap();//not needed to create records 
+		mapProperties=getPropertyMap(); 
 
 		System.out.println("Getting dataset map");
 		mapDatasets=getDatasetsMap();
@@ -111,150 +100,148 @@ public class OPERA_lookups {
 		
 		System.out.println("Getting methodAD map");
 		mapMethodAD=getMethodAD_Map();
-		System.out.println("done");
 		
-		System.out.println("Getting statistic map");
-		mapStatistics=getStatisticsMap();
-		System.out.println("done");
+//		System.out.println("Getting statistic map");
+//		mapStatistics=getStatisticsMap();
 		
-		System.out.println("Getting model statistics");
-		setModelStatistics();
+//		System.out.println("Getting model statistics");
+//		setModelStatistics();
+		
+		
 		System.out.println("done");
 		
 	}
 	
-	/**
-	 * Get database name of property based on abbreviation from OPERA
-	 * 
-	 * @param propertyNameOPERA
-	 * @return
-	 */
-	public static TreeMap<String,String> createOperaPropertyAbbreviationToDatabasePropertyNameHashtable() {
+//	/**
+//	 * Get database name of property based on abbreviation from OPERA
+//	 * 
+//	 * @param propertyNameOPERA
+//	 * @return
+//	 */
+//	public static TreeMap<String,String> createOperaPropertyAbbreviationToDatabasePropertyNameHashtable() {
+//
+//		TreeMap<String,String>ht=new TreeMap<>();
+//		
+//		ht.put("BP",DevQsarConstants.BOILING_POINT);
+//		ht.put("MP",DevQsarConstants.MELTING_POINT);
+//		ht.put("WS",DevQsarConstants.WATER_SOLUBILITY);
+//		ht.put("LogP",DevQsarConstants.LOG_KOW);
+//		ht.put("LogD55",DevQsarConstants.LogD_pH_5_5);
+//		ht.put("LogD74",DevQsarConstants.LogD_pH_7_4);
+//		ht.put("LogKOA",DevQsarConstants.LOG_KOA);
+//		ht.put("LogHL",DevQsarConstants.HENRYS_LAW_CONSTANT);
+//		ht.put("LogVP",DevQsarConstants.VAPOR_PRESSURE);
+//		ht.put("FUB",DevQsarConstants.FUB);
+//		ht.put("RT",DevQsarConstants.RT);
+//		ht.put("Clint",DevQsarConstants.CLINT);
+//		ht.put("LogBCF",DevQsarConstants.BCF);
+//		ht.put("CACO2",DevQsarConstants.CACO2);
+//		ht.put("LogKM",DevQsarConstants.KM);
+//		ht.put("LogKoc",DevQsarConstants.KOC);
+//		ht.put("pKa_a",DevQsarConstants.PKA_A);
+//		ht.put("pKa_b",DevQsarConstants.PKA_B);
+//		
+//		ht.put("LogOH",DevQsarConstants.OH);
+//		ht.put("ReadyBiodeg",DevQsarConstants.RBIODEG);
+//		ht.put("BioDeg_LogHalfLife",DevQsarConstants.BIODEG_HL_HC);
+//		
+//		ht.put("CATMoS_LD50",DevQsarConstants.ORAL_RAT_LD50);
+//		ht.put("CATMoS_VT",DevQsarConstants.ORAL_RAT_VERY_TOXIC);
+//		ht.put("CATMoS_NT",DevQsarConstants.ORAL_RAT_NON_TOXIC);
+//		ht.put("CATMoS_EPA",DevQsarConstants.ORAL_RAT_EPA_CATEGORY);
+//		ht.put("CATMoS_GHS",DevQsarConstants.ORAL_RAT_GHS_CATEGORY);
+//				
+//		ht.put("CERAPP_Ago",DevQsarConstants.ESTROGEN_RECEPTOR_AGONIST);
+//		ht.put("CERAPP_Anta",DevQsarConstants.ESTROGEN_RECEPTOR_ANTAGONIST);
+//		ht.put("CERAPP_Bind",DevQsarConstants.ESTROGEN_RECEPTOR_BINDING);
+//		
+//		ht.put("CoMPARA_Ago",DevQsarConstants.ANDROGEN_RECEPTOR_AGONIST);
+//		ht.put("CoMPARA_Anta",DevQsarConstants.ANDROGEN_RECEPTOR_ANTAGONIST);
+//		ht.put("CoMPARA_Bind",DevQsarConstants.ANDROGEN_RECEPTOR_BINDING);
+//		
+//		return ht;
+//		
+//	}
 
-		TreeMap<String,String>ht=new TreeMap<>();
-		
-		ht.put("BP",DevQsarConstants.BOILING_POINT);
-		ht.put("MP",DevQsarConstants.MELTING_POINT);
-		ht.put("WS",DevQsarConstants.WATER_SOLUBILITY);
-		ht.put("LogP",DevQsarConstants.LOG_KOW);
-		ht.put("LogD55",DevQsarConstants.LogD_pH_5_5);
-		ht.put("LogD74",DevQsarConstants.LogD_pH_7_4);
-		ht.put("LogKOA",DevQsarConstants.LOG_KOA);
-		ht.put("LogHL",DevQsarConstants.HENRYS_LAW_CONSTANT);
-		ht.put("LogVP",DevQsarConstants.VAPOR_PRESSURE);
-		ht.put("FUB",DevQsarConstants.FUB);
-		ht.put("RT",DevQsarConstants.RT);
-		ht.put("Clint",DevQsarConstants.CLINT);
-		ht.put("LogBCF",DevQsarConstants.BCF);
-		ht.put("CACO2",DevQsarConstants.CACO2);
-		ht.put("LogKM",DevQsarConstants.KM);
-		ht.put("LogKoc",DevQsarConstants.KOC);
-		ht.put("pKa_a",DevQsarConstants.PKA_A);
-		ht.put("pKa_b",DevQsarConstants.PKA_B);
-		
-		ht.put("LogOH",DevQsarConstants.OH);
-		ht.put("ReadyBiodeg",DevQsarConstants.RBIODEG);
-		ht.put("BioDeg_LogHalfLife",DevQsarConstants.BIODEG_HL_HC);
-		ht.put("CATMOS_LD50",DevQsarConstants.ORAL_RAT_LD50);
-		
-		ht.put("CERAPP_Ago",DevQsarConstants.ESTROGEN_RECEPTOR_AGONIST);
-		ht.put("CERAPP_Anta",DevQsarConstants.ESTROGEN_RECEPTOR_ANTAGONIST);
-		ht.put("CERAPP_Bind",DevQsarConstants.ESTROGEN_RECEPTOR_BINDING);
-		
-		ht.put("CoMPARA_Ago",DevQsarConstants.ANDROGEN_RECEPTOR_AGONIST);
-		ht.put("CoMPARA_Anta",DevQsarConstants.ANDROGEN_RECEPTOR_ANTAGONIST);
-		ht.put("CoMPARA_Bind",DevQsarConstants.ANDROGEN_RECEPTOR_BINDING);
-		
-		return ht;
-		
-	}
-
-	private void getOtherCASMap() {
+	
+	
+	public static List<OtherCAS> getOtherCASMapFromJson() {
 		List<OtherCAS>recsOtherCAS=null;
 		Type listType2 = new TypeToken<ArrayList<OtherCAS>>(){}.getType();
-		File fileJson2=new File("data\\dsstox\\json\\other_casrn lookup.json");
+		
 		try {
-			recsOtherCAS = Utilities.gson.fromJson(new FileReader(fileJson2), listType2);
+			recsOtherCAS = Utilities.gson.fromJson(new FileReader(fileJsonOtherCAS), listType2);
 			
-			for (OtherCAS otherCAS:recsOtherCAS) {
+			for (OtherCAS oc:recsOtherCAS) {
 				
-				String cas=otherCAS.casrn;
-				String dtxsid=otherCAS.dsstox_substance_id;
+				DsstoxRecord dr=mapDsstoxRecordsBySID.get(oc.dsstox_substance_id);
+				mapDsstoxRecordsByCAS.put(oc.casrn,dr);
 				
-//				System.out.println(cas+"\t"+dtxsid);
-									
-				if (mapDsstoxRecordsBySID.get(dtxsid)!=null) {
-					mapDsstoxRecordsByOtherCAS.put(cas, mapDsstoxRecordsBySID.get(dtxsid));	
-				} else if (mapDsstoxRecordsBySID_NoCompound.get(dtxsid)!=null) {
-					mapDsstoxRecordsByOtherCAS.put(cas, mapDsstoxRecordsBySID_NoCompound.get(dtxsid));
-//					System.out.println(cas+"\t"+mapDsstoxRecordsBySID_NoCompound.get(dtxsid).getCasrn()+"\t"+dtxsid);
-				} else {
-//					System.out.println("We dont have "+dtxsid+" in our maps");
-				}
-				
-				
-//				if (dr!=null) {
-//					System.out.println(cas+"\t"+dtxsid+"\t"+dr.getPreferredName());
-//				}
-				
-//				System.out.println(cas+"\t"+dtxsid+"\t"+dr.getPreferredName());
+				DsstoxOtherCASRN d=new DsstoxOtherCASRN();
+				d.setCasrn(oc.casrn);
+				d.setFk_dsstox_record_id(dr.getId());
+				dr.getOtherCasrns().add(d);
 				
 			}
 			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		return recsOtherCAS;
 	}
+
 
 	
-	private void getDsstoxRecordsFromGenericSubstancesNoCompound() {
-		
-		dsstoxRecordsNoCompound=new ArrayList<>();
-		
-		File fileJson=new File("data\\dsstox\\json\\snapshot_dsstox_generic_substances_no_compound.json");
-		try {
-			JsonArray ja = Utilities.gson.fromJson(new FileReader(fileJson), JsonArray.class);
-			
-//			System.out.println(ja.size());
-			
-			
-			for (JsonElement je:ja) {
-				JsonObject jo=(JsonObject)je;
-				Set<Map.Entry<String, JsonElement>> entries = jo.entrySet();
+//	private void getDsstoxRecordsFromGenericSubstancesNoCompound() {
+//		
+//		dsstoxRecordsNoCompound=new ArrayList<>();
+//		
+//		File fileJson=new File("data\\dsstox\\json\\snapshot_dsstox_generic_substances_no_compound.json");
+//		try {
+//			JsonArray ja = Utilities.gson.fromJson(new FileReader(fileJson), JsonArray.class);
+//			
+////			System.out.println(ja.size());
+//			
+//			
+//			for (JsonElement je:ja) {
+//				JsonObject jo=(JsonObject)je;
+//				Set<Map.Entry<String, JsonElement>> entries = jo.entrySet();
+//
+//				DsstoxRecord rec=new DsstoxRecord();
+//
+//				for(Map.Entry<String, JsonElement> entry: entries) {
+//					String fieldName=entry.getKey();
+//					JsonElement value=entry.getValue();
+//					
+//					if (value.isJsonNull()) continue;
+//					if(fieldName.equals("dsstox_substance_id")) rec.setDtxsid(value.getAsString());
+//					if(fieldName.equals("preferred_name")) 	rec.setPreferredName(value.getAsString());
+//					if(fieldName.equals("casrn")) 	rec.setCasrn(value.getAsString());
+//					rec.setMolImagePNGAvailable(false);
+//				}
+//
+//				dsstoxRecordsNoCompound.add(rec);
+//			}
+//			
+////			System.out.println(Utilities.gson.toJson(recs));
+//
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//		
+//	}
 
-				DsstoxRecord rec=new DsstoxRecord();
 
-				for(Map.Entry<String, JsonElement> entry: entries) {
-					String fieldName=entry.getKey();
-					JsonElement value=entry.getValue();
-					
-					if (value.isJsonNull()) continue;
-					if(fieldName.equals("dsstox_substance_id")) 	rec.setDtxsid(value.getAsString());
-					if(fieldName.equals("preferred_name")) 	rec.setPreferredName(value.getAsString());
-					if(fieldName.equals("casrn")) 	rec.setCasrn(value.getAsString());
-					rec.setMolImagePNGAvailable(false);
-				}
-
-				dsstoxRecordsNoCompound.add(rec);
-			}
-			
-//			System.out.println(Utilities.gson.toJson(recs));
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-	}
-
-
-	private void getDsstoxRecordsFromJsonExport() {
+	/**
+	 * Gets dsstox records from json file export from dsstox snapshot and creates hashtables for look up for neighbors
+	 */
+	public static void getDsstoxRecordsFromJsonExport() {
 		
 		
 		dsstoxRecords=new ArrayList<>();
 		
-		File fileJson=new File("data\\dsstox\\json\\dsstox_records.json");
 		try {
-			JsonArray ja = Utilities.gson.fromJson(new FileReader(fileJson), JsonArray.class);
+			JsonArray ja = Utilities.gson.fromJson(new FileReader(fileJsonDsstoxRecords), JsonArray.class);
 			
 //			System.out.println(ja.size());
 			
@@ -287,7 +274,15 @@ public class OPERA_lookups {
 
 			}
 			
-//			System.out.println(Utilities.gson.toJson(recs));
+			//Populate hashtables:
+			for (DsstoxRecord rec:dsstoxRecords) {
+				if (rec.getDtxcid()!=null) mapDsstoxRecordsByCID.put(rec.getDtxcid(),rec);
+				mapDsstoxRecordsBySID.put(rec.getDtxsid(),rec);
+				mapDsstoxRecordsByCAS.put(rec.getCasrn(),rec);
+			}
+			
+			getOtherCASMapFromJson(); //loads from fileJsonOtherCAS
+			
 			
 
 		} catch (Exception e) {
@@ -296,6 +291,87 @@ public class OPERA_lookups {
 	}
 	
 	
+	/**
+	 * Gets dsstox records from dsstox_records table in postgres and creates maps
+	 *  to look up neighbors (takes about 1 minute when not in office)
+	 * 
+	 */
+	public static void getDsstoxRecordsFromDatabase() {
+		int fk_snapshot_id=1;
+		
+		dsstoxRecords=new ArrayList<>();
+
+		try {
+			
+			TreeMap<Long, List<DsstoxOtherCASRN>> tmOtherCAS = getOtherCAS_Map();//ideally hibernate could autopopulate the other casrns stored in dsstoxRecord but this is work around for now
+
+			DsstoxRecordServiceImpl rs=new DsstoxRecordServiceImpl();
+			List<DsstoxRecord>recsDB=rs.findAll();
+
+			
+			for (DsstoxRecord rec:recsDB) 	{
+				
+				if(rec.getDsstoxSnapshot().getId()!=fk_snapshot_id) continue;//skip record if not right snapshot
+				
+				dsstoxRecords.add(rec);
+
+				//Populate hashtables:
+				if (rec.getDtxcid()!=null) mapDsstoxRecordsByCID.put(rec.getDtxcid(),rec);
+				mapDsstoxRecordsBySID.put(rec.getDtxsid(),rec);
+				mapDsstoxRecordsByCAS.put(rec.getCasrn(),rec);
+				
+				if(tmOtherCAS.get(rec.getId())==null) continue;
+
+				List<DsstoxOtherCASRN>otherCASRNs=tmOtherCAS.get(rec.getId());
+				rec.setOtherCasrns(otherCASRNs);//manually set it rather than lazy loading it
+
+				for(DsstoxOtherCASRN otherCASRN:otherCASRNs) {//store other casrns in lookup:
+					mapDsstoxRecordsByCAS.put(otherCASRN.getCasrn(),rec);
+//					System.out.println(rec.getDtxsid()+"\t"+otherCASRN.getCasrn());
+				}
+				
+			}
+			
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	
+	/**
+	 * Gets map of other casrns
+	 * Key = DsstoxRecord id
+	 * Value = list of DsstoxOtherCASRNs
+	 * 
+	 * @return
+	 */
+	public static TreeMap<Long, List<DsstoxOtherCASRN>> getOtherCAS_Map() {
+		DsstoxRecordOtherCASRNServiceImpl ocs=new DsstoxRecordOtherCASRNServiceImpl();
+		
+//		System.out.println("Getting recs OtherCAS");
+//		List<DsstoxOtherCASRN>recsOtherCAS=ocs.findAll();//slow for some reason
+		List<DsstoxOtherCASRN>recsOtherCAS=ocs.findAllSql();
+		
+//		System.out.println("Done");
+		
+		TreeMap<Long,List<DsstoxOtherCASRN>> tmOtherCAS=new TreeMap<>();
+		
+		for(DsstoxOtherCASRN recOtherCAS:recsOtherCAS) {
+			
+			long id=recOtherCAS.getFk_dsstox_record_id();
+			
+			if(tmOtherCAS.get(id)==null) {
+				List<DsstoxOtherCASRN>otherCASRNs=new ArrayList<>();
+				tmOtherCAS.put(id,otherCASRNs);
+				otherCASRNs.add(recOtherCAS);
+			} else {
+				List<DsstoxOtherCASRN>otherCASRNs=tmOtherCAS.get(id);
+				otherCASRNs.add(recOtherCAS);
+			}
+		}
+		return tmOtherCAS;
+	}
 	
 	private DsstoxRecord createNaphthalene() {
 		DsstoxRecord dr=new DsstoxRecord();
@@ -312,7 +388,7 @@ public class OPERA_lookups {
 	
 	
 	
-	private TreeMap <String,Property> getPropertyMap() {
+	public static TreeMap <String,Property> getPropertyMap() {
 		
 		PropertyServiceImpl ps=new PropertyServiceImpl();
 		List<Property>properties=ps.findAll();
@@ -341,7 +417,7 @@ public class OPERA_lookups {
 	}
 
 	
-	private TreeMap<String, Dataset> getDatasetsMap() {
+	public static TreeMap<String, Dataset> getDatasetsMap() {
 		
 		DatasetServiceImpl ps=new DatasetServiceImpl();
 		List<Dataset>datasets=ps.findAll();
@@ -353,7 +429,7 @@ public class OPERA_lookups {
 		return mapDatasets;
 	}
 	
-	private TreeMap<String, Model> getModelsMap() {
+	public static TreeMap<String, Model> getModelsMap() {
 		
 		ModelServiceImpl ps=new ModelServiceImpl();
 		List<Model>models=ps.getAll();
@@ -407,9 +483,4 @@ public class OPERA_lookups {
 
 	}
 
-
-	public static void main(String[] args) {
-		
-	}
-	
 }

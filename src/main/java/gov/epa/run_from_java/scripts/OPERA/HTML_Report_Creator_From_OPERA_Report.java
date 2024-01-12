@@ -1,23 +1,15 @@
 package gov.epa.run_from_java.scripts.OPERA;
 
-import java.awt.Desktop;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.Writer;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.Writer;
 import java.text.DecimalFormat;
-import java.util.List;
 
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
-
-import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
-import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedADEstimate;
-import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedNeighbor;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.run_from_java.scripts.OPERA.OPERA_Report.Neighbor;
 
 /**
@@ -25,10 +17,8 @@ import gov.epa.run_from_java.scripts.OPERA.OPERA_Report.Neighbor;
 */
 public class HTML_Report_Creator_From_OPERA_Report {
 
-	
-	String imgURL="https://comptox.epa.gov/dashboard-api/ccdapp1/chemical-files/image/by-dtxcid/";
-
-//	String imageURL="https://ccte-api-ccd-stg.epa.gov/ccdapp1/chemical-files/image/by-dtxcid/";
+	String imgURLCid="https://comptox.epa.gov/dashboard-api/ccdapp1/chemical-files/image/by-dtxcid/";
+	String imgURLSid="https://comptox.epa.gov/dashboard-api/ccdapp1/chemical-files/image/by-dtxsid/";
 	String detailsURL="https://comptox.epa.gov/dashboard/chemical/details/";
 
 	String createReport(OPERA_Report or) {
@@ -49,7 +39,10 @@ public class HTML_Report_Creator_From_OPERA_Report {
 			fw.write("</head>\n");
 			
 			
-			fw.write("<h2>OPERA Model Calculation Details: "+or.modelDetails.propertyName+"</h2>\r\n");
+			fw.write("<h3>OPERA Model Calculation Details</h3>\r\n");
+			
+//			fw.write("<h2>OPERA Model Calculation Details: "+"<div class=\"tooltip\">"+or.modelDetails.propertyName+
+//					  "<span class=\"tooltiptext\">"+or.modelDetails.propertyDescription+"</span></div>"+"</h2>\r\n");
 			
 			fw.write("<table border=0 width=100%>\n");
 			
@@ -106,8 +99,8 @@ public class HTML_Report_Creator_From_OPERA_Report {
 		fw.write("\t<tr>\n");
 
 		//Structure Image for test chemical:
-		String imgURL=this.imgURL+or.chemicalIdentifiers.dtxcid;
-		fw.write("\t\t<td width=150px><img src=\""+imgURL+"\" height=150 width=150 border=1></td>\n");
+		String imgURL=this.imgURLCid+or.chemicalIdentifiers.dtxcid;
+		fw.write("\t\t<td width=150px valign=\"top\"><img src=\""+imgURL+"\" height=150 width=150 border=2></td>\n");
 		
 		fw.write("<td valign=\"top\">");
 		writeChemicalInfo(or, fw);
@@ -153,21 +146,42 @@ public class HTML_Report_Creator_From_OPERA_Report {
 	}
 	
 	
-	String getFormattedValue(String value) {
+	public static String setSignificantDigits(double value, int significantDigits) {
+	    if (significantDigits < 0) throw new IllegalArgumentException();
 
-		DecimalFormat df1=new DecimalFormat("0.00");
-		DecimalFormat df2=new DecimalFormat("0.00E00");
+	    // this is more precise than simply doing "new BigDecimal(value);"
+	    BigDecimal bd = new BigDecimal(value, MathContext.DECIMAL64);
+	    bd = bd.round(new MathContext(significantDigits, RoundingMode.HALF_UP));
+	    final int precision = bd.precision();
+	    if (precision < significantDigits)
+	    bd = bd.setScale(bd.scale() + (significantDigits-precision));
+	    return bd.toPlainString();
+	}    
+	
+	String getFormattedValue(String value,String propertyName) {
 
+		int nsig=3;
+
+		DecimalFormat dfSci=new DecimalFormat("0.00E00");
+		DecimalFormat dfInt=new DecimalFormat("0");
+
+//		DecimalFormat df1=new DecimalFormat("0.00");
+//		DecimalFormat df4=new DecimalFormat("0.0");
+		
 		try {
 			double dvalue=Double.parseDouble(value);
 			
+			if(propertyName.equals(DevQsarConstants.RBIODEG) || propertyName.contains("receptor"))
+				return dfInt.format(dvalue);
 			
-
-			if(dvalue<0.1 && dvalue!=0) {
-				return df2.format(dvalue);
-			} else  {
-				return df1.format(dvalue);
+//			if(propertyName.equals(DevQsarConstants.BOILING_POINT) || propertyName.equals(DevQsarConstants.MELTING_POINT)) 
+//				return df4.format(dvalue);
+			
+			if(Math.abs(dvalue)<0.01 && dvalue!=0) {
+				return dfSci.format(dvalue);
 			}
+//			System.out.println(dvalue+"\t"+setSignificantDigits(dvalue, nsig));
+			return setSignificantDigits(dvalue, nsig);
 
 		} catch (Exception ex) {
 			return value;
@@ -203,8 +217,8 @@ public class HTML_Report_Creator_From_OPERA_Report {
 //		fw.write("\t<td>\n");
 		writeStatsTable(or,fw);
 		
-		if (or.modelDetails.qmrfReportUrl!=null) {
-			fw.write("<span class=\"border\"><a href=\""+or.modelDetails.qmrfReportUrl+"\"> QMRF</a></span>"+
+		if (or.modelDetails.hasQmrfPdf==1) {
+			fw.write("<span class=\"border\"><a href=\""+or.modelDetails.qmrfReportUrl+"\" target=\"_blank\"> QMRF</a></span>"+
 			"<style>.border {border: 2px solid darkblue; padding: 2px 4px 2px;}</style><br><br>");
 		}
 		
@@ -219,6 +233,14 @@ public class HTML_Report_Creator_From_OPERA_Report {
 		fw.write("<td align=center>"+text+"</td>\n");
 	}
 	
+	void  writeCenteredTD(Writer fw, Double value) throws IOException {
+		
+		if(value==null) {
+			fw.write("<td align=center>N/A</td>\n");	
+		} else {
+			fw.write("<td align=center>"+value+"</td>\n");
+		}
+	}
 	
 	private void writeStatsTable(OPERA_Report or, Writer fw) throws IOException {
 
@@ -241,30 +263,16 @@ public class HTML_Report_Creator_From_OPERA_Report {
 			fw.write("</tr>\n");
 
 			fw.write("<tr>\n");
-			writeCenteredTD(fw, or.modelResults.performance.fiveFoldICV.Q2+"");
 			
-			if (or.modelResults.performance.fiveFoldICV.RMSE==null) {
-				writeCenteredTD(fw, "NA");
-			} else {
-				writeCenteredTD(fw, or.modelResults.performance.fiveFoldICV.RMSE+"");
-			}
-			writeCenteredTD(fw, or.modelResults.performance.train.R2+"");
-			writeCenteredTD(fw, or.modelResults.performance.train.RMSE+"");
-			
-			
-			if (or.modelResults.performance.external.R2==null) {
-				writeCenteredTD(fw, "NA");
-			} else {
-				writeCenteredTD(fw, or.modelResults.performance.external.R2+"");
-			}
-			
+			writeCenteredTD(fw, or.modelResults.performance.fiveFoldICV.Q2);
+			writeCenteredTD(fw, or.modelResults.performance.fiveFoldICV.RMSE);
 
-			if (or.modelResults.performance.external.RMSE==null) {
-				writeCenteredTD(fw, "NA");
-			} else {
-				writeCenteredTD(fw, or.modelResults.performance.external.RMSE+"");
-			}
-
+			writeCenteredTD(fw, or.modelResults.performance.train.R2);
+			writeCenteredTD(fw, or.modelResults.performance.train.RMSE);
+			
+			writeCenteredTD(fw, or.modelResults.performance.external.R2);
+			writeCenteredTD(fw, or.modelResults.performance.external.RMSE);
+			
 			fw.write("</tr>\n");
 			
 			fw.write("</table>\n");
@@ -289,15 +297,19 @@ public class HTML_Report_Creator_From_OPERA_Report {
 			fw.write("</tr>\n");
 
 			fw.write("<tr>\n");
-			writeCenteredTD(fw, or.modelResults.performance.fiveFoldICV.BA+"");
-			writeCenteredTD(fw, or.modelResults.performance.fiveFoldICV.SN+"");
-			writeCenteredTD(fw, or.modelResults.performance.fiveFoldICV.SP+"");
-			writeCenteredTD(fw, or.modelResults.performance.train.BA+"");
-			writeCenteredTD(fw, or.modelResults.performance.train.SN+"");
-			writeCenteredTD(fw, or.modelResults.performance.train.SP+"");
-			writeCenteredTD(fw, or.modelResults.performance.external.BA+"");
-			writeCenteredTD(fw, or.modelResults.performance.external.SN+"");
-			writeCenteredTD(fw, or.modelResults.performance.external.SP+"");
+			
+			writeCenteredTD(fw, or.modelResults.performance.fiveFoldICV.BA);
+			writeCenteredTD(fw, or.modelResults.performance.fiveFoldICV.SN);
+			writeCenteredTD(fw, or.modelResults.performance.fiveFoldICV.SP);
+			
+			writeCenteredTD(fw, or.modelResults.performance.train.BA);
+			writeCenteredTD(fw, or.modelResults.performance.train.SN);
+			writeCenteredTD(fw, or.modelResults.performance.train.SP);
+			
+			
+			writeCenteredTD(fw, or.modelResults.performance.external.BA);
+			writeCenteredTD(fw, or.modelResults.performance.external.SN);
+			writeCenteredTD(fw, or.modelResults.performance.external.SP);
 			fw.write("</tr>\n");
 			
 			fw.write("</table>\n");
@@ -312,10 +324,13 @@ public class HTML_Report_Creator_From_OPERA_Report {
 	}
 	
 	private void writeNeighbors(OPERA_Report or, Writer fw) throws IOException {
+		
+		if (or.neighbors.size()==0) return;
+		
 		fw.write("<table border=0 width=100%>\n");
 		
 		fw.write("\t<tr bgcolor=\"black\">\n");
-		fw.write("\t\t<td><font color=\"white\">Nearest neighbors from the training set</color></td>\n");
+		fw.write("\t\t<td><font color=\"white\">Nearest Neighbors from Model Knowledge Base</color></td>\n");
 		fw.write("\t</tr>\n");
 
 		fw.write("\t<tr><td>\n");
@@ -325,9 +340,65 @@ public class HTML_Report_Creator_From_OPERA_Report {
 		fw.write("</table>");
 	}
 
-	
+
+	/**
+	 * Checks to see if have valid cas number with check sum method
+	 * 
+	 * @param CAS
+	 * @return
+	 */
+	public static boolean isCAS_OK(String CAS) {
+		
+		if (CAS.indexOf(" ")>-1) {
+//			System.out.println("Space!");
+			return false;
+		}
+		
+		String [] part=CAS.split("-");
+		
+		if (part.length!=3) return false;
+		
+		String part1=part[0];
+		String part2=part[1];
+		String part3=part[2];
+		
+		int sum=0;
+		
+		for (int i=0;i<part1.length();i++) {
+			String s=part1.substring(i, i+1);
+			if (!Character.isDigit(s.charAt(0))) return false;
+			sum+=(part1.length()+2-i)*Integer.parseInt(s);
+		}
+		
+		String s1=part2.substring(0, 1);
+		String s2=part2.substring(1, 2);
+		
+		if (!Character.isDigit(s1.charAt(0)) || !Character.isDigit(s2.charAt(0))) {
+			return false;
+		}
+		
+		int N2=Integer.parseInt(s1);
+		int N1=Integer.parseInt(s2);
+		int R=Integer.parseInt(part3);
+		
+		sum+=2*N2+N1;
+		
+		double bob=((double)sum)/10.0;
+		double bob2=Math.floor(bob);
+		double bob3=(bob-bob2)*10.0;
+		
+		int R2=(int)Math.round(bob3);
+		
+//		System.out.println(bob3);
+//		System.out.println(R+"\t"+R2);
+		
+		return R2==R;
+		
+		
+	}
 	private void writeNeighborsTable(OPERA_Report or, Writer fw) throws IOException {
 
+		boolean haveMissingExpVal=false;
 		
 		
 		fw.write("<table border=0 width=100%>\n");
@@ -335,12 +406,8 @@ public class HTML_Report_Creator_From_OPERA_Report {
 		fw.write("\t<tr>\n");
 		
 		for (int i=1;i<=5;i++) {
-			fw.write("\t\t<td valign=\"top\" width=20%>");
-			fw.write("<b>Neighbor</b>: "+i+"<br>");
-			
 			String measured=null;
 			String predicted=null; 
-			
 			for (Neighbor n:or.neighbors) {
 				if(n.neighborNumber==i) {
 					measured=n.measured;
@@ -349,29 +416,53 @@ public class HTML_Report_Creator_From_OPERA_Report {
 				}
 			}
 			
+			if(measured==null && predicted==null) continue;//no match for neighbor number
+
+			fw.write("\t\t<td valign=\"top\" width=20%>");
+			fw.write("<b>Neighbor</b>: "+i+"<br>");
 			
-			fw.write("<b>Measured</b>: "+getFormattedValue(measured)+" "+or.modelResults.standardUnit+"<br>");//add units
+			measured=getFormattedValue(measured,or.modelDetails.propertyName);
 			
+			fw.write("<b>Measured:</b> ");
+
+			if(measured==null) {
+				fw.write("N/A*<br>");
+				haveMissingExpVal=true;
+			} else {
+				fw.write(measured+" "+or.modelResults.standardUnit+"<br>");//add units
+			}
 			
-			fw.write("<div class=\"tooltip\"><b>Predicted:</b> "+
+			fw.write("<div class=\"tooltip\"><b>Predicted:</b>"+
 					  "<span class=\"tooltiptext\">Leave one out prediction for the neighbor</span></div>");
 			
-			fw.write(getFormattedValue(predicted)+" "+or.modelResults.standardUnit+"<br><br>");//add units
+			fw.write(" "+getFormattedValue(predicted, or.modelDetails.propertyName)+" "+or.modelResults.standardUnit+"<br><br>");//add units
 			
 			for (Neighbor n:or.neighbors) {
 				if(n.neighborNumber!=i) continue;
 				
-				if(n.molImagePNGAvailable) {
-					fw.write("<img src=\""+this.imgURL+n.dtxcid+"\"\" height=150 width=150 border=1><br>");
-					fw.write("<a href=\""+this.detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.preferredName+"</a></figcaption><br>");
-					
+				if(n.dsstoxRecord!= null && n.dsstoxRecord.isMolImagePNGAvailable()) {
+					fw.write("<img src=\""+this.imgURLCid+n.dsstoxRecord.getDtxcid()+"\"\" height=150 width=150 border=1><br>");
+					fw.write("<a href=\""+this.detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.dsstoxRecord.getPreferredName()+"</a></figcaption><br>");
 //					fw.write("<figure><img src=\""+imageURL+n.getDtxcid()+"\"\" height=150 width=150 border=1>");
 //					fw.write("<figcaption><a href=\""+detailsURL+n.getDtxsid()+"\" target=\"_blank\">"+n.getPreferredName()+"</a></figcaption>");
 //					fw.write("</figure>\n");
 				} else if(n.dtxsid!=null) {
-					fw.write("No structure image<br><a href=\""+detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.preferredName+"</a></figcaption><br>");
+					if(n.dsstoxRecord==null) {
+						System.out.println("For "+or.modelDetails.propertyName+ " for "+or.chemicalIdentifiers.dtxcid+ ", No dsstox record for "+n.dtxsid);
+						fw.write("No structure image<br><a href=\""+detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.dtxsid+"</a></figcaption><br>");
+					} else {
+						if(n.dsstoxRecord.getDtxcid()!=null)						
+							System.out.println("For "+or.modelDetails.propertyName+" for "+or.chemicalIdentifiers.dtxcid+", have dsstox record for "+n.dtxsid+" (" +n.dsstoxRecord.getPreferredName()+")but no image for neighbor");
+						
+						fw.write("No structure image<br><a href=\""+detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.dsstoxRecord.getPreferredName()+"</a></figcaption><br>");
+					}
+					
 				} else {
-					fw.write(n.casrn+"<br>\n");
+					
+					if(isCAS_OK(n.casrn))//just print the ones that have a valid cas but no still no dtxsid
+						System.out.println("For "+or.modelDetails.propertyName+" for "+or.chemicalIdentifiers.dtxcid+", only have casrn="+n.casrn+" for neighbor (no dsstox record match)");
+					
+					fw.write("No structure image<br>"+n.casrn+"<br>\n");
 				}
 				
 				fw.write("<br>");
@@ -382,9 +473,17 @@ public class HTML_Report_Creator_From_OPERA_Report {
 		
 		fw.write("\t</tr>\n");
 		fw.write("</table>");
+		
+		if(haveMissingExpVal) {
+			fw.write("* Some chemicals in the evaluation set do not have readily available experimental values");
+		}
 	}
 	
 	private void writeModelResults(OPERA_Report or, Writer fw) throws IOException {
+		
+		DecimalFormat df=new DecimalFormat("0.00");
+
+		
 		fw.write("<table border=0 width=100%>\n");
 		
 		fw.write("\t<tr bgcolor=\"black\">\n");
@@ -393,42 +492,21 @@ public class HTML_Report_Creator_From_OPERA_Report {
 
 		fw.write("\t<tr>\n");
 		fw.write("<td>");
-		
-		
-		//TODO need to add units to prediction value:
-		
-		if (or.modelResults.experimental!=null) {
-			fw.write("<b>Experimental value:</b> "+getFormattedValue(or.modelResults.experimental)+" "+or.modelResults.standardUnit+"<br>");
-		} else {
-			fw.write("<b>Experimental value: </b>N/A<br>");
-		}
-		
-		
-		fw.write("<div class=\"tooltip\"><b>Predicted value:</b> "+
-				  "<span class=\"tooltiptext\">Predicted value from the weighted kNN model. "
-				  + "If the chemical is present in the training set of the model, "
-				  + "the experimental value will match the predicted value</span></div>");
 
-		fw.write(getFormattedValue(or.modelResults.predicted)+" "+or.modelResults.standardUnit+"<br>");
+		fw.write("<b>Model name:</b> "+or.modelDetails.modelName+"<br>");
+		fw.write("<b>Model source:</b> "+or.modelDetails.modelSource+"<br>\n");
+		fw.write("<b>Property name:</b> "+or.modelDetails.propertyName+"<br>\n");
+		fw.write("<b>Property description:</b> "+or.modelDetails.propertyDescription+"<br>\n");
 
-		DecimalFormat df=new DecimalFormat("0.00");
 		
+		writeExperimental(or, fw);
+
+		writePrediction(or, fw);
+
 		this.writeGlobalAD(or, fw);
-		
-		fw.write("<div class=\"tooltip\"><b>Local applicability domain index:</b> "+
-				  "<span class=\"tooltiptext\">Local applicability domain is relative to the similarity of the query chemical to its\r\n"
-				  + "five nearest neighbors in the p-dimensional space of the\r\n"
-				  + "model using a weighted Euclidean distance </span></div>");
+		this.writeLocalAD(or, fw, df);
+		this.writeConfidenceIndex(or, fw, df);
 
-		fw.write(df.format(Double.parseDouble(or.modelResults.local))+"<br>");
-
-		fw.write("<div class=\"tooltip\"><b>Confidence level:</b> "+
-				  "<span class=\"tooltiptext\">Confidence level is calculated based on the\r\n"
-				  + "accuracy of the predictions of the five nearest neighbors\r\n"
-				  + "weighted by their distance to the query chemical</span></div>");
-		fw.write(df.format(Double.parseDouble(or.modelResults.confidence))+"<br>");
-
-		fw.write("<b>Model:</b> "+or.modelDetails.modelName+"<br>");
 //		fw.write("<b>OPERA version:</b> "+or.modelDetails.source+"<br>");
 
 		fw.write("</td>\n");
@@ -437,7 +515,77 @@ public class HTML_Report_Creator_From_OPERA_Report {
 		fw.write("</table>");
 	}
 
+	private void writeExperimental(OPERA_Report or, Writer fw) throws IOException {
+		
+		if (or.modelResults.experimental!=null) {
+			fw.write("<b>Experimental value:</b> "+getFormattedValue(or.modelResults.experimental,or.modelDetails.propertyName));
+
+			fw.write(" "+or.modelResults.standardUnit);//add units
+			
+//			if(or.modelDetails.modelName.contains("CATMoS") && !or.modelDetails.modelName.equals("CATMoS-LD50")) {
+//				fw.write("mg/kg");				
+//			}
+
+			if(or.modelResults.experimentalConclusion!=null) {
+				fw.write(" ("+or.modelResults.experimentalConclusion+")");
+			}
+			
+		} else {
+			fw.write("<b>Experimental value: </b>N/A");
+		}
+		
+		fw.write("<br>\n");
+	}
+
+	private void writePrediction(OPERA_Report or, Writer fw) throws IOException {
+		fw.write("<div class=\"tooltip\"><b>Predicted value:</b> "+
+				  "<span class=\"tooltiptext\">Predicted value from the weighted kNN model. "
+				  + "If the chemical is present in the training set of the model, "
+				  + "the experimental value will match the predicted value</span></div>");
+
+		
+		if(or.modelResults.predicted!=null) {
+			fw.write(" "+getFormattedValue(or.modelResults.predicted,or.modelDetails.propertyName)+" "+or.modelResults.standardUnit);
+
+			if(or.modelResults.predictedConclusion!=null) {
+				fw.write("("+or.modelResults.predictedConclusion+")");
+			}
+			
+		} else {
+			fw.write(" N/A");
+		}
+		fw.write("<br>");
+	}
+
+	private void writeConfidenceIndex(OPERA_Report or, Writer fw, DecimalFormat df) throws IOException {
+		
+		if (or.modelResults.confidence==null) return;
+		
+		fw.write("<div class=\"tooltip\"><b>Confidence level:</b> "+
+				  "<span class=\"tooltiptext\">Confidence level is calculated based on the\r\n"
+				  + "accuracy of the predictions of the five nearest neighbors\r\n"
+				  + "weighted by their distance to the query chemical</span></div>");
+		fw.write(" "+df.format(Double.parseDouble(or.modelResults.confidence))+"<br>");
+	}
+
+	private void writeLocalAD(OPERA_Report or, Writer fw, DecimalFormat df) throws IOException {
+		
+		if (or.modelResults.local==null) return;
+		
+		fw.write("<div class=\"tooltip\"><b>Local applicability domain index:</b> "+
+				  "<span class=\"tooltiptext\">Local applicability domain is relative to the similarity of the query chemical to its\r\n"
+				  + "five nearest neighbors in the p-dimensional space of the\r\n"
+				  + "model using a weighted Euclidean distance </span></div>");
+
+		fw.write(" "+df.format(Double.parseDouble(or.modelResults.local))+"<br>");
+	}
+
 	void writeGlobalAD(OPERA_Report or, Writer fw) throws IOException {
+		
+		if (or.modelResults.msgs.globalTitle==null) {
+			return;
+		}
+		
 		fw.write("<div class=\"tooltip\"><b>Global applicability domain:</b> "+
 				  "<span class=\"tooltiptext\">Global applicability domain via the leverage approach</span></div>");
 				

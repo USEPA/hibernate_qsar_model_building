@@ -169,7 +169,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 
 		List<PredictionReport>reports=new ArrayList<>();
 
-		String sql="SELECT id, file, created_by, created_at, fk_prediction_dashboard_id from qsar_models.prediction_reports\n";  
+		String sql="SELECT id, file, created_by, created_at, fk_predictions_dashboard_id from qsar_models.prediction_reports\n";  
 		sql+="where updated_by is null\n";
 		sql+="ORDER BY id\n";
 		sql+="LIMIT "+limit+" OFFSET "+offset;
@@ -214,7 +214,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 		
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		
-		String [] fieldNames= {"fk_prediction_dashboard_id", "file","created_by", "created_at"};
+		String [] fieldNames= {"fk_predictions_dashboard_id", "file","created_by", "created_at"};
 
 		int batchSize=1000;
 		

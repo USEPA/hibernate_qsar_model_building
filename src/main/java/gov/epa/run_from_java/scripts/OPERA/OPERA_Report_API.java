@@ -5,9 +5,13 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.PropertyService;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.PropertyServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedADEstimate;
@@ -22,7 +26,7 @@ import gov.epa.run_from_java.scripts.SqlUtilities;
 */
 public class OPERA_Report_API {
 
-			
+		
 	DatasetService ds=new DatasetServiceImpl();
 	PredictionDashboardServiceImpl pds=new PredictionDashboardServiceImpl();
 	QsarPredictedNeighborServiceImpl qpns=new QsarPredictedNeighborServiceImpl();
@@ -66,8 +70,8 @@ public class OPERA_Report_API {
 	/**
 	 * Assembles OPERA report from several tables in database on the fly
 	 * 
-	 * @param id
-	 * @param modelName
+	 * @param id: dtxcid or dtxsid of chemical being looked up
+	 * @param modelName: name of model
 	 * @return
 	 */
 	OPERA_Report getOperaReportFromPredictionDashboard(String id,String modelName,boolean useModelImageAPI) {
@@ -76,17 +80,30 @@ public class OPERA_Report_API {
 		if (id.contains("SID")) idCol="dtxsid";
 		
 				
-		String sql="Select id from qsar_models.models m where m.name='"+modelName+"'";
-		Long modelId=	Long.parseLong(SqlUtilities.runSQL(conn, sql));
+		String sql="Select m.id from qsar_models.models m\n"+ 
+		"join qsar_models.sources s on m.fk_source_id = s.id "+
+		"where m.name='"+modelName+"';";
+
+		String strModelID=SqlUtilities.runSQL(conn, sql);
+		
+		if(strModelID==null) {
+			System.out.println("prediction for "+modelName+" and "+id+" not in db");
+			return null;
+		}
+		
+		Long modelId=Long.parseLong(strModelID);
 		sql="Select id from qsar_models.dsstox_records dr where dr."+idCol+"='"+id+"' and dr.fk_dsstox_snapshot_id=1";
 		Long dsstoxRecordId=Long.parseLong(SqlUtilities.runSQL(conn, sql));
+		
+		System.out.println("modelID="+modelId+",dsstoxRecordId="+dsstoxRecordId);
+		
 		
 		PredictionDashboard pd=pds.findByIds(modelId, dsstoxRecordId);
 //		System.out.println(pd.getQsarPredictedNeighbors().size());
 //		System.out.println(pd.getDsstoxRecord().getDtxcid()+"\t"+pd.getId());
 		
-		pd.setQsarPredictedNeighbors(qpns.findById(pd.getId()));
-		pd.setQsarPredictedADEstimates(qpas.findById(pd.getId()));
+		pd.setQsarPredictedNeighbors(qpns.findById(pd.getId()));//TODO hibernate doesnt seem to automatically populate it
+		pd.setQsarPredictedADEstimates(qpas.findById(pd.getId()));//TODO hibernate doesnt seem to automatically populate it
 
 
 //		System.out.println(modelId+"\t"+dsstoxRecordId+"\t"+pd.getId());
@@ -99,43 +116,51 @@ public class OPERA_Report_API {
 //		for (QsarPredictedADEstimate n:pd.getQsarPredictedADEstimates()) {
 //			System.out.println(n.getMethodAD().getName()+"\t"+n.getApplicabilityValue());
 //		}
-
 		
 		String datasetName=pd.getModel().getDatasetName();
 		Dataset dataset=ds.findByName(datasetName);
-		
+		Property property=dataset.getProperty();
 		String unitAbbreviation=dataset.getUnitContributor().getAbbreviation();
-		OPERA_Report or=new OPERA_Report(pd,unitAbbreviation,useModelImageAPI);
+		OPERA_Report or=new OPERA_Report(pd,property,unitAbbreviation,useModelImageAPI);
 		
 		return or;
 		
 	}
 	
-	
-	
-	public static void main(String[] args) {
-		OPERA_Report_API o=new OPERA_Report_API();
+	public void viewReportsFromDatabase() {
+//		String id="DTXCID1015";
+//		String id="DTXSID7020001";
+//		String id="DTXCID505";
+		String id="DTXCID101";
 		
-//		String id="DTXCID101";
-		String id="DTXSID7020001";
-		
-//		String modelName="OPERA2.9_CACO2";
-//		String modelName="OPERA2.9_WS";
-		
-		String [] modelNames= {"OPERA2.9_WS","OPERA2.9_VP","OPERA2.9_MP"};
+		String [] propertyNames= {DevQsarConstants.ORAL_RAT_LD50,
+				DevQsarConstants.WATER_SOLUBILITY,
+				DevQsarConstants.RBIODEG,
+				DevQsarConstants.ANDROGEN_RECEPTOR_AGONIST};
 		
 		String folder="data\\opera\\reports";
 		
-		boolean useModelImageAPI=true;//set to false for testing purposes to get a viewable image
+		boolean useModelImageAPI=false;//set to false for testing purposes to get a viewable image
 				
-		for (String modelName:modelNames) {
-			System.out.println(modelName);
-			OPERA_Report or=o.getOperaReportFromPredictionDashboard(id,modelName,useModelImageAPI);
-//			OPERA_Report or=o.getOperaReportFromPredictionReport(id,modelName);
+		for (String propertyName:propertyNames) {
+			
+			String modelName=OPERA_csv_to_PostGres_DB.getModelName(propertyName);
+//			System.out.println(modelName);
+			OPERA_Report or=getOperaReportFromPredictionDashboard(id,modelName,useModelImageAPI);
+//			OPERA_Report or=getOperaReportFromPredictionReport(id,modelName);
+			
+			if(or==null) continue;
+			
 			String filename=or.chemicalIdentifiers.dtxcid+"_"+or.modelDetails.modelName+".html";
 			or.toHTMLFile(folder,filename);
 			or.viewInWebBrowser(folder+File.separator+filename);
 		}
+		
+	}
+	
+	public static void main(String[] args) {
+		OPERA_Report_API o=new OPERA_Report_API();
+		o.viewReportsFromDatabase();
 	}	
 
 }
