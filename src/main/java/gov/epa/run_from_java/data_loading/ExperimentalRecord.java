@@ -22,9 +22,6 @@ public class ExperimentalRecord {
 
 	public String property_category;//keep?
 	
-	public String reference;//keep?
-	
-	public LiteratureSource literatureSource;
 	
 	
 	//Property value fields:
@@ -57,7 +54,11 @@ public class ExperimentalRecord {
 	public String url;
 	public String source_name;//use Experimental constants
 	public String original_source_name;//If specific reference/paper provided
-								//"original_source_name" rather than "source_name_original" to avoid syntactic confusion with "*_original" vs "*_final" fields above
+
+	public String reference;//keep?
+	public LiteratureSource literatureSource;
+
+	//"original_source_name" rather than "source_name_original" to avoid syntactic confusion with "*_original" vs "*_final" fields above
 	public String fr_id;
 	public String date_accessed;//use Experimental constants
 	

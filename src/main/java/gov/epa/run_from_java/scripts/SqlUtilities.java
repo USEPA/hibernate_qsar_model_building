@@ -72,8 +72,13 @@ public class SqlUtilities {
 		String host = System.getenv().get("DSSTOX_HOST");
 		String port = System.getenv().get("DSSTOX_PORT");
 		String db = System.getenv().get("DSSTOX_DATABASE");
+		
 
 		String url = "jdbc:mysql://" + host + ":" + port + "/" + db;
+		
+//		System.out.println(url);
+
+		
 		String user = System.getenv().get("DSSTOX_USER");
 		String password = System.getenv().get("DSSTOX_PASS");
 
@@ -92,8 +97,8 @@ public class SqlUtilities {
 public static Connection getConnectionToxValV93() {
 		
 		try {
-			if (connPool.containsKey(dbDSSTOX) && connPool.get(dbDSSTOX) != null && !connPool.get(dbDSSTOX).isClosed()) {
-				return connPool.get(dbDSSTOX);
+			if (connPool.containsKey(dbToxVal93) && connPool.get(dbToxVal93) != null && !connPool.get(dbToxVal93).isClosed()) {
+				return connPool.get(dbToxVal93);
 			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block

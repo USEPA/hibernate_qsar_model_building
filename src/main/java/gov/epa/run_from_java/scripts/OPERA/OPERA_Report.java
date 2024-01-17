@@ -27,8 +27,8 @@ public class OPERA_Report {
 	String urlHistogramAPI="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/histo-graph/by-modelid/";
 	String urlScatterPlotAPI="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/scatter-graph/by-modelid/";
 	
-	String urlHistogramAPIOld="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/histo-graph/by-dtxsid/DTXSID3039242/";
-	String urlScatterPlotAPIOld="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/scatter-graph/by-dtxsid/DTXSID3039242/";
+	public static String urlHistogramAPIOld="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/histo-graph/by-dtxsid/DTXSID3039242/";
+	public static String urlScatterPlotAPIOld="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/scatter-graph/by-dtxsid/DTXSID3039242/";
 	
 	String urlQMRF_API="https://comptox.epa.gov/dashboard-api/ccdapp1/qmrfdata/file/by-modelid/";
 	
@@ -349,11 +349,12 @@ public class OPERA_Report {
 		this.modelDetails.category="QSAR";
 		this.modelDetails.source=pd.getModel().getSource().getName();
 		this.modelDetails.hasQmrfPdf=hasQMRF(pd);
-		this.modelDetails.hasPlots=hasPlots(pd);
+		this.modelDetails.hasPlots=hasPlots(property.getName());
 		
 		this.modelDetails.description=pd.getModel().getSource().getDescription();
 		
 		if (useLatestModelIds) {
+			//TODO OPERA scatter plot and histograms are stored in model_files table with fileType=3 and 4- could get images from there instead
 			if(this.modelDetails.hasPlots==1) {
 				this.modelDetails.urlHistogram=urlHistogramAPI+pd.getModel().getId();				
 				this.modelDetails.urlScatterPlot=urlScatterPlotAPI+pd.getModel().getId();
@@ -361,7 +362,7 @@ public class OPERA_Report {
 			if(modelDetails.hasQmrfPdf==1) this.modelDetails.qmrfReportUrl=urlQMRF_API+pd.getModel().getId();//these need to be available from Asif's API for that model Id
 		
 		} else {
-			int modelID_old=getOldModelID(property);
+			int modelID_old=getOldModelID(property.getName());
 			
 			if(modelID_old==-1) modelDetails.hasQmrfPdf=0;//we dont have oral rat ld50 qmrf available 
 			
@@ -375,8 +376,8 @@ public class OPERA_Report {
 	}
 	
 	
-	int getOldModelID(Property property) {
-		switch (property.getName()) {
+	public static int getOldModelID(String propertyName) {
+		switch (propertyName) {
 			case DevQsarConstants.BOILING_POINT:
 				return 27;
 			case DevQsarConstants.HENRYS_LAW_CONSTANT:
@@ -478,14 +479,12 @@ public class OPERA_Report {
 		}
 	}
 
-	int hasPlots(PredictionDashboard pd) {
+	public static int hasPlots(String propertyName) {
 		
 //		System.out.println(pd.getModel().getName());
 		
-		String n=pd.getModel().getDatasetName();
-		n=n.substring(0,n.indexOf(" OPERA"));
 
-		switch (n) {
+		switch (propertyName) {
 //		case DevQsarConstants.ORAL_RAT_LD50://For right now not available
 		case DevQsarConstants.MELTING_POINT:
 		case DevQsarConstants.BOILING_POINT:
@@ -583,7 +582,7 @@ public class OPERA_Report {
 
 	}
 	
-	void viewInWebBrowser(String filepath) {
+	public static void viewInWebBrowser(String filepath) {
         Desktop desktop = Desktop.getDesktop();
         try {
             desktop.browse(new File(filepath).toURI());
@@ -591,6 +590,11 @@ public class OPERA_Report {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+	}
+	
+	
+	public static void main(String[] args) {
+		
 	}
 	
 }

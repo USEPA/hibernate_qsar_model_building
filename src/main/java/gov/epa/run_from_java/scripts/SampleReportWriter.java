@@ -1,25 +1,22 @@
 package gov.epa.run_from_java.scripts;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
-import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelFile;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelFileServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
-import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.reports.WebTEST.GenerateWebTestReport;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable.ModelSetTableRow;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
+import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
 import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelPredictionReportGenerator;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class SampleReportWriter {
 
 
-	ModelSetReportServiceImpl msrs = new ModelSetReportServiceImpl();
+	ModelFileServiceImpl mfs = new ModelFileServiceImpl();
 	QsarModelsScript qms = new QsarModelsScript("tmarti02");		
 	ModelSetServiceImpl mss = new ModelSetServiceImpl();
 	ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
@@ -36,6 +33,28 @@ public class SampleReportWriter {
 		if(!reportFile.exists() || overWriteJsonReport) {
 			predictionReport = ReportGenerationScript.reportAllPredictions(datasetName, splittingName, modelSetName,
 					true,includeDescriptors);
+			System.out.println("Created:" + filepathReport);
+		} else {
+			predictionReport = GenerateWebTestReport.loadDataSetFromJson(filepathReport);
+			System.out.println("Loaded:" + filepathReport);
+		}
+
+		return predictionReport;
+		
+	}
+	
+	public PredictionReport createPredictionReportMethod(String modelSetName, String methodName, String datasetName, 
+			String splittingName,boolean overWriteJsonReport, boolean includeDescriptors,boolean includeOriginalCompounds) {
+		
+		PredictionReport predictionReport = null;
+
+		String filepathReport = "data/reports/" + modelSetName +"/"+ datasetName+"_"+methodName + "_PredictionReport.json";
+		File reportFile = new File(filepathReport);
+
+		
+		if(!reportFile.exists() || overWriteJsonReport) {
+			predictionReport = ReportGenerationScript.reportPredictionsMethod(modelSetName,datasetName, splittingName, methodName,
+					true,includeDescriptors,includeOriginalCompounds,filepathReport);
 			System.out.println("Created:" + filepathReport);
 		} else {
 			predictionReport = GenerateWebTestReport.loadDataSetFromJson(filepathReport);
@@ -151,15 +170,29 @@ public class SampleReportWriter {
 			boolean overWriteReportFiles, boolean overWriteExcelFiles, boolean includeDescriptors) {
 		
 		PredictionReport predictionReport=createPredictionReport(modelSetID, datasetName, splittingName,overWriteReportFiles,includeDescriptors);
-				
 		
+		Long modelId=null;//modelId to associate report with
+		Long fileTypeId=2L;//excel summary 
+		
+		for (PredictionReportModelMetadata mmd: predictionReport.predictionReportModelMetadata) {
+			if(mmd.qsarMethodName.contains("consensus") || predictionReport.predictionReportModelMetadata.size()==1) {
+				modelId=mmd.modelId;
+				break;
+			}
+		}
+		
+		if(modelId==null) {
+			System.out.println("Cant associate model for "+datasetName+"\t"+splittingName+"\tmodelSetId="+modelSetID);
+			return;
+		}
+				
 		String excelFilePath=createExcelReport(modelSetID, datasetName, splittingName, predictionReport,overWriteExcelFiles);
 						
-		ModelSetReport msr = msrs.findByModelSetIdAndModelData(modelSetID, datasetName, splittingName);
+		ModelFile msr = mfs.findByModelId(modelId, fileTypeId);
 
 		if (msr != null) {
 			if (deleteExistingReportInDatabase) {
-				msrs.delete(msr);
+				mfs.delete(msr);
 			
 			} else {
 				if (upload) {
@@ -172,11 +205,13 @@ public class SampleReportWriter {
 		if(!upload)return;
 		
 		try {
-			qms.uploadModelSetReport(modelSetID, datasetName, splittingName, excelFilePath);
+			qms.uploadModelFile(modelId,fileTypeId, excelFilePath);
 		} catch (Exception e) {
 			e.printStackTrace();
 		} 
 	}
+	
+
 
 	public static void main(String[] args) {
 

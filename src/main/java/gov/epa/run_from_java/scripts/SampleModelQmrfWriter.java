@@ -3,13 +3,19 @@ package gov.epa.run_from_java.scripts;
 import java.io.File;
 import java.io.FileWriter;
 import java.lang.reflect.Field;
+import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import gov.epa.databases.dev_qsar.qsar_models.entity.ModelQmrf;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfService;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfServiceImpl;
+import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelFile;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelFileService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelFileServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelInConsensusMethodServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelInConsensusModelService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.endpoints.reports.ModelMetadata;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable.ModelSetTableRow;
@@ -127,7 +133,7 @@ public class SampleModelQmrfWriter {
 				
 		ModelSetTable table=getModelsInModelSet(modelSetID);		
 		
-		ModelQmrfServiceImpl mqs=new ModelQmrfServiceImpl();
+		ModelFileServiceImpl mqs=new ModelFileServiceImpl();
 		
 		String outputFolder="data/reports/qmrf upload";
 		
@@ -140,7 +146,12 @@ public class SampleModelQmrfWriter {
 			
 			for (ModelMetadata modelMetadata:modelSetTableRow.modelMetadata) {
 				
-				ModelQmrf mq=mqs.findByModelId(modelMetadata.modelId);
+				if (!modelMetadata.qsarMethodName.contains("consensus")) continue;
+				
+				System.out.println(modelSetTableRow.datasetName+"\t"+modelMetadata.modelId);
+				
+				
+				ModelFile mq=mqs.findByModelId(modelMetadata.modelId,1L);
 				
 				if (mq != null) {
 					
@@ -164,12 +175,12 @@ public class SampleModelQmrfWriter {
 				try {
 					generateSampleQMRF(modelSetTableRow, modelMetadata, htmlPath);				
 					HtmlUtils.HtmlToPdf(htmlPath, pdfPath);
-					if (upload) script.uploadModelQmrf(modelMetadata.modelId, pdfPath);
+					if (upload) script.uploadModelFile(modelMetadata.modelId, 1L, pdfPath);
 					
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
 				}
-				
+//				
 //				if (true) break;
 			}
 
@@ -179,12 +190,11 @@ public class SampleModelQmrfWriter {
 	}
 	
 	
-	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		SampleModelQmrfWriter g=new SampleModelQmrfWriter();
 		
-		g.generateSampleQMRFs(1L,true,true);
+		g.generateSampleQMRFs(1L,false,false);
 //		g.generateSampleQMRFs(2L,true,true);
 //		g.generateSampleQMRFs(4L,true,true);
 

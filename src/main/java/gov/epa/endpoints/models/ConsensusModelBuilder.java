@@ -26,11 +26,14 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInConsensusModel;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Source;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInConsensusModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.SourceService;
+import gov.epa.databases.dev_qsar.qsar_models.service.SourceServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 import gov.epa.run_from_java.scripts.SplittingGeneratorPFAS_Script;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInConsensusMethodServiceImpl;
@@ -103,7 +106,11 @@ public class ConsensusModelBuilder extends ModelBuilder {
 		
 		String modelName="modelConsensus"+System.currentTimeMillis();//TODO maybe use dataset name and method name in modelName
 
-		Model consensusModel = new Model(modelName,consensusMethod, DevQsarConstants.CONSENSUS, datasetName, splittingName, DevQsarConstants.SOURCE_WEBTEST,lanId);
+		SourceService ss=new SourceServiceImpl();
+		Source source=ss.findByName(DevQsarConstants.SOURCE_CHEMINFORMATICS_MODULES);
+
+		
+		Model consensusModel = new Model(modelName,consensusMethod, DevQsarConstants.CONSENSUS, datasetName, splittingName, source,lanId);
 		consensusModel = modelService.create(consensusModel);
 		
 		for (Model model:models) {

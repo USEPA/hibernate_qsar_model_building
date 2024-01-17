@@ -15,14 +15,16 @@ public class SDE_Prediction_Request {
 	List<Dataset>datasets=new ArrayList<>();
 	String modelset_id;
 	String workflow;
+	Boolean use_cache;
 	
 	public SDE_Prediction_Request() {}
 
 	
-	public void getFromTSV(String predictionSetTsv,String modelSetId,String datasetId, String workflow) {
+	public void getFromTSV(String predictionSetTsv,String modelSetId,String datasetId, String workflow, boolean use_cache) {
 		
 		this.modelset_id=modelSetId;
 		this.workflow=workflow;
+		this.use_cache=use_cache;
 		
 		String [] lines=predictionSetTsv.split("\n");
 		

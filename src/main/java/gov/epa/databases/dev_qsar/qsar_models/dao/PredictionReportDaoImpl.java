@@ -4,7 +4,7 @@ import org.hibernate.Session;
 import org.hibernate.query.Query;
 
 import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
-import gov.epa.databases.dev_qsar.qsar_models.entity.ModelQmrf;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelFile;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport;
 
 public class PredictionReportDaoImpl implements PredictionReportDao {

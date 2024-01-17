@@ -7,44 +7,44 @@ import org.hibernate.Transaction;
 
 import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
-import gov.epa.databases.dev_qsar.qsar_models.dao.ModelQmrfDao;
-import gov.epa.databases.dev_qsar.qsar_models.dao.ModelQmrfDaoImpl;
-import gov.epa.databases.dev_qsar.qsar_models.entity.ModelQmrf;
+import gov.epa.databases.dev_qsar.qsar_models.dao.ModelFileDao;
+import gov.epa.databases.dev_qsar.qsar_models.dao.ModelFileDaoImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelFile;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 
-public class ModelQmrfServiceImpl implements ModelQmrfService {
+public class ModelFileServiceImpl implements ModelFileService {
 	
 	private Validator validator;
 	
-	public ModelQmrfServiceImpl() {
+	public ModelFileServiceImpl() {
 		this.validator = DevQsarValidator.getValidator();
 	}
 	
-	public ModelQmrf findByModelId(Long modelId) {
+	public ModelFile findByModelId(Long modelId, Long fileTypeId) {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
-		return findByModelId(modelId, session);
+		return findByModelId(modelId, fileTypeId, session);
 	}
 	
-	public ModelQmrf findByModelId(Long modelId, Session session) {
+	public ModelFile findByModelId(Long modelId, Long fileTypeId, Session session) {
 		Transaction t = session.beginTransaction();
-		ModelQmrfDao modelQmrfDao = new ModelQmrfDaoImpl();
-		ModelQmrf modelQmrf = modelQmrfDao.findByModelId(modelId, session);
+		ModelFileDao modelFileDao = new ModelFileDaoImpl();
+		ModelFile modelFile = modelFileDao.findByModelId(modelId,fileTypeId, session);
 		t.rollback();
-		return modelQmrf;
+		return modelFile;
 	}
 
 	@Override
-	public ModelQmrf create(ModelQmrf modelQmrf) throws ConstraintViolationException {
+	public ModelFile create(ModelFile modelFile) throws ConstraintViolationException {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
-		return create(modelQmrf, session);
+		return create(modelFile, session);
 	}
 
 	@Override
-	public ModelQmrf create(ModelQmrf modelQmrf, Session session) throws ConstraintViolationException {
-		Set<ConstraintViolation<ModelQmrf>> violations = validator.validate(modelQmrf);
+	public ModelFile create(ModelFile modelFile, Session session) throws ConstraintViolationException {
+		Set<ConstraintViolation<ModelFile>> violations = validator.validate(modelFile);
 		if (!violations.isEmpty()) {
 			throw new ConstraintViolationException(violations);
 		}
@@ -52,32 +52,32 @@ public class ModelQmrfServiceImpl implements ModelQmrfService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(modelQmrf);
+			session.save(modelFile);
 			session.flush();
-			session.refresh(modelQmrf);
+			session.refresh(modelFile);
 			t.commit();
 		} catch (org.hibernate.exception.ConstraintViolationException e) {
 			t.rollback();
 			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
 		}
 		
-		return modelQmrf;
+		return modelFile;
 	}
 
 	@Override
-	public void delete(ModelQmrf modelQmrf) {
+	public void delete(ModelFile modelFile) {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
-		delete(modelQmrf, session);
+		delete(modelFile, session);
 	}
 
 	@Override
-	public void delete(ModelQmrf modelQmrf, Session session) {
-		if (modelQmrf.getId()==null) {
+	public void delete(ModelFile modelFile, Session session) {
+		if (modelFile.getId()==null) {
 			return;
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.delete(modelQmrf);
+		session.delete(modelFile);
 		session.flush();
 		t.commit();
 	}

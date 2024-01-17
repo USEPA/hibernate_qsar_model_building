@@ -158,6 +158,54 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		return compounds;
 	}
 	
+	
+	List<DsstoxRecord> getDsstoxRecordsNoCompound(DsstoxSnapshot snapshot,String lanId) {
+
+		List<DsstoxRecord>records=new ArrayList<>();
+
+		String sql="select dsstox_substance_id, casrn,preferred_name from generic_substances gs\r\n"
+				+ "left join generic_substance_compounds gsc on gs.id = gsc.fk_generic_substance_id\r\n"
+				+ "where gsc.id is null order by dsstox_substance_id;";
+
+//		System.out.println(sql);
+
+		ResultSet rs=SqlUtilities.runSQL2(connDsstox, sql);
+
+		try {
+			while (rs.next()) {
+				DsstoxRecord record=new DsstoxRecord();
+				
+				record.setDtxsid(rs.getString(1));
+				
+				if (rs.getString(2)!=null) {
+					record.setCasrn(rs.getString(2));
+//					System.out.println("CAS="+rs.getString(5));
+				}
+				
+				if (rs.getString(3)!=null) {
+					record.setPreferredName(rs.getString(3));
+//					System.out.println("preferredName="+rs.getString(8));
+
+				}
+				record.setDsstoxSnapshot(snapshot);
+				record.setCreatedBy(lanId);
+				
+//				System.out.println(record.getDtxsid()+"\t"+record.getCasrn()+"\t"+record.getPreferredName()+"\t"+snapshot.getId());
+				
+				records.add(record);
+				
+				
+
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		//		System.out.println(compounds.size());
+		return records;
+	}
+	
 	void addSmiles(DsstoxCompound compound) {
 		
 		if (compound.getSmiles()!=null) return;
@@ -291,6 +339,21 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 
 //			if(true) break;
 		}
+	}
+	
+	void createDsstoxRecordsUsingCompoundsRecordsNoDTXCID() {
+		
+		DsstoxSnapshot snapshot=getSnapshot();
+		List<DsstoxRecord>records=getDsstoxRecordsNoCompound(snapshot,lanId);
+		
+		try {
+			dsstoxRecordService.createBatchSQLNoCompound(records);
+		} catch (Exception ex) {
+			System.out.println(ex.getMessage());
+		}
+
+		System.out.println(records.size());
+		
 	}
 	
 	void updateFkCompoundIdUsingCompoundsRecords() {
@@ -580,7 +643,11 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		
 //		List<DsstoxCompound>compounds=d.getCompoundsBySQL(0, 10,true);
 		
-		 d.createDsstoxRecordsUsingCompoundsRecords();
+//		 d.createDsstoxRecordsUsingCompoundsRecords();
+		 d.createDsstoxRecordsUsingCompoundsRecordsNoDTXCID();
+		 
+		 
+		 
 //		 d.updateFkCompoundIdUsingCompoundsRecords();
 //		 d.updateMolWeightUsingCompoundsRecords();
 //		d.updatePreferredNameCASRNUsingCompoundsRecords();

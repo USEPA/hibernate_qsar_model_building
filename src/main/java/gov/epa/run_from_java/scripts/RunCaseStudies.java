@@ -17,12 +17,12 @@ import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
-import gov.epa.databases.dev_qsar.qsar_models.entity.ModelQmrf;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelFile;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingService;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelFileServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionServiceImpl;
 import gov.epa.endpoints.models.ModelBuilder;
@@ -53,6 +53,8 @@ public class RunCaseStudies {
 	public static void runCaseStudyOPERA() {
 		boolean use_pmml=false;
 		boolean include_standardization_in_pmml=true;
+		boolean use_sklearn2pmml=false;
+		
 		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
 
@@ -107,7 +109,7 @@ public class RunCaseStudies {
 
 		for (String method:methods) {
 			System.out.println(method + "descriptor" + descriptorSetName);
-			ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml,include_standardization_in_pmml);
+			ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml,include_standardization_in_pmml,use_sklearn2pmml);
 		}
 		
 		buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName, methods.length);
@@ -118,6 +120,7 @@ public class RunCaseStudies {
 	public static void runCaseStudyTest_All_Endpoints() {
 		boolean use_pmml=false;		
 		boolean include_standardization_in_pmml=false;
+		boolean use_sklearn2pmml=false;
 		
 		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
@@ -160,7 +163,7 @@ public class RunCaseStudies {
 
 			for (String method:methods) {
 				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml,include_standardization_in_pmml);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml,include_standardization_in_pmml, use_sklearn2pmml);
 			}
 
 			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methods.length);
@@ -172,6 +175,7 @@ public class RunCaseStudies {
 	public static void runCaseStudyTest() {
 		boolean use_pmml=false;
 		boolean include_standardization_in_pmml=false;
+		boolean use_sklearn2pmml=false;
 		lanId="tmarti02";
 		
 		boolean buildModel=true;
@@ -208,7 +212,7 @@ public class RunCaseStudies {
 		if (!buildModel) return;//skip model building
 
 		System.out.println(method + "descriptor" + descriptorSetName);
-		ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml,include_standardization_in_pmml);
+		ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml,include_standardization_in_pmml,use_sklearn2pmml);
 
 
 	}
@@ -218,6 +222,8 @@ public class RunCaseStudies {
 	public static void runCaseStudyExpProp_All_Endpoints() {
 		boolean use_pmml=false;
 		boolean include_standardization_in_pmml=false;
+		boolean use_sklearn2pmml=false;
+		
 		lanId="cramslan";		
 		boolean buildModels=true;
 		
@@ -290,7 +296,7 @@ public class RunCaseStudies {
 
 			for (String method:methods) {
 				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml,include_standardization_in_pmml);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,descriptorEmbedding,ci,use_pmml,include_standardization_in_pmml,use_sklearn2pmml);
 			}
 //			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methods.length);
 		}
@@ -301,6 +307,8 @@ public class RunCaseStudies {
 	public static void runCaseStudyExpProp_All_Endpoints_No_Embedding() {
 		boolean use_pmml=false;
 		boolean include_standardization_in_pmml=false;
+		boolean use_sklearn2pmml=false;
+		
 		lanId="cramslan";		
 		
 		serverModelBuilding=DevQsarConstants.SERVER_819;
@@ -348,7 +356,7 @@ public class RunCaseStudies {
 
 			for (String method:methods) {
 				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci,use_pmml,include_standardization_in_pmml);
+				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci,use_pmml,include_standardization_in_pmml,use_sklearn2pmml);
 			}
 			
 			buildConsensusModel(datasetName,splitting,descriptorSetName,methods.length);
@@ -361,6 +369,8 @@ public class RunCaseStudies {
 	public static void runCaseStudyOPERA_All_Endpoints() {
 		boolean use_pmml=false;
 		boolean include_standardization_in_pmml=false;
+		boolean use_sklearn2pmml=false;
+		
 		String server=DevQsarConstants.SERVER_819;
 		DescriptorEmbeddingService descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
 		EmbeddingWebService2 ews2 = new EmbeddingWebService2(server, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
@@ -405,7 +415,7 @@ public class RunCaseStudies {
 
 			for (String method:methods) {
 				System.out.println(method + "descriptor" + descriptorSetName);
-				ModelBuildingScript.buildModel(lanId,server,portModelBuilding,method,descriptorEmbedding,ci,use_pmml,include_standardization_in_pmml);
+				ModelBuildingScript.buildModel(lanId,server,portModelBuilding,method,descriptorEmbedding,ci,use_pmml,include_standardization_in_pmml,use_sklearn2pmml);
 			}
 
 			buildConsensusModelForEmbeddedModels(descriptorEmbedding, datasetName,methods.length);

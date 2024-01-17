@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
@@ -22,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,11 +35,13 @@ import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.hibernate.Session;
 import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.DefaultChemObjectBuilder;
 import org.openscience.cdk.io.iterator.IteratingSDFReader;
+import org.w3c.tidy.Out;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -63,6 +67,7 @@ import gov.epa.databases.dsstox.service.ChemicalListServiceImpl;
 import gov.epa.databases.dsstox.service.DsstoxCompoundService;
 import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
 import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
+import gov.epa.endpoints.reports.Outliers.Outlier;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.util.MathUtil;
 import gov.epa.util.wekalite.CSVLoader;
@@ -98,22 +103,17 @@ public class GetExpPropInfo {
 			//			"source_name", "source_description", "source_type", "source_authors", "source_title", "source_dtxrid",
 			"source_dtxsid", "source_casrn", "source_chemical_name", "source_smiles", "mapped_dtxcid", "mapped_dtxsid",
 			"mapped_cas", "mapped_chemical_name", "mapped_smiles", "mapped_molweight", "value_original", "value_max",
-			"value_min", "value_point_estimate", "value_units", "qsar_property_value", "qsar_property_units",
+			"value_min", "value_point_estimate", "value_units", 
+			"qsar_property_value", "qsar_property_units",
+			"experimental_median","predicted_CV","predicted_CV_Error",
 			"temperature_c", "pressure_mmHg", "pH", "notes", "qc_flag",
-			"ICF_duplicate",
-			"ICF_chemical_matches", "ICF_is_experimental", "ICF_source_url", "ICF_source_type", "ICF_citation",
+			"ICF_cluster","ICF_status","ICF_notes","ICF_additional_resources_needed",
+			"ICF_duplicate","ICF_property_mismatch",
+			"ICF_chemical_matches", "ICF_corrected_chemical",
+			"ICF_is_experimental","ICF_exp_method","ICF_test_guidelines",
+			"ICF_source_url", "ICF_source_type", "ICF_citation",
+			"ICF_reportedvalue","ICF_reportedunits",
 			"ICF_property_value", "ICF_units_conversion_error", "ICF_temperature_c", "ICF_pressure_mmHg", "ICF_pH"};
-
-
-	//	String[] fields = { "canon_qsar_smiles","exp_prop_id", 
-	//			"source_chemical_id","source_dtxrid","source_dtxsid", "source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name",
-	//			"mapped_dtxcid", "mapped_dtxsid", "mapped_chemical_name", "mapped_cas", "mapped_smiles", "mapped_molweight","mapped_connection_reason",
-	//			"public_source_name", "public_source_description", "public_source_url", 
-	//			"public_source_original_name", "public_source_original_description", "public_source_original_url",
-	//			"literature_source_citation","literature_source_doi",
-	//			"page_url", "notes", "qc_flag", "temperature_c", "pressure_mmHg", "pH",
-	//			"value_qualifier", "value_original", "value_text","value_max", "value_min", "value_point_estimate",
-	//			"value_units","qsar_property_value","qsar_property_units" };
 
 
 
@@ -399,13 +399,21 @@ public class GetExpPropInfo {
 	 * @param conn
 	 * @param folder
 	 * @param arrayPFAS_CIDs
+	 * @param flagLargeCVError 
 	 */
-	static void createCheckingSpreadsheet_PFAS_data(String dataSetName,String folder,HashSet<String>arrayPFAS_CIDs,String listName,Hashtable<String,String> htOperaReferences) {
+	static void createCheckingSpreadsheet_PFAS_data(String dataSetName,String folder,HashSet<String>arrayPFAS_CIDs,String listName,Hashtable<String,String> htOperaReferences, boolean flagLargeCVError) {
 		//		String dataSetName=getDataSetName(dataset_id, conn);
+		
+		Hashtable<String,Outlier>htOutliers=null;
+		
+		if (flagLargeCVError) {
+			htOutliers=loadOutliers(dataSetName);
+		}
 
-		dataSetName=dataSetName.replace(" ", "_").replace("="," ");
+		
+		String dataSetName2=dataSetName.replace(" ", "_").replace("="," ");//filenames in output folder have spaces converted to underscores
 
-		String jsonPath=folder+dataSetName+"/"+dataSetName+"_Mapped_Records.json";
+		String jsonPath=folder+dataSetName2+"/"+dataSetName2+"_Mapped_Records.json";
 
 		File fileJson=new File(jsonPath);
 
@@ -417,7 +425,7 @@ public class GetExpPropInfo {
 		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
 		JsonArray ja2=new JsonArray();
 
-
+		
 		ArrayList<String>arrayQSARSmiles=new ArrayList<>();
 
 		for (int i=0;i<ja.size();i++) {
@@ -431,7 +439,16 @@ public class GetExpPropInfo {
 
 				String dtxcid_original=jo.get("mapped_dtxcid").getAsString();
 				String dtxsid_original=jo.get("mapped_dtxsid").getAsString();
-
+				
+				if(htOutliers!=null && htOutliers.get(dtxcid_original)!=null) {
+					Outlier outlier=htOutliers.get(dtxcid_original);
+					double error=Math.abs(outlier.exp-outlier.pred);
+					jo.addProperty("experimental_median",outlier.exp);
+					jo.addProperty("predicted_CV",outlier.pred);
+					jo.addProperty("predicted_CV_Error",error);
+//					System.out.println(dtxcid_original+"\t"+error);
+				}
+				
 				if (jo.get("public_source_name")!=null) {
 					String public_source_name=jo.get("public_source_name").getAsString();
 
@@ -442,7 +459,7 @@ public class GetExpPropInfo {
 					}
 				}
 
-				setICF_duplicate_Sushko_OCHEM(ja, jo);
+//				setICF_duplicate_Sushko_OCHEM(ja, jo);
 
 				if (jo.get("page_url")!=null) {//Fix sander URL
 					String page_url=jo.get("page_url").getAsString().replace("http://satellite.mpic.de/henry/","https://www.henrys-law.org/henry/");
@@ -469,17 +486,17 @@ public class GetExpPropInfo {
 			}
 		}
 
-		System.out.println(dataSetName+"\t"+ja2.size()+"\t"+arrayQSARSmiles.size());
+		System.out.println(dataSetName2+"\t"+ja2.size()+"\t"+arrayQSARSmiles.size());
 
 		//		System.out.println("Number of PFAS records="+ja2.size());
 		//		System.out.println("Number of unique PFAS records="+arrayQSARSmiles.size());
 
-		String pathout=folder+"//"+dataSetName+"//PFAS "+dataSetName+"_"+listName+".xlsx";
+		String pathout=folder+"//"+dataSetName2+"//PFAS "+dataSetName2+"_"+listName+".xlsx";
 
 		Hashtable<String,String>htDescriptions=ExcelCreator.getColumnDescriptions();
 		ExcelCreator.createExcel2(ja2, pathout,fieldsFinal,htDescriptions);
 
-		String pathout2=folder+"//checking spreadsheets//"+listName+"_PFAS_"+dataSetName+".xlsx";
+		String pathout2=folder+"//checking spreadsheets//"+listName+"_PFAS_"+dataSetName2+".xlsx";
 
 		try {
 			Files.copy(Paths.get(pathout), Paths.get(pathout2), StandardCopyOption.REPLACE_EXISTING);
@@ -491,6 +508,45 @@ public class GetExpPropInfo {
 
 		//		System.out.println("Excel file created:\t"+pathout);
 
+	}
+
+	private static Hashtable<String,Outlier> loadOutliers(String dataSetName) {
+		
+		Hashtable<String,Outlier>htOutliers=new Hashtable<>();
+		
+		String folderOutlier="data\\reports\\Outlier testing\\";
+		
+		String filepathJsonOutlier=folderOutlier+dataSetName+File.separator+dataSetName+".json";
+		
+		if (new File(filepathJsonOutlier).exists()) {
+
+			try {
+				String json = Files.readString(Path.of(filepathJsonOutlier));
+				Outlier[] outliers= new Gson().fromJson(json, Outlier[].class);
+				
+				for (Outlier outlier:outliers) {
+//					System.out.println(outlier.ID+"\t"+outlier.exp+"\t"+outlier.pred);
+					
+					String [] ids=outlier.ID.split("\\|");
+					
+					for (String id:ids) {
+						if (outlier.ID.contains("|") && !ids[0].equals(ids[1])) {
+//							System.out.println(ids[0]+"\t"+ids[1]);
+						}
+							
+						htOutliers.put(id, outlier);	
+					}
+					
+				}
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+		} else {
+			System.out.println(filepathJsonOutlier + " doesnt exist");
+		}
+		return htOutliers;
 	}
 
 	private static void setICF_duplicate_Sushko_OCHEM(JsonArray ja, JsonObject jo) {
@@ -532,7 +588,7 @@ public class GetExpPropInfo {
 			
 			if (err<minError && err<0.05) {
 				jo.addProperty("ICF_duplicate", exp_prop_idj);
-				System.out.println(exp_prop_id+"\t"+exp_prop_idj+"\t"+df.format(err));				minError=err;
+//				System.out.println(exp_prop_id+"\t"+exp_prop_idj+"\t"+df.format(err)+"\tSushko_duplicate");				minError=err;
 			}
 
 		}
@@ -822,6 +878,8 @@ public class GetExpPropInfo {
 
 	static void createCheckingSpreadsheets() {
 
+		boolean flagLargeCVError=true;
+		
 		String folder="data/dev_qsar/output/";
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		Connection connDSSTOX=SqlUtilities.getConnectionDSSTOX();					
@@ -830,25 +888,21 @@ public class GetExpPropInfo {
 
 		//		datasetNames.add("MP from exp_prop and chemprop");//Done
 		//		datasetNames.add("BP from exp_prop and chemprop");
-		////		datasetNames.add("WS from exp_prop and chemprop");
 		//		datasetNames.add("VP from exp_prop and chemprop");
 		//		datasetNames.add("HLC from exp_prop and chemprop");//Done
 		//		datasetNames.add("LogP from exp_prop and chemprop");//DONE
-
-		datasetNames.add("WS_v1_modeling");//DONE
-
+		//		datasetNames.add("WS from exp_prop and chemprop");
 		//		datasetNames.add("pKa_a from exp_prop and chemprop");
 		//		datasetNames.add("pKa_b from exp_prop and chemprop");
 
-
-		//		datasetNames.add("ExpProp_BCF_Fish_TMM");
-
-		//		String version="V4";
-		//		String version="V5";
-		//Old way use text file 
-		//From File generated from PFAS_SplittingGenerator.generateQSAR_ReadyPFAS_STRUCT, create list of PFAS cids:
-		//		ArrayList<String>arrayPFAS_CIDs=getPFAS_CIDs("data\\dev_qsar\\dataset_files\\PFASSTRUCT"+version+"_qsar_ready_smiles.txt");
-
+		datasetNames.add("BP v1 modeling");//DONE
+		datasetNames.add("VP v1 modeling");//DONE
+		datasetNames.add("MP v1 modeling");//DONE
+		
+		datasetNames.add("HLC v1 modeling");//DONE
+		datasetNames.add("WS v1 modeling");//DONE
+		datasetNames.add("LogP v1 modeling");//DONE
+		
 
 		//		String listName="CCL5PFAS";
 		String listName="PFASSTRUCTV4";
@@ -864,10 +918,9 @@ public class GetExpPropInfo {
 		for(String dataSetName:datasetNames) {
 			//			System.out.println(dataSetName);
 
-			//			String abbrev=dataSetName.substring(0,dataSetName.indexOf(" ")).trim().replace("HLC", "HL");
-			String abbrev=dataSetName.substring(0,dataSetName.indexOf("_")).trim().replace("HLC", "HL");
+			String abbrev=dataSetName.substring(0,dataSetName.indexOf(" ")).trim().replace("HLC", "HL");
 
-			System.out.println(abbrev);
+//			System.out.println(abbrev);
 
 			Hashtable<String,String> htOperaReferences=null;
 
@@ -875,13 +928,10 @@ public class GetExpPropInfo {
 			if (abbrev.equals("WS")) htOperaReferences=Utilities.createOpera_Reference_Lookup("WS","WS");
 			if (abbrev.equals("VP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("VP","VP");
 			if (abbrev.equals("HL")) htOperaReferences=Utilities.createOpera_Reference_Lookup("HL","HL");
-			//			if (abbrev.equals("MP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("MP","MP");//Has no references
-			//			if (abbrev.equals("BP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("BP","BP");//Has no references
+			//	if (abbrev.equals("MP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("MP","MP");//Has no references
+			//	if (abbrev.equals("BP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("BP","BP");//Has no references
 
-			createCheckingSpreadsheet_PFAS_data(dataSetName,folder,arrayPFAS_CIDs,listName,htOperaReferences);//create checking spreadsheet using json file for mapped records that was created when dataset was created
-
-
-
+			createCheckingSpreadsheet_PFAS_data(dataSetName,folder,arrayPFAS_CIDs,listName,htOperaReferences,flagLargeCVError);//create checking spreadsheet using json file for mapped records that was created when dataset was created
 			//			System.out.println("");
 		}
 
@@ -1083,12 +1133,112 @@ public class GetExpPropInfo {
 	}
 
 
+	static void checkOmittedRecordsCVError() {
+		
+		String folderChecking="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\ICF\\primary source checking results\\";
+		
+		String checkingFilePath=folderChecking+"PFAS LogP for EPA_23-07-18.xlsx";
+		String datasetName="LogP v1 modeling";
+		
+		JsonArray ja=ExcelCreator.convertExcelToJsonArray(checkingFilePath, 1, "Clustered Records");
+		JsonArray jaOmitted=omitRecords(ja);
+		
+//		System.out.println(Utilities.gson.toJson(jaOmitted));
+		
+		
+		Hashtable<String,Outlier>htOutliers=loadOutliers(datasetName);
+		
+		int count=0;
+		
+		for (int i=0;i<jaOmitted.size();i++) {
+			JsonObject jo=jaOmitted.get(i).getAsJsonObject();
+			
+			String mapped_dtxcid=jo.get("mapped_dtxcid").getAsString();
+			
+			if (htOutliers.get(mapped_dtxcid)!=null) {
+				Outlier outlier=htOutliers.get(mapped_dtxcid);
+				System.out.println(mapped_dtxcid+"\t"+outlier.exp+"\t"+outlier.pred);
+				count++;
+			}
+		}
+		
+		
+		System.out.println(count+" of "+jaOmitted.size());
+
+		
+	}
+
+	private static JsonArray omitRecords(JsonArray ja) {
+		JsonArray jaOmitted=new JsonArray();
+
+		
+//		System.out.println(Utilities.gson.toJson(ja));
+		
+		List<Integer>omittedIds=new ArrayList<>();
+	
+		for (int i=0;i<ja.size();i++) {
+			
+			JsonObject jo=ja.get(i).getAsJsonObject();
+			
+			String exp_prop_id=jo.get("exp_prop_id").getAsString();
+
+			if(jo.get("omit_tmm")==null) continue;
+						
+			jaOmitted.add(jo);
+			ja.remove(i--);
+//				System.out.println(Utilities.gson.toJson(jo));
+			
+		}
+			
+//		System.out.println(jaOmitted.size());
+		
+		//Loop back through and see if all the duplicates got omitted:
+		
+		for (int i=0;i<ja.size();i++) {
+			
+			JsonObject jo=ja.get(i).getAsJsonObject();
+			
+			if (jo.get("ICF_duplicate")==null) continue;
+			
+				
+			String ICF_duplicate=jo.get("ICF_duplicate").getAsString();
+						
+			for (int j=0;j<jaOmitted.size();j++) {
+				
+				JsonObject joOmitted=jaOmitted.get(j).getAsJsonObject();
+				String exp_prop_id=joOmitted.get("exp_prop_id").getAsString();
+				
+				if(ICF_duplicate.equals(exp_prop_id)) {
+					
+					jo.addProperty("omit_tmm", joOmitted.get("omit_tmm").getAsBoolean());
+					jo.addProperty("omit_reason_tmm", joOmitted.get("omit_reason_tmm").getAsString());
+//					System.out.println("\n\nMatch!");
+//					System.out.println(Utilities.gson.toJson(joOmitted));
+//					System.out.println(Utilities.gson.toJson(jo));
+
+					jaOmitted.add(jo);
+					ja.remove(i--);
+					break;
+
+				}
+			}
+			
+		}
+		return jaOmitted;
+	}
+	
+	
+	
+	
 
 	public static void main(String[] args) {
 
+//		createCheckingSpreadsheets();
+		checkOmittedRecordsCVError();
+
+		
 		//		createPFAS_text_File();
 
-		createCheckingSpreadsheets();
 
 		//		detectBadLogPvalues();
 

@@ -8,7 +8,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -20,26 +20,24 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
-@Table(name="model_set_reports",
-	uniqueConstraints={@UniqueConstraint(columnNames = {"fk_model_set_id", "dataset_name", "splitting_name"})})
-public class ModelSetReport {
+@Table(name="model_files", uniqueConstraints={@UniqueConstraint(columnNames = {"fk_model_id", "fk_file_type_id"})})
+public class ModelFile {
 	
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 	
-	@NotNull(message="Model set required")
-	@ManyToOne
-	@JoinColumn(name="fk_model_set_id")
-	private ModelSet modelSet;
+	@NotNull(message="Model required")
+	@OneToOne
+	@JoinColumn(name="fk_model_id")
+	private Model model;
 	
-	@NotNull(message="Dataset name required")
-	@Column(name="dataset_name")
-	private String datasetName;
 	
-	@NotNull(message="Splitting name required")
-	@Column(name="splitting_name")
-	private String splittingName;
+	@NotNull(message="Model required")
+	@OneToOne
+	@JoinColumn(name="fk_file_type_id")
+	private FileType fileType;
+	
 	
 	@Column(name="file", length=32767)
 	private byte[] file;
@@ -61,14 +59,13 @@ public class ModelSetReport {
 	@Column(name="created_by")
 	private String createdBy;
 	
-	public ModelSetReport() {}
+	public ModelFile() {}
 	
-	public ModelSetReport(ModelSet modelSet, String datasetName, String splittingName, byte[] bytes, String createdBy) {
-		this.setModelSet(modelSet);
-		this.setDatasetName(datasetName);
-		this.setSplittingName(splittingName);
+	public ModelFile(Model model, FileType fileType, byte[] bytes, String createdBy) {
+		this.setModel(model);
 		this.setFile(bytes);
 		this.setCreatedBy(createdBy);
+		this.setFileType(fileType);
 	}
 
 	public Long getId() {
@@ -79,28 +76,12 @@ public class ModelSetReport {
 		this.id = id;
 	}
 
-	public ModelSet getModelSet() {
-		return modelSet;
+	public Model getModel() {
+		return model;
 	}
 
-	public void setModelSet(ModelSet modelSet) {
-		this.modelSet = modelSet;
-	}
-
-	public String getDatasetName() {
-		return datasetName;
-	}
-
-	public void setDatasetName(String datasetName) {
-		this.datasetName = datasetName;
-	}
-
-	public String getSplittingName() {
-		return splittingName;
-	}
-
-	public void setSplittingName(String splittingName) {
-		this.splittingName = splittingName;
+	public void setModel(Model model) {
+		this.model = model;
 	}
 
 	public byte[] getFile() {
@@ -142,4 +123,13 @@ public class ModelSetReport {
 	public void setCreatedBy(String createdBy) {
 		this.createdBy = createdBy;
 	}
+
+	public FileType getFileType() {
+		return fileType;
+	}
+
+	public void setFileType(FileType fileType) {
+		this.fileType = fileType;
+	}
+
 }

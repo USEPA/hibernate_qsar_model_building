@@ -18,6 +18,8 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
+import javax.validation.ConstraintViolationException;
+
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
@@ -30,7 +32,12 @@ import com.google.gson.JsonArray;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInConsensusModel;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelInConsensusMethodServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelInConsensusModelService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.models.ModelData;
@@ -64,9 +71,10 @@ public class PredictionStatisticsScript {
 		datasetNames.add("HLC v1 modeling");
 		datasetNames.add("WS v1 modeling");
 		datasetNames.add("VP v1 modeling");
-		datasetNames.add("LogP v1 modeling");
 		datasetNames.add("BP v1 modeling");
+		datasetNames.add("LogP v1 modeling");
 		datasetNames.add("MP v1 modeling");
+
 	}
 
 	String lanId = "tmarti02";
@@ -502,6 +510,10 @@ public class PredictionStatisticsScript {
 		List<String> modelSetNames = new ArrayList<>();
 		modelSetNames.add("WebTEST2.0");
 		modelSetNames.add("WebTEST2.1");
+		
+//		modelSetNames.add("WebTEST2.0 PFAS");
+//		modelSetNames.add("WebTEST2.1 PFAS");
+
 
 		List<String> methodNames = new ArrayList<>();
 		// methodNames.add(DevQsarConstants.KNN);
@@ -512,8 +524,10 @@ public class PredictionStatisticsScript {
 
 		List<String> statisticNames = new ArrayList<>();
 //		statisticNames.add("Q2_CV_Training");
-		statisticNames.add("MAE_CV_Training");
+//		statisticNames.add("MAE_CV_Training");
+		statisticNames.add("PearsonRSQ_CV_Training");
 //		statisticNames.add("PearsonRSQ_Test");
+//		statisticNames.add("RMSE_Test");
 //		 statisticNames.add("MAE_Test");
 
 		for (String modelSetName : modelSetNames) {
@@ -548,6 +562,68 @@ public class PredictionStatisticsScript {
 
 	}
 
+	void createSummaryTableForSetSermacs() {
+
+		// Getting predictions for PFAS compounds in test set:
+		String listName = "PFASSTRUCTV4";
+		String folder = "data/dev_qsar/dataset_files/";
+		String filePath = folder + listName + "_qsar_ready_smiles.txt";
+		HashSet<String> smilesArrayPFAS = SplittingGeneratorPFAS_Script.getPFASSmiles(filePath);
+
+		List<String> modelSetNames = new ArrayList<>();
+		modelSetNames.add("WebTEST2.0");
+		modelSetNames.add("WebTEST2.1");
+		
+//		modelSetNames.add("WebTEST2.0 PFAS");
+//		modelSetNames.add("WebTEST2.1 PFAS");
+
+
+		List<String> methodNames = new ArrayList<>();
+//		 methodNames.add(DevQsarConstants.KNN);
+		methodNames.add(DevQsarConstants.RF);
+//		methodNames.add(DevQsarConstants.XGB);
+		// methodNames.add(DevQsarConstants.SVM);
+//		methodNames.add(DevQsarConstants.CONSENSUS);
+
+		List<String> statisticNames = new ArrayList<>();
+//		statisticNames.add("Q2_CV_Training");
+//		statisticNames.add("MAE_CV_Training");
+//		statisticNames.add("PearsonRSQ_CV_Training");
+		statisticNames.add("PearsonRSQ_Test");
+//		statisticNames.add("RMSE_Test");
+//		 statisticNames.add("MAE_Test");
+
+		for (String modelSetName : modelSetNames) {
+
+			for (String statisticName : statisticNames) {
+
+				Hashtable<String, Double> htVals = new Hashtable<>();
+				for (String methodName : methodNames) {
+					addHashtableEntry(statisticName, methodName, modelSetNames, datasetNames, htVals);
+				}
+
+				for (String methodName : methodNames) {
+					// System.out.println("\n"+methodName);
+
+					for (String datasetName : datasetNames) {
+						if (modelSetName.equals("WebTEST2.0_justPFAS")) {
+							addPFAS_Stats(statisticName, methodName, htVals, smilesArrayPFAS, datasetName,
+									"WebTEST2.0");
+						}
+
+						if (modelSetName.equals("WebTEST2.1_justPFAS")) {
+							addPFAS_Stats(statisticName, methodName, htVals, smilesArrayPFAS, datasetName,
+									"WebTEST2.1");
+						}
+					}
+				}
+
+				// Create the summary table as text file:
+				createSummaryTableForModelSet(statisticName, modelSetName, methodNames, datasetNames, htVals);
+			}
+		}
+
+	}
 	void createSummaryTableForMethod_Rnd_Representative() {
 		// String statisticName = "MAE_Test";
 		String statisticName = "PearsonRSQ_Test";
@@ -1676,26 +1752,31 @@ public class PredictionStatisticsScript {
 	
 	
 	void createExcelSummarysWithAD_JustPFAS() {
+		boolean upload=true;
+		boolean overwrite=false;
 		
 		String listName = "PFASSTRUCTV4";
 		String folder = "data/dev_qsar/dataset_files/";
 		String filePathPFAS = folder + listName + "_qsar_ready_smiles.txt";
 		HashSet<String> smilesArray = SplittingGeneratorPFAS_Script.getPFASSmiles(filePathPFAS);
 
-//		createExcelSummarysWithAD_JustPFAS("WebTEST2.0",smilesArray);
-		createExcelSummarysWithAD_JustPFAS("WebTEST2.1",smilesArray);
+//		createExcelSummarysWithAD_JustPFAS("WebTEST2.0",smilesArray,upload,overwrite);
+		createExcelSummarysWithAD_JustPFAS("WebTEST2.1",smilesArray,upload,overwrite);
 	}
 
-	private void createExcelSummarysWithAD_JustPFAS(String modelSetName, HashSet<String> smilesArray) {
+	private void createExcelSummarysWithAD_JustPFAS(String modelSetName, HashSet<String> smilesArray,boolean upload, boolean overwrite) {
 		
-
+			QsarModelsScript qms = new QsarModelsScript("tmarti02");
+		
 		String splittingName = DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 		// String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;//TODO get
 		// from prediction report instead
 
 		String outputFolder = "data/reports/prediction reports upload";
 		ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
-		
+
+		Long fileTypeId=2L;//excel summary 
+
 		
 		for (String datasetName : datasetNames) {
 
@@ -1703,18 +1784,66 @@ public class PredictionStatisticsScript {
 			PredictionReport predictionReport = SampleReportWriter.getReport(filePathReport);
 			String filepathExcel = outputFolder + File.separator + modelSetName + File.separator
 					+ String.join("_", datasetName, splittingName) + "_with_AD.xlsx";
-			eprg.generate(predictionReport, filepathExcel, null);
+			
+			File excelFile=new File(filepathExcel);
+			
+			System.out.println(!excelFile.exists()+"\t"+overwrite);
+			
+			if (!excelFile.exists() || overwrite) {
+				System.out.println("generating excel file");
+				eprg.generate(predictionReport, filepathExcel, null);
+			}
+			
 
+
+			Long modelId = getModelIdForReport(modelSetName, splittingName, datasetName, predictionReport);			
+			
+			if(modelId==null) {
+				System.out.println("Cant associate model for "+datasetName+"\t"+splittingName+"\tmodelSetId="+modelSetName);
+				return;
+			}
+
+			if(upload) {
+				try {
+					qms.uploadModelFile(modelId, fileTypeId, filepathExcel);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 			
 			filePathReport = "data/reports/" + modelSetName + "/" + datasetName + "_PredictionReport_only_PFAS_with_AD.json";
+			
+			if (!new File(filePathReport).exists()) continue;
+			
 			predictionReport = SampleReportWriter.getReport(filePathReport);
 			filepathExcel = outputFolder + File.separator + modelSetName + File.separator
 					+ String.join("_", datasetName, splittingName) + "_PFAS_with_AD.xlsx";
-			eprg.generate(predictionReport, filepathExcel, smilesArray);
+			
+			
+			excelFile=new File(filepathExcel);
 
+			if (!excelFile.exists() || overwrite) {
+				System.out.println("generating excel file");
+				eprg.generate(predictionReport, filepathExcel, null);
+			}
 
 		}
 		
+	}
+
+	private Long getModelIdForReport(String modelSetName, String splittingName, String datasetName,
+			PredictionReport predictionReport) {
+		Long modelId=null;//modelId to associate report with
+		
+		for (PredictionReportModelMetadata mmd: predictionReport.predictionReportModelMetadata) {
+			if(mmd.qsarMethodName.contains("consensus") || predictionReport.predictionReportModelMetadata.size()==1) {
+				modelId=mmd.modelId;
+				break;
+			}
+		}
+		
+		return modelId;
 	}
 	
 
@@ -1729,8 +1858,8 @@ public class PredictionStatisticsScript {
 //		createExcelSummarysWithAD_OnlyPFAS("WebTEST2.0 PFAS");
 //		createExcelSummarysWithAD_OnlyPFAS("WebTEST2.0 All but PFAS");
 
-		createExcelSummarysWithAD_OnlyPFAS("T=PFAS only, P=PFAS","WebTEST2.1 PFAS",smilesArray);
-		createExcelSummarysWithAD_OnlyPFAS("T=all but PFAS, P=PFAS", "WebTEST2.1 All but PFAS",smilesArray);
+//		createExcelSummarysWithAD_OnlyPFAS("T=PFAS only, P=PFAS","WebTEST2.1 PFAS",smilesArray);
+//		createExcelSummarysWithAD_OnlyPFAS("T=all but PFAS, P=PFAS", "WebTEST2.1 All but PFAS",smilesArray);
 
 	}
 	
@@ -2088,6 +2217,124 @@ public class PredictionStatisticsScript {
 	}
 	
 	
+	void createkNN_Reports() {
+		
+		SampleReportWriter srw = new SampleReportWriter();
+
+//		String modelSetName="WebTEST2.0";
+		String modelSetName="WebTEST2.1";
+		String methodName="knn_regressor_1.2";
+		String splittingName="RND_REPRESENTATIVE";
+		
+		boolean includeDescriptors=false;
+		boolean includeOriginalCompounds=true;
+		boolean overwriteJsonReport=true;
+		
+		for (String dataset:datasetNames) {
+			srw.createPredictionReportMethod(modelSetName,methodName, dataset, splittingName, overwriteJsonReport, includeDescriptors,includeOriginalCompounds);
+		}
+		
+//		String dataset="MP v1 modeling";
+//		srw.createPredictionReportMethod(modelSetName,methodName, dataset, splittingName, overwriteJsonReport, includeDescriptors,includeOriginalCompounds);		
+	}
+	
+	/**
+	 * Loops through Excel summary files, figures out matching model ids and uploads to model files table
+	 */
+	void uploadFinalExcelSummaries() {
+
+		Long fileTypeId=2L;
+		String splittingName=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+		
+		File folder=new File("data\\reports\\prediction reports upload\\WebTEST2.1\\");
+		ModelServiceImpl ms=new ModelServiceImpl();
+		ModelInConsensusModelService micms=new ModelInConsensusMethodServiceImpl();
+		QsarModelsScript qms=new QsarModelsScript("tmarti02");
+		
+		List<Model>models=ms.getAll();
+		
+		for (File file:folder.listFiles()) {
+			
+			if (file.getName().contains("_PFAS")) continue;//skip PFAS files
+			if (!file.getName().contains("_with_AD")) continue;//need summaries with AD included
+			
+			String datasetName=file.getName();
+			datasetName=datasetName.substring(0,datasetName.indexOf("_"));
+			
+			Model model=getMatchingModel(splittingName, micms, models, datasetName);
+			//TODO just get from model name once the final models have been renamed...
+			
+			if(model!=null) {
+				System.out.println(file.getName()+"\t"+datasetName+"\t"+model.getId());
+			}
+			
+			try {
+				qms.uploadModelFile(model.getId(), fileTypeId, file.getAbsolutePath());
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+	}
+
+	public static Model getMatchingModel(String splittingName, ModelInConsensusModelService micms, List<Model> allModels,
+			String datasetName) {
+
+		for(Model model:allModels) {
+			
+			if(!model.getDatasetName().equals(datasetName)) continue;
+			if(!model.getSplittingName().equals(splittingName)) continue;
+			if(!model.getMethod().getName().toLowerCase().contains("consensus")) continue;
+			
+			List<ModelInConsensusModel>modelsInConsensus=micms.findByConsensusModelId(model.getId());//note currently it doesnt lazy load them into model object by default so do a query
+			
+			for(ModelInConsensusModel modelInConsensus:modelsInConsensus) {
+				if (modelInConsensus.getModel().getDescriptorEmbedding()!=null) {//needs to be a consensus of model that have embeddings
+					return model;
+				}
+			}
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * Loops through QMRF files, figures out matching model ids and uploads to model files table
+	 */
+	void uploadFinalQmrfs() {
+
+		Long fileTypeId=1L;//qmrf
+		String splittingName=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+		
+		File folder=new File("C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\000 Papers\\2023 8.4.11 papers\\000 2023 8.4.11 product delivery\\files for delivery\\QMRFs\\");
+		ModelServiceImpl ms=new ModelServiceImpl();
+		ModelInConsensusModelService micms=new ModelInConsensusMethodServiceImpl();
+		QsarModelsScript qms=new QsarModelsScript("tmarti02");
+		
+		List<Model>models=ms.getAll();
+		
+		for (File file:folder.listFiles()) {
+			
+			if (!file.getName().contains(".pdf")) continue;
+			
+			String abbrev=file.getName().substring(0,file.getName().indexOf("_"));
+			String datasetName=abbrev+" v1 modeling";
+			
+			Model model=getMatchingModel(splittingName, micms, models, datasetName);
+			
+			if(model!=null) {
+				System.out.println(file.getName()+"\t"+datasetName+"\t"+model.getId());
+			}
+			
+			try {
+				qms.uploadModelFile(model.getId(), fileTypeId, file.getAbsolutePath());
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+		}
+	}
 	public static void main(String[] args) {
 		PredictionStatisticsScript ms = new PredictionStatisticsScript();
 		// ms.createSpreadsheetExample();
@@ -2099,6 +2346,8 @@ public class PredictionStatisticsScript {
 //		 ms.createSummaryTableForSet2();
 //		 ms.createSummaryTableForSet3();
 
+//		 ms.createSummaryTableForSetSermacs();
+		 
 		// ms.createSummaryTableForMethod_PFAS();
 
 		// ms.createSummaryTableForSet();
@@ -2108,10 +2357,15 @@ public class PredictionStatisticsScript {
 //		ms.createPredictionReportsExcelPFASOnlyModels();
 //		ms.copyReportsToFolder();
 		
-		ms.createExcelSummarysWithAD_JustPFAS();
-		ms.createExcelSummarysWithAD_OnlyPFAS();
-		ms.copyReportsToFolderWithAD();
-		ms.copyReportsToFolderWithAD_CSS_Delivery();
+//		ms.createkNN_Reports();
+		
+//		ms.createExcelSummarysWithAD_JustPFAS();
+//		ms.createExcelSummarysWithAD_OnlyPFAS();
+//		ms.copyReportsToFolderWithAD();
+//		ms.copyReportsToFolderWithAD_CSS_Delivery();
+
+//		ms.uploadFinalExcelSummaries();
+		ms.uploadFinalQmrfs();
 		
 		// ms.createSummaryTableForMethodTEST();
 		// RecalcStatsScript.viewPredsForSplitSet(1111L);

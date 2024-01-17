@@ -35,9 +35,8 @@ public class ReportGenerationScript {
 
 	static PredictionReportGenerator gen = new PredictionReportGenerator();
 
-	private static void writeReport(String datasetName, String modelSetName, PredictionReport report) {
-		String filePath = "data/reports/" + modelSetName+"/"+datasetName + "_PredictionReport.json";
-
+	private static void writeReport(String datasetName, String modelSetName, PredictionReport report,String filePath) {
+		
 		File file = new File(filePath);
 		if (file.getParentFile()!=null) {
 			file.getParentFile().mkdirs();
@@ -73,24 +72,49 @@ public class ReportGenerationScript {
 		long t2=System.currentTimeMillis();
 
 		if (deleteMissingSplitting) {
-			for(int i=0;i<report.predictionReportDataPoints.size();i++) {
-				PredictionReportDataPoint dp=report.predictionReportDataPoints.get(i);
-				
-				if(dp.qsarPredictedValues.size()==0 || dp.qsarPredictedValues.get(0).splitNum==null) {
-//					System.out.println(datasetName+"\t"+dp.canonQsarSmiles+"\tremoving data point since no predictions");					
-					report.predictionReportDataPoints.remove(i--);
-				}
-				
-			}			
+			deleteMissingSplitting(report);			
 		}
 		
 		
 		double time=(t2-t1)/1000.0;
 		System.out.println("Time to generate report for "+datasetName+" = "+time+" seconds");
 
-		writeReport(datasetName, modelSetName,report);
+		
+		String filePath = "data/reports/" + modelSetName+"/"+datasetName + "_PredictionReport.json";
+
+		writeReport(datasetName, modelSetName,report,filePath);
 		return report;
 	}
+	
+	public static PredictionReport reportPredictionsMethod(String modelSetName, String datasetName,String splittingName,String methodName,boolean deleteMissingSplitting,boolean includeDescriptors,boolean includeOriginalCompounds,String filePath) {
+
+		long t1=System.currentTimeMillis();
+		PredictionReport report=gen.generateMethodPredictions(modelSetName, datasetName, splittingName, methodName,includeDescriptors,includeOriginalCompounds);
+		long t2=System.currentTimeMillis();
+
+		if (deleteMissingSplitting) deleteMissingSplitting(report);			
+		
+		double time=(t2-t1)/1000.0;
+		System.out.println("Time to generate report for "+datasetName+" = "+time+" seconds");
+
+
+		writeReport(datasetName, modelSetName,report,filePath);
+		return report;
+	}
+
+
+	private static void deleteMissingSplitting(PredictionReport report) {
+		for(int i=0;i<report.predictionReportDataPoints.size();i++) {
+			PredictionReportDataPoint dp=report.predictionReportDataPoints.get(i);
+			
+			if(dp.qsarPredictedValues.size()==0 || dp.qsarPredictedValues.get(0).splitNum==null) {
+//					System.out.println(datasetName+"\t"+dp.canonQsarSmiles+"\tremoving data point since no predictions");					
+				report.predictionReportDataPoints.remove(i--);
+			}
+			
+		}
+	}
+
 
 
 	public static void reportAllPredictions(Vector<String> datasetNames,String splittingName,String modelSetName) {

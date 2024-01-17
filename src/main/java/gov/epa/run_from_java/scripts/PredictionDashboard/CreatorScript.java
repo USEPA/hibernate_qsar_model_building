@@ -75,22 +75,28 @@ public class CreatorScript {
 
 	
 	public static  Model createModel(Model model) {
-		List<Model>models=modelService.findByDatasetName(model.getDatasetName());
-
-		for (Model currentModel:models) {
-//			if(!currentModel.getMethod().getName().equals(model.getMethod().getName())) continue;
-//			if(!currentModel.getDescriptorSetName().equals(model.getDescriptorSetName())) continue;
-//			if(!currentModel.getDatasetName().equals(model.getDatasetName())) continue;
-//			if(!currentModel.getSplittingName().equals(model.getSplittingName())) continue;
-//			if(!currentModel.getSource().equals(model.getSource())) continue;
-			
-			if(currentModel.getName()==null) continue;
-			
-			//If have same name and source id then we have a match:
-			if(!currentModel.getName().equals(model.getName()))continue; 
-			if(!currentModel.getSource().getId().equals(model.getSource().getId()))continue;
-			return currentModel;
-		}
+//		List<Model>models=modelService.findByDatasetName(model.getDatasetName());
+//
+//		for (Model currentModel:models) {
+//			
+////			if(!currentModel.getMethod().getName().equals(model.getMethod().getName())) continue;
+////			if(!currentModel.getDescriptorSetName().equals(model.getDescriptorSetName())) continue;
+////			if(!currentModel.getDatasetName().equals(model.getDatasetName())) continue;
+////			if(!currentModel.getSplittingName().equals(model.getSplittingName())) continue;
+////			if(!currentModel.getSource().equals(model.getSource())) continue;
+//			
+//			if(currentModel.getName()==null) continue;
+//
+////			if(model.getName().equals("CATMoS-NT"))
+////				System.out.println(currentModel.getName()+"\t"+currentModel.getSource().getName()+"\t"+model.getName()+"\t"+model.getSource().getName());
+//
+//			//If have same name and source id then we have a match:
+//			if(!currentModel.getName().equals(model.getName()))continue;
+//			
+//			
+//			if(!currentModel.getSource().getName().equals(model.getSource().getName()))continue;
+//			return currentModel;
+//		}
 		
 		System.out.print("Creating model for "+model.getDatasetName()+"...");
 		model=modelService.create(model);

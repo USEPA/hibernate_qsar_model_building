@@ -149,6 +149,50 @@ public class PredictionReportGenerator extends ReportGenerator {
 		}
 	}
 	
+	private void addMethodPredictions(String methodName,boolean hasEmbedding) {
+		
+		List<Model> models = modelService.getAll();
+		
+		if (hasEmbedding) {
+			models = models.stream()
+					.filter(m -> m.getDatasetName().equals(predictionReport.predictionReportMetadata.datasetName))
+					.filter(m -> m.getSplittingName().equals(predictionReport.predictionReportMetadata.splittingName))
+					.filter(m -> m.getMethod().getName().equals(methodName))
+					.filter(m ->m.getDescriptorEmbedding()!=null)
+					.collect(Collectors.toList());
+			
+		} else {
+			models = models.stream()
+					.filter(m -> m.getDatasetName().equals(predictionReport.predictionReportMetadata.datasetName))
+					.filter(m -> m.getSplittingName().equals(predictionReport.predictionReportMetadata.splittingName))
+					.filter(m -> m.getMethod().getName().equals(methodName))
+					.filter(m -> m.getDescriptorEmbedding()==null)
+					.collect(Collectors.toList());
+		}
+		
+				
+		Collections.sort(models, (o1, o2) -> (int)(o1.getId() - o2.getId()));//sort in order so consensus last and also so can get the descriptor set name from the first model
+		
+		System.out.println(models.size());
+		
+		if (models.size()>1) {
+			
+			for (Model model:models) {
+				System.out.println(model.getId());
+			}
+			
+			return;
+		}
+		
+		for (Model model:models) {
+			
+			System.out.println(model.getId()+"\t"+model.getMethod().getName());
+			
+			addModelPredictionsAndMetadata(model);
+		}
+	}
+
+	
 	private void addModelPredictionsAndMetadata(Model model) {
 		if (model==null) {
 			return;
@@ -221,12 +265,33 @@ public class PredictionReportGenerator extends ReportGenerator {
 		
 		addModelSetPredictions(modelSetName);
 		
-		if(includeDescriptors) addDescriptors(datasetName,splittingName, modelSetName);
+		if(includeDescriptors) addDescriptors(datasetName);
 		
 		return predictionReport;
 	}
 	
-	private void addDescriptors(String datasetName, String splittingName, String modelSetName) {
+	public PredictionReport generateMethodPredictions(String modelSetName, String datasetName, String splittingName,
+			String methodName,boolean includeDescriptors,boolean includeOriginalCompounds) {
+		
+		initPredictionReport(datasetName, splittingName);
+		
+		if(includeOriginalCompounds)  addOriginalCompounds(predictionReport.predictionReportDataPoints);
+		
+		if(modelSetName.equals("WebTEST2.0")) {
+			addMethodPredictions(methodName,false);	
+		} else {
+			addMethodPredictions(methodName,true);
+		}
+		
+		
+		
+		if(includeDescriptors) addDescriptors(datasetName);
+		
+		return predictionReport;
+	}
+
+	
+	private void addDescriptors(String datasetName) {
 		
 		String descriptorSetName=predictionReport.predictionReportModelMetadata.get(0).descriptorSetName;
 		
@@ -237,8 +302,6 @@ public class PredictionReportGenerator extends ReportGenerator {
 		for (PredictionReportDataPoint dp:predictionReport.predictionReportDataPoints) {
 			dp.descriptorValues=htDescriptors.get(dp.canonQsarSmiles);
 		}
-		
-		
 		
 	}
 

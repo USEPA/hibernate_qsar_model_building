@@ -25,8 +25,9 @@ public class QsarModelsSession {
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Prediction.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.Statistic.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding.class);
-        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelQmrf.class);
-        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelFile.class);
+        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.FileType.class);
+//        	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.ModelInConsensusModel.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard.class);
         	config.addAnnotatedClass(gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedADEstimate.class);

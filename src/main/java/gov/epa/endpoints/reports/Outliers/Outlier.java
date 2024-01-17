@@ -8,6 +8,7 @@ public class Outlier extends ModelPrediction {
 
 	         
 	@SerializedName("analogs")
+	public
 	List<Analog> Analogs_Search;
 
 

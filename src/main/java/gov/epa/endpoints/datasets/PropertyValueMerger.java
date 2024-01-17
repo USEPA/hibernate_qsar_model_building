@@ -125,10 +125,10 @@ public class PropertyValueMerger {
 		if (size % 2 == 0) {//even number of records, need to determine average of middle 2 values
 			MappedPropertyValue mpv1 = mappedPropertyValues.get(size / 2 - 1);
 			MappedPropertyValue mpv2 = mappedPropertyValues.get(size / 2);
-			Double v1 = mpv1.qsarPropertyValue;
+			Double v1 = mpv1.qsarPropertyValue;//Note these already in log units for lots of properties
 			Double v2 = mpv2.qsarPropertyValue;
 			
-			if (PropertyValueValidator.checkRangeForProperty(v1, v2, propertyName)) {
+			if (PropertyValueValidator.checkMedianQsarValuesForDatapoint(v1, v2, propertyName)) {
 				finalValue= (v1 + v2) / 2.0;
 
 //				if (mpv1.compound.getDtxcid().equals(mpv2.compound.getDtxcid())) {

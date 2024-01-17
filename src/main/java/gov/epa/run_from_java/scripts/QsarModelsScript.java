@@ -21,27 +21,35 @@ import java.util.TreeMap;
 
 import javax.validation.ConstraintViolationException;
 
+import com.google.gson.JsonObject;
+
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Config;
-
+import gov.epa.databases.dev_qsar.qsar_models.entity.FileType;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
-import gov.epa.databases.dev_qsar.qsar_models.entity.ModelQmrf;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelFile;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
-import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport;
+//import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSetReport;
 import gov.epa.databases.dev_qsar.qsar_models.service.ConfigService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ConfigServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfService;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelFileService;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelFileServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportService;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportServiceImpl;
+//import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportService;
+//import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportServiceImpl;
+
+
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelFileServiceImpl;
+
+
+
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.models.ModelPrediction;
@@ -53,9 +61,10 @@ import kong.unirest.Unirest;
 public class QsarModelsScript {
 	
 	private ModelService modelService = new ModelServiceImpl();
-	private ModelQmrfService modelQmrfService = new ModelQmrfServiceImpl();
+	private ModelFileService modelFileService = new ModelFileServiceImpl();
 	private ModelSetService modelSetService = new ModelSetServiceImpl();
-	private ModelSetReportService modelSetReportService = new ModelSetReportServiceImpl();
+	
+	
 	private ModelInModelSetService modelInModelSetService = new ModelInModelSetServiceImpl();
 	private ModelBytesService modelBytesService = new ModelBytesServiceImpl();
 	
@@ -133,71 +142,84 @@ public class QsarModelsScript {
 		modelInModelSetService.delete(modelInModelSet);
 	}
 	
-	public void uploadModelQmrf(Long modelId, String qmrfFilePath) throws IOException, ConstraintViolationException {
-		byte[] bytes = Files.readAllBytes(Paths.get(qmrfFilePath));
-		Model model = modelService.findById(modelId);
-		
-		if (bytes==null) {
-			System.out.println("No file found at " + qmrfFilePath);
-			return;
-		} else if (model==null) {
-			System.out.println("No model found for ID " + modelId);
-			return;
-		}
-		
-		System.out.println("Uploading QMRF with bytecount " + bytes.length);
-		ModelQmrf modelQmrf = new ModelQmrf(model, bytes, lanId);
-		modelQmrfService.create(modelQmrf);
-	}
 	
-	public byte[] downloadModelQmrf(Long modelId, String downloadFolder) {
-		ModelQmrf modelQmrf = modelQmrfService.findByModelId(modelId);
+	
+	public byte[] downloadModelFile(Long modelId, Long fileTypeId,String downloadFolder) {
+		ModelFile modelQmrf = modelFileService.findByModelId(modelId,fileTypeId);
 		Model model = modelQmrf.getModel();
 		byte[] file = modelQmrf.getFile();
 		
 		String saveToFilePath = downloadFolder + File.separator + String.join("_", "model"+modelId, model.getDatasetName(), 
 				model.getDescriptorSetName(), 
 				model.getSplittingName(),
-				model.getMethod().getName()) 
-				+ ".pdf";
+				model.getMethod().getName());
 		
+		if(fileTypeId==1) {
+			saveToFilePath+=".pdf";
+		} else if (fileTypeId==2) {
+			saveToFilePath+=".xlsx";
+		} else if (fileTypeId==3 || fileTypeId==4) {
+			saveToFilePath+=".jpg";
+		}
 		safelyWriteBytes(saveToFilePath, file, true);
 		
 		return file;
 	}
 	
-	public void uploadModelSetReport(Long modelSetId, String datasetName, String splittingName, 
-			String reportFilePath) throws IOException, ConstraintViolationException {
+	
+	
+	public void uploadModelFile(Long modelId, Long fileTypeId,String reportFilePath) throws IOException, ConstraintViolationException {
 		byte[] bytes = Files.readAllBytes(Paths.get(reportFilePath));
-		ModelSet modelSet = modelSetService.findById(modelSetId);
 		
-		if (bytes==null) {
-			System.out.println("No file found at " + reportFilePath);
-			return;
-		} else if (modelSet==null) {
-			System.out.println("No model set found for ID " + modelSetId);
-			return;
-		}
+		System.out.println("Uploading filetype "+fileTypeId+" with bytecount " + bytes.length);
+		
+		Model model=new Model();
+		model.setId(modelId);
+		
+		FileType fileType=new FileType();
+		fileType.setId(fileTypeId);
+		
+		ModelFile modelSetReport = new ModelFile(model, fileType, bytes, lanId);
+		modelFileService.create(modelSetReport);
+	}
+	
+	public void uploadModelFile(Long modelId, Long fileTypeId,byte[] bytes) throws IOException, ConstraintViolationException {
+
+		System.out.println("Uploading filetype "+fileTypeId+" with bytecount " + bytes.length);
+		
+		Model model=new Model();
+		model.setId(modelId);
+		
+		FileType fileType=new FileType();
+		fileType.setId(fileTypeId);
+		
+		ModelFile modelSetReport = new ModelFile(model, fileType, bytes, lanId);
+		modelFileService.create(modelSetReport);
+	}
+	
+	
+	public void uploadModelFile(Model model, FileType fileType,String reportFilePath) throws IOException, ConstraintViolationException {
+		byte[] bytes = Files.readAllBytes(Paths.get(reportFilePath));
 		
 		System.out.println("Uploading Excel model set report with bytecount " + bytes.length);
-		ModelSetReport modelSetReport = new ModelSetReport(modelSet, datasetName, splittingName, bytes, lanId);
-		modelSetReportService.create(modelSetReport);
+		ModelFile modelSetReport = new ModelFile(model, fileType, bytes, lanId);
+		modelFileService.create(modelSetReport);
 	}
 	
-	public byte[] downloadModelSetReport(Long modelSetId, String datasetName, String splittingName,
-			String downloadFolder) {
-		ModelSetReport modelSetReport = modelSetReportService
-				.findByModelSetIdAndModelData(modelSetId, datasetName, splittingName);
-		return writeOneModelSetReport(modelSetReport, downloadFolder);
-	}
 	
-	public byte[] writeOneModelSetReport(ModelSetReport modelSetReport, String downloadFolder) {
-		ModelSet modelSet = modelSetReport.getModelSet();
-		byte[] file = modelSetReport.getFile();
+	
+	public byte[] downloadModelSetReport(Long modelId, Long fileTypeId,String downloadFolder) {
+		ModelFile modelFile = modelFileService.findByModelId(modelId, fileTypeId);
 		
-		String saveToFilePath = downloadFolder + File.separator + String.join("_", modelSet.getName(),
-				modelSetReport.getDatasetName(), 
-				modelSetReport.getSplittingName())
+		return writeSummaryFile(modelFile, downloadFolder);
+	}
+	
+	public byte[] writeSummaryFile(ModelFile modelFile, String downloadFolder) {
+		
+		byte[] file = modelFile.getFile();
+		
+		String saveToFilePath = downloadFolder + File.separator + String.join("_", modelFile.getModel().getName(),
+				modelFile.getFileType().getName()) 				
 				+ ".xlsx";
 		
 		safelyWriteBytes(saveToFilePath, file, true);
@@ -213,12 +235,6 @@ public class QsarModelsScript {
 		return file;
 	}
 	
-	public void downloadAllReportsForModelSet(Long modelSetId, String downloadFolder) {
-		List<ModelSetReport> modelSetReports = modelSetReportService.findByModelSetId(modelSetId);
-		for (ModelSetReport msr:modelSetReports) {
-			writeOneModelSetReport(msr, downloadFolder);
-		}
-	}
 	
 	public URI safelyWriteBytes(String pathToFile, byte[] bytes, boolean browse) {
 		File file = new File(pathToFile);
@@ -272,11 +288,11 @@ public class QsarModelsScript {
 		}
 				
 		
-		ModelQmrfService modelQmrfServiceImpl=new ModelQmrfServiceImpl();		
-		ModelQmrf modelQmrf=modelQmrfServiceImpl.findByModelId(modelID);		
+		ModelFileService modelFileServiceImpl=new ModelFileServiceImpl();		
+		ModelFile modelQmrf=modelFileServiceImpl.findByModelId(modelID,1L);		
 		
 		if (modelQmrf!=null) {
-			modelQmrfServiceImpl.delete(modelQmrf);
+			modelFileServiceImpl.delete(modelQmrf);
 		} else {
 //			System.out.println("Qmrf for "+modelID+" is null");
 		}
@@ -377,20 +393,8 @@ public class QsarModelsScript {
 	}
 	
 	
-	void deletePredictionReport() {
-		
-		ModelSetReportService m2=new ModelSetReportServiceImpl();
-		long modelSetID=2L;		
-		String datasetName="Data from LLNA from exp_prop, without eChemPortal external to LLNA TEST";
-		String descriptorSetName="T.E.S.T. 5.1";
-		String splittingName="RND_REPRESENTATIVE";
-		ModelSetReport modelSetReport=m2.findByModelSetIdAndModelData(modelSetID,datasetName,splittingName);
-		m2.delete(modelSetReport);
-
-		
-	}
 	
-	public void compareAPIPredictionsWithDB(Long existingModelId, String server, int port, String lanId,boolean use_pmml)  {
+	public void compareAPIPredictionsWithDB(Long existingModelId, String server, int port, String lanId)  {
 		
 		ModelService msi=new ModelServiceImpl();
 		
@@ -401,9 +405,11 @@ public class QsarModelsScript {
 		
 		ModelWebService ws = new ModelWebService(server, port);
 		WebServiceModelBuilder mb = new WebServiceModelBuilder(ws, lanId);
-
+		
 				
-		ModelPrediction[] modelPredictions= mb.getModelPredictionsFromAPI(model, use_pmml);
+//		System.out.println(use_pmml);
+		
+		ModelPrediction[] modelPredictions= mb.getModelPredictionsFromAPI(model);
 		Hashtable<String,ModelPrediction>htMP_new=new Hashtable<>();
 		
 		for (ModelPrediction mp:modelPredictions) {
@@ -618,21 +624,32 @@ public class QsarModelsScript {
 //		Long modelId=351L;//HLC, RF, no embedding, RND_REPRESENTATIVE splitting
 //		boolean usePMML=false;
 //		
-//		Long modelId=457L;
+//		Long modelId=735L;
 //		boolean usePMML=true;
-//		script.compareAPIPredictionsWithDB(modelId, modelWsServer,modelWsPort, lanId,usePMML);//non pmml based model
+//		boolean include_standardization_in_pmml=false;
+//		script.compareAPIPredictionsWithDB(modelId, modelWsServer,modelWsPort, lanId);//non pmml based model
 
 		//****************************************************************************************
 //		Long modelId=291L;//HLC,RF,embedding, T=PFAS only, P=PFAS- all predictions are same- handles embedding wrong
 //		Long modelId=336L;//HLC,RF,no embedding, T=PFAS only, P=PFAS
 //		Long modelId=306L;//HLC,RF,embedding, RND_REPRESENTATIVE splitting- predictions are different!
-		Long modelId=351L;//HLC,RF,no embedding, RND_REPRESENTATIVE splitting
-		boolean use_cache=false;
-		script.compareSDE_API_PredictionsWithDB(modelId,"qsar-ready", "http://localhost",8105, lanId,false,use_cache);//non pmml based model
+//		Long modelId=351L;//HLC,RF,no embedding, RND_REPRESENTATIVE splitting
+//		boolean use_cache=false;
+//		script.compareSDE_API_PredictionsWithDB(modelId,"qsar-ready", "http://localhost",8105, lanId,false,use_cache);//non pmml based model
 		
 		//****************************************************************************************
-//		script.deleteModel(456L);
-//		for (int i=453;i>=428;i--) script.deleteModel(i);
+//		script.deleteModel(861L);
+//		script.deleteModel(858L);
+//		script.deleteModel(857L);
+		
+//		script.deleteModel(859L);
+//		for (int i=853;i>=850;i--) script.deleteModel(i);
+
+//		script.downloadModelFile(776L, 1L,"data\\reports\\prediction reports upload\\");
+//		script.downloadModelFile(776L, 2L,"data\\reports\\prediction reports upload\\");
+		
+//		script.downloadModelFile(1038L, 3L,"data\\reports\\prediction reports upload\\");
+		script.downloadModelFile(1038L, 4L,"data\\reports\\prediction reports upload\\");
 
 		//****************************************************************************************
 //		long[] modelIds = { 43, 45, 46, 137, 139, 140, 218, 219, 225, 226, 227, 232 };

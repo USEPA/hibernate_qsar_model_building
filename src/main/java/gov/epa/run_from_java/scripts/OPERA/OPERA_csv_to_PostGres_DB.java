@@ -1,7 +1,12 @@
 package gov.epa.run_from_java.scripts.OPERA;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -48,6 +53,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.SourceService;
 import gov.epa.databases.dev_qsar.qsar_models.service.SourceServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
+import gov.epa.run_from_java.scripts.QsarModelsScript;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.OPERA.OPERA_lookups.OtherCAS;
@@ -981,7 +987,7 @@ private List<PredictionReport> createReports(List<PredictionDashboard> predictio
 		String filepathPredictionCsv=folder+"OPERA2.8_DSSTox_082021_1_first1000.csv";
 		String filepathStructureCSV=folder+"OPERA2.8_DSSTox_082021_1_first1000_structures.csv";
 		
-		int count=100;//number of rows in the csv to use
+		int count=10;//number of rows in the csv to use
 //		int count=-1;
 		boolean useLatestModelIds=false;//if false use plot images using legacy model ids 
 
@@ -1171,7 +1177,7 @@ private List<PredictionReport> createReports(List<PredictionDashboard> predictio
 		OPERA_csv_to_PostGres_DB o= new OPERA_csv_to_PostGres_DB();
 
 //		o.initializeOPERARecords();//create db entries in properties, datasets, models, statistics tables
-		o.goThroughCSVPredictionFile(true);//goes through csv and creates predictionDashboard objects
+//		o.goThroughCSVPredictionFile(false);//goes through csv and creates predictionDashboard objects
 
 		//View reports by generating them on the fly from database:
 //		OPERA_Report_API ora=new OPERA_Report_API();
@@ -1183,8 +1189,67 @@ private List<PredictionReport> createReports(List<PredictionDashboard> predictio
 //		o.compareLoadTimes();
 //		o.deleteOPERA_Records();//delete from db so have fresh start
 //		o.lookAtSpecialCSVRows();
+		o.saveOperaPlotImages();
 		
+	}
+	
+	
+	void saveOperaPlotImages() {
+		QsarModelsScript qms=new QsarModelsScript("tmarti02");
 		
+		TreeMap<String, Model>mapModels=OPERA_lookups.getModelsMap();
+		
+		for (String propertyName:DevQsarConstants.getOPERA_PropertyNames()) {
+
+			
+			int modelID_old=OPERA_Report.getOldModelID(propertyName);
+			
+			if(OPERA_Report.hasPlots(propertyName)==0) continue;
+			
+			if (modelID_old==-1) continue;
+
+			System.out.println(propertyName);
+
+			
+			if (modelID_old!=-1 )  {
+				String urlHistogram=OPERA_Report.urlHistogramAPIOld+modelID_old;
+				String urlScatterPlot=OPERA_Report.urlScatterPlotAPIOld+modelID_old;
+				
+				try {
+					
+					byte[] scatterFile=downloadUrl(new URL(urlScatterPlot));
+					byte[] histogramFile=downloadUrl(new URL(urlHistogram));
+					
+					Model model=mapModels.get(getModelName(propertyName));
+					
+					qms.uploadModelFile(model.getId(), 3L, scatterFile);
+					qms.uploadModelFile(model.getId(), 4L, histogramFile);
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
+	private byte[] downloadUrl(URL toDownload) {
+	    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+	    try {
+	        byte[] chunk = new byte[4096];
+	        int bytesRead;
+	        InputStream stream = toDownload.openStream();
+
+	        while ((bytesRead = stream.read(chunk)) > 0) {
+	            outputStream.write(chunk, 0, bytesRead);
+	        }
+
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	        return null;
+	    }
+
+	    return outputStream.toByteArray();
 	}
 
 	void deleteOPERA_Records() {

@@ -3,10 +3,8 @@ package gov.epa.web_services;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import com.google.gson.Gson;
@@ -15,19 +13,9 @@ import com.google.gson.JsonObject;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetService;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfService;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelQmrfServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportService;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetReportServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetService;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.SDE_Prediction_Request;
-import gov.epa.web_services.embedding_service.CalculationInfoGA;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
@@ -239,6 +227,7 @@ public class ModelWebService extends WebService {
 		jo.addProperty("model_id", modelId);
 		jo.addProperty("model", model);
 		jo.addProperty("use_sklearn2pmml", use_sklearn2pmml);
+				
 		String body=gson.toJson(jo);
 		
 		HttpResponse<String> response = Unirest.post(address+"/models/initPMML")
@@ -246,7 +235,7 @@ public class ModelWebService extends WebService {
 				.body(body)				
 				.asString();
 		
-		System.out.println("Status of init call = "+response.getStatus());
+		System.out.println("Status of init call = "+response.getStatus()+"\t"+response.getStatusText());
 		return response;
 
 	}
@@ -260,7 +249,7 @@ public class ModelWebService extends WebService {
 
 		Long model_id=457L;
 		boolean use_pmml=true;
-		boolean include_standardization_in_pmml=true;
+		boolean useSklearn2pmml=false;
 				
 //		Long model_id=272L;
 //		boolean use_pmml=false;
@@ -277,7 +266,7 @@ public class ModelWebService extends WebService {
 		
 		if (use_pmml) {
 			String details=new String(model.getDetails());
-			String result=callInitPmml(modelBytes,model_id+"", details, include_standardization_in_pmml).getBody().toString();
+			String result=callInitPmml(modelBytes,model_id+"", details, useSklearn2pmml).getBody().toString();
 			System.out.print("result="+result);
 		} else {
 			String result=callInitPickle(modelBytes,model_id+"").getBody().toString();

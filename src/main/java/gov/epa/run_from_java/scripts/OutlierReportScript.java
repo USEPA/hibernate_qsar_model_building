@@ -68,7 +68,7 @@ public class OutlierReportScript {
 		
 //		String dataset = "Standard Water solubility from exp_prop";
 		String dataset = "Standard Henry's law constant from exp_prop";
-		String folderOutput="Reports/Outlier testing";
+		String folderOutput="data/Reports/Outlier testing";
 		String jsonFilePath=folderOutput+"/"+dataset+".json";
 		String descriptorSetName="T.E.S.T. 5.1";
 		String folderTSV="data/dev_qsar/dataset_files/";
@@ -148,7 +148,7 @@ public class OutlierReportScript {
 		
 		
 //		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\";
-		String folderMain="reports\\Outlier testing\\";
+		String folderMain="data\\reports\\Outlier testing\\";
 		String folderOutput=folderMain+"\\"+dataset;
 		
 		String jsonFilePath=folderOutput+"/"+dataset+".json";

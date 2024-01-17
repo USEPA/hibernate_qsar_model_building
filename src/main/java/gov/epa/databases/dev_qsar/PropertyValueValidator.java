@@ -96,7 +96,17 @@ public class PropertyValueValidator {
 		}
 	}
 
-	
+	/**
+	 * Sometimes property values are reported as a range (min and max values). 
+	 * 
+	 * For some properties (e.g. water solubility with units of g/L) they arent in log units so
+	 * need to take log when comparing the range values
+	 * 
+	 * @param min
+	 * @param max
+	 * @param propertyName
+	 * @return
+	 */
 	public static Boolean checkRangeForProperty(double min, double max, String propertyName) {
 
 		if (propertyName.equals(DevQsarConstants.PKA) || propertyName.equals(DevQsarConstants.PKA_A) || propertyName.equals(DevQsarConstants.PKA_B)  
@@ -121,7 +131,44 @@ public class PropertyValueValidator {
 			return null;
 		}
 	}
+	
+	/**
+	 * The median qsar property values have log units for most properties
+	 * 
+	 * Note: can't just use checkRangeForProperty method because it assumes 
+	 * some of the properties are not in log units yet when comparing the values
+	 * 
+	 * @param median1
+	 * @param median2
+	 * @param propertyName
+	 * @return
+	 */
+	public static Boolean checkMedianQsarValuesForDatapoint(double median1, double median2, String propertyName) {
 
+		if (propertyName.equals(DevQsarConstants.PKA) || propertyName.equals(DevQsarConstants.PKA_A) || propertyName.equals(DevQsarConstants.PKA_B)  
+				|| propertyName.equals(DevQsarConstants.LOG_KOW)
+				|| propertyName.equals(DevQsarConstants.VAPOR_PRESSURE) 
+				|| propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT) 
+				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)
+				|| propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)
+				|| propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50)
+				|| propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)
+				|| propertyName.equals(DevQsarConstants.LOG_BCF_FISH_WHOLEBODY)) {
+			return isRangeWithinTolerance(median1, median2, DevQsarConstants.LOG_RANGE_TOLERANCE);
+		} else if (propertyName.equals(DevQsarConstants.MELTING_POINT) 
+				|| propertyName.equals(DevQsarConstants.BOILING_POINT) 
+				|| propertyName.equals(DevQsarConstants.FLASH_POINT)) {
+			return isRangeWithinTolerance(median1, median2, DevQsarConstants.TEMP_RANGE_TOLERANCE);
+		} else if (propertyName.equals(DevQsarConstants.DENSITY)) {
+			return isRangeWithinTolerance(median1, median2, DevQsarConstants.DENSITY_RANGE_TOLERANCE);
+		} else {
+			System.out.println("Missing entry in checkMedianValuesForProperty for "+propertyName);
+			return null;
+		}
+	}
+
+	
+	
 	
 	private static boolean isRangeWithinTolerance(double min, double max, double rangeTolerance) {
 		return max - min <= rangeTolerance;

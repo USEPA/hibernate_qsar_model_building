@@ -136,13 +136,19 @@ public class QsarDescriptorsScriptTodd {
 //		datasetNames.add("BP v1");
 //		datasetNames.add("MP v1");
 		
-		datasetNames.add("HLC v1 res_qsar");
-		datasetNames.add("WS v1 res_qsar");
-		datasetNames.add("VP v1 res_qsar");
-		datasetNames.add("LogP v1 res_qsar");
-		datasetNames.add("BP v1 res_qsar");
-		datasetNames.add("MP v1 res_qsar");
+//		datasetNames.add("HLC v1 res_qsar");
+//		datasetNames.add("WS v1 res_qsar");
+//		datasetNames.add("VP v1 res_qsar");
+//		datasetNames.add("LogP v1 res_qsar");
+//		datasetNames.add("BP v1 res_qsar");
+//		datasetNames.add("MP v1 res_qsar");
 
+//		datasetNames.add("HLC v1 modeling");
+//		datasetNames.add("WS v1 modeling");
+		datasetNames.add("VP v1 modeling");
+		datasetNames.add("LogP v1 modeling");
+		datasetNames.add("BP v1 modeling");
+		datasetNames.add("MP v1 modeling");
 		
 		int batchSize=1;//right now if one chemical in batch fails, the batch run fails, so run 1 at a time
 		for (String datasetName:datasetNames) {
@@ -169,8 +175,10 @@ public class QsarDescriptorsScriptTodd {
 //		String[] sciDataExpertsDescriptorSetNames = {"ToxPrints-default"};
 //		String[] sciDataExpertsDescriptorSetNames = {"Mordred-default"};
 
-		int batchSize=200;
-		String datasetName="WS v1 res_qsar";
+		int batchSize=1;
+//		String datasetName="WS v1 res_qsar";
+//		String datasetName="WS v1 modeling";
+		String datasetName="HLC v1 modeling";
 				
 		for (String descriptorSetName:sciDataExpertsDescriptorSetNames) {
 			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,batchSize);

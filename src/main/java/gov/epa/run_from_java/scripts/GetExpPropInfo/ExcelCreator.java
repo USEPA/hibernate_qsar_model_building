@@ -244,6 +244,9 @@ public class ExcelCreator {
 
 			CellStyle csLtGrey=createStyleHeader(wb);
 
+			CellStyle csYellow=wb.createCellStyle();
+			csYellow.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
+		    csYellow.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 		    
 		    
 			for (int i=0;i<fields.length;i++) {
@@ -274,10 +277,14 @@ public class ExcelCreator {
 				for (int k=0;k<fields.length;k++) {
 					Cell cell=row.createCell(k);
 
+					if(jo.get("predicted_CV")!=null) {
+						cell.setCellStyle(csYellow);
+					}
+
 					if (jo.get(fields[k])==null) continue;
 					if (jo.get(fields[k]).isJsonNull()) continue;
 					if (jo.get(fields[k]).getAsString().isBlank()) continue;
-
+					
 
 					String value=jo.get(fields[k]).getAsString();
 
@@ -298,7 +305,7 @@ public class ExcelCreator {
 					//						System.out.println("Error setting cell value = "+value+" for "+fields[k]);
 					//					}
 
-					try {
+					try {//Use brute force- first set as double then as string if that fails:
 						cell.setCellValue(Double.parseDouble(value));	
 					} catch (Exception ex) {
 						//						System.out.println("Error setting cell value = "+value+" for "+fields[k]);
@@ -589,13 +596,19 @@ public class ExcelCreator {
 
 
 		htDescriptions.put("public_source_name","name of the public source");
+		htDescriptions.put("public_source_description","description of the public source");
 		htDescriptions.put("public_source_url","url of the public source");
 
 		htDescriptions.put("public_source_original_name","name of the original public source");
+		htDescriptions.put("public_source_original_description","description of the original public source");
 		htDescriptions.put("public_source_original_url","url of the original public source");
 		
 		htDescriptions.put("literature_source_citation","citation for the literature source");
 		htDescriptions.put("literature_source_doi","doi url for the literature source");
+
+		htDescriptions.put("experimental_median","Median experimental property value for modeling dataset");
+		htDescriptions.put("predicted_CV","Prediction from random forest model during 5 fold cross validation");
+		htDescriptions.put("predicted_CV_Error","Prediction error from random forest model during 5 fold cross validation");
 		
 		htDescriptions.put("source_dtxrid","DSSTOX record id with the source chemical");
 		htDescriptions.put("source_dtxsid","DSSTOX substance id associated with the source chemical");
@@ -623,6 +636,8 @@ public class ExcelCreator {
 		htDescriptions.put("notes","notes on the record");
 		htDescriptions.put("qc_flag","whether or not a quality control flag has been issued");
 
+		
+		htDescriptions.put("ICF_Notes","Clarifying context for results or other description of any challenges encountered during QC review");
 		htDescriptions.put("ICF_duplicate","Duplicate exp_prop_id");
 		htDescriptions.put("ICF_chemical_matches","Does the chemical in the primary source match the source chemical (see source_casrn, source_chemical_name, and source_smiles) ?  Yes/No/?");
 		htDescriptions.put("ICF_is_experimental","Was the property value experimentally determined? Yes/No/?");
@@ -635,6 +650,25 @@ public class ExcelCreator {
 		htDescriptions.put("ICF_pressure_mmHg","Experimental pressure if it is different from pressure_mmHg field. Especially important for boiling point records far away from 760 mmHg");
 		htDescriptions.put("ICF_pH","Experimental pH if it is different from pH field. ");
 
+		
+		htDescriptions.put("ICF_cluster",
+				"Matching numerical values assigned to entries that have the same mapped chemical identity (sorted by CAS-RN) and qsar_property_value. Defined as being within 0.02 of a qsar unit. Sub-clusters within 0.02 of a qsar unit are given an a, b, or c distinction. One additional cluster that was identified after review began is marked with \"x.\"");
+
+		htDescriptions.put("ICF_status",
+				"Entries that have been reviewed or are part of a reviewed cluster. \"Reviewed\" = Entry was reviewed and QCd to the extent possible."
+						+ "\"Reviewed - could not confirm\" = Entry was not able to be reviewed, with explanation of steps taken provided in ICF_Notes."
+						+ "\"Reviewed (duplicate)\" = Entry was a duplicate value for another reviewed entry.");
+
+		htDescriptions.put("ICF_notes","Clarifying context for results or other description of any challenges encountered during QC review");
+		htDescriptions.put("ICF_additional_resources_needed","For values where the primary source could be tentatively identified, but not retrieved, the reference information for that source is provided here.");
+		htDescriptions.put("ICF_property_mismatch","If the values reported in the paper are not the property of interest, name the property reported. Otherwise, leave blank.");
+		htDescriptions.put("ICF_corrected_chemical","Where the chemical did not match, but was clearly intended as the correct chemical (e.g., a conjugate base instead of the acid form), the DTXSID of the corrected chemical will be reported here.");
+		htDescriptions.put("ICF_exp_method","Type of experimental method used to determine property value.");
+		htDescriptions.put("ICF_test_guidelines","Test guidelines used to determine property value, where reported. Ex: \"OPPTS 830.7570\" or \"OECD 117\"");
+		htDescriptions.put("ICF_reportedvalue","The original value reported in the primary source, where available");
+		htDescriptions.put("ICF_reportedunits","The unit for the original value reported in the primary source, where available");
+
+		
 		
 		return htDescriptions;
 	}

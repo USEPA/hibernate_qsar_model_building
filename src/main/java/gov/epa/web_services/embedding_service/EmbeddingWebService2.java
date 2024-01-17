@@ -14,6 +14,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingService
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
 import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.models.WebServiceModelBuilder;
+import gov.epa.run_from_java.scripts.SplittingGeneratorPFAS_Script;
 import gov.epa.web_services.WebService;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -100,20 +101,8 @@ public class EmbeddingWebService2 extends WebService {
 //		
 //	}
 	
-	public DescriptorEmbedding getEmbeddingGA(CalculationInfo ci,String lanId) {
+	public DescriptorEmbedding getEmbeddingGA(CalculationInfoGA ciGA,String lanId) {
 		
-		CalculationInfoGA ciGA=new CalculationInfoGA(ci);
-		
-		ciGA.qsarMethodEmbedding=DevQsarConstants.KNN;
-		
-//		System.out.println("use_wards="+ciGA.use_wards);
-		
-		
-//		if (datasetName.contains("BP") && !splitting.equals(SplittingGeneratorPFAS_Script.splittingPFASOnly))
-//			ci.num_generations = 10;// takes too long to do 100
-//		ci.num_jobs=4;
-
-		System.out.println("\n***"+ci.datasetName+"\t"+ci.splittingName+"\t"+"num_generations="+ciGA.num_generations+"***");
 
 		DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ciGA);
 		

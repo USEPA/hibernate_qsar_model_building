@@ -259,6 +259,26 @@ public class Model {
 		this.modelStatistics = modelStatistics;
 	}
 
+	public List<ModelInModelSet> getModelInModelSets() {
+		return modelInModelSets;
+	}
+
+	public void setModelInModelSets(List<ModelInModelSet> modelInModelSets) {
+		this.modelInModelSets = modelInModelSets;
+	}
+
+	public List<Prediction> getPredictions() {
+		return predictions;
+	}
+
+	public void setPredictions(List<Prediction> predictions) {
+		this.predictions = predictions;
+	}
+
+	public void setModelsInConsensusModel(List<ModelInConsensusModel> modelsInConsensusModel) {
+		this.modelsInConsensusModel = modelsInConsensusModel;
+	}
+
 //	public String getUrlScatterPlot() {
 //		return urlScatterPlot;
 //	}

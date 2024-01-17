@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import javax.validation.ConstraintViolationException;
 
@@ -45,6 +46,8 @@ import gov.epa.databases.dev_qsar.exp_prop.service.PublicSourceService;
 import gov.epa.databases.dev_qsar.exp_prop.service.PublicSourceServiceImpl;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalService;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
+import gov.epa.run_from_java.scripts.OPERA.OPERA_lookups;
 import gov.epa.databases.chemprop.ChemPropParameter;
 import gov.epa.databases.chemprop.ChemPropParameterValue;
 import gov.epa.databases.chemprop.CollectionDetail;
@@ -637,11 +640,27 @@ public class ChemPropLoader {
 		}
 	}
 
+	void seeOutstandingChemPropData() {
+		
+		HashMap<Long, Endpoint> endpoints = Endpoint.getTableFromJsonFiles2(JSON_FOLDER_PATH);
+		TreeMap <String,Property>mapProperties=OPERA_lookups.getPropertyMap();
+		
+		for (Long id:endpoints.keySet()) {
+			Endpoint endpoint=endpoints.get(id);
+			String propertyNameCorrected=correctPropertyName(endpoint.name);
+			System.out.println(endpoint.name+"\t"+propertyNameCorrected+"\t"+mapProperties.containsKey(propertyNameCorrected));
+		}
+		
+		
+	}
 	
 	public static void main(String[] args) {
 		ChemPropLoader c=new ChemPropLoader();
-		String[] endpoints = { "LogKow: Octanol-Water" };
+//		String[] endpoints = { "LogKow: Octanol-Water" };
 //		c.runEndpoints(endpoints);
-		c.testRunEndpoints(endpoints);
+//		c.testRunEndpoints(endpoints);
+		c.seeOutstandingChemPropData();
+		
+		
 	}
 }

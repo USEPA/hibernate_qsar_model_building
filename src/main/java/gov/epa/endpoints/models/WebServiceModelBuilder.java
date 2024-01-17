@@ -26,6 +26,7 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelBytes;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Source;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
@@ -38,6 +39,8 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelBytesServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.SourceService;
+import gov.epa.databases.dev_qsar.qsar_models.service.SourceServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
@@ -45,6 +48,7 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.SDE_Prediction_Response;
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.SDE_Prediction_Response.Prediction;
 import gov.epa.web_services.ModelWebService;
@@ -113,9 +117,17 @@ public class WebServiceModelBuilder extends ModelBuilder {
 //	}
 
 	
-	public ModelPrediction[] getModelPredictionsFromAPI(Model model,boolean use_pmml, boolean use_sklearn2pmml) {
+	public ModelPrediction[] getModelPredictionsFromAPI(Model model) {
+
 		
+		String details=new String(model.getDetails());
+		JsonObject joDetails=Utilities.gson.fromJson(details, JsonObject.class); 
+		boolean use_pmml=joDetails.get("use_pmml").getAsBoolean();
+		boolean use_sklearn2pmml=false;//if use true you cant have standarization included in pmml
+
 		long model_id=model.getId();
+		
+		
 		
 		//Get training and test set instances as strings using TEST descriptors:
 		ModelData md=ModelData.initModelData(model.getDatasetName(), model.getDescriptorSetName(),model.getSplittingName(), false, false);
@@ -124,12 +136,13 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		ModelBytes modelBytes = modelBytesService.findByModelId(model_id,use_pmml);//python can figure out the string even if the string bytes are compressed- so can send smaller bytes...
 //		System.out.println(modelBytes.getBytes().length);
 //		System.out.println(bytes.length);
-		
+
+		System.out.println(use_pmml+"\t"+modelBytes.getBytes().length);
+
 				
 		String strModelId = String.valueOf(model_id);
 		
 		if (use_pmml) {
-			String details=new String(model.getDetails());
 			HttpResponse<String>response=modelWebService.callInitPmml(modelBytes.getBytes(), model_id+"", details,use_sklearn2pmml);
 		} else {
 			HttpResponse<String>response=modelWebService.callInitPickle(modelBytes.getBytes(),model_id+"");
@@ -143,6 +156,42 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);
 		return modelPredictions;
 	}
+	
+	public ModelPrediction[] getModelPredictionsFromAPI(Model model,String predictionSetInstances) {
+
+		
+		String details=new String(model.getDetails());
+		JsonObject joDetails=Utilities.gson.fromJson(details, JsonObject.class); 
+		boolean use_pmml=joDetails.get("use_pmml").getAsBoolean();
+		boolean use_sklearn2pmml=false;//if use true you cant have standarization included in pmml
+
+		long model_id=model.getId();
+		
+			
+		ModelBytes modelBytes = modelBytesService.findByModelId(model_id,use_pmml);//python can figure out the string even if the string bytes are compressed- so can send smaller bytes...
+//		System.out.println(modelBytes.getBytes().length);
+//		System.out.println(bytes.length);
+
+		System.out.println(use_pmml+"\t"+modelBytes.getBytes().length);
+
+				
+		String strModelId = String.valueOf(model_id);
+		
+		if (use_pmml) {
+			HttpResponse<String>response=modelWebService.callInitPmml(modelBytes.getBytes(), model_id+"", details,use_sklearn2pmml);
+		} else {
+			HttpResponse<String>response=modelWebService.callInitPickle(modelBytes.getBytes(),model_id+"");
+		}
+		
+		String predictResponse = modelWebService.callPredict(predictionSetInstances, strModelId).getBody();
+		System.out.println("predictResponse="+predictResponse);
+		
+		
+		Gson gson=new Gson();
+		ModelPrediction[] modelPredictions = gson.fromJson(predictResponse, ModelPrediction[].class);
+		return modelPredictions;
+	}
+
 	
 
 	public ModelPrediction[] getModelPredictionsFromSDE_API(Model model,String workflow,boolean use_cache) {
@@ -244,7 +293,10 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		String modelName="model"+System.currentTimeMillis();//TODO maybe use dataset name and method name in modelName
 		
-		Model model = new Model(modelName, genericMethod, descriptorEmbedding, data.descriptorSetName, data.datasetName, data.splittingName, DevQsarConstants.SOURCE_WEBTEST, lanId);
+		SourceService ss=new SourceServiceImpl();
+		Source source=ss.findByName(DevQsarConstants.SOURCE_CHEMINFORMATICS_MODULES);
+		
+		Model model = new Model(modelName, genericMethod, descriptorEmbedding, data.descriptorSetName, data.datasetName, data.splittingName, source, lanId);
 		
 		
 		modelService.create(model);
@@ -365,7 +417,10 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		String modelName="model"+System.currentTimeMillis();//TODO maybe use dataset name and method name in modelName
 
-		Model model = new Model(modelName, genericMethod, descriptorEmbedding, data.descriptorSetName, data.datasetName, data.splittingName,DevQsarConstants.SOURCE_WEBTEST, lanId);
+		SourceService ss=new SourceServiceImpl();
+		Source source=ss.findByName(DevQsarConstants.SOURCE_CHEMINFORMATICS_MODULES);
+		
+		Model model = new Model(modelName, genericMethod, descriptorEmbedding, data.descriptorSetName, data.datasetName, data.splittingName,source, lanId);
 		modelService.create(model);
 		
 		String strModelId = String.valueOf(model.getId());

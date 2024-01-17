@@ -108,7 +108,7 @@ public class SciDataExpertsDescriptorWebService extends WebService {
 		
 		SciDataExpertsDescriptorRequest request = new SciDataExpertsDescriptorRequest(smiles, descriptorName, options);
 
-		System.out.println(address + "/api/descriptors");
+//		System.out.println(address + "/api/descriptors");
 		System.out.println("calculateDescriptorsWithOptions, request="+Utilities.gson.toJson(request));
 		
 		
