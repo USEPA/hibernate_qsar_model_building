@@ -7,15 +7,13 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ser.std.StdKeySerializers.Default;
-
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedADEstimate;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedNeighbor;
-import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
+
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 

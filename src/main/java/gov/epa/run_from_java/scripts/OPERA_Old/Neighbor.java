@@ -1,4 +1,4 @@
-package gov.epa.run_from_java.scripts.OPERA;
+package gov.epa.run_from_java.scripts.OPERA_Old;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,7 +10,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import gov.epa.databases.dsstox.DsstoxRecord;
-import gov.epa.run_from_java.scripts.OPERA_Old.RecordOpera;
 
 public class Neighbor {
 	
