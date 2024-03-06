@@ -37,6 +37,9 @@ public class DsstoxRecord {
 	public String msReadySmiles;
 	public String synonymQuality;
 	
+	static SourceSubstanceServiceImpl sss=new SourceSubstanceServiceImpl();
+
+	
 	public DsstoxRecord() {}
 	
 	public DsstoxRecord(String dsstoxSubstanceId, String dsstoxCompoundId, String casrn, String preferredName, String substanceType, 
@@ -59,11 +62,10 @@ public class DsstoxRecord {
 	 * @param dtxrid
 	 * @return
 	 */
-	public static DsstoxRecord getDsstoxRecord(String dtxrid) {
+	public static DsstoxRecord getDsstoxRecordByDTXRID(String dtxrid) {
 		
 		DsstoxRecord dr=new DsstoxRecord();	
 		
-		SourceSubstanceServiceImpl sss=new SourceSubstanceServiceImpl();
 		SourceSubstance sourceSubstance=sss.findByDtxrid(dtxrid);
 		
 		SourceGenericSubstanceMapping sgsm=sourceSubstance.getSourceGenericSubstanceMapping();
@@ -198,6 +200,11 @@ public class DsstoxRecord {
 			return new ExplainedResponse(false, "Omitted salt");
 		}
 		
+		if(smiles.contains("*")) {
+			return new ExplainedResponse(false, "UVCB");
+		}
+		
+		
 		try {
 			AtomContainer molecule = (AtomContainer) DsstoxSession.smilesParser.parseSmiles(smiles.trim());
 			
@@ -238,7 +245,7 @@ public class DsstoxRecord {
 				return new ExplainedResponse(false, reason);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 			return new ExplainedResponse(false, "Structure validation failed: CDK SMILES parsing failed");
 		}
 	}
@@ -403,10 +410,10 @@ public class DsstoxRecord {
 //		String rid="DTXRID805797238";//name
 //		String rid="DTXRID405797250";
 
-		DsstoxRecord dr=getDsstoxRecord("DTXRID2020689619");
+		DsstoxRecord dr=getDsstoxRecordByDTXRID("DTXRID2020689619");
 		System.out.println(Utilities.gson.toJson(dr)+"\n");
 
-		DsstoxRecord dr2=getDsstoxRecord("DTXRID405797179");
+		DsstoxRecord dr2=getDsstoxRecordByDTXRID("DTXRID405797179");
 		System.out.println(Utilities.gson.toJson(dr2));
 		
 		

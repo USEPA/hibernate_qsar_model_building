@@ -31,7 +31,7 @@ public class ModelSetTableGenerator {
 		this.datasetService = new DatasetServiceImpl();
 	}
 	
-	private ModelSetTable generate(ModelSet modelSet) {
+	public ModelSetTable generate(ModelSet modelSet) {
 		modelSetTable = new ModelSetTable(modelSet.getName(), modelSet.getDescription());
 		
 		List<Model> models = modelService.findByModelSetId(modelSet.getId());

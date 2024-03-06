@@ -26,5 +26,14 @@ public interface PropertyValueService {
 
 	public PropertyValue update(PropertyValue propertyValue, Session session) throws ConstraintViolationException;
 
+	public List<PropertyValue> update(List<PropertyValue> propertyValues) throws ConstraintViolationException;
+
+	public List<PropertyValue> update(List<PropertyValue> propertyValues, Session session) throws ConstraintViolationException;
+
+	
+	public void delete(List<PropertyValue> propertyValues) throws ConstraintViolationException;
+
+	public void delete(List<PropertyValue> propertyValues, Session session);
+
 	
 }

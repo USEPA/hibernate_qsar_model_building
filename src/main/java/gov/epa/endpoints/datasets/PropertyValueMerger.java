@@ -1,5 +1,6 @@
 package gov.epa.endpoints.datasets;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -31,16 +32,17 @@ public class PropertyValueMerger {
 		}
 	}
 	
-	public static String [] mergeBinaryIncludeFinalCIDsExpPropIDs(List<MappedPropertyValue> mappedPropertyValues) {
+	public static String [] mergeBinaryIncludeFinalCIDsExpPropIDs(List<MappedPropertyValue> mappedPropertyValues,boolean validateMedian) {
 		Double consensusValue = 0.0;
 		for (MappedPropertyValue mpv:mappedPropertyValues) {
 			consensusValue += mpv.qsarPropertyValue;
 		}
 		consensusValue /= mappedPropertyValues.size();
 		
-		if (consensusValue < DevQsarConstants.BINARY_FRAC_AGREE && consensusValue > (1-DevQsarConstants.BINARY_FRAC_AGREE)) {
+		if (consensusValue < DevQsarConstants.BINARY_FRAC_AGREE && consensusValue > (1-DevQsarConstants.BINARY_FRAC_AGREE) && validateMedian) {
 			System.out.println(mappedPropertyValues.iterator().next().standardizedSmiles + ": Ambiguous binary consensus value: " + consensusValue);
 			return null;
+		
 		} else {
 			
 			Double finalValue=consensusValue > DevQsarConstants.BINARY_CUTOFF ? 1.0 : 0.0;
@@ -48,7 +50,7 @@ public class PropertyValueMerger {
 			Vector<Long> vecFinalExpPropIds=new Vector<>();
 			
 			for (MappedPropertyValue mpv:mappedPropertyValues) {
-				if (mpv.qsarPropertyValue==finalValue) {
+				if (mpv.qsarPropertyValue==finalValue || !validateMedian) {
 //					if (!vecFinalCIDs.contains(mpv.compound.getDtxcid()))
 //						vecFinalCIDs.add(mpv.compound.getDtxcid());					
 
@@ -107,7 +109,7 @@ public class PropertyValueMerger {
 	}
 	
 	
-	public static String [] mergeContinuousIncludeFinalCIDsExpPropIDs(List<MappedPropertyValue> mappedPropertyValues, String propertyName) {
+	public static String [] mergeContinuousIncludeFinalCIDsExpPropIDs(List<MappedPropertyValue> mappedPropertyValues, String propertyName,boolean validateMedian) {
 		Collections.sort(mappedPropertyValues, new Comparator<MappedPropertyValue>() {
 			@Override
 			public int compare(MappedPropertyValue mpv1, MappedPropertyValue mpv2) {
@@ -128,7 +130,7 @@ public class PropertyValueMerger {
 			Double v1 = mpv1.qsarPropertyValue;//Note these already in log units for lots of properties
 			Double v2 = mpv2.qsarPropertyValue;
 			
-			if (PropertyValueValidator.checkMedianQsarValuesForDatapoint(v1, v2, propertyName)) {
+			if (PropertyValueValidator.checkMedianQsarValuesForDatapoint(v1, v2, propertyName) || !validateMedian) {
 				finalValue= (v1 + v2) / 2.0;
 
 //				if (mpv1.compound.getDtxcid().equals(mpv2.compound.getDtxcid())) {

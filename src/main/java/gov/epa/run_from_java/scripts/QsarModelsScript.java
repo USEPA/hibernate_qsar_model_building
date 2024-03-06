@@ -145,9 +145,9 @@ public class QsarModelsScript {
 	
 	
 	public byte[] downloadModelFile(Long modelId, Long fileTypeId,String downloadFolder) {
-		ModelFile modelQmrf = modelFileService.findByModelId(modelId,fileTypeId);
-		Model model = modelQmrf.getModel();
-		byte[] file = modelQmrf.getFile();
+		ModelFile modelFile = modelFileService.findByModelId(modelId,fileTypeId);
+		Model model = modelFile.getModel();
+		byte[] file = modelFile.getFile();
 		
 		String saveToFilePath = downloadFolder + File.separator + String.join("_", "model"+modelId, model.getDatasetName(), 
 				model.getDescriptorSetName(), 
@@ -389,9 +389,36 @@ public class QsarModelsScript {
 			
 			deleteModel(model);
 		}
+		
+		
 
 	}
 	
+	void deletePMMLModels() {
+
+		String splitting=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+
+		ModelServiceImpl ms=new ModelServiceImpl();
+
+		List<Model>models=ms.getAll();
+
+		Map <Long,Model>htModels=new TreeMap<>((Collections.reverseOrder()));				
+		for (Model model:models)htModels.put(model.getId(), model);
+
+
+		int count=0;
+		
+		for (Long key:htModels.keySet()) {
+			Model model=htModels.get(key);
+			boolean hasEmbedding=model.getDescriptorEmbedding()!=null;
+
+//			if(!model.getDatasetName().contains("v1 modeling")) continue;
+			if(!model.getDatasetName().contains("res_qsar")) continue;
+			
+			System.out.println(++count+"\t"+model.getId()+"\t"+model.getDatasetName()+"\t"+model.getMethod().getName()+"\t"+model.getSplittingName()+"\t"+model.getDescriptorSetName()+"\thasEmbedding="+hasEmbedding);
+			deleteModel(model);
+		}
+	}
 	
 	
 	public void compareAPIPredictionsWithDB(Long existingModelId, String server, int port, String lanId)  {
@@ -615,6 +642,7 @@ public class QsarModelsScript {
 		String lanId="tmarti02";
 
 		QsarModelsScript script = new QsarModelsScript(lanId);
+//		script.deletePMMLModels();
 
 		//****************************************************************************************
 
@@ -645,11 +673,13 @@ public class QsarModelsScript {
 //		script.deleteModel(859L);
 //		for (int i=853;i>=850;i--) script.deleteModel(i);
 
-//		script.downloadModelFile(776L, 1L,"data\\reports\\prediction reports upload\\");
+//		script.downloadModelFile(1065L, 2L,"data\\reports\\model files download\\");
+		script.downloadModelFile(1065L, 1L,"data\\reports\\model files download\\");
+		
 //		script.downloadModelFile(776L, 2L,"data\\reports\\prediction reports upload\\");
 		
 //		script.downloadModelFile(1038L, 3L,"data\\reports\\prediction reports upload\\");
-		script.downloadModelFile(1038L, 4L,"data\\reports\\prediction reports upload\\");
+//		script.downloadModelFile(1038L, 4L,"data\\reports\\prediction reports upload\\");
 
 		//****************************************************************************************
 //		long[] modelIds = { 43, 45, 46, 137, 139, 140, 218, 219, 225, 226, 227, 232 };
@@ -713,3 +743,4 @@ public class QsarModelsScript {
 	}
 
 }
+

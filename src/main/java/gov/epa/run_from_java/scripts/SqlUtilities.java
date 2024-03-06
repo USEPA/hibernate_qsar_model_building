@@ -295,8 +295,13 @@ public static Connection getConnectionToxValV93() {
 	
 	public static void runSQLUpdate(Connection conn, String sql) {
 		try {
+			conn.setAutoCommit(false);
+			System.out.println("\nrunning "+sql);
 			Statement st = conn.createStatement();			
 			st.executeUpdate(sql);
+			conn.commit();
+			conn.setAutoCommit(true);
+			System.out.println("done");
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -137,7 +137,7 @@ public class Utilities {
 	
 
 	
-	static Hashtable<String,String> createOpera_Reference_Lookup(String propertyAbbrev,String propertyAbbrev2) {
+	public static Hashtable<String,String> createOpera_Reference_Lookup(String propertyAbbrev,String refField) {
 		Hashtable<String,String>ht=new Hashtable<>();
 		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\OPERA\\OPERA_SDFS\\";
 		String filepath=folder+propertyAbbrev+"_QR.sdf";
@@ -154,18 +154,34 @@ public class Utilities {
 				}
 				if (m==null) break;
 
-				String DTXSID=m.getProperty("dsstox_substance_id");
+				String key=m.getProperty("dsstox_substance_id");
 				
-				if (m.getProperty(propertyAbbrev2+" Reference")==null) {
-					System.out.println(propertyAbbrev+"\t"+DTXSID+"\tref missing");
+				if (key.isBlank()) {
+					key=m.getProperty("CAS");
+
+					if (!key.isBlank()) {
+						System.out.println("cas reference key "+key);
+					}
+					
+				}
+				
+				if (key.isBlank()) {
+					System.out.println("Missing key for "+propertyAbbrev);
+					continue;
+				} 
+				
+				if (m.getProperty(refField)==null) {
+					System.out.println(propertyAbbrev+"\t"+key+"\tref missing");
 					
 					continue;
 				}
 				
-				String Reference=m.getProperty(propertyAbbrev2+" Reference");
+				String Reference=m.getProperty(refField);
 				
+				if (Reference.isBlank() || Reference.equals("?")) continue;
 				
-				ht.put(DTXSID, Reference);
+//				System.out.println(DTXSID+"\t"+Reference);
+				ht.put(key, Reference);
 			}
 
 		} catch (Exception ex) {

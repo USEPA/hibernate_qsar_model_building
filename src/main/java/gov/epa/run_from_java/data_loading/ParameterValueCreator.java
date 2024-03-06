@@ -2,6 +2,7 @@ package gov.epa.run_from_java.data_loading;
 
 import java.util.regex.Matcher;
 
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropUnit;
 import gov.epa.databases.dev_qsar.exp_prop.entity.Parameter;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
@@ -31,7 +32,7 @@ public class ParameterValueCreator {
 		if (pressureValue!=null) {
 			pressureValue.setPropertyValue(propertyValue);
 			pressureValue.setParameter(loader.parametersMap.get("Pressure"));
-			pressureValue.setUnit(loader.unitsMap.get("mmHg"));
+			pressureValue.setUnit(loader.unitsMap.get(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.MMHG)));
 			//				QueryExpPropDb.postParameterValue(expPropDbUrl, pressureValue);
 			propertyValue.addParameterValue(pressureValue);
 		}
@@ -42,7 +43,7 @@ public class ParameterValueCreator {
 		if (temperatureValue!=null) {
 			temperatureValue.setPropertyValue(propertyValue);
 			temperatureValue.setParameter(loader.parametersMap.get("Temperature"));
-			temperatureValue.setUnit(loader.unitsMap.get("C"));
+			temperatureValue.setUnit(loader.unitsMap.get(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.DEG_C)));
 			//				QueryExpPropDb.postParameterValue(expPropDbUrl, temperatureValue);
 			propertyValue.addParameterValue(temperatureValue);
 		}
@@ -54,7 +55,7 @@ public class ParameterValueCreator {
 		if (phValue!=null) {
 			phValue.setPropertyValue(propertyValue);
 			phValue.setParameter(loader.parametersMap.get("pH"));
-			phValue.setUnit(loader.unitsMap.get("Log units"));
+			phValue.setUnit(loader.unitsMap.get(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.LOG_UNITS)));
 			//				QueryExpPropDb.postParameterValue(expPropDbUrl, phValue);
 			propertyValue.addParameterValue(phValue);
 		}
@@ -158,6 +159,8 @@ public class ParameterValueCreator {
 
 
 	public void addToxParameterValues(ExperimentalRecord rec,PropertyValue propertyValue) {
+		
+		//could also just store these values in rec rather than constructing from the the propertyName or make the propertyName very specific
 		
 		ParameterValue speciesValue = getSpeciesValue(rec);
 		if (speciesValue!=null) {

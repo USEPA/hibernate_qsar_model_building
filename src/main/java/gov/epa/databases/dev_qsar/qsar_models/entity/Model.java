@@ -99,6 +99,13 @@ public class Model {
 //	@OneToOne(mappedBy="model", cascade=CascadeType.ALL, fetch=FetchType.LAZY, optional=false)
 //	private ModelBytes modelBytes;
 	
+//	@ManyToOne
+//	@JoinColumn(name="fk_ad_method_id")
+	private Long fk_ad_method;//TODO add ad_method object instead
+
+	
+	private Boolean is_public;//whether or not to expose to cheminformatics modules
+	
 	@OneToMany(mappedBy="model", cascade=CascadeType.ALL)
 	private List<ModelInModelSet> modelInModelSets;
 	
@@ -110,6 +117,9 @@ public class Model {
 	
 	@OneToMany(mappedBy="consensusModel", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	private List<ModelInConsensusModel> modelsInConsensusModel;
+	
+	
+	
 	
 	public Model() {}
 	

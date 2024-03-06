@@ -23,12 +23,25 @@ public class DatasetParams {
 		public boolean omitUvcbKeywords;
 		public boolean omitSalts;
 		public boolean validateStructure;//set to false when we are just creating a dataset for exposing raw data to dashboard
+//		public boolean validatePropertyValue;
 		
+		
+		public boolean validateMedian;
+		
+		public boolean createChemRegMapOutstandingSourceChemicals=false;
+//		public boolean createChemRegMapOutstandingSourceChemicals;
+		
+		public boolean autoMapByDTXRID;//set to true for records from chemprop which already have an RID
+        public BoundPropertyValue boundPropertyValue;
+		public List<BoundParameterValue> boundsParameterValues;
 		
 		public MappingParams(String dsstoxMappingId, String chemicalListName, boolean isNaive, boolean useValidation, 
 				boolean requireValidation, boolean resolveConflicts,
 				boolean validateConflictsTogether, boolean omitOpsinAmbiguousNames, boolean omitUvcbNames,
-				ArrayList<String> chemRegListNameList,boolean omitSalts,boolean validateStructure) {
+				ArrayList<String> chemRegListNameList,boolean omitSalts,
+				boolean validateStructure, boolean validateMedian,
+				List<BoundParameterValue> boundsParametersValues, BoundPropertyValue boundPropertyValue) {
+			
 			this.dsstoxMappingId = dsstoxMappingId;
 			this.isNaive = isNaive;
 			this.useCuratorValidation = useValidation;
@@ -41,13 +54,12 @@ public class DatasetParams {
 			this.chemRegListNameList = chemRegListNameList;
 			this.omitSalts=omitSalts;
 			this.validateStructure=validateStructure;
+			this.validateMedian=validateMedian;
+			this.boundPropertyValue=boundPropertyValue;
+			this.boundsParameterValues=boundsParametersValues;
 		}
 		
-		public MappingParams(String dsstoxMappingId, boolean isNaive, boolean useValidation, boolean requireValidation, boolean resolveConflicts,
-				boolean validateConflictsTogether, boolean omitOpsinAmbiguousNames, boolean omitUvcbKeywords, ArrayList<String> chemRegListNameList,boolean omitSalts,boolean validateStructure) {
-			this(dsstoxMappingId, null, isNaive, useValidation, requireValidation, resolveConflicts, validateConflictsTogether,
-					omitOpsinAmbiguousNames, omitUvcbKeywords, chemRegListNameList,omitSalts,validateStructure);
-		}
+
 	}
 	
 	public String datasetName;
@@ -58,32 +70,38 @@ public class DatasetParams {
 	
 	public MappingParams mappingParams;
 	
-	public List<BoundParameterValue> bounds;
+//	public List<BoundParameterValue> boundsParameterValue;
+//	public BoundPropertyValue boundPropertyValue;
 	
+//	public DatasetParams(String datasetName, String datasetDescription, String propertyName, 
+//			MappingParams mappingParams, List<BoundParameterValue> bounds) {
+//		this.datasetName = datasetName;
+//		this.datasetDescription = datasetDescription;
+//		this.propertyName = propertyName;
+//		this.mappingParams = mappingParams;
+//		this.boundsParameterValue = bounds;
+//		
+//	}
 	public DatasetParams(String datasetName, String datasetDescription, String propertyName, 
-			MappingParams mappingParams, List<BoundParameterValue> bounds) {
+			MappingParams mappingParams) {
 		this.datasetName = datasetName;
 		this.datasetDescription = datasetDescription;
 		this.propertyName = propertyName;
 		this.mappingParams = mappingParams;
-		this.bounds = bounds;
 	}
+
 	
-	public DatasetParams(String datasetName, String datasetDescription, String propertyName, 
-			MappingParams mappingParams) {
-		this(datasetName, datasetDescription, propertyName, mappingParams, null);
-	}
 	
 	/**
 	 * Test a list of parameter values against the provided bounds
 	 * TODO handle different units (or at least give a warning!)
 	 * 
 	 * @param parameterValues
-	 * @param bounds
+	 * @param boundsParameterValue
 	 * @return
 	 */
 	public ExplainedResponse testParameterValues(PropertyValue propertyValue) {
-		if (bounds==null) {
+		if (mappingParams.boundsParameterValues==null) {
 			// If no parameter value bounds, don't eliminate anything
 			return new ExplainedResponse(true, "No bounds to test");
 		}
@@ -95,7 +113,7 @@ public class DatasetParams {
 		}
 		
 		ExplainedResponse testResponse = null;
-		Iterator<BoundParameterValue> it = bounds.iterator();
+		Iterator<BoundParameterValue> it = mappingParams.boundsParameterValues.iterator();
 		while (it.hasNext()) {
 			BoundParameterValue bound = it.next();
 			ParameterValue pv = parameterValuesMap.get(bound.parameterName);
@@ -107,4 +125,16 @@ public class DatasetParams {
 		
 		return testResponse;
 	}
+	
+	public ExplainedResponse testPropertyValue(PropertyValue propertyValue) {
+		if (mappingParams.boundPropertyValue==null) {
+			// If no parameter value bounds, don't eliminate anything
+			return new ExplainedResponse(true, "No bounds to test");
+		}
+		
+		ExplainedResponse testResponse = null;
+		testResponse = mappingParams.boundPropertyValue.test(propertyValue);
+		return testResponse;
+	}
+
 }

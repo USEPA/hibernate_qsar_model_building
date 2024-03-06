@@ -22,4 +22,7 @@ public interface ExpPropPropertyService {
 	
 	public ExpPropProperty create(ExpPropProperty property, Session session) throws ConstraintViolationException;
 
+	public void delete(ExpPropProperty property, Session session);
+	public void delete(ExpPropProperty property);
+
 }

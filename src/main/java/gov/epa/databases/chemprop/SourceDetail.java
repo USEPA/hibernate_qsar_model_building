@@ -30,15 +30,25 @@ public class SourceDetail {
 	public String updated_at;
 	
 	public LiteratureSource asLiteratureSource(String createdBy) {
-		LiteratureSource s =  new LiteratureSource();
-		s.setName(this.name);
-		s.setTitle(this.title);
-		s.setAuthor(this.authors);
-		s.setCitation(this.short_description);
-		s.setUrl(this.url);
-		s.setNotes(this.qc_notes);
-		s.setCreatedBy(createdBy);
-		return s;
+		LiteratureSource ls =  new LiteratureSource();
+		ls.setName(this.name);
+		
+		String strYear=name.substring(name.lastIndexOf("_")+1,name.length());
+		ls.setYear(strYear);
+		
+		String firstAuthor=name.substring(0,name.lastIndexOf("_"));
+		
+//		System.out.println(firstAuthor);
+		String description=long_description.replace(firstAuthor, "").trim();
+		if(description.substring(0,1).equals("_")) description =description.substring(1,description.length());
+		
+		ls.setTitle(this.title);
+		ls.setAuthor(this.authors);
+		ls.setCitation(authors+ " ("+ls.getYear()+"). "+description);
+		ls.setUrl(this.url);
+		ls.setNotes(this.qc_notes);
+		ls.setCreatedBy(createdBy);
+		return ls;
 	}
 	
 	public static transient String tableName = "source_details";

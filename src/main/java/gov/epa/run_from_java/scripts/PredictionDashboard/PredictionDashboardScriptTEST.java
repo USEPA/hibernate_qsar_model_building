@@ -142,6 +142,38 @@ public class PredictionDashboardScriptTEST  {
 		
 	}
 	
+	/* Possible prediction errors:
+	
+	 * [
+  {
+    "prediction_error": "Error processing record with CAS null, error=Timeout 120000 ms while generating paths for null."
+  },
+  {
+    "prediction_error": "The consensus prediction for this chemical is considered unreliable since only one prediction can only be made"
+  },
+  {
+    "prediction_error": "FindPaths"
+  },
+  {
+    "prediction_error": "Only one nonhydrogen atom"
+  },
+  {
+    "prediction_error": "FindRings"
+  },
+  {
+    "prediction_error": "Molecule does not contain carbon"
+  },
+  {
+    "prediction_error": "Molecule contains unsupported element"
+  },
+  {
+    "prediction_error": "No prediction could be made due to applicability domain violation"
+  },
+  {
+    "prediction_error": "Multiple molecules"
+  }
+]
+	 */
 	
 
 	void runFromDashboardJsonFileBatchPost(String filepathJson) {
@@ -1003,9 +1035,63 @@ public class PredictionDashboardScriptTEST  {
 		
 	}
 	
+	void deleteTEST_Predictions2() {
+		
+		for (int i=66300000;i<69000000;i=i+10000) {
+			String sql="delete from qsar_models.predictions_dashboard pd\n"
+					+ "where fk_model_id>=223 and fk_model_id<=240 and id<"+i;
+			SqlUtilities.runSQLUpdate(SqlUtilities.getConnectionPostgres(), sql);
+			
+		}
+		
+		
+	}
+	
+	/**
+	 * Instead of complicated delete sql, find the OPERA reports one by one and delete them
+	 */
+	void deleteTEST_Predictions() {
+		
+		String sql="select pd.id from qsar_models.predictions_dashboard pd\n"+
+				"join qsar_models.models m on m.id=pd.fk_model_id\n"+
+				"join qsar_models.sources s on s.id=m.fk_source_id\n"+
+				"where pd.fk_model_id = m.id and s.name='TEST5.1.3'";
+		
+		System.out.print("\n"+sql+"\n");
+		
+		try {
+			
+			Connection conn=SqlUtilities.getConnectionPostgres();
+			
+
+			ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+			
+			int counter=0;
+			
+			while (rs.next()) {
+				counter++;
+				String id=rs.getString(1);
+				sql="Delete from qsar_models.predictions_dashboard where id="+id+";";
+				SqlUtilities.runSQLUpdate(SqlUtilities.getConnectionPostgres(), sql);
+				if(counter%1000==0) System.out.println(counter);
+//				System.out.println(id);
+				
+			}
+						
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.out.println("Done");
+		
+	}
 
 	public static void main(String[] args) {
 		PredictionDashboardScriptTEST pds=new PredictionDashboardScriptTEST();
+		
+		pds.deleteTEST_Predictions2();
+		
 		
 //		pds.createDatasets();//TODO need to add the datapoints
 
@@ -1014,10 +1100,10 @@ public class PredictionDashboardScriptTEST  {
 //		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\sample.json";
 		
 
-		int num=35;
-		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";//		
-////		String filePathJson="C:\\Users\\TMARTI02\\Documents\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";
-		pds.runFromDashboardJsonFileBatchPost(filePathJson);
+//		int num=35;
+//		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";//		
+//////		String filePathJson="C:\\Users\\TMARTI02\\Documents\\reports\\TEST_results_all_endpoints_snapshot_compounds"+num+".json";
+//		pds.runFromDashboardJsonFileBatchPost(filePathJson);
 
 		
 //		for (int num=15;num<=18;num++) {

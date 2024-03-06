@@ -40,6 +40,7 @@ public class LiteratureSource {
 	@Column(name="author")
 	private String author;
 	
+	@NotBlank(message="Citation required")
 	@Column(name="citation", length=1000)
 	private String citation;
 
@@ -122,7 +123,7 @@ public class LiteratureSource {
 	}
 
 	public void setTitle(String title) {
-		this.title = name;
+		this.title = title;
 	}
 
 

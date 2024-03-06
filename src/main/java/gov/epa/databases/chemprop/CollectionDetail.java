@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import gov.epa.databases.dev_qsar.exp_prop.entity.LiteratureSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
 
 public class CollectionDetail {
@@ -115,4 +116,15 @@ public class CollectionDetail {
 		System.out.println("Got " + hm.size() + " distinct records from " + tableName);
 		return hm;
 	}
+
+	public LiteratureSource asLiteratureSource(String user) {
+		LiteratureSource ls=new LiteratureSource();
+		ls.setCitation(description);
+		ls.setName(name);
+		ls.setCreatedBy(user);
+		ls.setUpdatedBy(user);
+		return ls;
+	}
+	
+
 }

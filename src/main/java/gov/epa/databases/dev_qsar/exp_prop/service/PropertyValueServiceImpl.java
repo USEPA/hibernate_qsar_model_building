@@ -17,6 +17,7 @@ import gov.epa.databases.dev_qsar.exp_prop.ExpPropSession;
 import gov.epa.databases.dev_qsar.exp_prop.dao.PropertyValueDao;
 import gov.epa.databases.dev_qsar.exp_prop.dao.PropertyValueDaoImpl;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointContributor;
 import gov.epa.databases.dev_qsar.qsar_descriptors.QsarDescriptorsSession;
 
 
@@ -137,4 +138,86 @@ public class PropertyValueServiceImpl implements PropertyValueService {
 		
 		return propertyValue;
 	}
+	
+	@Override
+	public List<PropertyValue> update(List<PropertyValue> propertyValues) throws ConstraintViolationException {
+		Session session = ExpPropSession.getSessionFactory().getCurrentSession();
+		return update(propertyValues, session);
+	}
+
+	@Override
+	public List<PropertyValue> update(List<PropertyValue> propertyValues, Session session)
+			throws ConstraintViolationException {
+
+		Transaction tx = session.beginTransaction();
+		for (int i = 0; i < propertyValues.size(); i++) {
+			PropertyValue propertyValue = propertyValues.get(i);
+
+			try {
+//				Set<ConstraintViolation<PropertyValue>> violations = validator.validate(propertyValue);
+//				if (!violations.isEmpty()) {
+//					throw new ConstraintViolationException(violations);
+//				}
+				session.update(propertyValue);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+
+			if (i % 100 == 0) { // 50, same as the JDBC batch size
+				// flush a batch of inserts and release memory:
+				System.out.println(i);
+				session.flush();
+				session.clear();
+			}
+		}
+
+		session.flush();
+		session.clear();
+
+		tx.commit();//things dont show up in db until this line. But if try to commit sooner it causes error
+		session.close();
+
+		return propertyValues;
+	}
+
+	@Override
+	public void delete(List<PropertyValue> propertyValues) throws ConstraintViolationException {
+		Session session = ExpPropSession.getSessionFactory().getCurrentSession();
+		delete(propertyValues, session);
+	}
+
+	@Override
+	public void delete(List<PropertyValue> propertyValues, Session session) {
+		Transaction tx = session.beginTransaction();
+		for (int i = 0; i < propertyValues.size(); i++) {
+			PropertyValue propertyValue = propertyValues.get(i);
+
+			try {
+//				Set<ConstraintViolation<PropertyValue>> violations = validator.validate(propertyValue);
+//				if (!violations.isEmpty()) {
+//					throw new ConstraintViolationException(violations);
+//				}
+				session.delete(propertyValue);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+
+			if (i % 100 == 0) { // 50, same as the JDBC batch size
+				// flush a batch of inserts and release memory:
+				System.out.println(i);
+				session.flush();
+				session.clear();
+			}
+		}
+
+		session.flush();
+		session.clear();
+
+		tx.commit();//things dont show up in db until this line. But if try to commit sooner it causes error
+		session.close();
+		
+	}
+
+	
+
 }

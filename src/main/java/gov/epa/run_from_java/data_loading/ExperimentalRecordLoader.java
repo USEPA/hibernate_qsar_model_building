@@ -6,6 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,33 +53,35 @@ import gov.epa.databases.dev_qsar.exp_prop.service.PublicSourceService;
 import gov.epa.databases.dev_qsar.exp_prop.service.PublicSourceServiceImpl;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalService;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.PropertyService;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.PropertyServiceImpl;
 import gov.epa.databases.dsstox.entity.SourceSubstance;
 import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class ExperimentalRecordLoader {
-	static boolean loadSourceChemicalMap=true;
+
+	static boolean loadSourceChemicalMap=true;//takes a while but faster for loading lots of records
 	boolean debug=false;
 	
 	static final Pattern STRING_COLUMN_PATTERN = Pattern.compile("([~><=]{1,2})?(-?[0-9\\.]+)([-~])?(-?[0-9\\.]+)?");
 	
-	private ParameterService parameterService = new ParameterServiceImpl();
-	private PropertyCategoryService propertyCategoryService = new PropertyCategoryServiceImpl();
-	private PropertyInCategoryService propertyInCategoryService = new PropertyInCategoryServiceImpl();
-	private ExpPropPropertyService expPropPropertyService = new ExpPropPropertyServiceImpl();
-	private ExpPropUnitService expPropUnitService = new ExpPropUnitServiceImpl();
+	ParameterService parameterService = new ParameterServiceImpl();
+	PropertyCategoryService propertyCategoryService = new PropertyCategoryServiceImpl();
+	PropertyInCategoryService propertyInCategoryService = new PropertyInCategoryServiceImpl();
+	ExpPropPropertyService expPropPropertyService = new ExpPropPropertyServiceImpl();
+	ExpPropUnitService expPropUnitService = new ExpPropUnitServiceImpl();
 	LiteratureSourceService literatureSourceService = new LiteratureSourceServiceImpl();
 	PublicSourceService publicSourceService = new PublicSourceServiceImpl();
 	SourceChemicalService sourceChemicalService=new SourceChemicalServiceImpl(); 
-	
 	
 	ParameterAcceptableUnitService parameterAcceptableUnitService=new ParameterAcceptableUnitServiceImpl();
 	PropertyAcceptableUnitService propertyAcceptableUnitService=new PropertyAcceptableUnitServiceImpl();  
 	PropertyAcceptableParameterService propertyAcceptableParameterService=new PropertyAcceptableParameterServiceImpl();
 	
 	
-	Map<String, LiteratureSource> literatureSourcesMap = new HashMap<String, LiteratureSource>();
+	Map<String, LiteratureSource> literatureSourcesMap = new HashMap<String, LiteratureSource>();//key is citation 
 	Map<String, Parameter> parametersMap = new HashMap<String, Parameter>();
 	Map<String, ExpPropProperty> propertiesMap = new HashMap<String, ExpPropProperty>();
 	Map<String, PublicSource> publicSourcesMap = new HashMap<String, PublicSource>();
@@ -86,7 +89,6 @@ public class ExperimentalRecordLoader {
 	Map<String, PropertyCategory> propertyCategoryMap = new HashMap<String, PropertyCategory>();
 	
 	Map<String, SourceChemical> sourceChemicalMap = new HashMap<String, SourceChemical>();
-	
 	
 	List<ParameterAcceptableUnit>parameterAcceptableUnits=null;
 	List<PropertyAcceptableUnit>propertyAcceptableUnits=null;
@@ -99,7 +101,7 @@ public class ExperimentalRecordLoader {
 	public static final String typeTox="Tox";
 	public static final String typeOther="Other";
 	
-	private static Gson gson =  new GsonBuilder()
+	public static Gson gson =  new GsonBuilder()
 			.setPrettyPrinting()
 			.disableHtmlEscaping()
 			.serializeSpecialFloatingPointValues()
@@ -107,13 +109,15 @@ public class ExperimentalRecordLoader {
 	
 	public ExperimentalRecordLoader(String lanId) {
 		this.lanId = lanId;
+		System.out.print("loading maps...");
 		mapTables();
+		System.out.println("done");
 	}
 	
 	private void mapTables() {
 		List<LiteratureSource> literatureSources = literatureSourceService.findAll();
 		for (LiteratureSource ls:literatureSources) {
-			literatureSourcesMap.put(ls.getName(), ls);
+			literatureSourcesMap.put(ls.getCitation(), ls);//use citation because more likely to be unique
 		}
 		
 		List<Parameter> parameters = parameterService.findAll();
@@ -257,7 +261,8 @@ public class ExperimentalRecordLoader {
 //	}
 	
 	
-	public void load(List<ExperimentalRecord> records, String type, boolean createDBEntries) {
+	public List<PropertyValue> load(List<ExperimentalRecord> records, String type, boolean createDBEntries) {
+
 		List<ExperimentalRecord> failedRecords = new ArrayList<>();
 		List<ExperimentalRecord> loadedRecords = new ArrayList<>();
 		List<PropertyValue> loadedPropertyValues = new ArrayList<>();
@@ -271,10 +276,14 @@ public class ExperimentalRecordLoader {
 		PropertyValueCreator propValCreator=new PropertyValueCreator(this);
 		ParameterValueCreator paramValCreator=new ParameterValueCreator(this);
 		
+		List<PropertyValue> propertyValues = new ArrayList<>();
+		
+		
 		for (ExperimentalRecord rec:records) {
 			counter++;
 			
-//			System.out.println(counter);
+			if(counter%1000==0)
+				System.out.println(counter);
 			
 			try {
 				boolean success = false;
@@ -296,11 +305,11 @@ public class ExperimentalRecordLoader {
 				} else if (type.equals(typeTox)) {
 					paramValCreator.addToxParameterValues(rec, pv);
 				} else {
-					//do nothing
+					//typeOther: dont need to pull parameters from fields in rec
 				}
-				
 				paramValCreator.addGenericParametersValues(rec,pv);
-				
+
+
 				if (createDBEntries) {
 					success = propValCreator.postPropertyValue(pv);//TODO add batch insert instead	
 				} else {
@@ -342,10 +351,15 @@ public class ExperimentalRecordLoader {
 				+ countSuccess + " successful; " 
 				+ countFailure + " failed");
 		
+		
+		
+		
 		if (!failedRecords.isEmpty()) {
 			ExperimentalRecord recSample = failedRecords.iterator().next();
 			String failedRecordsFilePath = "data/dev_qsar/exp_prop/" + type + "/"
-					+ recSample.source_name + "/" + recSample.property_name + " Experimental Records-Failed.json";
+					+ recSample.source_name + "/" + recSample.property_name.replace(":", "") + " Experimental Records-Failed.json";
+			
+			
 			
 			writeRecordsToFile(failedRecords, failedRecordsFilePath);
 		}
@@ -354,7 +368,7 @@ public class ExperimentalRecordLoader {
 			ExperimentalRecord recSample = records.iterator().next();
 			
 			String loadedRecordsFilePath = "data/dev_qsar/exp_prop/" + type + "/"
-					+ recSample.source_name + "/" + recSample.property_name + " ExperimentalRecords-Loaded.json";
+					+ recSample.source_name + "/" + recSample.property_name.replace(":", "") + " ExperimentalRecords-Loaded.json";
 			writeRecordsToFile(loadedRecords, loadedRecordsFilePath);
 			
 			
@@ -366,13 +380,14 @@ public class ExperimentalRecordLoader {
 			}
 
 			String loadedPropertyValuesFilePath = "data/dev_qsar/exp_prop/" + type + "/"
-					+ recSample.source_name + "/" + recSample.property_name + " PropertyValues-Loaded.json";
+					+ recSample.source_name + "/" + recSample.property_name.replace(":", "") + " PropertyValues-Loaded.json";
 			writeRecordsToFile(ja, loadedPropertyValuesFilePath);
 		}
+		return loadedPropertyValues;
 
 	}
-
-
+	
+	
 	private void writeRecordsToFile(Object records, String filePath) {
 		File failedFile = new File(filePath);
 		if (failedFile.getParentFile()!=null) { failedFile.getParentFile().mkdirs(); }
@@ -415,6 +430,9 @@ public class ExperimentalRecordLoader {
 		property.setCreatedBy(lanId);
 		property.setDescription(description);
 		property= expPropPropertyService.create(property);
+		
+		propertiesMap.put(name,property);
+		
 		return property;
 	}
 	
@@ -432,6 +450,9 @@ public class ExperimentalRecordLoader {
 		unit.setCreatedBy(lanId);
 		unit.setAbbreviation(abbreviation);
 		unit= expPropUnitService.create(unit);
+		
+		unitsMap.put(name,unit);
+		
 		return unit;
 	}
 	
@@ -574,7 +595,7 @@ public class ExperimentalRecordLoader {
 		addPropertyAcceptableParameter(getParameter("Exposure route","exposure route field in toxval table in ToxVal database"),property);
 		addPropertyAcceptableParameter(getParameter("Reliability","Reliability"),property);
 		
-		addPropertyInCategory(getPropertyCategory("Acute aquatic toxicity", "Acute aquatic toxicity"), property);
+//		addPropertyInCategory(getPropertyCategory("Acute aquatic toxicity", "Acute aquatic toxicity"), property);
 		
 		//There are no units for parameters for acute aquatic tox but here is example:
 //		addParameterAcceptableUnit(getUnit("C","C"), getParameter("Temperature","Temperature"));		
@@ -605,33 +626,119 @@ public class ExperimentalRecordLoader {
 
 		Connection conn=SqlUtilities.getConnectionPostgres();
 
-//		int propertyId=22;
-//		int public_source_id=79;
-		
-		int propertyId=19;
-		int public_source_id=73;//ToxValBCF
+//		int propertyId=19;//b
+//		int public_source_id=73;//ToxValBCF
 //		int public_source_id=74;//Burkhard_BCF
+
+//		int propertyId=22;//FHM lc50
+//		int public_source_id=79;//ToxValv93
+				
 		
+//		int publicSourceId=12;//OPERA
+//		String propertyName=DevQsarConstants.KmHL;
+//		String propertyName=DevQsarConstants.BIODEG_HL_HC;
+//		String propertyName=DevQsarConstants.OH;
+//		String propertyName=DevQsarConstants.BCF;
+//		String propertyName=DevQsarConstants.KOC;
+
+		int publicSourceId=253;//OPERA2.9
+//		String propertyName=DevQsarConstants.ESTROGEN_RECEPTOR_AGONIST;
+//		String propertyName=DevQsarConstants.ESTROGEN_RECEPTOR_ANTAGONIST;
+//		String propertyName=DevQsarConstants.ESTROGEN_RECEPTOR_BINDING;
+//		String propertyName=DevQsarConstants.ANDROGEN_RECEPTOR_AGONIST;
+//		String propertyName=DevQsarConstants.ANDROGEN_RECEPTOR_ANTAGONIST;
+//		String propertyName=DevQsarConstants.ANDROGEN_RECEPTOR_BINDING;
+		
+		String propertyName=DevQsarConstants.HENRYS_LAW_CONSTANT;
+		
+		String sqlPropertyName="select id from exp_prop.properties p where p.name='"+propertyName+"';";
+		Long propertyId=Long.parseLong(SqlUtilities.runSQL(conn, sqlPropertyName));
 		
 		String sqlParameters="delete from exp_prop.parameter_values pv2 using exp_prop.property_values pv\n"+
-				"where pv2.fk_property_value_id=pv.id and pv.fk_property_id="+propertyId;
+				"where pv2.fk_property_value_id=pv.id and pv.fk_property_id="+propertyId+" and pv2.created_by='tmarti02'";
 
 //		-- delete property values for fhm lc50 endpoint
-		String sqlPropertyValues="delete from exp_prop.property_values pv where fk_property_id="+propertyId;
+		String sqlPropertyValues="delete from exp_prop.property_values pv where fk_public_source_id="+publicSourceId+" and fk_property_id="+propertyId+" and created_by='tmarti02'";
+//		String sqlPropertyValues="delete from exp_prop.property_values pv where fk_public_source_id="+publicSourceId+" and created_by='tmarti02'";
 		
 //	-- Delete source chemicals that came from toxvalv93:
-		String sqlSourceCHemicals="delete from exp_prop.source_chemicals sc where sc.fk_public_source_id="+public_source_id;
+		String sqlSourceCHemicals="delete from exp_prop.source_chemicals sc where sc.fk_public_source_id="+publicSourceId+" and created_by='tmarti02'";
 
 		//Literature sources
-		String sqlLiteratureSources="delete from exp_prop.literature_sources where created_by='tmarti02'";
+		String sqlLiteratureSources="delete from exp_prop.literature_sources where created_by='tmarti02' and id>1677";
 
-		SqlUtilities.runSQLUpdate(conn, sqlParameters);
-//		SqlUtilities.runSQLUpdate(conn, sqlPropertyValues);
+		//Public sources
+		String sqlPublicSources="delete from exp_prop.public_sources where created_by='tmarti02' and id>104";
+
+		
+//		SqlUtilities.runSQLUpdate(conn, sqlParameters);
+		SqlUtilities.runSQLUpdate(conn, sqlPropertyValues);
 //		SqlUtilities.runSQLUpdate(conn, sqlSourceCHemicals);
+		
 //		SqlUtilities.runSQLUpdate(conn, sqlLiteratureSources);
+//		SqlUtilities.runSQLUpdate(conn, sqlPublicSources);
 				
 	}
-	
+
+	void loadPropertyValuesFromThreeM_ExperimentalRecordsFile() {
+		
+		boolean store=true;
+		
+//		String propertyName=DevQsarConstants.KOC;
+		String propertyName=DevQsarConstants.BCF;
+		
+//		List<String> propertyNames=Arrays.asList(DevQsarConstants.KOC,DevQsarConstants.BCF);
+
+		//TODO should reload following properties in the future because Three3M parsing was cleaned up by TMM
+//		Vapor pressure - already there
+//		Melting point- already there
+//		Water solubility - already there
+
+		//Rest of these dont make it into a dataset:
+//		Boiling point - already there
+//		LogKow: Octanol-Water - already there
+//		pKA - dont need
+//		
+		System.out.println("\nLoading property values for "+propertyName);
+		
+		String sourceName="ThreeM";
+		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+		String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+" Experimental Records.json";
+
+		ExperimentalRecords records=ExperimentalRecords.loadFromJson(filePath, ExperimentalRecordLoader.gson);
+		
+		List<String>propertiesInJson=new ArrayList<>();
+		
+		for (int i=0;i<records.size();i++) {
+			ExperimentalRecord er=records.get(i);
+			
+			if (!propertiesInJson.contains(er.property_name) && er.keep) propertiesInJson.add(er.property_name);			
+			
+//			if (!propertyNames.contains(er.property_name)) records.remove(i--);
+			if (!er.property_name.equals(propertyName)) records.remove(i--);
+		}
+
+		
+//		for (String prop:propertiesInJson) {
+//			System.out.println(prop);
+//		}
+
+		System.out.println(gson.toJson(records));
+		
+//		printUniqueUnitsListInExperimentalRecords(records);
+		
+		System.out.println("experimentalRecords.size()="+records.size());
+
+		List<PropertyValue>propertyValues=load(records,typePhyschem,store);
+		
+//		for (PropertyValue pv:propertyValues) {
+//			pv.getProperty().setPropertiesInCategories(null);//to enable json print
+//			pv.getProperty().setPropertiesAcceptableParameters(null);//to enable json print
+//			pv.getProperty().setPropertiesAcceptableUnits(null);
+//		}
+//		System.out.println(gson.toJson(propertyValues));
+	}
+
 	
 	
 	public static void main(String[] args) {
@@ -639,8 +746,12 @@ public class ExperimentalRecordLoader {
 	
 		deleteExpPropData();
 		
-//		ExperimentalRecordLoader.loadSourceChemicalMap=true;
+		
+//		ExperimentalRecordLoader.loadSourceChemicalMap=false;//faster when have lots of records to load
 //		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("tmarti02");
+//		loader.loadPropertyValuesFromThreeM_ExperimentalRecordsFile();
+		
+		
 //		loader.loadAcuteAquaticToxicityData();
 		
 		

@@ -14,8 +14,6 @@ import com.google.gson.Gson;
 public class DevQsarConstants {
 	
 
-
-
 	public Gson gson;
 	
 	// Numerical constants for processing and modeling
@@ -57,7 +55,10 @@ public class DevQsarConstants {
 	public static final Double MIN_VAPOR_PRESSURE_MMHG = 1.0e-14;
 	public static final Double MAX_VAPOR_PRESSURE_MMHG = 1.0e6;
 
-	
+
+	public static final Double MIN_DENSITY_G_CM3 = 0.5;
+	public static final Double MAX_DENSITY_G_CM3 = 5.0;
+
 	// Data folder path
 	public static final String OUTPUT_FOLDER_PATH = "data" + File.separator + "dev_qsar" + File.separator + "output";
 	
@@ -99,14 +100,24 @@ public class DevQsarConstants {
 	public static final String Applicability_Domain_TEST_Embedding_Cosine = "TEST Cosine Similarity Embedding Descriptors";
 	public static final String Applicability_Domain_TEST_Embedding_Euclidean = "TEST Euclidean Distance Embedding Descriptors";
 	public static final String Applicability_Domain_TEST_All_Descriptors_Cosine = "TEST Cosine Similarity All Descriptors";
+	public static final String Applicability_Domain_TEST_All_Descriptors_Euclidean = "TEST Euclidean Distance All Descriptors";
 	public static final String Applicability_Domain_OPERA_local_index = "OPERA Local Index";
+	public static final String Applicability_Domain_OPERA_global_index = "OPERA Global Index";
+	public static final String Applicability_Domain_Kernel_Density = "Kernel Density";
 
 	
 	// Property names
 	public static final String WATER_SOLUBILITY = "Water solubility";//OPERA
 	public static final String HENRYS_LAW_CONSTANT = "Henry's law constant";//OPERA
 	public static final String MELTING_POINT = "Melting point";//OPERA
-	public static final String LOG_KOW = "Octanol water partition coefficient";//OPERA
+
+//	public static final String LOG_KOW = "Octanol water partition coefficient";//OPERA
+	public static final String LOG_KOW = "LogKow: Octanol-Water";//OPERA
+	
+//	public static final String LOG_KOA = "Octanol air partition coefficient";//OPERA
+	public static final String LOG_KOA ="LogKoa: Octanol-Air";//TODO add log() to it?
+
+	
 	public static final String VAPOR_PRESSURE = "Vapor pressure";//OPERA
 	public static final String DENSITY = "Density";
 	public static final String BOILING_POINT = "Boiling point";//OPERA
@@ -136,32 +147,42 @@ public class DevQsarConstants {
 	
 	public static final String PKA = "pKa";
 
+	public static final String LOG_BCF = "LogBCF";//OLD OPERA
 	public static final String BCF = "Bioconcentration factor";//OPERA
-	public static final String LOG_BCF = "Log10(Bioconcentration factor)";
 	
 	public static final String LOG_OH = "LogOH";//OLD OPERA
+	public static final String OH = "Atmospheric hydroxylation rate";//OPERA
+
 	public static final String LOG_KOC = "LogKOC";//OLD OPERA
-	public static final String LOG_HALF_LIFE = "LogHalfLife";//OLD OPERA
+	public static final String KOC = "Soil Adsorption Coefficient (Koc)";//OPERA
 	
-	public static final String LOG_KM_HL = "LogKmHL";
-	public static final String LOG_KOA = "Octanol air partition coefficient";//OPERA
-	public static final String LOG_BCF_FISH_WHOLEBODY = "LogBCF_Fish_WholeBody";
+	public static final String LOG_HALF_LIFE = "LogHalfLife";//OLD OPERA
+	public static final String BIODEG_HL_HC = "Biodegradation half-life for hydrocarbons";//OPERA
+	
+	public static final String LOG_KM_HL = "LogKmHL";//OLD OPERA
+	public static final String KmHL = "Fish biotransformation half-life (Km)";//OPERA
+
+
+	public static final String LOG_BCF_FISH_WHOLEBODY = "LogBCF_Fish_WholeBody";//should just be Fish whole body bioconcentration factor
 	
 	//Additional OPERA properties:
-	public static final String KOC = "Soil Adsorption Coefficient (Koc)";//OPERA
-	public static final String KM = "Fish biotransformation half-life (Km)";//OPERA
-	public static final String OH = "Atmospheric hydroxylation rate";//OPERA
-	public static final String BIODEG_HL_HC = "Biodegradation half-life for hydrocarbons";//OPERA
+
 	public static final String RBIODEG = "Ready biodegradability";//OPERA
 	public static final String FUB = "Fraction unbound in human plasma";//OPERA
 	public static final String RT = "Liquid chromatography retention time";//OPERA
 	public static final String CLINT = "Human hepatic intrinsic clearance";//OPERA
-	public static final String CACO2 = "Caco-2 permeability (logPapp)";//OPERA
+	public static final String CACO2 = "Caco-2 permeability (Papp)";//OPERA
 	public static final String LogD_pH_7_4 = "LogD at pH=7.4";//OPERA
 	public static final String LogD_pH_5_5 = "LogD at pH=5.5";//OPERA
-	public static final String PKA_A = "Strongest acidic acid dissociation constant";//OPERA
-	public static final String PKA_B = "Strongest basic acid dissociation constant";//OPERA
 
+	
+//	public static final String PKA_A = "Strongest acidic acid dissociation constant";//OPERA
+//	public static final String PKA_B = "Strongest basic acid dissociation constant";//OPERA
+
+	public static final String PKA_A="Acidic pKa";
+	public static final String PKA_B="Basic pKa";
+
+	
 	//Old versions for building sample models
 	public static final String MUTAGENICITY ="Mutagenicity";
 	public static final String LC50 ="LC50";
@@ -199,6 +220,7 @@ public class DevQsarConstants {
 			VAPOR_PRESSURE,DENSITY, SURFACE_TENSION,THERMAL_CONDUCTIVITY, VISCOSITY,WATER_SOLUBILITY};	
 	
 	// Unit names
+	public static final String COUNT = "Count";
 	public static final String DIMENSIONLESS = "Dimensionless";
 	public static final String BINARY = "Binary";
 	public static final String G_L = "g/L";
@@ -216,8 +238,42 @@ public class DevQsarConstants {
 	public static final String G_CM3 = "g/cm3";
 	public static final String PPM = "ppm";
 	
+	public static final String POUNDS = "lbs";
 
 
+	public static final String CM3 = "cm^3";
+	public static final String CUBIC_ANGSTROM = "Å^3";
+
+//	public static final String CM3 = "cm3";
+//	public static final String CUBIC_ANGSTROM = "Å3";
+
+	
+	public static final String ATM_M3_MOL = "atm-m3/mol";
+	public static final String NEG_LOG_ATM_M3_MOL = "-log10(atm-m3/mol)";
+	public static final String LOG_ATM_M3_MOL = "log10(atm-m3/mol)";
+	public static final String MMHG = "mmHg";
+	public static final String NEG_LOG_MMHG = "-log10(mmHg)";
+	public static final String LOG_MMHG = "log10(mmHg)";
+	public static final String LOG_HR = "log10(hr)";
+	public static final String LOG_DAYS = "log10(days)";
+	public static final String DAYS = "days";
+	public static final String HOUR = "hr";
+	public static final String MINUTES = "min";
+	
+	public static final String LOG_CM3_MOLECULE_SEC="log10(cm3/molecule-sec)";
+	public static final String CM3_MOLECULE_SEC="cm3/molecule-sec";
+	
+	public static final String LOG_CM_SEC="log10(cm/sec)";
+	public static final String CM_SEC="cm/sec";
+	
+	public static final String UL_MIN_1MM_CELLS="ul/min/10^6 cells";//for clint
+	public static final String LOG_UL_MIN_1MM_CELLS="log10(ul/min/10^6 cells)";//for clint
+
+	public static final String MW_MK="mW/mK";
+	public static final String DYN_CM="dyn/cm";
+	
+	public static final String LOG_CP = "log10(cP)";
+	public static final String CP = "cP";
 	
 	public static final String PCT_VOLUME="%v";
 	public static final String PCT_WEIGHT="%w";
@@ -225,6 +281,7 @@ public class DevQsarConstants {
 	public static final String TEXT="Text";
 	
 	//ghs data gathering constants for reference (a lot of these get converted in ghs data gathering and dont make it into units table):
+	
 //	public static final String str_mg_m3="mg/m^3";
 //	public static final String str_g_m3="g/m^3";
 //	public static final String str_mL_m3="mL/m^3";
@@ -286,42 +343,6 @@ public class DevQsarConstants {
 //	public static final String str_g_10mL = "g/10mL";
 //	public static final String str_oz_gal = "oz/gal";
 //	public static final String str_pii="PII";
-	
-	
-	public static final String CM3 = "cm^3";
-	public static final String CUBIC_ANGSTROM = "Å^3";
-
-//	public static final String CM3 = "cm3";
-//	public static final String CUBIC_ANGSTROM = "Å3";
-
-	
-	public static final String ATM_M3_MOL = "atm-m3/mol";
-	public static final String NEG_LOG_ATM_M3_MOL = "-log10(atm-m3/mol)";
-	public static final String LOG_ATM_M3_MOL = "log10(atm-m3/mol)";
-	public static final String MMHG = "mmHg";
-	public static final String NEG_LOG_MMHG = "-log10(mmHg)";
-	public static final String LOG_MMHG = "log10(mmHg)";
-	public static final String LOG_HR = "log10(hr)";
-	public static final String LOG_DAYS = "log10(days)";
-	public static final String DAYS = "days";
-	public static final String HOUR = "hr";
-	public static final String MINUTES = "min";
-	
-	public static final String LOG_CM3_MOLECULE_SEC="log10(cm3/molecule-sec)";
-	public static final String CM3_MOLECULE_SEC="cm3/molecule-sec";
-	
-	public static final String LOG_CM_SEC="log10(cm/sec)";
-	public static final String CM_SEC="cm/sec";
-	
-	public static final String UL_MIN_1MM_CELLS="ul/min/10^6 cells";
-
-	
-	
-	public static final String MW_MK="mW/mK";
-	public static final String DYN_CM="dyn/cm";
-	
-	public static final String LOG_CP = "log10(cP)";
-	public static final String CP = "cP";
 	
 	
 	// Integer codes for train/test splitting
@@ -422,6 +443,8 @@ public class DevQsarConstants {
 	 * Assigns desired units for datapoint used in modeling 
 	 * Final units are the units that the QSAR models output
 	 * 
+	 * TODO redo this method using getUnitNameByReflection(String) instead of strings
+	 * 
 	 * @return
 	 */
 	public static HashMap<String, String> getDatasetFinalUnitsNameMap() {
@@ -430,18 +453,41 @@ public class DevQsarConstants {
 		map.put(BOILING_POINT, "DEG_C");
 		map.put(FLASH_POINT, "DEG_C");
 		map.put(LOG_KOW, "LOG_UNITS");
+		map.put(LOG_KOA, "LOG_UNITS");
 		map.put(PKA, "LOG_UNITS");
 		map.put(PKA_A, "LOG_UNITS");
 		map.put(PKA_B, "LOG_UNITS");
-		map.put(LOG_BCF_FISH_WHOLEBODY, "LOG_L_KG");
+		
+		map.put(ESTROGEN_RECEPTOR_AGONIST, "BINARY");
+		map.put(ESTROGEN_RECEPTOR_ANTAGONIST, "BINARY");
+		map.put(ESTROGEN_RECEPTOR_BINDING, "BINARY");
+		
+		map.put(ANDROGEN_RECEPTOR_AGONIST, "BINARY");
+		map.put(ANDROGEN_RECEPTOR_ANTAGONIST, "BINARY");
+		map.put(ANDROGEN_RECEPTOR_BINDING, "BINARY");
+
+		
+		map.put(KmHL,getConstantNameByReflection(LOG_DAYS));
+		map.put(BIODEG_HL_HC,getConstantNameByReflection(LOG_DAYS));
+		map.put(RBIODEG, "BINARY");
+
+		map.put(KOC,getConstantNameByReflection(LOG_L_KG));
+		map.put(BCF,getConstantNameByReflection(LOG_L_KG));
+		map.put(OH, getConstantNameByReflection(LOG_CM3_MOLECULE_SEC));
+		
+//		map.put(CLINT, getUnitNameByReflection(LOG_UL_MIN_1MM_CELLS));
+		map.put(CLINT, getConstantNameByReflection(UL_MIN_1MM_CELLS));//dont store as log because there are zero values. OPERA stored zeroes as 1e-7 values but that was for model building
+		map.put(FUB, "DIMENSIONLESS");
+		
+//		map.put(LOG_BCF_FISH_WHOLEBODY, "LOG_L_KG");
 		map.put(WATER_SOLUBILITY, "NEG_LOG_M");
 		map.put(HENRYS_LAW_CONSTANT, "NEG_LOG_ATM_M3_MOL");
 		map.put(VAPOR_PRESSURE, "LOG_MMHG");
 		map.put(DENSITY, "G_CM3");
 		map.put(LOCAL_LYMPH_NODE_ASSAY, "BINARY");
-		map.put(SURFACE_TENSION,"LOG_CP");
 		map.put(THERMAL_CONDUCTIVITY,"MW_MK");
 		map.put(VISCOSITY,"LOG_CP");
+		map.put(SURFACE_TENSION,"DYN_CM");
 		
 		map.put(MUTAGENICITY,"BINARY");
 				
@@ -463,6 +509,7 @@ public class DevQsarConstants {
 		
 		map.put(ESTROGEN_RECEPTOR_RBA,"DIMENSIONLESS");
 		map.put(ESTROGEN_RECEPTOR_BINDING,"BINARY");
+		
 		
 		return map;
 	}
@@ -498,10 +545,10 @@ public class DevQsarConstants {
 		map.put(BIODEG_HL_HC, "LOG_DAYS");
 		map.put(FUB, "DIMENSIONLESS");
 		map.put(RT, "MINUTES");
-		map.put(KM, "LOG_DAYS");
-		map.put(OH, "LOG_CM3_MOLECULE_SEC");
-		map.put(CACO2, "LOG_CM_SEC");
-		map.put(CLINT, "UL_MIN_1MM_CELLS");
+		map.put(KmHL, "LOG_DAYS");
+		map.put(OH, getConstantNameByReflection(LOG_CM3_MOLECULE_SEC));
+		map.put(CACO2, getConstantNameByReflection(LOG_CM_SEC));
+		map.put(CLINT, getConstantNameByReflection(LOG_UL_MIN_1MM_CELLS));
 		
 		
 		map.put(ESTROGEN_RECEPTOR_AGONIST,"BINARY");
@@ -536,7 +583,7 @@ public class DevQsarConstants {
 		propertyNames.add(DevQsarConstants.HENRYS_LAW_CONSTANT);
 		propertyNames.add(DevQsarConstants.LOG_KOA);
 		propertyNames.add(DevQsarConstants.KOC);
-		propertyNames.add(DevQsarConstants.KM);
+		propertyNames.add(DevQsarConstants.KmHL);
 		propertyNames.add(DevQsarConstants.RBIODEG);
 		propertyNames.add(DevQsarConstants.BIODEG_HL_HC);
 		propertyNames.add(DevQsarConstants.BOILING_POINT);
@@ -642,7 +689,7 @@ public class DevQsarConstants {
 			return "strongest acidic acid dissociation constant";
 		} else if(propertyNameDB.equals(PKA_B)) {
 			return "strongest basic acid dissociation constant";
-		} else if(propertyNameDB.equals(KM)) {
+		} else if(propertyNameDB.equals(KmHL)) {
 			return "The whole body primary biotransformation rate (half-life) constant for organic chemicals in fish";
 		} else if(propertyNameDB.equals(KOC)) {
 			return "soil adsorption coefficient of organic compounds";
@@ -686,10 +733,15 @@ public class DevQsarConstants {
 		map.put(WATER_SOLUBILITY, "MOLAR");//**
 		map.put(HENRYS_LAW_CONSTANT, "ATM_M3_MOL");//***
 		map.put(VAPOR_PRESSURE, "MMHG");//***
-		map.put(DENSITY, "G_CM3");
-		map.put(THERMAL_CONDUCTIVITY,"MW_MK");
-		map.put(SURFACE_TENSION,"CP");
-		map.put(VISCOSITY,"CP");
+		
+		map.put(ESTROGEN_RECEPTOR_AGONIST, "BINARY");
+		map.put(ESTROGEN_RECEPTOR_ANTAGONIST, "BINARY");
+		map.put(ESTROGEN_RECEPTOR_BINDING, "BINARY");
+		
+		map.put(ANDROGEN_RECEPTOR_AGONIST, "BINARY");
+		map.put(ANDROGEN_RECEPTOR_ANTAGONIST, "BINARY");
+		map.put(ANDROGEN_RECEPTOR_BINDING, "BINARY");
+
 		
 		map.put(LOG_KOW, "LOG_UNITS");
 		map.put(LOG_KOA, "LOG_UNITS");
@@ -701,15 +753,25 @@ public class DevQsarConstants {
 		
 		map.put(FUB, "DIMENSIONLESS");
 		map.put(RT, "MINUTES");
-		map.put(RBIODEG, "BINARY");
-		map.put(BIODEG_HL_HC, "DAYS");
-		map.put(KM, "DAYS");
+		map.put(RBIODEG, "BINARY");		
+
+		map.put(KmHL,getConstantNameByReflection(DAYS));
+		map.put(BIODEG_HL_HC,getConstantNameByReflection(DAYS));
+		
 		map.put(BCF, "L_KG");
 		map.put(KOC, "L_KG");
-		map.put(LOG_BCF_FISH_WHOLEBODY, "LOG_L_KG");//TODO is this right? Property should just be BCF_FISH_WHOLEBODY
+		
 		map.put(OH, "CM3_MOLECULE_SEC");
 		map.put(CACO2, "CM_SEC");
 		map.put(CLINT, "UL_MIN_1MM_CELLS");
+		
+		map.put(DENSITY, "G_CM3");
+		map.put(THERMAL_CONDUCTIVITY,"MW_MK");
+		map.put(SURFACE_TENSION,"DYN_CM");
+		map.put(VISCOSITY,"CP");
+
+
+//		map.put(LOG_BCF_FISH_WHOLEBODY, "LOG_L_KG");//TODO is this right? Property should just be BCF_FISH_WHOLEBODY
 		
 		//*********************************************************************************
 		//Tox endpoints
@@ -753,6 +815,8 @@ public class DevQsarConstants {
 		map.put(PARACHOR, "DIMENSIONLESS");//null in prod_chemprop, see https://www.epj-conferences.org/articles/epjconf/pdf/2015/11/epjconf_efm2014_02054.pdf
 		map.put(DIELECTRIC_CONSTANT, "DIMENSIONLESS");//https://byjus.com/physics/dielectric-constant/#what-is-dielectric-constant		
 		
+		
+		
 		return map;
 	}
 
@@ -761,7 +825,8 @@ public class DevQsarConstants {
 	 * 
 	 * For example, for water solubility it should return G_L if the unitsAbbreviation is "g/L";
 	 * 
-	 * TODO should we just look this up from the database?
+	 * TODO All ExperimentalRecords should have a non null property_value_units_final so that 
+	 * can get the unit name by reflection rather than by property name which isnt bullet proof
 	 * 
 	 * @param propertyName
 	 * @param unitsAbbreviation
@@ -769,65 +834,47 @@ public class DevQsarConstants {
 	 */
 	public static String getExpPropUnitName(String propertyName,String unitsAbbreviation) {
 
+		if (unitsAbbreviation!=null &&  !unitsAbbreviation.isBlank())  {
+			return getConstantNameByReflection(unitsAbbreviation);
+		}
+		
 		switch (propertyName) {
 		
-		// Properties with abbreviations that can be used to find units name by reflection of the constants in this class:
-		case HENRYS_LAW_CONSTANT:
-		case WATER_SOLUBILITY:
-		case BOILING_POINT:
-		case MELTING_POINT:			
-		case THERMAL_CONDUCTIVITY:
-		case SURFACE_TENSION:
-		case FLASH_POINT:
-		case VAPOR_PRESSURE:	
-		case VISCOSITY:
-		case DENSITY:
-		case NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50:
-		case FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50:
-		case FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50:
-			
-			return getUnitNameByReflection(unitsAbbreviation);
-			
-
-		// BINARY properties:
+		// Properties where the user didnt set the units (by they should!)
+		case RBIODEG:	
 		case LOCAL_LYMPH_NODE_ASSAY:
 		case EYE_IRRITATION:
 		case EYE_CORROSION:
 		case SKIN_IRRITATION:
-			return "BINARY";
+			return getConstantNameByReflection(BINARY);
+		case FUB:
+			return getConstantNameByReflection(DIMENSIONLESS);
 
 		// LOG_UNITS:
 		case PKA:
 		case PKA_A:
 		case PKA_B:
 		case LOG_KOW:
-		case LOG_OH:
-		case LOG_KOC:
 		case LOG_KOA:
-		case LOG_HALF_LIFE:
-		case LOG_KM_HL:
-			return "LOG_UNITS";
+			return getConstantNameByReflection(LOG_UNITS);//TODO we should store log units in the ExperimentalRecord then use return getUnitNameByReflection(unitsAbbreviation)?
 
-		case LOG_BCF_FISH_WHOLEBODY:
-		case LOG_BCF:
-			return "LOG_L_KG";
 		case APPEARANCE:
 			return "TEXT";
 
 		default:
-			System.out.println("Unknown units in ExpPropData.getValues() for "+propertyName+"\t"+unitsAbbreviation);
+			System.out.println("Unknown units in DevQsarConstants.getExpPropUnitName() for "+propertyName+"\t"+unitsAbbreviation);
 			return "MISSING";
 		}
 	}
 	
 	/**
-	 * Looks up the name of the Unit based on the value of the abbreviation from DevQsarConstants
+	 * Looks up the name of the constant  based on the value of the string from DevQsarConstants
 	 * For example, if unitsAbbreviation="g/L", this method returns "G_L"
 	 * 
 	 * @param rec
 	 * @return
 	 */
-	private static String getUnitNameByReflection(String unitsAbbreviation) {
+	public static String getConstantNameByReflection(String strValue) {
 		DevQsarConstants d=new DevQsarConstants();
 		Field[] fields= d.getClass().getDeclaredFields();
 		
@@ -837,7 +884,7 @@ public class DevQsarConstants {
 			try {
 				String value= (String) f.get(d);
 				
-				if(value.equals(unitsAbbreviation)) {
+				if(value.equals(strValue)) {
 //					System.out.println(f.getName()+"\t"+value);
 					return f.getName();
 				}
@@ -849,4 +896,5 @@ public class DevQsarConstants {
 		return "MISSING";
 	}
 }
+
 

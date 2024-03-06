@@ -22,6 +22,8 @@ import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.UnitConverter;
+import gov.epa.databases.dsstox.DsstoxRecord;
 import gov.epa.endpoints.datasets.MappedPropertyValue;
 
 @Entity
@@ -96,40 +98,11 @@ public class DataPointContributor {
 	 * @param finalUnit
 	 */
 	public void setPropertyValue(MappedPropertyValue mpv, Unit finalUnit) {
-		
 		String propertyName=mpv.propertyValue.getProperty().getName();
-		
-		if (finalUnit.getName().equals(mpv.qsarPropertyUnits)) {
-			this.propertyValue=mpv.qsarPropertyValue;
-		
-		} else if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
-			if (finalUnit.getName().equals("MOLAR")) {
-				if(mpv.qsarPropertyUnits.equals("NEG_LOG_M")) {
-					this.propertyValue=Math.pow(10, -mpv.qsarPropertyValue);
-				}
-			} 
-		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
-			if (finalUnit.getName().equals("ATM_M3_MOL")) {
-				if (mpv.qsarPropertyUnits.equals("NEG_LOG_ATM_M3_MOL")) {
-					this.propertyValue=Math.pow(10, -mpv.qsarPropertyValue);
-				}
-			}
-		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
-			
-			if (finalUnit.getName().equals("MMHG")) {
-				if (mpv.qsarPropertyUnits.equals("LOG_MMHG")) {
-					this.propertyValue=Math.pow(10, mpv.qsarPropertyValue);
-				} 
-			}
-		} else {
-			System.out.println("*** Need to add code to DataPointContributor.setQsarPropertyValue() to assign property value for finalUnit:"+finalUnit+",qsarPropertyUnits="+mpv.qsarPropertyUnits);
-		}
-		
-		
-		if (this.propertyValue==null) {
-			System.out.println("Couldnt set propertyValue in DataPointContributor.setQsarPropertyValue() to convert "+mpv.qsarPropertyUnits+" to "+finalUnit.getName());
-		}
-		
+		String unitName=mpv.qsarPropertyUnits;
+		String finalUnitName=finalUnit.getName();
+		String chemicalId=dtxcid;
+		this.propertyValue=UnitConverter.convertUnits(mpv.qsarPropertyValue,unitName,finalUnitName,mpv.dsstoxRecord,propertyName,chemicalId);
 	}
 	
 	

@@ -3,6 +3,8 @@ package gov.epa.run_from_java.data_loading;
 import java.lang.reflect.Field;
 import java.util.regex.Matcher;
 
+import javax.validation.ConstraintViolationException;
+
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropUnit;
 import gov.epa.databases.dev_qsar.exp_prop.entity.LiteratureSource;
@@ -36,10 +38,10 @@ public class PropertyValueCreator {
 
 
 
-	
-	
 
-	
+
+
+
 
 
 	public PropertyValue createPropertyValue(ExperimentalRecord er,boolean createDB_Entries) {
@@ -50,17 +52,19 @@ public class PropertyValueCreator {
 		setReliabilityValue(er,pv);
 		setUnit(er,pv);
 
+		pv.setDocumentName(er.document_name);
+		pv.setFileName(er.file_name);
 		setPublicSource(er, pv, createDB_Entries);
-		setPublicSourceOriginal(er, pv, createDB_Entries);
+		setPublicSourceOriginal(er, pv, createDB_Entries);//in some cases better to store original source info in the document_name if dont need entry in public_sources table
 		setLiteratureSource(er, pv, createDB_Entries);
-				
+
 		setSourceChemical(er,pv,createDB_Entries);		
 
-//		System.out.println("publicSourceId="+pv.getPublicSource().getId());
-//		System.out.println("publicSourceOriginalId="+pv.getPublicSourceOriginal().getId());
-//		System.out.println("literatureSourceId="+pv.getLiteratureSource().getId());
-//		System.out.println("sourceChemicalId="+pv.getSourceChemical().getId());
-		
+		//		System.out.println("publicSourceId="+pv.getPublicSource().getId());
+		//		System.out.println("publicSourceOriginalId="+pv.getPublicSourceOriginal().getId());
+		//		System.out.println("literatureSourceId="+pv.getLiteratureSource().getId());
+		//		System.out.println("sourceChemicalId="+pv.getSourceChemical().getId());
+
 		String url = er.url;
 
 		if (url==null || url.isBlank() || 
@@ -90,7 +94,7 @@ public class PropertyValueCreator {
 			pv.setUnit(loader.unitsMap.get(unitName));
 		} else {
 			//TODO should we add missing units to units table?
-//			System.out.println("Unknown unitName:"+unitName);
+			//			System.out.println("Unknown unitName:"+unitName);
 		}
 	}
 
@@ -100,12 +104,12 @@ public class PropertyValueCreator {
 		if(er.source_name==null) return;
 
 		String name=er.source_name;
-		
+
 
 		if(loader.publicSourcesMap.containsKey(name)) {
 			pv.setPublicSource(loader.publicSourcesMap.get(name));
 		} else {
-			
+
 			PublicSource ps = new PublicSource();
 
 			ps.setName(name);
@@ -115,7 +119,7 @@ public class PropertyValueCreator {
 			if(createDB_Entries) {
 				ps = loader.publicSourceService.create(ps);
 				loader.publicSourcesMap.put(name, ps);
-//				System.out.println("publicSource.id="+ps.getId());
+				//				System.out.println("publicSource.id="+ps.getId());
 			}
 			pv.setPublicSource(ps);
 		}
@@ -159,21 +163,28 @@ public class PropertyValueCreator {
 
 
 
+	/**
+	 * Note this doesnt assure uniqueness of name field in the database.
+	 * 
+	 * @param er
+	 * @param pv
+	 * @param createDB_Entries
+	 */
 	private void setLiteratureSource(ExperimentalRecord er, PropertyValue pv,boolean createDB_Entries) {
 
 		if (er.literatureSource==null) {
 			return;
 		}
 
-		String literatureSourceName=er.literatureSource.getName();//should already be set		
+		String literatureSourceCitation=er.literatureSource.getCitation();//should already be set		
 
-		if (loader.literatureSourcesMap.containsKey(literatureSourceName)) {
-			pv.setLiteratureSource(loader.literatureSourcesMap.get(literatureSourceName));
+		if (loader.literatureSourcesMap.containsKey(literatureSourceCitation)) {
+			pv.setLiteratureSource(loader.literatureSourcesMap.get(literatureSourceCitation));
 		} else {
-			er.literatureSource.setName(literatureSourceName);
+
 			LiteratureSource ls=er.literatureSource;
 			ls.setCreatedBy(loader.lanId);
-			
+
 			if(createDB_Entries) {
 				try {
 					ls = loader.literatureSourceService.create(ls);
@@ -182,7 +193,7 @@ public class PropertyValueCreator {
 				}
 			}
 
-			loader.literatureSourcesMap.put(literatureSourceName, ls);
+			loader.literatureSourcesMap.put(literatureSourceCitation, ls);
 			pv.setLiteratureSource(ls);
 
 		}
@@ -190,15 +201,10 @@ public class PropertyValueCreator {
 	}
 
 	public boolean postPropertyValue(PropertyValue propertyValue) {
-		
+
 		try {
 			propertyValue = propertyValueService.create(propertyValue);
-			
-			if (propertyValue!=null) {
-				return true;
-			} else {
-				return false;
-			}
+			return (propertyValue!=null);
 
 		} catch(Exception ex) {
 			ex.printStackTrace();
@@ -207,56 +213,35 @@ public class PropertyValueCreator {
 
 	}
 
-	
-	
 
 	private void setSourceChemical(ExperimentalRecord rec,PropertyValue pv,boolean createDB_Entries) {
+
+		SourceChemical sourceChemical =rec.getSourceChemical(loader.lanId, pv.getPublicSource(), pv.getLiteratureSource()); 
 		
-		
-		SourceChemical sourceChemical = new SourceChemical();
-		sourceChemical.setCreatedBy(loader.lanId);
+		SourceChemical dbSourceChemical=null;
 
-		if (rec.casrn!=null && !rec.casrn.isBlank()) {
-			sourceChemical.setSourceCasrn(rec.casrn);
-		}
+		if(loader.sourceChemicalMap.containsKey(sourceChemical.getKey())) {
+			dbSourceChemical=loader.sourceChemicalMap.get(sourceChemical.getKey());
+//			System.out.println("Found in map\t"+sourceChemical.getKey());
+		} else if (!ExperimentalRecordLoader.loadSourceChemicalMap) {
+			dbSourceChemical = sourceChemicalService.findMatch(sourceChemical);
+			System.out.println("Found by service\t"+sourceChemical.getKey());
+		}			
+		if (dbSourceChemical==null) {
 
-		if (rec.chemical_name!=null && !rec.chemical_name.isBlank()) {
-			sourceChemical.setSourceChemicalName(rec.chemical_name);
-		}
-
-		if (rec.smiles!=null && !rec.smiles.isBlank()) {
-			sourceChemical.setSourceSmiles(rec.smiles);
-		}
-
-		if (rec.dsstox_substance_id!=null && !rec.dsstox_substance_id.isBlank()) {
-			if (rec.dsstox_substance_id.startsWith("DTXCID")) {
-				sourceChemical.setSourceDtxcid(rec.dsstox_substance_id);
-			} else if (rec.dsstox_substance_id.startsWith("DTXSID")) {
-				sourceChemical.setSourceDtxsid(rec.dsstox_substance_id);
-			} else if (rec.dsstox_substance_id.startsWith("DTXRID")) {
-				sourceChemical.setSourceDtxrid(rec.dsstox_substance_id);
-			}
-		}
-		
-		if(pv.getPublicSource()!=null) {
-			sourceChemical.setPublicSource(pv.getPublicSource());
-		}
-
-		if(pv.getLiteratureSource()!=null) {
-			sourceChemical.setLiteratureSource(pv.getLiteratureSource());
-		}
-
-		
-		if (loader.sourceChemicalMap.containsKey(sourceChemical.getKey())) {
-			sourceChemical=loader.sourceChemicalMap.get(sourceChemical.getKey());
-		} else {
 			if(createDB_Entries) {
-				sourceChemical = sourceChemicalService.create(sourceChemical);
-				loader.sourceChemicalMap.put(sourceChemical.getKey(), sourceChemical);
-			} 
+				try {
+					System.out.println("Creating "+sourceChemical.getKey());
+					sourceChemical = sourceChemicalService.create(sourceChemical);
+				} catch (ConstraintViolationException e) {
+					e.printStackTrace();
+				}
+			}
+		} else {
+			sourceChemical = dbSourceChemical;
 		}
 
-		
+
 		pv.setSourceChemical(sourceChemical);
 	}
 
@@ -274,6 +259,7 @@ public class PropertyValueCreator {
 			rec.property_value_qualitative = rec.property_value_qualitative.substring(0, 255);
 		}
 		propertyValue.setValueText(rec.property_value_qualitative);
+		
 		if (rec.property_value_string!=null && 
 				rec.property_value_string.length()>1000) { 
 			rec.property_value_string = rec.property_value_string.substring(0, 1000);
@@ -305,5 +291,5 @@ public class PropertyValueCreator {
 
 
 
-	
+
 }

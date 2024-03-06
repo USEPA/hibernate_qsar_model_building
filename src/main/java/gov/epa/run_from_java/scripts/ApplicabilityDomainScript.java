@@ -212,18 +212,18 @@ public class ApplicabilityDomainScript {
 	public void runCaseStudyExpProp_All_Endpoints_modelSpecificAD() {
 
 		
-//		String modelSetName="WebTEST2.1";
-//		String splittingName =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
-////		boolean limitToPFAS=true;
-//		boolean limitToPFAS=false;
+		String modelSetName="WebTEST2.1";
+		String splittingName =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+//		boolean limitToPFAS=true;
+		boolean limitToPFAS=false;
 
 //		String modelSetName="WebTEST2.1 PFAS";
 //		String splittingName =SplittingGeneratorPFAS_Script.splittingPFASOnly;
 //		boolean limitToPFAS=false;
 		
-		String modelSetName="WebTEST2.1 All but PFAS";
-		String splittingName =SplittingGeneratorPFAS_Script.splittingAllButPFAS;
-		boolean limitToPFAS=false;
+//		String modelSetName="WebTEST2.1 All but PFAS";
+//		String splittingName =SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+//		boolean limitToPFAS=false;
 		
 		
 		String statName="MAE_Test";
@@ -238,11 +238,13 @@ public class ApplicabilityDomainScript {
 //		System.out.println(smilesArray.size());
 		//*************************************************************************************************
 		
-				
-		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Cosine;
-//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;		
-//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine; 		
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_Kernel_Density;
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_global_index;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_local_index;
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Cosine;
+		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;		
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine; 		
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
 		
 		System.out.println(applicability_domain+"\t"+splittingName+"\t"+"limitToPFAS="+limitToPFAS);
 		
@@ -260,7 +262,7 @@ public class ApplicabilityDomainScript {
 		datasetNames.add("MP v1 modeling");
 		
 		List<String>methodNames=new ArrayList<>();
-		methodNames.add(DevQsarConstants.RF);
+//		methodNames.add(DevQsarConstants.RF);
 		methodNames.add(DevQsarConstants.XGB);
 		
 				
@@ -280,11 +282,13 @@ public class ApplicabilityDomainScript {
 					storeNeighbors, descriptorSetName, datasetName);
 			}
 			
-			Hashtable<String, ApplicabilityDomainPrediction>htAD_Consensus=addConsensusAD(predictionReport, methodNames);
+//			Hashtable<String, ApplicabilityDomainPrediction>htAD_Consensus=addConsensusAD(predictionReport, methodNames);
 			
-			calculateAD_statsConsensus(predictionReport, htAD_Consensus, statName, datasetName);
+//			calculateAD_statsConsensus(predictionReport, htAD_Consensus, statName, datasetName);
 			
-			predictionReport.hasAD=true;
+			predictionReport.AD=applicability_domain;
+			
+			if(true) continue;
 			
 			//Write out new reports with AD info: (TODO later need to store this info in the database...
 			SampleReportWriter.writeReportWithAD(modelSetName, datasetName, splittingName, limitToPFAS, predictionReport);
@@ -323,10 +327,12 @@ public void runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN() {
 		//*************************************************************************************************
 		
 				
-		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Cosine;
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Cosine;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;		
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine; 		
+		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_local_index;
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_global_index;
 		
 		System.out.println(applicability_domain+"\t"+splittingName+"\t"+"limitToPFAS="+limitToPFAS);
 		
@@ -357,13 +363,17 @@ public void runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN() {
 			
 			String filepathReport = "data/reports/" + modelSetName +"/"+ datasetName+"_"+methodName + "_PredictionReport.json";
 			
+//			System.out.println(filepathReport);
+			
 			PredictionReport predictionReport=SampleReportWriter.getReport(filepathReport);
 			
 			
 			calculateAD_stats(predictionReport, splittingName, methodName, statName, applicability_domain,
 					storeNeighbors, descriptorSetName, datasetName);
 			
-			predictionReport.hasAD=true;
+			predictionReport.AD=applicability_domain;
+			
+			if(true) continue;
 			
 			//Write out new reports with AD info: (TODO later need to store this info in the database...
 			String filepathReport2 = "data/reports/" + modelSetName +"/"+ datasetName+"_"+methodName + "_PredictionReport_withAD.json";
@@ -440,7 +450,7 @@ public void runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN() {
 			
 			calculateAD_statsConsensus(predictionReport, htAD_Consensus, statName, datasetName);
 			
-			predictionReport.hasAD=true;
+			predictionReport.AD=applicability_domain;
 			
 			//Write out new reports with AD info: (TODO later need to store this info in the database...
 			SampleReportWriter.writeReportWithAD(modelSetName, datasetName, splittingName, limitToPFAS, predictionReport);
@@ -503,7 +513,7 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 			calculateAD_stats(predictionReport, splittingName, methodName, statName, applicability_domain,
 					storeNeighbors, descriptorSetName, datasetName);
 
-			predictionReport.hasAD=true;
+			predictionReport.AD=applicability_domain;
 
 			String filepathReport2 = "data/reports/" + modelSetName +"/"+ datasetName+"_"+methodName + "_PredictionReport_withAD.json";
 			Utilities.saveJson(predictionReport, filepathReport2);
@@ -618,6 +628,7 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 //			System.out.println(statsOriginal);
 		
 		System.out.println(datasetName.replace(" v1 modeling", "")+"\t"+methodName+"\t"+statsCoverage+"\t"+statsInside+"\t"+statsOutside);
+		
 		return predictionReport;
 	}
 	
@@ -1020,10 +1031,10 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 	public static void main(String[] args) {
 		ApplicabilityDomainScript ads=new ApplicabilityDomainScript();
 		
-//		ads.runCaseStudyExpProp_All_Endpoints_modelSpecificAD();
+		ads.runCaseStudyExpProp_All_Endpoints_modelSpecificAD();
 //		ads.runCaseStudyExpProp_All_Endpoints_allDescriptorsAD();
 		
-		ads.runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN();
+//		ads.runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN();
 //		ads.runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN();
 
 //		ads.runCaseStudyExpProp_All_Endpoints();

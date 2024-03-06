@@ -924,16 +924,18 @@ public class GetExpPropInfo {
 
 			Hashtable<String,String> htOperaReferences=null;
 
-			if (abbrev.equals("LogP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("LogP","Kow");
-			if (abbrev.equals("WS")) htOperaReferences=Utilities.createOpera_Reference_Lookup("WS","WS");
-			if (abbrev.equals("VP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("VP","VP");
-			if (abbrev.equals("HL")) htOperaReferences=Utilities.createOpera_Reference_Lookup("HL","HL");
+			if (abbrev.equals("LogP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("LogP","Kow Reference");
+			if (abbrev.equals("WS")) htOperaReferences=Utilities.createOpera_Reference_Lookup("WS Reference","WS");
+			if (abbrev.equals("VP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("VP","VP Reference");
+			if (abbrev.equals("HL")) htOperaReferences=Utilities.createOpera_Reference_Lookup("HL","HL Reference");
 			//	if (abbrev.equals("MP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("MP","MP");//Has no references
 			//	if (abbrev.equals("BP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("BP","BP");//Has no references
 
 			createCheckingSpreadsheet_PFAS_data(dataSetName,folder,arrayPFAS_CIDs,listName,htOperaReferences,flagLargeCVError);//create checking spreadsheet using json file for mapped records that was created when dataset was created
 			//			System.out.println("");
 		}
+
+		
 
 	}
 
@@ -1233,8 +1235,8 @@ public class GetExpPropInfo {
 
 	public static void main(String[] args) {
 
-//		createCheckingSpreadsheets();
-		checkOmittedRecordsCVError();
+		createCheckingSpreadsheets();
+//		checkOmittedRecordsCVError();
 
 		
 		//		createPFAS_text_File();

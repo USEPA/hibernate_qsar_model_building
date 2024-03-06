@@ -133,7 +133,7 @@ public class ExcelPredictionReportGenerator {
 		List<String> binaryStats;
 		List<String> continuousStats;
 		
-		Stats(boolean hasAD) {
+		Stats(String AD) {
 
 			binaryStats = (Arrays.asList("Split", "BA", "SN", "SP"));
 			
@@ -145,7 +145,7 @@ public class ExcelPredictionReportGenerator {
 					DevQsarConstants.MAE_TEST));
 						
 			
-			if(hasAD) {
+			if(AD!=null) {
 				continuousStats.add("MAE_Test_inside_AD");
 				continuousStats.add("MAE_Test_outside_AD");
 				continuousStats.add("Coverage_Test");
@@ -218,7 +218,7 @@ public class ExcelPredictionReportGenerator {
 		File folder=new File("data/reports");
 		folder.mkdirs();		
 		//		e.generate( predictionReport,folder.getAbsolutePath()+File.separator+"report.xlsx");
-		generate(predictionReport, folder.getAbsolutePath()+File.separator+fileName,null);
+		generate(predictionReport, folder.getAbsolutePath()+File.separator+fileName,null,null);
 		
 	}
 	
@@ -304,14 +304,14 @@ public class ExcelPredictionReportGenerator {
 	 * @param report
 	 * @param filepathOut
 	 */
-	public void generate(PredictionReport report, String filepathOut,HashSet<String>smiles) {
+	public void generate(PredictionReport report, String filepathOut,HashSet<String>smiles,String applicabilityDomain) {
 		
 		Workbook wb = new XSSFWorkbook();
 		
 		boolean isBinary = report.predictionReportMetadata.datasetUnit.equalsIgnoreCase("binary") ? true : false;
 		
 		System.out.println("Generating cover sheet");
-		generateCoverSheet2(report,wb, isBinary);
+		generateCoverSheet2(report,wb, isBinary,applicabilityDomain);
 
 		System.out.println("Generating Statistics sheet");
 		generateStatisticsSheet(report, wb, isBinary);
@@ -328,11 +328,20 @@ public class ExcelPredictionReportGenerator {
 			
 			String methodName = report.predictionReportModelMetadata.get(i).qsarMethodName;
 			
-			generatePredictionSheet2(report, i, wb, isBinary,propertyName ,propertyUnits);
+
+			String sheetName=null;
+			
+			if (report.predictionReportModelMetadata.size()>1) {
+				sheetName=methodName+" predictions";	
+			} else {
+				sheetName="Test set predictions";
+			}
+			
+			generatePredictionSheet2(report, i, wb, isBinary,propertyName ,propertyUnits,sheetName);
 
 			
 			if (!(isBinary)) {
-				eu.GenerateChart(wb,methodName,"Experimental" + propertyName,"Predicted" + propertyName,propertyName,propertyUnits);
+				eu.GenerateChart(wb,methodName,"Experimental" + propertyName,"Predicted" + propertyName,propertyName,propertyUnits,sheetName);
 			}
 
 		}
@@ -340,7 +349,15 @@ public class ExcelPredictionReportGenerator {
 		addEmbeddingDescriptions(wb, report);
 		
 		for (int i = 0; i < report.predictionReportModelMetadata.size(); i++) {
-			addEmbeddingDescriptors(report, i, wb);
+			
+			String sheetName=null;
+			
+			if (report.predictionReportModelMetadata.size()>1) {
+				sheetName=report.predictionReportModelMetadata.get(i).qsarMethodName+" descriptor values";	
+			} else {
+				sheetName="Model descriptor values";
+			}
+			addEmbeddingDescriptors(report, i, wb,sheetName);
 		}
 		
 		eu.autoSizeColumns(wb);
@@ -542,7 +559,7 @@ public class ExcelPredictionReportGenerator {
 		if(!haveEmbedding)return;
 		
 		
-		Sheet sheet=wb.createSheet("Embedding descriptions");
+		Sheet sheet=wb.createSheet("Model descriptors");
 		
 		CellStyle boldstyle = wb.createCellStyle();//Create style
 		Font font = wb.createFont();;//Create font
@@ -615,7 +632,7 @@ public class ExcelPredictionReportGenerator {
 			
 		}//end loop of methodNames
 		
-		
+		setAutofilter(sheet);
 		
 		
 		
@@ -649,7 +666,17 @@ public class ExcelPredictionReportGenerator {
 
 		for (PredictionReportModelMetadata md:pr.predictionReportModelMetadata) {
 //			System.out.println(md.qsarMethodName);
-			XSSFSheet sheetMethod=(XSSFSheet) wb.getSheet(md.qsarMethodName);
+			
+			String sheetName=null;
+			
+			if (pr.predictionReportModelMetadata.size()>1) {
+				sheetName=md.qsarMethodName+" predictions";	
+			} else {
+				sheetName="Test set predictions";
+			}
+
+			
+			XSSFSheet sheetMethod=(XSSFSheet) wb.getSheet(sheetName);
 			addHyperlink(sheetMethod,sheetRecords, createHelper, hlink_style, colNumRecords,htExp_Prop_Ids);
 		}
 		
@@ -716,18 +743,16 @@ public class ExcelPredictionReportGenerator {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		generate(report,outputFilePath, null);
+		generate(report,outputFilePath, null,null);
 	}
 
-	public void generateCoverSheet2(PredictionReport predictionReport, Workbook wb, boolean isBinary) {
+	public void generateCoverSheet2(PredictionReport predictionReport, Workbook wb, boolean isBinary,String applicabilityDomain) {
 		List <List<Object> > spreadsheetMap = new ArrayList <List<Object> >();
 
 		spreadsheetMap.add(prepareCoverSheetRow("Property Name", predictionReport.predictionReportMetadata.datasetProperty));
 		spreadsheetMap.add(prepareCoverSheetRow("Property Description", predictionReport.predictionReportMetadata.datasetPropertyDescription));
 		spreadsheetMap.add(prepareCoverSheetRow("Dataset Name", predictionReport.predictionReportMetadata.datasetName));
 		spreadsheetMap.add(prepareCoverSheetRow("Dataset Description", predictionReport.predictionReportMetadata.datasetDescription));
-		spreadsheetMap.add(prepareCoverSheetRow("Property Units", predictionReport.predictionReportMetadata.datasetUnit));
-		//	spreadsheetMap.put(5, prepareCoverSheetRow("Descriptor Set Name", predictionReport.predictionReportMetadata.descriptorSetName));
 
 		int nTrain = 0;
 		int nPredict = 0;
@@ -741,9 +766,29 @@ public class ExcelPredictionReportGenerator {
 				}
 			}
 		}
-
+		
 		spreadsheetMap.add(prepareCoverSheetRow("nTraining", nTrain));
 		spreadsheetMap.add(prepareCoverSheetRow("nTest", nPredict));
+
+		spreadsheetMap.add(prepareCoverSheetRow("Property Units", predictionReport.predictionReportMetadata.datasetUnit));
+		//	spreadsheetMap.put(5, prepareCoverSheetRow("Descriptor Set Name", predictionReport.predictionReportMetadata.descriptorSetName));
+
+		
+		if(predictionReport.predictionReportModelMetadata.size()==1) {			
+			PredictionReportModelMetadata prmm=predictionReport.predictionReportModelMetadata.get(0);
+			spreadsheetMap.add(prepareCoverSheetRow("Method name", prmm.qsarMethodName));
+			spreadsheetMap.add(prepareCoverSheetRow("Method description", prmm.qsarMethodDescription));			
+		}
+		
+		
+		if(applicabilityDomain!=null) {			
+			if (applicabilityDomain.equals(DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean)) {
+				spreadsheetMap.add(prepareCoverSheetRow("Applicability domain", "Average distance of three most similar chemicals in the training set to the test chemical"));
+				spreadsheetMap.add(prepareCoverSheetRow("Applicability domain cutoff", "Average distance at which 95% of training set is inside the applicability domain"));
+				spreadsheetMap.add(prepareCoverSheetRow("Applicability domain descriptors", "Model descriptors"));
+				spreadsheetMap.add(prepareCoverSheetRow("Applicability domain distance measure", "Euclidean distance"));
+			}
+		}
 
 		populateSheet2(spreadsheetMap, wb, isBinary, "Cover sheet", null, null);
 
@@ -863,7 +908,7 @@ public class ExcelPredictionReportGenerator {
 		ArrayList<Object> headerStats = new ArrayList<Object>(Arrays.asList("Dataset Name", "Descriptor Set", 
 				"Method Name"));
 
-		Stats stats = new Stats(report.hasAD);
+		Stats stats = new Stats(report.AD);
 		
 		
 		if (isBinary) headerStats.addAll(stats.binaryStats);
@@ -902,6 +947,8 @@ public class ExcelPredictionReportGenerator {
 
 
 	}
+	
+	
 	
 //	private void generateSummarySheet2(PredictionReport report, Workbook wb,
 //			boolean isBinary) {
@@ -1071,7 +1118,7 @@ public class ExcelPredictionReportGenerator {
 //
 //	}
 
-	private void generatePredictionSheet2(PredictionReport r, int methodID, Workbook wb, Boolean isBinary, String propertyName, String units) {
+	private void generatePredictionSheet2(PredictionReport r, int methodID, Workbook wb, Boolean isBinary, String propertyName, String units,String sheetName) {
 		
 		List <List<Object> > spreadsheetMap = new ArrayList <>();
 		
@@ -1082,7 +1129,7 @@ public class ExcelPredictionReportGenerator {
 		listColumnNames.add("Predicted " + "(" + units + ")");
 		listColumnNames.add("Error");
 		
-		if(r.hasAD) {
+		if(r.AD!=null) {
 			listColumnNames.add("Inside AD");
 		}
 		
@@ -1110,7 +1157,7 @@ public class ExcelPredictionReportGenerator {
 			listCellValues.add(qpv.qsarPredictedValue);
 			listCellValues.add(Math.abs(dp.experimentalPropertyValue-qpv.qsarPredictedValue));
 			
-			if(r.hasAD) {
+			if(r.AD!=null) {
 				listCellValues.add(qpv.AD+"");
 			}
 
@@ -1118,7 +1165,7 @@ public class ExcelPredictionReportGenerator {
 			spreadsheetMap.add(listCellValues);
 		}
 
-		populateSheet2(spreadsheetMap, wb, isBinary, methodName, propertyName, units);
+		populateSheet2(spreadsheetMap, wb, isBinary, sheetName, propertyName, units);
 
 
 //		System.out.println("Done Generating prediction sheet");
@@ -1126,7 +1173,7 @@ public class ExcelPredictionReportGenerator {
 	}
 	
 
-	private void addEmbeddingDescriptors(PredictionReport predictionReport, int methodID, Workbook wb) {
+	private void addEmbeddingDescriptors(PredictionReport predictionReport, int methodID, Workbook wb,String sheetName) {
 
 		String propertyName=predictionReport.predictionReportMetadata.datasetProperty;
 		String propertyUnits=predictionReport.predictionReportMetadata.datasetUnit;
@@ -1211,7 +1258,7 @@ public class ExcelPredictionReportGenerator {
 		spreadsheetMap.addAll(spreadsheetMapTest);
 		spreadsheetMap.addAll(spreadsheetMapTraining);
 		
-		populateSheet2(spreadsheetMap, wb, false, methodName+" descriptors", null,null);
+		populateSheet2(spreadsheetMap, wb, false, sheetName, null,null);
 //		System.out.println("Done Generating prediction sheet");
 
 	}
@@ -1264,7 +1311,7 @@ public class ExcelPredictionReportGenerator {
 
 
 
-	private void setAutofilter(Sheet sheet) {
+	public static void setAutofilter(Sheet sheet) {
 
 		if (sheet.getSheetName().equals("Cover sheet")) return;
 		
@@ -1275,7 +1322,7 @@ public class ExcelPredictionReportGenerator {
 		String lastCol = CellReference.convertNumToColString(row.getLastCellNum()-1);
 		int lastRow=sheet.getLastRowNum();
 		
-//		sheet.createFreezePane(0, 1);
+		sheet.createFreezePane(0, 1);
 
 		if(lastRow<100000) {//Causes excel to be damaged otherwise and have to have excel fix it on opening
 			sheet.setAutoFilter(CellRangeAddress.valueOf("A1:"+lastCol+lastRow));
@@ -1286,6 +1333,8 @@ public class ExcelPredictionReportGenerator {
 		
 //		System.out.println(sheetName);
 		if (wb.getSheet(sheetName) != null) return;
+		
+		System.out.println(sheetName);
 		
 		XSSFSheet sheet = (XSSFSheet) wb.createSheet(sheetName);
 		// 2 decimal center aligned numeric cell style
@@ -1385,12 +1434,12 @@ public class ExcelPredictionReportGenerator {
 		 * @param propertyName
 		 * @param units
 		 */
-		public void GenerateChart(Workbook wb, String methodName,String source1,String source2, String propertyName,String units) {
+		public void GenerateChart(Workbook wb, String methodName,String source1,String source2, String propertyName,String units,String sheetName) {
 
-			XSSFSheet sheet=(XSSFSheet) wb.getSheet(methodName);
+			XSSFSheet sheet=(XSSFSheet) wb.getSheet(sheetName);
 			
 			XSSFDrawing drawing = sheet.createDrawingPatriarch();
-			XSSFClientAnchor anchor = drawing.createAnchor(0, 0, 0, 0, 6, 0, 14, 24);
+			XSSFClientAnchor anchor = drawing.createAnchor(0, 0, 0, 0, 6, 1, 14, 25);
 
 			XSSFChart chart = drawing.createChart(anchor);
 

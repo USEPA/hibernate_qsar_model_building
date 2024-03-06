@@ -78,6 +78,12 @@ public class PropertyValue {
 	@Column(name="page_url", length=1000)
 	private String pageUrl;
 	
+	@Column(name="document_name", length=100)
+	private String documentName;
+
+	@Column(name="file_name", length=100)
+	private String fileName;
+	
 	@Column(name="value_qualifier")
 	private String valueQualifier;
 	
@@ -222,6 +228,36 @@ public class PropertyValue {
 		}
 		
 		return null;
+	}
+	
+	/**
+	 * Used to try to remove duplicates from chemprop loading
+	 * 
+	 * @return
+	 */
+	public String getKey() {
+		
+		
+		String keyValue=valueQualifier+"\t"+valuePointEstimate+"\t"+valueMin+"\t"+
+		valueMax+"\t"+valueError+"\t"+valueText+"\t"+valueOriginal;
+		
+		//Using sourceChemical.getKey() instead of its id because a chemical might have been accidentally mapped to a new sourceChemical rather than using an existing one that was exact match
+		
+		String key=sourceChemical.getKey()+"\t"+keyValue;
+		
+		if (publicSource!=null) {
+			key+="\t"+publicSource.getId();
+		} else {
+			key+="\tnull";
+		}
+
+		if (literatureSource!=null) {
+			key+="\t"+literatureSource.getId();
+		} else {
+			key+="\tnull";
+		}
+		
+		return key;
 	}
 	
 	
@@ -466,34 +502,52 @@ public class PropertyValue {
 		this.publicSourceOriginal = publicSourceOriginal;
 	}
 
+	
+	/**
+	 * TODO probably dont need to use get methods- access directly by variables
+	 * 
+	 * @return
+	 */
 	public JsonObject createJsonObjectFromPropertyValue() {
 		JsonObject jo=new JsonObject();
+
+		if (getCreatedAt()!=null)
+			jo.addProperty("createdAt",getCreatedAt().toString());
+
+		if (getCreatedBy()!=null)
+			jo.addProperty("createdBy",getCreatedBy());
 		
 //				jo.addProperty("created_by", pv.getCreatedBy());
 		jo.addProperty("sourceChemicalName", getSourceChemical().getSourceChemicalName());
 		jo.addProperty("sourceChemicalCASRN",getSourceChemical().getSourceCasrn());
 		jo.addProperty("sourceChemicalDTXSID",getSourceChemical().getSourceDtxsid());
+		jo.addProperty("sourceChemicalDTXRID",getSourceChemical().getSourceDtxrid());
 		
-		for (ParameterValue parameterValue:getParameterValues()) {
-			if (parameterValue.getValueText()!=null) {
-				jo.addProperty("parameter_"+parameterValue.getParameter().getName(),parameterValue.getValueText());	
-			} else if (parameterValue.getValuePointEstimate()!=null) {
-				jo.addProperty("parameter_"+parameterValue.getParameter().getName(),parameterValue.getValuePointEstimate());
+		if (getParameterValues()!=null) {
+
+			for (ParameterValue parameterValue:getParameterValues()) {
+				if (parameterValue.getValueText()!=null) {
+					jo.addProperty("parameter_"+parameterValue.getParameter().getName(),parameterValue.getValueText());	
+				} else if (parameterValue.getValuePointEstimate()!=null) {
+					jo.addProperty("parameter_"+parameterValue.getParameter().getName(),parameterValue.getValuePointEstimate());
+				}
 			}
-			
-			
 		}
 		
 		jo.addProperty("notes", getNotes());
 		jo.addProperty("page_url", getPageUrl());
 		
-		jo.addProperty("publicSourceName", getPublicSource().getName());
-		jo.addProperty("publicSourceURL", getPublicSource().getUrl());
+		if(getPublicSource()!=null) {
+			jo.addProperty("publicSourceName", getPublicSource().getName());
+			jo.addProperty("publicSourceURL", getPublicSource().getUrl());
+		}
 		
-		jo.addProperty("publicSourceNameOriginal", getPublicSourceOriginal().getName());
-		jo.addProperty("publicSourceOriginalURL", getPublicSourceOriginal().getUrl());
+		if (getPublicSourceOriginal()!=null) {
+			jo.addProperty("publicSourceNameOriginal", getPublicSourceOriginal().getName());
+			jo.addProperty("publicSourceOriginalURL", getPublicSourceOriginal().getUrl());
+		}
 		
-		if(literatureSource!=null) {
+		if(getLiteratureSource()!=null) {
 			jo.addProperty("literatureSourceName", getLiteratureSource().getName());
 			jo.addProperty("literatureSourceCitation", getLiteratureSource().getCitation());
 			jo.addProperty("literatureSourceDOI", getLiteratureSource().getDoi());
@@ -510,6 +564,22 @@ public class PropertyValue {
 		jo.addProperty("page_url", getPageUrl());
 		
 		return jo;
+	}
+
+	public String getDocumentName() {
+		return documentName;
+	}
+
+	public void setDocumentName(String documentName) {
+		this.documentName = documentName;
+	}
+
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
 	}
 
 }

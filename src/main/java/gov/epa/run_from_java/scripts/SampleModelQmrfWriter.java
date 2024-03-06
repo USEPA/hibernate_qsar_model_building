@@ -3,19 +3,12 @@ package gov.epa.run_from_java.scripts;
 import java.io.File;
 import java.io.FileWriter;
 import java.lang.reflect.Field;
-import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelFile;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelFileService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelFileServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelInConsensusMethodServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelInConsensusModelService;
-import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.endpoints.reports.ModelMetadata;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable.ModelSetTableRow;

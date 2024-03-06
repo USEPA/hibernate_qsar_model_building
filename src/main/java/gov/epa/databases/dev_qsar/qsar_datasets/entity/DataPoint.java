@@ -92,12 +92,29 @@ public class DataPoint {
 	
 	public DataPoint(String canonQsarSmiles, String DTXCID, String exp_prop_id, Double qsarPropertyValue, Dataset dataset, Boolean outlier, String createdBy) {
 		this.setCanonQsarSmiles(canonQsarSmiles);
-		this.setQsar_dtxcid(DTXCID);
-		this.setQsar_exp_prop_property_values_id(exp_prop_id);
+		
+		//To account for edge case when loading CERAPP/COMPARA experimental values for dashboard:
+		if(DTXCID.length()>500) {
+			this.setQsar_dtxcid(DTXCID.substring(0,495)+"...");
+		} else {
+			this.setQsar_dtxcid(DTXCID);	
+		}
+		
+		if (exp_prop_id.length()>255) {
+			this.setQsar_exp_prop_property_values_id(exp_prop_id.substring(0,250)+"...");
+		} else {
+			this.setQsar_exp_prop_property_values_id(exp_prop_id);	
+		}
+		
+		
+		
 		this.setQsarPropertyValue(qsarPropertyValue);
 		this.setDataset(dataset);
 		this.setOutlier(outlier);
 		this.setCreatedBy(createdBy);
+		
+		
+		
 	}
 
 

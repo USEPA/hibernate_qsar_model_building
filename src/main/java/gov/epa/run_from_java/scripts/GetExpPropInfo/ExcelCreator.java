@@ -34,6 +34,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelPredictionReportGenerator;
 import gov.epa.util.StructureImageUtil;
 
 public class ExcelCreator {
@@ -348,6 +349,42 @@ public class ExcelCreator {
 		}
 	}
 	
+	
+	private static void createDescriptionsTab(Workbook wb,Hashtable <String,String>htDesc,String []fieldnames) {
+
+		CellStyle cs=createStyleHeader(wb);
+				
+		Sheet sheetDesc = wb.createSheet("Records field descriptions");			
+		Row row0 = sheetDesc.createRow(0);
+		Cell cell0=row0.createCell(0);
+		cell0.setCellValue("Field");
+		cell0.setCellStyle(cs);
+		
+		Cell cell1=row0.createCell(1);
+		cell1.setCellValue("Description");
+		cell1.setCellStyle(cs);
+		
+		Set<String>keys=htDesc.keySet();
+		
+		int rowNum=0;
+		for (String fieldname:fieldnames) {
+			rowNum++;
+			
+			Row row = sheetDesc.createRow(rowNum);
+			cell0=row.createCell(0);
+			cell0.setCellValue(fieldname);
+			
+			cell1=row.createCell(1);
+			cell1.setCellValue(htDesc.get(fieldname));
+			
+		}
+		
+		sheetDesc.autoSizeColumn(0);
+		sheetDesc.autoSizeColumn(1);
+		ExcelPredictionReportGenerator.setAutofilter(sheetDesc);
+		
+	}
+	
 	/**
 	 *	TODO- this might run out of memory
 	 *
@@ -438,39 +475,7 @@ public class ExcelCreator {
 	}
 	
 	
-	private static void createDescriptionsTab(Workbook wb,Hashtable <String,String>htDesc,String []fieldnames) {
-
-		CellStyle cs=createStyleHeader(wb);
-				
-		Sheet sheetDesc = wb.createSheet("Records field descriptions");			
-		Row row0 = sheetDesc.createRow(0);
-		Cell cell0=row0.createCell(0);
-		cell0.setCellValue("Field");
-		cell0.setCellStyle(cs);
-		
-		Cell cell1=row0.createCell(1);
-		cell1.setCellValue("Description");
-		cell1.setCellStyle(cs);
-		
-		Set<String>keys=htDesc.keySet();
-		
-		int rowNum=0;
-		for (String fieldname:fieldnames) {
-			rowNum++;
-			
-			Row row = sheetDesc.createRow(rowNum);
-			cell0=row.createCell(0);
-			cell0.setCellValue(fieldname);
-			
-			cell1=row.createCell(1);
-			cell1.setCellValue(htDesc.get(fieldname));
-			
-		}
-		
-		sheetDesc.autoSizeColumn(0);
-		sheetDesc.autoSizeColumn(1);
-		
-	}
+	
 	
 	static void createExcel(JsonArray ja,String excelFilePath) {
 		try {
@@ -581,8 +586,8 @@ public class ExcelCreator {
 		Font font = workbook.createFont();
 		font.setBold(true);
 		style.setFont(font);	
-		style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-	    style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+//		style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+//	    style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 		return style;
 	}
 	

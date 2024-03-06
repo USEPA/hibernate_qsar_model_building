@@ -95,4 +95,32 @@ public class ExpPropPropertyServiceImpl implements ExpPropPropertyService {
 		return property;
 	}
 
+	
+	@Override
+	public void delete(ExpPropProperty property) {
+		Session session = ExpPropSession.getSessionFactory().getCurrentSession();
+		delete(property,session);
+	}
+
+	@Override
+	public void delete(ExpPropProperty property, Session session) {
+		
+		Transaction t = session.beginTransaction();
+		
+		try {
+			session.delete(property);
+			session.flush();
+//			session.refresh(property);
+			t.commit();
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			t.rollback();
+			throw new ConstraintViolationException(e.getMessage() + ": " + e.getSQLException().getMessage(), null);
+		} catch (Exception e) {
+			t.rollback();
+			throw e;
+		}
+		
+	}
+
+
 }

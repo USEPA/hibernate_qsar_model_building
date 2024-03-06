@@ -116,7 +116,7 @@ public class OPERA_csv_to_PostGres_DB {
 		case DevQsarConstants.KOC:
 			abbrev="KOC";
 			break;
-		case DevQsarConstants.KM:
+		case DevQsarConstants.KmHL:
 			abbrev="KM";
 			break;
 		case DevQsarConstants.OH:
@@ -776,7 +776,7 @@ private List<PredictionReport> createReports(List<PredictionDashboard> predictio
 			} else if (colName.contains("Koc")) {
 				propName = DevQsarConstants.KOC;				
 			} else if (colName.contains("KM")) {
-				propName = DevQsarConstants.KM;				
+				propName = DevQsarConstants.KmHL;				
 			} else if (colName.contains("ReadyBiodeg")) {
 				propName = DevQsarConstants.RBIODEG;				
 			} else if (colName.contains("BioDeg")) {
@@ -1185,9 +1185,9 @@ private List<PredictionReport> createReports(List<PredictionDashboard> predictio
 //		o.printOtherCAS();
 //		o.findMissingDsstoxRecords();
 //		o.compareLoadTimes();
-//		o.deleteOPERA_Records();//delete from db so have fresh start
+		o.deleteOPERA_Records();//delete from db so have fresh start
 //		o.lookAtSpecialCSVRows();
-		o.saveOperaPlotImages();
+//		o.saveOperaPlotImages();
 		
 	}
 	
@@ -1444,7 +1444,7 @@ private List<PredictionReport> createReports(List<PredictionDashboard> predictio
 		ms.create(new ModelStatistic(statisticR2_Test,modelKOC,0.71,userName));		
 		ms.create(new ModelStatistic(statisticRMSE_Test,modelKOC,0.61,userName));
 		
-		Model modelKM=getModel(DevQsarConstants.KM, mapModels);
+		Model modelKM=getModel(DevQsarConstants.KmHL, mapModels);
 		ms.create(new ModelStatistic(statisticR2_Training,modelKM,0.82,userName));		
 		ms.create(new ModelStatistic(statisticRMSE_Training,modelKM,0.5,userName));
 		ms.create(new ModelStatistic(statisticR2_CV_Training,modelKM,0.83,userName));		

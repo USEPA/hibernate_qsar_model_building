@@ -40,12 +40,12 @@ public class SourceChemical {
 	@Column(name="source_casrn")
 	private String sourceCasrn;
 	
-	@Column(name="source_smiles", length=255)
-	@Length(max=255)
+	@Column(name="source_smiles", length=1000)
+	@Length(max=1000)
 	private String sourceSmiles;
 	
 	@Column(name="source_chemical_name", length=255)
-	@Length(max=255)
+	@Length(max=500)
 	private String sourceChemicalName;
 	
 	@ManyToOne

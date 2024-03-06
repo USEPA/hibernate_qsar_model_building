@@ -396,7 +396,7 @@ public class OPERA_Report {
 				return 17;
 			case DevQsarConstants.RBIODEG:
 				return 20;
-			case DevQsarConstants.KM:
+			case DevQsarConstants.KmHL:
 				return 28;
 			case DevQsarConstants.KOC:
 				return 25;
@@ -470,7 +470,7 @@ public class OPERA_Report {
 		case DevQsarConstants.BIODEG_HL_HC:
 		case DevQsarConstants.BCF:
 		case DevQsarConstants.KOC:
-		case DevQsarConstants.KM:
+		case DevQsarConstants.KmHL:
 			return 1;
 		default:
 			return 0;
@@ -495,7 +495,7 @@ public class OPERA_Report {
 		case DevQsarConstants.BIODEG_HL_HC:
 		case DevQsarConstants.BCF:
 		case DevQsarConstants.KOC:
-		case DevQsarConstants.KM:
+		case DevQsarConstants.KmHL:
 			return 1;
 		default:
 			return 0;

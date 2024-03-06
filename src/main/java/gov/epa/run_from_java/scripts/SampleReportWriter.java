@@ -3,6 +3,7 @@ package gov.epa.run_from_java.scripts;
 import java.io.File;
 
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelFile;
+import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelFileServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.reports.WebTEST.GenerateWebTestReport;
@@ -154,7 +155,7 @@ public class SampleReportWriter {
 		
 		if (overwrite || !excelFile.exists()) {
 			ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
-			eprg.generate(predictionReport, filepath,null);
+			eprg.generate(predictionReport, filepath,null,null);
 		} else {
 			System.out.println("Excel report already exists at"+filepath);
 		}

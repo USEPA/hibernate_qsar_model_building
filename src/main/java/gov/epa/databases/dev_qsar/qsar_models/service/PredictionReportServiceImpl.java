@@ -446,4 +446,14 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 //		return "error getting report";
 //		
 //	}
+	
+	
+	public static void main(String[] args) {
+		
+		for (Long i=1L;i<190;i++) {
+			String sql ="delete from qsar_models.prediction_reports pr where pr.id<"+100000*i+";";			
+			SqlUtilities.runSQLUpdate(SqlUtilities.getConnectionPostgres(), sql);
+		}
+		
+	}
 }

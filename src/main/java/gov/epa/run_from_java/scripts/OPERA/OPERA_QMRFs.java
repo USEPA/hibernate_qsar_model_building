@@ -53,7 +53,7 @@ public class OPERA_QMRFs {
 			} else if(file.getName().contains("KOC")) {
 				endpoint=DevQsarConstants.KOC;
 			} else if(file.getName().contains("KM")) {
-				endpoint=DevQsarConstants.KM;
+				endpoint=DevQsarConstants.KmHL;
 			} else if (file.getName().contains("CATMoS")) {
 				endpoint=DevQsarConstants.ORAL_RAT_LD50;
 			} else {

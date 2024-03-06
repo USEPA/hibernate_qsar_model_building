@@ -117,7 +117,7 @@ public class ModelBuildingScript {
 	 * @param lanId
 	 * @param include_standardization_in_pmml 
 	 */
-	public static void buildModel(String lanId,String modelWsServer,int modelWsPort,String methodName,
+	public static long buildModel(String lanId,String modelWsServer,int modelWsPort,String methodName,
 			DescriptorEmbedding de,CalculationInfo ci,boolean usePMML, boolean include_standardization_in_pmml,boolean use_sklearn2pmml) {
 
 		System.out.println("\nBuilding "+methodName+" model for "+ci.datasetName + "with" + ci.descriptorSetName + "descriptors");
@@ -143,7 +143,7 @@ public class ModelBuildingScript {
 		//	PredictionReport report=gen.generateForModelPredictions(modelId);
 		//	writeReport(datasetName, descriptorSetName, report);//dont really need to write report since we probably want report from all models in one json file anyways
 
-
+		return modelID;
 	}
 
 

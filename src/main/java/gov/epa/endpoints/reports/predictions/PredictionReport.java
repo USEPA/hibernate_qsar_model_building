@@ -10,7 +10,8 @@ import gov.epa.endpoints.reports.ModelMetadata;
 
 public class PredictionReport {
 
-	public Boolean hasAD=false;
+//	public Boolean hasAD=false;
+	public String AD;
 	
 	public PredictionReportMetadata predictionReportMetadata;
 	public List<PredictionReportModelMetadata> predictionReportModelMetadata = new ArrayList<PredictionReportModelMetadata>();
