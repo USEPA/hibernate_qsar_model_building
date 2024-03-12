@@ -388,12 +388,16 @@ public class RunCaseStudiesTodd {
 
 		List<String>datasetNames=new ArrayList<>();
 
-		datasetNames.add("HLC v1 modeling");
-		datasetNames.add("WS v1 modeling");
-		datasetNames.add("VP v1 modeling");
-		datasetNames.add("BP v1 modeling");
-		datasetNames.add("LogP v1 modeling");
-		datasetNames.add("MP v1 modeling");
+//		datasetNames.add("HLC v1 modeling");
+//		datasetNames.add("WS v1 modeling");
+//		datasetNames.add("VP v1 modeling");
+//		datasetNames.add("BP v1 modeling");
+//		datasetNames.add("LogP v1 modeling");
+//		datasetNames.add("MP v1 modeling");
+		
+		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
+		datasetNames.add("exp_prop_96HR_FHM_LC50_v2 modeling");
+		
 		
 		List<String>methods=new ArrayList<>();			
 //		methods.add(DevQsarConstants.RF);
@@ -403,8 +407,8 @@ public class RunCaseStudiesTodd {
 
 		
 //		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;		
-//		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
-		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+//		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
 
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
@@ -660,6 +664,15 @@ public class RunCaseStudiesTodd {
 
 		System.out.println("\n*** portNumber="+portModelBuilding+" ***");
 		
+		
+		List<String>methods=new ArrayList<>();			
+		methods.add(DevQsarConstants.KNN);
+		methods.add(DevQsarConstants.RF);
+		methods.add(DevQsarConstants.XGB);
+		methods.add(DevQsarConstants.SVM);
+
+		
+		
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
 		for (String datasetName:datasetNames) {
@@ -676,29 +689,12 @@ public class RunCaseStudiesTodd {
 					
 			System.out.println("\n***"+datasetName+"\t"+splitting+"***");
 			
-			List<String>methods=new ArrayList<>();			
-			
-//			if(!datasetName.equals("LogP from exp_prop and chemprop")) {
-//				methods.add(DevQsarConstants.KNN);
-//				methods.add(DevQsarConstants.RF);
-//				methods.add(DevQsarConstants.XGB);
-//				methods.add(DevQsarConstants.SVM);				
-//			} else {
-////				methods.add(DevQsarConstants.SVM);
-//			}
-			
-			methods.add(DevQsarConstants.KNN);
-			methods.add(DevQsarConstants.RF);
-			methods.add(DevQsarConstants.XGB);
-			methods.add(DevQsarConstants.SVM);
 
 			for (String method:methods) {
 				System.out.println(method + "\t" + descriptorSetName);
 				ModelBuildingScript.buildModel(lanId,serverModelBuilding,portModelBuilding,method,null, ci,use_pmml, include_standardization_in_pmml,use_sklearn2pmml);
 			}
-			
 			buildConsensusModel(datasetName,splitting,descriptorSetName,methodsConsensus);
-			
 		}
 
 	}
@@ -780,21 +776,25 @@ public class RunCaseStudiesTodd {
 //		datasetNames.add("LogP v1");
 //		datasetNames.add("MP v1");
 
-		datasetNames.add("HLC v1 modeling");
-		datasetNames.add("WS v1 modeling");
-		datasetNames.add("VP v1 modeling");
-		datasetNames.add("BP v1 modeling");
-		datasetNames.add("LogP v1 modeling");
-		datasetNames.add("MP v1 modeling");
+//		datasetNames.add("HLC v1 modeling");
+//		datasetNames.add("WS v1 modeling");
+//		datasetNames.add("VP v1 modeling");
+//		datasetNames.add("BP v1 modeling");
+//		datasetNames.add("LogP v1 modeling");
+//		datasetNames.add("MP v1 modeling");
+		
+		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
+		datasetNames.add("exp_prop_96HR_FHM_LC50_v2 modeling");
 
 		List<String>methods=new ArrayList<>();			
 //		methods.add(DevQsarConstants.RF);
 		methods.add(DevQsarConstants.XGB);
+//		methods.add(DevQsarConstants.KNN);
 
 		
 //		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;
-//		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;		
-		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;		
+//		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
 
 		System.out.println("\n*** portNumber="+portModelBuilding+" ***");
 		
@@ -1507,7 +1507,7 @@ public class RunCaseStudiesTodd {
 		
 //		runCaseStudyExpProp_All_Endpoints();
 		
-//		runCaseStudyExpProp_All_Endpoints_method_specific_embedding();
+		runCaseStudyExpProp_All_Endpoints_method_specific_embedding();
 		runCaseStudyExpProp_All_Endpoints_No_Embedding_RF_XGB();
 		
 //		runCaseStudyExpProp_All_Endpoints_No_Embedding_kNN();
@@ -1524,3 +1524,4 @@ public class RunCaseStudiesTodd {
 	
 
 }
+

@@ -1,7 +1,14 @@
 package gov.epa.endpoints.reports.predictions;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.endpoints.reports.ReportDataPoint;
@@ -82,5 +89,24 @@ public class PredictionReport {
 			
 		}
 	}
+	
+	
+	public void toFile(String filePath) {
+		
+		File file = new File(filePath);
+		if (file.getParentFile()!=null) {
+			file.getParentFile().mkdirs();
+//			System.out.println(file.getAbsolutePath());
+		}
+
+		Gson gson = new GsonBuilder().setPrettyPrinting().serializeSpecialFloatingPointValues().disableHtmlEscaping().create();
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+			writer.write(gson.toJson(this));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 	
 }

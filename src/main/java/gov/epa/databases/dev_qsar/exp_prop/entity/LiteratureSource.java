@@ -23,7 +23,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
-@Table(name="literature_sources", indexes={@Index(name="litsrc_name_idx", columnList="name", unique=true)})
+@Table(name="literature_sources", indexes={@Index(name="litsrc_citation_idx", columnList="citation", unique=true)})
 public class LiteratureSource {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)

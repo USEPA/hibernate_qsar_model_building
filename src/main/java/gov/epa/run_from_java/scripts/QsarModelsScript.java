@@ -671,10 +671,12 @@ public class QsarModelsScript {
 //		script.deleteModel(857L);
 		
 //		script.deleteModel(859L);
-//		for (int i=853;i>=850;i--) script.deleteModel(i);
+//		for (int i=1102;i>=1099;i--) script.deleteModel(i);
+		for (int i=1103;i<=1106;i++) script.deleteModel(i);
+		
 
 //		script.downloadModelFile(1065L, 2L,"data\\reports\\model files download\\");
-		script.downloadModelFile(1065L, 1L,"data\\reports\\model files download\\");
+//		script.downloadModelFile(1065L, 1L,"data\\reports\\model files download\\");
 		
 //		script.downloadModelFile(776L, 2L,"data\\reports\\prediction reports upload\\");
 		

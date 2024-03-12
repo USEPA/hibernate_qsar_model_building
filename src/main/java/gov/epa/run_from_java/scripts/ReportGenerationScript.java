@@ -35,34 +35,7 @@ public class ReportGenerationScript {
 
 	static PredictionReportGenerator gen = new PredictionReportGenerator();
 
-	private static void writeReport(String datasetName, String modelSetName, PredictionReport report,String filePath) {
-		
-		File file = new File(filePath);
-		if (file.getParentFile()!=null) {
-			file.getParentFile().mkdirs();
-//			System.out.println(file.getAbsolutePath());
-		}
 
-		Gson gson = new GsonBuilder().setPrettyPrinting().serializeSpecialFloatingPointValues().disableHtmlEscaping().create();
-		try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-			writer.write(gson.toJson(report));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-
-	public static void writeReport(PredictionReport report,String filePath) {
-
-		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().serializeSpecialFloatingPointValues().create();
-		try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-			writer.write(gson.toJson(report));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
 
 
 	public static PredictionReport reportAllPredictions(String datasetName,String splittingName,String modelSetName,boolean deleteMissingSplitting,boolean includeDescriptors) {
@@ -82,11 +55,13 @@ public class ReportGenerationScript {
 		
 		String filePath = "data/reports/" + modelSetName+"/"+datasetName + "_PredictionReport.json";
 
-		writeReport(datasetName, modelSetName,report,filePath);
+		report.toFile(filePath);
 		return report;
 	}
 	
-	public static PredictionReport reportPredictionsMethod(String modelSetName, String datasetName,String splittingName,String methodName,boolean deleteMissingSplitting,boolean includeDescriptors,boolean includeOriginalCompounds,String filePath) {
+
+	
+	public static PredictionReport reportPredictionsMethod(String modelSetName, String datasetName,String splittingName,String methodName,boolean deleteMissingSplitting,boolean includeDescriptors,boolean includeOriginalCompounds,String filePath,boolean writeFile) {
 
 		long t1=System.currentTimeMillis();
 		PredictionReport report=gen.generateMethodPredictions(modelSetName, datasetName, splittingName, methodName,includeDescriptors,includeOriginalCompounds);
@@ -97,8 +72,7 @@ public class ReportGenerationScript {
 		double time=(t2-t1)/1000.0;
 		System.out.println("Time to generate report for "+datasetName+" = "+time+" seconds");
 
-
-		writeReport(datasetName, modelSetName,report,filePath);
+		if(writeFile) report.toFile(filePath);
 		return report;
 	}
 

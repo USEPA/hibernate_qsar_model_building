@@ -53,12 +53,7 @@ import gov.epa.databases.dev_qsar.exp_prop.service.PublicSourceService;
 import gov.epa.databases.dev_qsar.exp_prop.service.PublicSourceServiceImpl;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalService;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.PropertyService;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.PropertyServiceImpl;
-import gov.epa.databases.dsstox.entity.SourceSubstance;
-import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class ExperimentalRecordLoader {
 
@@ -115,10 +110,6 @@ public class ExperimentalRecordLoader {
 	}
 	
 	private void mapTables() {
-		List<LiteratureSource> literatureSources = literatureSourceService.findAll();
-		for (LiteratureSource ls:literatureSources) {
-			literatureSourcesMap.put(ls.getCitation(), ls);//use citation because more likely to be unique
-		}
 		
 		List<Parameter> parameters = parameterService.findAll();
 		for (Parameter p:parameters) {
@@ -129,7 +120,13 @@ public class ExperimentalRecordLoader {
 		for (ExpPropProperty p:properties) {
 			propertiesMap.put(p.getName(), p);
 		}
+
 		
+		List<LiteratureSource> literatureSources = literatureSourceService.findAll();
+		for (LiteratureSource ls:literatureSources) {
+			literatureSourcesMap.put(ls.getCitation(), ls);//use citation because more likely to be unique
+		}
+
 		List<PublicSource> publicSources = publicSourceService.findAll();
 		for (PublicSource ps:publicSources) {
 			publicSourcesMap.put(ps.getName(), ps);
@@ -568,7 +565,7 @@ public class ExperimentalRecordLoader {
 		return propertyCategory;
 	}
 	
-	void loadAcuteAquaticToxicityData() {
+	void loadAcuteAquaticToxicityDataToxVal() {
 
 		debug=true;//prints values loaded from database like property
 		
@@ -590,15 +587,64 @@ public class ExperimentalRecordLoader {
 		addPropertyAcceptableUnit(getUnit("G_L","g/L"), property);
 		addPropertyAcceptableUnit(getUnit("MOLAR","M"), property);
 
-		addPropertyAcceptableParameter(getParameter("toxval_id","toxval_id field in toxval table in ToxVal database"),property);
-		addPropertyAcceptableParameter(getParameter("Lifestage","lifestage field in toxval table in ToxVal database"),property);
-		addPropertyAcceptableParameter(getParameter("Exposure route","exposure route field in toxval table in ToxVal database"),property);
-		addPropertyAcceptableParameter(getParameter("Reliability","Reliability"),property);
+//		addPropertyAcceptableParameter(getParameter("toxval_id","toxval_id field in toxval table in ToxVal database"),property);
+//		addPropertyAcceptableParameter(getParameter("Lifestage","lifestage field in toxval table in ToxVal database"),property);
+//		addPropertyAcceptableParameter(getParameter("Exposure route","exposure route field in toxval table in ToxVal database"),property);
+//		addPropertyAcceptableParameter(getParameter("Reliability","Reliability"),property);
 		
 //		addPropertyInCategory(getPropertyCategory("Acute aquatic toxicity", "Acute aquatic toxicity"), property);
 		
 		//There are no units for parameters for acute aquatic tox but here is example:
 //		addParameterAcceptableUnit(getUnit("C","C"), getParameter("Temperature","Temperature"));		
+		
+		//*******************************************************************************************************
+
+		ExperimentalRecords records=ExperimentalRecords.loadFromJson(filePath, gson);
+//		printUniqueUnitsListInExperimentalRecords(records);
+		System.out.println("experimentalRecords.size()="+records.size());
+		
+		load(records, typeOther, createDBEntries);
+		
+	}
+	
+	void loadAcuteAquaticToxicityDataEcotox() {
+
+		debug=true;//prints values loaded from database like property
+		
+		boolean createDBEntries=true;
+			
+		String sourceName="ECOTOX_2023_12_14";
+		
+		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
+		
+		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+		String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+"_"+propertyName+" Experimental Records.json";
+		
+		File jsonFile=new File(filePath);
+		
+		System.out.println(filePath+"\t"+jsonFile.exists());
+		
+
+		//**********************************************************************************************
+		//First create the property
+		ExpPropProperty property=getProperty(propertyName, "concentration that kills half of fathead minnow in 96 hours");
+		
+		//**********************************************************************************************
+		//Add entries for properties_acceptable_units:
+		addPropertyAcceptableUnit(getUnit("G_L","g/L"), property);
+		addPropertyAcceptableUnit(getUnit("MOLAR","M"), property);
+
+//		addPropertyAcceptableParameter(getParameter("test_id","test_id field in tests table in Ecotox database"),property);		
+//		//See exposure_type_codes table in ECOTOX:
+//		addPropertyAcceptableParameter(getParameter("exposure_type","Type of exposure (S=static, F=flowthrough, R=renewal, etc)"),property);
+//		//See chemical_analysis_codes table in ECOTOX:
+//		addPropertyAcceptableParameter(getParameter("chem_analysis_method","Analysis method for water concentration (M=measured, U=unmeasured etc)"),property);		
+//		
+//		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("test_id","test_id field in tests table in Ecotox database"));
+//		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("exposure_type","Type of exposure (S=static, F=flow-through, R=renewal, etc)"));		
+//		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("chem_analysis_method","Analysis method for water concentration (M=measured, U=unmeasured etc)"));
+
+//		addPropertyInCategory(getPropertyCategory("Acute aquatic toxicity", "Acute aquatic toxicity"), property);
 		
 		//*******************************************************************************************************
 
@@ -679,6 +725,33 @@ public class ExperimentalRecordLoader {
 //		SqlUtilities.runSQLUpdate(conn, sqlPublicSources);
 				
 	}
+	
+	static void deleteEcotoxData() {
+
+		Connection conn=SqlUtilities.getConnectionPostgres();
+
+		int publicSourceId=254;//ECOTOX		
+		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
+		
+		String sqlPropertyName="select id from exp_prop.properties p where p.name='"+propertyName+"';";
+		Long propertyId=Long.parseLong(SqlUtilities.runSQL(conn, sqlPropertyName));
+		
+		String sqlParameters="delete from exp_prop.parameter_values pv2 using exp_prop.property_values pv\n"+
+				"where pv2.fk_property_value_id=pv.id and pv.fk_property_id="+propertyId+" and pv.fk_public_source_id="+publicSourceId;
+
+		String sqlPropertyValues="delete from exp_prop.property_values pv where fk_public_source_id="+publicSourceId+" and fk_property_id="+propertyId+";";
+		String sqlSourceCHemicals="delete from exp_prop.source_chemicals sc where sc.fk_public_source_id="+publicSourceId+" and created_by='tmarti02'";
+		String sqlLiteratureSources="delete from exp_prop.literature_sources where created_by='tmarti02' and id>3378";
+//		String sqlPublicSources="delete from exp_prop.public_sources where created_by='tmarti02' and id>104";
+
+		SqlUtilities.runSQLUpdate(conn, sqlParameters);
+		SqlUtilities.runSQLUpdate(conn, sqlPropertyValues);
+//		SqlUtilities.runSQLUpdate(conn, sqlSourceCHemicals);
+//		SqlUtilities.runSQLUpdate(conn, sqlLiteratureSources);
+//		SqlUtilities.runSQLUpdate(conn, sqlPublicSources);
+				
+	}
+
 
 	void loadPropertyValuesFromThreeM_ExperimentalRecordsFile() {
 		
@@ -743,18 +816,14 @@ public class ExperimentalRecordLoader {
 	
 	public static void main(String[] args) {
 //		loadBCF();
+//		loader.loadPropertyValuesFromThreeM_ExperimentalRecordsFile();		
 	
-		deleteExpPropData();
+//		deleteExpPropData();
+//		loader.loadAcuteAquaticToxicityDataToxVal();
 		
-		
-//		ExperimentalRecordLoader.loadSourceChemicalMap=false;//faster when have lots of records to load
-//		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("tmarti02");
-//		loader.loadPropertyValuesFromThreeM_ExperimentalRecordsFile();
-		
-		
-//		loader.loadAcuteAquaticToxicityData();
-		
-		
+//		deleteEcotoxData();
+		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("tmarti02");
+		loader.loadAcuteAquaticToxicityDataEcotox();
 		
 	}
 

@@ -50,8 +50,8 @@ public class DatasetFileWriter {
 	private DescriptorValuesService descriptorValuesService = new DescriptorValuesServiceImpl();
 	
 	public String writeWithoutSplitting(String datasetName, String descriptorSetName, String outputFolderPath, boolean fetchDtxcids) {
-		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
-		List<DescriptorValues> descriptorValues = descriptorValuesService.findByDescriptorSetName(descriptorSetName);
+//		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
+//		List<DescriptorValues> descriptorValues = descriptorValuesService.findByDescriptorSetName(descriptorSetName);
 		
 		String outputFileName = datasetName + "_" + descriptorSetName + "_full.tsv";
 		String outputFilePath = outputFolderPath + (outputFolderPath.endsWith("/") ? "" : "/") + outputFileName;
@@ -101,6 +101,9 @@ public class DatasetFileWriter {
 		try {
 			
 			FileWriter fw=new FileWriter(outputFilePathTraining);
+			
+			System.out.println(outputFilePathTraining);
+			
 			fw.write(md.trainingSetInstances);
 			fw.flush();
 			fw.close();
@@ -473,17 +476,20 @@ public class DatasetFileWriter {
 //		writer.writeTEST_Toxicity_Files();
 //		writer.write_exp_prop_datasets();
 		
+//		String outputFolderPath="data/dev_qsar/dataset_files/";
+//		String datasetName="exp_prop_96HR_FHM_LC50_v1 modeling";
+//		String descriptorSetName="WebTEST-default";
+//		writer.writeWithoutSplitting(datasetName, descriptorSetName, outputFolderPath, true);
+		
+//		writer.writeWithoutSplitting(108L, descriptorSetName, outputFolderPath, true);
 				
 		//**********************************************************
 
-		String outputFolderPath="data/dev_qsar/dataset_files/";
-		String descriptorSetName="T.E.S.T. 5.1";
+//		String outputFolderPath="data/dev_qsar/dataset_files/";
+		String descriptorSetName="WebTEST-default";
 //		
-//		writer.writeWithoutSplitting(108L, descriptorSetName, outputFolderPath, true);
-		
-		
-		//TODO need to compile list of sources used in compiling a dataset
-//		writer.writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE","Standard Water solubility from exp_prop",outputFolderPath);
+		String outputFolderPath="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_exp_prop";
+		writer.writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE","exp_prop_96HR_FHM_LC50_v1 modeling",outputFolderPath,false,true);
 //		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingPFASOnly,"Standard Water solubility from exp_prop",outputFolderPath);
 //		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingAll,"Standard Water solubility from exp_prop",outputFolderPath);
 //		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingAllButPFAS,"Standard Water solubility from exp_prop",outputFolderPath);

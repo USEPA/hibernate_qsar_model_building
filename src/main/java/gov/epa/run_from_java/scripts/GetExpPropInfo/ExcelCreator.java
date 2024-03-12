@@ -635,9 +635,15 @@ public class ExcelCreator {
 		htDescriptions.put("value_units","units for the value_point_estimate");
 		htDescriptions.put("qsar_property_value","value_point_estimate converted to the qsar_property_units");
 		htDescriptions.put("qsar_property_units","units for the qsar_property_value");
+		
 		htDescriptions.put("temperature_c","temperature at which the experiment was performed in C");
 		htDescriptions.put("pressure_mmHg","pressure at which the experiment was performed in mmHg");
 		htDescriptions.put("pH","pH at which the experiment was performed");
+		
+		htDescriptions.put("test_id","ECOTOX db test_id");
+		htDescriptions.put("exposure_type","ECOTOX db exposure_type");
+		htDescriptions.put("chem_analysis_method","ECOTOX db chem_analysis_method");
+		
 		htDescriptions.put("notes","notes on the record");
 		htDescriptions.put("qc_flag","whether or not a quality control flag has been issued");
 

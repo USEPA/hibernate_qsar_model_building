@@ -254,12 +254,14 @@ public class ApplicabilityDomainScript {
 		System.out.println("Dataset\tMethod\tFrac_Inside\t"+statName+"_Inside\t"+statName+"_Outside");	
 
 		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add("HLC v1 modeling");
-		datasetNames.add("WS v1 modeling");
-		datasetNames.add("VP v1 modeling");
-		datasetNames.add("LogP v1 modeling");
-		datasetNames.add("BP v1 modeling");
-		datasetNames.add("MP v1 modeling");
+//		datasetNames.add("HLC v1 modeling");
+//		datasetNames.add("WS v1 modeling");
+//		datasetNames.add("VP v1 modeling");
+//		datasetNames.add("LogP v1 modeling");
+//		datasetNames.add("BP v1 modeling");
+//		datasetNames.add("MP v1 modeling");
+		
+		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
 		
 		List<String>methodNames=new ArrayList<>();
 //		methodNames.add(DevQsarConstants.RF);
@@ -267,11 +269,6 @@ public class ApplicabilityDomainScript {
 		
 				
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
-		
-		if (modelSetName.contains("2.0") && !applicability_domain.equals(DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine)) {
-			System.out.println("Invalid AD!");
-			return;			
-		}
 				
 		for (String datasetName:datasetNames) {
 			
@@ -288,12 +285,37 @@ public class ApplicabilityDomainScript {
 			
 			predictionReport.AD=applicability_domain;
 			
-			if(true) continue;
+//			if(true) continue;
 			
 			//Write out new reports with AD info: (TODO later need to store this info in the database...
 			SampleReportWriter.writeReportWithAD(modelSetName, datasetName, splittingName, limitToPFAS, predictionReport);
 
 		}//end loop over datasets
+		
+	}
+	
+
+	/**
+	 * Adds AD results to prediction report using web service
+	 * 
+	 * @param methodName
+	 * @param splittingName
+	 * @param descriptorSetName
+	 * @param applicability_domain
+	 * @param datasetName
+	 * @param predictionReport
+	 */
+	public void runAD(String methodName, String splittingName,String descriptorSetName, 
+			String applicability_domain,String datasetName,PredictionReport predictionReport) {
+		
+		String statName="MAE_Test";
+//		String statName="Q2_Test";
+		
+		boolean storeNeighbors=false;
+		System.out.println("Dataset\tMethod\tFrac_Inside\t"+statName+"_Inside\t"+statName+"_Outside");	
+		
+		calculateAD_stats(predictionReport, splittingName, methodName, statName, applicability_domain,
+				storeNeighbors, descriptorSetName, datasetName);				
 		
 	}
 
@@ -407,7 +429,8 @@ public void runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN() {
 				
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Cosine;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;		
-		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine; 		
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine; 		
+		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_local_index;
 		
 		System.out.println(applicability_domain+"\t"+splittingName+"\t"+"limitToPFAS="+limitToPFAS);
@@ -418,21 +441,23 @@ public void runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN() {
 		System.out.println("Dataset\tMethod\tFrac_Inside\t"+statName+"_Inside\t"+statName+"_Outside");	
 
 		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add("HLC v1 modeling");
-		datasetNames.add("WS v1 modeling");
-		datasetNames.add("VP v1 modeling");
-		datasetNames.add("LogP v1 modeling");
-		datasetNames.add("BP v1 modeling");
-		datasetNames.add("MP v1 modeling");
+//		datasetNames.add("HLC v1 modeling");
+//		datasetNames.add("WS v1 modeling");
+//		datasetNames.add("VP v1 modeling");
+//		datasetNames.add("LogP v1 modeling");
+//		datasetNames.add("BP v1 modeling");
+//		datasetNames.add("MP v1 modeling");
+		
+		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
 		
 		List<String>methodNames=new ArrayList<>();
-		methodNames.add(DevQsarConstants.RF);
+//		methodNames.add(DevQsarConstants.RF);
 		methodNames.add(DevQsarConstants.XGB);
 		
 				
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
-		if (modelSetName.contains("2.0") && !applicability_domain.equals(DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine)) {
+		if (modelSetName.contains("2.0") && !applicability_domain.equals(DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean)) {
 			System.out.println("Invalid AD!");
 			return;			
 		}
@@ -448,7 +473,7 @@ public void runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN() {
 			
 			Hashtable<String, ApplicabilityDomainPrediction>htAD_Consensus=addConsensusAD(predictionReport, methodNames);
 			
-			calculateAD_statsConsensus(predictionReport, htAD_Consensus, statName, datasetName);
+//			calculateAD_statsConsensus(predictionReport, htAD_Consensus, statName, datasetName);
 			
 			predictionReport.AD=applicability_domain;
 			
@@ -628,6 +653,8 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 //			System.out.println(statsOriginal);
 		
 		System.out.println(datasetName.replace(" v1 modeling", "")+"\t"+methodName+"\t"+statsCoverage+"\t"+statsInside+"\t"+statsOutside);
+		
+		predictionReport.AD=applicability_domain;
 		
 		return predictionReport;
 	}
@@ -1032,7 +1059,7 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 		ApplicabilityDomainScript ads=new ApplicabilityDomainScript();
 		
 		ads.runCaseStudyExpProp_All_Endpoints_modelSpecificAD();
-//		ads.runCaseStudyExpProp_All_Endpoints_allDescriptorsAD();
+		ads.runCaseStudyExpProp_All_Endpoints_allDescriptorsAD();
 		
 //		ads.runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN();
 //		ads.runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN();

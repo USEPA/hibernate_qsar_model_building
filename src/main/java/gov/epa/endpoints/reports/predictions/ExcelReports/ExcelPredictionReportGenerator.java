@@ -71,15 +71,6 @@ public class ExcelPredictionReportGenerator {
 	ExcelUtilities eu = new ExcelUtilities();
 
 	
-	String[] fieldsMappedRecords = { "exp_prop_id", "canon_qsar_smiles", "page_url", 			
-			"public_source_name","public_source_url","public_source_original_name","public_source_original_url",
-			"literature_source_citation","literature_source_doi",
-//			"source_url", "source_doi",	"source_name", "source_description", "source_authors", "source_title", 
-			"source_dtxrid","source_dtxsid", "source_casrn", "source_chemical_name", "source_smiles", 
-			"mapped_dtxcid", "mapped_dtxsid","mapped_cas", "mapped_chemical_name", "mapped_smiles", "mapped_molweight", 
-			"value_original", "value_max", "value_min", "value_point_estimate", "value_units", 
-			"qsar_property_value", "qsar_property_units",
-			"temperature_c", "pressure_mmHg", "pH", "notes", "qc_flag"};
 
 	
 //	private static class Stats {
@@ -243,7 +234,7 @@ public class ExcelPredictionReportGenerator {
 		
 		Hashtable<String,String>htDescriptions=ExcelCreator.getColumnDescriptions();
 		
-		ExcelCreator.addSheet(wb, "Records",ja,fieldsMappedRecords, htDescriptions);
+		ExcelCreator.addSheet(wb, "Records",ja,getMappedRecordsFields(ja), htDescriptions);
 		
 		wb.setSheetOrder("Records", wb.getSheetIndex("Test set")+1);
 		wb.setSheetOrder("Records field descriptions", wb.getSheetIndex("Records")+1);
@@ -251,6 +242,41 @@ public class ExcelPredictionReportGenerator {
 		return ja;
 		
 	}
+	
+	String [] getMappedRecordsFields (JsonArray ja) {
+		List<String> fieldsMappedRecords =new ArrayList<String> (Arrays.asList( "exp_prop_id", "canon_qsar_smiles", "page_url", 			
+				"public_source_name","public_source_url",
+				"public_source_original_name","public_source_original_url",
+				"literature_source_citation","literature_source_doi",
+//				"source_url", "source_doi",	"source_name", "source_description", "source_authors", "source_title", 
+				"source_dtxrid","source_dtxsid", "source_casrn", "source_chemical_name", "source_smiles", 
+				"mapped_dtxcid", "mapped_dtxsid","mapped_cas", "mapped_chemical_name", "mapped_smiles", "mapped_molweight", 
+				"value_original", "value_max", "value_min", "value_point_estimate", "value_units", 
+				"qsar_property_value", "qsar_property_units",
+				"notes", "qc_flag"));
+		
+		//Add in parameters:
+		for(int i=0;i<ja.size();i++) {
+			JsonObject jo=ja.get(i).getAsJsonObject();
+			for(String key:jo.keySet()) {
+				
+				if(key.equals("mapped_connection_reason")) continue;
+				if(key.equals("public_source_description")) continue;
+				if(key.equals("literature_source_description")) continue;
+				if(key.equals("public_source_original_description")) continue;
+				if(key.equals("source_chemical_id")) continue;
+				
+				if(!fieldsMappedRecords.contains(key)) fieldsMappedRecords.add(key);
+			}
+		}
+		
+		String []fields=new String[fieldsMappedRecords.size()];
+		for(int i=0;i<fieldsMappedRecords.size();i++) {
+			fields[i]=fieldsMappedRecords.get(i);
+		}
+		return fields;
+	}
+	
 	
 	
 	JsonArray addExperimentalRecordsSheet(Workbook wb,String jsonPath,HashSet<String>smilesList) {
@@ -268,7 +294,7 @@ public class ExcelPredictionReportGenerator {
 		}
 		
 		Hashtable<String,String>htDescriptions=ExcelCreator.getColumnDescriptions();
-		ExcelCreator.addSheet(wb, "Records",ja,fieldsMappedRecords, htDescriptions);
+		ExcelCreator.addSheet(wb, "Records",ja,getMappedRecordsFields(ja), htDescriptions);
 		wb.setSheetOrder("Records", wb.getSheetIndex("Test set")+1);
 		wb.setSheetOrder("Records field descriptions", wb.getSheetIndex("Records")+1);
 		return ja;

@@ -68,12 +68,14 @@ public class PredictionStatisticsScript {
 		// datasetNames.add("BP v1 res_qsar");
 		// datasetNames.add("MP v1 res_qsar");
 
-		datasetNames.add("HLC v1 modeling");
-		datasetNames.add("WS v1 modeling");
-		datasetNames.add("VP v1 modeling");
-		datasetNames.add("BP v1 modeling");
-		datasetNames.add("LogP v1 modeling");
-		datasetNames.add("MP v1 modeling");
+//		datasetNames.add("HLC v1 modeling");
+//		datasetNames.add("WS v1 modeling");
+//		datasetNames.add("VP v1 modeling");
+//		datasetNames.add("BP v1 modeling");
+//		datasetNames.add("LogP v1 modeling");
+//		datasetNames.add("MP v1 modeling");
+		
+		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
 
 	}
 
@@ -1059,7 +1061,7 @@ public class PredictionStatisticsScript {
 			limitPredictionReportToPFAS(smilesArray, predictionReport);
 
 			String filePath = "data/reports/" + modelSetName + "/" + datasetName + "_PredictionReport_only_PFAS.json";
-			ReportGenerationScript.writeReport(predictionReport, filePath);
+			predictionReport.toFile(filePath);
 
 			// System.out.println(Utilities.gson.toJson(predictionReport));
 
@@ -1077,6 +1079,31 @@ public class PredictionStatisticsScript {
 			}
 
 		}
+
+	}
+	
+	
+	void createPredictionReportsExcelForJustPFAS(String modelSetName, boolean upload,
+			boolean deleteExistingReportInDatabase, boolean overWriteReportFiles, boolean overWriteExcelFiles,
+			 boolean includeDescriptors) {
+
+
+		SampleReportWriter srw = new SampleReportWriter();
+
+		String splittingName = DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+		// String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;//TODO get
+		// from prediction report instead
+
+		ModelSetServiceImpl modelSetService = new ModelSetServiceImpl();
+		ModelSet ms = modelSetService.findByName(modelSetName);
+
+		// Create the PredictionReport for all compounds in
+		// SPLITTING_RND_REPRESENTATIVE:
+		for (String datasetName : datasetNames) {
+			srw.generateSamplePredictionReport(ms.getId(), datasetName, splittingName, upload,
+					deleteExistingReportInDatabase, overWriteReportFiles, overWriteExcelFiles, includeDescriptors);
+		}
+
 
 	}
 	
@@ -1780,6 +1807,8 @@ public class PredictionStatisticsScript {
 				overWriteReportFiles, overWriteExcelFiles, filePathPFAS, includeDescriptors);
 	}
 	
+	
+	
 	void createPredictionReportExcel() {
 		ModelSetServiceImpl modelSetService = new ModelSetServiceImpl();
 
@@ -1789,7 +1818,10 @@ public class PredictionStatisticsScript {
 		boolean upload = false;
 		boolean includeDescriptors = true;
 
-		String datasetName="datasetName";
+		String methodName="xgb";
+				
+		
+		String datasetName="exp_prop_96HR_FHM_LC50_v1 modeling";
 		
 		SampleReportWriter srw = new SampleReportWriter();
 		String splittingName = DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
@@ -1815,6 +1847,15 @@ public class PredictionStatisticsScript {
 //		createExcelSummarysWithAD_JustPFAS("WebTEST2.0",smilesArray,upload,overwrite);
 		createExcelSummarysWithAD_JustPFAS("WebTEST2.1",smilesArray,upload,overwrite);
 	}
+	
+	void createExcelSummarysWithAD() {
+		boolean upload=false;
+		boolean overwrite=true;
+		
+		createExcelSummarysWithAD("WebTEST2.0",upload,overwrite,DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean);
+		createExcelSummarysWithAD("WebTEST2.1",upload,overwrite,DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean);
+	}
+
 
 	private void createExcelSummarysWithAD_JustPFAS(String modelSetName, HashSet<String> smilesArray,boolean upload, boolean overwrite) {
 		
@@ -1883,6 +1924,71 @@ public class PredictionStatisticsScript {
 		}
 		
 	}
+	
+	private void createExcelSummarysWithAD(String modelSetName, boolean upload, boolean overwrite,String applicabilityDomain) {
+		
+		QsarModelsScript qms = new QsarModelsScript("tmarti02");
+	
+	String splittingName = DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+	// String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;//TODO get
+	// from prediction report instead
+
+	String outputFolder = "data/reports/prediction reports upload";
+	ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
+
+	Long fileTypeId=2L;//excel summary 
+	
+	for (String datasetName : datasetNames) {
+
+		String filePathReport="data/reports/" + modelSetName + "/" + datasetName + "_PredictionReport_with_AD.json";
+		PredictionReport predictionReport = SampleReportWriter.getReport(filePathReport);
+		String filepathExcel = outputFolder + File.separator + modelSetName + File.separator
+				+ String.join("_", datasetName, splittingName) + "_with_AD.xlsx";
+		
+		File excelFile=new File(filepathExcel);
+		
+		System.out.println(!excelFile.exists()+"\t"+overwrite);
+		
+		if (!excelFile.exists() || overwrite) {
+			System.out.println("generating excel file");
+			eprg.generate(predictionReport, filepathExcel, null,applicabilityDomain);
+		}
+		
+		Long modelId = getModelIdForReport(modelSetName, splittingName, datasetName, predictionReport);			
+		
+		if(modelId==null) {
+			System.out.println("Cant associate model for "+datasetName+"\t"+splittingName+"\tmodelSetId="+modelSetName);
+			return;
+		}
+
+		if(upload) {
+			try {
+				qms.uploadModelFile(modelId, fileTypeId, filepathExcel);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		filePathReport = "data/reports/" + modelSetName + "/" + datasetName + "_PredictionReport_only_PFAS_with_AD.json";
+		
+		if (!new File(filePathReport).exists()) continue;
+		
+		predictionReport = SampleReportWriter.getReport(filePathReport);
+		filepathExcel = outputFolder + File.separator + modelSetName + File.separator
+				+ String.join("_", datasetName, splittingName) + "_PFAS_with_AD.xlsx";
+		
+		
+		excelFile=new File(filepathExcel);
+
+		if (!excelFile.exists() || overwrite) {
+			System.out.println("generating excel file");
+			eprg.generate(predictionReport, filepathExcel, null,applicabilityDomain);
+		}
+
+	}
+	
+}
 
 	private Long getModelIdForReport(String modelSetName, String splittingName, String datasetName,
 			PredictionReport predictionReport) {
@@ -2270,25 +2376,56 @@ public class PredictionStatisticsScript {
 	}
 	
 	
-	void createkNN_Reports() {
+	void createPredictionReportForMethod() {
 		
-		SampleReportWriter srw = new SampleReportWriter();
-
-//		String modelSetName="WebTEST2.0";
-		String modelSetName="WebTEST2.1";
-		String methodName="knn_regressor_1.2";
+		String modelSetName="WebTEST2.0";//use all descriptors
+//		String modelSetName="WebTEST2.1";//use subset of descriptors (model descriptors)
+//		String methodName="knn";
+		String methodName="xgb";
 		String splittingName="RND_REPRESENTATIVE";
+		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
-		boolean includeDescriptors=false;
+		boolean includeDescriptors=true;
 		boolean includeOriginalCompounds=true;
 		boolean overwriteJsonReport=true;
 		
-		for (String dataset:datasetNames) {
-			srw.createPredictionReportMethod(modelSetName,methodName, dataset, splittingName, overwriteJsonReport, includeDescriptors,includeOriginalCompounds);
-		}
+		String dataset="exp_prop_96HR_FHM_LC50_v1 modeling";
+
+		SampleReportWriter srw = new SampleReportWriter();
+		srw.createPredictionReportMethod(modelSetName,descriptorSetName, methodName, dataset, splittingName, overwriteJsonReport, includeDescriptors,includeOriginalCompounds);
 		
-//		String dataset="MP v1 modeling";
-//		srw.createPredictionReportMethod(modelSetName,methodName, dataset, splittingName, overwriteJsonReport, includeDescriptors,includeOriginalCompounds);		
+	}
+	
+	
+
+	void createPredictionReportForMethodArrays() {
+		
+		List<String>modelSets=new ArrayList<>();		
+		modelSets.add("WebTEST2.0");
+		modelSets.add("WebTEST2.1");
+		
+		List<String>dataSets=new ArrayList<>();
+		dataSets.add("exp_prop_96HR_FHM_LC50_v1 modeling");
+		dataSets.add("exp_prop_96HR_FHM_LC50_v2 modeling");
+
+		
+//		String methodName="knn";
+		String methodName="xgb";
+		String splittingName="RND_REPRESENTATIVE";
+		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		
+		boolean includeDescriptors=true;
+		boolean includeOriginalCompounds=true;
+		boolean overwriteJsonReport=true;
+		
+
+		SampleReportWriter srw = new SampleReportWriter();
+		
+		for (String modelSet:modelSets) {
+			for (String dataSet:dataSets) {
+				srw.createPredictionReportMethod(modelSet,descriptorSetName, methodName, dataSet, splittingName, overwriteJsonReport, includeDescriptors,includeOriginalCompounds);
+			}
+		}
 	}
 	
 	/**
@@ -2419,11 +2556,17 @@ public class PredictionStatisticsScript {
 	}
 	public static void main(String[] args) {
 		PredictionStatisticsScript ms = new PredictionStatisticsScript();
+		
+		//Create summary json report and excel file
+//		ms.createPredictionReportForMethod();
+		ms.createPredictionReportForMethodArrays();
+
+		
 		// ms.createSpreadsheetExample();
 
 		// ms.createSummaryTableForMethod_Rnd_Representative();
 
-		 ms.createSummaryTableForMethod();
+//		 ms.createSummaryTableForMethod();
 //		 ms.createSummaryTableForSet();
 //		 ms.createSummaryTableForSet2();
 //		 ms.createSummaryTableForSet3();
@@ -2436,15 +2579,22 @@ public class PredictionStatisticsScript {
 		// ms.createSummaryTableForSetOPERA();
 
 		//Create summary spreadsheets:
+//		ms.createPredictionReportExcel();
+//		ms.createExcelSummarysWithAD();
+
+
+		
 //		ms.createPredictionReportsExcelForJustPFAS();
 //		ms.createPredictionReportsExcelPFASOnlyModels();
 //		ms.copyReportsToFolder();
 							
-//		ms.createkNN_Reports();
+
 		
 		//Create spreadsheets with AD added in:
 //		ms.createExcelSummarysWithAD_JustPFAS();
 //		ms.createExcelSummarysWithAD_OnlyPFAS();
+		
+		
 //		ms.copyReportsToFolderWithAD();
 //		ms.copyReportsToFolderWithAD_CSS_Delivery();
 		

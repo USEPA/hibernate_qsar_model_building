@@ -48,7 +48,7 @@ public class ModelData {
 	static DatasetServiceImpl datasetService=new DatasetServiceImpl();
 	static DescriptorSetServiceImpl descriptorSetService=new DescriptorSetServiceImpl(); 
 	
-	boolean debug=false;
+	public static boolean debug=false;
 	
 	public ModelData(String datasetName, String descriptorSetName, String splittingName,boolean removeLogP_Descriptors,boolean useDTXCIDs) {
 		this.datasetName = datasetName;
@@ -196,6 +196,79 @@ public class ModelData {
 		this.countTraining=counterTrain;
 		this.countPrediction=counterTest;
 		
+	}
+	
+
+	/**
+	 * Creates an overall set tsv for all the distinct DTXSIDs in the datapoint contributors for a dataset
+	 * 
+	 * @param datasetName
+	 * @param splittingName
+	 * @param descriptorSetName
+	 * @return
+	 */
+	public static String getOverallInstancesByDTXSID(String datasetName,String splittingName,String descriptorSetName) {
+		
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		
+		Dataset dataset=datasetService.findByName(datasetName);
+//		Splitting splitting=splittingService.findByName(splittingName);
+		DescriptorSet descriptorSet=descriptorSetService.findByName(descriptorSetName);
+		
+//		System.out.println("descriptorSetName"+descriptorSetName);
+		
+		String sql="select headers_tsv from qsar_descriptors.descriptor_sets d\n"+					
+					"where d.\"name\"='"+descriptorSetName+"';";
+		String instanceHeader="ID\tProperty\t"+SqlUtilities.runSQL(conn, sql)+"\r\n";
+//		System.out.println(instanceHeader+"\n");
+		
+		sql = "select distinct dpc.dtxsid, dp.qsar_property_value, dv.values_tsv from qsar_datasets.data_point_contributors dpc\n"
+				+ "join qsar_datasets.data_points dp on dpc.fk_data_point_id = dp.id\n"
+				+ "join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"
+				+ "where dp.fk_dataset_id=" + dataset.getId() + " and dv.fk_descriptor_set_id=" + descriptorSet.getId()+"\n"
+				+ "order by dpc.dtxsid;";
+		
+		System.out.println("\n"+sql);
+
+		StringBuilder sbOverall = new StringBuilder(instanceHeader);
+
+		int counterOverall=0;
+		
+		
+		try {
+			
+			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+			
+			while (rs.next()) {
+				
+//				if (counter%1000==0) System.out.println(counter+ "\tbuilding instances");
+				
+				String id=rs.getString(1);
+				String qsar_property_value=rs.getString(2);
+				String descriptors=rs.getString(3);
+
+				String instance=generateInstance(id, qsar_property_value, descriptors);
+				
+				if (instance==null) {
+					System.out.println(id+"\tnull instance");
+					continue;
+				}
+
+				sbOverall.append(instance);
+				counterOverall++;
+
+			}
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+				
+		if (debug) {
+			System.out.println("Instances created:"+counterOverall);
+			
+		}
+		
+		return sbOverall.toString();
 	}
 	
 	

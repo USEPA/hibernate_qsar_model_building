@@ -149,6 +149,8 @@ public class PredictionReportGenerator extends ReportGenerator {
 		}
 	}
 	
+
+	
 	private void addMethodPredictions(String methodName,boolean hasEmbedding) {
 		
 		List<Model> models = modelService.getAll();
@@ -157,7 +159,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 			models = models.stream()
 					.filter(m -> m.getDatasetName().equals(predictionReport.predictionReportMetadata.datasetName))
 					.filter(m -> m.getSplittingName().equals(predictionReport.predictionReportMetadata.splittingName))
-					.filter(m -> m.getMethod().getName().equals(methodName))
+					.filter(m -> m.getMethod().getName().contains(methodName))
 					.filter(m ->m.getDescriptorEmbedding()!=null)
 					.collect(Collectors.toList());
 			
@@ -165,7 +167,7 @@ public class PredictionReportGenerator extends ReportGenerator {
 			models = models.stream()
 					.filter(m -> m.getDatasetName().equals(predictionReport.predictionReportMetadata.datasetName))
 					.filter(m -> m.getSplittingName().equals(predictionReport.predictionReportMetadata.splittingName))
-					.filter(m -> m.getMethod().getName().equals(methodName))
+					.filter(m -> m.getMethod().getName().contains(methodName))
 					.filter(m -> m.getDescriptorEmbedding()==null)
 					.collect(Collectors.toList());
 		}
@@ -282,8 +284,6 @@ public class PredictionReportGenerator extends ReportGenerator {
 		} else {
 			addMethodPredictions(methodName,true);
 		}
-		
-		
 		
 		if(includeDescriptors) addDescriptors(datasetName);
 		

@@ -273,7 +273,10 @@ public class ParameterValueCreator {
 			}
 
 			Parameter parameter=loader.parametersMap.get(parameterName);
-			ExpPropUnit unit=loader.unitsMap.get("Text");//TODO how do we handle generic unit that has specific units? add units to experimental_parameters dictionary for each entry? or add handle like temperature or pressure was
+			
+//			System.out.println(parameterName);
+			
+			ExpPropUnit unit=loader.unitsMap.get("TEXT");//TODO how do we handle generic unit that has specific units? add units to experimental_parameters dictionary for each entry? or add handle like temperature or pressure was
 
 			parameterValue.setPropertyValue(propertyValue);
 			parameterValue.setParameter(parameter);//need to add parameter to Parameters table first

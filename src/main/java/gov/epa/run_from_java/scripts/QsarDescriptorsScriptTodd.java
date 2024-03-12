@@ -70,7 +70,7 @@ public class QsarDescriptorsScriptTodd {
 	void runSingleChemical() {
 		String lanId="tmarti02";
 		
-		String smiles="CCCCO";
+		String smiles="CF";
 //		String smiles="COC(CNC(N)=O)C[Hg+2]Cl";
 //		String smiles="CN(C)CCC[n]1(=O)c2ccccc2[s]c2ccccc12";
 		
@@ -178,7 +178,9 @@ public class QsarDescriptorsScriptTodd {
 		int batchSize=1;
 //		String datasetName="WS v1 res_qsar";
 //		String datasetName="WS v1 modeling";
-		String datasetName="HLC v1 modeling";
+//		String datasetName="HLC v1 modeling";
+//		String datasetName="exp_prop_96HR_FHM_LC50_v1 modeling";
+		String datasetName="exp_prop_96HR_FHM_LC50_v2 modeling";
 				
 		for (String descriptorSetName:sciDataExpertsDescriptorSetNames) {
 			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,batchSize);
@@ -265,11 +267,11 @@ public class QsarDescriptorsScriptTodd {
 		
 		QsarDescriptorsScriptTodd q=new QsarDescriptorsScriptTodd();
 		
-//		q.generateDescriptorsForDataset();
+		q.generateDescriptorsForDataset();
 //		q.generateDescriptorsForDatasets();
 //		q.generateDescriptorsForDsstoxSDF();
 //		q.runChemicalsFromBatchSearchCSV();
-		q.runSingleChemical();
+//		q.runSingleChemical();
 		
 		//*********************************************************************************************************		
 //		q.calcSingleChemical();

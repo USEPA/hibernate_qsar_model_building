@@ -123,6 +123,13 @@ public class DatasetServiceImpl implements DatasetService {
 		SqlUtilities.runSQLUpdate(conn, sqlDID);
 
 		
+		String sqlDIS="delete from qsar_datasets.data_points_in_splittings dis\n"
+				+ "using qsar_datasets.data_points dp\r\n"
+				+ "where dp.id=dis.fk_data_point_id and dp.fk_dataset_id="+id+";";
+				
+		SqlUtilities.runSQLUpdate(conn, sqlDIS);
+
+		
 		String sqlDPC="delete from qsar_datasets.data_point_contributors dpc\n"+ 
 		"using qsar_datasets.data_points dp\n"+
 		"where dp.fk_dataset_id="+id+" and dpc.fk_data_point_id =dp.id;";

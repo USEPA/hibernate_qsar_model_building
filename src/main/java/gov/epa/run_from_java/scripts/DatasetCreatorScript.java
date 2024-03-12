@@ -129,7 +129,7 @@ public class DatasetCreatorScript {
 		return qsarExpPropID2;
 	}
 
-	void createFHM_LC50() {
+	void createFHM_LC50_toxval() {
 
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
@@ -171,8 +171,11 @@ public class DatasetCreatorScript {
 	public static void main(String[] args) {
 		DatasetCreatorScript dcs = new DatasetCreatorScript();
 
+		
 //		DatasetServiceImpl ds=new DatasetServiceImpl();
-//		ds.deleteSQL(262L);
+//		ds.deleteSQL(280L);
+//		ds.deleteSQL(281L);
+		
 //		ds.deleteSQL(273L);
 //		ds.deleteSQL(238L);
 //		ds.deleteSQL(239L);
@@ -180,7 +183,10 @@ public class DatasetCreatorScript {
 //		ds.deleteSQL(i);	
 //	}
 //		if(true) return;
-				
+
+		dcs.createFHM_96hr_LC50_Ecotox_modeling();
+
+		
 //		dcs.getMappings();
 		
 		//TODO add public_source_original to all OPERA2.9 property values
@@ -249,7 +255,7 @@ public class DatasetCreatorScript {
 //		dcs.getDatasetStats();//Get record counts for the papers
 //		dcs.getDatasetStatsUsingSql();//Get record counts for the papers
 //		getDatasetStatsForOneDataset();
-		dcs.getMappedRecordCountsBySourceAndProperty();
+//		dcs.getMappedRecordCountsBySourceAndProperty();
 
 //		String folder="data\\dev_qsar\\output\\";
 		// CR: 2/14/23 this was causing an error
@@ -2039,6 +2045,45 @@ public class DatasetCreatorScript {
 		excludedSources.add("Aspira Scientific");// chemical company
 
 		creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
+
+	}
+	
+	public void createFHM_96hr_LC50_Ecotox_modeling() {
+
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+
+		creator.postToDB = false;//otherwise wont create the dataset
+		
+		String propertyName = DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
+		String propAbbrev=DevQsarConstants.getConstantNameByReflection(propertyName) ;
+		String sourceName="ECOTOX_2023_12_14";
+		String chemicalListName="exp_prop_"+sourceName;				
+		
+//		ArrayList<String> listNameArray = new ArrayList<String>();
+//		listNameArray.add("ExpProp_MP_WithChemProp_063022_1_to_40000");
+		
+		List<BoundParameterValue> boundsParameterValues = null;
+		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
+
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, chemicalListName, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
+
+		
+//		String datasetName = "exp_prop_96HR_FHM_LC50_v1 modeling";
+//		String datasetDescription = "96HR_FHM_LC50 from "+sourceName;
+
+		String datasetName = "exp_prop_96HR_FHM_LC50_v2 modeling";
+		String datasetDescription = "96HR_FHM_LC50 from "+sourceName+" (omit property values that exceed predicted water solubility from XGB model)";
+
+		
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+
+		List<String> includedSources = new ArrayList<>();
+		includedSources.add(sourceName);
+		
+		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
 
 	}
 

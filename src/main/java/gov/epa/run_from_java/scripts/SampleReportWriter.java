@@ -2,6 +2,7 @@ package gov.epa.run_from_java.scripts;
 
 import java.io.File;
 
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelFile;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelFileServiceImpl;
@@ -21,7 +22,9 @@ public class SampleReportWriter {
 	QsarModelsScript qms = new QsarModelsScript("tmarti02");		
 	ModelSetServiceImpl mss = new ModelSetServiceImpl();
 	ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
+	ApplicabilityDomainScript ads=new ApplicabilityDomainScript();
 
+	
 	public PredictionReport createPredictionReport(String modelSetName, String datasetName, 
 			String splittingName,boolean overWriteJsonReport, boolean includeDescriptors) {
 		
@@ -44,7 +47,21 @@ public class SampleReportWriter {
 		
 	}
 	
-	public PredictionReport createPredictionReportMethod(String modelSetName, String methodName, String datasetName, 
+
+	/**
+	 * Generates prediction report and excel file with AD results
+	 * 
+	 * @param modelSetName
+	 * @param descriptorSetName
+	 * @param methodName
+	 * @param datasetName
+	 * @param splittingName
+	 * @param overWriteJsonReport
+	 * @param includeDescriptors
+	 * @param includeOriginalCompounds
+	 * @return
+	 */
+	public PredictionReport createPredictionReportMethod(String modelSetName, String descriptorSetName, String methodName, String datasetName, 
 			String splittingName,boolean overWriteJsonReport, boolean includeDescriptors,boolean includeOriginalCompounds) {
 		
 		PredictionReport predictionReport = null;
@@ -55,13 +72,37 @@ public class SampleReportWriter {
 		
 		if(!reportFile.exists() || overWriteJsonReport) {
 			predictionReport = ReportGenerationScript.reportPredictionsMethod(modelSetName,datasetName, splittingName, methodName,
-					true,includeDescriptors,includeOriginalCompounds,filepathReport);
+					true,includeDescriptors,includeOriginalCompounds,filepathReport,false);
 			System.out.println("Created:" + filepathReport);
 		} else {
 			predictionReport = GenerateWebTestReport.loadDataSetFromJson(filepathReport);
 			System.out.println("Loaded:" + filepathReport);
 		}
+		
+		
+		String outputFolder = "data/reports/prediction reports upload/"+modelSetName;
+		
+		File f = new File(outputFolder);
+		if (!f.exists())
+			f.mkdirs();
 
+
+		String applicability_domain=null;
+		if(modelSetName.equals("WebTEST2.0")) {
+			applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
+		} else if(modelSetName.equals("WebTEST2.1")) {
+			applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
+		}
+		
+		
+		ads.runAD(methodName, splittingName, descriptorSetName, applicability_domain,datasetName,predictionReport);
+
+		filepathReport = "data/reports/" + modelSetName +"/"+ datasetName+"_"+methodName + "_PredictionReport_with_AD.json";
+		predictionReport.toFile(filepathReport);
+		
+		String filepathExcel = outputFolder + File.separator + String.join("_", datasetName, splittingName, methodName,"with_AD") + ".xlsx";
+		createExcelReport(methodName, predictionReport, filepathExcel, overWriteJsonReport);
+		
 		return predictionReport;
 		
 	}
@@ -163,6 +204,15 @@ public class SampleReportWriter {
 		return filepath;
 	}
 
+	public void createExcelReport (String methodName, PredictionReport predictionReport,String outputFilePath, boolean overwrite) {
+		File excelFile=new File(outputFilePath);
+		if (overwrite || !excelFile.exists()) {
+			ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
+			eprg.generate(predictionReport, outputFilePath,null,null);
+		} else {
+			System.out.println("Excel report already exists at"+outputFilePath);
+		}
+	}
 		
 
 
@@ -210,6 +260,53 @@ public class SampleReportWriter {
 		} catch (Exception e) {
 			e.printStackTrace();
 		} 
+	}
+	
+	
+	public void generateSamplePredictionReport(String methodName, ModelSet ms, String datasetName, String splittingName,
+			boolean upload, boolean deleteExistingReportInDatabase, 
+			boolean overWriteReportFiles, boolean overWriteExcelFiles, boolean includeDescriptors) {
+		
+		
+		
+//		Long modelId=null;//modelId to associate report with
+//		Long fileTypeId=2L;//excel summary 
+//		
+//		for (PredictionReportModelMetadata mmd: predictionReport.predictionReportModelMetadata) {
+//			if(mmd.qsarMethodName.contains("consensus") || predictionReport.predictionReportModelMetadata.size()==1) {
+//				modelId=mmd.modelId;
+//				break;
+//			}
+//		}
+//		
+//		if(modelId==null) {
+//			System.out.println("Cant associate model for "+datasetName+"\t"+splittingName+"\tmodelSetId="+modelSetID);
+//			return;
+//		}
+//				
+//		String excelFilePath=createExcelReport(modelSetID, datasetName, splittingName, predictionReport,overWriteExcelFiles);
+//						
+//		ModelFile msr = mfs.findByModelId(modelId, fileTypeId);
+//
+//		if (msr != null) {
+//			if (deleteExistingReportInDatabase) {
+//				mfs.delete(msr);
+//			
+//			} else {
+//				if (upload) {
+//					System.out.println(datasetName + " exists skipping!");
+//					return;// skip it we already did it						
+//				}
+//			}
+//		}
+//
+//		if(!upload)return;
+//		
+//		try {
+//			qms.uploadModelFile(modelId,fileTypeId, excelFilePath);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		} 
 	}
 	
 

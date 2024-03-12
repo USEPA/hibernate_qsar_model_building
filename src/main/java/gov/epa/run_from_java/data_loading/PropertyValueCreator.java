@@ -178,6 +178,7 @@ public class PropertyValueCreator {
 
 		String literatureSourceCitation=er.literatureSource.getCitation();//should already be set		
 
+				
 		if (loader.literatureSourcesMap.containsKey(literatureSourceCitation)) {
 			pv.setLiteratureSource(loader.literatureSourcesMap.get(literatureSourceCitation));
 		} else {
@@ -222,17 +223,23 @@ public class PropertyValueCreator {
 
 		if(loader.sourceChemicalMap.containsKey(sourceChemical.getKey())) {
 			dbSourceChemical=loader.sourceChemicalMap.get(sourceChemical.getKey());
-//			System.out.println("Found in map\t"+sourceChemical.getKey());
+			System.out.println("Found in map\t"+sourceChemical.getKey());
 		} else if (!ExperimentalRecordLoader.loadSourceChemicalMap) {
 			dbSourceChemical = sourceChemicalService.findMatch(sourceChemical);
-			System.out.println("Found by service\t"+sourceChemical.getKey());
+			System.out.println("Found by one at a time service\t"+sourceChemical.getKey());
 		}			
+		
 		if (dbSourceChemical==null) {
 
 			if(createDB_Entries) {
 				try {
 					System.out.println("Creating "+sourceChemical.getKey());
 					sourceChemical = sourceChemicalService.create(sourceChemical);
+					
+					//Store in map:
+					loader.sourceChemicalMap.put(sourceChemical.getKey(),sourceChemical);
+					//TODO Note: unique index for source_chemicals table isnt stopping creation of duplicates if dont put in map in line above
+					
 				} catch (ConstraintViolationException e) {
 					e.printStackTrace();
 				}

@@ -381,7 +381,7 @@ public class ChemPropLoader {
 
 			} else if (!loadSourceChemicalMap) {
 				dbSourceChemical = sourceChemicalService.findMatch(sourceChemical);
-				System.out.println("Found by service\t"+sourceChemical.getSourceDtxrid());
+//				System.out.println("Found by service\t"+sourceChemical.getSourceDtxrid());
 			}			
 			
 

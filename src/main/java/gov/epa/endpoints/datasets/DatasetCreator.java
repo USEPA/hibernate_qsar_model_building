@@ -6,6 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -28,6 +29,7 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropUnit;
 import gov.epa.databases.dev_qsar.exp_prop.entity.LiteratureSource;
+import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
@@ -855,7 +857,7 @@ public class DatasetCreator {
 		System.out.println("Enter createPropertyDatasetWithSpecifiedSources");
 		Dataset datasetDB = datasetService.findByName(params.datasetName);
 
-		if (datasetDB != null) {
+		if (datasetDB != null && postToDB) {
 			System.out.println("already have " + params.datasetName + " in db");
 			return;
 		}
@@ -999,15 +1001,8 @@ public class DatasetCreator {
 
 		System.out.println("Enter saveUnifiedData - creates excel file for mapped records");
 
-		String[] fields = { "canon_qsar_smiles", "exp_prop_id", "source_chemical_id", "source_dtxrid", "source_dtxsid",
-				"source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name", "mapped_dtxcid",
-				"mapped_dtxsid", "mapped_chemical_name", "mapped_cas", "mapped_smiles", "mapped_molweight",
-				"mapped_connection_reason", "public_source_name", "public_source_description", "public_source_url",
-				"public_source_original_name", "public_source_original_description", "public_source_original_url",
-				"literature_source_citation", "literature_source_doi", "page_url", "notes", "document_name",
-				"file_name", "qc_flag", "temperature_c", "pressure_mmHg", "pH", "value_qualifier", "value_original",
-				"value_text", "value_max", "value_min", "value_point_estimate", "value_units", "qsar_property_value",
-				"qsar_property_units" };
+		String []fields = createFieldsArray(unifiedPropertyValues);
+		
 
 		List<String> keys = new ArrayList<>();
 
@@ -1055,6 +1050,72 @@ public class DatasetCreator {
 			if (keys.size() == 0)
 				break;
 		}
+	}
+
+	private String [] createFieldsArray(Map<String, List<MappedPropertyValue>> unifiedPropertyValues) {
+		List<String> fields = new ArrayList<String>(Arrays.asList("canon_qsar_smiles", "exp_prop_id", "source_chemical_id", "source_dtxrid", "source_dtxsid",
+				"source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name", "mapped_dtxcid",
+				"mapped_dtxsid", "mapped_chemical_name", "mapped_cas", "mapped_smiles", "mapped_molweight",
+				"mapped_connection_reason", "public_source_name", "public_source_description", "public_source_url",
+				"public_source_original_name", "public_source_original_description", "public_source_original_url",
+				"literature_source_citation", "literature_source_doi", "page_url", "notes", "document_name",
+				"file_name", "qc_flag"));
+		
+			
+		addParamNamesToFields(unifiedPropertyValues, fields);
+		 
+		List<String> fields2 = Arrays.asList("value_qualifier", "value_original",
+				"value_text", "value_max", "value_min", "value_point_estimate", "value_units", "qsar_property_value",
+				"qsar_property_units" );
+		
+		fields.addAll(fields2);
+		
+		String [] fieldArray=new String[fields.size()];
+		
+		for(int i=0;i<fields.size();i++) {
+			fieldArray[i]=fields.get(i);
+		}
+		
+		
+		return fieldArray;
+	}
+
+	private void addParamNamesToFields(Map<String, List<MappedPropertyValue>> unifiedPropertyValues,
+			List<String> fields) {
+		
+		for (String key : unifiedPropertyValues.keySet()) {
+
+			List<MappedPropertyValue> structurePropertyValues = unifiedPropertyValues.get(key);
+		
+			for (MappedPropertyValue mpv : structurePropertyValues) {
+				PropertyValue pv=mpv.propertyValue;
+				
+				for(ParameterValue paramValue:pv.getParameterValues()) {
+					
+					String paramName=paramValue.getParameter().getName();
+					
+					if(paramName.equals("Temperature") && !fields.contains("temperature_c")) {
+						fields.add("temperature_c");
+					} else if(paramName.equals("Pressure") && !fields.contains("pressure_mmHg")) {
+						fields.add("pressure_mmHg");
+					} else if(paramName.equals("pH") && !fields.contains("pH")) {
+						fields.add("pH");
+					} else {
+						if(paramValue.getUnit().getName().equals("TEXT")) {
+							if(!fields.contains(paramName)) {
+								System.out.println(paramName);
+								fields.add(paramName);
+							}
+						}
+					}
+				}
+					
+			}
+		}
+		
+//		fields.add("temperature_c");
+//		fields.add("pressure_mmHg");
+//		fields.add("pH");
 	}
 
 	private JsonArray makeJsonArrayFromUnifiedRecords(Map<String, List<MappedPropertyValue>> unifiedPropertyValues,
@@ -1138,15 +1199,24 @@ public class DatasetCreator {
 		jo.addProperty("value_point_estimate", pv.getValuePointEstimate());
 		jo.addProperty("value_units", pv.getUnit().getAbbreviation());
 
-		if (pv.getParameterValue("Temperature") != null)
-			jo.addProperty("temperature_c", pv.getParameterValue("Temperature").getValuePointEstimate());
 
-		if (pv.getParameterValue("Pressure") != null)
-			jo.addProperty("pressure_mmHg", pv.getParameterValue("Pressure").getValuePointEstimate());
+		for (ParameterValue parameterValue:pv.getParameterValues()) {
+			String name=parameterValue.getParameter().getName();
+			
+			if(name.equals("Temperature")) {
+				jo.addProperty("temperature_c", parameterValue.getValuePointEstimate());
+			} else if(name.equals("Pressure")) {
+				jo.addProperty("pressure_mmHg", parameterValue.getValuePointEstimate());
+			} else if(name.equals("pH")) {
+				jo.addProperty("pH", parameterValue.getValuePointEstimate());
+			} else if(parameterValue.getUnit().getName().equals("TEXT")) {
+				jo.addProperty(name, parameterValue.getValueText());	
+			} else {//TODO
+			}
 
-		if (pv.getParameterValue("pH") != null)
-			jo.addProperty("pH", pv.getParameterValue("pH").getValuePointEstimate());
-
+		}
+		
+		
 		if (mpv.qsarPropertyValue != null) {
 			jo.addProperty("qsar_property_value", mpv.qsarPropertyValue+"");
 //			jo.addProperty("qsar_property_units", unit.getAbbreviation());
