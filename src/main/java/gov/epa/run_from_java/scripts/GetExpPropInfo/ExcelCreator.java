@@ -643,6 +643,7 @@ public class ExcelCreator {
 		htDescriptions.put("test_id","ECOTOX db test_id");
 		htDescriptions.put("exposure_type","ECOTOX db exposure_type");
 		htDescriptions.put("chem_analysis_method","ECOTOX db chem_analysis_method");
+		htDescriptions.put("concentration_type","ECOTOX db concentration_type");		
 		
 		htDescriptions.put("notes","notes on the record");
 		htDescriptions.put("qc_flag","whether or not a quality control flag has been issued");

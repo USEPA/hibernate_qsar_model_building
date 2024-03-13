@@ -631,18 +631,20 @@ public class ExperimentalRecordLoader {
 		
 		//**********************************************************************************************
 		//Add entries for properties_acceptable_units:
-		addPropertyAcceptableUnit(getUnit("G_L","g/L"), property);
-		addPropertyAcceptableUnit(getUnit("MOLAR","M"), property);
+		
+		//Note: first time you run this property, uncomment out the following lines:
+//		addPropertyAcceptableUnit(getUnit("G_L","g/L"), property);
+//		addPropertyAcceptableUnit(getUnit("MOLAR","M"), property);
 
 //		addPropertyAcceptableParameter(getParameter("test_id","test_id field in tests table in Ecotox database"),property);		
-//		//See exposure_type_codes table in ECOTOX:
 //		addPropertyAcceptableParameter(getParameter("exposure_type","Type of exposure (S=static, F=flowthrough, R=renewal, etc)"),property);
-//		//See chemical_analysis_codes table in ECOTOX:
 //		addPropertyAcceptableParameter(getParameter("chem_analysis_method","Analysis method for water concentration (M=measured, U=unmeasured etc)"),property);		
-//		
+//		addPropertyAcceptableParameter(getParameter("concentration_type","How concentration is reported"),property);
+				
 //		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("test_id","test_id field in tests table in Ecotox database"));
 //		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("exposure_type","Type of exposure (S=static, F=flow-through, R=renewal, etc)"));		
 //		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("chem_analysis_method","Analysis method for water concentration (M=measured, U=unmeasured etc)"));
+//		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("concentration_type","How concentration is reported"));
 
 //		addPropertyInCategory(getPropertyCategory("Acute aquatic toxicity", "Acute aquatic toxicity"), property);
 		

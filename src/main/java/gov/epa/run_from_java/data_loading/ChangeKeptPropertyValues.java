@@ -6,6 +6,7 @@ import java.util.*;
 import com.google.gson.Gson;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.exp_prop.service.*;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
@@ -64,6 +65,7 @@ public class ChangeKeptPropertyValues {
 			
 			Double toxValue_g_L=null;
 			
+			if(!pv.getKeep()) continue;
 			
 			if(htWSpred.containsKey(dtxsid)) {
 		
@@ -107,6 +109,61 @@ public class ChangeKeptPropertyValues {
 
 	}
 	
+	public void updateKeepBasedExposureType(String propertyName, String datasetName, List<String> includedSources) {
+		
+		boolean useKeep=false;
+		boolean omitQualifiers=true;
+		
+		System.out.println("Selecting experimental property data for " + propertyName + "...");
+		long t5 = System.currentTimeMillis();
+		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(propertyName,
+				useKeep, omitQualifiers);
+		long t6 = System.currentTimeMillis();
+		System.out.println("Selection time = " + (t6 - t5) / 1000.0 + " s");
+
+		System.out.println("Raw records:" + propertyValues.size());
+		DatasetCreator.excludePropertyValues2(includedSources, propertyValues);
+		
+		if (includedSources.size() > 0)
+			System.out.println("Raw records after source exclusion:" + propertyValues.size());
+
+		
+		List<DsstoxRecord>records=PredictScript.getDsstoxRecords();
+		Hashtable<String, DsstoxRecord> htDsstox=PredictScript.getDsstoxHashtableByDTXSID(records);
+		
+//		List<String>omitted=new ArrayList<>();		
+		List<PropertyValue>propertyValuesUpdate=new ArrayList<>();
+				
+		for (PropertyValue pv:propertyValues) {
+
+			if(!pv.getKeep())continue;
+			
+//			String chemicalName=pv.getSourceChemical().getSourceChemicalName();
+//			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
+			
+			for(ParameterValue parameterValue:pv.getParameterValues()) {
+				if(parameterValue.getParameter().getName().equals("exposure_type")) {
+					if (parameterValue.getValueText().contains("Not reported")) {
+						propertyValuesUpdate.add(pv);
+						pv.setKeep(false);
+						pv.setKeepReason("exposure_type is not reported");
+					}					
+				}
+			}
+//			System.out.println(pv.getUnit().getName());
+		}
+		
+		System.out.println(propertyValuesUpdate.size());
+				
+		propertyValueService.update(propertyValuesUpdate);
+				
+//		for (String dtxsid:omitted) {
+//			System.out.println(dtxsid);
+//		}
+
+
+	}
+	
 	
 	private Hashtable<String, Double> getHashtableWSpred(String filepathWSpred)  {
 		Gson gson=new Gson();
@@ -125,6 +182,7 @@ public class ChangeKeptPropertyValues {
 		ChangeKeptPropertyValues c=new ChangeKeptPropertyValues();
 		List<String>includedSources=Arrays.asList("ECOTOX_2023_12_14");
 		c.updateKeepBasedOnPredictedWS(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50, "exp_prop_96HR_FHM_LC50_v1 modeling",includedSources);
+//		c.updateKeepBasedExposureType(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50, "exp_prop_96HR_FHM_LC50_v1 modeling",includedSources);
 	}
 
 }
