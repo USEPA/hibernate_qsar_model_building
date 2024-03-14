@@ -205,14 +205,13 @@ public class PredictScript {
 	 * @param datasetName dataset to make predictions for
 	 * @throws ConstraintViolationException
 	 */
-	public void predict(String folder, Long modelId,String datasetName) throws ConstraintViolationException {
+	public Hashtable<String,Double> predict(String filePathOut, Long modelId,String datasetName) throws ConstraintViolationException {
 		
 		try {
 			
 			boolean use_pmml=false;
 			boolean use_sklearn2pmml=false;
 					
-			
 			Model model=modelService.findById(modelId);
 			String predictionTSV = ModelData.getOverallInstancesByDTXSID(datasetName, model.getSplittingName(), model.getDescriptorSetName());
 			
@@ -225,54 +224,57 @@ public class PredictScript {
 			//Following may not be necessary if webservice hasnt been restarted:
 			if (use_pmml) {
 				String details=new String(model.getDetails());
-				HttpResponse<String>response=modelWebService.callInitPmml(bytes, strModelId, details,use_sklearn2pmml);
+				modelWebService.callInitPmml(bytes, strModelId, details,use_sklearn2pmml);
 			} else {
-				HttpResponse<String>response=modelWebService.callInitPickle(bytes,strModelId);
+				modelWebService.callInitPickle(bytes,strModelId);
 			}
 
-			//		System.out.println("Splitting id = "+splitting.getId());
 			String predictResponse = modelWebService.callPredict(predictionTSV, strModelId).getBody();
 			ModelPrediction[] modelPredictionsArray = Utilities.gson.fromJson(predictResponse, ModelPrediction[].class);
 			
-			
-			List<DsstoxRecord>records=getDsstoxRecords();
-			Hashtable<String,DsstoxRecord>htDsstox=getDsstoxHashtableByDTXSID(records);
-
 			Hashtable<String,Double>htPredWS=new Hashtable<>();
 			
 			for (ModelPrediction mp:modelPredictionsArray) {
-				String dtxsid=mp.id;
-				DsstoxRecord dr=htDsstox.get(dtxsid);
-				
-				double pred_Neg_Log_molar=mp.pred;
-				double pred_molar=Math.pow(10.0, -pred_Neg_Log_molar);
-				double pred_g_L=pred_molar*dr.getMolWeight();
-//					System.out.println(dtxsid+"\t"+pred_g_L);
-					
-				htPredWS.put(dtxsid, pred_g_L);
-				
+				String dtxsid=mp.id;												
+				htPredWS.put(dtxsid, mp.pred);
 			}
-			
 			
 			String json=Utilities.gson.toJson(htPredWS);
 			
-			System.out.println(json);
+//			System.out.println(json);
 			
-			Hashtable<String,Double>htPredWS2=Utilities.gson.fromJson(json, (Hashtable.class));
+//			Hashtable<String,Double>htPredWS2=Utilities.gson.fromJson(json, (Hashtable.class));
 			
-			System.out.println(htPredWS2.get("DTXSID6021953"));
+//			System.out.println(htPredWS2.get("DTXSID6021953"));
+
+			if (filePathOut!=null) {				
+				System.out.println(filePathOut);
+				FileWriter fw=new FileWriter(filePathOut);
+				fw.write(json);
+				fw.flush();
+				fw.close();
+			}
 			
-			
-			FileWriter fw=new FileWriter(folder+"WS_pred_xgb_"+datasetName+".json");
-			fw.write(json);
-			fw.flush();
-			fw.close();
-			
+			return htPredWS;			
 //			System.out.println(predictResponse);
 
 		} catch (IOException e) {
 			e.printStackTrace();
+			return null;
 		}
+	}
+	
+	
+
+	public String getPropertyNameModel(Long modelId) {
+		String sql="select p.name from qsar_models.models m\r\n"
+				+ "			join qsar_datasets.datasets d on m.dataset_name=d.name\r\n"
+				+ "			join qsar_datasets.properties p on d.fk_property_id = p.id\r\n"
+				+ "			where m.id="+modelId+";";
+
+		
+		String propertyNameModel=SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sql);
+		return propertyNameModel;
 	}
 	
 	public static void main(String[] args) {
@@ -284,8 +286,10 @@ public class PredictScript {
 //		String tsvFileName="exp_prop_96HR_FHM_LC50_v1 modeling_WebTEST-default_full.tsv";
 //		ps.predict(folder,tsvFileName, 1066L, false, false);
 		
+		boolean convertLogMolar=true;
 		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\ECOTOX_2023_12_14\\";
-		ps.predict(folder,1066L, "exp_prop_96HR_FHM_LC50_v1 modeling");
+		String filePathOut=folder+"96HR_FHM_LC50_WS.json";
+		ps.predict(filePathOut,1066L, "exp_prop_96HR_FHM_LC50_v1 modeling");
 		
 	}
 
