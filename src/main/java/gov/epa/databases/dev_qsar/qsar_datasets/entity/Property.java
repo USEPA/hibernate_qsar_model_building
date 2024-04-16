@@ -33,6 +33,9 @@ public class Property {
 	@NotBlank(message="Name required")
 	@Column(name="name", unique=true)
 	private String name;
+
+	@Column(name="name_ccd")
+	private String name_ccd;
 	
 	@NotBlank(message="Description required")
 	@Column(name="description")

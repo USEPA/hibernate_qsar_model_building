@@ -31,6 +31,10 @@ public class Unit {
 	
 	@Column(name="abbreviation")
 	private String abbreviation;
+
+	@Column(name="abbreviation_ccd")
+	private String abbreviation_ccd;
+
 	
 	@Column(name="updated_at")
 	@UpdateTimestamp
