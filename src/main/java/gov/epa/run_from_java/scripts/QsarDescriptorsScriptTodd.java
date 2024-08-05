@@ -70,12 +70,35 @@ public class QsarDescriptorsScriptTodd {
 	void runSingleChemical() {
 		String lanId="tmarti02";
 		
-		String smiles="CF";
+		
+//		CCOC(=O)NCCOC1C=CC(=CC=1)OC1C=CC=CC=1
+//		CC(C)C1=CC(=C(C(=C1)[N+]([O-])=O)N(CCC)CCC)[N+]([O-])=O
+//		CC(C)CC1=C(C(=O)OC)C(=NC(=C1C1=NCCS1)C(F)(F)F)C(F)F
+//		CCCCCCCCCCCCS
+//		O=C(NC(=O)NC1C=C(Cl)C(OC(F)(F)C(F)F)=C(Cl)C=1)C1C(F)=CC=CC=1F
+//		CC(C)(C)C1C=C(C=CC=1O)C(C)(C)C
+
+		String smiles="C[SH+](=O)C1C=CC(=CC=1)C1=CC(=NN1C1C=CC(=CC=1)OC)C(F)F";
+		
+		
+//		String smiles="CF";
+//		String smiles="NC(O)=O";
+//		String smiles="O=[SH+]1OCC2C(CO1)C1(Cl)C(Cl)=C(Cl)C2(Cl)C1(Cl)Cl";
+//		String smiles="XXX";
 //		String smiles="COC(CNC(N)=O)C[Hg+2]Cl";
+		
+		
 //		String smiles="CN(C)CCC[n]1(=O)c2ccccc2[s]c2ccccc12";
 		
-		String descriptorSetName="WebTEST-default";
-		String server="https://hcd.rtpnc.epa.gov";
+//		String descriptorSetName="WebTEST-default";
+		String descriptorSetName="PaDEL-default";
+//		String descriptorSetName="ToxPrints-default";
+//		String descriptorSetName="Mordred-default";
+		
+//		String server="https://hcd.rtpnc.epa.gov";
+		String server="https://hazard-dev.sciencedataexperts.com";
+//		String server="https://ccte-cced-cheminformatics.epa.gov";
+		
 		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
 
 		DescriptorSetService descriptorSetService = new DescriptorSetServiceImpl();
@@ -84,16 +107,29 @@ public class QsarDescriptorsScriptTodd {
 			System.out.println("No such descriptor set: " + descriptorSetName);
 		}
 
-//		String tsvValues=calc.calculateDescriptors(smiles,descriptorSet);
-//		System.out.println(tsvValues);
+		String tsvValues=calc.calculateDescriptors(smiles,descriptorSet);
+		System.out.println("From get:"+tsvValues);
 		
-		List<String>smilesList=new ArrayList<>();
-		smilesList.add(smiles);
+
+//		List<String>smilesList=new ArrayList<>();
+//		smilesList.add(smiles);
+//		Map<String, String> descriptorsMap=new HashMap<String,String>();
+//		calc.calculateDescriptors(smilesList, descriptorSet, descriptorsMap);
+//		tsvValues=descriptorsMap.get(smiles);
+//		System.out.println("From post:"+tsvValues);
 		
-		Map<String,String>mapDescriptors=new HashMap<>();
-		calc.calculateDescriptors(smilesList,descriptorSet,mapDescriptors);
-		System.out.println(mapDescriptors.get(smiles));
 		
+		
+//		List<String>smilesList=new ArrayList<>();
+//		smilesList.add(smiles);
+//		Map<String,String>mapDescriptors=new HashMap<>();
+//		calc.calculateDescriptors(smilesList,descriptorSet,mapDescriptors);
+//		System.out.println(mapDescriptors.get(smiles));
+		
+		
+//		HttpResponse<String> response = Unirest.get("https://ccte-cced-cheminformatics.epa.gov/api/descriptors?type=padel&smiles=O%3D%5BSH%2B%5D1OCC2C%28CO1%29C1%28Cl%29C%28Cl%29%3DC%28Cl%29C2%28Cl%29C1%28Cl%29Cl")
+//				  .asString();
+//				System.out.println(response.getBody().toString());
 		
 //		DescriptorValues dv=new DescriptorValues(smiles,descriptorSet,tsvValues,lanId);
 //		DescriptorValuesService descriptorValuesService = new DescriptorValuesServiceImpl();
@@ -145,10 +181,20 @@ public class QsarDescriptorsScriptTodd {
 
 //		datasetNames.add("HLC v1 modeling");
 //		datasetNames.add("WS v1 modeling");
-		datasetNames.add("VP v1 modeling");
-		datasetNames.add("LogP v1 modeling");
-		datasetNames.add("BP v1 modeling");
-		datasetNames.add("MP v1 modeling");
+//		datasetNames.add("VP v1 modeling");
+//		datasetNames.add("LogP v1 modeling");
+//		datasetNames.add("BP v1 modeling");
+//		datasetNames.add("MP v1 modeling");
+		
+//		datasetNames.add("BP v2 modeling");
+//		datasetNames.add("BP OChem_2024_04_03");
+//		datasetNames.add("VP OChem_2024_04_03");
+		datasetNames.add("MP OChem_2024_04_03");
+		
+//		datasetNames.add("VP v2 modeling");
+//		datasetNames.add("LogP v2 modeling");
+//		datasetNames.add("MP v2 modeling");
+
 		
 		int batchSize=1;//right now if one chemical in batch fails, the batch run fails, so run 1 at a time
 		for (String datasetName:datasetNames) {
@@ -159,7 +205,8 @@ public class QsarDescriptorsScriptTodd {
 
 	void generateDescriptorsForDataset() {
 		
-		String server="https://hcd.rtpnc.epa.gov/";
+//		String server="https://hcd.rtpnc.epa.gov";
+		String server="https://hazard-dev.sciencedataexperts.com";
 		
 		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
 		
@@ -174,13 +221,17 @@ public class QsarDescriptorsScriptTodd {
 		String[] sciDataExpertsDescriptorSetNames = {"WebTEST-default"};
 //		String[] sciDataExpertsDescriptorSetNames = {"ToxPrints-default"};
 //		String[] sciDataExpertsDescriptorSetNames = {"Mordred-default"};
+//		String[] sciDataExpertsDescriptorSetNames = {"PaDEL-default"};
+		
 
 		int batchSize=1;
 //		String datasetName="WS v1 res_qsar";
 //		String datasetName="WS v1 modeling";
 //		String datasetName="HLC v1 modeling";
 //		String datasetName="exp_prop_96HR_FHM_LC50_v1 modeling";
-		String datasetName="exp_prop_96HR_FHM_LC50_v2 modeling";
+//		String datasetName="exp_prop_96HR_FHM_LC50_v2 modeling";
+//		String datasetName="exp_prop_96HR_FHM_LC50_v3 modeling";
+		String datasetName="TTR_Binding_training_remove_bad_max_conc";
 				
 		for (String descriptorSetName:sciDataExpertsDescriptorSetNames) {
 			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,batchSize);
@@ -256,7 +307,7 @@ public class QsarDescriptorsScriptTodd {
 //		String server="https://hazard-dev.sciencedataexperts.com";
 		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
 		
-		calc.runSingleChemical(descriptorSetName, "ClC(Cl)(Cl)Cl");
+		calc.runSingleChemicalPost(descriptorSetName, "ClC(Cl)(Cl)Cl");
 				
 		
 	}
@@ -278,6 +329,8 @@ public class QsarDescriptorsScriptTodd {
 //		runSimple();
 //		compareToGrace();
 	}
+	
+	
 	
 	
 	/**
@@ -330,7 +383,7 @@ public class QsarDescriptorsScriptTodd {
 	
 	
 	
-	static List<Double> runSimple() {
+	static List<String> runSimple() {
 //		Unirest.setTimeouts(0, 0);
 		
 		
@@ -370,7 +423,7 @@ public class QsarDescriptorsScriptTodd {
 				Instance instance=instances.instance(i);
 				String smiles=instance.getName();
 				
-				String valuesTsv=calc.runSingleChemical("RDKit-default", smiles);
+				String valuesTsv=calc.runSingleChemicalPost("RDKit-default", smiles);
 				
 				String [] vals=valuesTsv.split("\t");
 				
