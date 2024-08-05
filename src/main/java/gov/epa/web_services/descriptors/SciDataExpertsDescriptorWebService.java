@@ -1,5 +1,7 @@
 package gov.epa.web_services.descriptors;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
 
@@ -9,24 +11,31 @@ import com.google.gson.GsonBuilder;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.web_services.WebService;
 import kong.unirest.HttpResponse;
+import kong.unirest.JsonNode;
 import kong.unirest.Unirest;
 
 public class SciDataExpertsDescriptorWebService extends WebService {
 	
 	public static class SciDataExpertsDescriptorResponse {
-		public List<SciDataExpertsChemical> chemicals;
-		public List<String> headers;
+
 		public SciDataExpertsDescriptorInfo info;
 		public SciDataExpertsDescriptorOptions options;
+		
+		public List<SciDataExpertsChemical> chemicals;
+		public List<String> headers;
+
 	}
 	
 	public static class SciDataExpertsChemical {
 		public Integer ordinal;
-		public List<Double> descriptors;
-		public String id;
+		public String smiles;
 		public String inchi;
 		public String inchikey;
-		public String smiles;
+
+		public List<String> descriptors;
+//		public String[]> descriptors;
+		public String id;
+
 	}
 	
 	public static class SciDataExpertsDescriptorInfo {
@@ -64,12 +73,42 @@ public class SciDataExpertsDescriptorWebService extends WebService {
 	}
 	
 	public HttpResponse<SciDataExpertsDescriptorResponse> calculateDescriptors(String smiles, String descriptorName) {
+
+		System.out.println(address + "/api/descriptors");
+		System.out.println(descriptorName);
 		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.get(address + "/api/descriptors")
-				.queryString("type", descriptorName)
-				.queryString("smiles", smiles)
-				.asObject(SciDataExpertsDescriptorResponse.class);
-		
+		.queryString("type", descriptorName)
+		.queryString("smiles", smiles)
+		.asObject(SciDataExpertsDescriptorResponse.class);
 		return response;
+		
+	
+	}
+	
+	public HttpResponse<String> calculateDescriptorsAsString(String smiles, String descriptorName) {
+
+//		System.out.println(address + "/api/descriptors");
+//		System.out.println(descriptorName);
+		HttpResponse<String> response = Unirest.get(address + "/api/descriptors")
+		.queryString("type", descriptorName)
+		.queryString("smiles", smiles)
+		.asString();
+		return response;
+	}
+	
+	
+	public HttpResponse<JsonNode> calculateDescriptorsAsJson(String smiles, String descriptorName) {
+
+		System.out.println(address + "/api/descriptors");
+		System.out.println(descriptorName);
+		HttpResponse<JsonNode> response = Unirest.get(address + "/api/descriptors")
+		.queryString("type", descriptorName)
+		.queryString("smiles", smiles)
+		.asJson();
+
+		return response;
+		
+	
 	}
 	
 	public HttpResponse<SciDataExpertsDescriptorResponse> calculateDescriptorsWithOptions(String smiles, String descriptorName, 
@@ -109,7 +148,7 @@ public class SciDataExpertsDescriptorWebService extends WebService {
 		SciDataExpertsDescriptorRequest request = new SciDataExpertsDescriptorRequest(smiles, descriptorName, options);
 
 //		System.out.println(address + "/api/descriptors");
-		System.out.println("calculateDescriptorsWithOptions, request="+Utilities.gson.toJson(request));
+//		System.out.println("calculateDescriptorsWithOptions, request="+Utilities.gson.toJson(request));
 		
 		
 		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.post(address + "/api/descriptors")
