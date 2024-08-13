@@ -1,16 +1,15 @@
 package gov.epa.run_from_java.data_loading;
 
 import java.io.FileReader;
+import java.text.DecimalFormat;
 import java.util.*;
-
 import com.google.gson.Gson;
-
-import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.exp_prop.service.*;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.endpoints.datasets.DatasetCreator;
+
 import gov.epa.run_from_java.scripts.PredictScript;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 
@@ -21,130 +20,85 @@ public class ChangeKeptPropertyValues {
 
 	
 	PropertyValueService propertyValueService = new PropertyValueServiceImpl();
-		
-	public void updateKeepBasedOnPredictedWS(String datasetName, List<String> includedSources, boolean generateNewPredictions,boolean postUpdates,String userName) {
+			
 	
-		boolean useKeep=false;
-		boolean omitQualifiers=true;
-		boolean convertLogMolar=true;
+	public static int removeBasedOnPredictedWS(String datasetNameOriginal, List<PropertyValue> propertyValues) {
 
-		String propertyNameDataset = getPropertyNameForDataset(datasetName);
+		DecimalFormat df=new DecimalFormat("0.00E00");
+		DecimalFormat df2=new DecimalFormat("0.0");
+		
+		boolean generateNewPredictions=true;
 		
 		long modelId=1066L;
 		PredictScript ps=new PredictScript();
 		String propertyNameModel=ps.getPropertyNameModel(modelId);
-		
-		System.out.println("Selecting experimental property data for " + propertyNameDataset + "...");
-		long t5 = System.currentTimeMillis();
-		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(propertyNameDataset,
-				useKeep, omitQualifiers);
-		long t6 = System.currentTimeMillis();
-		System.out.println("Selection time = " + (t6 - t5) / 1000.0 + " s");
 
-		System.out.println("Raw records:" + propertyValues.size());
-		DatasetCreator.excludePropertyValues2(includedSources, propertyValues);
-		
-		if (includedSources.size() > 0)
-			System.out.println("Raw records after source exclusion:" + propertyValues.size());
 
-		
 		//Folder for storing prediction hashtable:
 		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\ECOTOX_2023_12_14\\";
-		String filePathPreds=folder+datasetName+"_WS.json";
-		
-		Hashtable<String, Double> htPred = getPredictionHashtable(datasetName, generateNewPredictions, modelId, ps,
+		String filePathPreds=folder+datasetNameOriginal+"_WS.json";
+
+		Hashtable<String, Double> htPred = getPredictionHashtable(datasetNameOriginal, generateNewPredictions, modelId, ps,
 				propertyNameModel,filePathPreds);
-				
-		
+
 		List<DsstoxRecord>records=PredictScript.getDsstoxRecords();
 		Hashtable<String, DsstoxRecord> htDsstox=PredictScript.getDsstoxHashtableByDTXSID(records);
-		
-		
-		List<PropertyValue>propertyValuesUpdate=new ArrayList<>();
-		
-		List<String>omittedDtxsids=new ArrayList<>();
-		
-		for (PropertyValue pv:propertyValues) {
+
+		int countBefore=propertyValues.size();
+
+		for (int i=0;i<propertyValues.size();i++) {
+
+			PropertyValue pv=propertyValues.get(i);
 
 			if(!pv.getKeep()) continue;
-			
-			String chemicalName=pv.getSourceChemical().getSourceChemicalName();
+
+//			String chemicalName=pv.getSourceChemical().getSourceChemicalName();
 			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
-			
-//			System.out.println(pv.getUnit().getName());
-			
+
 			Double toxValue_g_L=null;
 
-			if(htPred.containsKey(dtxsid)) {
-		
-				double mol_weight=htDsstox.get(dtxsid).getMolWeight();
-				
-				if(pv.getUnit().getName().equals("MOLAR")) {
-										
-					toxValue_g_L=pv.getValuePointEstimate()*mol_weight;
-				} else if(pv.getUnit().getName().equals("G_L")) {
-					toxValue_g_L=pv.getValuePointEstimate();
-				} else {
-					System.out.println(pv.getUnit().getAbbreviation()+"\tnot handled");
-					continue;
-				}
-				
-				double pred_Neg_Log_molar=htPred.get(dtxsid);
-				double pred_molar=Math.pow(10.0, -pred_Neg_Log_molar);
-				double wsValue_g_L=pred_molar*mol_weight;
-				
-				if(toxValue_g_L>wsValue_g_L) {				
-					System.out.println(dtxsid+"\t"+toxValue_g_L+"\t"+wsValue_g_L);
-					pv.setKeep(false);
-					pv.setKeepReason("Toxicity value exceeds predicted water solubility from XGB model");
-					pv.setUpdatedBy(userName);
-					propertyValuesUpdate.add(pv);
-				}
-				
-			} else {
-				if(!omittedDtxsids.contains(dtxsid)) omittedDtxsids.add(dtxsid);
-//				System.out.println(dtxsid+"\tNo prediction in hashtable");
+			if(!htPred.containsKey(dtxsid)) {
+//				System.out.println("prediction hashtable missing "+dtxsid);
+				continue;
 			}
+
+			double mol_weight=htDsstox.get(dtxsid).getMolWeight();
+
+			if(pv.getUnit().getName().equals("MOLAR")) {
+				toxValue_g_L=pv.getValuePointEstimate()*mol_weight;
+			} else if(pv.getUnit().getName().equals("G_L")) {
+				toxValue_g_L=pv.getValuePointEstimate();
+			} else {
+				System.out.println(pv.getUnit().getAbbreviation()+"\tnot handled");
+				continue;
+			}
+
+			double pred_Neg_Log_molar=htPred.get(dtxsid);
+			double pred_molar=Math.pow(10.0, -pred_Neg_Log_molar);
+			double wsValue_g_L=pred_molar*mol_weight;
 			
-		}
-		System.out.println("Number of records to update:"+propertyValuesUpdate.size());
-		
-//		System.out.println("Missing predicted value:");
-//		for (String dtxsidOmitted:omittedDtxsids) {
-//			System.out.println(dtxsidOmitted);
-//		}
-		
-		if(postUpdates)
-			propertyValueService.update(propertyValuesUpdate);
+			if(toxValue_g_L>10.0*wsValue_g_L) {				
+				System.out.println(dtxsid+"\t"+df.format(toxValue_g_L)+"\t"+df.format(wsValue_g_L)+"\tWS ratio="+df2.format(toxValue_g_L/wsValue_g_L));
 				
+				propertyValues.remove(i--);
+			}
+		}
+		
+		int countAfter=propertyValues.size();
+		
+		return countBefore-countAfter;
+
 	}
 
-
-	public void updateKeepBasedOnBaselineToxicity(String datasetName, List<String> includedSources, boolean generateNewPredictions,boolean postUpdates,String typeAnimal,String userName) {
+	
+	
+	public static int removeBasedOnBaselineToxicity(String datasetName, List<PropertyValue> propertyValues,String typeAnimal) {
 		
-		boolean useKeep=false;
-		boolean omitQualifiers=true;
-		boolean convertLogMolar=false;
-
-		String propertyNameDataset = getPropertyNameForDataset(datasetName);
+		boolean generateNewPredictions=true;
 		
 		long modelId=1069L;//logKow XGB model
 		PredictScript ps=new PredictScript();
 		String propertyNameModel=ps.getPropertyNameModel(modelId);
-		
-		System.out.println("Selecting experimental property data for " + propertyNameDataset + "...");
-		long t5 = System.currentTimeMillis();
-		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(propertyNameDataset,
-				useKeep, omitQualifiers);
-		long t6 = System.currentTimeMillis();
-		System.out.println("Selection time = " + (t6 - t5) / 1000.0 + " s");
-
-		System.out.println("Raw records:" + propertyValues.size());
-		DatasetCreator.excludePropertyValues2(includedSources, propertyValues);
-		
-		if (includedSources.size() > 0)
-			System.out.println("Raw records after source exclusion:" + propertyValues.size());
-
 		
 		//Folder for storing prediction hashtable:
 		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\ECOTOX_2023_12_14\\";
@@ -157,15 +111,16 @@ public class ChangeKeptPropertyValues {
 		List<DsstoxRecord>records=PredictScript.getDsstoxRecords();
 		Hashtable<String, DsstoxRecord> htDsstox=PredictScript.getDsstoxHashtableByDTXSID(records);
 		
-		
-		List<PropertyValue>propertyValuesUpdate=new ArrayList<>();
-		
 		List<String>omittedDtxsids=new ArrayList<>();
 		List<String>omittedNames=new ArrayList<>();
 		
 		System.out.println("dtxsid\ttoxValue_g_L\t10*BaseLineTox_g_L");
 		
-		for (PropertyValue pv:propertyValues) {
+		int countBefore=propertyValues.size();
+		
+		for (int i=0;i<propertyValues.size();i++) {
+
+			PropertyValue pv=propertyValues.get(i);
 
 			String chemicalName=pv.getSourceChemical().getSourceChemicalName();
 			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
@@ -200,13 +155,14 @@ public class ChangeKeptPropertyValues {
 				} else if (typeAnimal.equals("Fathead minnow")) {					
 					//FHM model for nonpolar compounds, Nendza and Russom, 1991:
 					BaseLineTox_Log_mmol_L=-0.79*logKowPred + 1.35;
+					//Note this ends up excluding some records for methanol!
 					//Is there a better model for FHM
 				} else if (typeAnimal.equals("Daphnid")) {
 //					ECOSAR manual, Baseline Toxicity Equation for Daphnid:
 					BaseLineTox_Log_mmol_L=-0.8580*logKowPred + 1.3848;
 				} else {
 					System.out.println("Unknown animal type");
-					return;
+					return -9999;
 				}
 							
 				double BaseLineTox_mmol_L=Math.pow(10.0, BaseLineTox_Log_mmol_L);
@@ -214,11 +170,8 @@ public class ChangeKeptPropertyValues {
 				double BaseLineTox_g_L=BaseLineTox_mol_L*mol_weight;
 				
 				if(toxValue_g_L>10.0*BaseLineTox_g_L) {
-					System.out.println(dtxsid+"\t"+chemicalName+"\t"+toxValue_g_L+"\t"+10*BaseLineTox_g_L);
-					pv.setKeep(false);
-					pv.setKeepReason("Toxicity value exceeds 10*baseline toxicity (logKow from XGB model)");
-					pv.setUpdatedBy(userName);
-					propertyValuesUpdate.add(pv);
+					System.out.println(dtxsid+"\t"+chemicalName+"\t"+toxValue_g_L+"\t"+10*BaseLineTox_g_L+"\tToxicity value exceeds 10*baseline toxicity (logKow from XGB model)");
+					propertyValues.remove(i--);
 				}
 				
 //				if(toxValue_g_L>wsValue_g_L) {				
@@ -227,10 +180,9 @@ public class ChangeKeptPropertyValues {
 				if(!omittedNames.contains(chemicalName)) omittedNames.add(chemicalName);
 //				System.out.println(dtxsid+"\tNo prediction in hashtable");
 			}
-			
 		}
-		System.out.println("typeAnimal:"+typeAnimal);
-		System.out.println("Number of records to update:"+propertyValuesUpdate.size());
+		
+		int countAfter=propertyValues.size();
 		
 //		System.out.println("DTXSIDs missing predicted logKow:"+omittedDtxsids.size());
 //		for (String dtxsidOmitted:omittedDtxsids) {
@@ -243,12 +195,11 @@ public class ChangeKeptPropertyValues {
 //			System.out.println(omittedName);
 //		}
 		
-		if(postUpdates)
-			propertyValueService.update(propertyValuesUpdate);
-				
+		return countBefore-countAfter;
+		
 	}
 
-	private Hashtable<String, Double> getPredictionHashtable(String datasetName, boolean generateNewPredictions,
+	private  static Hashtable<String, Double> getPredictionHashtable(String datasetName, boolean generateNewPredictions,
 			long modelId, PredictScript ps, String propertyNameModel,String filePathPreds) {
 		Hashtable<String, Double>htPred=null;
 
@@ -275,63 +226,9 @@ public class ChangeKeptPropertyValues {
 	
 	
 	
-	public void updateKeepBasedExposureType(String propertyName, String datasetName, List<String> includedSources,String userName) {
+	
 		
-		boolean useKeep=false;
-		boolean omitQualifiers=true;
-		
-		System.out.println("Selecting experimental property data for " + propertyName + "...");
-		long t5 = System.currentTimeMillis();
-		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(propertyName,
-				useKeep, omitQualifiers);
-		long t6 = System.currentTimeMillis();
-		System.out.println("Selection time = " + (t6 - t5) / 1000.0 + " s");
-
-		System.out.println("Raw records:" + propertyValues.size());
-		DatasetCreator.excludePropertyValues2(includedSources, propertyValues);
-		
-		if (includedSources.size() > 0)
-			System.out.println("Raw records after source exclusion:" + propertyValues.size());
-
-		
-		List<DsstoxRecord>records=PredictScript.getDsstoxRecords();
-		Hashtable<String, DsstoxRecord> htDsstox=PredictScript.getDsstoxHashtableByDTXSID(records);
-		
-//		List<String>omitted=new ArrayList<>();		
-		List<PropertyValue>propertyValuesUpdate=new ArrayList<>();
-				
-		for (PropertyValue pv:propertyValues) {
-
-			if(!pv.getKeep())continue;
-			
-//			String chemicalName=pv.getSourceChemical().getSourceChemicalName();
-//			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
-			
-			for(ParameterValue parameterValue:pv.getParameterValues()) {
-				if(parameterValue.getParameter().getName().equals("exposure_type")) {
-					if (parameterValue.getValueText().contains("Not reported")) {
-						propertyValuesUpdate.add(pv);
-						pv.setKeep(false);
-						pv.setKeepReason("exposure_type is not reported");
-						pv.setUpdatedBy(userName);
-					}					
-				}
-			}
-//			System.out.println(pv.getUnit().getName());
-		}
-		
-		System.out.println(propertyValuesUpdate.size());
-				
-		propertyValueService.update(propertyValuesUpdate);
-				
-//		for (String dtxsid:omitted) {
-//			System.out.println(dtxsid);
-//		}
-
-
-	}
-		
-	private Hashtable<String, Double> getHashtablePred(String filepathPred)  {
+	private static Hashtable<String, Double> getHashtablePred(String filepathPred)  {
 		Gson gson=new Gson();
 		Hashtable<String, Double> htPredWS;
 		try {
@@ -349,17 +246,42 @@ public class ChangeKeptPropertyValues {
 		List<String>includedSources=Arrays.asList("ECOTOX_2023_12_14");
 		
 		//TODO implement filter to exclude LC50>10 * baseline LC50
-		boolean generateNewPredictions=false;
-		boolean postUpdates=false;
+		boolean generateNewPredictions=true;
+		boolean postUpdates=true;
 		
-		String userName="tmarti02";
-		c.updateKeepBasedOnPredictedWS("exp_prop_96HR_FHM_LC50_v1 modeling",includedSources,generateNewPredictions,postUpdates,userName);
+//		String userName="tmarti02";
+//		c.updateKeepBasedOnPredictedWS("exp_prop_96HR_FHM_LC50_v1 modeling",includedSources,generateNewPredictions,postUpdates,userName);
+//		c.updateKeepBasedOnPredictedWS("exp_prop_96HR_BG_LC50_v1 modeling",includedSources,generateNewPredictions,postUpdates,userName);
 		
 //		String typeAnimal="Fish";
-		String typeAnimal="Fathead minnow";
+//		String typeAnimal="Fathead minnow";
 //		c.updateKeepBasedOnBaselineToxicity("exp_prop_96HR_FHM_LC50_v1 modeling",includedSources,generateNewPredictions,postUpdates,typeAnimal,userName);
 
 		//c.updateKeepBasedExposureType(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50, "exp_prop_96HR_FHM_LC50_v1 modeling",includedSources,userName);
+	}
+
+
+	public static int removeBasedOnMissingExposureType(String datasetName, List<PropertyValue> propertyValues) {
+		
+		
+		int countBefore=propertyValues.size();
+		for (int i=0;i<propertyValues.size();i++) {
+			PropertyValue pv=propertyValues.get(i);
+			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
+			for (ParameterValue parameterValue:pv.getParameterValues()) {
+				if(!parameterValue.getParameter().getName().equals("exposure_type")) continue;
+				String exposure_type=parameterValue.getValueText().toLowerCase();
+				if(exposure_type.contains("not reported")) {
+					System.out.println(dtxsid+"\texposure_type="+exposure_type);
+					propertyValues.remove(i--);
+					break;
+				}
+			}
+		}
+		int countAfter=propertyValues.size();
+		
+		return countBefore-countAfter;
+		
 	}
 
 }

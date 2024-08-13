@@ -2,9 +2,12 @@ package gov.epa.run_from_java.data_loading;
 
 import java.util.Hashtable;
 
+import org.apache.commons.text.StringEscapeUtils;
+
 import gov.epa.databases.dev_qsar.exp_prop.entity.LiteratureSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
+
 
 public class ExperimentalRecord {
 
@@ -51,6 +54,7 @@ public class ExperimentalRecord {
 	public Hashtable <String,Object> experimental_parameters=null;//TODO should we store above conditions in this hashtable directly?
 		
 	public String dsstox_substance_id; //DSSTox substance identifier
+	public String dsstox_compound_id; //DSSTox substance identifier
 	public String note;//	Any additional note
 
 	public String url;
@@ -61,6 +65,7 @@ public class ExperimentalRecord {
 
 	public String reference;//keep?
 	public LiteratureSource literatureSource;
+	public PublicSource publicSourceOriginal;
 
 	//"original_source_name" rather than "source_name_original" to avoid syntactic confusion with "*_original" vs "*_final" fields above
 	public String fr_id;
@@ -101,5 +106,49 @@ public class ExperimentalRecord {
 		sourceChemical.setPublicSource(publicSource);
 		return sourceChemical;
 
+	}
+	
+	public static String fixCASLeadingZero(String cas) {
+		if (cas!=null && !cas.isBlank()) {
+			cas=cas.trim();
+			while (cas.substring(0,1).contentEquals("0")) {//trim off zeros at front
+				cas=cas.substring(1,cas.length());
+			}
+			return cas;
+		} else {
+			return null;
+		}
+	}
+	
+	public void setComboID(String del) {
+		String CAS=casrn;
+		
+		if (CAS==null || CAS.trim().isEmpty()) CAS="casrn=null";//need placeholder so dont get spurious match in chemreg
+		else {
+			CAS=fixCASLeadingZero(CAS);
+		}
+		String name=StringEscapeUtils.escapeJava(chemical_name);
+		
+		String EINECS=einecs;
+		if (EINECS==null || EINECS.trim().isEmpty()) EINECS="einecs=null";//need placeholder so dont get spurious match in chemreg
+		EINECS=EINECS.trim();
+		
+		if (name==null || name.trim().isEmpty()) name="name=null";//need placeholder so dont get spurious match in chemreg
+		name=name.trim();
+		
+		String SMILES=smiles;
+		if (SMILES==null || SMILES.trim().isEmpty()) SMILES="smiles=null";//need placeholder so dont get spurious match in chemreg
+		SMILES=SMILES.trim();
+				
+		String DTXSID=dsstox_substance_id;
+		if(DTXSID==null) DTXSID="dtxsid=null";
+
+		String DTXCID=dsstox_compound_id;
+		if(DTXCID==null) DTXCID="dtxcid=null";
+
+		//TODO omit chemicals where smiles indicates bad element....
+		
+		comboID=CAS+del+EINECS+del+name+del+SMILES+del+DTXSID+del+DTXCID;
+		
 	}
 }

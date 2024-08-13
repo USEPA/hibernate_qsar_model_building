@@ -3,9 +3,9 @@ package gov.epa.run_from_java.data_loading;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
-import java.util.List;
-
+import java.util.TreeMap;
 import com.google.gson.Gson;
+
 
 public class ExperimentalRecords extends ArrayList<ExperimentalRecord> {
 
@@ -25,6 +25,28 @@ public class ExperimentalRecords extends ArrayList<ExperimentalRecord> {
 			ex.printStackTrace();
 			return null;
 		}
+	}
+	
+
+	public void getRecordsByProperty() {
+		TreeMap <String,ExperimentalRecords>map=new TreeMap<String,ExperimentalRecords>();
+
+		for (ExperimentalRecord er:this) {
+			if(!er.keep) continue;
+			if(map.get(er.property_name)==null) {
+				ExperimentalRecords recs=new ExperimentalRecords();
+				recs.add(er);
+				map.put(er.property_name, recs);
+			} else {
+				ExperimentalRecords recs=map.get(er.property_name);
+				recs.add(er);
+			}
+		}
+		System.out.println("\nKept records:");
+		for(String property:map.keySet()) {
+			System.out.println(property+"\t"+map.get(property).size());
+		}
+		System.out.println("");
 	}
 	
 }

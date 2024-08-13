@@ -49,7 +49,7 @@ public class OperaLoader {
 	
 	OperaLoader(boolean loadSC) {
 		ExperimentalRecordLoader.loadSourceChemicalMap=loadSC;
-		loader=new ExperimentalRecordLoader("tmarti02");
+		loader=new ExperimentalRecordLoader("tmarti02",true);
 	}
 	
 
@@ -265,7 +265,7 @@ public class OperaLoader {
 //		System.out.println(Utilities.gson.toJson(recordsAll));
 //		printUniqueUnitsListInExperimentalRecords(records);
 		System.out.println("experimentalRecords.size()="+recordsAll.size());
-		loader.load(recordsAll,type,true);
+		loader.load(recordsAll,type,true,sourceName,propertyName);
 	}
 	
 	void reloadFailedPropertyValuesFromOPERA_ExperimentalRecordsFile(String propertyName,String type,String sourceName) {
@@ -304,7 +304,7 @@ public class OperaLoader {
 //		System.out.println(Utilities.gson.toJson(recordsAll));
 //		printUniqueUnitsListInExperimentalRecords(records);
 		System.out.println("experimentalRecords.size()="+recordsAll.size());
-		loader.load(recordsAll,type,true);
+		loader.load(recordsAll,type,true,sourceName,propertyName);
 	}
 
 	

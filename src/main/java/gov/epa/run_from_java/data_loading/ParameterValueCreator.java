@@ -67,7 +67,7 @@ public class ParameterValueCreator {
 		if (measurementMethodValue!=null) {
 			measurementMethodValue.setPropertyValue(propertyValue);
 			measurementMethodValue.setParameter(loader.parametersMap.get("Measurement method"));
-			measurementMethodValue.setUnit(loader.unitsMap.get("Text"));
+			measurementMethodValue.setUnit(loader.unitsMap.get("TEXT"));
 			//				QueryExpPropDb.postParameterValue(expPropDbUrl, measurementMethodValue);
 			propertyValue.addParameterValue(measurementMethodValue);
 		}
@@ -79,7 +79,7 @@ public class ParameterValueCreator {
 			ParameterValue measurementMethodValue = new ParameterValue();
 			measurementMethodValue.setCreatedBy(loader.lanId);
 			measurementMethodValue.setValueText(rec.measurement_method);
-			System.out.println(measurementMethodValue.getValueText());
+//			System.out.println(measurementMethodValue.getValueText());
 			return measurementMethodValue;
 		} else {
 			return null;
@@ -272,6 +272,8 @@ public class ParameterValueCreator {
 				parameterValue.setValueText((String)value);	
 			}
 
+//			System.out.println(parameterName);
+			
 			Parameter parameter=loader.parametersMap.get(parameterName);
 			
 //			System.out.println(parameterName);
@@ -282,6 +284,9 @@ public class ParameterValueCreator {
 			parameterValue.setParameter(parameter);//need to add parameter to Parameters table first
 			parameterValue.setUnit(unit);
 			propertyValue.addParameterValue(parameterValue);
+			
+//			System.out.println(parameter.getName()+"\t"+parameterValue.getUnit().getName());
+			
 
 		}
 

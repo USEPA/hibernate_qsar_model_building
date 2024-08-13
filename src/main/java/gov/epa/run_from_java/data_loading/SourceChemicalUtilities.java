@@ -23,6 +23,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalService;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalServiceImpl;
@@ -48,11 +49,11 @@ public class SourceChemicalUtilities {
 	void loadSourceChemicals() {
 		System.out.print("Loading sourceChemical map...");
 		sourceChemicals = sourceChemicalService.findAll();
-		for (SourceChemical sourceChemical:sourceChemicals) {
+//		for (SourceChemical sourceChemical:sourceChemicals) {
 //			if(sourceChemical.generateSrcChemId().equals("SCH000000571295")) {
 //				System.out.println("Found it in map:"+gson.toJson(sourceChemical));
 //			}
-		}
+//		}
 		System.out.println("Done");
 	}
 	
@@ -148,14 +149,15 @@ public class SourceChemicalUtilities {
 		
 	}
 	
-	void writeChemRegFileOChem() {
+	void writeChemRegFileForPublicSource() {
 		
 		List<SourceChemical>scList=new ArrayList<>();
 
-		String sourceName="OChem";
+//		String sourceName="OChem_2024_04_03";
+//		String sourceName="PubChem_2024_03_20";
+		String sourceName="OPERA2.8";
 		
 		for (SourceChemical sc:this.sourceChemicals) {
-
 			if(sc.getPublicSource()==null) continue;
 			if(sc.getPublicSource().getName().equals(sourceName)) {
 				scList.add(sc);
@@ -166,12 +168,43 @@ public class SourceChemicalUtilities {
 		}
 		
 		System.out.println(sourceName+":"+scList.size());
-		String filepath="data\\dev_qsar\\output\\new chemreg lists\\exp_prop_2024_02_02_from_"+sourceName+".txt";
-		DsstoxMapper.writeChemRegImportFile(scList, filepath);
+//		String filepath="data\\dev_qsar\\output\\new chemreg lists\\exp_prop_2024_04_10_from_"+sourceName+".txt";
+		String filepath="data\\dev_qsar\\output\\new chemreg lists\\"+sourceName+"\\"+sourceName+".txt";
 		
+		File file=new File(filepath);
+		System.out.println(file.getAbsolutePath());
+		
+		DsstoxMapper.writeChemRegImportFile(scList, filepath,40000);
 		
 	}
 
+	
+	
+	void writeChemRegFileForPublicSource2() {
+		
+		List<SourceChemical>scList=new ArrayList<>();
+
+//		String sourceName="OChem_2024_04_03";
+//		String sourceName="PubChem_2024_03_20";
+		String sourceName="OPERA2.8";
+		
+		PublicSource ps=new PublicSource();
+		ps.setName(sourceName);
+
+		System.out.println("Finding source chemicals for "+sourceName);
+		List<SourceChemical>sourceChemicals=sourceChemicalService.findAllFromSource(ps);
+		System.out.println("Found "+sourceChemicals.size()+" source chemicals");
+
+		//		String filepath="data\\dev_qsar\\output\\new chemreg lists\\exp_prop_2024_04_10_from_"+sourceName+".txt";
+//		String filepath="data\\dev_qsar\\output\\new chemreg lists\\"+sourceName+"\\"+sourceName+".txt";
+		String filepath="data\\dev_qsar\\output\\new chemreg lists\\exp_prop_2024_02_02_from_"+sourceName+".txt";
+		
+		File file=new File(filepath);
+		System.out.println(file.getAbsolutePath());
+		
+		DsstoxMapper.writeChemRegImportFile(scList, filepath,40000);
+		
+	}
 	void writeChemRegFileLiteratureSources() {
 		
 		Map<String, List<SourceChemical>> mapBySource = new HashMap<>();
@@ -221,10 +254,10 @@ public class SourceChemicalUtilities {
 		Map<String,SourceChemical>mapList=new TreeMap<>();
 		
 		String sourceName=file.getName();
-		sourceName=sourceName.replace("exp_prop_2024_02_02_from_", "").replace(".txt", "");
+		sourceName=sourceName.replace("exp_prop_2024_04_03_from_", "").replace(".txt", "");
 		
 		if (sourceName.equals("OChem")) {
-			for (int i=1;i<=11;i++) {
+			for (int i=1;i<=13;i++) {
 				Map<String,SourceChemical>mapList2=getMapChemRegList(listName+"_40000_"+i);
 				System.out.println(listName+"_"+i+"\t"+mapList2.size());
 				mapList.putAll(mapList2);
@@ -250,8 +283,71 @@ public class SourceChemicalUtilities {
 
 		System.out.println(listName+"\t"+mapImport.size()+"\t"+mapList.size()+"\t"+missing.size());
 
-		String filepath=file.getParentFile().getAbsolutePath()+File.separator+"missing"+File.separator+file.getName();
+		File outputFolder=new File(file.getParentFile().getAbsolutePath()+File.separator+"missing");
+		
+		outputFolder.mkdirs();
+		
+		String filepath=outputFolder.getAbsolutePath()+File.separator+file.getName();
 		DsstoxMapper.writeChemRegImportFile(missing, filepath);
+
+		
+	}
+	
+	
+	/**
+	 * Compares chemicals in chemreg list with those in the import file(s). 
+	 * Missing chemicals are added to a new import file
+	 * 
+	 * @param file
+	 */
+	void compareChemRegListToOchemImportFiles(File folderImportFiles,String sourceName) {
+
+		Map<String,SourceChemical>mapList=new TreeMap<>();
+		Map<String,SourceChemical>mapImport=new TreeMap<>();
+
+		
+		for (File importFile:folderImportFiles.listFiles()) {
+			if(!importFile.getName().contains(".txt")) continue;
+			
+			String [] vals=importFile.getName().replace(".txt","").split("_");
+			String fileNum=vals[vals.length-1];
+			
+//			String listName=importFile.getName().substring(0,importFile.getName().indexOf(".txt"));
+			String listName="exp_prop_2024_04_03_from_OChem_40000_"+fileNum;
+			
+			Map<String,SourceChemical>mapList2=getMapChemRegList(listName);
+			System.out.println(listName+"\t"+mapList2.size());
+			mapList.putAll(mapList2);
+
+			Map<String,SourceChemical>mapImport2=getMapChemRegImportFile(importFile);
+			mapImport.putAll(mapImport2);
+
+		}
+		
+		
+		System.out.println(mapImport.size()+"\t"+mapList.size());
+
+		
+//		if (mapImport.size()==mapList.size()) return;
+//		
+		List<SourceChemical>missing=new ArrayList<>();
+		
+		for (String key:mapImport.keySet()) {
+			if(!mapList.containsKey(key)) {
+				SourceChemical sc=mapImport.get(key);
+				missing.add(sc);
+				System.out.println(sc.generateSrcChemId());
+			}
+		}
+//
+//		System.out.println(listName+"\t"+mapImport.size()+"\t"+mapList.size()+"\t"+missing.size());
+//
+//		File outputFolder=new File(file.getParentFile().getAbsolutePath()+File.separator+"missing");
+//		
+//		outputFolder.mkdirs();
+//		
+//		String filepath=outputFolder.getAbsolutePath()+File.separator+file.getName();
+//		DsstoxMapper.writeChemRegImportFile(missing, filepath);
 
 		
 	}
@@ -375,20 +471,31 @@ public class SourceChemicalUtilities {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 
-//		SourceChemicalUtilities scu=new SourceChemicalUtilities(true);
+		SourceChemicalUtilities scu=new SourceChemicalUtilities(false);
 //		scu.writeChemRegFileChemProp();
 //		scu.writeChemRegFilePublicSources();
 //		scu.writeChemRegFileLiteratureSources();//dont have any without dtxrids- all from chemprop
-//		scu.writeChemRegFileOChem();
+
+		scu.writeChemRegFileForPublicSource2();
 		
 		
-		SourceChemicalUtilities scu=new SourceChemicalUtilities(false);
-		String folder="data\\dev_qsar\\output\\new chemreg lists\\check\\";
+//		SourceChemicalUtilities scu=new SourceChemicalUtilities(false);
+//		String folder="data\\dev_qsar\\output\\new chemreg lists\\check\\";
 //		String folder="data\\dev_qsar\\output\\new chemreg lists\\OChem 40K\\done\\";
-		File FOLDER=new File(folder);
-		for (File file:FOLDER.listFiles()) {
-			scu.compareChemRegListToImportFile(file);
-		}
+//		File FOLDER=new File(folder);
+//		for (File file:FOLDER.listFiles()) {
+//			scu.compareChemRegListToImportFile(file);
+//		}
+		
+//		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\hibernate_qsar_model_building\\data\\dev_qsar\\output\\exp_prop_96HR_BG_LC50_v1_modeling\\";
+//		File fileChemReg=new File(folder+"exp_prop_ECOTOX_2023_12_14_ChemRegImport.txt");
+//		scu.compareChemRegListToImportFile(fileChemReg);
+
+//		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\hibernate_qsar_model_building\\data\\dev_qsar\\output\\new chemreg lists\\OChem_2024_04_03\\";
+//		File folderOchemImportFiles=new File(folder);
+//		scu.compareChemRegListToOchemImportFiles(folderOchemImportFiles,"OChem_2024_04_03");
+		
+		
 		
 //		scu.compareChemRegListToImportFile(new File("data\\dev_qsar\\output\\new chemreg lists\\exp_prop_2024_02_02_from_OChem.txt"));
 		

@@ -56,6 +56,7 @@ import gov.epa.endpoints.datasets.DatasetCreator;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.OPERA.OPERA_lookups;
+import gov.epa.run_from_java.scripts.PredictionDashboard.CreatorScript;
 import gov.epa.databases.chemprop.ChemPropParameter;
 import gov.epa.databases.chemprop.ChemPropParameterValue;
 import gov.epa.databases.chemprop.CollectionDetail;
@@ -1154,7 +1155,7 @@ public class ChemPropLoader {
 	void seeOutstandingChemPropData() {
 		
 		HashMap<Long, Endpoint> endpoints = Endpoint.getTableFromJsonFiles2(JSON_FOLDER_PATH);
-		TreeMap <String,Property>mapProperties=OPERA_lookups.getPropertyMap();
+		TreeMap <String,Property>mapProperties=CreatorScript.getPropertyMap();
 		
 		for (Long id:endpoints.keySet()) {
 			Endpoint endpoint=endpoints.get(id);

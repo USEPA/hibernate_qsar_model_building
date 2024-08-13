@@ -5,17 +5,16 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
+
+import javax.validation.ConstraintViolationException;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
@@ -54,6 +53,8 @@ import gov.epa.databases.dev_qsar.exp_prop.service.PublicSourceServiceImpl;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalService;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JSONUtilities;
 
 public class ExperimentalRecordLoader {
 
@@ -102,11 +103,14 @@ public class ExperimentalRecordLoader {
 			.serializeSpecialFloatingPointValues()
 			.create();
 	
-	public ExperimentalRecordLoader(String lanId) {
+	public ExperimentalRecordLoader(String lanId,boolean loadmapTables) {
 		this.lanId = lanId;
-		System.out.print("loading maps...");
-		mapTables();
-		System.out.println("done");
+		
+		if(loadmapTables) {
+			System.out.print("loading maps...");
+			mapTables();
+			System.out.println("done");
+		}
 	}
 	
 	private void mapTables() {
@@ -258,10 +262,10 @@ public class ExperimentalRecordLoader {
 //	}
 	
 	
-	public List<PropertyValue> load(List<ExperimentalRecord> records, String type, boolean createDBEntries) {
+	public List<PropertyValue> load(List<ExperimentalRecord> records, String type, boolean createDBEntries,String sourceName, String propertyName) {
 
-		List<ExperimentalRecord> failedRecords = new ArrayList<>();
-		List<ExperimentalRecord> loadedRecords = new ArrayList<>();
+		ExperimentalRecords failedRecords = new ExperimentalRecords();
+		ExperimentalRecords loadedRecords = new ExperimentalRecords();
 		List<PropertyValue> loadedPropertyValues = new ArrayList<>();
 		
 		int countSuccess = 0;
@@ -305,8 +309,17 @@ public class ExperimentalRecordLoader {
 					//typeOther: dont need to pull parameters from fields in rec
 				}
 				paramValCreator.addGenericParametersValues(rec,pv);
-
-
+				
+				if(pv.getParameterValues()!=null) {
+					for (ParameterValue paramValue : pv.getParameterValues()) {
+						if(paramValue.getUnit()==null) {
+							//TMM bail right away if we have a parameter missing a unit:
+							System.out.println("Missing unit for "+paramValue.getParameter().getName());
+							return null;
+						}
+					}
+				}
+				
 				if (createDBEntries) {
 					success = propValCreator.postPropertyValue(pv);//TODO add batch insert instead	
 				} else {
@@ -314,20 +327,18 @@ public class ExperimentalRecordLoader {
 				}
 				
 				
-//				JsonObject jo = createJsonObjectFromPropertyValue(pv);
-//				System.out.println(gson.toJson(jo));
-//				System.out.println(counter+"\t"+success+"\t"+expPropData.propertyValue.getLiteratureSource().getName()+"\t"+expPropData.propertyValue.getSourceChemical().getSourceChemicalName());
-				
 				if (success) {
 					countSuccess++;
 					loadedRecords.add(rec);
 					loadedPropertyValues.add(pv);
 				} else {
 					failedRecords.add(rec);
+					System.out.println("fail1");
 //					logger.warn(rec.id_physchem + ": Loading failed");
 					countFailure++;
 				}
 			} catch (Exception e) {
+				System.out.println("fail2:\t"+e.getMessage());
 				failedRecords.add(rec);
 //				logger.warn(rec.id_physchem + ": Loading failed with exception: " + e.getMessage());
 				countFailure++;
@@ -349,39 +360,86 @@ public class ExperimentalRecordLoader {
 				+ countFailure + " failed");
 		
 		
-		
-		
 		if (!failedRecords.isEmpty()) {
-			ExperimentalRecord recSample = failedRecords.iterator().next();
-			String failedRecordsFilePath = "data/dev_qsar/exp_prop/" + type + "/"
-					+ recSample.source_name + "/" + recSample.property_name.replace(":", "") + " Experimental Records-Failed.json";
+			String failedRecordsFilePath=null;
+			if(propertyName==null) {
+				failedRecordsFilePath = "data/dev_qsar/exp_prop/" + type + "/"
+						+ sourceName + "/Experimental Records-Failed.json";
+			} else {
+				failedRecordsFilePath = "data/dev_qsar/exp_prop/" + type + "/"
+						+ sourceName + "/" + propertyName.replace(":", "") + " Experimental Records-Failed.json";
+			}
 			
 			
-			
-			writeRecordsToFile(failedRecords, failedRecordsFilePath);
+			JSONUtilities.batchAndWriteJSON(failedRecords, failedRecordsFilePath);
 		}
 		
 		if (!loadedRecords.isEmpty()) {
-			ExperimentalRecord recSample = records.iterator().next();
+			String loadedRecordsFilePath=null;
+			if(propertyName==null) {
+				loadedRecordsFilePath = "data/dev_qsar/exp_prop/" + type + "/"
+						+ sourceName + "/ExperimentalRecords-Loaded.json";
+			} else {
+				loadedRecordsFilePath = "data/dev_qsar/exp_prop/" + type + "/"
+						+ sourceName + "/" + propertyName.replace(":", "") + " ExperimentalRecords-Loaded.json";
+				
+			}
+			JSONUtilities.batchAndWriteJSON(loadedRecords, loadedRecordsFilePath);
 			
-			String loadedRecordsFilePath = "data/dev_qsar/exp_prop/" + type + "/"
-					+ recSample.source_name + "/" + recSample.property_name.replace(":", "") + " ExperimentalRecords-Loaded.json";
-			writeRecordsToFile(loadedRecords, loadedRecordsFilePath);
+//			JsonArray ja=new JsonArray();
+			List <JsonObject>ja=new ArrayList<>();//use list so can use same batch write method for json
 			
-			
-			JsonArray ja=new JsonArray();
 			for (PropertyValue pv:loadedPropertyValues) {
 				JsonObject jo = pv.createJsonObjectFromPropertyValue();
 				ja.add(jo);
 //				System.out.println(gson.toJson(jo));
 			}
 
-			String loadedPropertyValuesFilePath = "data/dev_qsar/exp_prop/" + type + "/"
-					+ recSample.source_name + "/" + recSample.property_name.replace(":", "") + " PropertyValues-Loaded.json";
-			writeRecordsToFile(ja, loadedPropertyValuesFilePath);
+			System.out.println("createDBEntries="+createDBEntries);
+			
+			File of=new File("data/dev_qsar/exp_prop/" + type + "/"+ sourceName);
+			
+			System.out.println("See results at\n"+of.getAbsolutePath());
+			
+			String loadedPropertyValuesFilePath=null;
+			if(propertyName==null) {
+				loadedPropertyValuesFilePath = "data/dev_qsar/exp_prop/" + type + "/"
+						+ sourceName + "/PropertyValues-Loaded.json";
+			} else {
+				loadedPropertyValuesFilePath = "data/dev_qsar/exp_prop/" + type + "/"
+						+ sourceName + "/" + propertyName.replace(":", "") + " PropertyValues-Loaded.json";
+			}
+			
+			JSONUtilities.batchAndWriteJSON(ja, loadedPropertyValuesFilePath);
 		}
 		return loadedPropertyValues;
 
+	}
+	
+	public void createLiteratureSources(List<ExperimentalRecord> records) {
+
+		for (ExperimentalRecord er:records) {
+			try {
+				
+				if (er.literatureSource==null || literatureSourcesMap.containsKey(er.literatureSource.getCitation())) continue;
+					
+				LiteratureSource ls=er.literatureSource;
+				ls.setCreatedBy(lanId);
+
+				try {
+					
+					System.out.println(Utilities.gson.toJson(er.literatureSource));
+					
+					ls = literatureSourceService.create(ls);
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}				
+
+				literatureSourcesMap.put(er.literatureSource.getCitation(), ls);
+			} catch (Exception e) {
+				System.out.println(e.getMessage());
+			}
+		}
 	}
 	
 	
@@ -397,22 +455,7 @@ public class ExperimentalRecordLoader {
 	}
 	
 	
-	static void loadBCF() {
-		System.out.println("eclipse recognizes new code4");
-		String sourceName = "Burkhard_BCF";
-		String type = "physchem";
-		
-		System.out.println("Retrieving records...");
-		ExperimentalRecords records = getPublicSourceRecords(sourceName, type);
-		System.out.println("Retrieved " + records.size() + " records");
-		
-		System.out.println("Loading " + records.size() + " records...");
-		long t0 = System.currentTimeMillis();
-		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("cramslan");
-		loader.load(records, type, true);
-		long t = System.currentTimeMillis();
-		System.out.println("Loading completed in " + (t - t0)/1000.0 + " s");
-	}
+	
 	
 	ExpPropProperty getProperty(String name, String description) {
 		ExpPropProperty property=propertiesMap.get(name);
@@ -467,6 +510,9 @@ public class ExperimentalRecordLoader {
 		parameter.setCreatedBy(lanId);
 		parameter.setDescription(description);
 		parameter= parameterService.create(parameter);
+		
+		parametersMap.put(name, parameter);
+		
 		return parameter;
 	}
 
@@ -603,7 +649,7 @@ public class ExperimentalRecordLoader {
 //		printUniqueUnitsListInExperimentalRecords(records);
 		System.out.println("experimentalRecords.size()="+records.size());
 		
-		load(records, typeOther, createDBEntries);
+		load(records, typeOther, createDBEntries,sourceName,propertyName);
 		
 	}
 	
@@ -615,8 +661,9 @@ public class ExperimentalRecordLoader {
 			
 		String sourceName="ECOTOX_2023_12_14";
 		
-		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
-		
+//		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
+		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_BLUEGILL_LC50;
+
 		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
 		String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+"_"+propertyName+" Experimental Records.json";
 		
@@ -633,18 +680,18 @@ public class ExperimentalRecordLoader {
 		//Add entries for properties_acceptable_units:
 		
 		//Note: first time you run this property, uncomment out the following lines:
-//		addPropertyAcceptableUnit(getUnit("G_L","g/L"), property);
-//		addPropertyAcceptableUnit(getUnit("MOLAR","M"), property);
+		addPropertyAcceptableUnit(getUnit("G_L","g/L"), property);
+		addPropertyAcceptableUnit(getUnit("MOLAR","M"), property);
 
-//		addPropertyAcceptableParameter(getParameter("test_id","test_id field in tests table in Ecotox database"),property);		
-//		addPropertyAcceptableParameter(getParameter("exposure_type","Type of exposure (S=static, F=flowthrough, R=renewal, etc)"),property);
-//		addPropertyAcceptableParameter(getParameter("chem_analysis_method","Analysis method for water concentration (M=measured, U=unmeasured etc)"),property);		
-//		addPropertyAcceptableParameter(getParameter("concentration_type","How concentration is reported"),property);
+		addPropertyAcceptableParameter(getParameter("test_id","test_id field in tests table in Ecotox database"),property);		
+		addPropertyAcceptableParameter(getParameter("exposure_type","Type of exposure (S=static, F=flowthrough, R=renewal, etc)"),property);
+		addPropertyAcceptableParameter(getParameter("chem_analysis_method","Analysis method for water concentration (M=measured, U=unmeasured etc)"),property);		
+		addPropertyAcceptableParameter(getParameter("concentration_type","How concentration is reported"),property);
 				
-//		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("test_id","test_id field in tests table in Ecotox database"));
-//		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("exposure_type","Type of exposure (S=static, F=flow-through, R=renewal, etc)"));		
-//		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("chem_analysis_method","Analysis method for water concentration (M=measured, U=unmeasured etc)"));
-//		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("concentration_type","How concentration is reported"));
+		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("test_id","test_id field in tests table in Ecotox database"));
+		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("exposure_type","Type of exposure (S=static, F=flow-through, R=renewal, etc)"));		
+		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("chem_analysis_method","Analysis method for water concentration (M=measured, U=unmeasured etc)"));
+		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("concentration_type","How concentration is reported"));
 
 //		addPropertyInCategory(getPropertyCategory("Acute aquatic toxicity", "Acute aquatic toxicity"), property);
 		
@@ -654,18 +701,406 @@ public class ExperimentalRecordLoader {
 //		printUniqueUnitsListInExperimentalRecords(records);
 		System.out.println("experimentalRecords.size()="+records.size());
 		
-		load(records, typeOther, createDBEntries);
+		load(records, typeOther, createDBEntries,sourceName,propertyName);
+		
+	}
+	
+	void loadToxCastTTR_Binding() {
+
+		debug=true;//prints values loaded from database like property
+		
+		boolean createDBEntries=true;
+			
+		String sourceName="ToxCast";
+		
+//		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
+		String propertyName=DevQsarConstants.TTR_BINDING;
+
+		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+//		String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+"_"+propertyName+" Experimental Records.json";
+		String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+" Experimental Records.json";
+		
+		File jsonFile=new File(filePath);
+		
+		System.out.println(filePath+"\t"+jsonFile.exists());
+
+		//**********************************************************************************************
+		//First create the property
+		ExpPropProperty property=getProperty(propertyName, "concentration that kills half of fathead minnow in 96 hours");
+		
+		//**********************************************************************************************
+		//Add entries for properties_acceptable_units:
+		
+		//Note: first time you run this property, uncomment out the following lines:
+		addPropertyAcceptableUnit(getUnit("DIMENSIONLESS","Dimensionless"), property);
+
+		addPropertyAcceptableParameter(getParameter("maximum_concentration","Maximum concentration tested"),property);		
+		addPropertyAcceptableParameter(getParameter("library","Experimental data library used"),property);
+		addPropertyAcceptableParameter(getParameter("tested_in_concentration_response","Whether or not tested for concentration response"),property);		
+		addPropertyAcceptableParameter(getParameter("dataset","Which dataset the chemical appears in"),property);
+				
+		addParameterAcceptableUnit(getUnit("MICRO_MOLAR","μM"), getParameter("maximum_concentration","Maximum concentration tested"));
+		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("library","Experimental data library used"));		
+		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("tested_in_concentration_response","Whether or not tested for concentration response"));
+		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("dataset","Which dataset the chemical appears in"));
+
+//		addPropertyInCategory(getPropertyCategory("Acute aquatic toxicity", "Acute aquatic toxicity"), property);
+		
+		//*******************************************************************************************************
+
+		ExperimentalRecords records=ExperimentalRecords.loadFromJson(filePath, gson);
+//		printUniqueUnitsListInExperimentalRecords(records);
+		System.out.println("experimentalRecords.size()="+records.size());
+		
+		load(records, typeOther, createDBEntries,sourceName,propertyName);
+		
+	}
+	
+	
+	void loadRatLC50_CoMPAIT() {
+
+		debug=true;//prints values loaded from database like property
+		
+		boolean createDBEntries=true;
+			
+		String sourceName="CoMPAIT";
+		
+		String propertyName=DevQsarConstants.FOUR_HOUR_INHALATION_RAT_LC50;
+
+		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+//		String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+"_"+propertyName+" Experimental Records.json";
+		String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+" Experimental Records.json";
+		
+		File jsonFile=new File(filePath);
+		
+		System.out.println(filePath+"\t"+jsonFile.exists());
+
+		//**********************************************************************************************
+		//First create the property
+		ExpPropProperty property=getProperty(propertyName, "Inhalation concentration that kills half of rats in 4 hours");
+		
+		//**********************************************************************************************
+		//Add entries for properties_acceptable_units:
+		
+		//Note: first time you run this property, uncomment out the following lines:
+		addPropertyAcceptableUnit(getUnit("LOG_MG_L","log10(mg/L)"), property);
+		addPropertyAcceptableUnit(getUnit("LOG_PPM","log10(ppm)"), property);
+
+		addPropertyAcceptableParameter(getParameter("qsar_ready_smiles","qsar_ready_smiles"),property);		
+		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("qsar_ready_smiles","qsar_ready_smiles"));		
+
+		//*******************************************************************************************************
+
+		ExperimentalRecords records=ExperimentalRecords.loadFromJson(filePath, gson);
+//		printUniqueUnitsListInExperimentalRecords(records);
+		System.out.println("experimentalRecords.size()="+records.size());
+		
+		load(records, typeOther, createDBEntries,sourceName,propertyName);
+		
+	}
+	
+	void loadBCFDataEcotox() {
+
+		debug=true;//prints values loaded from database like property
+		
+		boolean createDBEntries=true;
+			
+		String sourceName="ECOTOX_2023_12_14";
+		String propertyName=DevQsarConstants.BCF;
+		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+		String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+"_"+propertyName+" Experimental Records.json";
+		File jsonFile=new File(filePath);
+		
+		System.out.println(filePath+"\t"+jsonFile.exists());
+		
+		//**********************************************************************************************
+		//First create the property
+		ExpPropProperty property=getProperty(propertyName, DevQsarConstants.BCF);
+		
+		//**********************************************************************************************
+		//Add entries for properties_acceptable_units:
+		
+		//Note: first time you run this property, uncomment out the following lines:
+		addPropertyAcceptableUnit(getUnit("L_KG",DevQsarConstants.L_KG), property);
+
+		List<Parameter>params=new ArrayList<>();
+		params.add(getParameter("test_id","test_id field in tests table in Ecotox database"));
+		params.add(getParameter("exposure_type","Type of exposure (S=static, F=flowthrough, R=renewal, etc)"));
+		params.add(getParameter("Media type","Media type where exposure occurs (e.g. fresh water)"));
+		params.add(getParameter("Species latin","Latin name of tested organism (e.g. Pimephales promelas)"));
+		params.add(getParameter("Species common","Common name of tested organism (e.g. Fathead minnow)"));
+		params.add(getParameter("Response site","Part of organism tested for the chemical"));
+		params.add(getParameter("Test location","Where the test was performed (e.g. laboratory"));
+		params.add(getParameter("Exposure concentration","Water concentration"));
+
+		ExpPropUnit unitText=getUnit("TEXT","");
+		for(Parameter param:params) {
+			addParameterAcceptableUnit(unitText, param);	
+		}
+		
+		//*******************************************************************************************************
+
+		ExperimentalRecords records=ExperimentalRecords.loadFromJson(filePath, gson);
+		printUniqueUnitsListInExperimentalRecords(records);
+		System.out.println("experimentalRecords.size()="+records.size());
+		
+		load(records, typeOther, createDBEntries,sourceName,propertyName);
+		
+	}
+	
+	void loadSanderHLC() {
+
+		debug=true;//prints values loaded from database like property
+		
+		boolean createDBEntries=true;
+			
+		String sourceName="Sander_v5";
+		String propertyName=DevQsarConstants.HENRYS_LAW_CONSTANT;
+		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+		String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+" Experimental Records.json";
+		File jsonFile=new File(filePath);
+		
+		System.out.println(filePath+"\t"+jsonFile.exists());
+		
+		//**********************************************************************************************
+		//First create the property
+		ExpPropProperty property=getProperty(propertyName, propertyName);
+		
+		//**********************************************************************************************
+		//Acceptable units for property already in db
+		//*******************************************************************************************************
+
+		ExperimentalRecords records=ExperimentalRecords.loadFromJson(filePath, gson);
+		printUniqueUnitsListInExperimentalRecords(records);
+		System.out.println("experimentalRecords.size()="+records.size());
+		
+		load(records, typePhyschem, createDBEntries,sourceName,propertyName);
+	}
+	
+	
+	void loadOChem() {
+
+		debug=true;//prints values loaded from database like property
+		boolean createDBEntries=true;
+		String type=typePhyschem;
+		
+			
+//		String propertyName=DevQsarConstants.HENRYS_LAW_CONSTANT;
+//		String propertyName=DevQsarConstants.MELTING_POINT;
+//		String propertyName=DevQsarConstants.WATER_SOLUBILITY;
+		String propertyName=null;
+		
+		String sourceName="OChem_2024_04_03";
+		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+				
+		//Initial loading attempt:
+		String folderPath=mainFolder+"data\\experimental\\"+sourceName;
+		String substring=sourceName+" Experimental Records ";
+		ExperimentalRecords records=getExperimentalRecords(propertyName, folderPath,substring);		
+
+//		String folderPath="data/dev_qsar/exp_prop/" + type + "/"+ sourceName + "/6-12-24";
+//		ExperimentalRecords records=getExperimentalRecords(propertyName, folderPath,"Experimental Records-Failed");
+		
+		records.getRecordsByProperty();
+		
+		if(true) return;
+		
+		printUniqueUnitsListInExperimentalRecords(records);
+		System.out.println("experimentalRecords.size()="+records.size());
+		
+		
+//		createLiteratureSources(records);
+		load(records, type, createDBEntries,sourceName,propertyName);
+
+	}
+	
+	
+	void loadPubChem() {
+
+		debug=true;//prints values loaded from database like property
+		boolean createDBEntries=true;
+		String type=typePhyschem;
+		
+			
+//		String propertyName=DevQsarConstants.HENRYS_LAW_CONSTANT;
+//		String propertyName=DevQsarConstants.MELTING_POINT;
+//		String propertyName=DevQsarConstants.WATER_SOLUBILITY;
+		String propertyName=null;
+		
+		String sourceName="PubChem_2024_03_20";
+		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+				
+
+		//Initial loading attempt:
+		String folderPath=mainFolder+"data\\experimental\\"+sourceName;
+		String substring=sourceName+" Experimental Records ";
+		ExperimentalRecords records=getExperimentalRecords(propertyName, folderPath,substring);		
+
+//		String folderPath="data/dev_qsar/exp_prop/" + type + "/"+ sourceName + "/6-12-24";
+//		ExperimentalRecords records=getExperimentalRecords(propertyName, folderPath,"Experimental Records-Failed");
+//		if(true) return;
+		
+		printUniqueUnitsListInExperimentalRecords(records);
+		System.out.println("experimentalRecords.size()="+records.size());
+		
+		printPropertiesInExperimentalRecords(records);
+		
+//		createLiteratureSources(records);
+//		load(records, type, createDBEntries,sourceName,propertyName);
+
+	}
+
+	private ExperimentalRecords getExperimentalRecords(String propertyName, String folderPath,String subString) {
+		ExperimentalRecords records=new ExperimentalRecords();
+		
+		File folder=new File(folderPath);
+		
+		System.out.println(folderPath+"\t"+folder.exists());
+		
+		for(File file: folder.listFiles()) {
+			if(!file.getName().contains(subString) || !file.getName().contains(".json")) continue;
+//			System.out.println(file.getName());
+			
+			ExperimentalRecords recordsi=ExperimentalRecords.loadFromJson(file.getAbsolutePath(), gson);
+			for(ExperimentalRecord er:recordsi) {		 
+				if (er.property_name.equals(propertyName) || propertyName==null) records.add(er);
+			}
+			System.out.println(file.getName()+"\t"+recordsi.size());
+		}
+		return records;
+	}
+	
+	
+//	static void loadBCF() {
+//		System.out.println("eclipse recognizes new code4");
+//		String sourceName = "Burkhard_BCF";
+//		String type = "physchem";
+//		
+//		System.out.println("Retrieving records...");
+//		ExperimentalRecords records = getPublicSourceRecords(sourceName, type);
+//		System.out.println("Retrieved " + records.size() + " records");
+//		
+//		System.out.println("Loading " + records.size() + " records...");
+//		long t0 = System.currentTimeMillis();
+//		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("cramslan");
+//		loader.load(records, type, true,sourceName,propertyName);
+//		long t = System.currentTimeMillis();
+//		System.out.println("Loading completed in " + (t - t0)/1000.0 + " s");
+//	}
+
+	
+	
+	void loadBCFDataBurkhard() {
+
+		debug=true;//prints values loaded from database like property
+		
+		boolean createDBEntries=true;
+			
+		String sourceName="Burkhard";
+		String propertyName=DevQsarConstants.BCF;
+		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+		String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+"_"+propertyName+" Experimental Records.json";
+		File jsonFile=new File(filePath);
+		
+		System.out.println(filePath+"\t"+jsonFile.exists());
+		
+		//**********************************************************************************************
+		//First create the property
+		ExpPropProperty property=getProperty(propertyName, DevQsarConstants.BCF);
+		
+		//**********************************************************************************************
+		//Add entries for properties_acceptable_units:
+		
+		//Note: first time you run this property, uncomment out the following lines:
+		addPropertyAcceptableUnit(getUnit("L_KG",DevQsarConstants.L_KG), property);
+
+		List<Parameter>params=new ArrayList<>();
+		params.add(getParameter("Media type","Media type where exposure occurs (e.g. fresh water)"));
+		params.add(getParameter("Species latin","Latin name of tested organism (e.g. Pimephales promelas)"));
+		params.add(getParameter("Species common","Common name of tested organism (e.g. Fathead minnow)"));
+		params.add(getParameter("Response site","Part of organism tested for the chemical"));
+		params.add(getParameter("Test location","Where the test was performed (e.g. laboratory"));
+		params.add(getParameter("Exposure concentration","Water concentration"));
+		params.add(getParameter("Measurement method","Method used to measure the property"));
+		params.add(getParameter("Reliability","Reliability of the experimental data point"));
+		
+		ExpPropUnit unitText=getUnit("TEXT","");
+		for(Parameter param:params) {
+			addParameterAcceptableUnit(unitText, param);	
+		}
+		
+		//*******************************************************************************************************
+
+		ExperimentalRecords records=ExperimentalRecords.loadFromJson(filePath, gson);
+		printUniqueUnitsListInExperimentalRecords(records);
+		System.out.println("experimentalRecords.size()="+records.size());
+		
+		load(records, typeOther, createDBEntries,sourceName,propertyName);
+		
+	}
+	
+	void loadRBIODEG_NITE_OPPT() {
+
+		debug=true;//prints values loaded from database like property
+		
+		boolean createDBEntries=true;
+			
+		String sourceName="NITE_OPPT";
+		
+		String propertyName=DevQsarConstants.RBIODEG;
+
+		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+		String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+"_"+propertyName+" Experimental Records.json";
+		
+		File jsonFile=new File(filePath);
+		
+		System.out.println(filePath+"\t"+jsonFile.exists());
+		
+
+		//**********************************************************************************************
+		//First create the property
+		ExpPropProperty property=getProperty(propertyName, DevQsarConstants.RBIODEG);
+		
+		//**********************************************************************************************
+		//Add entries for properties_acceptable_units:
+		
+		//Note: first time you run this property, uncomment out the following lines:
+		addPropertyAcceptableUnit(getUnit("BINARY","Binary"), property);
+		
+		addPropertyAcceptableParameter(getParameter("set","Training (T) or Validation (V) set"),property);		
+		addParameterAcceptableUnit(getUnit("TEXT",""), getParameter("set","Training (T) or Validation (V) set"));
+
+		//*******************************************************************************************************
+		ExperimentalRecords records=ExperimentalRecords.loadFromJson(filePath, gson);
+//		printUniqueUnitsListInExperimentalRecords(records);
+		System.out.println("experimentalRecords.size()="+records.size());
+		
+		load(records, typeOther, createDBEntries,sourceName,propertyName);
 		
 	}
 
 	private void printUniqueUnitsListInExperimentalRecords(ExperimentalRecords records) {
 		//Following gets list of unique units in experimental records:
-		List<String>unitsList=new ArrayList();
+		List<String>unitsList=new ArrayList<String>();
+		
 		for (ExperimentalRecord er:records) {
 //			System.out.println(er.property_value_units_final);
-			if (!unitsList.contains(er.property_value_units_final)) unitsList.add(er.property_value_units_final);
+			String value=er.property_name+"\t"+er.property_value_units_final;
+			if (!unitsList.contains(value)) unitsList.add(value);
 		}
-		for (String units:unitsList) {
+		Collections.sort(unitsList);
+		for (String units:unitsList) System.out.println(units);
+		
+	}
+	
+	private void printPropertiesInExperimentalRecords(ExperimentalRecords records) {
+		//Following gets list of unique units in experimental records:
+		List<String>list=new ArrayList();
+		for (ExperimentalRecord er:records) {
+//			System.out.println(er.property_value_units_final);
+			if (!list.contains(er.property_name)) list.add(er.property_name);
+		}
+		for (String units:list) {
 			System.out.println(units);
 		}
 	}
@@ -680,7 +1115,8 @@ public class ExperimentalRecordLoader {
 
 //		int propertyId=22;//FHM lc50
 //		int public_source_id=79;//ToxValv93
-				
+		
+//		int publicSourceId=254;//ECOTOX_2023_12_14		
 		
 //		int publicSourceId=12;//OPERA
 //		String propertyName=DevQsarConstants.KmHL;
@@ -689,7 +1125,7 @@ public class ExperimentalRecordLoader {
 //		String propertyName=DevQsarConstants.BCF;
 //		String propertyName=DevQsarConstants.KOC;
 
-		int publicSourceId=253;//OPERA2.9
+//		int publicSourceId=253;//OPERA2.9
 //		String propertyName=DevQsarConstants.ESTROGEN_RECEPTOR_AGONIST;
 //		String propertyName=DevQsarConstants.ESTROGEN_RECEPTOR_ANTAGONIST;
 //		String propertyName=DevQsarConstants.ESTROGEN_RECEPTOR_BINDING;
@@ -697,20 +1133,28 @@ public class ExperimentalRecordLoader {
 //		String propertyName=DevQsarConstants.ANDROGEN_RECEPTOR_ANTAGONIST;
 //		String propertyName=DevQsarConstants.ANDROGEN_RECEPTOR_BINDING;
 		
-		String propertyName=DevQsarConstants.HENRYS_LAW_CONSTANT;
+//		String propertyName=DevQsarConstants.HENRYS_LAW_CONSTANT;
+		
+		String publicSourceName="ECOTOX_2023_12_14";
+//		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
+		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_BLUEGILL_LC50;
+//		String propertyName="96 hour scud LC50";
+		
+		String sqlPublicSourceName="select id from exp_prop.public_sources ps where ps.name='"+publicSourceName+"';";
+		Long publicSourceId=Long.parseLong(SqlUtilities.runSQL(conn, sqlPublicSourceName));
 		
 		String sqlPropertyName="select id from exp_prop.properties p where p.name='"+propertyName+"';";
 		Long propertyId=Long.parseLong(SqlUtilities.runSQL(conn, sqlPropertyName));
-		
+				
 		String sqlParameters="delete from exp_prop.parameter_values pv2 using exp_prop.property_values pv\n"+
-				"where pv2.fk_property_value_id=pv.id and pv.fk_property_id="+propertyId+" and pv2.created_by='tmarti02'";
+				"where pv2.fk_property_value_id=pv.id and pv.fk_property_id="+propertyId+" and pv.fk_public_source_id="+publicSourceId+" and pv2.created_by='tmarti02'";
 
 //		-- delete property values for fhm lc50 endpoint
 		String sqlPropertyValues="delete from exp_prop.property_values pv where fk_public_source_id="+publicSourceId+" and fk_property_id="+propertyId+" and created_by='tmarti02'";
 //		String sqlPropertyValues="delete from exp_prop.property_values pv where fk_public_source_id="+publicSourceId+" and created_by='tmarti02'";
 		
 //	-- Delete source chemicals that came from toxvalv93:
-		String sqlSourceCHemicals="delete from exp_prop.source_chemicals sc where sc.fk_public_source_id="+publicSourceId+" and created_by='tmarti02'";
+		String sqlSourceChemicals="delete from exp_prop.source_chemicals sc where sc.fk_public_source_id="+publicSourceId+" and created_by='tmarti02'";
 
 		//Literature sources
 		String sqlLiteratureSources="delete from exp_prop.literature_sources where created_by='tmarti02' and id>1677";
@@ -718,11 +1162,14 @@ public class ExperimentalRecordLoader {
 		//Public sources
 		String sqlPublicSources="delete from exp_prop.public_sources where created_by='tmarti02' and id>104";
 
+
+//		System.out.println(sqlParameters+"\n");
+//		System.out.println(sqlPropertyValues);
 		
-//		SqlUtilities.runSQLUpdate(conn, sqlParameters);
+		SqlUtilities.runSQLUpdate(conn, sqlParameters);
 		SqlUtilities.runSQLUpdate(conn, sqlPropertyValues);
-//		SqlUtilities.runSQLUpdate(conn, sqlSourceCHemicals);
-		
+				
+//		SqlUtilities.runSQLUpdate(conn, sqlSourceChemicals);
 //		SqlUtilities.runSQLUpdate(conn, sqlLiteratureSources);
 //		SqlUtilities.runSQLUpdate(conn, sqlPublicSources);
 				
@@ -733,7 +1180,8 @@ public class ExperimentalRecordLoader {
 		Connection conn=SqlUtilities.getConnectionPostgres();
 
 		int publicSourceId=254;//ECOTOX		
-		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
+//		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
+		String propertyName=DevQsarConstants.BCF;
 		
 		String sqlPropertyName="select id from exp_prop.properties p where p.name='"+propertyName+"';";
 		Long propertyId=Long.parseLong(SqlUtilities.runSQL(conn, sqlPropertyName));
@@ -744,6 +1192,59 @@ public class ExperimentalRecordLoader {
 		String sqlPropertyValues="delete from exp_prop.property_values pv where fk_public_source_id="+publicSourceId+" and fk_property_id="+propertyId+";";
 		String sqlSourceCHemicals="delete from exp_prop.source_chemicals sc where sc.fk_public_source_id="+publicSourceId+" and created_by='tmarti02'";
 		String sqlLiteratureSources="delete from exp_prop.literature_sources where created_by='tmarti02' and id>3378";
+//		String sqlPublicSources="delete from exp_prop.public_sources where created_by='tmarti02' and id>104";
+
+		SqlUtilities.runSQLUpdate(conn, sqlParameters);
+		SqlUtilities.runSQLUpdate(conn, sqlPropertyValues);
+//		SqlUtilities.runSQLUpdate(conn, sqlSourceCHemicals);
+//		SqlUtilities.runSQLUpdate(conn, sqlLiteratureSources);
+//		SqlUtilities.runSQLUpdate(conn, sqlPublicSources);
+				
+	}
+	
+	static void deleteSander() {
+		
+
+		Connection conn=SqlUtilities.getConnectionPostgres();
+
+		int publicSourceId=257;//Sander_v5		
+		String propertyName=DevQsarConstants.HENRYS_LAW_CONSTANT.replace("'","''");
+		
+		String sqlPropertyName="select id from exp_prop.properties p where p.name='"+propertyName+"';";
+		Long propertyId=Long.parseLong(SqlUtilities.runSQL(conn, sqlPropertyName));
+		
+		String sqlParameters="delete from exp_prop.parameter_values pv2 using exp_prop.property_values pv\n"+
+				"where pv2.fk_property_value_id=pv.id and pv.fk_property_id="+propertyId+" and pv.fk_public_source_id="+publicSourceId;
+
+		String sqlPropertyValues="delete from exp_prop.property_values pv where fk_public_source_id="+publicSourceId+" and fk_property_id="+propertyId+";";
+		String sqlSourceCHemicals="delete from exp_prop.source_chemicals sc where sc.fk_public_source_id="+publicSourceId+" and created_by='tmarti02'";
+		String sqlLiteratureSources="delete from exp_prop.literature_sources where created_by='tmarti02' and id>3378";
+//		String sqlPublicSources="delete from exp_prop.public_sources where created_by='tmarti02' and id>104";
+
+		SqlUtilities.runSQLUpdate(conn, sqlParameters);
+		SqlUtilities.runSQLUpdate(conn, sqlPropertyValues);
+//		SqlUtilities.runSQLUpdate(conn, sqlSourceCHemicals);
+//		SqlUtilities.runSQLUpdate(conn, sqlLiteratureSources);
+//		SqlUtilities.runSQLUpdate(conn, sqlPublicSources);
+				
+	}
+	
+
+	static void deleteOChemNew() {
+		
+
+		Connection conn=SqlUtilities.getConnectionPostgres();
+
+		int publicSourceId=259;//OChem_2024_04_03		
+		
+		
+		String sqlParameters="delete from exp_prop.parameter_values pv2 using exp_prop.property_values pv\n"+
+				"where pv2.fk_property_value_id=pv.id and pv.fk_public_source_id="+publicSourceId;
+
+		String sqlPropertyValues="delete from exp_prop.property_values pv where fk_public_source_id="+publicSourceId+";";
+		
+//		String sqlSourceCHemicals="delete from exp_prop.source_chemicals sc where sc.fk_public_source_id="+publicSourceId+" and created_by='tmarti02'";
+//		String sqlLiteratureSources="delete from exp_prop.literature_sources where created_by='tmarti02' and id>3378";
 //		String sqlPublicSources="delete from exp_prop.public_sources where created_by='tmarti02' and id>104";
 
 		SqlUtilities.runSQLUpdate(conn, sqlParameters);
@@ -804,7 +1305,7 @@ public class ExperimentalRecordLoader {
 		
 		System.out.println("experimentalRecords.size()="+records.size());
 
-		List<PropertyValue>propertyValues=load(records,typePhyschem,store);
+		List<PropertyValue>propertyValues=load(records,typePhyschem,store,sourceName,propertyName);
 		
 //		for (PropertyValue pv:propertyValues) {
 //			pv.getProperty().setPropertiesInCategories(null);//to enable json print
@@ -821,12 +1322,37 @@ public class ExperimentalRecordLoader {
 //		loader.loadPropertyValuesFromThreeM_ExperimentalRecordsFile();		
 	
 //		deleteExpPropData();
-//		loader.loadAcuteAquaticToxicityDataToxVal();
 		
+//		loadSourceChemicalMap=false;
 //		deleteEcotoxData();
-		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("tmarti02");
+		
+		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("tmarti02",true);
 		loader.loadAcuteAquaticToxicityDataEcotox();
 		
+		
+//		loader.loadRBIODEG_NITE_OPPT();;
+//		loader.loadBCFDataEcotox();
+//		loader.loadBCFDataBurkhard();
+
+//		loader.loadSanderHLC();
+//		deleteSander();
+
+//		loadSourceChemicalMap=false;
+
+//		loadSourceChemicalMap=false;
+//		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("tmarti02",true);
+//		loader.loadToxCastTTR_Binding();
+//		loader.loadRatLC50_CoMPAIT();
+		
+//		loader.loadOChem();
+//		loader.loadPubChem();
+		
+//		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("tmarti02",false);
+//		deleteOChemNew();
+//		
+		
+//		
 	}
 
 }
+

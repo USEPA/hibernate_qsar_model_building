@@ -37,6 +37,7 @@ public class PropertyValueCreator {
 
 
 
+	boolean debug=false;
 
 
 
@@ -129,20 +130,32 @@ public class PropertyValueCreator {
 
 	private void setPublicSourceOriginal(ExperimentalRecord er,PropertyValue pv, boolean createDB_Entries) {
 
-		if(er.original_source_name==null) return;
-
-		String name=er.original_source_name;
+		String name=null;
+		if(er.publicSourceOriginal!=null) {
+			name=er.publicSourceOriginal.getName();
+		} else {
+			name=er.original_source_name;
+		}
+		
+		if(name==null) return;
 
 		if(loader.publicSourcesMap.containsKey(name)) {
-
 			pv.setPublicSourceOriginal(loader.publicSourcesMap.get(name));
-
 		} else {
-
 			PublicSource ps = new PublicSource();
-
-			ps.setName(name);
-			ps.setDescription("TODO");
+			if(er.publicSourceOriginal!=null) {
+				ps.setName(name);
+				if(er.publicSourceOriginal.getDescription()!=null) {
+					ps.setDescription(er.publicSourceOriginal.getDescription());
+				} else {
+					ps.setDescription("TODO");	
+				}
+				ps.setUrl(er.publicSourceOriginal.getUrl());
+			} else {
+				ps.setName(name);
+				ps.setDescription("TODO");
+			}
+			
 			ps.setCreatedBy(loader.lanId);
 
 			if(createDB_Entries) {
@@ -223,17 +236,17 @@ public class PropertyValueCreator {
 
 		if(loader.sourceChemicalMap.containsKey(sourceChemical.getKey())) {
 			dbSourceChemical=loader.sourceChemicalMap.get(sourceChemical.getKey());
-			System.out.println("Found in map\t"+sourceChemical.getKey());
+			if(debug) System.out.println("Found in map\t"+sourceChemical.getKey());
 		} else if (!ExperimentalRecordLoader.loadSourceChemicalMap) {
 			dbSourceChemical = sourceChemicalService.findMatch(sourceChemical);
-			System.out.println("Found by one at a time service\t"+sourceChemical.getKey());
+			if(debug) System.out.println("Found by one at a time service\t"+sourceChemical.getKey());
 		}			
 		
 		if (dbSourceChemical==null) {
 
 			if(createDB_Entries) {
 				try {
-					System.out.println("Creating "+sourceChemical.getKey());
+					if(debug) System.out.println("Creating "+sourceChemical.getKey());
 					sourceChemical = sourceChemicalService.create(sourceChemical);
 					
 					//Store in map:
@@ -288,7 +301,7 @@ public class PropertyValueCreator {
 			reliabilityValue.setValueText(rec.reliability);
 			reliabilityValue.setPropertyValue(pv);
 			reliabilityValue.setParameter(loader.parametersMap.get("Reliability"));
-			reliabilityValue.setUnit(loader.unitsMap.get("Text"));
+			reliabilityValue.setUnit(loader.unitsMap.get("TEXT"));
 			pv.addParameterValue(reliabilityValue);
 		} 
 	}
