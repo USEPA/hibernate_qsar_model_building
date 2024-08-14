@@ -228,7 +228,7 @@ public class ModelData {
 				+ "where dp.fk_dataset_id=" + dataset.getId() + " and dv.fk_descriptor_set_id=" + descriptorSet.getId()+"\n"
 				+ "order by dpc.dtxsid;";
 		
-		System.out.println("\n"+sql);
+//		System.out.println("\n"+sql);
 
 		StringBuilder sbOverall = new StringBuilder(instanceHeader);
 

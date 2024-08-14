@@ -14,7 +14,7 @@ import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Fetch;
@@ -30,14 +30,14 @@ public class Property {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 
-	@NotBlank(message="Name required")
+	@NotNull(message="Name required")
 	@Column(name="name", unique=true)
 	private String name;
 
 	@Column(name="name_ccd")
 	private String name_ccd;
 	
-	@NotBlank(message="Description required")
+	@NotNull(message="Description required")
 	@Column(name="description")
 	private String description;
 	
@@ -54,7 +54,7 @@ public class Property {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator required")
+	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	
@@ -136,5 +136,13 @@ public class Property {
 
 	public void setPropertyInCategories(List<PropertyInCategory> propertyInCategories) {
 		this.propertyInCategories = propertyInCategories;
+	}
+
+	public String getName_ccd() {
+		return name_ccd;
+	}
+
+	public void setName_ccd(String name_ccd) {
+		this.name_ccd = name_ccd;
 	}
 }

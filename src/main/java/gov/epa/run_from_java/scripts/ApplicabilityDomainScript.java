@@ -242,9 +242,9 @@ public class ApplicabilityDomainScript {
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_global_index;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_local_index;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Cosine;
-		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;		
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;		
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine; 		
-//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
+		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
 		
 		System.out.println(applicability_domain+"\t"+splittingName+"\t"+"limitToPFAS="+limitToPFAS);
 		
@@ -254,14 +254,14 @@ public class ApplicabilityDomainScript {
 		System.out.println("Dataset\tMethod\tFrac_Inside\t"+statName+"_Inside\t"+statName+"_Outside");	
 
 		List<String>datasetNames=new ArrayList<>();
-//		datasetNames.add("HLC v1 modeling");
-//		datasetNames.add("WS v1 modeling");
-//		datasetNames.add("VP v1 modeling");
-//		datasetNames.add("LogP v1 modeling");
-//		datasetNames.add("BP v1 modeling");
-//		datasetNames.add("MP v1 modeling");
+		datasetNames.add("HLC v1 modeling");
+		datasetNames.add("WS v1 modeling");
+		datasetNames.add("VP v1 modeling");
+		datasetNames.add("LogP v1 modeling");
+		datasetNames.add("BP v1 modeling");
+		datasetNames.add("MP v1 modeling");
 		
-		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
+//		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
 		
 		List<String>methodNames=new ArrayList<>();
 //		methodNames.add(DevQsarConstants.RF);
@@ -285,7 +285,7 @@ public class ApplicabilityDomainScript {
 			
 			predictionReport.AD=applicability_domain;
 			
-//			if(true) continue;
+			if(true) continue;
 			
 			//Write out new reports with AD info: (TODO later need to store this info in the database...
 			SampleReportWriter.writeReportWithAD(modelSetName, datasetName, splittingName, limitToPFAS, predictionReport);
@@ -1059,7 +1059,7 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 		ApplicabilityDomainScript ads=new ApplicabilityDomainScript();
 		
 		ads.runCaseStudyExpProp_All_Endpoints_modelSpecificAD();
-		ads.runCaseStudyExpProp_All_Endpoints_allDescriptorsAD();
+//		ads.runCaseStudyExpProp_All_Endpoints_allDescriptorsAD();
 		
 //		ads.runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN();
 //		ads.runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN();

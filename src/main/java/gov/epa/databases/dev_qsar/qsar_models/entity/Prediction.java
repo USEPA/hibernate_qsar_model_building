@@ -31,7 +31,7 @@ public class Prediction {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 	
-	@NotBlank(message="Canonical QSAR-ready SMILES required")
+	@NotNull(message="Canonical QSAR-ready SMILES required")
 	@Column(name="canon_qsar_smiles")
 	private String canonQsarSmiles;
 	
@@ -60,7 +60,7 @@ public class Prediction {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator required")
+	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	

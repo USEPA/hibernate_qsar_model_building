@@ -11,7 +11,7 @@ import javax.persistence.Index;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -26,7 +26,7 @@ public class ExpPropUnit {
 	@Column(name="abbreviation")
 	private String abbreviation;
 	
-	@NotBlank(message="Unit name required")
+	@NotNull(message="Unit name required")
 	@Column(name="name", unique=true)
 	private String name;
 	
@@ -35,7 +35,7 @@ public class ExpPropUnit {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator name required")
+	@NotNull(message="Creator name required")
 	@Column(name="created_by")
 	private String createdBy;
 	

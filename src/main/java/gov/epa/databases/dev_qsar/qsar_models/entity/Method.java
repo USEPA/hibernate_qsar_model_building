@@ -27,11 +27,11 @@ public class Method {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 
-	@NotBlank(message="Name required")
+	@NotNull(message="Name required")
 	@Column(name="name", unique=true)
 	private String name;
 	
-	@NotBlank(message="Description required")
+	@NotNull(message="Description required")
 	@Column(name="description", length=2047)
 	private String description;
 
@@ -66,7 +66,7 @@ public class Method {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator required")
+	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	

@@ -11,11 +11,15 @@ import gov.epa.databases.dev_qsar.exp_prop.ExpPropSession;
 import gov.epa.databases.dev_qsar.exp_prop.entity.LiteratureSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 
 public class SourceChemicalDaoImpl implements SourceChemicalDao {
 	
 	private static final String HQL_ALL = "from SourceChemical";
 	
+	private static final String HQL_BY_PUBLIC_SOURCE_NAME= "select sc from SourceChemical sc "
+			+ "join sc.publicSource ps "
+			+ "where ps.name = :publicSourceName";	
 	@Override
 	public SourceChemical findMatch(SourceChemical sc, Session session) {
 		if (session==null) { session = ExpPropSession.getSessionFactory().getCurrentSession(); }
@@ -47,6 +51,15 @@ public class SourceChemicalDaoImpl implements SourceChemicalDao {
 	public List<SourceChemical> findAll(Session session) {
 		if (session==null) { session = ExpPropSession.getSessionFactory().getCurrentSession(); }
 		Query query = session.createQuery(HQL_ALL);
+		return (List<SourceChemical>) query.list();
+	}
+
+	@Override
+	public List<SourceChemical> findAll(PublicSource ps, Session session) {
+		if (session==null) { session = ExpPropSession.getSessionFactory().getCurrentSession(); }
+		
+		Query query = session.createQuery(HQL_BY_PUBLIC_SOURCE_NAME);
+		query.setParameter("publicSourceName", ps.getName());
 		return (List<SourceChemical>) query.list();
 	}
 

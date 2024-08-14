@@ -686,18 +686,24 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			Map<String, Double>mapStats=ModelStatisticCalculator.calculateContinuousStatistics(mpsTestSetPooled, 0.0, DevQsarConstants.TAG_TEST);
 			double R2_CV_pooled=mapStats.get(DevQsarConstants.PEARSON_RSQ + DevQsarConstants.TAG_TEST);
 			double MAE_CV_pooled=mapStats.get(DevQsarConstants.MAE + DevQsarConstants.TAG_TEST);
+			double RMSE_CV_pooled=mapStats.get(DevQsarConstants.RMSE + DevQsarConstants.TAG_TEST);
 
 						
 			if (postPredictions) {			
 
-				System.out.println("storing "+DevQsarConstants.PEARSON_RSQ_CV_TRAINING+"="+R2_CV_pooled);
+//				System.out.println("storing "+DevQsarConstants.PEARSON_RSQ_CV_TRAINING+"="+R2_CV_pooled);
 				Statistic statistic=statisticService.findByName(DevQsarConstants.PEARSON_RSQ_CV_TRAINING);		
 				ModelStatistic modelStatistic=new ModelStatistic(statistic, model, R2_CV_pooled, lanId);
 				modelStatistic=modelStatisticService.create(modelStatistic);
 
-				System.out.println("storing "+DevQsarConstants.MAE_CV_TRAINING+"="+MAE_CV_pooled);
+//				System.out.println("storing "+DevQsarConstants.MAE_CV_TRAINING+"="+MAE_CV_pooled);
 				statistic=statisticService.findByName(DevQsarConstants.MAE_CV_TRAINING);		
 				modelStatistic=new ModelStatistic(statistic, model, MAE_CV_pooled, lanId);
+				modelStatistic=modelStatisticService.create(modelStatistic);
+
+//				System.out.println("storing "+DevQsarConstants.RMSE_CV_TRAINING+"="+RMSE_CV_pooled);
+				statistic=statisticService.findByName(DevQsarConstants.RMSE_CV_TRAINING);		
+				modelStatistic=new ModelStatistic(statistic, model, RMSE_CV_pooled, lanId);
 				modelStatistic=modelStatisticService.create(modelStatistic);
 
 				
@@ -980,7 +986,14 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			return;
 		} else if (data.predictionSetInstances==null) {
 //			logger.error("Dataset instances were not initialized");
+			System.out.println("No prediction instances exiting predict method");
 			return;
+		} else {
+			String [] lines=data.predictionSetInstances.split("\n");
+			if(lines.length==1) {
+				System.out.println("No prediction instances exiting predict method");
+				return;
+			}
 		}
 		
 //		logger.debug("Validating Python model with dataset = " + data.datasetName + ", descriptors = " + data.descriptorSetName
@@ -1140,6 +1153,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		ModelData data = ModelData.initModelData(ci,false);
 		
 //		System.out.println(data.trainingSetInstances);
+//		System.out.println(data.predictionSetInstances);
 		
 		Long modelId = train(data, methodName,use_pmml,include_standardization_in_pmml);
 		

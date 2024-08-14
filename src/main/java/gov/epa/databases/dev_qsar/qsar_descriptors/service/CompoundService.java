@@ -26,4 +26,8 @@ public interface CompoundService {
 	
 	public Compound create(Compound compound, Session session) throws ConstraintViolationException;
 
+	public void delete(Compound compound);
+
+	public void delete(Compound descriptorValues, Session session);
+
 }

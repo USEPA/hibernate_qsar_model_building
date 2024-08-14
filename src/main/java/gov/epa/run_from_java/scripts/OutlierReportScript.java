@@ -144,7 +144,14 @@ public class OutlierReportScript {
 //		String dataset="WS v1 modeling";
 //		String dataset="VP v1 modeling";
 //		String dataset="LogP v1 modeling";
-		String dataset="MP v1 modeling";
+//		String dataset="MP v1 modeling";
+		
+//		String dataset="BP v2 modeling";
+		
+//		String dataset="BP OChem_2024_04_03";
+//		String dataset="VP OChem_2024_04_03";
+		String dataset="MP OChem_2024_04_03";
+		
 		
 		
 //		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\";
@@ -207,7 +214,7 @@ public class OutlierReportScript {
 			outputFileName="outlier report "+dataset+"_PFAS.html";
 			createReport(conn, dataset, recordsOutliers, folderOutput,outputFileName,outputFileName,arrayPFAS_CIDs);
 			
-			outputFileName="outlier report "+dataset+"_PFAS.xlsx";
+//			outputFileName="outlier report "+dataset+"_PFAS.xlsx";
 //			createSpreadsheet(conn, dataset, recordsOutliers, folderOutput,outputFileName,outputFileName,arrayPFAS_CIDs);
 			
 			

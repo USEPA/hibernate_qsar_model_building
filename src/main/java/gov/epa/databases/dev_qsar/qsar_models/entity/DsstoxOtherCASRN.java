@@ -75,7 +75,7 @@ public class DsstoxOtherCASRN {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator required")
+	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	
@@ -91,7 +91,7 @@ public class DsstoxOtherCASRN {
 			
 			ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionDSSTOX(), sql);
 			
-			OPERA_lookups.getDsstoxRecordsFromJsonExport();
+			OPERA_lookups ol=new OPERA_lookups(OPERA_lookups.fileJsonDsstoxRecords);
 			
 			while (rs.next()) {
 				DsstoxOtherCASRN oc=new DsstoxOtherCASRN();
@@ -102,7 +102,7 @@ public class DsstoxOtherCASRN {
 				oc.source=rs.getString(4);
 				oc.updatedBy=user;
 				oc.createdBy=user;
-				oc.fk_dsstox_record_id=OPERA_lookups.mapDsstoxRecordsBySID.get(dtxsid).getId();
+				oc.fk_dsstox_record_id=ol.mapDsstoxRecordsBySID.get(dtxsid).getId();
 				
 				if(otherCasrnsMap.get(oc.casrn)!=null) {
 					DsstoxOtherCASRN ocOld=otherCasrnsMap.get(oc.casrn);

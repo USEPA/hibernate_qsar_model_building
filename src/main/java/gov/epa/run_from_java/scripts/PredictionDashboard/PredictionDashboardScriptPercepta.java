@@ -130,7 +130,7 @@ public class PredictionDashboardScriptPercepta {
 		DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
 		DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
 		DsstoxRecordServiceImpl dsstoxRecordService=new  DsstoxRecordServiceImpl();
-		Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot);
+		Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot,"dtxcid");
 		
 		SmilesGenerator sg= new SmilesGenerator(SmiFlavor.Unique);
 		
@@ -208,8 +208,6 @@ public class PredictionDashboardScriptPercepta {
 		} 
 		
 	}
-	
-	
 	
 	
 	

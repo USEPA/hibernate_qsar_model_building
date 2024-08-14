@@ -37,13 +37,37 @@ public class StructureUtil {
 		indigo.setOption("ignore-stereochemistry-errors", true);
 		IndigoInchi indigoInchi = new IndigoInchi(indigo);
 
-		IndigoObject molecule = indigo.loadMolecule(smiles);
-		String inchi = indigoInchi.getInchi(molecule);
-		String inchikey = indigoInchi.getInchiKey(inchi);
+		try {
 		
-		return inchikey;
+			IndigoObject molecule = indigo.loadMolecule(smiles);
+			String inchi = indigoInchi.getInchi(molecule);
+			String inchikey = indigoInchi.getInchiKey(inchi);
+		
+			return inchikey;
+			
+		} catch (Exception ex) {
+			return null;
+		}
 	}
 	
+	public static String indigoInchikey1FromSmiles(String smiles) throws IndigoException {
+		Indigo indigo = new Indigo();
+		indigo.setOption("ignore-stereochemistry-errors", true);
+		IndigoInchi indigoInchi = new IndigoInchi(indigo);
+
+		try {
+		
+			IndigoObject molecule = indigo.loadMolecule(smiles);
+			String inchi = indigoInchi.getInchi(molecule);
+			String inchikey = indigoInchi.getInchiKey(inchi);
+			if(inchikey!=null) return inchikey.substring(0,14);
+			
+		} catch (Exception ex) {
+		}
+
+		return null;
+
+	}
 	
 	public static Double molWeightFromSmiles(String smiles) throws IndigoException {
 

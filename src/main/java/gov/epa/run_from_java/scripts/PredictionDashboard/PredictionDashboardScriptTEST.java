@@ -1,31 +1,34 @@
 package gov.epa.run_from_java.scripts.PredictionDashboard;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.awt.Desktop;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
+
+import java.util.zip.GZIPInputStream;
+
+import org.openscience.cdk.AtomContainer;
+import org.openscience.cdk.AtomContainerSet;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
-
+import ToxPredictor.Application.TESTConstants;
+import ToxPredictor.Application.Calculations.RunFromCommandLine.CompareStandaloneToSDE;
+import ToxPredictor.Application.Calculations.RunFromCommandLine.RunFromSmiles;
+import ToxPredictor.Application.model.IndividualPredictionsForConsensus;
+import ToxPredictor.Application.model.IndividualPredictionsForConsensus.PredictionIndividualMethod;
 import ToxPredictor.Application.model.PredictionResults;
 import ToxPredictor.Application.model.PredictionResultsPrimaryTable;
 import ToxPredictor.Application.model.SimilarChemical;
+import ToxPredictor.Database.DSSToxRecord;
+import ToxPredictor.Database.ResolverDb2;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
@@ -33,9 +36,11 @@ import gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
+import gov.epa.databases.dev_qsar.qsar_models.entity.MethodAD;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport;
+import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedADEstimate;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Source;
 import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxRecordServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxSnapshotServiceImpl;
@@ -44,8 +49,12 @@ import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardService
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionReportServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.SourceService;
 import gov.epa.databases.dev_qsar.qsar_models.service.SourceServiceImpl;
+import gov.epa.databases.dsstox.DsstoxSession;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.run_from_java.scripts.OPERA.OPERA_Report;
+import gov.epa.run_from_java.scripts.OPERA.OPERA_csv_to_PostGres_DB;
+import gov.epa.run_from_java.scripts.OPERA.OPERA_lookups;
 
 
 /**
@@ -58,10 +67,12 @@ public class PredictionDashboardScriptTEST  {
 	PredictionReportServiceImpl predictionReportService=new PredictionReportServiceImpl();
 	DsstoxRecordServiceImpl dsstoxRecordService=new  DsstoxRecordServiceImpl();
 	
+	long minModelId=223L;
+	long maxModelID=240L;
 	
 	
 	String lanId="tmarti02";
-	String version="5.1.3";
+	static String version="5.1.3";
 
 	
 	String[] propertyNames = { "Fathead minnow LC50 (96 hr)", "Daphnia magna LC50 (48 hr)",
@@ -83,13 +94,13 @@ public class PredictionDashboardScriptTEST  {
 			hmMethods.put("consensus_regressor",methodService.findByName("consensus_regressor"));
 			hmMethods.put("consensus_classifier",methodService.findByName("consensus_classifier"));
 			
-			HashMap<String, Model> hmModels = createModels(hmMethods);
+			TreeMap<String, Model> hmModels = createModels(hmMethods);
 			
 //			if(true)return;
 			
 			DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
 			DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
-			Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot);
+			Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot,"dtxcid");
 
 			
 			for (String DTXSID:htResultsAll.keySet()) {
@@ -113,7 +124,7 @@ public class PredictionDashboardScriptTEST  {
 		
 		DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
 		DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
-		Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot);
+		Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot,"dtxcid");
 
 		
 		Type listOfMyClassObject = new TypeToken<List<PredictionResults>>() {}.getType();
@@ -126,7 +137,7 @@ public class PredictionDashboardScriptTEST  {
 			hmMethods.put("consensus_regressor",methodService.findByName("consensus_regressor"));
 			hmMethods.put("consensus_classifier",methodService.findByName("consensus_classifier"));
 			
-			HashMap<String, Model> hmModels = createModels(hmMethods);
+			TreeMap<String, Model> hmModels = createModels(hmMethods);
 			
 //			if(true)return;
 			
@@ -143,39 +154,16 @@ public class PredictionDashboardScriptTEST  {
 	}
 	
 	/* Possible prediction errors:
-	
-	 * [
-  {
-    "prediction_error": "Error processing record with CAS null, error=Timeout 120000 ms while generating paths for null."
-  },
-  {
-    "prediction_error": "The consensus prediction for this chemical is considered unreliable since only one prediction can only be made"
-  },
-  {
-    "prediction_error": "FindPaths"
-  },
-  {
-    "prediction_error": "Only one nonhydrogen atom"
-  },
-  {
-    "prediction_error": "FindRings"
-  },
-  {
-    "prediction_error": "Molecule does not contain carbon"
-  },
-  {
-    "prediction_error": "Molecule contains unsupported element"
-  },
-  {
-    "prediction_error": "No prediction could be made due to applicability domain violation"
-  },
-  {
-    "prediction_error": "Multiple molecules"
-  }
-]
+    "Error processing record with CAS null, error=Timeout 120000 ms while generating paths for null."
+    "The consensus prediction for this chemical is considered unreliable since only one prediction can only be made"
+    "FindPaths"
+    "Only one nonhydrogen atom"
+    "FindRings"
+    "Molecule does not contain carbon"
+    "Molecule contains unsupported element"
+    "No prediction could be made due to applicability domain violation"
+    "Multiple molecules"
 	 */
-	
-
 	void runFromDashboardJsonFileBatchPost(String filepathJson) {
 		
 		try {
@@ -184,14 +172,14 @@ public class PredictionDashboardScriptTEST  {
 			
 			DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
 			DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
-			Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot);
+			Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot,"dtxcid");
 			
 			//TODO add code to create automatically new methods if they arent in the methods table in db
 			HashMap<String,Method> hmMethods=new HashMap<>();
 			hmMethods.put("consensus_regressor",methodService.findByName("consensus_regressor"));
 			hmMethods.put("consensus_classifier",methodService.findByName("consensus_classifier"));
 			
-			HashMap<String, Model> hmModels = createModels(hmMethods);
+			TreeMap<String, Model> hmModels = createModels(hmMethods);
 			
 			BufferedReader br=new BufferedReader(new FileReader(filepathJson));
 			
@@ -202,7 +190,8 @@ public class PredictionDashboardScriptTEST  {
 			List<PredictionReport>predictionReports=new ArrayList<>();
 						
 			//Get list of prediction dashboard keys already in the database:
-			HashSet<String> pd_keys = getPredictionsDashboardKeysInDB();
+			HashSet<String> pd_keys = OPERA_csv_to_PostGres_DB.getPredictionsDashboardKeysInDB(minModelId,maxModelID);
+
 
 			int countAlreadyHave=0;
 			Gson gson=new Gson();
@@ -281,30 +270,172 @@ public class PredictionDashboardScriptTEST  {
 		} 
 		
 	}
+	
 
-	private HashSet<String> getPredictionsDashboardKeysInDB() throws SQLException {
-		HashSet<String> pd_keys=new HashSet<>();
+	void createRecordsFromJsonFile(String filepathJson,boolean fixReports,boolean skipER,boolean writeToDB) {
+		
+		try {
+			System.out.println(filepathJson);
+			
+			DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
+			DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
+			Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot,"dtxcid");
+			
+//			HashMap<String, Model> hmModels = createModels(hmMethods);
+			TreeMap<String, Model> hmModels = CreatorScript.getModelsMap();
+			TreeMap<String,MethodAD>hmMethodAD=CreatorScript.getMethodAD_Map();
+			
+			BufferedReader br=new BufferedReader(new FileReader(filepathJson));
+			
+			int counter=0;
+			int countToPost=1000;
+			
+			List<PredictionDashboard>predictions=new ArrayList<>();
+						
+			//Get list of prediction dashboard keys already in the database:
+			HashSet<String> pd_keys = OPERA_csv_to_PostGres_DB.getPredictionsDashboardKeysInDB(minModelId,maxModelID);
 
-		String sql="select canon_qsar_smiles, fk_dsstox_records_id, fk_model_id from qsar_models.predictions_dashboard pd\n"+
-				"where fk_model_id>=223 and fk_model_id<=240";
+			int countAlreadyHave=0;
+			Gson gson=new Gson();
+			
+			while (true) {
 				
-		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
-					
-		while (rs.next()) {
-			String canon_qsar_smiles=rs.getString(1);
-			Long fk_dsstox_records_id=rs.getLong(2);
-			String fk_model_id=rs.getString(3);
-			String key=canon_qsar_smiles+"\t"+fk_dsstox_records_id+"\t"+fk_model_id;
-//				System.out.println(key);
-			pd_keys.add(key);
+				String strPredictionResults=br.readLine();
+				if(strPredictionResults==null) break;
+				counter++;
+				
+//				System.out.println(strPredictionResults);
+								
+				if(counter%countToPost==0) System.out.println(counter);
+				
+				PredictionResults predictionResults=Utilities.gson.fromJson(strPredictionResults,PredictionResults.class);
+				
+//				System.out.println(predictionResults.getEndpoint()+"\t"+predictionResults.getError());
+				
+				if(fixReports)
+					fixPredictionResults(predictionResults);//fixes error where CAS was set to the SID for the test chemical in the similar chemicals table
+				
+//				System.out.println(Utilities.gson.toJson(predictionResults));
+								
+				PredictionDashboard pd=convertPredictionResultsToPredictionDashboard(predictionResults,hmModels,true,htCIDtoDsstoxRecordId);
+				
+				if (skipER) {
+					if (predictionResults.getEndpoint().equals(DevQsarConstants.ESTROGEN_RECEPTOR_BINDING)
+							|| predictionResults.getEndpoint().equals(DevQsarConstants.ESTROGEN_RECEPTOR_RBA))
+						continue;
+				}
+
+				
+//				System.out.println("*"+predictionResults.getError()+"*"+"\t"+predictionResults.getPredictionResultsPrimaryTable().getMessage());
+
+				addApplicabilityDomain(predictionResults,pd,hmMethodAD);
+
+				
+				//See if prediction is already in the database:
+				if(pd_keys.contains(pd.getKey())) {
+					countAlreadyHave++;
+//					System.out.println("Already have in db ("+countAlreadyHave+"):"+pd.getKey());
+					continue;
+				}
+				
+				predictions.add(pd);
+				
+//				if(predictionDashboard.getPredictionError()!=null) continue;//For testing
+				
+//				byte[] bytes=PredictionReport.compress(strPredictionResults);
+//				byte[] bytes=strPredictionResults.getBytes(StandardCharsets.ISO_8859_1);
+				
+				
+//				if(counter==1) {
+//					System.out.println(Utilities.gson.toJson(predictionResults));
+//					String fileName="results.html";
+//					String folder="data\\TEST1.0\\";
+//					displayHTMLReport(predictionResults, fileName, folder);
+//				}
+//				if(true) return;
+				
+				//Store fixed report as string:
+				String strPredictionResults2=gson.toJson(predictionResults);
+
+				byte[] bytes=strPredictionResults2.getBytes();
+				
+//				String line2=PredictionReport.decompress(bytes);
+//				System.out.println("Decompressed:"+line2);
+				
+//				System.out.println(pd.getDtxcid()+"\t"+pd.getModel().getName()+"\t"+pd.getPredictionValue()+"\t"+pd.getPredictionString()+"\t"+pd.getPredictionError());
+
+				pd.setPredictionReport(new PredictionReport(pd, bytes, lanId));
+				
+//				predictionReportService.create(predictionReport);
+								
+				if(writeToDB && predictions.size()==countToPost) {
+//					System.out.println(counter);
+					predictionDashboardService.createSQL(predictions);
+					predictions.clear();
+				}
+				
+				
+//				if(true) break;
+			}
+			br.close();
+
+			if(writeToDB) predictionDashboardService.createSQL(predictions);//do last ones
+
+			System.out.println("exited main loop");
+			System.out.println("countAlreadyHave="+countAlreadyHave);
+			
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		} 
+		
+	}
+
+	private void addApplicabilityDomain(PredictionResults pr,PredictionDashboard pd, TreeMap<String, MethodAD> hmMethodAD) {
+		
+		QsarPredictedADEstimate adEstimate=new QsarPredictedADEstimate();
+		adEstimate.setCreatedBy(lanId);
+		adEstimate.setMethodAD(hmMethodAD.get(DevQsarConstants.Applicability_Domain_Combined));
+
+		
+		if(pd.getPredictionError()==null) {
+			adEstimate.setApplicabilityValue(1.0);
+			adEstimate.setConclusion("Inside");
+			adEstimate.setReasoning("Compound is inside WebTEST applicability domains");
+			
+		} else {
+//			if(pr.getDTXSID().equals("DTXSID7020005"))
+//				System.out.println("Error not null, "+pr.getDTXCID()+"\t"+pr.getEndpoint()+", error="+pd.getPredictionError());
+			
+			adEstimate.setApplicabilityValue(0.0);
+			adEstimate.setConclusion("Outside");
+			adEstimate.setReasoning(pd.getPredictionError());
 		}
 		
-		System.out.println("Got keys for test predictions in predictions dashboard:"+pd_keys.size());
+		adEstimate.setPredictionDashboard(pd);
+		List<QsarPredictedADEstimate>adEstimates=new ArrayList<>();
+		adEstimates.add(adEstimate);
 		
-		return pd_keys;
+		pd.setQsarPredictedADEstimates(adEstimates);
+		
 	}
-	
-	
+
+	private void displayHTMLReport(PredictionResults predictionResults, String fileName, String folder) {
+		String htmlReport=RunFromSmiles.getReportAsHTMLString(predictionResults);
+		//		System.out.println(htmlReport);
+		try {
+			File file=new File(folder+fileName);
+			FileWriter fw=new FileWriter(file);
+			fw.write(htmlReport);
+			fw.flush();
+			fw.close();
+			Desktop desktop = Desktop.getDesktop();
+			desktop.browse(file.toURI());
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+
 
 	/**
 	 * TODO this method needs to be updated based on latest schema for predictions_dashboard table
@@ -382,13 +513,12 @@ public class PredictionDashboardScriptTEST  {
 			
 			DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
 			DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
-			Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot);
-
+			Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot,"dtxcid");
 			
 			HashMap<String,Method> hmMethods=new HashMap<>();
 			hmMethods.put("consensus_regressor",methodService.findByName("consensus_regressor"));
 			hmMethods.put("consensus_classifier",methodService.findByName("consensus_classifier"));
-			HashMap<String, Model> hmModels = createModels(hmMethods);
+			TreeMap<String, Model> hmModels = createModels(hmMethods);
 			
 			BufferedReader br=new BufferedReader(new FileReader(filepathJson));
 								
@@ -557,8 +687,8 @@ public class PredictionDashboardScriptTEST  {
 	}
 
 
-	private HashMap<String, Model> createModels(HashMap<String, Method> hmMethods) {
-		HashMap<String,Model> hmModels=new HashMap<>();
+	private TreeMap<String, Model> createModels(HashMap<String, Method> hmMethods) {
+		TreeMap<String,Model> hmModels=CreatorScript.getModelsMap();
 		
 		String sourceName=getSoftwareName();
 		
@@ -583,6 +713,8 @@ public class PredictionDashboardScriptTEST  {
 			String modelName=getModelName(propertyNameDB); 
 			
 //			System.out.println(modelName);
+			
+			if(hmModels.containsKey(modelName)) continue;
 			
 			Model model=new Model(modelName, hmMethods.get(methodName), null,descriptorSetName, datasetName, splittingName, source,lanId);
 			model=CreatorScript.createModel(model);
@@ -706,7 +838,7 @@ public class PredictionDashboardScriptTEST  {
 //		
 //	}
 	
-	String getSoftwareName() {
+	static String getSoftwareName() {
 		return "TEST"+version;
 	}
 	
@@ -722,7 +854,7 @@ public class PredictionDashboardScriptTEST  {
 	
 
 	
-	PredictionDashboard convertPredictionResultsToPredictionDashboard(PredictionResults pr,HashMap<String,Model>htModels,boolean convertPredictionMolarUnits,Hashtable<String,Long> htCIDtoDsstoxRecordId) {
+	PredictionDashboard convertPredictionResultsToPredictionDashboard(PredictionResults pr,TreeMap<String,Model>htModels,boolean convertPredictionMolarUnits,Hashtable<String,Long> htCIDtoDsstoxRecordId) {
 
 		if(pr.getSmiles()==null) pr.setSmiles("N/A");
 		
@@ -738,6 +870,8 @@ public class PredictionDashboardScriptTEST  {
 				String propertyNameDB=getPropertyNameDB(propertyName);
 				String modelName=getModelName(propertyNameDB);
 				
+				pr.setEndpoint(propertyNameDB);
+				
 //				System.out.println(Utilities.gson.toJson(htModels.get(modelName)));
 				
 				pd.setModel(htModels.get(modelName));
@@ -745,6 +879,7 @@ public class PredictionDashboardScriptTEST  {
 //				System.out.println("here");
 								
 				pd.setCanonQsarSmiles("N/A");
+				pd.setDtxcid(pr.getDTXCID());
 				
 				DsstoxRecord dr=new DsstoxRecord();
 				dr.setId(htCIDtoDsstoxRecordId.get(pr.getDTXCID()));
@@ -755,37 +890,16 @@ public class PredictionDashboardScriptTEST  {
 //				pd.setSmiles(pr.getSmiles());
 				
 				pd.setCreatedBy(lanId);
+				
+//				if(pr.getPredictionResultsPrimaryTable()!=null && pr.getPredictionResultsPrimaryTable().getMessage()!=null) {
+//					System.out.println("message="+pr.getPredictionResultsPrimaryTable().getMessage());
+//				}
+				
 
 				if (pr.getError()!=null && !pr.getError().isBlank()) {
 					pd.setPredictionError(pr.getError());
 				} else {
-					if (pr.isBinaryEndpoint()) {
-						if (pt.getPredToxValue().equals("N/A")) {
-							pd.setPredictionError(pt.getMessage());
-						} else {
-							pd.setPredictionValue(Double.parseDouble(pt.getPredToxValue()));
-							pd.setPredictionString(pt.getPredValueEndpoint());
-						}
-					} else if (pr.isLogMolarEndpoint()) {
-
-						if (pt.getPredToxValue().equals("N/A")) {
-							pd.setPredictionError(pt.getMessage());
-						} else {
-							if (convertPredictionMolarUnits)
-								convertLogMolarUnits(pd, pt);
-							else {
-								pd.setPredictionValue(Double.parseDouble(pt.getPredToxValue()));
-//								pd.prediction_units=pt.getMolarLogUnits();
-							}
-						}
-					} else {
-
-						if (pt.getPredToxValMass().equals("N/A")) {
-							pd.setPredictionError(pt.getMessage());
-						} else {
-							pd.setPredictionValue(Double.parseDouble(pt.getPredToxValMass()));
-						}
-					}
+					setExperimentalPredictedValues(pr, convertPredictionMolarUnits, pd, pt);
 				}
 
 				if (pd.getPredictionError()!=null) {
@@ -813,35 +927,82 @@ public class PredictionDashboardScriptTEST  {
 		return pd;
 	}
 
-	
-	private static void convertLogMolarUnits(PredictionDashboard pd, PredictionResultsPrimaryTable pt) {
+	private void setExperimentalPredictedValues(PredictionResults pr, boolean convertPredictionMolarUnits,
+			PredictionDashboard pd, PredictionResultsPrimaryTable pt) {
 		
-		String modelName=pd.getModel().getName();
-		String name=modelName.replace(" "+pd.getModel().getSource(), "");
 		
-		if (name.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)
-				|| name.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)
-				|| name.equals(DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50)
-				|| name.contains(DevQsarConstants.WATER_SOLUBILITY)) {
-			pd.setPredictionValue(Math.pow(10.0,-Double.parseDouble(pt.getPredToxValue())));
-//			pd.prediction_units="M";
-		} else if (name.equals(DevQsarConstants.ORAL_RAT_LD50)) {
-			pd.setPredictionValue(Math.pow(10.0,-Double.parseDouble(pt.getPredToxValue())));
-//			pd.prediction_units="mol/kg";
-		} else if (name.equals(DevQsarConstants.BCF)) {
-			pd.setPredictionValue(Math.pow(10.0,Double.parseDouble(pt.getPredToxValue())));
-//			pd.prediction_units="L/kg";								
-		} else if (name.contains(DevQsarConstants.VAPOR_PRESSURE)) {
-			pd.setPredictionValue(Math.pow(10.0,Double.parseDouble(pt.getPredToxValue())));
-//			pd.prediction_units="mmHg";								
-		} else if (name.contains(DevQsarConstants.VISCOSITY)) {
-			pd.setPredictionValue(Math.pow(10.0,Double.parseDouble(pt.getPredToxValue())));
-//			pd.prediction_units="cP";								
-		} else if (name.equals(DevQsarConstants.ESTROGEN_RECEPTOR_RBA)) {
-			pd.setPredictionValue(Math.pow(10.0,Double.parseDouble(pt.getPredToxValue())));
-//			pd.prediction_units="Dimensionless";
+		if (pr.isBinaryEndpoint()) {
+			
+			if (pt.getPredToxValue().equals("N/A")) {
+				pd.setPredictionError(pt.getMessage());
+			} else {
+				pd.setPredictionValue(Double.parseDouble(pt.getPredToxValue()));
+				pd.setPredictionString(pt.getPredValueEndpoint());
+			}
+			
+			if (!pt.getExpToxValue().equals("N/A")) {
+				pd.setExperimentalValue(Double.parseDouble(pt.getExpToxValue()));
+				pd.setExperimentalString(pt.getExpToxValueEndpoint());
+//				System.out.println(pr.getDTXCID()+"\t"+pr.getEndpoint()+"\tExperimental value="+pd.getExperimentalValue()+",Experimental string="+pd.getExperimentalString());
+			}
+			
+			
+		} else if (pr.isLogMolarEndpoint()) {
+
+			if (pt.getPredToxValue().equals("N/A")) {
+				pd.setPredictionError(pt.getMessage());
+			} else {
+				if (convertPredictionMolarUnits)
+					pd.setPredictionValue(convertLogMolarUnits(pr.getEndpoint(), pt.getPredToxValue()));
+				else {
+					pd.setPredictionValue(Double.parseDouble(pt.getPredToxValue()));
+//								pd.prediction_units=pt.getMolarLogUnits();
+				}
+			}
+			
+			if (!pt.getExpToxValue().equals("N/A")) {
+				if (convertPredictionMolarUnits)
+					pd.setExperimentalValue(convertLogMolarUnits(pr.getEndpoint(), pt.getExpToxValue()));
+				else {
+					pd.setExperimentalValue(Double.parseDouble(pt.getExpToxValue()));
+				}
+			}
+			
+//			System.out.println(pr.getDTXCID()+"\t"+pr.getEndpoint()+"\tExperimental value="+pd.getExperimentalValue());
+			
+			
 		} else {
-			System.out.println("Not handled:"+name);
+
+			if (pt.getPredToxValMass().equals("N/A")) {
+				pd.setPredictionError(pt.getMessage());
+			} else {
+				pd.setPredictionValue(Double.parseDouble(pt.getPredToxValMass()));
+			}
+			
+			if (!pt.getExpToxValMass().equals("N/A")) {
+				pd.setExperimentalValue(Double.parseDouble(pt.getExpToxValMass()));
+//				System.out.println(pr.getDTXCID()+"\t"+pr.getEndpoint()+"\tExperimental value="+pd.getExperimentalValue());
+			}
+		}
+	}
+
+	
+	private static Double convertLogMolarUnits(String endpoint, String massValue) {
+		
+		if (endpoint.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)
+				|| endpoint.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)
+				|| endpoint.equals(DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50)
+				|| endpoint.contains(DevQsarConstants.WATER_SOLUBILITY)
+				|| endpoint.equals(DevQsarConstants.ORAL_RAT_LD50)) {
+			return Math.pow(10.0,-Double.parseDouble(massValue));
+		} else if (endpoint.equals(DevQsarConstants.BCF) 
+				|| endpoint.contains(DevQsarConstants.VAPOR_PRESSURE)
+				|| endpoint.contains(DevQsarConstants.VISCOSITY)
+				|| endpoint.equals(DevQsarConstants.ESTROGEN_RECEPTOR_RBA)) {
+			return Math.pow(10.0,Double.parseDouble(massValue));
+		} else {
+			System.out.println("Not handled:"+endpoint);
+			return null;
 		}
 	}
 	
@@ -1086,17 +1247,190 @@ public class PredictionDashboardScriptTEST  {
 		System.out.println("Done");
 		
 	}
+	
+	void deleteTEST_PredictionsSimple() {
+		System.out.print("Deleting from predictions_dashboard");
 
+		String sql="delete from qsar_models.predictions_dashboard pd using qsar_models.models m\n"+
+		"where pd.fk_model_id = m.id and m.fk_source_id=2;";
+		
+		SqlUtilities.runSQLUpdate(SqlUtilities.getConnectionPostgres(), sql);
+
+		System.out.println("Done");
+	}
+	
+	
+
+	
+	/* Possible prediction errors:
+    "The consensus prediction for this chemical is considered unreliable since only one prediction can only be made"
+    "No prediction could be made due to applicability domain violation"
+    "FindPaths"
+    "FindRings"
+    "Only one nonhydrogen atom"
+    "Molecule does not contain carbon"
+    "Molecule contains unsupported element"
+    "Multiple molecules"
+	 */
+	void loadSDE_Json_File() {
+		String folder="data\\TEST1.0\\";
+		String filepath=folder+"predictionResults.json.gz";
+		
+		
+		CompareStandaloneToSDE c=new CompareStandaloneToSDE();
+		
+		try {
+			
+			InputStream fileStream = new FileInputStream(filepath);
+			InputStream gzipStream = new GZIPInputStream(fileStream);
+			Reader decoder = new InputStreamReader(gzipStream,  StandardCharsets.UTF_8);
+			BufferedReader br = new BufferedReader(decoder);
+			
+			List<String> errors=new ArrayList<>();
+			
+			int index=1383;
+			
+			for (int i=1;i<=5000;i++) {
+				
+				String Line=br.readLine();
+				PredictionResults pr=Utilities.gson.fromJson(Line, PredictionResults.class);
+				
+				if (pr.getError()!=null) {					
+					if(!errors.contains(pr.getError())){
+						errors.add(pr.getError());
+					}
+//					System.out.println(pr.getDTXSID()+"\t"+pr.getEndpoint()+"\t"+pr.getError());
+				}
+//				System.out.println(Utilities.gson.toJson(pr));
+				
+//				if(i%1000==0) System.out.println(i);
+				
+//				if(pr.getError()==null || pr.getError().isBlank()) {
+//					System.out.println(i+"\t"+pr.getDTXSID()+"\t"+pr.getEndpoint()+"\t"+pr.getPredictionResultsPrimaryTable().getPredToxValMass());
+//					System.out.println(Utilities.gson.toJson(pr));
+//					break;
+//				}
+				
+				c.fixPredictionResultsSDE(pr);
+				
+				if(i==index) {
+					System.out.println(Utilities.gson.toJson(pr));
+					String fileName="results.html";
+					displayHTMLReport(pr, fileName, folder);
+				}
+				
+			}
+			
+			for (String error:errors) {
+				System.out.println(error);
+			}
+			
+			
+			br.close();
+			
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	
+	void deleteTEST_Records() {
+		OPERA_csv_to_PostGres_DB o=new OPERA_csv_to_PostGres_DB();
+		
+		o.deleteRecordsSimple("prediction_reports",minModelId,maxModelID);
+		o.deleteRecordsSimple("qsar_predicted_ad_estimates",minModelId,maxModelID);
+		o.deletePredictionsSimple(minModelId,maxModelID);
+		
+	}
+	
+
+	PredictionResults getPredictionResultsFromPredictionReport(String id,String modelName) {
+		
+		String idCol="dtxcid";
+		if (id.contains("SID")) idCol="dtxsid";
+		
+				
+		String sql="select file from qsar_models.prediction_reports pr\r\n"
+				+ "join qsar_models.predictions_dashboard pd on pr.fk_predictions_dashboard_id = pd.id\r\n"
+				+ "join qsar_models.models m on pd.fk_model_id = m.id\r\n"
+				+ "join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\r\n"
+				+ "where dr."+idCol+"='"+id+"' and dr.fk_dsstox_snapshot_id=1 and m.name='"+modelName+"';";
+				
+		try {
+			Connection conn=SqlUtilities.getConnectionPostgres();
+			
+			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+
+			if (rs.next()) {
+				String json=new String(rs.getBytes(1));
+				return Utilities.gson.fromJson(json,PredictionResults.class);
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+		
+	}
+	
+	public void viewReportsFromDatabase(String id) {
+
+		String folder="data\\opera\\reports";
+
+		//TODO just add list of TEST endpoints to DevQsarConstants similar to OPERA
+		List<String> propertyNames=TESTConstants.getFullEndpoints(null);
+		List<String> propertyNamesDB=new ArrayList<>();
+		
+		for(String propertyName:propertyNames) {
+			propertyNamesDB.add(getPropertyNameDB(propertyName));
+		}
+		
+		for (String propertyName:propertyNamesDB) {
+			
+			String modelName=getModelName(propertyName);
+//			System.out.println(modelName);
+			
+			PredictionResults pr=getPredictionResultsFromPredictionReport(id,modelName);
+			
+			if(pr==null) {
+				System.out.println("No report for "+propertyName);
+				continue;
+			}
+			
+			if(propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
+				System.out.println(Utilities.gson.toJson(pr));
+			}
+			
+			String filename=pr.getDTXCID()+"_"+pr.getEndpoint()+".html";
+			displayHTMLReport(pr, filename, folder);
+		}
+		
+	}
+	
 	public static void main(String[] args) {
 		PredictionDashboardScriptTEST pds=new PredictionDashboardScriptTEST();
 		
-		pds.deleteTEST_Predictions2();
+//		pds.deleteTEST_Records();
+//		pds.runNewPredictionsFromTextFile();		
 		
 		
+		boolean fixReports=false;
+		boolean skipER=true;
+		boolean writeToDB=true;
+//		pds.createRecordsFromJsonFile("data\\TEST1.0\\sample compounds.json",fixReports,skipER,writeToDB);
+
+		pds.viewReportsFromDatabase("DTXCID505");
+		
+		
+		//************************************************************************************
+		
+//		pds.loadSDE_Json_File();
+		
+//		pds.deleteTEST_Predictions2();
+
 //		pds.createDatasets();//TODO need to add the datapoints
-
-		pds.version="5.1.3";
-
+		
 //		String filePathJson="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\RunTestCalculationsFromJar\\reports\\sample.json";
 		
 
@@ -1143,6 +1477,85 @@ public class PredictionDashboardScriptTEST  {
 //		pds.extractRecords2(filePathJson,filePathJson2,dtxsid);
 		
 
+	}
+
+	private void runNewPredictionsFromTextFile() {
+
+		RunFromSmiles.debug=false;
+		
+		//Need to set path of structure db because it's a relative path and this is calling TEST project:
+		ResolverDb2.setSqlitePath("C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\TEST_2020_03_18_EPA_Github\\databases\\snapshot.db");
+		
+		boolean createReports=true;//whether to store report
+		boolean createDetailedReports=false;//detailed reports have lots more info and creates more html files
+		String method =TESTConstants.ChoiceConsensus;//what QSAR method being used (default- runs all methods and takes average)
+
+		List<String>endpoints=TESTConstants.getFullEndpoints(null);
+//		endpoints= Arrays.asList(TESTConstants.ChoiceFHM_LC50);
+		
+		Gson gson=new Gson();
+		try {
+			
+			String filepath="data\\TEST1.0\\sample compounds.txt";
+			String filepathOut="data\\TEST1.0\\sample compounds.json";
+			
+			BufferedReader br=new BufferedReader(new FileReader(filepath));
+			br.readLine();
+			
+			FileWriter fw=new FileWriter(filepath.replace(".txt", ".json"));
+			
+			int count=0;
+			
+			while (true) {
+				String Line=br.readLine();
+				if(Line==null) break;
+				
+				count++;
+				
+				String [] vals=Line.split("\t");
+				
+				String dtxsid=vals[0];
+				String dtxcid=vals[1];
+				String casrn=vals[2];
+				String smiles=vals[3];
+				
+				
+				AtomContainer molecule=RunFromSmiles.createMolecule(smiles, dtxsid, dtxcid, casrn);
+				
+
+				AtomContainerSet acs=new AtomContainerSet();
+				
+				acs.addAtomContainer(molecule);
+//				acs.addAtomContainer(RunFromSmiles.createMolecule("NC1=C(C=CC(=C1)NC(=O)C)OCC", "DTXSID7020053","17026-81-2"));
+				
+				
+				List<PredictionResults>listPR=RunFromSmiles.runEndpointsAsList(acs, endpoints, method,createReports,createDetailedReports,DSSToxRecord.strSID);		
+				
+				System.out.println(count+"\t"+smiles+"\t"+listPR.size());
+				
+//				if (smiles.contains(".")) {
+//					System.out.println(Utilities.gson.toJson(listPR.get(0)));	
+//				}
+				
+				for (PredictionResults pr:listPR) {
+					String json=gson.toJson(pr);
+					fw.write(json+"\r\n");
+				}
+				fw.flush();
+				
+//				System.out.println(dtxsid+"\t"+smiles+"\t"+molecule.getAtomCount());
+				
+//				if(true) break;
+				
+			}
+			
+			br.close();
+			fw.close();
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
 	}
 
 	private void lookAtValuesInDatabase() {
@@ -1236,6 +1649,17 @@ public class PredictionDashboardScriptTEST  {
 			if(pr.getCAS()!=null) sc1_0.setCAS(pr.getCAS());
 			else sc1_0.setCAS("N/A");
 		}
+	}
+	
+	
+	private void fixPredictionResultsSDE(PredictionResults pr) {
+		
+		for(PredictionIndividualMethod pred:pr.getIndividualPredictionsForConsensus().getConsensusPredictions()) {
+			pred.setMethod(TESTConstants.getFullMethod(pred.getMethod()));
+		}
+		
+		pr.setEndpoint(TESTConstants.getFullEndpoint(pr.getEndpoint()));
+		
 	}
 	
 

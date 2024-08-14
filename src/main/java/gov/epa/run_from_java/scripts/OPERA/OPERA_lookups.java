@@ -14,6 +14,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
+
+
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
@@ -27,13 +29,13 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
 import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxRecordOtherCASRNServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxRecordServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.service.MethodADServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.CreatorScript;
 
 
 /**
@@ -41,9 +43,9 @@ import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 */
 public class OPERA_lookups {
 
-	public static TreeMap<String,DsstoxRecord>mapDsstoxRecordsByCID=new TreeMap<>();
-	public static TreeMap<String,DsstoxRecord>mapDsstoxRecordsBySID=new TreeMap<>();
-	public static TreeMap<String,DsstoxRecord>mapDsstoxRecordsByCAS=new TreeMap<>();
+	public  TreeMap<String,DsstoxRecord>mapDsstoxRecordsByCID=new TreeMap<>();
+	public  TreeMap<String,DsstoxRecord>mapDsstoxRecordsBySID=new TreeMap<>();
+	public  TreeMap<String,DsstoxRecord>mapDsstoxRecordsByCAS=new TreeMap<>();
 	
 	//No longer need following maps because added records with no dtxcids to the DsstoxRecord table (and json export)
 //	public TreeMap<String,DsstoxRecord>mapDsstoxRecordsBySID_NoCompound=new TreeMap<>();
@@ -59,13 +61,13 @@ public class OPERA_lookups {
 	public TreeMap<String,Property>mapProperties=null;
 	public TreeMap<String, Dataset>mapDatasets=null;
 	public TreeMap<String, Model>mapModels=null;
-	public TreeMap<String, MethodAD>mapMethodAD=null;
 	
+	public TreeMap<String, MethodAD>mapMethodAD=null;
 	public TreeMap<String, Statistic>mapStatistics=null;
 	
 //	Following files are used to fix the neighbors which are missing dtxsids- but might need to pull info from prod_dsstox instead???
-	static File fileJsonDsstoxRecords=new File("data\\dsstox\\json\\2023_04_snapshot_dsstox_records_2024_01_09.json");
-	static File fileJsonOtherCAS=new File("data\\dsstox\\json\\2023_04_snapshot_other_casrn lookup.json");
+	public static File fileJsonDsstoxRecords=new File("data\\dsstox\\json\\2023_04_snapshot_dsstox_records_2024_01_09.json");
+	public static File fileJsonOtherCAS=new File("data\\dsstox\\json\\2023_04_snapshot_other_casrn lookup.json");
 
 	
 	class OtherCAS {
@@ -73,10 +75,12 @@ public class OPERA_lookups {
 		String dsstox_substance_id;
 	}
 	
-	OPERA_lookups(boolean useJsonForDsstoxRecords) {
+	
+	
+	public OPERA_lookups(File fileJsonDsstoxRecords) {
 		
-		if (useJsonForDsstoxRecords) {
-			getDsstoxRecordsFromJsonExport();//loads from fileJsonDsstoxRecords
+		if (fileJsonDsstoxRecords!=null) {
+			getDsstoxRecordsFromJsonExport(fileJsonDsstoxRecords);//loads from fileJsonDsstoxRecords
 		} else {
 			getDsstoxRecordsFromDatabase();	
 		}		
@@ -90,16 +94,16 @@ public class OPERA_lookups {
 		System.out.println("Getting maps");
 		
 		System.out.println("Getting property map");
-		mapProperties=getPropertyMap(); 
+		mapProperties=CreatorScript.getPropertyMap(); 
 
 		System.out.println("Getting dataset map");
-		mapDatasets=getDatasetsMap();
+		mapDatasets=CreatorScript.getDatasetsMap();
 		
 		System.out.println("Getting model map");
-		mapModels=getModelsMap();
+		mapModels=CreatorScript.getModelsMap();
 		
 		System.out.println("Getting methodAD map");
-		mapMethodAD=getMethodAD_Map();
+		mapMethodAD=CreatorScript.getMethodAD_Map();
 		
 //		System.out.println("Getting statistic map");
 //		mapStatistics=getStatisticsMap();
@@ -165,7 +169,7 @@ public class OPERA_lookups {
 
 	
 	
-	public static List<OtherCAS> getOtherCASMapFromJson() {
+	public  List<OtherCAS> getOtherCASMapFromJson() {
 		List<OtherCAS>recsOtherCAS=null;
 		Type listType2 = new TypeToken<ArrayList<OtherCAS>>(){}.getType();
 		
@@ -235,8 +239,9 @@ public class OPERA_lookups {
 	/**
 	 * Gets dsstox records from json file export from dsstox snapshot and creates hashtables for look up for neighbors
 	 */
-	public static void getDsstoxRecordsFromJsonExport() {
+	public void getDsstoxRecordsFromJsonExport(File fileJsonDsstoxRecords) {
 		
+		System.out.println("Getting dsstox records from json files");
 		
 		dsstoxRecords=new ArrayList<>();
 		
@@ -283,6 +288,7 @@ public class OPERA_lookups {
 			
 			getOtherCASMapFromJson(); //loads from fileJsonOtherCAS
 			
+			System.out.println("Done");
 			
 
 		} catch (Exception e) {
@@ -296,14 +302,14 @@ public class OPERA_lookups {
 	 *  to look up neighbors (takes about 1 minute when not in office)
 	 * 
 	 */
-	public static void getDsstoxRecordsFromDatabase() {
+	public void getDsstoxRecordsFromDatabase() {
 		int fk_snapshot_id=1;
 		
 		dsstoxRecords=new ArrayList<>();
 
 		try {
 			
-			TreeMap<Long, List<DsstoxOtherCASRN>> tmOtherCAS = getOtherCAS_Map();//ideally hibernate could autopopulate the other casrns stored in dsstoxRecord but this is work around for now
+			TreeMap<Long, List<DsstoxOtherCASRN>> tmOtherCAS = CreatorScript.getOtherCAS_Map();//ideally hibernate could autopopulate the other casrns stored in dsstoxRecord but this is work around for now
 
 			DsstoxRecordServiceImpl rs=new DsstoxRecordServiceImpl();
 			List<DsstoxRecord>recsDB=rs.findAll();
@@ -339,39 +345,7 @@ public class OPERA_lookups {
 	}
 
 	
-	/**
-	 * Gets map of other casrns
-	 * Key = DsstoxRecord id
-	 * Value = list of DsstoxOtherCASRNs
-	 * 
-	 * @return
-	 */
-	public static TreeMap<Long, List<DsstoxOtherCASRN>> getOtherCAS_Map() {
-		DsstoxRecordOtherCASRNServiceImpl ocs=new DsstoxRecordOtherCASRNServiceImpl();
-		
-//		System.out.println("Getting recs OtherCAS");
-//		List<DsstoxOtherCASRN>recsOtherCAS=ocs.findAll();//slow for some reason
-		List<DsstoxOtherCASRN>recsOtherCAS=ocs.findAllSql();
-		
-//		System.out.println("Done");
-		
-		TreeMap<Long,List<DsstoxOtherCASRN>> tmOtherCAS=new TreeMap<>();
-		
-		for(DsstoxOtherCASRN recOtherCAS:recsOtherCAS) {
-			
-			long id=recOtherCAS.getFk_dsstox_record_id();
-			
-			if(tmOtherCAS.get(id)==null) {
-				List<DsstoxOtherCASRN>otherCASRNs=new ArrayList<>();
-				tmOtherCAS.put(id,otherCASRNs);
-				otherCASRNs.add(recOtherCAS);
-			} else {
-				List<DsstoxOtherCASRN>otherCASRNs=tmOtherCAS.get(id);
-				otherCASRNs.add(recOtherCAS);
-			}
-		}
-		return tmOtherCAS;
-	}
+
 	
 	private DsstoxRecord createNaphthalene() {
 		DsstoxRecord dr=new DsstoxRecord();
@@ -388,70 +362,11 @@ public class OPERA_lookups {
 	
 	
 	
-	public static TreeMap <String,Property> getPropertyMap() {
-		
-		PropertyServiceImpl ps=new PropertyServiceImpl();
-		List<Property>properties=ps.findAll();
-
-		TreeMap <String,Property>mapProperties=new TreeMap<>();
-		for (Property property:properties) {
-			mapProperties.put(property.getName(), property);
-		}
-		return mapProperties;
-	}
 	
-	private TreeMap<String,MethodAD> getMethodAD_Map() {
-
-		MethodADServiceImpl servMAD=new MethodADServiceImpl();
-		
-		List<MethodAD>methodADs=servMAD.findAll();
-
-		TreeMap<String,MethodAD>map=new TreeMap<>();
-		
-		for (MethodAD methodAD:methodADs) {
-			map.put(methodAD.getName(), methodAD);
-//			System.out.println(methodAD.getName()+"\t"+methodAD.getDescription());
-		}
-
-		return map;
-	}
-
 	
-	public static TreeMap<String, Dataset> getDatasetsMap() {
-		
-		DatasetServiceImpl ps=new DatasetServiceImpl();
-		List<Dataset>datasets=ps.findAll();
-
-		TreeMap <String,Dataset>mapDatasets=new TreeMap<>();
-		for (Dataset dataset:datasets) {
-			mapDatasets.put(dataset.getName(), dataset);
-		}
-		return mapDatasets;
-	}
 	
-	public static TreeMap<String, Model> getModelsMap() {
-		
-		ModelServiceImpl ps=new ModelServiceImpl();
-		List<Model>models=ps.getAll();
-
-		TreeMap <String,Model>mapModels=new TreeMap<>();
-		for (Model model:models) {
-			mapModels.put(model.getName(), model);
-		}
-		return mapModels;
-	}
 	
-	private TreeMap<String, Statistic> getStatisticsMap() {
-		
-		StatisticService ps=new StatisticServiceImpl();
-		List<Statistic>statistics=ps.getAll();
-
-		TreeMap <String,Statistic>mapStatistics=new TreeMap<>();
-		for (Statistic statistic:statistics) {
-			mapStatistics.put(statistic.getName(), statistic);
-		}
-		return mapStatistics;
-	}
+	
 	
 	
 	/**

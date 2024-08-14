@@ -43,7 +43,7 @@ public class DsstoxRecord {
 	@Column(name="cid")
 	private Long cid;
 	
-	@NotBlank(message="smiles required")
+	@NotNull(message="smiles required")
 	@Column(name="smiles")
 	private String smiles;
 		
@@ -82,7 +82,7 @@ public class DsstoxRecord {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator required")
+	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
 

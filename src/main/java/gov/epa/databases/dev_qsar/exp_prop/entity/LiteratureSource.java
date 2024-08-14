@@ -15,7 +15,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -29,7 +29,7 @@ public class LiteratureSource {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 	
-	@NotBlank(message="Source name required")
+	@NotNull(message="Source name required")
 	@Column(name="name", unique=true)
 	private String name;
 	
@@ -40,7 +40,7 @@ public class LiteratureSource {
 	@Column(name="author")
 	private String author;
 	
-	@NotBlank(message="Citation required")
+	@NotNull(message="Citation required")
 	@Column(name="citation", length=1000)
 	private String citation;
 
@@ -78,7 +78,7 @@ public class LiteratureSource {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator name required")
+	@NotNull(message="Creator name required")
 	@Column(name="created_by")
 	private String createdBy;
 	

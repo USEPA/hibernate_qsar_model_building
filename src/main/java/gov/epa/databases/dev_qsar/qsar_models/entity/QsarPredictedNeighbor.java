@@ -28,13 +28,12 @@ import gov.epa.run_from_java.scripts.OPERA.HTML_Report_Creator_From_OPERA_Report
 import gov.epa.run_from_java.scripts.OPERA.OPERA_lookups;
 
 @Entity
-@Table(name="qsar_predicted_neighbors", uniqueConstraints={@UniqueConstraint(columnNames = {"fk_predictions_dashboard_id", "neighbor_number","casrn","dtxsid"})})
+@Table(name="qsar_predicted_neighbors", uniqueConstraints={@UniqueConstraint(columnNames = {"fk_predictions_dashboard_id", "neighbor_number","fk_dsstox_records_id"})})
 public class QsarPredictedNeighbor {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 
-	
 	@NotNull(message="Neighbor number required")
 	@Column(name="neighbor_number")
 	private Integer neighborNumber;
@@ -48,7 +47,6 @@ public class QsarPredictedNeighbor {
 
 //	@Column(name="mol_image_png_available")
 //	private Boolean molImagePNGAvailable;
-
 	
 //	@NotNull(message="QsarPredictedProperty required")
 //	@JoinColumn(name="fk_qsar_predicted_properties_id")
@@ -96,12 +94,17 @@ public class QsarPredictedNeighbor {
 //	private String dtxcid;
 
 	
-	@Column(name="exp")
-	private String exp;//in opera the neighbor can be a mixture so need to store the experimental value for the mixture
+	@Column(name="experimental_value")
+	private Double experimentalValue;//in opera the neighbor can be a mixture so need to store the experimental value for the mixture
 	
-	@Column(name="pred")
-	private String pred;////used to checking match to OPERA values from sqlite database
+	@Column(name="predicted_value")
+	private Double predictedValue;////used to checking match to OPERA values from sqlite database
 
+	@Column(name="experimental_string")
+	private String experimentalString;//in opera the neighbor can be a mixture so need to store the experimental value for the mixture
+	
+	@Column(name="predicted_string")
+	private String predictedString;////used to checking match to OPERA values from sqlite database
 
 	
 	@Column(name="updated_at")
@@ -117,24 +120,44 @@ public class QsarPredictedNeighbor {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator required")
+	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	
 	public QsarPredictedNeighbor() {}
 	
-	public QsarPredictedNeighbor(int neighborNumber,String casrn,String dtxsid,String inchiKey, String exp,String pred, String user,PredictionDashboard pd) {
+//	public QsarPredictedNeighbor(int neighborNumber,String casrn,String dtxsid,String inchiKey, String exp,String pred, String user,PredictionDashboard pd) {
+//		
+//		this.neighborNumber=neighborNumber;
+//		this.casrn=casrn;
+//		this.dtxsid=dtxsid;
+//		this.inchiKey=inchiKey;
+//
+//		this.exp=exp;
+//		this.pred=pred;
+//		this.createdBy=user;
+//		this.updatedBy=user;
+//		this.predictionDashboard=pd;
+//	}
+	
+
+	public QsarPredictedNeighbor(int neighborNumber,Double experimentalValue,String experimentalString,Double predictedValue,String predictedString,String dtxsid, String casrn, String user,PredictionDashboard pd) {
 		
 		this.neighborNumber=neighborNumber;
-		this.casrn=casrn;
-		this.dtxsid=dtxsid;
-		this.inchiKey=inchiKey;
 
-		this.exp=exp;
-		this.pred=pred;
+		this.experimentalValue=experimentalValue;
+		this.predictedValue=predictedValue;
+
+		this.experimentalString=experimentalString;
+		this.predictedString=predictedString;
+
+		this.dtxsid=dtxsid;
+		this.casrn=casrn;
+		
 		this.createdBy=user;
 		this.updatedBy=user;
 		this.predictionDashboard=pd;
+		
 	}
 
 	public Integer getNeighborNumber() {
@@ -169,21 +192,6 @@ public class QsarPredictedNeighbor {
 		this.casrn = casrn;
 	}
 
-	public String getExp() {
-		return exp;
-	}
-
-	public void setExp(String exp) {
-		this.exp = exp;
-	}
-
-	public String getPred() {
-		return pred;
-	}
-
-	public void setPred(String pred) {
-		this.pred = pred;
-	}
 
 	public String getUpdatedBy() {
 		return updatedBy;
@@ -277,6 +285,7 @@ public class QsarPredictedNeighbor {
 	public static void removeEmptyNeighbors(List<QsarPredictedNeighbor> neighbors) {
 		for (int i=0;i<neighbors.size();i++) {
 			QsarPredictedNeighbor n=neighbors.get(i);
+			
 			if(n.getCasrn()==null && n.getDtxsid()==null) {
 				neighbors.remove(i--);
 			}
@@ -291,85 +300,106 @@ public class QsarPredictedNeighbor {
 	 * @param propertyName - used for print statements
 	 * @param lookups
 	 */
-	public static void cloneNeighbors(List<QsarPredictedNeighbor> neighbors, String propertyName,OPERA_lookups lookups) {
+	public static List<QsarPredictedNeighbor> splitNeighbors(List<QsarPredictedNeighbor> neighbors, String propertyName,OPERA_lookups lookups) {
+		
+		List<QsarPredictedNeighbor> neighborsNew=new ArrayList<QsarPredictedNeighbor>();
 		
 		for (int i=0;i<neighbors.size();i++) {
-		
 			QsarPredictedNeighbor n=neighbors.get(i);
 			
-						
 			if(n.getDtxsid()!=null && n.getDtxsid().contains("|")) {
-
-				String [] sidsArray=n.getDtxsid().split("\\|");
-				String [] casrnsArray=n.getCasrn().split("\\|");
-				
-				List<String>sids=new ArrayList<>();
-				List<String>casrns=new ArrayList<>();
-				
-				for (String sid:sidsArray) {
-					sid=sid.trim();
-					if(sid.equals("?") || sid.equals("NoID") || sid.isEmpty()) continue;
-					sids.add(sid);
-				}
-				
-				for (String casrn:casrnsArray) {
-					casrn=casrn.trim();
-					if(casrn.equals("?") || casrn.equals("NoID") || casrn.isEmpty()) continue;
-					casrns.add(casrn);
-				}
-				
-				if (sids.size()!=casrns.size()) {//mismatch in length of arrays, look up CAS from SID in DB
-					//						System.out.println(propertyName+"\t"+n.getPredictionDashboard().getDsstoxRecord().getDtxcid()+"\t"+n.getNeighborNumber()+"\tmismatch on sid and cas");
-
-					neighbors.remove(i);
-					for (int j=sids.size()-1;j>=0;j--) {//go in reverse order to preserve order
-						String dtxsid=sids.get(j);
-						
-						String casrnDB=null;
-						if (lookups.mapDsstoxRecordsBySID.get(dtxsid)!=null) {
-							casrnDB=lookups.mapDsstoxRecordsBySID.get(dtxsid).getCasrn();
-//							System.out.println("Found casrn from db:"+casrnDB);
-						}
-						
-//						System.out.println("unequal array sizes:"+j+"\t"+dtxsid+"\t"+casrnDB);
-						
-						QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),casrnDB,dtxsid,n.getInchiKey(),n.getExp(),n.getPred(), n.getCreatedBy(),n.getPredictionDashboard());
-						neighbors.add(i,nnew);
-					}
-
-				} else {
-					neighbors.remove(i);
-					for (int j=sids.size()-1;j>=0;j--) {//go in reverse order to preserve order
-						String dtxsid=sids.get(j);
-						String casrn=casrns.get(j);
-						
-//						System.out.println("equal array sizes:"+j+"\t"+dtxsid+"\t"+casrn);
-
-						QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),casrn,dtxsid,n.getInchiKey(),n.getExp(),n.getPred(), n.getCreatedBy(),n.getPredictionDashboard());
-						neighbors.add(i,nnew);
-					}
-
-				}
-
-
+				handleMultipleSIDs(n,neighborsNew, lookups);
 			} else if (n.getDtxsid()==null && n.getCasrn().contains("|")) {
-				String [] casrnsArray=n.getCasrn().split("\\|");
-				
-				List<String>casrns=Arrays.asList(casrnsArray);
-				
-				neighbors.remove(i);
-				for (int j=casrns.size()-1;j>=0;j--) {//go in reverse order to preserve order
-					String casrn=casrns.get(j).trim();
-					QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),casrn,null,n.getInchiKey(),n.getExp(),n.getPred(), n.getCreatedBy(),n.getPredictionDashboard());
-					neighbors.add(i,nnew);
-				}
+				handleMultipleCAS(n,neighborsNew);
 			} else {
 				if(n.getDtxsid()!=null && (n.getDtxsid().equals("?") || n.getDtxsid().equals("NoID"))) {
 					n.setDtxsid(null);
 				}
-				//Dont need to clone neighbors
+				neighborsNew.add(n);
 			}
 			
+		}
+		return neighborsNew;
+	}
+
+	private static void handleMultipleCAS(QsarPredictedNeighbor n,List<QsarPredictedNeighbor> neighborsNew) {
+		String [] casrnsArray=n.getCasrn().split("\\|");
+		
+		List<String>casrns=Arrays.asList(casrnsArray);
+		
+		for (int j=0; j<casrns.size(); j++) {
+			String casrn=casrns.get(j).trim();
+			QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),n.getExperimentalValue(),n.getExperimentalString(),
+					n.getPredictedValue(),n.getPredictedString(), n.getDtxsid(), 
+					casrn, n.getCreatedBy(),n.getPredictionDashboard());
+			neighborsNew.add(nnew);
+		}
+	}
+
+	private static void handleMultipleSIDs(QsarPredictedNeighbor n, List<QsarPredictedNeighbor> neighborsNew, OPERA_lookups lookups) {
+		String [] sidsArray=n.getDtxsid().split("\\|");
+		String [] casrnsArray=n.getCasrn().split("\\|");
+		
+		List<String>sids=new ArrayList<>();
+		List<String>casrns=new ArrayList<>();
+		
+		for (String sid:sidsArray) {
+			sid=sid.trim();
+			if(sid.equals("?") || sid.equals("NoID") || sid.isEmpty()) continue;
+			sids.add(sid);
+		}
+		
+		for (String casrn:casrnsArray) {
+			casrn=casrn.trim();
+			if(casrn.equals("?") || casrn.equals("NoID") || casrn.isEmpty()) continue;
+			casrns.add(casrn);
+		}
+
+		if (sids.size()!=casrns.size()) {//mismatch in length of arrays, look up CAS from SID in DB
+			//						System.out.println(propertyName+"\t"+n.getPredictionDashboard().getDsstoxRecord().getDtxcid()+"\t"+n.getNeighborNumber()+"\tmismatch on sid and cas");
+
+			for (int j=0;j<sids.size();j++) {
+				String dtxsid=sids.get(j);
+				String casrnDB=null;
+				if (lookups.mapDsstoxRecordsBySID.get(dtxsid)!=null) {
+					casrnDB=lookups.mapDsstoxRecordsBySID.get(dtxsid).getCasrn();
+//							System.out.println("Found casrn from db:"+casrnDB);
+				}
+				
+//				System.out.println("unequal array sizes:"+j+"\t"+dtxsid+"\t"+casrnDB);
+				
+//				QsarPredictedNeighbor nnew = new QsarPredictedNeighbor(n.getNeighborNumber(), n.getExp(), n.getPred(),
+//						dtxsid, casrnDB, n.getCreatedBy(), n.getPredictionDashboard());
+				
+				QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),n.getExperimentalValue(),
+						n.getExperimentalString(),n.getPredictedValue(),n.getPredictedString(), 
+						dtxsid, casrnDB, n.getCreatedBy(),n.getPredictionDashboard());
+				
+				
+				
+				neighborsNew.add(nnew);
+			}
+
+		} else {
+			for (int j=0;j<sids.size();j++) {//go in reverse order to preserve order
+				String dtxsid=sids.get(j);
+				String casrn=casrns.get(j);
+//						System.out.println("equal array sizes:"+j+"\t"+dtxsid+"\t"+casrn);
+
+//				QsarPredictedNeighbor nnew = new QsarPredictedNeighbor(n.getNeighborNumber(), n.getExp(), n.getPred(),
+//						dtxsid, casrn, n.getCreatedBy(), n.getPredictionDashboard());
+
+				QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),n.getExperimentalValue(),
+						n.getExperimentalString(),n.getPredictedValue(),n.getPredictedString(), 
+						dtxsid, casrn, n.getCreatedBy(),n.getPredictionDashboard());
+
+				
+//				System.out.println(j+"\t"+n.getPred());
+
+				
+				neighborsNew.add(nnew);
+			}
+
 		}
 	}
 
@@ -390,7 +420,9 @@ public class QsarPredictedNeighbor {
 		for (QsarPredictedNeighbor n:neighbors) {
 
 			DsstoxRecord dr=null;
-
+			
+			n.setMatchBy("None");
+			
 			if(n.getDtxsid()==null || lookups.mapDsstoxRecordsBySID.get(n.getDtxsid())==null) {
 
 				if(n.getCasrn()!=null) {
@@ -398,48 +430,39 @@ public class QsarPredictedNeighbor {
 					if(lookups.mapDsstoxRecordsByCAS.get(n.getCasrn())!=null) {
 						dr=lookups.mapDsstoxRecordsByCAS.get(n.getCasrn());
 
-						if(dr.getCasrn().equals(n.getCasrn())) {
+						if(dr.getCasrn().equals(dr.getCasrn())) {
 							n.setMatchBy("CASRN");
 						}
 
 						if(dr.getOtherCasrns().size()>0) {
 							for(DsstoxOtherCASRN oc:dr.getOtherCasrns()) {
-								if(oc.getCasrn().equals(n.getCasrn())) {
+								if(oc.getCasrn().equals(dr.getCasrn())) {
 									n.setMatchBy("Other CASRN");
 								}
 							}
 						}
-
 					}
 					
-					if(n.getMatchBy()==null && !HTML_Report_Creator_From_OPERA_Report.isCAS_OK(n.getCasrn()))
-						n.setMatchBy("Invalid CASRN");
-
-				} else {
-					n.setMatchBy("None");
-				}
-
+				} 
 
 			} else {
 
 				if(lookups.mapDsstoxRecordsBySID.get(n.getDtxsid())!=null) {
 					dr=lookups.mapDsstoxRecordsBySID.get(n.getDtxsid());
 					n.setMatchBy("DTXSID");
-				} else {
-					n.setMatchBy("N/A DTXSID");
-				}
+				} 
 			}
 
+			
 			if (dr!=null) {
 				if(dr.getDtxsid()!=null) n.setDtxsid(dr.getDtxsid());
 				n.setDsstoxRecord(dr);
-			} else {
-				//n.setMolImagePNGAvailable(false);
-			}
+			} 
 
-//			if(!matchBy.contains("Neighbor match by sid")) {
-//				System.out.println(matchBy);
+//			if(!n.getMatchBy().equals("DTXSID")) {
+//				System.out.println(n.getMatchBy());
 //			} 
+			
 
 		}//end loop over neighbors
 	}
@@ -458,6 +481,38 @@ public class QsarPredictedNeighbor {
 
 	public void setMatchBy(String matchBy) {
 		this.matchBy = matchBy;
+	}
+
+	public Double getExperimentalValue() {
+		return experimentalValue;
+	}
+
+	public void setExperimentalValue(Double experimentalValue) {
+		this.experimentalValue = experimentalValue;
+	}
+
+	public Double getPredictedValue() {
+		return predictedValue;
+	}
+
+	public void setPredictedValue(Double predictedValue) {
+		this.predictedValue = predictedValue;
+	}
+
+	public String getExperimentalString() {
+		return experimentalString;
+	}
+
+	public void setExperimentalString(String experimentalString) {
+		this.experimentalString = experimentalString;
+	}
+
+	public String getPredictedString() {
+		return predictedString;
+	}
+
+	public void setPredictedString(String predictedString) {
+		this.predictedString = predictedString;
 	}
 
 //	public Boolean getMolImagePNGAvailable() {

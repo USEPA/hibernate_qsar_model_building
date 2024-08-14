@@ -1,5 +1,5 @@
-package gov.epa.databases.dev_qsar;
 
+package gov.epa.databases.dev_qsar;
 import java.util.Hashtable;
 import java.util.List;
 
@@ -80,21 +80,23 @@ public class PropertyValueValidator {
 		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_SCUD_LC50)
-				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50)) {
+				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50)
+				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_BLUEGILL_LC50)) {
 			return (unitName.equals("G_L") || unitName.equals("MOLAR"));
 		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
 			return unitName.equals("MMHG");
 		
 		} else if (propertyName.equals(DevQsarConstants.OH)) {
 			return unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.CM3_MOLECULE_SEC));
-		
+		} else if (propertyName.equals(DevQsarConstants.TTR_BINDING)) {
+			return unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.DIMENSIONLESS));
 		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
 			return unitName.equals("ATM_M3_MOL");
 		} else if (propertyName.equals(DevQsarConstants.MELTING_POINT)
 				|| propertyName.equals(DevQsarConstants.BOILING_POINT)
 				|| propertyName.equals(DevQsarConstants.FLASH_POINT)) {
 			return unitName.equals("DEG_C");
-		} else if (propertyName.equals(DevQsarConstants.FUB)) {
+		} else if (propertyName.equals(DevQsarConstants.FUB) || propertyName.equals(DevQsarConstants.TTR_BINDING)) {
 			return unitName.equals("DIMENSIONLESS");
 		} else if (propertyName.equals(DevQsarConstants.SURFACE_TENSION)) {
 			return unitName.equals("DYN_CM");
@@ -122,6 +124,10 @@ public class PropertyValueValidator {
 		} else if (propertyName.equals(DevQsarConstants.CLINT)) {
 			return unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.UL_MIN_1MM_CELLS));
 
+		} else if (propertyName.equals(DevQsarConstants.FOUR_HOUR_INHALATION_RAT_LC50)) {
+			return (unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.LOG_PPM))
+					|| unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.LOG_MG_L)));
+			
 		} else {
 			System.out.println(
 					"Missing entry in checkUnits() for propertyName=" + propertyName + " for unitName=" + unitName);
@@ -153,8 +159,13 @@ public class PropertyValueValidator {
 				|| propertyName.equals(DevQsarConstants.BOILING_POINT)
 				|| propertyName.equals(DevQsarConstants.FLASH_POINT)) {
 			return isRangeWithinTolerance(min, max, DevQsarConstants.TEMP_RANGE_TOLERANCE);
-		} else if (propertyName.equals(DevQsarConstants.DENSITY) || propertyName.equals(DevQsarConstants.FUB)) {
+		} else if (propertyName.equals(DevQsarConstants.DENSITY) || 
+				propertyName.equals(DevQsarConstants.FUB)) {
 			return isRangeWithinTolerance(min, max, DevQsarConstants.DENSITY_RANGE_TOLERANCE);
+		
+		} else if (propertyName.equals(DevQsarConstants.TTR_BINDING)) {
+			return isRangeWithinTolerance(min, max, 10.0);
+			
 		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)
 				|| propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)
 				|| propertyName.equals(DevQsarConstants.KmHL) || propertyName.equals(DevQsarConstants.BIODEG_HL_HC)
@@ -165,6 +176,7 @@ public class PropertyValueValidator {
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_SCUD_LC50)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50)
+				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_BLUEGILL_LC50)
 				|| propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)
 				|| propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50)
 				|| propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
@@ -205,6 +217,7 @@ public class PropertyValueValidator {
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_SCUD_LC50)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50)
+				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_BLUEGILL_LC50)				
 				|| propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)
 				|| propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50)
 				|| propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
@@ -213,8 +226,11 @@ public class PropertyValueValidator {
 				|| propertyName.equals(DevQsarConstants.BOILING_POINT)
 				|| propertyName.equals(DevQsarConstants.FLASH_POINT)) {
 			return isRangeWithinTolerance(median1, median2, DevQsarConstants.TEMP_RANGE_TOLERANCE);
-		} else if (propertyName.equals(DevQsarConstants.DENSITY) || propertyName.equals(DevQsarConstants.FUB)) {
+		} else if (propertyName.equals(DevQsarConstants.DENSITY) 
+				|| propertyName.equals(DevQsarConstants.FUB)) {
 			return isRangeWithinTolerance(median1, median2, DevQsarConstants.DENSITY_RANGE_TOLERANCE);
+		} else if (propertyName.equals(DevQsarConstants.TTR_BINDING)) {
+			return isRangeWithinTolerance(median1, median2, 10.0);
 		} else if (propertyName.equals(DevQsarConstants.RBIODEG)) {
 			return isRangeWithinBinaryTolerance(median1, median2);//TODO does this ever get called?
 		} else {

@@ -17,6 +17,7 @@ import gov.epa.databases.dev_qsar.exp_prop.dao.ParameterDaoImpl;
 import gov.epa.databases.dev_qsar.exp_prop.dao.SourceChemicalDao;
 import gov.epa.databases.dev_qsar.exp_prop.dao.SourceChemicalDaoImpl;
 import gov.epa.databases.dev_qsar.exp_prop.entity.Parameter;
+import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
 
 public class SourceChemicalServiceImpl implements SourceChemicalService {
@@ -87,6 +88,22 @@ public class SourceChemicalServiceImpl implements SourceChemicalService {
 		t.rollback();
 		return parameters;
 	}
+	
+	@Override
+	public List<SourceChemical> findAllFromSource(PublicSource ps) {
+		Session session = ExpPropSession.getSessionFactory().getCurrentSession();
+		return findAllFromSource(ps, session);
+	}
+	
+	@Override
+	public List<SourceChemical> findAllFromSource(PublicSource ps,Session session) {
+		Transaction t = session.beginTransaction();
+		SourceChemicalDao sourceChemicalDao = new SourceChemicalDaoImpl();
+		List<SourceChemical> parameters = sourceChemicalDao.findAll(ps, session);
+		t.rollback();
+		return parameters;
+	}
+
 
 
 }

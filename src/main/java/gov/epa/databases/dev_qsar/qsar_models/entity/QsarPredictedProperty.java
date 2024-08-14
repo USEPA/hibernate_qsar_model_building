@@ -47,12 +47,12 @@ public class QsarPredictedProperty {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 	
-	@NotBlank(message="Canonical QSAR-ready SMILES required")
+	@NotNull(message="Canonical QSAR-ready SMILES required")
 	@Column(name="canon_qsar_smiles")
 	private String canonQsarSmiles;
 
 	
-	@NotBlank(message="DTXCID required")
+	@NotNull(message="DTXCID required")
 	@Column(name="dtxcid")
 	private String dtxcid;
 
@@ -90,7 +90,7 @@ public class QsarPredictedProperty {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator required")
+	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	

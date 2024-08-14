@@ -36,11 +36,11 @@ public class DsstoxSnapshot {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 
-	@NotBlank(message="Name required")
+	@NotNull(message="Name required")
 	@Column(name="name", unique=true)
 	private String name;
 	
-	@NotBlank(message="Description required")
+	@NotNull(message="Description required")
 	@Column(name="description")
 	private String description;
 	
@@ -61,7 +61,7 @@ public class DsstoxSnapshot {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator required")
+	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	

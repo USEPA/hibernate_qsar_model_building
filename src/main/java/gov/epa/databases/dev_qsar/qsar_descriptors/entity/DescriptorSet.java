@@ -11,7 +11,7 @@ import javax.persistence.Index;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -25,16 +25,16 @@ public class DescriptorSet {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 
-	@NotBlank(message="descriptor set name required")
+	@NotNull(message="descriptor set name required")
 	@Column(name="name", unique=true)
 	private String name;
 	
 	// this one I'm not sure if it's alright to keep blank.
-	@NotBlank(message="description field required")
+	@NotNull(message="description field required")
 	@Column(name="description")
 	private String description;
 	
-	@NotBlank(message="headers_tsv field required")
+	@NotNull(message="headers_tsv field required")
 	@Column(length = 32767, name="headers_tsv")
 	private String headersTsv;
 	
@@ -57,7 +57,7 @@ public class DescriptorSet {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Descriptor set creator required")
+	@NotNull(message="Descriptor set creator required")
 	@Column(name="created_by")
 	private String createdBy;
 

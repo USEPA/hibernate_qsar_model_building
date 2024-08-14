@@ -15,6 +15,7 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.QsarDescriptorsSession;
 import gov.epa.databases.dev_qsar.qsar_descriptors.dao.CompoundDao;
 import gov.epa.databases.dev_qsar.qsar_descriptors.dao.CompoundDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
+import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorValues;
 
 public class CompoundServiceImpl implements CompoundService {
 	
@@ -55,6 +56,25 @@ public class CompoundServiceImpl implements CompoundService {
 	public Compound create(Compound compound) throws ConstraintViolationException {
 		Session session = QsarDescriptorsSession.getSessionFactory().getCurrentSession();
 		return create(compound, session);
+	}
+	
+	
+	@Override
+	public void delete(Compound compound) {
+		Session session = QsarDescriptorsSession.getSessionFactory().getCurrentSession();
+		delete(compound, session);
+	}
+
+	@Override
+	public void delete(Compound compound, Session session) {
+		if (compound.getId()==null) {
+			return;
+		}
+		
+		Transaction t = session.beginTransaction();
+		session.delete(compound);
+		session.flush();
+		t.commit();
 	}
 
 	@Override
