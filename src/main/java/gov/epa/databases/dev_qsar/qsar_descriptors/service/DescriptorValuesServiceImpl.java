@@ -2,33 +2,21 @@ package gov.epa.databases.dev_qsar.qsar_descriptors.service;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
-import javax.persistence.Column;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.qsar_descriptors.QsarDescriptorsSession;
 import gov.epa.databases.dev_qsar.qsar_descriptors.dao.DescriptorValuesDao;
 import gov.epa.databases.dev_qsar.qsar_descriptors.dao.DescriptorValuesDaoImpl;
-import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorSet;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorValues;
-import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 
 public class DescriptorValuesServiceImpl implements DescriptorValuesService {

@@ -11,7 +11,8 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.UniqueConstraint;
-import javax.validation.constraints.NotBlank;
+//import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -28,11 +29,11 @@ public class Compound {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 	
-	@NotBlank(message="DTXCID required to create compound")
+	@NotNull(message="DTXCID required to create compound")
 	@Column(name="dtxcid")
 	private String dtxcid;
 
-	@NotBlank(message="Smiles required to create compound")
+	@NotNull(message="Smiles required to create compound")
 	@Column(name="smiles", length=1000) //TMM
 	private String smiles;
 
@@ -48,7 +49,7 @@ public class Compound {
 	@Column(name="canon_qsar_smiles", length=1000) //TMM
 	private String canonQsarSmiles;
 	
-	@NotBlank(message="Standardizer required to create compound")
+	@NotNull(message="Standardizer required to create compound")
 	@Column(name="standardizer")
 	private String standardizer;
 	
@@ -65,7 +66,7 @@ public class Compound {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 
-	@NotBlank(message="Compound creator required")
+	@NotNull(message="Compound creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	

@@ -15,7 +15,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -30,7 +30,7 @@ public class PublicSource {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 	
-	@NotBlank(message="Public source name required")
+	@NotNull(message="Public source name required")
 	@Column(name="name", unique=true)
 	private String name;
 	
@@ -51,7 +51,7 @@ public class PublicSource {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="SourceCollection creator required")
+	@NotNull(message="SourceCollection creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	

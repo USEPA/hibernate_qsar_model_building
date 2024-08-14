@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -74,20 +75,30 @@ import kong.unirest.HttpResponse;
 /**
  * Discards exp_prop records during dataset creation if
  * 
- * - has no mapped dsstox record - mapped dsstox record doesnt have both dtxsid
- * and dtxcid - fails mapping to dsstox o is "No hit" o contains UvcbKeywords
- * (can be turned off) o OPSIN ambiguous name (can be turned off) o conflicts
- * dont resolve to the same 2d structure - fails validate structure (there is
- * option to turn off validation of structure for properties for dashboard) o is
- * not authoritative "exact" match in terms of available identifiers o bad
- * substanceType (Mineral/Composite, Mixture/Formulation, and Polymer) o no
- * smiles in DsstoxRecord o omittedSalt o singleAtom o multipleOrganicFragments
- * o hasUnacceptable element for modeling o isInorganic - has invalid property
- * value o no numerical data o range doesnt have both max and min o range too
- * wide o unrealistic property value - has invalid experimental parameter o
- * parameter is outside specified bounds e.g. Temperature = 35 C but bounds are
- * 20-30 C for vapor pressure value - has units that cant be converted to
- * desired final qsar units
+ * - has no mapped dsstox record 
+ * - mapped dsstox record doesnt have both dtxsid and dtxcid
+ * - fails mapping to dsstox
+ * 		o is "No hit"
+ * 		o contains UVCB Keywords (can be turned off) 
+ * 		o OPSIN ambiguous name (can be turned off) 
+ * 		o conflicts dont resolve to the same 2d structure
+ *  	o is not authoritative "exact" match in terms of available identifiers
+ *  - fails validate structure (there is option to turn off validation of structure for properties for dashboard) 
+ *  	o bad substanceType (Mineral/Composite, Mixture/Formulation, and Polymer) 
+ *  	o no smiles in DsstoxRecord o
+ *  	o omittedSalt 
+ *  	o singleAtom
+ *      o multipleOrganicFragments
+ * 		o hasUnacceptable element for modeling
+ *      o isInorganic 
+ *  - has invalid property value
+ *      o no numerical data 
+ *      o range doesnt have both max and min 
+ *      o range too wide 
+ *      o unrealistic property value 
+ * - has invalid experimental parameter 
+ * 		o parameter is outside specified bounds e.g. Temperature = 35 C but bounds are 20-30 C for vapor pressure value 
+ * - has units that cant be converted to desired final qsar units
  * 
  * @author gsinclair, tmarti02
  *
@@ -275,10 +286,17 @@ public class DsstoxMapper {
 
 		Map<String, SourceChemical> htSC = new HashMap<>();
 
+		List<String>publicSourcesDataset=new ArrayList<String>();
+		
 		for (String srcChemId : propertyValuesMap.keySet()) {
 			List<PropertyValue> propertyValues = propertyValuesMap.get(srcChemId);
 			if (propertyValues != null && !propertyValues.isEmpty()) {
 				SourceChemical sc = propertyValues.iterator().next().getSourceChemical();
+				
+				if(sc.getPublicSource()!=null) {
+					String sourceName=sc.getPublicSource().getName();
+					if(!publicSourcesDataset.contains(sourceName)) publicSourcesDataset.add(sourceName);
+				}
 
 				String id = sc.generateSrcChemId();
 
@@ -288,16 +306,42 @@ public class DsstoxMapper {
 				}
 			}
 		}
+		
+		Collections.sort(publicSourcesDataset);
+		System.out.println("All public sources in dataset:");
+		for (String publicSource:publicSourcesDataset) {
+			System.out.println(publicSource);
+		}
+		System.out.println("");
 
-		for (String checkChemicalList : datasetParams.mappingParams.chemRegListNameList) {
+		
+		if (datasetParams.mappingParams.chemRegListNameList!=null) {
+			for (String chemRegListName : datasetParams.mappingParams.chemRegListNameList) {
 
-			System.out.println("Getting ids from " + checkChemicalList);
+				System.out.println("Getting ids from " + chemRegListName);
 
-			ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
+				ChemicalList chemicalList = chemicalListService.findByName(chemRegListName);
+				if (chemicalList != null) {
+					// If chemical list already added to DSSTox, queries all records from it
+					List<DsstoxRecord> recordsDsstoxList = sourceSubstanceService
+							.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(chemRegListName);
+
+					for (DsstoxRecord dr : recordsDsstoxList) {
+						if (htSC.containsKey(dr.externalId)) {
+							htSC.remove(dr.externalId);
+						}
+					}
+				}
+			}
+
+		} else {
+
+			String chemRegListName=datasetParams.mappingParams.chemicalListName;
+			ChemicalList chemicalList = chemicalListService.findByName(chemRegListName);
 			if (chemicalList != null) {
 				// If chemical list already added to DSSTox, queries all records from it
 				List<DsstoxRecord> recordsDsstoxList = sourceSubstanceService
-						.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
+						.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(chemRegListName);
 
 				for (DsstoxRecord dr : recordsDsstoxList) {
 					if (htSC.containsKey(dr.externalId)) {
@@ -306,22 +350,37 @@ public class DsstoxMapper {
 				}
 			}
 		}
-
+		
 		List<SourceChemical> outstandingSC = new ArrayList<>();
 
+		List<String>publicSourcesOutstanding=new ArrayList<String>();
+		
 		for (String id : htSC.keySet()) {
 			outstandingSC.add(htSC.get(id));
+			String sourceName=htSC.get(id).getPublicSource().getName();
+			if(!publicSourcesOutstanding.contains(sourceName)) publicSourcesOutstanding.add(sourceName);
 //			System.out.println(id);
 		}
+		Collections.sort(publicSourcesOutstanding);
+		System.out.println("Public sources in outstanding source chemicals:");
+		for (String publicSource:publicSourcesOutstanding) {
+			System.out.println(publicSource);
+		}
+		System.out.println("");
 
 //		String importFilePath = datasetFolderPath + File.separator + datasetParams.datasetName + "_Outstanding_ChemRegImport.txt";
-		String importFilePath = "data\\dev_qsar\\output\\new chemreg lists\\" + datasetParams.datasetName
-				+ "_Outstanding_ChemRegImport.txt";
+//		String importFilePath = "data\\dev_qsar\\output\\new chemreg lists\\" + datasetParams.datasetName
+//				+ "_Outstanding_ChemRegImport.txt";
 
+		
+		String datasetName = datasetParams.datasetName.replaceAll("[^A-Za-z0-9-_]+", "_");
+		String importFilePath = "data\\dev_qsar\\output\\"+datasetName+"\\" + datasetName
+				+ "_Outstanding_ChemRegImport.txt";
 		File importFile = new File(importFilePath);
 		importFile.getParentFile().mkdirs();
 
 		writeChemRegImportFile(outstandingSC, importFilePath);
+		System.out.println("Outstanding chemreg import file\t"+importFilePath);
 
 	}
 
@@ -329,18 +388,30 @@ public class DsstoxMapper {
 		initPropertyValuesMap(propertyValues);
 		List<DsstoxRecord> dsstoxRecords = null;
 		String checkChemicalList = null;
-
+		
+		System.out.println("Enter map()");
+		
 		if (datasetParams.mappingParams.createChemRegMapOutstandingSourceChemicals) {
 			createChemRegFileOutstandingSourceChemicals(propertyValuesMap);
 			return null;
 		}
 
 		if (datasetParams.mappingParams.isNaive) {
+			
+			System.out.println("Map naive");
+
+			
 			// For naive mapping strategies (CASRN, DTXSID, DTXCID), pull the DSSTox records
 			// and map them directly
 			dsstoxRecords = getDsstoxRecords(propertyValuesMap.keySet(), datasetParams.mappingParams.dsstoxMappingId);
+//			System.out.println(dsstoxRecords.size());
+			
 		} else if (datasetParams.mappingParams.chemicalListName != null
 				&& datasetParams.mappingParams.chemRegListNameList == null) {
+			
+			System.out.println("Map using list");
+
+			
 			checkChemicalList = datasetParams.mappingParams.chemicalListName;
 
 			ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
@@ -352,13 +423,18 @@ public class DsstoxMapper {
 				// If chemical list not in DSSTox, write the import file for the user to add
 
 				writeChemRegImportFile(propertyValuesMap);
+				
 				return null;
 			}
 
 		} else if (datasetParams.mappingParams.chemRegListNameList != null) {
 			// here's where multiple lists are handled
+
+			System.out.println("Map using multiple lists");
+			
 			dsstoxRecords = new ArrayList<DsstoxRecord>();
 			for (int i = 0; i < datasetParams.mappingParams.chemRegListNameList.size(); i++) {
+				
 				checkChemicalList = datasetParams.mappingParams.chemRegListNameList.get(i);
 				ChemicalList chemicalList = chemicalListService.findByName(checkChemicalList);
 				List<DsstoxRecord> records = null;
@@ -369,8 +445,12 @@ public class DsstoxMapper {
 							.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
 					recordsAR = new ArrayList<DsstoxRecord>(records);
 				}
+				
+				
+//				System.out.println(checkChemicalList+"\t"+recordsAR.size());
+								
 				dsstoxRecords.addAll(recordsAR);
-				System.out.println("dsstox records collected =" + dsstoxRecords.size());
+				System.out.println(checkChemicalList+"\tdsstox records collected =" + dsstoxRecords.size());
 			}
 
 		}
@@ -588,18 +668,15 @@ public class DsstoxMapper {
 				continue;
 			}
 
-
 			if (dsstoxRecord.dsstoxCompoundId == null || dsstoxRecord.dsstoxCompoundId.isBlank()) {
-					discardPropertyValues(propertyValues, dsstoxRecord,
+				discardPropertyValues(propertyValues, dsstoxRecord,
 						"Missing DSSTox compound mapping for generic substance (no structure)");//if dont have a dtxcid, wont have a smiles
-					continue;
+				continue;
 			}
-			
 
 			if (datasetParams.mappingParams.validateStructure) {// validateStructure when dataset is to be used for
-																// modeling
+				// important for modeling
 				// Validates structure from DSSTox
-
 				ExplainedResponse validStructure = dsstoxRecord.validateStructure(datasetParams.mappingParams.omitSalts,
 						acceptableAtoms);
 				if (!validStructure.response) {
@@ -642,6 +719,16 @@ public class DsstoxMapper {
 				
 				MappedPropertyValue mpv = new MappedPropertyValue(id, pv, dsstoxRecord, validValue.value,
 						finalUnitName);
+
+				
+				//TMM 4/2/24 moved following block back to where it was supposed to be so that property values with parameters outside the bounds will always be excluded from the mapped property values
+				ExplainedResponse parametersWithinBounds = datasetParams.testParameterValues(pv);
+				if (!parametersWithinBounds.response) {
+					discardedPropertyValues
+							.add(new DiscardedPropertyValue(pv, dsstoxRecord, parametersWithinBounds.reason));
+					continue;
+				}
+
 				
 				if (mpv.qsarPropertyValue != null) {
 					mappedPropertyValues.add(mpv);
@@ -649,13 +736,11 @@ public class DsstoxMapper {
 					discardedPropertyValues.add(new DiscardedPropertyValue(pv, dsstoxRecord, "Unit conversion failed"));
 				}
 
-				
-				ExplainedResponse parametersWithinBounds = datasetParams.testParameterValues(pv);
-				if (!parametersWithinBounds.response) {
-					discardedPropertyValues
-							.add(new DiscardedPropertyValue(pv, dsstoxRecord, parametersWithinBounds.reason));
-					continue;
-				}
+//				if(pv.getSourceChemical().getSourceCasrn()!=null && pv.getParameterValues().size()!=0) {
+//					if(pv.getSourceChemical().getSourceCasrn().equals("80-05-7")) {
+//						System.out.println("Found 80-05-7\tP="+pv.getParameterValues().get(0).getValuePointEstimate());
+//					}
+//				}
 
 				
 			}
@@ -1122,8 +1207,14 @@ public class DsstoxMapper {
 				if (dcr.isWellDefined()) {
 					// If conflict record has a structure, standardize it
 //					dsstoxConflictRecord.standardizedSmiles = standardizeSmiles(srcChemId, dcr);
-					dsstoxConflictRecord.standardizedSmiles = DatasetCreator
-							.getCompound(hmCanonSmilesLookup, false, dcr, standardizer).getCanonQsarSmiles();
+					
+					Compound compound=DatasetCreator.getCompound(hmCanonSmilesLookup, false, dcr, standardizer);
+					
+					//TMM added if block 6/20/2024- some smiles cause a 500 status 
+					if (compound!=null) {
+						dsstoxConflictRecord.standardizedSmiles = compound.getCanonQsarSmiles();
+					}
+					
 				} else {
 					// Otherwise, it's a no-structure record; move on
 					continue;
@@ -1406,6 +1497,8 @@ public class DsstoxMapper {
 				+ "_ChemRegImport.txt";
 		File importFile = new File(importFilePath);
 		importFile.getParentFile().mkdirs();
+		
+		System.out.println("Writing chemreg file at:\n"+importFilePath);
 
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(importFile))) {
 			bw.write(EXTERNAL_ID_HEADER + "\t" + SOURCE_DTXSID_HEADER + "\t" + SOURCE_DTXCID_HEADER + "\t"
@@ -1831,6 +1924,5 @@ public class DsstoxMapper {
 
 		return responses;
 	}
-
 
 }

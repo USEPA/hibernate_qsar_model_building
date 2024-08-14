@@ -27,19 +27,19 @@ public class DescriptorEmbedding {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 
-	@NotBlank(message="Name required")
+	@NotNull(message="Name required")
 	@Column(name="name", unique=true)
 	private String name;
 	
-	@NotBlank(message="Description required")
+	@NotNull(message="Description required")
 	@Column(name="description", length=2047)
 	private String description;
 	
-	@NotBlank(message="Descriptor set name required")
+	@NotNull(message="Descriptor set name required")
 	@Column(name="descriptor_set_name")
 	private String descriptorSetName;
 	
-	@NotBlank(message="Dataset name required")
+	@NotNull(message="Dataset name required")
 	@Column(name="dataset_name")
 	private String datasetName;
 	
@@ -71,7 +71,7 @@ public class DescriptorEmbedding {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator required")
+	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	

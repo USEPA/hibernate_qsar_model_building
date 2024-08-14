@@ -11,7 +11,7 @@ import javax.persistence.Index;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -23,7 +23,7 @@ public class Parameter {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 
-	@NotBlank(message="Parameter name required")
+	@NotNull(message="Parameter name required")
 	@Column(name="name", unique=true)
 	private String name;
 	
@@ -35,7 +35,7 @@ public class Parameter {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Parameter creator required")
+	@NotNull(message="Parameter creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	

@@ -6,6 +6,7 @@ import javax.validation.ConstraintViolationException;
 
 import org.hibernate.Session;
 
+import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
 
 public interface SourceChemicalService {
@@ -21,5 +22,9 @@ public interface SourceChemicalService {
 	public List<SourceChemical> findAll();
 
 	public List<SourceChemical> findAll(Session session);
+
+	public List<SourceChemical> findAllFromSource(PublicSource ps);
+
+	public List<SourceChemical> findAllFromSource(PublicSource ps, Session session);
 
 }

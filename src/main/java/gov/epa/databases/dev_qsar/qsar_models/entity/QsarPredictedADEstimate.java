@@ -30,10 +30,16 @@ public class QsarPredictedADEstimate  {
 	private MethodAD methodAD;
 			
 
-	@NotNull(message="applicability_value required")
+//	@NotNull(message="applicability_value required")
 	@Column(name="applicability_value")
 	private Double applicabilityValue;		
 	
+
+	@Column(name="conclusion")
+	private String conclusion;		
+
+	@Column(name="reasoning")
+	private String reasoning;		
 	
 //	@NotNull(message="qsar_predicted_property required")
 //	@JoinColumn(name="fk_qsar_predicted_property_id")
@@ -65,7 +71,7 @@ public class QsarPredictedADEstimate  {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator required")
+	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	
@@ -157,6 +163,22 @@ public class QsarPredictedADEstimate  {
 
 	public void setPredictionDashboard(PredictionDashboard predictionDashboard) {
 		this.predictionDashboard = predictionDashboard;
+	}
+
+	public String getConclusion() {
+		return conclusion;
+	}
+
+	public void setConclusion(String conclusion) {
+		this.conclusion = conclusion;
+	}
+
+	public String getReasoning() {
+		return reasoning;
+	}
+
+	public void setReasoning(String reasoning) {
+		this.reasoning = reasoning;
 	}
 
 	

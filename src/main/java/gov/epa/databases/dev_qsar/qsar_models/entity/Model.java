@@ -85,7 +85,7 @@ public class Model {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator required")
+	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	

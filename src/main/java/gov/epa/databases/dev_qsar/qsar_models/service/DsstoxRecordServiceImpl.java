@@ -237,20 +237,25 @@ public class DsstoxRecordServiceImpl  {
 		}
 	}	
 	
-	public Hashtable<String,Long> getRecordIdHashtable(DsstoxSnapshot snapshot) {
+	public Hashtable<String,Long> getRecordIdHashtable(DsstoxSnapshot snapshot,String keyName) {
 		
-		String sql2="select dtxcid, id from qsar_models.dsstox_records "
+		String sql2="select "+keyName+", id from qsar_models.dsstox_records "
 				+ "where fk_dsstox_snapshot_id="+snapshot.getId();
 
 		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql2);
 		
-		Hashtable<String,Long>htCID_to_FK=new Hashtable<>();
+		Hashtable<String,Long>htID_to_FK=new Hashtable<>();
 		
 		try {
 			while (rs.next()) {
-				String dtxcid=rs.getString(1);
+				String key=rs.getString(1);
 				Long id=rs.getLong(2);
-				htCID_to_FK.put(dtxcid, id);
+				
+				if(key==null) continue;
+				
+//				System.out.println(dtxcid+"\t"+id);
+				
+				htID_to_FK.put(key, id);
 				
 //				System.out.println(dtxcid+"\t"+id);
 				
@@ -260,9 +265,9 @@ public class DsstoxRecordServiceImpl  {
 			e.printStackTrace();
 		}
 
-		System.out.println("Got look up from cid to dsstox_records_id:"+htCID_to_FK.size());
+		System.out.println("Got look up from id to dsstox_records_id:"+htID_to_FK.size());
 		
-		return htCID_to_FK;
+		return htID_to_FK;
 	}
 
 	public void updateFkCompoundsIdBatchSQL(List<DsstoxRecord> records,String lanId) {

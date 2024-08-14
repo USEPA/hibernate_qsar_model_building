@@ -11,7 +11,7 @@ import javax.persistence.Index;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -25,7 +25,7 @@ public class Unit {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 
-	@NotBlank(message="Name required")
+	@NotNull(message="Name required")
 	@Column(name="name", unique=true)
 	private String name;
 	
@@ -49,7 +49,7 @@ public class Unit {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator required")
+	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	
@@ -119,5 +119,13 @@ public class Unit {
 
 	public void setCreatedBy(String createdBy) {
 		this.createdBy = createdBy;
+	}
+
+	public String getAbbreviation_ccd() {
+		return abbreviation_ccd;
+	}
+
+	public void setAbbreviation_ccd(String abbreviation_ccd) {
+		this.abbreviation_ccd = abbreviation_ccd;
 	}
 }

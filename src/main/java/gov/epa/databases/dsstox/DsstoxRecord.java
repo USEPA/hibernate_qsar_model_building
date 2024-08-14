@@ -216,10 +216,14 @@ public class DsstoxRecord {
 				return new ExplainedResponse(false, "Multiple organic fragments");
 			}
 			
+
 			String reason = null;
 			boolean containsCarbon = false;
 			boolean containsUnacceptableAtom = false;
-			Iterator<IAtom> atoms = molecule.atoms().iterator();
+
+			
+			AtomContainer largestFragment=getLargestFragment(molecule);//use largest fragment for the case where keeping salts 
+			Iterator<IAtom> atoms = largestFragment.atoms().iterator();
 			while (atoms.hasNext() && !(containsCarbon && containsUnacceptableAtom)) {
 				IAtom atom = atoms.next();
 				String symbol = atom.getSymbol();
@@ -233,6 +237,7 @@ public class DsstoxRecord {
 					containsUnacceptableAtom = true;
 				}
 			}
+
 			
 			if (!containsCarbon && !containsUnacceptableAtom) {
 				reason = "Inorganic";
@@ -266,6 +271,32 @@ public class DsstoxRecord {
 		}
 
 		return count;
+	}
+	
+	/**
+	 * Gets fragment with most atoms
+	 * 
+	 * @param molecule
+	 * @return
+	 */
+	public AtomContainer getLargestFragment(AtomContainer molecule) {
+		
+		AtomContainerSet moleculeSet = (AtomContainerSet) ConnectivityChecker.partitionIntoMolecules(molecule);
+		
+		int maxSize=0;
+		AtomContainer acLargest=null;
+		
+		for (int i=0; i < moleculeSet.getAtomContainerCount(); i++) {
+			AtomContainer fragment = (AtomContainer) moleculeSet.getAtomContainer(i);
+			
+			if(fragment.getAtomCount()>maxSize) {
+				maxSize=fragment.getAtomCount();
+				acLargest=fragment;
+			}
+
+		}
+
+		return acLargest;
 	}
 	
 	public boolean isWellDefined() {

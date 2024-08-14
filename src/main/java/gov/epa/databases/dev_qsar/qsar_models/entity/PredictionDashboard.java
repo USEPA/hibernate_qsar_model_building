@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_models.entity;
 
+import java.lang.reflect.Field;
 import java.util.Date;
 import java.util.List;
 
@@ -13,6 +14,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -24,8 +26,11 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.google.gson.JsonObject;
+
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointContributor;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 
 @Entity()
@@ -36,7 +41,7 @@ public class PredictionDashboard {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 	
-	@NotBlank(message="Canonical QSAR-ready SMILES required")
+	@NotNull(message="Canonical QSAR-ready SMILES required")
 	@Column(name="canon_qsar_smiles")
 	private String canonQsarSmiles;
 
@@ -53,7 +58,7 @@ public class PredictionDashboard {
 	@JoinColumn(name="fk_dsstox_records_id")
 	private DsstoxRecord dsstoxRecord;//temp storage for convenience (dont have in table because in different schema)- maybe move to this schema 
 
-	
+//	@Transient  
 	private String dtxcid;//needed for storing cases where there is no matching dsstoxRecord
 	
 	@ManyToOne
@@ -89,7 +94,7 @@ public class PredictionDashboard {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator required")
+	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	
@@ -103,7 +108,28 @@ public class PredictionDashboard {
 	@OneToMany(mappedBy="predictionDashboard", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	private List<QsarPredictedADEstimate> qsarPredictedADEstimates;
 	
+	@OneToOne(mappedBy="predictionDashboard", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	private PredictionReport predictionReport;
+	
 		
+	
+	public String toTsv() {
+		
+		if(dsstoxRecord!=null) {
+			return dsstoxRecord.getId()+"\t"+dsstoxRecord.getSmiles()+"\t"+ dsstoxRecord.getDtxsid()+"\t"+dtxcid + "\t" + model.getName() + "\t"
+					+ experimentalString + "\t" + experimentalValue + "\t" + predictionString + "\t"
+					+ predictionValue + "\t" + predictionError;
+			
+		} else {
+			return null+"\t"+null+"\t"+ null + "\t"+dtxcid+"\t" + model.getName() + "\t"
+					+ experimentalString + "\t" + experimentalValue + "\t" + predictionString + "\t"
+					+ predictionValue + "\t" + predictionError;
+			
+		}
+		
+	}
+
+	
 	public Long getId() {
 		return id;
 	}
@@ -146,6 +172,35 @@ public class PredictionDashboard {
 	public void setPredictionString(String predictionString) {
 		this.predictionString = predictionString;
 	}
+	
+	
+	public String toJson() {
+		
+		JsonObject jo=new JsonObject();
+		jo.addProperty("canonQsarSmiles", canonQsarSmiles);
+		jo.addProperty("dtxsid", this.getDsstoxRecord().getDtxsid());
+		jo.addProperty("experimentalString", experimentalString);
+		jo.addProperty("modelName", model.getName());
+		
+		jo.addProperty("predictionError", predictionError);
+
+		jo.addProperty("experimentalString", experimentalString);
+		jo.addProperty("experimentalValue", experimentalValue);
+
+		
+		jo.addProperty("predictionString", predictionString);
+		jo.addProperty("predictionValue", predictionValue);
+		
+		if(predictionReport!=null)
+			jo.addProperty("predictionReport", new String(predictionReport.getFile()));
+		
+//		jo.addProperty("createdAt", createdAt.toString());
+//		jo.addProperty("createdBy", createdBy);
+		return Utilities.gson.toJson(jo);
+		
+	}
+	
+
 
 	public String getPredictionError() {
 		return predictionError;
@@ -243,6 +298,16 @@ public class PredictionDashboard {
 
 	public void setDtxcid(String dtxcid) {
 		this.dtxcid = dtxcid;
+	}
+
+
+	public PredictionReport getPredictionReport() {
+		return predictionReport;
+	}
+
+
+	public void setPredictionReport(PredictionReport predictionReport) {
+		this.predictionReport = predictionReport;
 	}
 
 }

@@ -21,9 +21,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Table(name="ad_methods", indexes={@Index(name="ad_method_name_idx", columnList="name", unique=true)})
 public class MethodAD {
 
-	public String getName() {
-		return name;
-	}
 
 	public MethodAD() {}
 			
@@ -40,13 +37,22 @@ public class MethodAD {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 
-	@NotBlank(message="Name required")
+	@NotNull(message="Name required")
 	@Column(name="name", unique=true)
 	private String name;
+
+		
+	@Column(name="name_display", unique=true)
+	private String name_display;
+
 	
-	@NotBlank(message="Description required")
+	@NotNull(message="Description required")
 	@Column(name="description", length=100)
 	private String description;
+	
+	@Column(name="description_long", length=100)
+	private String description_long;
+
 		
 	@Column(name="method_scope", length=20)
 	private String methodScope;
@@ -64,10 +70,16 @@ public class MethodAD {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
-	@NotBlank(message="Creator required")
+	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
 
+	
+	public String getName() {
+		return name;
+	}
+
+	
 	public Long getId() {
 		return id;
 	}
@@ -126,5 +138,21 @@ public class MethodAD {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public String getName_display() {
+		return name_display;
+	}
+
+	public void setName_display(String name_display) {
+		this.name_display = name_display;
+	}
+
+	public String getDescription_long() {
+		return description_long;
+	}
+
+	public void setDescription_long(String description_long) {
+		this.description_long = description_long;
 	}
 }

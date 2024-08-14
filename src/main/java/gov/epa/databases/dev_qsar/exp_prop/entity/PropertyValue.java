@@ -19,7 +19,7 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.constraints.AssertTrue;
-import javax.validation.constraints.NotBlank;
+//import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -32,244 +32,235 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.endpoints.datasets.ExplainedResponse;
 
 @Entity
-@Table(name="property_values")
+@Table(name = "property_values")
 public class PropertyValue {
 	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-	
-	@NotNull(message="Source chemical required to create property value")
+
+	@NotNull(message = "Source chemical required to create property value")
 	@ManyToOne
-	@JoinColumn(name="fk_source_chemical_id")
+	@JoinColumn(name = "fk_source_chemical_id")
 	private SourceChemical sourceChemical;
-	
-	@NotNull(message="Property required to create property value")
+
+	@NotNull(message = "Property required to create property value")
 	@ManyToOne
-	@JoinColumn(name="fk_property_id")
+	@JoinColumn(name = "fk_property_id")
 	@JsonManagedReference
 	private ExpPropProperty property;
-	
-	@NotNull(message="Unit required to create property value")
+
+	@NotNull(message = "Unit required to create property value")
 	@ManyToOne
-	@JoinColumn(name="fk_unit_id")
+	@JoinColumn(name = "fk_unit_id")
 	private ExpPropUnit unit;
-	
+
 	@ManyToOne
-	@JoinColumn(name="fk_public_source_id")
+	@JoinColumn(name = "fk_public_source_id")
 	@JsonManagedReference
 	private PublicSource publicSource;
 
-	
 	@ManyToOne
-	@JoinColumn(name="fk_public_source_original_id")
+	@JoinColumn(name = "fk_public_source_original_id")
 	@JsonManagedReference
 	private PublicSource publicSourceOriginal;
 
-	
 	@ManyToOne
-	@JoinColumn(name="fk_literature_source_id")
+	@JoinColumn(name = "fk_literature_source_id")
 	@JsonManagedReference
 	private LiteratureSource literatureSource;
-	
+
 //	@Column(name="id_source_database")
 //	private Long id_source_database;
-		
-	// If there is a direct link to a static page with chemical information available
-	@Column(name="page_url", length=1000)
+
+	// If there is a direct link to a static page with chemical information
+	// available
+	@Column(name = "page_url", length = 1000)
 	private String pageUrl;
-	
-	@Column(name="document_name", length=100)
+
+	@Column(name = "document_name", length = 100)
 	private String documentName;
 
-	@Column(name="file_name", length=100)
+	@Column(name = "file_name", length = 100)
 	private String fileName;
-	
-	@Column(name="value_qualifier")
+
+	@Column(name = "value_qualifier")
 	private String valueQualifier;
-	
-	@Column(name="value_point_estimate")
+
+	@Column(name = "value_point_estimate")
 	private Double valuePointEstimate;
-	
-	@Column(name="value_min")
+
+	@Column(name = "value_min")
 	private Double valueMin;
-	
-	@Column(name="value_max")
+
+	@Column(name = "value_max")
 	private Double valueMax;
-	
-	@Column(name="value_error")
+
+	@Column(name = "value_error")
 	private Double valueError;
-	
-	@Column(name="value_text")
+
+	@Column(name = "value_text")
 	private String valueText;
-	
-	@Column(name="value_original", length=1000)
+
+	@Column(name = "value_original", length = 1000)
 	private String valueOriginal;
-	
-	@Column(name="notes", length=1000)
+
+	@Column(name = "notes", length = 1000)
 	private String notes;
-	
-	@OneToMany(mappedBy="propertyValue", cascade=CascadeType.ALL, fetch=FetchType.EAGER)
+
+	@OneToMany(mappedBy = "propertyValue", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	private List<ParameterValue> parameterValues;
-	
-	@NotNull(message="Keep required to create property value")
-	@Column(name="keep")
+
+	@NotNull(message = "Keep required to create property value")
+	@Column(name = "keep")
 	private Boolean keep;
-	
-	@Column(name="keep_reason")
+
+	@Column(name = "keep_reason")
 	private String keepReason;
-	
-	@NotNull(message="Flag required to create property value")
-	@Column(name="qc_flag")
+
+	@NotNull(message = "Flag required to create property value")
+	@Column(name = "qc_flag")
 	private Boolean qcFlag;
-	
-	@Column(name="qc_notes")
+
+	@Column(name = "qc_notes")
 	private String qcNotes;
-	
-	@Column(name="created_at")
+
+	@Column(name = "created_at")
 	@CreationTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
-	
-	@NotBlank(message="PropertyValue creator required")
-	@Column(name="created_by")
+
+	@NotNull(message = "PropertyValue creator required")
+	@Column(name = "created_by")
 	private String createdBy;
-	
-	@Column(name="updated_at")
+
+	@Column(name = "updated_at")
 	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date updatedAt;
-	
-	@Column(name="updated_by")
+
+	@Column(name = "updated_by")
 	private String updatedBy;
-	
-	public PropertyValue() {}
-	
+
+	public PropertyValue() {
+	}
+
 	public String generateParameterValuesString() {
-		
-		
-		ArrayList<String>vals=new ArrayList<>();
-		DecimalFormat df1=new DecimalFormat("0.0");
-		
-		if (getParameterValue("Temperature")!=null) {
+
+		ArrayList<String> vals = new ArrayList<>();
+		DecimalFormat df1 = new DecimalFormat("0.0");
+
+		if (getParameterValue("Temperature") != null) {
 			try {
-				vals.add("T = "+df1.format(getParameterValue("Temperature").getValuePointEstimate())+" C");
+				vals.add("T = " + df1.format(getParameterValue("Temperature").getValuePointEstimate()) + " C");
 			} catch (Exception ex) {
-				vals.add("T = "+getParameterValue("Temperature").getValuePointEstimate()+" C");
+				vals.add("T = " + getParameterValue("Temperature").getValuePointEstimate() + " C");
 			}
 		}
-					
-		if (getParameterValue("Pressure")!=null) {		
+
+		if (getParameterValue("Pressure") != null) {
 			try {
-				vals.add("P = "+df1.format(getParameterValue("Pressure").getValuePointEstimate())+" mmHg");
+				vals.add("P = " + df1.format(getParameterValue("Pressure").getValuePointEstimate()) + " mmHg");
 			} catch (Exception ex) {
-				vals.add("P = "+getParameterValue("Pressure").getValuePointEstimate()+" mmHg");
+				vals.add("P = " + getParameterValue("Pressure").getValuePointEstimate() + " mmHg");
 			}
 		}
-		
-		if (getParameterValue("pH")!=null) {			
+
+		if (getParameterValue("pH") != null) {
 			try {
-				vals.add("pH = "+df1.format(getParameterValue("pH").getValuePointEstimate())+"");
+				vals.add("pH = " + df1.format(getParameterValue("pH").getValuePointEstimate()) + "");
 			} catch (Exception ex) {
-				vals.add("pH = "+getParameterValue("pH").getValuePointEstimate());
+				vals.add("pH = " + getParameterValue("pH").getValuePointEstimate());
 			}
 		}
-	
-		
-		String result="";
-		
-		for (int i=0;i<vals.size();i++) {
-			result+=vals.get(i);
-			if (i<vals.size()-1) result+="; ";
+
+		String result = "";
+
+		for (int i = 0; i < vals.size(); i++) {
+			result += vals.get(i);
+			if (i < vals.size() - 1)
+				result += "; ";
 		}
-		
+
 		return result;
 	}
-	
-	
+
 	public String generateConciseValueString() {
-		if (valueText!=null) {
+		if (valueText != null) {
 			return valueText;
 		}
-		
+
 		String unitAbbr = unit.getAbbreviation();
-		if (unitAbbr==null) { unitAbbr = ""; }
-		
-		if (valuePointEstimate!=null) {
-			String qual = valueQualifier==null ? "" : valueQualifier;
-			String error = valueError==null ? "" : ("+/-" + String.valueOf(valueError));
+		if (unitAbbr == null) {
+			unitAbbr = "";
+		}
+
+		if (valuePointEstimate != null) {
+			String qual = valueQualifier == null ? "" : valueQualifier;
+			String error = valueError == null ? "" : ("+/-" + String.valueOf(valueError));
 			return qual + String.valueOf(valuePointEstimate) + error + " " + unitAbbr;
 		}
-		
-		if (valueMin!=null || valueMax!=null) {
+
+		if (valueMin != null || valueMax != null) {
 			return String.valueOf(valueMin) + "-" + String.valueOf(valueMax) + " " + unitAbbr;
 		}
-		
+
 		return null;
 	}
-	
 
-
-	
-	
-	
-	
-	
-	
-	
 	public ParameterValue getParameterValue(String parameterName) {
-		if (parameterValues==null || parameterValues.size()==0) {
+		if (parameterValues == null || parameterValues.size() == 0) {
 			return null;
 		}
-		
-		for (ParameterValue pav:parameterValues) {
+
+		for (ParameterValue pav : parameterValues) {
 			if (pav.getParameter().getName().equals(parameterName)) {
 				return pav;
 			}
 		}
-		
+
 		return null;
 	}
-	
+
 	/**
 	 * Used to try to remove duplicates from chemprop loading
 	 * 
 	 * @return
 	 */
 	public String getKey() {
-		
-		
-		String keyValue=valueQualifier+"\t"+valuePointEstimate+"\t"+valueMin+"\t"+
-		valueMax+"\t"+valueError+"\t"+valueText+"\t"+valueOriginal;
-		
-		//Using sourceChemical.getKey() instead of its id because a chemical might have been accidentally mapped to a new sourceChemical rather than using an existing one that was exact match
-		
-		String key=sourceChemical.getKey()+"\t"+keyValue;
-		
-		if (publicSource!=null) {
-			key+="\t"+publicSource.getId();
+
+		String keyValue = valueQualifier + "\t" + valuePointEstimate + "\t" + valueMin + "\t" + valueMax + "\t"
+				+ valueError + "\t" + valueText + "\t" + valueOriginal;
+
+		// Using sourceChemical.getKey() instead of its id because a chemical might have
+		// been accidentally mapped to a new sourceChemical rather than using an
+		// existing one that was exact match
+
+		String key = sourceChemical.getKey() + "\t" + keyValue;
+
+		if (publicSource != null) {
+			key += "\t" + publicSource.getId();
 		} else {
-			key+="\tnull";
+			key += "\tnull";
 		}
 
-		if (literatureSource!=null) {
-			key+="\t"+literatureSource.getId();
+		if (literatureSource != null) {
+			key += "\t" + literatureSource.getId();
 		} else {
-			key+="\tnull";
+			key += "\tnull";
 		}
-		
+
 		return key;
 	}
-	
-	
+
 	@AssertTrue(message = "Public or literature source is required")
 	private boolean isPublicSourceOrLiteratureSourceExists() {
-	    return publicSource != null || literatureSource != null;
+		return publicSource != null || literatureSource != null;
 	}
-	
+
 //	public String generateExpPropId() {
 //		return String.format("EXP%012d", id);
 //	}
-	
+
 	public Long getId() {
 		return id;
 	}
@@ -293,20 +284,20 @@ public class PropertyValue {
 	public void setParameterValues(List<ParameterValue> parameterValues) {
 		this.parameterValues = parameterValues;
 	}
-	
+
 	public void addParameterValue(ParameterValue parameterValue) {
-		if (this.parameterValues==null) {
+		if (this.parameterValues == null) {
 			this.parameterValues = new ArrayList<ParameterValue>();
 		}
-		
+
 		this.parameterValues.add(parameterValue);
 	}
-	
+
 	public void addParameterValues(List<ParameterValue> parameterValues) {
-		if (this.parameterValues==null) {
+		if (this.parameterValues == null) {
 			this.parameterValues = new ArrayList<ParameterValue>();
 		}
-		
+
 		this.parameterValues.addAll(parameterValues);
 	}
 
@@ -502,67 +493,68 @@ public class PropertyValue {
 		this.publicSourceOriginal = publicSourceOriginal;
 	}
 
-	
 	/**
 	 * TODO probably dont need to use get methods- access directly by variables
 	 * 
 	 * @return
 	 */
 	public JsonObject createJsonObjectFromPropertyValue() {
-		JsonObject jo=new JsonObject();
+		JsonObject jo = new JsonObject();
 
-		if (getCreatedAt()!=null)
-			jo.addProperty("createdAt",getCreatedAt().toString());
+		if (getCreatedAt() != null)
+			jo.addProperty("createdAt", getCreatedAt().toString());
 
-		if (getCreatedBy()!=null)
-			jo.addProperty("createdBy",getCreatedBy());
-		
+		if (getCreatedBy() != null)
+			jo.addProperty("createdBy", getCreatedBy());
+
 //				jo.addProperty("created_by", pv.getCreatedBy());
 		jo.addProperty("sourceChemicalName", getSourceChemical().getSourceChemicalName());
-		jo.addProperty("sourceChemicalCASRN",getSourceChemical().getSourceCasrn());
-		jo.addProperty("sourceChemicalDTXSID",getSourceChemical().getSourceDtxsid());
-		jo.addProperty("sourceChemicalDTXRID",getSourceChemical().getSourceDtxrid());
-		
-		if (getParameterValues()!=null) {
+		jo.addProperty("sourceChemicalCASRN", getSourceChemical().getSourceCasrn());
+		jo.addProperty("sourceChemicalDTXSID", getSourceChemical().getSourceDtxsid());
+		jo.addProperty("sourceChemicalDTXRID", getSourceChemical().getSourceDtxrid());
+		jo.addProperty("sourceChemicalSmiles", getSourceChemical().getSourceSmiles());
 
-			for (ParameterValue parameterValue:getParameterValues()) {
-				if (parameterValue.getValueText()!=null) {
-					jo.addProperty("parameter_"+parameterValue.getParameter().getName(),parameterValue.getValueText());	
-				} else if (parameterValue.getValuePointEstimate()!=null) {
-					jo.addProperty("parameter_"+parameterValue.getParameter().getName(),parameterValue.getValuePointEstimate());
+		if (getParameterValues() != null) {
+
+			for (ParameterValue parameterValue : getParameterValues()) {
+				if (parameterValue.getValueText() != null) {
+					jo.addProperty("parameter_" + parameterValue.getParameter().getName(),
+							parameterValue.getValueText());
+				} else if (parameterValue.getValuePointEstimate() != null) {
+					jo.addProperty("parameter_" + parameterValue.getParameter().getName(),
+							parameterValue.getValuePointEstimate());
 				}
 			}
 		}
-		
+
 		jo.addProperty("notes", getNotes());
 		jo.addProperty("page_url", getPageUrl());
-		
-		if(getPublicSource()!=null) {
+
+		if (getPublicSource() != null) {
 			jo.addProperty("publicSourceName", getPublicSource().getName());
 			jo.addProperty("publicSourceURL", getPublicSource().getUrl());
 		}
-		
-		if (getPublicSourceOriginal()!=null) {
+
+		if (getPublicSourceOriginal() != null) {
 			jo.addProperty("publicSourceNameOriginal", getPublicSourceOriginal().getName());
 			jo.addProperty("publicSourceOriginalURL", getPublicSourceOriginal().getUrl());
 		}
-		
-		if(getLiteratureSource()!=null) {
+
+		if (getLiteratureSource() != null) {
 			jo.addProperty("literatureSourceName", getLiteratureSource().getName());
 			jo.addProperty("literatureSourceCitation", getLiteratureSource().getCitation());
 			jo.addProperty("literatureSourceDOI", getLiteratureSource().getDoi());
 		}
-		 
-		
+
 		jo.addProperty("propertyName", getProperty().getName());
 		jo.addProperty("valueQualifier", getValueQualifier());
 		jo.addProperty("valuePointEstimate", getValuePointEstimate());
 		jo.addProperty("unitsAbbreviation", getUnit().getAbbreviation());
 		jo.addProperty("keep", getKeep());
 		jo.addProperty("keep_reason", getKeepReason());
-		
+
 		jo.addProperty("page_url", getPageUrl());
-		
+
 		return jo;
 	}
 

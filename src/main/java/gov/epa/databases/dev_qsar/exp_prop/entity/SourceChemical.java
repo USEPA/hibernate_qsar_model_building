@@ -14,7 +14,7 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.AssertTrue;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 import org.hibernate.Criteria;
 import org.hibernate.annotations.CreationTimestamp;
@@ -23,70 +23,64 @@ import org.hibernate.criterion.Restrictions;
 import org.hibernate.validator.constraints.Length;
 
 @Entity
-@Table(name="source_chemicals", uniqueConstraints={@UniqueConstraint(columnNames = {
-		"source_casrn",
-		"source_smiles",
-		"source_chemical_name",
-		"source_dtxsid",
-		"source_dtxcid",
-		"source_dtxrid",
-		"fk_public_source_id",
-		"fk_literature_source_id"})})
+@Table(name = "source_chemicals", uniqueConstraints = {
+		@UniqueConstraint(columnNames = { "source_casrn", "source_smiles", "source_chemical_name", "source_dtxsid",
+				"source_dtxcid", "source_dtxrid", "fk_public_source_id", "fk_literature_source_id" }) })
 public class SourceChemical {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-	
-	@Column(name="source_casrn")
+
+	@Column(name = "source_casrn")
 	private String sourceCasrn;
-	
-	@Column(name="source_smiles", length=1000)
-	@Length(max=1000)
+
+	@Column(name = "source_smiles", length = 1000)
+	@Length(max = 1000)
 	private String sourceSmiles;
-	
-	@Column(name="source_chemical_name", length=255)
-	@Length(max=500)
+
+	@Column(name = "source_chemical_name", length = 255)
+	@Length(max = 500)
 	private String sourceChemicalName;
-	
+
 	@ManyToOne
-	@JoinColumn(name="fk_public_source_id")
+	@JoinColumn(name = "fk_public_source_id")
 	private PublicSource publicSource;
-	
+
 	@ManyToOne
-	@JoinColumn(name="fk_literature_source_id")
+	@JoinColumn(name = "fk_literature_source_id")
 	private LiteratureSource literatureSource;
-	
-	@Column(name="source_dtxsid")
+
+	@Column(name = "source_dtxsid")
 	private String sourceDtxsid;
-	
-	@Column(name="source_dtxcid")
+
+	@Column(name = "source_dtxcid")
 	private String sourceDtxcid;
-	
-	@Column(name="source_dtxrid")
+
+	@Column(name = "source_dtxrid")
 	private String sourceDtxrid;
-	
-	@Column(name="created_at")
+
+	@Column(name = "created_at")
 	@CreationTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
-	
-	@NotBlank(message="SourceCollection creator required")
-	@Column(name="created_by")
+
+	@NotNull(message = "SourceChemical creator required")
+	@Column(name = "created_by")
 	private String createdBy;
-	
-	@Column(name="updated_at")
+
+	@Column(name = "updated_at")
 	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date updatedAt;
-	
-	@Column(name="updated_by")
+
+	@Column(name = "updated_by")
 	private String updatedBy;
-	
+
 	@AssertTrue(message = "Public or literature source is required")
 	private boolean isPublicSourceOrLiteratureSourceExists() {
-	    return publicSource != null || literatureSource != null;
+		return publicSource != null || literatureSource != null;
 	}
-	
+
 	public String generateSrcChemId() {
 		return String.format("SCH%012d", id);
 	}
@@ -196,16 +190,17 @@ public class SourceChemical {
 	}
 
 	public String getKey() {
-		
-		Long publicSourceID=null;
-		if (publicSource!=null) publicSourceID=publicSource.getId();
-		
-		Long literatureSourceID=null;
-		if (literatureSource!=null) literatureSourceID=literatureSource.getId();
-		
 
-		String key=sourceCasrn+"\t"+sourceSmiles+"\t"+sourceChemicalName+"\t"+sourceDtxsid+"\t"+sourceDtxcid+"\t"+
-				sourceDtxrid+"\t"+publicSourceID+"\t"+literatureSourceID;
+		Long publicSourceID = null;
+		if (publicSource != null)
+			publicSourceID = publicSource.getId();
+
+		Long literatureSourceID = null;
+		if (literatureSource != null)
+			literatureSourceID = literatureSource.getId();
+
+		String key = sourceCasrn + "\t" + sourceSmiles + "\t" + sourceChemicalName + "\t" + sourceDtxsid + "\t"
+				+ sourceDtxcid + "\t" + sourceDtxrid + "\t" + publicSourceID + "\t" + literatureSourceID;
 
 		return key;
 	}

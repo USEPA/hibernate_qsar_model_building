@@ -13,7 +13,7 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.UniqueConstraint;
-import javax.validation.constraints.NotBlank;
+//import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -51,7 +51,7 @@ public class DescriptorValues {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 
-	@NotBlank(message="Compound descriptor creator required")
+	@NotNull(message="Compound descriptor creator required")
 	@Column(name="created_by")
 	private String createdBy;
 	
