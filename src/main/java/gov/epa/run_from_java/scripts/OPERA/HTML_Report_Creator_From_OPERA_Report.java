@@ -10,10 +10,26 @@ import java.io.StringWriter;
 import java.text.DecimalFormat;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.run_from_java.scripts.OPERA.OPERA_Report.ADEstimate;
 import gov.epa.run_from_java.scripts.OPERA.OPERA_Report.Neighbor;
 
 /**
 * @author TMARTI02
+* 
+* 
+1.	HTML on the page has bigger problems using tables for presentation layout vs data table layout for screen reading.
+
+2.	All images need alt text descriptors. You can programmatically add them by saying "This is a chemical structure image of <Chemical Name>", "This is a histogram of <XYZ>".
+	Done
+
+3.	The histogram blues are too close to each other. The better thing to do is to make them contrasting colors on the color wheel like Blue/Orange, Purple/Yellow. But add textures to it like diagonal lines or dots. (I think there are other render problems with the image and the columns lining up, but that is not an accessibility issue.)
+4.	The scatterplots likely cannot be helped, but can still have alt text to say it's a scatterplot and possibly change one set of dots to X's or squares instead. How did you generate the scatterplots? Through a visualization tool like the one Jason Brown makes for CCD/RapidTox? Or is that from Django or R?
+5.	Regarding grouped table columns (i.e. two headers stacked up), needs some help but I am asking other testers for guidance on a resolution. I'll have to get back to you about this one.
+6.	Regarding keyboard accessibility: Please start using <hx> tags & tabindex attributes for keyboard navigation. Right now, if I hit tab, I only jump to the links on the page super old-school style, but really if you have visual headings on the page, tabbing should touch those headings, then jump to the links in the heading group before going to the next heading.
+7.	You might find ARIA role tagging useful for addressing some of these concerns. https://www.w3.org/WAI/standards-guidelines/aria/
+8.	You may want to work on responsiveness since zooming in 200% is an accessibility test. Scrolling side to side is ok, but I can tell there are problems with the underlying code since the black header bars don't stretch automatically across the screen. IIRC this is a viewport issue and setting to em for screen elements on the DOM so they stretch across the viewport. Will look this up for you if you need it.
+
+* 
 */
 public class HTML_Report_Creator_From_OPERA_Report {
 
@@ -21,6 +37,8 @@ public class HTML_Report_Creator_From_OPERA_Report {
 	String imgURLSid="https://comptox.epa.gov/dashboard-api/ccdapp1/chemical-files/image/by-dtxsid/";
 	String detailsURL="https://comptox.epa.gov/dashboard/chemical/details/";
 
+	boolean debug=false;
+	
 	String createReport(OPERA_Report or) {
 		
 		try {
@@ -39,7 +57,8 @@ public class HTML_Report_Creator_From_OPERA_Report {
 			fw.write("</head>\n");
 			
 			
-			fw.write("<h3>OPERA Model Calculation Details</h3>\r\n");
+			fw.write("<h3>OPERA Model Calculation Details: "+or.modelDetails.propertyName+"</h3>\r\n");
+						
 			
 //			fw.write("<h2>OPERA Model Calculation Details: "+"<div class=\"tooltip\">"+or.modelDetails.propertyName+
 //					  "<span class=\"tooltiptext\">"+or.modelDetails.propertyDescription+"</span></div>"+"</h2>\r\n");
@@ -75,7 +94,7 @@ public class HTML_Report_Creator_From_OPERA_Report {
 		
 		int width=400;
 		
-		fw.write("<style>\r\n" + "	.tooltip {\r\n" + "	  position: relative;\r\n" + "	  display: inline-block;\r\n"
+		String style="<style>\r\n" + "	.tooltip {\r\n" + "	  position: relative;\r\n" + "	  display: inline-block;\r\n"
 				+ "	  border-bottom: 1px dotted black;\r\n" + "	}\r\n" + "\r\n" + "	.tooltip .tooltiptext {\r\n"
 				+ "	  visibility: hidden;\r\n" + "	  width: "+width+"px;\r\n" + "	  background-color: #555;\r\n"
 				+ "	  color: #fff;\r\n" + "	  text-align: center;\r\n" + "	  border-radius: 6px;\r\n"
@@ -87,7 +106,10 @@ public class HTML_Report_Creator_From_OPERA_Report {
 				+ "	  border-width: 5px;\r\n" + "	  border-style: solid;\r\n"
 				+ "	  border-color: #555 transparent transparent transparent;\r\n" + "	}\r\n" + "\r\n"
 				+ "	.tooltip:hover .tooltiptext {\r\n" + "	  visibility: visible;\r\n" + "	  opacity: 1;\r\n"
-				+ "	}\r\n" + "	</style>");
+				+ "	}\r\n" + "	</style>";
+		
+				
+		fw.write(style);
 
 	}
 	
@@ -100,7 +122,11 @@ public class HTML_Report_Creator_From_OPERA_Report {
 
 		//Structure Image for test chemical:
 		String imgURL=this.imgURLCid+or.chemicalIdentifiers.dtxcid;
-		fw.write("\t\t<td width=150px valign=\"top\"><img src=\""+imgURL+"\" height=150 width=150 border=2></td>\n");
+		
+		String chemicalName=or.chemicalIdentifiers.preferredName;
+		
+		fw.write("\t\t<td width=150px valign=\"top\"><img src=\""+imgURL+"\" height=150 width=150 border=2 "
+				+ "alt=\"Structural image of "+chemicalName+"\"></td>\n");
 		
 		fw.write("<td valign=\"top\">");
 		writeChemicalInfo(or, fw);
@@ -158,7 +184,7 @@ public class HTML_Report_Creator_From_OPERA_Report {
 	    return bd.toPlainString();
 	}    
 	
-	String getFormattedValue(String value,String propertyName) {
+	public static String getFormattedValue(Double dvalue,String propertyName) {
 
 		int nsig=3;
 
@@ -169,7 +195,7 @@ public class HTML_Report_Creator_From_OPERA_Report {
 //		DecimalFormat df4=new DecimalFormat("0.0");
 		
 		try {
-			double dvalue=Double.parseDouble(value);
+			
 			
 			if(propertyName.equals(DevQsarConstants.RBIODEG) || propertyName.contains("receptor"))
 				return dfInt.format(dvalue);
@@ -184,7 +210,8 @@ public class HTML_Report_Creator_From_OPERA_Report {
 			return setSignificantDigits(dvalue, nsig);
 
 		} catch (Exception ex) {
-			return value;
+//			System.out.println("exception");
+			return null;
 		}
 
 		
@@ -205,8 +232,8 @@ public class HTML_Report_Creator_From_OPERA_Report {
 		fw.write("\t<tr>\n");
 		
 		if (or.modelDetails.urlHistogram!=null) {
-			fw.write("<td width=30%><img src=\""+or.modelDetails.urlHistogram+"\"></td>");
-			fw.write("<td width=30%><img src=\""+or.modelDetails.urlScatterPlot+"\"></td>");
+			fw.write("<td width=30%><img src=\""+or.modelDetails.urlHistogram+"\" alt=\"Histogram of property values for the training and test sets for "+or.modelDetails.propertyName+"\"></td>");
+			fw.write("<td width=30%><img src=\""+or.modelDetails.urlScatterPlot+"\" alt=\"Scatter plot of experimental vs predicted values for the test set for "+or.modelDetails.propertyName+"\"></td>");
 		} else {
 			//do nothing?
 		}
@@ -218,7 +245,9 @@ public class HTML_Report_Creator_From_OPERA_Report {
 		writeStatsTable(or,fw);
 		
 		if (or.modelDetails.hasQmrfPdf==1) {
-			fw.write("<span class=\"border\"><a href=\""+or.modelDetails.qmrfReportUrl+"\" target=\"_blank\"> QMRF</a></span>"+
+			fw.write("<span class=\"border\"><a href=\""+or.modelDetails.qmrfReportUrl+"\" target=\"_blank\"> "
+					+ "Model summary in QSAR Model Reporting Format (QMRF)"
+					+ "</a></span>"+
 			"<style>.border {border: 2px solid darkblue; padding: 2px 4px 2px;}</style><br><br>");
 		}
 		
@@ -245,7 +274,7 @@ public class HTML_Report_Creator_From_OPERA_Report {
 	private void writeStatsTable(OPERA_Report or, Writer fw) throws IOException {
 
 		if (or.modelResults.performance.train.R2!=null) { 
-			fw.write("<table width=100% border=1 cellpadding=0 cellspacing=0><caption>Weighted kNN model statistics</caption>\n");
+			fw.write("<table width=40% border=1 cellpadding=0 cellspacing=0><caption>Weighted kNN model statistics</caption>\n");
 			
 			fw.write("<tr>\n");
 			fw.write("<td colspan=2 align=center>5-fold CV (75%)</td>\n");
@@ -398,6 +427,7 @@ public class HTML_Report_Creator_From_OPERA_Report {
 	}
 	private void writeNeighborsTable(OPERA_Report or, Writer fw) throws IOException {
 
+		
 		boolean haveMissingExpVal=false;
 		
 		
@@ -406,62 +436,69 @@ public class HTML_Report_Creator_From_OPERA_Report {
 		fw.write("\t<tr>\n");
 		
 		for (int i=1;i<=5;i++) {
-			String measured=null;
-			String predicted=null; 
+			Double experimentalValue=null;
+			String experimentalString=null;
+			
+			Double predictedValue=null;
+			String predictedString=null; 
+			
+			
 			for (Neighbor n:or.neighbors) {
 				if(n.neighborNumber==i) {
-					measured=n.measured;
-					predicted=n.predicted;
+					experimentalValue=n.experimentalValue;
+					experimentalString=n.experimentalString;
+					predictedValue=n.predictedValue;
+					predictedString=n.predictedString;
 					break;
 				}
 			}
 			
-			if(measured==null && predicted==null) continue;//no match for neighbor number
+			if(experimentalValue==null && predictedValue==null && experimentalString==null && predictedString==null) continue;//no match for neighbor number
 
 			fw.write("\t\t<td valign=\"top\" width=20%>");
 			fw.write("<b>Neighbor</b>: "+i+"<br>");
 			
-			measured=getFormattedValue(measured,or.modelDetails.propertyName);
+			if(experimentalValue==null && experimentalString==null) haveMissingExpVal=true;
 			
-			fw.write("<b>Measured:</b> ");
-
-			if(measured==null) {
-				fw.write("N/A*<br>");
-				haveMissingExpVal=true;
-			} else {
-				fw.write(measured+" "+or.modelResults.standardUnit+"<br>");//add units
-			}
-			
-			fw.write("<div class=\"tooltip\"><b>Predicted:</b>"+
-					  "<span class=\"tooltiptext\">Leave one out prediction for the neighbor</span></div>");
-			
-			fw.write(" "+getFormattedValue(predicted, or.modelDetails.propertyName)+" "+or.modelResults.standardUnit+"<br><br>");//add units
+			writeExpNeighbor(or, fw, experimentalValue,experimentalString);
+			writePredNeighbor(or, fw, predictedValue,predictedString);
 			
 			for (Neighbor n:or.neighbors) {
 				if(n.neighborNumber!=i) continue;
-				
-				if(n.dsstoxRecord!= null && n.dsstoxRecord.isMolImagePNGAvailable()) {
-					fw.write("<img src=\""+this.imgURLCid+n.dsstoxRecord.getDtxcid()+"\"\" height=150 width=150 border=1><br>");
-					fw.write("<a href=\""+this.detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.dsstoxRecord.getPreferredName()+"</a></figcaption><br>");
+								
+				if(n.molImagePNGAvailable) {
+					fw.write("<img src=\""+this.imgURLCid+n.dtxcid+"\" height=150 width=150 border=1 "
+							+ "alt=\"Structural image of "+n.preferredName+"\"><br>");
+					fw.write("<a href=\""+this.detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.preferredName+"</a></figcaption><br>");
 //					fw.write("<figure><img src=\""+imageURL+n.getDtxcid()+"\"\" height=150 width=150 border=1>");
 //					fw.write("<figcaption><a href=\""+detailsURL+n.getDtxsid()+"\" target=\"_blank\">"+n.getPreferredName()+"</a></figcaption>");
 //					fw.write("</figure>\n");
 				} else if(n.dtxsid!=null) {
-					if(n.dsstoxRecord==null) {
-						System.out.println("For "+or.modelDetails.propertyName+ " for "+or.chemicalIdentifiers.dtxcid+ ", No dsstox record for "+n.dtxsid);
-						fw.write("No structure image<br><a href=\""+detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.dtxsid+"</a></figcaption><br>");
-					} else {
-						if(n.dsstoxRecord.getDtxcid()!=null)						
-							System.out.println("For "+or.modelDetails.propertyName+" for "+or.chemicalIdentifiers.dtxcid+", have dsstox record for "+n.dtxsid+" (" +n.dsstoxRecord.getPreferredName()+")but no image for neighbor");
+					if(!n.molImagePNGAvailable) {
+						if(debug) System.out.println("Here1, for "+or.modelDetails.propertyName+ " for "+or.chemicalIdentifiers.dtxcid+ ", No dsstox record for "+n.dtxsid);
 						
-						fw.write("No structure image<br><a href=\""+detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.dsstoxRecord.getPreferredName()+"</a></figcaption><br>");
+						if(n.preferredName!=null) {
+							fw.write("No structure image<br><a href=\""+detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.preferredName+"</a></figcaption><br>");	
+							
+						} else {
+							fw.write("No structure image<br><a href=\""+detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.dtxsid+"</a></figcaption><br>");	
+						}
+						
+						
+					} else {
+						if(n.dtxcid!=null)	 {					
+							if(debug) System.out.println("Here 2, For "+or.modelDetails.propertyName+" for "+or.chemicalIdentifiers.dtxcid+", have dsstox record for "+n.dtxsid+" (" +n.preferredName+")but no image for neighbor");
+						}
+						fw.write("No structure image<br><a href=\""+detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.preferredName+"</a></figcaption><br>");
 					}
 					
 				} else {
 					
-					if(isCAS_OK(n.casrn))//just print the ones that have a valid cas but no still no dtxsid
-						System.out.println("For "+or.modelDetails.propertyName+" for "+or.chemicalIdentifiers.dtxcid+", only have casrn="+n.casrn+" for neighbor (no dsstox record match)");
-					
+					if(n.casrn!=null && isCAS_OK(n.casrn))//just print the ones that have a valid cas but no still no dtxsid
+						if(debug)System.out.println("Here 3, for "+or.modelDetails.propertyName+" for "+or.chemicalIdentifiers.dtxcid+", only have casrn="+n.casrn+" for neighbor (no dsstox record match)");
+					else {
+						if(debug) System.out.println("Here 4, for "+or.modelDetails.propertyName+" for "+or.chemicalIdentifiers.dtxcid+", only have casrn="+n.casrn+" for neighbor (no dsstox record match), bad CAS");
+					}
 					fw.write("No structure image<br>"+n.casrn+"<br>\n");
 				}
 				
@@ -478,6 +515,9 @@ public class HTML_Report_Creator_From_OPERA_Report {
 			fw.write("* Some chemicals in the evaluation set do not have readily available experimental values");
 		}
 	}
+
+
+	
 	
 	private void writeModelResults(OPERA_Report or, Writer fw) throws IOException {
 		
@@ -495,6 +535,14 @@ public class HTML_Report_Creator_From_OPERA_Report {
 
 		fw.write("<b>Model name:</b> "+or.modelDetails.modelName+"<br>");
 		fw.write("<b>Model source:</b> "+or.modelDetails.modelSource+"<br>\n");
+
+//		fw.write("<b>Model source description:</b> "+or.modelDetails.sourceDescription+"<br>\n");
+		
+//		fw.write("<b>Model source:</b>");
+//		fw.write("<div class=\"tooltip\">"+or.modelDetails.modelSource+
+//		  "<span class=\"tooltiptext\">"+or.modelDetails.sourceDescription+"</span></div><br>");
+
+		
 		fw.write("<b>Property name:</b> "+or.modelDetails.propertyName+"<br>\n");
 		fw.write("<b>Property description:</b> "+or.modelDetails.propertyDescription+"<br>\n");
 
@@ -503,9 +551,11 @@ public class HTML_Report_Creator_From_OPERA_Report {
 
 		writePrediction(or, fw);
 
-		this.writeGlobalAD(or, fw);
-		this.writeLocalAD(or, fw, df);
-		this.writeConfidenceIndex(or, fw, df);
+		writeAD(or,fw);
+		
+//		this.writeGlobalAD(or, fw);
+//		this.writeLocalAD(or, fw, df);
+//		this.writeConfidenceIndex(or, fw, df);
 
 //		fw.write("<b>OPERA version:</b> "+or.modelDetails.source+"<br>");
 
@@ -515,93 +565,207 @@ public class HTML_Report_Creator_From_OPERA_Report {
 		fw.write("</table>");
 	}
 
+	private void writeAD(OPERA_Report or, Writer fw) throws IOException {
+
+		if (or.modelResults.adEstimates==null) return;
+
+		//		fw.write("<br>\n");
+
+		for (ADEstimate adEstimate:or.modelResults.adEstimates) {
+
+			String name=adEstimate.adMethod.name;
+			String description=adEstimate.adMethod.description;
+
+			fw.write("<div class=\"tooltip\"><b>"+name+":</b>&nbsp;"+
+					"<span class=\"tooltiptext\">"+description+"</span></div>");
+
+
+			if (name.equals("Combined applicability domain")) {
+				fw.write(adEstimate.reasoningHtml+"<br>");
+			} else {
+				if (adEstimate.conclusion==null) {
+					fw.write(" "+adEstimate.value+"<br>");
+				} else {
+					
+					
+					if (adEstimate.conclusion.contentEquals("Inside")) {
+						fw.write("<span class=\"borderAD_Green\">Inside</span>"+
+								"<style>.borderAD_Green {border: 2px solid green; padding: 0px 4px 0px}</style>");
+						
+						if(debug) System.out.println(adEstimate.adMethod.name+"\t"+adEstimate.conclusion+"\t"+
+								adEstimate.conclusion.contentEquals("Inside"));
+						
+
+					} else if (adEstimate.conclusion.contentEquals("Outside")) {
+						fw.write("<span class=\"borderAD_Red\">Outside</span>"+
+								"<style>.borderAD_Red {border: 2px solid red; padding: 0px 4px 0px}</style>");
+					}
+					
+//					if (name.equals("Combined applicability domain")) {
+//						fw.write("&nbsp;("+adEstimate.reasoning+")");
+//					} 
+					
+					fw.write("<br>\n");
+				}
+
+			}
+
+//			if (name.equals("Overall applicability domain")) {
+//				fw.write("<div class=\"tooltip\"><b>Overall applicability domain reasoning:</b> "+
+//						"<span class=\"tooltiptext\">Reasoning for the overall applicability domain result</span></div>");
+//				fw.write(" "+adEstimate.reasoning+"<br>");
+//				//				fw.write("<div class=\"tooltip\"><b>Prediction reliability:</b> "+
+//				//						"<span class=\"tooltiptext\">Reliability of the prediction based on the OPERA applicability domains</span></div>");
+//				//				fw.write(" "+adEstimate.reliability+"<br>");
+//			} 		
+		}
+
+	}
+
 	private void writeExperimental(OPERA_Report or, Writer fw) throws IOException {
 		
-		if (or.modelResults.experimental!=null) {
-			fw.write("<b>Experimental value:</b> "+getFormattedValue(or.modelResults.experimental,or.modelDetails.propertyName));
+		String strExp="<b>Experimental value: </b>";
 
-			fw.write(" "+or.modelResults.standardUnit);//add units
+		if (or.modelResults.experimentalValue!=null) {
+			String formattedValue=getFormattedValue(or.modelResults.experimentalValue,or.modelDetails.propertyName);
+			strExp+="&nbsp;"+formattedValue+"&nbsp;"+or.modelResults.standardUnit;//add units
 			
-//			if(or.modelDetails.modelName.contains("CATMoS") && !or.modelDetails.modelName.equals("CATMoS-LD50")) {
-//				fw.write("mg/kg");				
-//			}
-
-			if(or.modelResults.experimentalConclusion!=null) {
-				fw.write(" ("+or.modelResults.experimentalConclusion+")");
+			if(or.modelResults.experimentalString!=null) {
+				strExp+=("&nbsp;("+or.modelResults.experimentalString+")");
 			}
-			
+		} else if(or.modelResults.experimentalString!=null) {
+			strExp+=("&nbsp;"+or.modelResults.experimentalString+"");
 		} else {
-			fw.write("<b>Experimental value: </b>N/A");
+			strExp+="N/A";
+		}
+
+		fw.write(strExp+"<br>");
+	}
+	
+	private void writeExpNeighbor(OPERA_Report or, Writer fw, Double experimentalValue,String experimentalString)
+			throws IOException {
+
+		fw.write("<b>Measured:</b> ");
+		
+		String strExp="";
+		
+		if(experimentalValue!=null) {
+			String formattedValue=getFormattedValue(experimentalValue,or.modelDetails.propertyName);
+			strExp+="&nbsp;"+formattedValue+"&nbsp;"+or.modelResults.standardUnit;
+			
+			if(experimentalString!=null) {
+				strExp+="&nbsp;("+experimentalString+")";
+			}
+
+		} else {
+			if(experimentalString!=null) {
+				strExp+="&nbsp;"+experimentalString;
+			}
 		}
 		
-		fw.write("<br>\n");
+		if(strExp.isBlank()) strExp="N/A*";
+		
+		fw.write(strExp+"<br>");
+		
+		
 	}
+	
 
 	private void writePrediction(OPERA_Report or, Writer fw) throws IOException {
 		fw.write("<div class=\"tooltip\"><b>Predicted value:</b> "+
-				  "<span class=\"tooltiptext\">Predicted value from the weighted kNN model. "
-				  + "If the chemical is present in the training set of the model, "
-				  + "the experimental value will match the predicted value</span></div>");
+				  "<span class=\"tooltiptext\">Predicted value from the model</span></div>");
+
+		String strPred="N/A";
+		
+		if(or.modelResults.predictedValue!=null) {
+			String formattedValue=getFormattedValue(or.modelResults.predictedValue,or.modelDetails.propertyName);
+			strPred=" "+formattedValue+"&nbsp;"+or.modelResults.standardUnit;
+//			System.out.println("pred formattedValue="+formattedValue);
+		}
+		
+		if(or.modelResults.predictedString!=null) {
+			strPred+=("&nbsp;("+or.modelResults.predictedString+")");
+		}
 
 		
-		if(or.modelResults.predicted!=null) {
-			fw.write(" "+getFormattedValue(or.modelResults.predicted,or.modelDetails.propertyName)+" "+or.modelResults.standardUnit);
+		fw.write(strPred+"<br>");
 
-			if(or.modelResults.predictedConclusion!=null) {
-				fw.write("("+or.modelResults.predictedConclusion+")");
+	}
+	
+	private void writePredNeighbor(OPERA_Report or, Writer fw, Double predictedValue,String predictedString) throws IOException {
+		
+		fw.write("<div class=\"tooltip\"><b>Predicted:</b>"+
+				  "<span class=\"tooltiptext\">Five fold cross validation prediction for the neighbor</span></div>");
+		
+		String strPred="";
+		
+		if(predictedValue!=null) {
+			String formattedValue=getFormattedValue(predictedValue,or.modelDetails.propertyName);
+			strPred+="&nbsp;"+formattedValue+"&nbsp;&nbsp;"+or.modelResults.standardUnit;
+//			System.out.println("pred formattedValue="+formattedValue);
+			
+			if(predictedString!=null) {
+				strPred+=("&nbsp;("+predictedString+")");
+			}
+
+		} else {
+			if(predictedString!=null) {
+				strPred+=("&nbsp;"+predictedString);
 			}
 			
-		} else {
-			fw.write(" N/A");
-		}
-		fw.write("<br>");
-	}
-
-	private void writeConfidenceIndex(OPERA_Report or, Writer fw, DecimalFormat df) throws IOException {
-		
-		if (or.modelResults.confidence==null) return;
-		
-		fw.write("<div class=\"tooltip\"><b>Confidence level:</b> "+
-				  "<span class=\"tooltiptext\">Confidence level is calculated based on the\r\n"
-				  + "accuracy of the predictions of the five nearest neighbors\r\n"
-				  + "weighted by their distance to the query chemical</span></div>");
-		fw.write(" "+df.format(Double.parseDouble(or.modelResults.confidence))+"<br>");
-	}
-
-	private void writeLocalAD(OPERA_Report or, Writer fw, DecimalFormat df) throws IOException {
-		
-		if (or.modelResults.local==null) return;
-		
-		fw.write("<div class=\"tooltip\"><b>Local applicability domain index:</b> "+
-				  "<span class=\"tooltiptext\">Local applicability domain is relative to the similarity of the query chemical to its\r\n"
-				  + "five nearest neighbors in the p-dimensional space of the\r\n"
-				  + "model using a weighted Euclidean distance </span></div>");
-
-		fw.write(" "+df.format(Double.parseDouble(or.modelResults.local))+"<br>");
-	}
-
-	void writeGlobalAD(OPERA_Report or, Writer fw) throws IOException {
-		
-		if (or.modelResults.msgs.globalTitle==null) {
-			return;
 		}
 		
-		fw.write("<div class=\"tooltip\"><b>Global applicability domain:</b> "+
-				  "<span class=\"tooltiptext\">Global applicability domain via the leverage approach</span></div>");
-				
-		if (or.modelResults.msgs.globalTitle.equals("Inside")) {
-			fw.write("<span class=\"borderAD\">Inside</span>"+
-			"<style>.borderAD {border: 2px solid green; padding: 0px 4px 0px}</style>");
-			
-		} else if (or.modelResults.msgs.globalTitle.equals("Outside")) {
-			fw.write("<span class=\"borderAD\">Outside</span>"+
-			"<style>.borderAD {border: 2px solid red; padding: 0px 4px 0px}</style>");
-		}
- 		
-		fw.write("<br>\n");
 		
+		if(strPred.isBlank()) strPred="N/A";
 		
+		fw.write(strPred+"<br><br>");
 	}
+
+
+//	private void writeConfidenceIndex(OPERA_Report or, Writer fw, DecimalFormat df) throws IOException {
+//		
+//		if (or.modelResults.confidence==null) return;
+//		
+//		fw.write("<div class=\"tooltip\"><b>Confidence level:</b> "+
+//				  "<span class=\"tooltiptext\">Confidence level is calculated based on the\r\n"
+//				  + "accuracy of the predictions of the five nearest neighbors\r\n"
+//				  + "weighted by their distance to the query chemical</span></div>");
+//		fw.write(" "+df.format(Double.parseDouble(or.modelResults.confidence))+"<br>");
+//	}
+//
+//	private void writeLocalAD(OPERA_Report or, Writer fw, DecimalFormat df) throws IOException {
+//		
+//		if (or.modelResults.local==null) return;
+//		
+//		fw.write("<div class=\"tooltip\"><b>Local applicability domain index:</b> "+
+//				  "<span class=\"tooltiptext\">Local applicability domain is relative to the similarity of the query chemical to its\r\n"
+//				  + "five nearest neighbors</span></div>");
+//
+//		fw.write(" "+df.format(Double.parseDouble(or.modelResults.local))+"<br>");
+//	}
+//
+//	void writeGlobalAD(OPERA_Report or, Writer fw) throws IOException {
+//		
+//		if (or.modelResults.msgs.globalTitle==null) {
+//			return;
+//		}
+//		
+//		fw.write("<div class=\"tooltip\"><b>Global applicability domain:</b> "+
+//				  "<span class=\"tooltiptext\">Global applicability domain via the leverage approach</span></div>&nbsp;&nbsp;");
+//				
+//		if (or.modelResults.msgs.globalTitle.equals("Inside")) {
+//			fw.write("<span class=\"borderAD\">Inside</span>"+
+//			"<style>.borderAD {border: 2px solid green; padding: 0px 4px 0px}</style>");
+//			
+//		} else if (or.modelResults.msgs.globalTitle.equals("Outside")) {
+//			fw.write("<span class=\"borderAD\">Outside</span>"+
+//			"<style>.borderAD {border: 2px solid red; padding: 0px 4px 0px}</style>");
+//		}
+// 		
+//		fw.write("<br>\n");
+//		
+//		
+//	}
 	
 
 	public static void main(String[] args) {

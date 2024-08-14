@@ -922,7 +922,7 @@ public class Lookup {
 		return SQL;
 	}
 	
-	static String createSQLAll(int offset,int limit) {
+	public static String createSQLAll(int offset,int limit) {
 
 		String SQL="SELECT * from Results\r\n";							
 

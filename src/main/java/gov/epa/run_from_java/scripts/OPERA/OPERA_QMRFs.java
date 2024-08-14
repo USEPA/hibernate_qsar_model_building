@@ -1,15 +1,12 @@
 package gov.epa.run_from_java.scripts.OPERA;
 
-import java.awt.Desktop;
+
 import java.io.File;
-import java.io.IOException;
 import java.util.TreeMap;
-
-import javax.validation.ConstraintViolationException;
-
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.run_from_java.scripts.QsarModelsScript;
+import gov.epa.run_from_java.scripts.PredictionDashboard.CreatorScript;
 
 /**
 * @author TMARTI02
@@ -21,7 +18,7 @@ public class OPERA_QMRFs {
 		
 		File folder=new File("C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\OPERA\\OPERA 2.8\\QMRFs\\");
 
-		TreeMap<String, Model>mapModels=OPERA_lookups.getModelsMap();
+		TreeMap<String, Model>mapModels=CreatorScript.getModelsMap();
 		System.out.println(mapModels.size());
 		
 		for (File file:folder.listFiles()) {

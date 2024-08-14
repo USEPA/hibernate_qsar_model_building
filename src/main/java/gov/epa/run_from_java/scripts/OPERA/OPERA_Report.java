@@ -6,9 +6,11 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
+import gov.epa.databases.dev_qsar.qsar_models.entity.MethodAD;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedADEstimate;
@@ -47,11 +49,13 @@ public class OPERA_Report {
 		long modelId;
 		String modelName;
 		String modelSource;
+		String modelSourceURL;
 		String propertyName;
 		String propertyDescription;
 		String dataAccessability;
 		String category;
 		String source;
+		String sourceDescription;
 		int hasQmrfPdf;
 		int hasPlots;
 		String qmrfReportUrl;
@@ -60,29 +64,63 @@ public class OPERA_Report {
 		String urlScatterPlot;
 	}
 	
+	class ADEstimate {
+		ADMethod adMethod;
+		String value;
+		String conclusion;
+		String reasoning;
+		String reasoningHtml;
+		String reliability;
+		
+		public ADEstimate(QsarPredictedADEstimate adEstimate) {
+			
+			if (adEstimate.getApplicabilityValue()!=null)
+				this.value=adEstimate.getApplicabilityValue().toString();
+			
+			this.conclusion=adEstimate.getConclusion();
+			this.reasoning=adEstimate.getReasoning();
+			ADMethod adMethod=new ADMethod();
+			adMethod.name=adEstimate.getMethodAD().getName_display();
+			adMethod.description=adEstimate.getMethodAD().getDescription();
+			this.adMethod=adMethod;
+		}
+
+		
+	}
+
+	class ADMethod {
+		String name;
+		String description;
+	}
+	
 	class ModelResults {
 
-		String experimental;
-		String experimentalConclusion;
+		Double experimentalValue;
+		String experimentalString;
 
-		String predicted;
-		String predictedConclusion;
+		Double predictedValue;
+		String predictedString;
 
 		String operaVersion;
 		String standardUnit;
+
 		
-		int global;
-		String local;
-		String confidence;
+//		int global;
+//		String local;
+//		String confidence;
+//		Msgs msgs=new Msgs();
+//
+//		class Msgs {
+//			String globalTitle;
+//			String localTitle;
+//			String confidenceTitle;
+//		}
 		
-		Msgs msgs=new Msgs();
+		List<ADEstimate>adEstimates;
 		
-		class Msgs {
-			String globalTitle;
-			String localTitle;
-			String confidenceTitle;
-		}
-		
+//		double adValue;
+//		String adReliability;
+//		String adReasoning;
 		
 		Performance performance=new Performance();
 		
@@ -135,36 +173,50 @@ public class OPERA_Report {
 	class Neighbor {
 		
 		int neighborNumber;//done
-		String measured;//done
-		String predicted;//done
-//		String dtxcid;
+		
+		Double experimentalValue;//done
+		Double predictedValue;//done
+		
+		String experimentalString;//done
+		String predictedString;//done
+		
+		String dtxcid;
 		String dtxsid;
 		String casrn;
-		
+		boolean molImagePNGAvailable;//default is false
+		String preferredName; //SCDCD had this as preferred_name which is inconsistent with naming scheme of other classes
+		String matchBy;
+
 //		long cid;
 //		String gsid;//needed?
-//		String preferredName; //SCDCD had this as preferred_name which is inconsistent with naming scheme of other classes
-//		boolean molImagePNGAvailable;//default is false
-		
-		DsstoxRecord dsstoxRecord;
-		String matchBy;
-		
+//		DsstoxRecord dsstoxRecord;
 
-		public Neighbor(QsarPredictedNeighbor n) {
-			this.neighborNumber=n.getNeighborNumber();
-			this.measured=n.getExp();
-			this.predicted=n.getPred();
-			this.matchBy=n.getMatchBy();
+		public Neighbor(QsarPredictedNeighbor qpn) {
+			
+			this.neighborNumber=qpn.getNeighborNumber();
+			
+			this.experimentalValue=qpn.getExperimentalValue();
+			this.experimentalString=qpn.getExperimentalString();
+			
+			this.predictedValue=qpn.getPredictedValue();
+			this.predictedString=qpn.getPredictedString();
+			
+			this.matchBy=qpn.getMatchBy();
+			
+			
+			if(qpn.getDsstoxRecord()!=null) {
+				DsstoxRecord dr=qpn.getDsstoxRecord();
+				this.dtxsid=dr.getDtxsid();
+				this.casrn=dr.getCasrn();
+				this.dtxcid=dr.getDtxcid();
+				this.molImagePNGAvailable=dr.isMolImagePNGAvailable();
+				this.preferredName=dr.getPreferredName();
 
-			if(n.getDtxsid()!=null) this.dtxsid=n.getDtxsid();
-			if(n.getCasrn()!=null)this.casrn=n.getCasrn();
-			
-			if(n.getDsstoxRecord()!=null) this.dsstoxRecord=n.getDsstoxRecord();
-			
-//			if(n.getDtxcid()!=null) this.dtxcid=n.getDtxcid();
-//			if(n.getCid()!=null) this.cid=n.getCid();
-//			if(n.getPreferredName()!=null) this.preferredName=n.getPreferredName();
-//			if(n.isMolImagePNGAvailable()!=null) this.molImagePNGAvailable=n.isMolImagePNGAvailable();
+			} else {
+				this.dtxsid=qpn.getDtxsid();
+				this.casrn=qpn.getCasrn();
+				this.molImagePNGAvailable=false;
+			}
 		}
 
 	}
@@ -175,7 +227,6 @@ public class OPERA_Report {
 		setModelDetails(pd,property,useLatestModelIds);
 		setModelResults(pd, unitAbbreviation,property);
 		setNeighbors(pd);
-		
 //		System.out.println(this.modelDetails.description);
 	}
 
@@ -199,85 +250,20 @@ public class OPERA_Report {
 
 	
 	private void setModelResults(PredictionDashboard pd,String unitAbbreviation,Property property) {
-		String strGlobalAD="OPERA global applicability domain";
-		String strLocalAD="OPERA local applicability domain";
-		String strConfidenceIndex="OPERA confidence index";
 
 		modelResults.standardUnit=unitAbbreviation;
 		
 		if (modelResults.standardUnit!=null && modelResults.standardUnit.equals("Binary")) modelResults.standardUnit="";
 		if (modelResults.standardUnit==null) modelResults.standardUnit="";
 		
-		if (pd.getExperimentalString()!=null) {
-			modelResults.experimental=pd.getExperimentalString();
-		} else if (pd.getExperimentalValue()!=null) {
-			modelResults.experimental=pd.getExperimentalValue()+"";
-
-			String id=null;
-			
-			if(pd.getDsstoxRecord()!=null) {
-				id=pd.getDsstoxRecord().getDtxcid();
-			}
-			
-			modelResults.experimentalConclusion=getConclusion(property, pd.getExperimentalValue(),id);
-			
-		} 
-		
-		if (pd.getPredictionString()!=null) {
-			modelResults.predicted=pd.getPredictionString();
-			
-		} else if (pd.getPredictionValue()!=null) {
-			modelResults.predicted=pd.getPredictionValue()+"";
-			
-			String id="";
-
-			if(pd.getDsstoxRecord()!=null) {
-				if(pd.getDsstoxRecord().getDtxcid()!=null) {
-					id=pd.getDsstoxRecord().getDtxcid();
-				}
-			}
-			
-			modelResults.predictedConclusion=getConclusion(property, pd.getPredictionValue(),id);
-			
-//			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_VERY_TOXIC)) {
-//				if(pd.getPredictionValue()==0) modelResults.predictedConclusion="Not very toxic: oral rat LD50 > 50 mg/kg";
-//				else modelResults.predictedConclusion="Very toxic: oral rat LD50 ≤ 50 mg/kg";
-//			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_NON_TOXIC)) {
-//				if(pd.getPredictionValue()==1) modelResults.predictedConclusion="Nontoxic: oral rat LD50 > 2000 mg/kg";
-//				else modelResults.predictedConclusion="Not nontoxic: oral rat LD50 ≤ 2000 mg/kg";
-//			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_EPA_CATEGORY)) {
-//				modelResults.predictedConclusion=getConclusionEPA(pd.getPredictionValue());
-//			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_GHS_CATEGORY)) {
-//				modelResults.predictedConclusion=getConclusionGHS(pd.getPredictionValue());		
-//			}
-			
-		}
-		
-		
-		
-				
-		for (QsarPredictedADEstimate ad:pd.getQsarPredictedADEstimates()) {
-
-			if(ad.getMethodAD().getName().equals(strGlobalAD)) {
-				modelResults.global=ad.getApplicabilityValue().intValue();
-				if (ad.getApplicabilityValue()==1) modelResults.msgs.globalTitle="Inside";	
-				else modelResults.msgs.globalTitle="Outside";
-			}
-					
-			if(ad.getMethodAD().getName().equals(strLocalAD)) {
-				modelResults.local=ad.getApplicabilityValue()+"";
-				modelResults.msgs.localTitle=modelResults.local;
-			}
-
-			if(ad.getMethodAD().getName().equals(strConfidenceIndex)) {
-				modelResults.confidence=ad.getApplicabilityValue()+"";
-				modelResults.msgs.confidenceTitle=modelResults.confidence;
-			}
-			
-		}
-		
+		setExperimental(pd, property); 
+		setPrediction(pd, property);
+		setADEstimates(pd);
 //		System.out.println(pd.getModel().getName()+"\t"+pd.getModel().getModelStatistics().size());
-		
+		setStatistics(pd);
+	}
+
+	private void setStatistics(PredictionDashboard pd) {
 		for (ModelStatistic ms:pd.getModel().getModelStatistics()) {
 			
 			if (ms.getStatistic().getName().equals(DevQsarConstants.PEARSON_RSQ_TRAINING)) {
@@ -314,38 +300,270 @@ public class OPERA_Report {
 		}
 	}
 
-	String getConclusion(Property property,double value,String id) {
-		if(property.getName().equals(DevQsarConstants.RBIODEG)) {
-			if(value==0) return "Not readily biodegradable";
-			else return "Readily biodegradable";
-		} else if (property.getName().contains("receptor")) {
-			if(value==0) {
-				return "Inactive";
-			} else {
-//				System.out.println(id);
-				return "Active";
-			}
-		} else {
-			return null;
-		}
+	private void setExperimental(PredictionDashboard pd, Property property) {
+		
+		modelResults.experimentalValue=pd.getExperimentalValue();
+		modelResults.experimentalString=pd.getExperimentalString();
+		
+//		if (pd.getExperimentalString()!=null) {
+//			modelResults.experimental=pd.getExperimentalString();
+//		} else if (pd.getExperimentalValue()!=null) {
+//			
+//
+//			String id=null;
+//			
+//			if(pd.getDsstoxRecord()!=null) {
+//				id=pd.getDsstoxRecord().getDtxcid();
+//			}
+//			
+//			modelResults.experimentalConclusion=OPERA_csv_to_PostGres_DB.getBinaryConclusion(property.getName(), pd.getExperimentalValue());
+//			
+//		}
 	}
+
+	private void setPrediction(PredictionDashboard pd, Property property) {
+		
+		modelResults.predictedValue=pd.getPredictionValue();
+		modelResults.predictedString=pd.getPredictionString();
+
+//		if (pd.getPredictionString()!=null) {
+//			modelResults.predicted=pd.getPredictionString();
+//			
+//		} else if (pd.getPredictionValue()!=null) {
+//			modelResults.predicted=pd.getPredictionValue()+"";
+//			
+//			String id="";
+//
+//			if(pd.getDsstoxRecord()!=null) {
+//				if(pd.getDsstoxRecord().getDtxcid()!=null) {
+//					id=pd.getDsstoxRecord().getDtxcid();
+//				}
+//			}
+//			
+//			modelResults.predictedConclusion=pd.getPredictionString();
+//			
+////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_VERY_TOXIC)) {
+////				if(pd.getPredictionValue()==0) modelResults.predictedConclusion="Not very toxic: oral rat LD50 > 50 mg/kg";
+////				else modelResults.predictedConclusion="Very toxic: oral rat LD50 ≤ 50 mg/kg";
+////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_NON_TOXIC)) {
+////				if(pd.getPredictionValue()==1) modelResults.predictedConclusion="Nontoxic: oral rat LD50 > 2000 mg/kg";
+////				else modelResults.predictedConclusion="Not nontoxic: oral rat LD50 ≤ 2000 mg/kg";
+////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_EPA_CATEGORY)) {
+////				modelResults.predictedConclusion=getConclusionEPA(pd.getPredictionValue());
+////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_GHS_CATEGORY)) {
+////				modelResults.predictedConclusion=getConclusionGHS(pd.getPredictionValue());		
+////			}
+//			
+//		}
+	}
+
+	private void setADEstimates(PredictionDashboard pd) {
+
+		modelResults.adEstimates=new ArrayList<ADEstimate>();
+		
+		for (QsarPredictedADEstimate qsarADEstimate: pd.getQsarPredictedADEstimates()) {
+			ADEstimate adEstimate=new ADEstimate(qsarADEstimate);
+			
+			if(qsarADEstimate.getMethodAD().getName().contentEquals(DevQsarConstants.Applicability_Domain_Combined)) {
+				String reasoning=qsarADEstimate.getReasoning();
+				adEstimate.reasoning=reasoning;
+				setReasoningHTML(adEstimate, reasoning);
+			}
+			modelResults.adEstimates.add(adEstimate);
+		}
+
+//Old way that matches what SCDCD used in json in their db:
+//		for (QsarPredictedADEstimate ad:pd.getQsarPredictedADEstimates()) {
+//		if(ad.getMethodAD().getName().equals(strGlobalAD)) {
+//			modelResults.global=ad.getApplicabilityValue().intValue();
+//			if (ad.getApplicabilityValue()==1) modelResults.msgs.globalTitle="Inside";	
+//			else modelResults.msgs.globalTitle="Outside";
+//		}
+//
+//		if(ad.getMethodAD().getName().equals(strLocalAD)) {
+//			modelResults.local=ad.getApplicabilityValue()+"";
+//			modelResults.msgs.localTitle=modelResults.local;
+//		}
+//
+//		if(ad.getMethodAD().getName().equals(strConfidenceIndex)) {
+//			modelResults.confidence=ad.getApplicabilityValue()+"";
+//			modelResults.msgs.confidenceTitle=modelResults.confidence;
+//		}
+//	}
+
+	}
+
+	private void setReasoningHTML(ADEstimate adEstimate, String reasoning) {
+		String globalMethodDescription=DevQsarConstants.Applicability_Domain_OPERA_global_index_description;
+		String localMethodDescription=DevQsarConstants.Applicability_Domain_OPERA_local_index_description;
+		
+		String fancyGlobal="<div class=\"tooltip\">Global AD&nbsp;"+
+				"<span class=\"tooltiptext\">"+globalMethodDescription+"</span></div>";
+		
+		String fancyLocal="<div class=\"tooltip\">Local AD index<span class=\"tooltiptext\">"+localMethodDescription+"</span></div>";
+
+		
+		reasoning=reasoning.replace("Global AD", fancyGlobal);
+		reasoning=reasoning.replace("Local AD index", fancyLocal);
+		
+		reasoning=addColor(reasoning,"Inside","green");
+		reasoning=addColor(reasoning,"Outside","red");
+		reasoning=addColor(reasoning,"poor","red");
+		reasoning=addColor(reasoning,"fair","orange");
+		reasoning=addColor(reasoning,"good","green");
+		adEstimate.reasoningHtml=reasoning;
+	}
+	
+	String addColor(String reasoning, String text,String color)  {
+		if (!reasoning.contains(text)) return reasoning;
+		return reasoning.replace(text, "<font color="+color+"><b>"+text+"</b></font>");
+	}
+	
+
+//	private ADEstimate setOverallAD(PredictionDashboard pd, ModelResults modelResults, ADEstimate adEstimateGlobal, ADEstimate adEstimateLocal, ADEstimate adEstimateConfidence) {
+//		
+//		int globalValue=Integer.parseInt(adEstimateGlobal.value);
+//		double localValue=Double.parseDouble(adEstimateLocal.value);
+//		double confidenceValue=Double.parseDouble(adEstimateConfidence.value);
+//		
+//		ADEstimate adEstimateOverall=new ADEstimate();
+//		
+//		ADMethod adMethod=new ADMethod();
+//		adMethod.name="Overall applicability domain";
+//		//					adMethod.description=ad.getMethodAD().getDescription();//from the database
+//		adMethod.description="Overall applicability domain from multiple AD measures";
+//		
+//		adEstimateOverall.adMethod=adMethod;
+//		
+//		setOverallADResults(adEstimateOverall, globalValue, localValue, confidenceValue);
+//		
+//		System.out.println(chemicalIdentifiers.dtxcid+"\t"+  modelDetails.propertyName +"\t"+  globalValue+"\t"+localValue+"\t"+confidenceValue+"\t"+"AD conclusion="+adEstimateOverall.reasoning);
+//
+//		
+////		System.out.println(adEstimateOverall.value+"\t"+adEstimateOverall.conclusion);
+//		
+//		return adEstimateOverall;
+//	}
+
+//	private ADEstimate setConfidenceAD(PredictionDashboard pd) {
+//		
+//		String strConfidenceIndex="OPERA confidence index";
+//		
+//		for (QsarPredictedADEstimate ad:pd.getQsarPredictedADEstimates()) {
+//			if(ad.getMethodAD().getName().equals(strConfidenceIndex)) { 
+//				
+//				ADEstimate adEstimateConfidence=new ADEstimate();
+//				ADMethod adMethod=new ADMethod();
+//				adMethod.name="Confidence level";
+//				adMethod.description="Confidence level is calculated based on the accuracy of the "
+//						+ "predictions of the five nearest neighbors weighted by their distance "
+//						+ "to the query chemicals";
+//				
+//				//TODO make this match what's in the database
+//
+//				adEstimateConfidence.adMethod=adMethod;
+//				adEstimateConfidence.value=ad.getApplicabilityValue().toString();
+//				return adEstimateConfidence;
+//
+//			}
+//		}
+//		
+//		return null;
+//	}
+
+//	private ADEstimate setGlobalAD(PredictionDashboard pd) {
+//		String strGlobalAD="OPERA global applicability domain";
+//
+//		for (QsarPredictedADEstimate ad:pd.getQsarPredictedADEstimates()) {
+//			if(ad.getMethodAD().getName().equals(strGlobalAD)) {
+//				ADEstimate adEstimateGlobal=new ADEstimate();
+//
+//				ADMethod adMethod=new ADMethod();
+//				//					adMethod.name=ad.getMethodAD().getName();
+//				adMethod.name="Global applicability domain";
+//				//					adMethod.description=ad.getMethodAD().getDescription();//from the database
+//				adMethod.description="Global applicability domain via the leverage approach";
+//
+//				//TODO make this match what's in the database
+//				
+//				adEstimateGlobal.adMethod=adMethod;
+//				adEstimateGlobal.value=ad.getApplicabilityValue().intValue()+"";
+//
+//				if(ad.getApplicabilityValue().intValue()==1) {
+//					adEstimateGlobal.conclusion="Inside";
+//				} else {
+//					adEstimateGlobal.conclusion="Outside";
+//				}
+//				return adEstimateGlobal;
+//
+//			}
+//		}
+//
+//		return null;
+//
+//	}
+//	
+//	 private ADEstimate setLocalAD(PredictionDashboard pd) {
+//
+//		 String strLocalAD="OPERA local applicability domain";
+//
+//		 for (QsarPredictedADEstimate ad:pd.getQsarPredictedADEstimates()) {
+//
+//			 if(ad.getMethodAD().getName().equals(strLocalAD)) {
+//
+//				 ADEstimate adEstimateLocal;
+//				 adEstimateLocal=new ADEstimate();
+//
+//				 ADMethod adMethod=new ADMethod();
+//				 adMethod.name="Local applicability domain index";
+//				 adMethod.description = "Local applicability domain is relative to the similarity of the "
+//						 + "query chemical to its five nearest neighbors";
+//				 
+//				//TODO make this match what's in the database
+//
+//				 adEstimateLocal.adMethod=adMethod;
+//				 adEstimateLocal.value=ad.getApplicabilityValue().toString();
+//
+//
+//				 return adEstimateLocal;
+//
+//			 }
+//
+//		 } 
+//
+//		 return null;
+//	 }
+
+
 	private void setModelDetails(PredictionDashboard pd,Property property, boolean useLatestModelIds) {
 		this.modelDetails.modelId=pd.getModel().getId();
 
 //		String datasetName=pd.getModel().getDatasetName();
 //		this.modelDetails.propertyName=datasetName.substring(0,datasetName.indexOf(" OPERA"));
 
-		this.modelDetails.propertyName=property.getName();
+		this.modelDetails.propertyName=property.getName_ccd();
 		this.modelDetails.propertyDescription=property.getDescription();
 		
 		
 		this.modelDetails.dataAccessability=getDataAccessibility(pd);
 		this.modelDetails.modelName=pd.getModel().getName();
-		this.modelDetails.modelSource=pd.getModel().getSource().getName();
 		
+		//Make model name shorter for display:
+		this.modelDetails.modelName=modelDetails.modelName.substring(0,modelDetails.modelName.indexOf(" OPERA"));//simplify for display
+		this.modelDetails.modelSource=pd.getModel().getSource().getName();
+		this.modelDetails.modelSourceURL="https://github.com/kmansouri/OPERA";
 		
 		this.modelDetails.category="QSAR";
 		this.modelDetails.source=pd.getModel().getSource().getName();
+		
+		this.modelDetails.sourceDescription="OPERA is a free and open source/open "
+				+ "data suite of QSAR Models providing predictions and additional "
+				+ "information including applicability domain and accuracy assessment, "
+				+ "as described in the <a href=\"http://dx.doi.org/10.1186/s13321-018-0263-1\">OPERA publication</a>. "
+				+ "All models were built on curated data and standardized chemical "
+				+ "structures as described in <a href=\"http://dx.doi.org/10.1080/1062936X.2016.1253611\">Mansouri et al, 2016</a>. All OPERA properties are "
+				+ "predicted under ambient conditions of 760mm of Hg at 25 degrees Celsius.";
+				
 		this.modelDetails.hasQmrfPdf=hasQMRF(pd);
 		this.modelDetails.hasPlots=hasPlots(property.getName());
 		
