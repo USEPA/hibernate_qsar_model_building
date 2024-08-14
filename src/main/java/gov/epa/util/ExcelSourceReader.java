@@ -336,7 +336,7 @@ public class ExcelSourceReader {
 //						content = row.getCell(k,MissingCellPolicy.CREATE_NULL_AS_BLANK).getStringCellValue();
 //					}
 					
-					content = row.getCell(k,MissingCellPolicy.CREATE_NULL_AS_BLANK).getStringCellValue();
+					if(content.isBlank()) content=null;
 					
 					if (content!=null && !content.isBlank()) { hasAnyFields = true; }
 					jo.addProperty(hmFieldNames.get(k), content);

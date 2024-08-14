@@ -57,6 +57,24 @@ public class SqlUtilities {
 		}
 	}
 
+	public static Connection getConnectionSqlite(String databasePath)  {
+		try {
+			if (connPool.containsKey(databasePath) && connPool.get(databasePath) != null && !connPool.get(databasePath).isClosed()) {
+				return connPool.get(databasePath);
+			} else {
+				Class.forName("org.sqlite.JDBC");
+				Connection conn = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+				connPool.put(databasePath, conn); 
+				return conn;
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
+
+	
+	
 	public static Connection getConnectionDSSTOX() {
 		
 		try {

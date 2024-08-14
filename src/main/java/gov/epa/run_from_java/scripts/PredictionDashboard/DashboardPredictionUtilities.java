@@ -12,6 +12,7 @@ import java.util.List;
 import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.AtomContainerSet;
 import org.openscience.cdk.DefaultChemObjectBuilder;
+import org.openscience.cdk.graph.ConnectivityChecker;
 import org.openscience.cdk.interfaces.IAtomContainer;
 import org.openscience.cdk.io.MDLV2000Reader;
 import org.openscience.cdk.io.MDLV3000Reader;
@@ -31,6 +32,12 @@ public class DashboardPredictionUtilities {
 
 	}
 	
+	
+	public static boolean isSalt(AtomContainer ac) {
+		AtomContainerSet moleculeSet = (AtomContainerSet) ConnectivityChecker.partitionIntoMolecules(ac);
+		return (moleculeSet.getAtomContainerCount() >= 2);
+	}
+
 	/**
 	 * Writing my own V3000 reader because CDK sucks and cant read SDFs for all the dashboard chemicals and get the properties too
 	 * 
@@ -208,10 +215,13 @@ public class DashboardPredictionUtilities {
 					String Line=br.readLine();
 					//				System.out.println(Line);
 
-					if(Line.contains(">  <")) {
+					if(Line.contains(">  <") || Line.contains("> <")) {
 						String field=Line.substring(Line.indexOf("<")+1,Line.length()-1);
 						String value=br.readLine();
 						molecule.setProperty(field, value);
+						
+//						System.out.println(field+"\t"+value);
+						
 						//					System.out.println(field);
 					}
 

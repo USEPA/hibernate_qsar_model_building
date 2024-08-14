@@ -185,17 +185,22 @@ public class ExcelCreator {
 
 				for (int colNum=0;colNum<row.getLastCellNum();colNum++) {
 
-					Cell cell=row.getCell(colNum);
+					try {
 
-					FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator(); 
-					CellValue value=evaluator.evaluate(cell);
-					
-					if (value!=null) {
-						String strValue=value.formatAsString().replace("\"", "");
-						jo.addProperty(fields.get(colNum), strValue);
-						
+						Cell cell=row.getCell(colNum);
+
+						FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator(); 
+						CellValue value=evaluator.evaluate(cell);
+
+						if (value!=null) {
+							String strValue=value.formatAsString().replace("\"", "");
+							jo.addProperty(fields.get(colNum), strValue);
+
+						}
+
+					} catch (Exception ex) {
+						System.out.println(ex.getMessage()+"\tError evaluating formula for "+rowNum+"\t"+colNum);
 					}
-
 				}
 				ja.add(jo);
 			}
@@ -596,6 +601,9 @@ public class ExcelCreator {
 		
 		
 		htDescriptions.put("exp_prop_id","raw property id number in our database");
+		htDescriptions.put("exp_prop_id_previous_version","raw property id number from older version of the source");
+		
+
 		htDescriptions.put("canon_qsar_smiles","qsar_ready_smiles associated with the mapped smiles");
 		htDescriptions.put("page_url","url that the property value is associated with");
 
