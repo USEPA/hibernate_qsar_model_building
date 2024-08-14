@@ -78,7 +78,9 @@ public class PropertyValueValidator {
 	private static Boolean checkUnits(String propertyName, String unitName) {
 
 		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)
-				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)) {
+				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)
+				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_SCUD_LC50)
+				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50)) {
 			return (unitName.equals("G_L") || unitName.equals("MOLAR"));
 		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
 			return unitName.equals("MMHG");
@@ -161,6 +163,8 @@ public class PropertyValueValidator {
 				|| propertyName.equals(DevQsarConstants.SURFACE_TENSION)
 				|| propertyName.equals(DevQsarConstants.KOC) || propertyName.equals(DevQsarConstants.BCF)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)
+				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_SCUD_LC50)
+				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50)
 				|| propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)
 				|| propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50)
 				|| propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
@@ -199,6 +203,8 @@ public class PropertyValueValidator {
 				|| propertyName.equals(DevQsarConstants.KmHL) || propertyName.equals(DevQsarConstants.BCF)
 				|| propertyName.equals(DevQsarConstants.KOC) || propertyName.equals(DevQsarConstants.BIODEG_HL_HC)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)
+				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_SCUD_LC50)
+				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50)
 				|| propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)
 				|| propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50)
 				|| propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {

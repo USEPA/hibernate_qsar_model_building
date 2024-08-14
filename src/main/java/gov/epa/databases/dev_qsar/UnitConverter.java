@@ -46,7 +46,11 @@ public class UnitConverter {
 			return value;
 		}
 		
-		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY) || propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)) {
+		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY) || 
+				propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50) ||
+				propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_SCUD_LC50) ||
+				propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50) ||
+				propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)) {
 			return handle_WATER_SOLUBILITY(propertyName, value, finalUnitName, chemicalId, dsstoxRecord, unitName);
 		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
 			return handle_HENRYS_LAW_CONSTANT(propertyName,value, finalUnitName, chemicalId, unitName);

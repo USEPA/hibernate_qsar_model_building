@@ -91,9 +91,9 @@ public class QsarDescriptorsScriptTodd {
 //		String smiles="CN(C)CCC[n]1(=O)c2ccccc2[s]c2ccccc12";
 		
 //		String descriptorSetName="WebTEST-default";
-		String descriptorSetName="PaDEL-default";
+//		String descriptorSetName="PaDEL-default";
 //		String descriptorSetName="ToxPrints-default";
-//		String descriptorSetName="Mordred-default";
+		String descriptorSetName="Mordred-default";
 		
 //		String server="https://hcd.rtpnc.epa.gov";
 		String server="https://hazard-dev.sciencedataexperts.com";
@@ -141,10 +141,11 @@ public class QsarDescriptorsScriptTodd {
 	
 	void generateDescriptorsForDatasets() {
 		
-		String descriptorSetName="WebTEST-default";
+//		String descriptorSetName="WebTEST-default";
 //		String descriptorSetName="ToxPrints-default";
 //		String descriptorSetName="RDKit-default";
 //		String descriptorSetName="PaDEL-default";
+		String descriptorSetName="Mordred-default";
 //		
 //		String server="https://ccte-cced.epa.gov/";
 		String server="https://hcd.rtpnc.epa.gov/";
@@ -218,11 +219,11 @@ public class QsarDescriptorsScriptTodd {
 //				"RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
 //		};
 		
-		String[] sciDataExpertsDescriptorSetNames = {"WebTEST-default"};
+//		String[] sciDataExpertsDescriptorSetNames = {"WebTEST-default"};
 //		String[] sciDataExpertsDescriptorSetNames = {"ToxPrints-default"};
 //		String[] sciDataExpertsDescriptorSetNames = {"Mordred-default"};
 //		String[] sciDataExpertsDescriptorSetNames = {"PaDEL-default"};
-		
+		String[] sciDataExpertsDescriptorSetNames = {"Mordred-default"};
 
 		int batchSize=1;
 //		String datasetName="WS v1 res_qsar";
@@ -231,7 +232,9 @@ public class QsarDescriptorsScriptTodd {
 //		String datasetName="exp_prop_96HR_FHM_LC50_v1 modeling";
 //		String datasetName="exp_prop_96HR_FHM_LC50_v2 modeling";
 //		String datasetName="exp_prop_96HR_FHM_LC50_v3 modeling";
-		String datasetName="TTR_Binding_training_remove_bad_max_conc";
+//		String datasetName="TTR_Binding_training_remove_bad_max_conc";
+//		String datasetName="exp_prop_96HR_scud_v1 modeling";
+		String datasetName="exp_prop_96HR_RT_LC50_v1 modeling";
 				
 		for (String descriptorSetName:sciDataExpertsDescriptorSetNames) {
 			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,batchSize);
@@ -298,10 +301,11 @@ public class QsarDescriptorsScriptTodd {
 
 	void calcSingleChemical() {
 		
-		String descriptorSetName="WebTEST-default";
+//		String descriptorSetName="WebTEST-default";
 //		String descriptorSetName="ToxPrints-default";
 //		String descriptorSetName="RDKit-default";
 //		String descriptorSetName="PaDEL-default";
+		String descriptorSetName="Mordred-default";
 //		
 		String server="https://ccte-cced.epa.gov/";
 //		String server="https://hazard-dev.sciencedataexperts.com";
@@ -326,6 +330,7 @@ public class QsarDescriptorsScriptTodd {
 		
 		//*********************************************************************************************************		
 //		q.calcSingleChemical();
+//		q.runSingleChemical();
 //		runSimple();
 //		compareToGrace();
 	}

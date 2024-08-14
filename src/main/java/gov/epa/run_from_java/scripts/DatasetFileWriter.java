@@ -488,9 +488,15 @@ public class DatasetFileWriter {
 //		String outputFolderPath="data/dev_qsar/dataset_files/";
 		String descriptorSetName="WebTEST-default";
 //		
-		String outputFolderPath="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_exp_prop";
-		writer.writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE","exp_prop_96HR_FHM_LC50_v1 modeling",outputFolderPath,false,true);
-//		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingPFASOnly,"Standard Water solubility from exp_prop",outputFolderPath);
+		String datasetName="HLC v1 modeling";
+		
+		String outputFolderPath="C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 Python\\pf_python_modelbuilding\\datasets\\"+datasetName;
+//		writer.writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE","exp_prop_96HR_FHM_LC50_v2 modeling",outputFolderPath,false,true);
+
+		writer.writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE",datasetName,outputFolderPath,false,true);
+		
+		
+		//		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingPFASOnly,"Standard Water solubility from exp_prop",outputFolderPath);
 //		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingAll,"Standard Water solubility from exp_prop",outputFolderPath);
 //		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingAllButPFAS,"Standard Water solubility from exp_prop",outputFolderPath);
 

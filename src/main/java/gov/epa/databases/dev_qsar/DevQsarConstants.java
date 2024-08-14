@@ -199,9 +199,13 @@ public class DevQsarConstants {
 	
 	//New versions for dashboard
 	public static final String NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50 ="96 hour fathead minnow LC50";
+	public static final String NINETY_SIX_HOUR_BLUEGILL_LC50 ="96 hour bluegill LC50";
+
 	public static final String FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50 ="48 hour Daphnia magna LC50";
 	public static final String FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50 ="48 hour Tetrahymena pyriformis IGC50";
-
+	public static final String NINETY_SIX_HOUR_SCUD_LC50 ="96 hour scud LC50";
+	public static final String NINETY_SIX_HOUR_RAINBOW_TROUT_LC50 ="96 hour rainbow trout LC50";
+	
 	public static final String ORAL_RAT_LD50="Oral rat LD50";//OPERA
 	public static final String ORAL_RAT_VERY_TOXIC = "Oral rat very toxic binary";
 	public static final String ORAL_RAT_NON_TOXIC = "Oral rat nontoxic binary";
@@ -504,6 +508,9 @@ public class DevQsarConstants {
 		map.put(NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50, "NEG_LOG_M");
 		map.put(FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50, "NEG_LOG_M");
 		map.put(FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50, "NEG_LOG_M");
+		map.put(NINETY_SIX_HOUR_SCUD_LC50, "NEG_LOG_M");
+		map.put(NINETY_SIX_HOUR_RAINBOW_TROUT_LC50, "NEG_LOG_M");
+		
 		map.put(ORAL_RAT_LD50, "NEG_LOG_MOL_KG");
 		map.put(BCF, "LOG_L_KG");
 		
@@ -780,7 +787,9 @@ public class DevQsarConstants {
 		
 		map.put(NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50,"MOLAR");
 		map.put(FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50,"MOLAR");
-		map.put(FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50, "MOLAR");		
+		map.put(FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50, "MOLAR");
+		map.put(NINETY_SIX_HOUR_SCUD_LC50,"MOLAR");
+		map.put(NINETY_SIX_HOUR_RAINBOW_TROUT_LC50,"MOLAR");
 
 		map.put(ORAL_RAT_LD50, "MG_KG");
 		map.put(ORAL_RAT_VERY_TOXIC, "BINARY");

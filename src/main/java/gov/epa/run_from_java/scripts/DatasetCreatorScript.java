@@ -184,8 +184,9 @@ public class DatasetCreatorScript {
 //	}
 //		if(true) return;
 
-		dcs.createFHM_96hr_LC50_Ecotox_modeling();
-
+//		dcs.createFHM_96hr_LC50_Ecotox_modeling();
+//		dcs.createScud_96hr_LC50_Ecotox_modeling();
+		dcs.createRT_96hr_LC50_Ecotox_modeling();
 		
 //		dcs.getMappings();
 		
@@ -701,7 +702,7 @@ public class DatasetCreatorScript {
 
 	public void createWS() {
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		creator.postToDB = false;
 		
 		String propertyName = DevQsarConstants.WATER_SOLUBILITY;
 
@@ -2086,7 +2087,84 @@ public class DatasetCreatorScript {
 		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
 
 	}
+	
+	public void createScud_96hr_LC50_Ecotox_modeling() {
 
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+
+		creator.postToDB = false;//otherwise wont create the dataset
+		
+		String propertyName = DevQsarConstants.NINETY_SIX_HOUR_SCUD_LC50;
+		String propAbbrev=DevQsarConstants.getConstantNameByReflection(propertyName) ;
+		String sourceName="ECOTOX_2023_12_14";
+		String chemicalListName="exp_prop_"+sourceName;				
+		
+//		ArrayList<String> listNameArray = new ArrayList<String>();
+//		listNameArray.add("ExpProp_MP_WithChemProp_063022_1_to_40000");
+		
+		List<BoundParameterValue> boundsParameterValues = null;
+		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
+
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, chemicalListName, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
+
+		
+//		String datasetName = "exp_prop_96HR_FHM_LC50_v1 modeling";
+//		String datasetDescription = "96HR_FHM_LC50 from "+sourceName;
+
+		String datasetName = "exp_prop_96HR_scud_v1 modeling";
+		String datasetDescription = "96HR_SCUD_LC50 from "+sourceName;
+
+		
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+
+		List<String> includedSources = new ArrayList<>();
+		includedSources.add(sourceName);
+		
+		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
+
+	}
+
+	public void createRT_96hr_LC50_Ecotox_modeling() {
+
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+
+		creator.postToDB = true;//otherwise wont create the dataset
+		
+		String propertyName = DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50;
+		String propAbbrev=DevQsarConstants.getConstantNameByReflection(propertyName) ;
+		String sourceName="ECOTOX_2023_12_14";
+		String chemicalListName="exp_prop_"+sourceName;				
+		
+//		ArrayList<String> listNameArray = new ArrayList<String>();
+//		listNameArray.add("ExpProp_MP_WithChemProp_063022_1_to_40000");
+		
+		List<BoundParameterValue> boundsParameterValues = null;
+		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
+
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, chemicalListName, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
+
+		
+//		String datasetName = "exp_prop_96HR_FHM_LC50_v1 modeling";
+//		String datasetDescription = "96HR_FHM_LC50 from "+sourceName;
+
+		String datasetName = "exp_prop_96HR_RT_LC50_v1 modeling";
+		String datasetDescription = "96HR_RT_LC50 from "+sourceName+" (omit property values that exceed predicted water solubility from XGB model)";
+
+		
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+
+		List<String> includedSources = new ArrayList<>();
+		includedSources.add(sourceName);
+		
+		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
+
+	}
 	/**
 	 * creates Boiling point dataset using records from chemreg with CAS
 	 * registration

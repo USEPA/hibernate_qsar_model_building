@@ -47,8 +47,9 @@ public class SplittingGeneratorScript {
 //		datasetNames.add("BP v1 modeling");
 //		datasetNames.add("MP v1 modeling");
 		
-		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
-		datasetNames.add("exp_prop_96HR_FHM_LC50_v2 modeling");
+//		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
+//		datasetNames.add("exp_prop_96HR_FHM_LC50_v2 modeling");
+		datasetNames.add("exp_prop_96HR_RT_LC50_v1 modeling");
 		
 		
 		System.out.println(splittingWebService.address);

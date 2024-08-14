@@ -662,9 +662,13 @@ public class ExperimentalRecordLoader {
 		String sourceName="ECOTOX_2023_12_14";
 		
 //		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
-		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_BLUEGILL_LC50;
+//		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_BLUEGILL_LC50;
+//		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50;
+		String propertyName=DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50;
 
-		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+//		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+		String mainFolder="C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\data_gathering\\";
+
 		String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+"_"+propertyName+" Experimental Records.json";
 		
 		File jsonFile=new File(filePath);
