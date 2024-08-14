@@ -576,7 +576,8 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		
-		Hashtable<String,Long>htCID_to_Record_Id=dsstoxRecordService.getRecordIdHashtable(getSnapshot());
+		Hashtable<String,Long>htCID_to_Record_Id=dsstoxRecordService.getRecordIdHashtable(getSnapshot(),"dtxcid");
+		
 		System.out.println("retrieved snapshot ht");
 	
 		String sql="select dtxcid from qsar_models.predictions_dashboard pd where fk_dsstox_records_id is null";

@@ -1,7 +1,9 @@
 package gov.epa.run_from_java.scripts.PredictionDashboard;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
@@ -14,8 +16,15 @@ import gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.PropertyServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.UnitServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxOtherCASRN;
+import gov.epa.databases.dev_qsar.qsar_models.entity.MethodAD;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
+import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxRecordOtherCASRNServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.MethodADServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.StatisticService;
+import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 
 /**
 * @author TMARTI02
@@ -66,37 +75,32 @@ public class CreatorScript {
 		if (datasetDB!=null) 
 			return datasetDB;
 
-		System.out.print("Need to create dataset for "+dataset.getName()+"...");
+		System.out.print("Creating dataset "+dataset.getName()+"...");
+		datasetDB=datasetService.create(dataset);
 		System.out.println("done");
-		return datasetService.create(dataset);
 		
+		return datasetDB;
 
 	}
 
 	
 	public static  Model createModel(Model model) {
-//		List<Model>models=modelService.findByDatasetName(model.getDatasetName());
-//
-//		for (Model currentModel:models) {
-//			
-////			if(!currentModel.getMethod().getName().equals(model.getMethod().getName())) continue;
-////			if(!currentModel.getDescriptorSetName().equals(model.getDescriptorSetName())) continue;
-////			if(!currentModel.getDatasetName().equals(model.getDatasetName())) continue;
-////			if(!currentModel.getSplittingName().equals(model.getSplittingName())) continue;
-////			if(!currentModel.getSource().equals(model.getSource())) continue;
-//			
-//			if(currentModel.getName()==null) continue;
-//
-////			if(model.getName().equals("CATMoS-NT"))
-////				System.out.println(currentModel.getName()+"\t"+currentModel.getSource().getName()+"\t"+model.getName()+"\t"+model.getSource().getName());
-//
-//			//If have same name and source id then we have a match:
-//			if(!currentModel.getName().equals(model.getName()))continue;
-//			
-//			
-//			if(!currentModel.getSource().getName().equals(model.getSource().getName()))continue;
-//			return currentModel;
-//		}
+		List<Model>models=modelService.findByDatasetName(model.getDatasetName());
+
+		for (Model currentModel:models) {
+//			if(!currentModel.getMethod().getName().equals(model.getMethod().getName())) continue;
+//			if(!currentModel.getDescriptorSetName().equals(model.getDescriptorSetName())) continue;
+//			if(!currentModel.getDatasetName().equals(model.getDatasetName())) continue;
+//			if(!currentModel.getSplittingName().equals(model.getSplittingName())) continue;
+//			if(!currentModel.getSource().equals(model.getSource())) continue;
+			
+			if(currentModel.getName()==null) continue;
+
+			//If have same name and source id then we have a match:
+			if(!currentModel.getName().equals(model.getName()))continue;
+			if(!currentModel.getSource().getName().equals(model.getSource().getName()))continue;
+			return currentModel;
+		}
 		
 		System.out.print("Creating model for "+model.getDatasetName()+"...");
 		model=modelService.create(model);
@@ -159,11 +163,108 @@ public class CreatorScript {
 			}
 		}
 		return property;
+	
 	}
 	
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+	/**
+	 * Gets map of other casrns
+	 * Key = DsstoxRecord id
+	 * Value = list of DsstoxOtherCASRNs
+	 * 
+	 * @return
+	 */
+	public static TreeMap<Long, List<DsstoxOtherCASRN>> getOtherCAS_Map() {
+		DsstoxRecordOtherCASRNServiceImpl ocs=new DsstoxRecordOtherCASRNServiceImpl();
+		
+//		System.out.println("Getting recs OtherCAS");
+//		List<DsstoxOtherCASRN>recsOtherCAS=ocs.findAll();//slow for some reason
+		List<DsstoxOtherCASRN>recsOtherCAS=ocs.findAllSql();
+		
+//		System.out.println("Done");
+		
+		TreeMap<Long,List<DsstoxOtherCASRN>> tmOtherCAS=new TreeMap<>();
+		
+		for(DsstoxOtherCASRN recOtherCAS:recsOtherCAS) {
+			
+			long id=recOtherCAS.getFk_dsstox_record_id();
+			
+			if(tmOtherCAS.get(id)==null) {
+				List<DsstoxOtherCASRN>otherCASRNs=new ArrayList<>();
+				tmOtherCAS.put(id,otherCASRNs);
+				otherCASRNs.add(recOtherCAS);
+			} else {
+				List<DsstoxOtherCASRN>otherCASRNs=tmOtherCAS.get(id);
+				otherCASRNs.add(recOtherCAS);
+			}
+		}
+		return tmOtherCAS;
 	}
+	
+
+	public static TreeMap <String,Property> getPropertyMap() {
+		
+		PropertyServiceImpl ps=new PropertyServiceImpl();
+		List<Property>properties=ps.findAll();
+
+		TreeMap <String,Property>mapProperties=new TreeMap<>();
+		for (Property property:properties) {
+			mapProperties.put(property.getName(), property);
+		}
+		return mapProperties;
+	}
+	
+
+	public static TreeMap<String, Dataset> getDatasetsMap() {
+		
+		DatasetServiceImpl ps=new DatasetServiceImpl();
+		List<Dataset>datasets=ps.findAll();
+
+		TreeMap <String,Dataset>mapDatasets=new TreeMap<>();
+		for (Dataset dataset:datasets) {
+			mapDatasets.put(dataset.getName(), dataset);
+		}
+		return mapDatasets;
+	}
+
+	public static TreeMap<String, Model> getModelsMap() {
+		
+		ModelServiceImpl ps=new ModelServiceImpl();
+		List<Model>models=ps.getAll();
+
+		TreeMap <String,Model>mapModels=new TreeMap<>();
+		for (Model model:models) {
+			mapModels.put(model.getName(), model);
+		}
+		return mapModels;
+	}
+	
+	private TreeMap<String, Statistic> getStatisticsMap() {
+		
+		StatisticService ps=new StatisticServiceImpl();
+		List<Statistic>statistics=ps.getAll();
+
+		TreeMap <String,Statistic>mapStatistics=new TreeMap<>();
+		for (Statistic statistic:statistics) {
+			mapStatistics.put(statistic.getName(), statistic);
+		}
+		return mapStatistics;
+	}
+
+
+	public static TreeMap<String,MethodAD> getMethodAD_Map() {
+	
+			MethodADServiceImpl servMAD=new MethodADServiceImpl();
+			
+			List<MethodAD>methodADs=servMAD.findAll();
+	
+			TreeMap<String,MethodAD>map=new TreeMap<>();
+			
+			for (MethodAD methodAD:methodADs) {
+				map.put(methodAD.getName(), methodAD);
+	//			System.out.println(methodAD.getName()+"\t"+methodAD.getDescription());
+			}
+	
+			return map;
+		}
 
 }

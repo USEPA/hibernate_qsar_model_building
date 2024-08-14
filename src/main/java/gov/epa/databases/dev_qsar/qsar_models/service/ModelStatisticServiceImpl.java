@@ -76,7 +76,8 @@ public class ModelStatisticServiceImpl implements ModelStatisticService {
 			}
 		}
 
-		System.out.println("Creating statistic "+modelStatistic.getStatistic().getName()+ " for "+model.getName());
+//		System.out.println("Creating statistic "+modelStatistic.getStatistic().getName()+ " for "+model.getName()+", value="+modelStatistic.getStatisticValue());
+		System.out.println("Creating statistic "+modelStatistic.getStatistic().getName()+", value="+modelStatistic.getStatisticValue()+", modelName="+model.getName());
 		return create(modelStatistic, session);
 	}
 

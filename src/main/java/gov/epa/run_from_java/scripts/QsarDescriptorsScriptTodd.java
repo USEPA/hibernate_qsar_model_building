@@ -228,10 +228,10 @@ public class QsarDescriptorsScriptTodd {
 //		String datasetName="WS v1 res_qsar";
 //		String datasetName="WS v1 modeling";
 //		String datasetName="HLC v1 modeling";
-//		String datasetName="exp_prop_96HR_FHM_LC50_v1 modeling";
+		String datasetName="exp_prop_96HR_FHM_LC50_v1 modeling";
 //		String datasetName="exp_prop_96HR_FHM_LC50_v2 modeling";
 //		String datasetName="exp_prop_96HR_FHM_LC50_v3 modeling";
-		String datasetName="TTR_Binding_training_remove_bad_max_conc";
+//		String datasetName="TTR_Binding_training_remove_bad_max_conc";
 				
 		for (String descriptorSetName:sciDataExpertsDescriptorSetNames) {
 			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,batchSize);

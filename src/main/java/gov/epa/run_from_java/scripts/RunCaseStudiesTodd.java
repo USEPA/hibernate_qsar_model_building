@@ -395,16 +395,21 @@ public class RunCaseStudiesTodd {
 //		datasetNames.add("LogP v1 modeling");
 //		datasetNames.add("MP v1 modeling");
 		
-		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
-		datasetNames.add("exp_prop_96HR_FHM_LC50_v2 modeling");
+//		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
+//		datasetNames.add("exp_prop_96HR_FHM_LC50_v2 modeling");
+//		datasetNames.add("exp_prop_96HR_FHM_LC50_v3 modeling");
 		
+//		datasetNames.add("exp_prop_96HR_BG_LC50_v1 modeling");
+//		datasetNames.add("exp_prop_96HR_BG_LC50_v2 modeling");
+		
+		datasetNames.add("TTR_Binding_training_remove_bad_max_conc");		
 		
 		List<String>methods=new ArrayList<>();			
 //		methods.add(DevQsarConstants.RF);
-		methods.add(DevQsarConstants.XGB);
-//		methods.add(DevQsarConstants.KNN);//takes forever to run GA
+//		methods.add(DevQsarConstants.XGB);
+		methods.add(DevQsarConstants.KNN);//takes forever to run GA
 //		methods.add(DevQsarConstants.SVM);//*** We dont have way yet to make embedding based on this method unless use GA
-
+//		methods.add(DevQsarConstants.REG);
 		
 //		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;		
 		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
@@ -432,6 +437,11 @@ public class RunCaseStudiesTodd {
 //				ci.qsarMethodEmbedding="rf";//**For testing purposes, just use rf embedding for both rf and xgb
 				ci.qsarMethodEmbedding=method;//unique embedding for each method
 				
+//				if(method.equals(DevQsarConstants.REG)) {
+//					ci.qsarMethodEmbedding="rf";//use random forest descriptor set, although should use GA or SA for REG directly	
+//				}
+				
+				
 				ci.datasetName=datasetName;
 				ci.descriptorSetName=descriptorSetName;
 				ci.splittingName=splitting;
@@ -441,11 +451,13 @@ public class RunCaseStudiesTodd {
 				
 				DescriptorEmbedding descriptorEmbedding=null;
 				
-				if(method.equals(DevQsarConstants.KNN)) {
-					
+				if(method.equals(DevQsarConstants.KNN) || method.equals(DevQsarConstants.REG)) {
+//				if(method.equals(DevQsarConstants.KNN)) {	
+				
 					CalculationInfoGA ciGA=new CalculationInfoGA(ci);
 					ciGA.use_wards=false;
-					ciGA.qsarMethodEmbedding=DevQsarConstants.KNN;
+//					ciGA.qsarMethodEmbedding=DevQsarConstants.KNN;
+					ciGA.qsarMethodEmbedding=method;
 //					System.out.println("use_wards="+ciGA.use_wards);
 					if ((ci.datasetName.contains("LogP") || ci.datasetName.contains("MP") )  
 							&& !ci.splittingName.equals(SplittingGeneratorPFAS_Script.splittingPFASOnly)) {
@@ -456,6 +468,10 @@ public class RunCaseStudiesTodd {
 					System.out.println("\n***"+ci.datasetName+"\t"+ci.splittingName+"\t"+"num_generations="+ciGA.num_generations+"***");
 					descriptorEmbedding=ews2.getEmbeddingGA(ciGA,lanId);
 				} else if (method.equals(DevQsarConstants.RF) || method.equals(DevQsarConstants.XGB)) {
+//				} else if (method.equals(DevQsarConstants.RF) || method.equals(DevQsarConstants.XGB) || method.equals(DevQsarConstants.REG)) {					
+//					if(method.equals(DevQsarConstants.REG)) {
+//						ci.qsarMethodEmbedding="rf";//use random forest descriptor set, although should use GA or SA for REG directly	
+//					}
 					descriptorEmbedding=ews2.generateImportanceEmbedding(ci,lanId,true,true);
 				}
 				
@@ -783,15 +799,23 @@ public class RunCaseStudiesTodd {
 //		datasetNames.add("LogP v1 modeling");
 //		datasetNames.add("MP v1 modeling");
 		
-		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
-		datasetNames.add("exp_prop_96HR_FHM_LC50_v2 modeling");
+//		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
+//		datasetNames.add("exp_prop_96HR_FHM_LC50_v2 modeling");
+//		datasetNames.add("exp_prop_96HR_FHM_LC50_v3 modeling");
 
-		List<String>methods=new ArrayList<>();			
-//		methods.add(DevQsarConstants.RF);
-		methods.add(DevQsarConstants.XGB);
-//		methods.add(DevQsarConstants.KNN);
-
+//		datasetNames.add("exp_prop_96HR_BG_LC50_v1 modeling");
+//		datasetNames.add("exp_prop_96HR_BG_LC50_v2 modeling");
 		
+//		datasetNames.add("TTR_Binding_training_remove_bad_max_conc");
+		datasetNames.add("exp_prop_96HR_scud_v1 modeling");
+		
+			
+		List<String>methods=new ArrayList<>();			
+		methods.add(DevQsarConstants.RF);
+//		methods.add(DevQsarConstants.XGB);
+//		methods.add(DevQsarConstants.KNN);
+//		methods.add(DevQsarConstants.SVM);
+
 //		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;
 		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;		
 //		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
@@ -1507,7 +1531,7 @@ public class RunCaseStudiesTodd {
 		
 //		runCaseStudyExpProp_All_Endpoints();
 		
-		runCaseStudyExpProp_All_Endpoints_method_specific_embedding();
+//		runCaseStudyExpProp_All_Endpoints_method_specific_embedding();
 		runCaseStudyExpProp_All_Endpoints_No_Embedding_RF_XGB();
 		
 //		runCaseStudyExpProp_All_Endpoints_No_Embedding_kNN();

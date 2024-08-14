@@ -242,13 +242,11 @@ public class PredictScript {
 			String json=Utilities.gson.toJson(htPredWS);
 			
 //			System.out.println(json);
-			
 //			Hashtable<String,Double>htPredWS2=Utilities.gson.fromJson(json, (Hashtable.class));
-			
 //			System.out.println(htPredWS2.get("DTXSID6021953"));
 
 			if (filePathOut!=null) {				
-				System.out.println(filePathOut);
+				System.out.println("New file for model predictions:\t"+filePathOut);
 				FileWriter fw=new FileWriter(filePathOut);
 				fw.write(json);
 				fw.flush();

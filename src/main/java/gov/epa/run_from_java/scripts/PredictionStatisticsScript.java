@@ -75,7 +75,11 @@ public class PredictionStatisticsScript {
 //		datasetNames.add("LogP v1 modeling");
 //		datasetNames.add("MP v1 modeling");
 		
-		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
+//		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
+		
+		datasetNames.add("exp_prop_96HR_BG_LC50_v1 modeling");
+		datasetNames.add("exp_prop_96HR_BG_LC50_v2 modeling");
+
 
 	}
 
@@ -1734,7 +1738,7 @@ public class PredictionStatisticsScript {
 		}
 	}
 
-	private static double calculateMeanExpTraining(List<ModelPrediction> trainingSetPredictions) {
+	public static double calculateMeanExpTraining(List<ModelPrediction> trainingSetPredictions) {
 		double meanExpTraining = 0.0;
 		int count = 0;
 		for (ModelPrediction mp : trainingSetPredictions) {
@@ -2400,14 +2404,18 @@ public class PredictionStatisticsScript {
 
 	void createPredictionReportForMethodArrays() {
 		
+		
 		List<String>modelSets=new ArrayList<>();		
 		modelSets.add("WebTEST2.0");
 		modelSets.add("WebTEST2.1");
 		
-		List<String>dataSets=new ArrayList<>();
-		dataSets.add("exp_prop_96HR_FHM_LC50_v1 modeling");
-		dataSets.add("exp_prop_96HR_FHM_LC50_v2 modeling");
+//		List<String>dataSets=new ArrayList<>();
+//		dataSets.add("exp_prop_96HR_FHM_LC50_v1 modeling");
+//		dataSets.add("exp_prop_96HR_FHM_LC50_v2 modeling");
+//		dataSets.add("exp_prop_96HR_FHM_LC50_v3 modeling");
 
+//		datasetNames.add("exp_prop_96HR_BG_LC50_v1 modeling");
+//		datasetNames.add("exp_prop_96HR_BG_LC50_v2 modeling");
 		
 //		String methodName="knn";
 		String methodName="xgb";
@@ -2422,10 +2430,11 @@ public class PredictionStatisticsScript {
 		SampleReportWriter srw = new SampleReportWriter();
 		
 		for (String modelSet:modelSets) {
-			for (String dataSet:dataSets) {
+			for (String dataSet:datasetNames) {
 				srw.createPredictionReportMethod(modelSet,descriptorSetName, methodName, dataSet, splittingName, overwriteJsonReport, includeDescriptors,includeOriginalCompounds);
 			}
 		}
+		
 	}
 	
 	/**

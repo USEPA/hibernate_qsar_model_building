@@ -3,6 +3,7 @@ package gov.epa.run_from_java.scripts.DSSTOX_Loading;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -27,9 +28,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.json.CDL;
+import org.openscience.cdk.Atom;
 import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.AtomContainerSet;
+import org.openscience.cdk.DefaultChemObjectBuilder;
+import org.openscience.cdk.exception.CDKException;
 import org.openscience.cdk.interfaces.IAtomContainer;
+import org.openscience.cdk.interfaces.IMolecularFormula;
+import org.openscience.cdk.io.MDLV3000Reader;
+import org.openscience.cdk.tools.manipulator.MolecularFormulaManipulator;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Value;
 import com.google.gson.JsonArray;
@@ -39,6 +46,8 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
+import gov.epa.databases.dsstox.DsstoxRecord;
+import gov.epa.databases.dsstox.DsstoxSession;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.entity.GenericSubstance;
 import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
@@ -74,7 +83,7 @@ public class DSSTOX_Compounds_Script {
 		sql+="left join generic_substance_compounds gsc on gsc.fk_compound_id =c.id\n";
 		sql+="left join generic_substances gs on gs.id=gsc.fk_generic_substance_id\n"; 
 		//		sql+="where (mol_weight is not null and mol_weight !=0) and (indigo_inchi_key is not null or jchem_inchi_key is not null) and gs.dsstox_substance_id is not null\n";
-		sql+="where (mol_weight is not null and mol_weight !=0) and (indigo_inchi_key is not null or jchem_inchi_key is not null)\n";
+//		sql+="where (mol_weight is not null and mol_weight !=0) and (indigo_inchi_key is not null or jchem_inchi_key is not null)\n";
 		sql+="ORDER BY dsstox_compound_id\n";
 		sql+="LIMIT "+limit+" OFFSET "+offset;
 
@@ -199,7 +208,8 @@ public class DSSTOX_Compounds_Script {
 
 		while(true) {
 
-			File file=new File("data/dsstox/json/snapshot_compounds"+(i+1)+".json");
+//			File file=new File("data/dsstox/json/snapshot_compounds"+(i+1)+".json");
+			File file=new File("data/dsstox/json/prod_compounds"+(i+1)+".json");
 
 			if (file.exists()) {
 				i++;
@@ -923,11 +933,364 @@ public class DSSTOX_Compounds_Script {
 		}
 	}
 	
+	void writeIsOrganicTextFile() {
+		
+		try {
+			
+			
+			String filePathInput="data\\dsstox\\smi\\prod_dsstox_compounds.tsv";
+			String filePathOutput="data\\dsstox\\smi\\prod_dsstox_compounds_is_organic.tsv";
+			boolean writeAll=true;
+			
+//			String filePathInput="data\\dsstox\\smi\\prod_dsstox_compounds_EPISUITE.tsv";
+//			String filePathOutput="data\\dsstox\\smi\\prod_dsstox_compounds_EPISUITE_not_organic.tsv";
+//			boolean writeAll=false;
+			
+			BufferedReader br=new BufferedReader(new FileReader(filePathInput));
+			FileWriter fw=new FileWriter(filePathOutput);
+			
+			DsstoxCompoundServiceImpl dsci=new DsstoxCompoundServiceImpl();
+			
+			
+			
+			fw.write("compound_id\tdsstox_compound_id\tsmiles\tformula\tisOrganic\r\n");
+			
+			br.readLine();
+			while (true) {
+				String line=br.readLine();
+				if(line==null) break;
+				
+				String [] vals=line.split("\t");
 
+				String dtxcid=vals[0];
+				
+
+				Boolean isOrganic=null;
+				String smiles=null;
+				String formula=null;
+
+				if(vals.length==3) {
+
+					formula=vals[1];
+					smiles=vals[2];	
+
+					try {
+						AtomContainer molecule = (AtomContainer) DsstoxSession.smilesParser.parseSmiles(smiles.trim());
+						isOrganic=false;
+						
+						for (int i=0;i<molecule.getAtomCount();i++) {
+							Atom atom=(Atom)molecule.getAtom(i);
+
+							if(atom.getSymbol().equals("C")) {
+								isOrganic=true;
+								break;
+							}
+						}
+						
+					} catch (Exception ex) {
+						if(!formula.isBlank()) {
+							try {
+								IMolecularFormula mf=MolecularFormulaManipulator.getMolecularFormula(formula,DefaultChemObjectBuilder.getInstance());
+								int countC=MolecularFormulaManipulator.getElementCount(mf, "C");
+								isOrganic=countC>0;
+//								System.out.println(dtxcid+"\t"+formula+"\t"+isOrganic);
+							} catch (Exception ex2) {
+//								System.out.println(dtxcid+"\t"+formula+"\tCant parse formula1");
+							}	
+						}
+					}
+
+
+//					if(isOrganic!=null && !isOrganic) System.out.println(smiles+"\tNot organic");
+
+				} else if(vals.length==2) {
+					formula=vals[1];
+//					
+					DsstoxRecord dr=dsci.findAsDsstoxRecordsByDtxcid(dtxcid).get(0);
+					
+//					System.out.println(dr.getno)
+//					System.out.println(line);
+					
+					if(!formula.isBlank()) {
+						try {
+							IMolecularFormula mf=MolecularFormulaManipulator.getMolecularFormula(formula,DefaultChemObjectBuilder.getInstance());
+							int countC=MolecularFormulaManipulator.getElementCount(mf, "C");
+							isOrganic=countC>0;
+//							System.out.println(dtxcid+"\t"+formula+"\t"+isOrganic);
+						} catch (Exception ex2) {
+//							System.out.println(dtxcid+"\t"+formula+"\tCant parse formula1");
+						}	
+					}
+					
+//					try {
+//						
+//						if(!formula.isBlank()) {
+//							IMolecularFormula mf=MolecularFormulaManipulator.getMolecularFormula(formula,DefaultChemObjectBuilder.getInstance());
+//							int countC=MolecularFormulaManipulator.getElementCount(mf, "C");
+//							isOrganic=countC>0;
+//							
+//							if(isOrganic)
+//								System.out.println(dtxcid+"\t"+formula);
+//						}
+//						
+//					} catch (Exception ex) {
+////						System.out.println(dtxcid+"\t"+formula+"\tCant parse formula2");
+//					}
+////					System.out.println(dtxcid+"\t"+formula+"\t"+isOrganic);
+
+					
+				} else {
+					System.out.println(line);
+				}
+				
+//				if(isOrganic!=null && !isOrganic)	 {
+//					System.out.println(dtxcid+"\t"+smiles+"\t"+formula+"\t"+isOrganic+"\r\n");
+//				}
+				
+				if(writeAll) {
+					fw.write(dtxcid+"\t"+smiles+"\t"+formula+"\t"+isOrganic+"\r\n");
+				} else if (isOrganic==null || !isOrganic) {
+					fw.write(dtxcid+"\t"+smiles+"\t"+formula+"\t"+isOrganic+"\r\n");	
+				}
+
+				fw.flush();
+				
+			}
+			
+			
+			br.close();
+			fw.close();
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		
+	}
+	
+	
+
+	void writeIsOrganicTextFileFromJsonFiles() {
+		
+		try {
+			MDLV3000Reader mr=new MDLV3000Reader();
+
+			
+			String filePathOutput="data\\dsstox\\smi\\prod_dsstox_compounds_is_organic.tsv";
+			
+			FileWriter fw=new FileWriter(filePathOutput);
+			fw.write("dsstox_compound_id\tsmiles\tisOrganic\r\n");
+			
+			DsstoxCompoundServiceImpl dsci=new DsstoxCompoundServiceImpl();
+			
+			File folder=new File("data/dsstox/json");
+
+			Type listOfMyClassObject = new TypeToken<List<DsstoxCompound>>() {}.getType();
+
+			for (File file:folder.listFiles()) {
+
+				if(!file.getName().contains("json") || file.getName().indexOf("prod_compounds")!=0) {
+					continue;
+				}
+				
+				System.out.println(file.getName());
+
+				try {
+					List<DsstoxCompound>compounds=Utilities.gson.fromJson(new FileReader(file), listOfMyClassObject);
+
+					assignIsOrganicForCompounds(mr, compounds,fw);
+
+				} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
+					e.printStackTrace();
+				}
+			}
+			
+
+			fw.flush();
+			fw.close();
+			
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		
+	}
+
+
+	private void assignIsOrganicForCompounds(MDLV3000Reader mr, List<DsstoxCompound> compounds,FileWriter fw) throws Exception {
+		for (DsstoxCompound compound:compounds) {
+			
+			if(compound.getDsstoxCompoundId()==null) continue;
+			
+			Boolean isOrganic=null;
+			
+			if(compound.getMolFile()!=null) {
+				InputStream stream = new ByteArrayInputStream(compound.getMolFile().getBytes());
+				mr.setReader(stream);
+
+				IAtomContainer molecule=null;
+				
+				try {
+					molecule = (IAtomContainer) mr.readMolecule(DefaultChemObjectBuilder.getInstance());
+				} catch (Exception ex) {
+					molecule=new AtomContainer();
+				}
+				
+				isOrganic=isOrganic(molecule);
+				
+//					System.out.println(compound.getDsstoxCompoundId()+"\t"+compound.getSmiles()+"\t"+isOrganic);
+				
+			} else {
+				System.out.println(compound.getDsstoxCompoundId()+"\tmissing mol file");
+			}
+			
+			fw.write(compound.getDsstoxCompoundId()+"\t"+compound.getSmiles()+"\t"+isOrganic+"\r\n");
+		}
+	}
+
+	
+	boolean isOrganic(IAtomContainer molecule) {
+		
+		boolean isOrganic=false;
+		
+		for (int i=0;i<molecule.getAtomCount();i++) {
+			Atom atom=(Atom)molecule.getAtom(i);
+
+			if(atom.getSymbol().equals("C")) {
+				isOrganic=true;
+				break;
+			}
+		}
+		return isOrganic;
+	}
+	
+	void writeNotOrganicTextFile() {
+		
+		try {
+			
+			
+			
+			String filePathInput="data\\dsstox\\smi\\prod_dsstox_compounds_EPISUITE.tsv";
+			String filePathOutput="data\\dsstox\\smi\\prod_dsstox_compounds_EPISUITE_not_organic.tsv";
+
+			
+			BufferedReader br=new BufferedReader(new FileReader(filePathInput));
+			FileWriter fw=new FileWriter(filePathOutput);
+			
+			
+			
+			
+			fw.write("compound_id\tdsstox_compound_id\tsmiles\tformula\tisOrganic\r\n");
+			
+			br.readLine();
+			while (true) {
+				String line=br.readLine();
+				if(line==null) break;
+				
+				String [] vals=line.split("\t");
+
+				String compound_id=vals[0];
+				String dtxcid=vals[1];
+
+				Boolean isOrganic=null;
+				String smiles=null;
+				String formula=null;
+
+				if(vals.length==4) {
+
+					formula=vals[2];
+					smiles=vals[3];	
+
+					try {
+						AtomContainer molecule = (AtomContainer) DsstoxSession.smilesParser.parseSmiles(smiles.trim());
+						isOrganic=false;
+						
+						for (int i=0;i<molecule.getAtomCount();i++) {
+							Atom atom=(Atom)molecule.getAtom(i);
+
+							if(atom.getSymbol().equals("C")) {
+								isOrganic=true;
+								break;
+							}
+						}
+						
+					} catch (Exception ex) {
+						if(!formula.isBlank()) {
+							try {
+								IMolecularFormula mf=MolecularFormulaManipulator.getMolecularFormula(formula,DefaultChemObjectBuilder.getInstance());
+								int countC=MolecularFormulaManipulator.getElementCount(mf, "C");
+								isOrganic=countC>0;
+//								System.out.println(dtxcid+"\t"+formula+"\t"+isOrganic);
+							} catch (Exception ex2) {
+//								System.out.println(dtxcid+"\t"+formula+"\tCant parse formula1");
+							}	
+						}
+					}
+
+
+//					if(isOrganic!=null && !isOrganic) System.out.println(smiles+"\tNot organic");
+
+				} else if(vals.length==3) {
+					formula=vals[2];
+//					
+					System.out.println(line);
+					
+//					try {
+//						
+//						if(!formula.isBlank()) {
+//							IMolecularFormula mf=MolecularFormulaManipulator.getMolecularFormula(formula,DefaultChemObjectBuilder.getInstance());
+//							int countC=MolecularFormulaManipulator.getElementCount(mf, "C");
+//							isOrganic=countC>0;
+//							
+//							if(isOrganic)
+//								System.out.println(dtxcid+"\t"+formula);
+//						}
+//						
+//					} catch (Exception ex) {
+////						System.out.println(dtxcid+"\t"+formula+"\tCant parse formula2");
+//					}
+////					System.out.println(dtxcid+"\t"+formula+"\t"+isOrganic);
+
+					
+				} else {
+					System.out.println(line);
+				}
+				
+//				if(isOrganic!=null && !isOrganic)	 {
+//					System.out.println(dtxcid+"\t"+smiles+"\t"+formula+"\t"+isOrganic+"\r\n");
+//				}
+				
+				if (isOrganic==null || !isOrganic) {
+					fw.write(compound_id+"\t"+dtxcid+"\t"+smiles+"\t"+formula+"\t"+isOrganic+"\r\n");	
+				}
+
+				fw.flush();
+				
+			}
+			
+			
+			br.close();
+			fw.close();
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		
+	}
+	
+	
+	
 	public static void main(String[] args) {
 		DSSTOX_Compounds_Script d=new DSSTOX_Compounds_Script();
-		//			d.compoundsToJsonFiles();
-		//		d.convertJsonsToSDFs();
+//		d.compoundsToJsonFiles();
+//		d.convertJsonsToSDFs();
+		
+//		d.writeNotOrganicTextFile();
+//		d.writeIsOrganicTextFile();
+		d.writeIsOrganicTextFileFromJsonFiles();
+		
 
 		//			d.compoundsToTSV_File();
 		//		d.lookatRecordsWithInchiKey();
@@ -935,10 +1298,10 @@ public class DSSTOX_Compounds_Script {
 //		d.backupCompoundsInchis();
 //		d.backupCompoundsInchis2();
 
-		d.generateNewIndigoValuesToTSV();
+//		d.generateNewIndigoValuesToTSV();
 //		d.updateIndigoInchiValues("data/dsstox/tsv/snapshot_compounds_indigo_inchi_key.tsv");
 
-		System.out.println("hi");
+//		System.out.println("hi");
 
 	}
 
