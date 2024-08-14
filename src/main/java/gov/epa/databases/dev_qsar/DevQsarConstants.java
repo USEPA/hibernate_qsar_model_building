@@ -13,6 +13,8 @@ import com.google.gson.Gson;
 
 public class DevQsarConstants {
 	
+	public static final String sourceNameOChem_2024_04_03="OChem_2024_04_03";
+	
 
 	public Gson gson;
 	
@@ -97,14 +99,25 @@ public class DevQsarConstants {
 	public static final String DESCRIPTOR_SET_PADEL_SINGLE = "Padelpy webservice single";
 	public static final String DESCRIPTOR_SET_PADEL_BATCH = "Padelpy_batch";
 	
-	public static final String Applicability_Domain_TEST_Embedding_Cosine = "TEST Cosine Similarity Embedding Descriptors";
-	public static final String Applicability_Domain_TEST_Embedding_Euclidean = "TEST Euclidean Distance Embedding Descriptors";
-	public static final String Applicability_Domain_TEST_All_Descriptors_Cosine = "TEST Cosine Similarity All Descriptors";
-	public static final String Applicability_Domain_TEST_All_Descriptors_Euclidean = "TEST Euclidean Distance All Descriptors";
+	//Following are used in python webservice for AD calculations
+	public static final String Applicability_Domain_TEST_Embedding_Cosine = "TEST Cosine Similarity Embedding Descriptors";//matches ad_method_name in db
+	public static final String Applicability_Domain_TEST_Embedding_Euclidean = "TEST Euclidean Distance Embedding Descriptors";//matches ad_method_name in db
+	public static final String Applicability_Domain_TEST_All_Descriptors_Cosine = "TEST Cosine Similarity All Descriptors";//matches ad_method_name in db
+	public static final String Applicability_Domain_TEST_All_Descriptors_Euclidean = "TEST Euclidean Distance All Descriptors";//matches ad_method_name in db
+	
 	public static final String Applicability_Domain_OPERA_local_index = "OPERA Local Index";
 	public static final String Applicability_Domain_OPERA_global_index = "OPERA Global Index";
+	
+	public static final String Applicability_Domain_OPERA_local_index_description = "Local applicability domain index is relative to the similarity of the query chemical to its five nearest neighbors from the training set";
+	public static final String Applicability_Domain_OPERA_global_index_description = "Global applicability domain via the leverage approach";
+	
+	
+	public static final String Applicability_Domain_OPERA_confidence_level = "OPERA Confidence Level";
 	public static final String Applicability_Domain_Kernel_Density = "Kernel Density";
 
+	public static final String Applicability_Domain_Combined = "Combined Applicability Domain";
+
+	
 	
 	// Property names
 	public static final String WATER_SOLUBILITY = "Water solubility";//OPERA
@@ -144,11 +157,22 @@ public class DevQsarConstants {
 	public static final String ANDROGEN_RECEPTOR_ANTAGONIST = "Androgen receptor antagonist";//OPERA
 	public static final String ANDROGEN_RECEPTOR_BINDING = "Androgen receptor binding";//OPERA
 	
+	public static final String TTR_BINDING = "Binding to TTR (replacement of ANSA)";//OPERA
+	
 	
 	public static final String PKA = "pKa";
 
 	public static final String LOG_BCF = "LogBCF";//OLD OPERA
+	
 	public static final String BCF = "Bioconcentration factor";//OPERA
+	public static final String BAF = "Bioaccumulation factor";
+
+	public static final String ULTIMATE_BIODEG = "Ultimate biodegradation timeframe";
+	public static final String PRIMARY_BIODEG = "Primary biodegradation timeframe";
+
+	public static final String BIODEG_ANAEROBIC = "Biodegradability (anaerobic)";
+	public static final String BIODEG = "Biodegradability";
+
 	
 	public static final String LOG_OH = "LogOH";//OLD OPERA
 	public static final String OH = "Atmospheric hydroxylation rate";//OPERA
@@ -167,7 +191,7 @@ public class DevQsarConstants {
 	
 	//Additional OPERA properties:
 
-	public static final String RBIODEG = "Ready biodegradability";//OPERA
+	public static final String RBIODEG = "Ready biodegradability";//OPERA (binary)
 	public static final String FUB = "Fraction unbound in human plasma";//OPERA
 	public static final String RT = "Liquid chromatography retention time";//OPERA
 	public static final String CLINT = "Human hepatic intrinsic clearance";//OPERA
@@ -199,6 +223,7 @@ public class DevQsarConstants {
 	
 	//New versions for dashboard
 	public static final String NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50 ="96 hour fathead minnow LC50";
+	public static final String NINETY_SIX_HOUR_BLUEGILL_LC50 ="96 hour bluegill LC50";
 	public static final String FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50 ="48 hour Daphnia magna LC50";
 	public static final String FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50 ="48 hour Tetrahymena pyriformis IGC50";
 
@@ -207,6 +232,8 @@ public class DevQsarConstants {
 	public static final String ORAL_RAT_NON_TOXIC = "Oral rat nontoxic binary";
 	public static final String ORAL_RAT_EPA_CATEGORY = "Oral rat EPA hazard category";
 	public static final String ORAL_RAT_GHS_CATEGORY = "Oral rat GHS hazard category";
+	
+	public static final String FOUR_HOUR_INHALATION_RAT_LC50="4 hour Inhalation rat LC50";//OPERA
 	
 	public static final String AMES_MUTAGENICITY ="Ames Mutagenicity";
 	public static final String DEVELOPMENTAL_TOXICITY ="Developmental toxicity";
@@ -238,10 +265,14 @@ public class DevQsarConstants {
 	public static final String G_CM3 = "g/cm3";
 	public static final String PPM = "ppm";
 	
+	public static final String LOG_PPM="log10(ppm)";
+	public static final String LOG_MG_L="log10(mg/L)";
+			
 	public static final String POUNDS = "lbs";
 
 
 	public static final String CM3 = "cm^3";
+	public static final String CM3_MOL = "cm^3/mol";
 	public static final String CUBIC_ANGSTROM = "Å^3";
 
 //	public static final String CM3 = "cm3";
@@ -430,6 +461,9 @@ public class DevQsarConstants {
 	public static final String SP_TEST=SPECIFICITY+TAG_TEST;
 
 
+
+
+
 			
 	
 	// Acceptable atoms in structures for modeling
@@ -478,6 +512,7 @@ public class DevQsarConstants {
 //		map.put(CLINT, getUnitNameByReflection(LOG_UL_MIN_1MM_CELLS));
 		map.put(CLINT, getConstantNameByReflection(UL_MIN_1MM_CELLS));//dont store as log because there are zero values. OPERA stored zeroes as 1e-7 values but that was for model building
 		map.put(FUB, "DIMENSIONLESS");
+		map.put(TTR_BINDING, "DIMENSIONLESS");
 		
 //		map.put(LOG_BCF_FISH_WHOLEBODY, "LOG_L_KG");
 		map.put(WATER_SOLUBILITY, "NEG_LOG_M");
@@ -502,6 +537,7 @@ public class DevQsarConstants {
 		map.put(DEVELOPMENTAL_TOXICITY,"BINARY");
 		
 		map.put(NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50, "NEG_LOG_M");
+		map.put(NINETY_SIX_HOUR_BLUEGILL_LC50, "NEG_LOG_M");
 		map.put(FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50, "NEG_LOG_M");
 		map.put(FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50, "NEG_LOG_M");
 		map.put(ORAL_RAT_LD50, "NEG_LOG_MOL_KG");
@@ -627,6 +663,8 @@ public class DevQsarConstants {
 			return("Hazard category based on GHS scoring system for oral rat LD50");
 		} else if (propertyNameDB.equals(DevQsarConstants.ORAL_RAT_EPA_CATEGORY)) {
 			return("Hazard category based on EPA's scoring system for oral rat LD50");
+		} else if (propertyNameDB.equals(DevQsarConstants.BAF)) {
+			return "Bioaccumulation factor: the ratio of the concentration of a substance in fish to the amount of that substance it's exposed to in its environment";
 		} else if (propertyNameDB.equals(DevQsarConstants.BCF)) {
 			return "Bioconcentration factor: the ratio of the chemical concentration in fish as a result of absorption via the respiratory surface to that in water at steady state";
 		} else if (propertyNameDB.equals(DevQsarConstants.DEVELOPMENTAL_TOXICITY)) {
@@ -697,6 +735,16 @@ public class DevQsarConstants {
 			return "OH rate constant for the atmospheric, gas-phase reaction between photochemically produced hydroxyl radicals and organic chemicals";
 		} else if(propertyNameDB.equals(RBIODEG)) {
 			return "Ready biodegradability of organic chemicals";
+
+		} else if(propertyNameDB.equals(BIODEG)) {
+			return "A binary classification in terms of the fast biodegradability of organic chemicals";
+		} else if(propertyNameDB.equals(BIODEG_ANAEROBIC)) {
+			return "A binary classification in terms of the anaerobic fast biodegradability of organic chemicals";
+		} else if(propertyNameDB.equals(PRIMARY_BIODEG)) {
+			return "Timeframe for primary biodegradation: 5.00 -> hours, 4.00 -> days, 3.00 -> weeks, 2.00 -> months, and 1.00 -> longer";
+		} else if(propertyNameDB.equals(ULTIMATE_BIODEG)) {
+			return "Timeframe for ultimate biodegradation: 5.00 -> hours, 4.00 -> days, 3.00 -> weeks, 2.00 -> months, and 1.00 -> longer";
+
 		} else if(propertyNameDB.equals(BIODEG_HL_HC)) {
 			return "biodegradation half-life for compounds containing only carbon and hydrogen";
 		} else if (propertyNameDB.equals(DevQsarConstants.ESTROGEN_RECEPTOR_BINDING)) {
@@ -752,12 +800,20 @@ public class DevQsarConstants {
 		map.put(PKA_B, "LOG_UNITS");
 		
 		map.put(FUB, "DIMENSIONLESS");
+		map.put(TTR_BINDING, "DIMENSIONLESS");
+		
 		map.put(RT, "MINUTES");
 		map.put(RBIODEG, "BINARY");		
-
+		map.put(BIODEG, "BINARY");
+		map.put(BIODEG_ANAEROBIC, "BINARY");
+		map.put(ULTIMATE_BIODEG, "DIMENSIONLESS");
+		map.put(PRIMARY_BIODEG, "DIMENSIONLESS");
+		
 		map.put(KmHL,getConstantNameByReflection(DAYS));
 		map.put(BIODEG_HL_HC,getConstantNameByReflection(DAYS));
 		
+		
+		map.put(BAF, "L_KG");
 		map.put(BCF, "L_KG");
 		map.put(KOC, "L_KG");
 		
@@ -779,6 +835,7 @@ public class DevQsarConstants {
 		map.put(LOCAL_LYMPH_NODE_ASSAY, "BINARY");
 		
 		map.put(NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50,"MOLAR");
+		map.put(NINETY_SIX_HOUR_BLUEGILL_LC50,"MOLAR");
 		map.put(FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50,"MOLAR");
 		map.put(FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50, "MOLAR");		
 
@@ -805,7 +862,7 @@ public class DevQsarConstants {
 		
 		//Percepta properties:
 		map.put(MOLAR_VOLUME, "CM3");
-		map.put(MOLAR_REFRACTIVITY, "CM3");
+		map.put(MOLAR_REFRACTIVITY, "CM3_MOL");
 		map.put(INDEX_OF_REFRACTION, "DIMENSIONLESS");
 		map.put(POLARIZABILITY, "CUBIC_ANGSTROM");
 

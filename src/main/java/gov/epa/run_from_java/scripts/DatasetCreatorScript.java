@@ -16,7 +16,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
+import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
+import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueService;
 import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.dao.DataPointDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
@@ -69,8 +72,16 @@ public class DatasetCreatorScript {
 	boolean validateStructure = true;
 	boolean validateMedian = true;//important when creating modeling datasets, may not want to exclude records if for the dashboard
 
+	
+	boolean excludeBasedOnMissingExposureType=false;
+	boolean excludeBasedOnPredictedWS=false;
+	boolean excludeBasedOnBaselineToxicity=false;
+	
+	
 	String workflow = "qsar-ready";
-	String serverHost = "https://hcd.rtpnc.epa.gov";
+//	String serverHost = "https://hcd.rtpnc.epa.gov";
+	String serverHost = "https://hazard-dev.sciencedataexperts.com";
+	
 	SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,
 			workflow, serverHost);
 
@@ -167,100 +178,194 @@ public class DatasetCreatorScript {
 		creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
 
 	}
+	
+	void createBCF() {
 
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator.postToDB = true;
+
+		String propertyName = DevQsarConstants.BCF;
+		String datasetName = "exp_prop_BCF_v1.0";
+		String datasetDescription = propertyName+" data for the Dashboard";
+		
+		String sourceECOTOX="ECOTOX_2023_12_14";
+		String sourceBurkhard="Burkhard";		
+		String sourceOPERA="OPERA2.9";
+//		String source=sourceBurkhard;		
+//		String listName="exp_prop_"+source;
+		
+		
+		ArrayList<String> listNameArray = new ArrayList<String>(Arrays.asList("exp_prop_ECOTOX_2023_12_14",
+				"exp_prop_Burkhard","exp_prop_2024_02_02_from_OPERA2.9"));
+		
+//		ArrayList<String> listNameArray = new ArrayList<String>(Arrays.asList("exp_prop_ECOTOX_2023_12_14",
+//				"exp_prop_Burkhard"));
+		
+//		for(String name:listNameArray) {
+//			System.out.println(name);
+//		}
+		
+		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(1e-6, null);// TODO
+		List<BoundParameterValue> bounds = null;// leave empty
+
+		useExperimentalDashboardSettings();
+		
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, listNameArray, omitSalts, validateStructure, validateMedian, bounds, boundPropertyValue);
+		
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+
+
+		List<String> includedSources = Arrays.asList(sourceECOTOX,sourceBurkhard,sourceOPERA);
+//		List<String> includedSources = Arrays.asList(sourceECOTOX,sourceBurkhard);
+
+		Dataset dataset=creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
+
+		if(dataset!=null) addEntryForDatasetsInDashboard(dataset);
+
+	}
+
+	
+	void createDatasetsForDashboard() {
+//		createpKa_a();
+//		createpKa_b();
+//		createKM();
+//		createBIODEG_HL_HC();
+//		createKOC();
+//		createOH();		
+//		createRBIODEG();
+//		createCLINT();
+//		createFUB();
+//		createKOA();
+//		createFP();
+//		createBCF();
+
+//		createBP();//rerun
+		createHLC2();//rerun
+//		createLogP();//rerun
+//		createD();//rerun
+//		createWS();//rerun
+//		createVP();//rerun
+//		createMP();//rerun
+		
+//		createER_AR();//need to run for all except estrogen receptor agonist
+//		createST();//TODO
+
+	}
+	void createModelingDatasets() {
+//		createWS_modeling();
+//		createLogP_modeling();
+//		createHLC_modeling();
+		
+//		createBP_modeling();
+//		createVP_modeling();
+//		createMP_modeling();
+		
+//		createBP_OChem();
+//		createVP_OChem();
+		createMP_OChem();
+		
+	}
+	
+	void createFishToxModels() {
+//		createFHM_LC50();
+//		createFHM_96hr_LC50_Ecotox_modeling();
+//		createBG_96hr_LC50_Ecotox_modeling();
+
+	}
+	
+	void createBiodegDatasets() {
+//		createRBIODEG_NITE_OPPT();
+//		createRBIODEG_NITE_OPPT_CAS();
+		
+	}
+	
+	void deleteDatasets() {
+		DatasetServiceImpl ds=new DatasetServiceImpl();
+		
+//		for (Long i=388L;i<=391L;i++) ds.deleteSQL(i);
+		
+//		ds.deleteSQL(261L);
+//		ds.deleteSQL(275L);		
+//		ds.deleteSQL(271L);
+//		ds.deleteSQL(241L);
+//		ds.deleteSQL(274L);
+//		ds.deleteSQL(240L);
+//		ds.deleteSQL(272L);
+		
+//		ds.deleteSQL(304L);
+		
+//		ds.deleteSQL(384L);
+		ds.deleteSQL(392L);
+		
+		
+		
+	}
+	
+	void updateTTR_Binding_PropertyValues(List<PropertyValue> propertyValues,String set) {
+
+		for(int i=0;i<propertyValues.size();i++) {
+			
+			PropertyValue pv=propertyValues.get(i);
+			
+			String dataset=pv.getParameterValue("dataset").getValueText();
+			double property_value=pv.getValuePointEstimate();
+
+//			if(maximum_concentration<90) {
+//				if (property_value<90) {
+//					System.out.println(pv.getSourceChemical().getSourceDtxsid()+"\t"+maximum_concentration+"\t"+property_value);
+//					pv.setKeep(false);
+//					pv.setKeepReason("maximum_concentration < 90 and property_value < 90");
+//				}
+//			} else if(maximum_concentration>110) { 
+//				System.out.println(pv.getSourceChemical().getSourceDtxsid()+"\t"+maximum_concentration+"\t"+property_value);
+//				pv.setKeep(false);
+//				pv.setKeepReason("maximum_concentration>110");
+//			}
+
+			if(!dataset.equals(set)) {
+				propertyValues.remove(i--);
+				continue;
+			} 
+			
+			if(pv.getParameterValue("maximum_concentration")==null) continue;
+			double maximum_concentration=pv.getParameterValue("maximum_concentration").getValuePointEstimate();
+			
+			if(maximum_concentration<90) {
+				if (property_value<90) {
+					propertyValues.remove(i--);
+				}
+			} else if(maximum_concentration>110) { 
+				propertyValues.remove(i--);
+			}
+		}
+		
+	}
 	public static void main(String[] args) {
 		DatasetCreatorScript dcs = new DatasetCreatorScript();
-
 		
-//		DatasetServiceImpl ds=new DatasetServiceImpl();
-//		ds.deleteSQL(280L);
-//		ds.deleteSQL(281L);
+//		dcs.createToxCast_TTR_Binding();
+//		dcs.createRatLC50_CoMPAIT();
+//		dcs.deleteDatasets();
 		
-//		ds.deleteSQL(273L);
-//		ds.deleteSQL(238L);
-//		ds.deleteSQL(239L);
-//		for (Long i=236L;i<=237L;i++) {
-//		ds.deleteSQL(i);	
-//	}
-//		if(true) return;
-
-		dcs.createFHM_96hr_LC50_Ecotox_modeling();
-
+//		dcs.createDatasetsForDashboard();
 		
-//		dcs.getMappings();
+//		dcs.createModelingDatasets();
+//		dcs.createFishToxModels();
+//		dcs.createBiodegDatasets();
+//		
+//		dcs.createFHM_96hr_LC50_Ecotox_modeling();
+		dcs.createBG_96hr_LC50_Ecotox_modeling();
+
+//		dcs.getAutoMappingsFromChemRegList();
 		
-		//TODO add public_source_original to all OPERA2.9 property values
-		
-//		dcs.createpKa_a();
-//		dcs.createpKa_b();
-//		dcs.createKM();
-//		dcs.createBIODEG_HL_HC();
-//		dcs.createKOC();
-//		dcs.createOH();		
-//		dcs.createRBIODEG();
-//		dcs.createCLINT();
-//		dcs.createFUB();
-//		dcs.createKOA();
-
-//		dcs.createD();
-//		dcs.createFP();
-//		dcs.createST();
-		
-//		dcs.createER_AR();//need to run for all except estrogen receptor agonist
-
-//		dcs.createHLC();
-//		dcs.createWS();
-//		dcs.createVP();
-//		dcs.createBP();//need to run
-//		dcs.createMP();//need to run
-//		dcs.createLogP();//need to run
-
-//		if(true)return;
-
-//		dcs.createFHM_LC50();
-
-//		dcs.createWS_modeling();
-//		dcs.createHLC_modeling();
-//		dcs.createMP_modeling();
-//		dcs.createVP_modeling();
-//		dcs.createBP_modeling();
-//		dcs.createLogP_modeling();
-
-//		fixQsarExpPropIds();
-
-		// *********************************************************************************************
-
-//		DataPointServiceImpl dpsi=new DataPointServiceImpl();
-//		List<DataPoint>datapoints=dpsi.findByDatasetName("VP v1");
-//		List<DataPoint>datapoints=dpsi.findByDatasetName("HLC v1");
-//		System.out.println(datapoints.size());
-
-//		DataPointDaoImpl d=new DataPointDaoImpl ();
-//		List<DataPoint>dps=d.findByDatasetNameSql("HLC v1");
-//		System.out.println(Utilities.gson.toJson(dps));
-//		System.out.println(dps.size());
-
-		// *********************************************************************************************
-
-//		Connection conn=SqlUtilities.getConnectionPostgres();
-//		String dataSetName="HLC";
-//		String sql="select id from qsar_datasets.datasets d where d.\"name\" ='"+dataSetName+"'";
-//		String datasetId=DatabaseLookup.runSQL(conn, sql);
-//		sql="select count(id) from qsar_datasets.data_points dp where dp.fk_dataset_id="+datasetId;			
-//		String countDatapoints=DatabaseLookup.runSQL(conn, sql);
-//		System.out.println(countDatapoints);
-
-		// *********************************************************************************************
-
 //		dcs.getDatasetStats();//Get record counts for the papers
 //		dcs.getDatasetStatsUsingSql();//Get record counts for the papers
 //		getDatasetStatsForOneDataset();
 //		dcs.getMappedRecordCountsBySourceAndProperty();
 
-//		String folder="data\\dev_qsar\\output\\";
-		// CR: 2/14/23 this was causing an error
-//		System.out.println("fix this error in datasetcreator before running again");
-//		GetExpPropInfo.createCheckingSpreadsheet("pKa_a from exp_prop and chemprop", folder, null);
 
 	}
 
@@ -701,7 +806,7 @@ public class DatasetCreatorScript {
 
 	public void createWS() {
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 		
 		String propertyName = DevQsarConstants.WATER_SOLUBILITY;
 
@@ -745,27 +850,33 @@ public class DatasetCreatorScript {
 		List<String> excludedSources = new ArrayList<>();
 
 		excludedSources.add("LookChem");// OPERA2.9 includes this when corroborated by other source
-		excludedSources.add("OPERA");// we are now using OPERA2.9
+		excludedSources.add("OPERA2.8");// we are now using OPERA2.9
 		excludedSources.add("PhysPropNCCT");//already have OPERA2.9
 
 //		excludedSources.add("ANGUS Chemical Company (Chemical company)");// keep it since only a handful
 //		excludedSources.add("OFMPub");// some curation issues
 
 		Dataset dataset=creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
-		addEntryForDatasetsInDashboard(dataset);
+		if(dataset!=null) addEntryForDatasetsInDashboard(dataset);
 		
 	}
 	
 	
-
-	public void getMappings() {
+/**
+ * Prints automapping for a list without a dataset
+ */
+	public void getAutoMappingsFromChemRegList() {
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
-		String propertyName = DevQsarConstants.ESTROGEN_RECEPTOR_BINDING;
+//		String propertyName = DevQsarConstants.ESTROGEN_RECEPTOR_BINDING;
 //		String listName="exp_prop_CERAPP";		
-		String listName = "exp_prop_2024_02_02_from_OPERA2.9";
-
-		validateStructure = false;// for Dashboard not modeling
+//		String listName = "exp_prop_2024_02_02_from_OPERA2.9";
+//		String listName="DMSO_Solubility_OChem";
+		
+		String propertyName = "TTR_ANSA";
+		String listName="TTR_ANSA_Challenge";
+		
+		validateStructure = true;// for Dashboard not modeling
 		omitSalts = false;
 		omitUvcbNames = false;
 
@@ -800,13 +911,23 @@ public class DatasetCreatorScript {
 	}
 
 	public void createWS_modeling() {
+		
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-
-		creator.postToDB = false;
+		DatasetCreator.postToDB = false;
 
 		String propertyName = DevQsarConstants.WATER_SOLUBILITY;
-		String listName = "ExpProp_WaterSolubility_WithChemProp_120121";
+//		String listName = "ExpProp_WaterSolubility_WithChemProp_120121";
+		
+//		List<String> sources = Arrays.asList("prod_chemprop", "ADDoPT", "AqSolDB", "Bradley", "ChemicalBook",
+//				"eChemPortalAPI", "ICF", DevQsarConstants.sourceNameOChem_2024_04_03, "OFMPub", "OPERA2.8", "PubChem", "QSARDB", "ThreeM");
 
+		List<String> sources = Arrays.asList(DevQsarConstants.sourceNameOChem_2024_04_03);
+		ArrayList<String> listNameArray = getChemRegListNames2(sources);
+		
+//		for (String listName:listNameArray) {
+//			System.out.println(listName);
+//		}
+		
 		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
 		BoundParameterValue pressureBound = new BoundParameterValue("Pressure", 740.0, 780.0, true);
 		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);// TODO can the chemical itself
@@ -822,13 +943,14 @@ public class DatasetCreatorScript {
 		BoundPropertyValue boundPV = new BoundPropertyValue(DevQsarConstants.MIN_WATER_SOLUBILITY_G_L,
 				DevQsarConstants.MAX_WATER_SOLUBILITY_G_L);
 
-		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, isNaive,
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, isNaive,
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
-				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, bounds, boundPV);
+				omitUvcbNames, listNameArray, omitSalts, validateStructure, validateMedian, bounds, boundPV);
 
 //		String datasetName = "WS v1";
 //		String datasetName = "WS v1 res_qsar";
-		String datasetName = "WS v1 modeling";
+//		String datasetName = "WS v2 modeling";
+		String datasetName = "WS "+DevQsarConstants.sourceNameOChem_2024_04_03;
 
 //		String datasetDescription = "WS from exp_prop and chemprop where 1e-14 < WS(M) < 100, 1e-11 < WS(g/L) < 990, " 
 //				+ "20 < T (C) < 30, 740 < P (mmHg) < 780, 6.5 < pH < 7.5, omit LookChem";
@@ -840,13 +962,16 @@ public class DatasetCreatorScript {
 		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
 				listMappingParams);
 
-		List<String> excludedSources = new ArrayList<>();
+//		List<String> excludedSources = new ArrayList<>();
+//		excludedSources.add("LookChem");// chemical company, MAE is 35% higher than OPERA
+//		excludedSources.add("ANGUS Chemical Company (Chemical company)");// Chemical company
+//		excludedSources.add("OFMPub");// some curation issues
+//		excludedSources.add("PubChem");// messy data
+//		creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
 
-		excludedSources.add("LookChem");// chemical company, MAE is 35% higher than OPERA
-		excludedSources.add("ANGUS Chemical Company (Chemical company)");// Chemical company
-		excludedSources.add("OFMPub");// some curation issues
-
-		creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
+		List<String> includedSources = new ArrayList<>();
+		includedSources.add(DevQsarConstants.sourceNameOChem_2024_04_03);
+		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
 
 	}
 
@@ -854,7 +979,7 @@ public class DatasetCreatorScript {
 	public void createVP() {
 
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 		
 		String propertyName = DevQsarConstants.VAPOR_PRESSURE;
 
@@ -892,7 +1017,7 @@ public class DatasetCreatorScript {
 
 		List<String> excludedSources = new ArrayList<>();
 
-		excludedSources.add("OPERA");// we are now using OPERA2.9
+		excludedSources.add("OPERA2.8");// we are now using OPERA2.9
 		excludedSources.add("PhysPropNCCT");//already have OPERA2.9
 
 //		excludedSources.add("eChemPortalAPI");// high error rate
@@ -909,7 +1034,7 @@ public class DatasetCreatorScript {
 	public void createD() {
 		
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 		
 		String propertyName = DevQsarConstants.DENSITY;
 
@@ -959,7 +1084,7 @@ public class DatasetCreatorScript {
 	public void createFP() {
 		
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 		
 		String propertyName = DevQsarConstants.FLASH_POINT;
 
@@ -1009,7 +1134,7 @@ public class DatasetCreatorScript {
 //		Active(NA)	0.625
 
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 		
 //		String propertyName = DevQsarConstants.ESTROGEN_RECEPTOR_AGONIST;
 //		String propertyName = DevQsarConstants.ESTROGEN_RECEPTOR_ANTAGONIST;
@@ -1054,7 +1179,7 @@ public class DatasetCreatorScript {
 	public void createBIODEG_HL_HC() {
 		
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 
 		String propertyName = DevQsarConstants.BIODEG_HL_HC;
 		List<String> sources = Arrays.asList("prod_chemprop", "OPERA2.9");
@@ -1080,7 +1205,7 @@ public class DatasetCreatorScript {
 				listMappingParams);
 
 		List<String> excludedSources = new ArrayList<>();
-		excludedSources.add("OPERA");//we have OPERA2.9
+		excludedSources.add("OPERA2.8");//we have OPERA2.9
 		excludedSources.add("PhysPropNCCT");//already have OPERA2.9
 
 		Dataset dataset=creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
@@ -1095,7 +1220,7 @@ public class DatasetCreatorScript {
 	public void createRBIODEG() {
 		
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 
 		String propertyName = DevQsarConstants.RBIODEG;
 		List<String> sources = Arrays.asList("prod_chemprop", "OPERA2.9");
@@ -1121,7 +1246,7 @@ public class DatasetCreatorScript {
 				listMappingParams);
 
 		List<String> excludedSources = new ArrayList<>();
-		excludedSources.add("OPERA");//we have OPERA2.9
+		excludedSources.add("OPERA2.8");//we have OPERA2.9
 		excludedSources.add("PhysPropNCCT");//already have OPERA2.9
 
 		Dataset dataset=creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
@@ -1130,11 +1255,93 @@ public class DatasetCreatorScript {
 		System.out.println("dataset Id="+dataset.getId());
 		addEntryForDatasetsInDashboard(dataset);
 	}
+	
+	
+
+	public void createRBIODEG_NITE_OPPT() {
+		
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator.postToDB = false;
+
+		String propertyName = DevQsarConstants.RBIODEG;
+//		List<String> sources = Arrays.asList("NITE_OPPT");
+		String listName = "exp_prop_RBIODEG_NITE_OPPT";
+
+		BoundPropertyValue boundPV = new BoundPropertyValue(0.0, 1.0);// binary
+		
+		omitSalts=false;//want to keep since OPPT did- hopefully qsar ready smiles allows for TEST descriptor generation
+
+
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, null, boundPV);
+
+		String datasetName = "exp_prop_RBIODEG_NITE_OPPT v1.0";
+		
+		String datasetDescription = DevQsarConstants.RBIODEG + " data from NITE_OPPT";
+		
+		//Note for OPERA2.9, if had DTXSID, the record was automapped, some mappings might be out of date, but allows one to have more mappings
+		//For PhysPropNCCT, DTXRID was used to retrieve dsstox record- but mapping only accepted if automapper accepts the mapping based on the original identifiers
+
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+
+		List<String> includedSources = new ArrayList<>();
+		includedSources.add("NITE_OPPT");//we have OPERA2.9
+		
+
+		Dataset dataset=creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
+		if(dataset==null) return;
+		
+		System.out.println("property Id="+dataset.getProperty().getId());
+		System.out.println("dataset Id="+dataset.getId());
+//		addEntryForDatasetsInDashboard(dataset);
+	}
+	
+	public void createRBIODEG_NITE_OPPT_CAS() {
+		
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator.postToDB = false;
+
+		String propertyName = DevQsarConstants.RBIODEG;
+//		List<String> sources = Arrays.asList("NITE_OPPT");
+//		String listName = "exp_prop_RBIODEG_NITE_OPPT";
+
+		BoundPropertyValue boundPV = new BoundPropertyValue(0.0, 1.0);// binary
+		
+		omitSalts=false;//want to keep since OPPT did- hopefully qsar ready smiles allows for TEST descriptor generation
+		isNaive=true;
+
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_CASRN, null, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, null, boundPV);
+
+		String datasetName = "exp_prop_RBIODEG_NITE_OPPT_BY_CAS";
+		
+		String datasetDescription = DevQsarConstants.RBIODEG + " data from NITE_OPPT_BY_CAS";
+		
+		//Note for OPERA2.9, if had DTXSID, the record was automapped, some mappings might be out of date, but allows one to have more mappings
+		//For PhysPropNCCT, DTXRID was used to retrieve dsstox record- but mapping only accepted if automapper accepts the mapping based on the original identifiers
+
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+
+		List<String> includedSources = new ArrayList<>();
+		includedSources.add("NITE_OPPT");//we have OPERA2.9
+		
+
+		Dataset dataset=creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
+		if(dataset==null) return;
+		
+		System.out.println("property Id="+dataset.getProperty().getId());
+		System.out.println("dataset Id="+dataset.getId());
+//		addEntryForDatasetsInDashboard(dataset);
+	}
 
 	public void createKOC() {
 
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 
 		String propertyName = DevQsarConstants.KOC;
 		List<String> sources = Arrays.asList("prod_chemprop", "OPERA2.9","ThreeM");
@@ -1159,7 +1366,7 @@ public class DatasetCreatorScript {
 				listMappingParams);
 
 		List<String> excludedSources = new ArrayList<>();
-		excludedSources.add("OPERA");//we have OPERA2.9
+		excludedSources.add("OPERA2.8");//we have OPERA2.9
 		excludedSources.add("PhysPropNCCT");//already have OPERA2.9
 
 		Dataset dataset=creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
@@ -1172,7 +1379,7 @@ public class DatasetCreatorScript {
 
 	public void createKOA() {
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 
 		String propertyName = DevQsarConstants.LOG_KOA;
 		List<String> sources = Arrays.asList("prod_chemprop", "OPERA2.9");
@@ -1200,7 +1407,7 @@ public class DatasetCreatorScript {
 				listMappingParams);
 
 		List<String> excludedSources = new ArrayList<>();
-		excludedSources.add("OPERA");//we have OPERA2.9
+		excludedSources.add("OPERA2.8");//we have OPERA2.9
 		excludedSources.add("PhysPropNCCT");//already have OPERA2.9
 
 		Dataset dataset=creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
@@ -1212,7 +1419,7 @@ public class DatasetCreatorScript {
 		//TODO add data from TEST
 		
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-//		creator.postToDB = true;
+//		DatasetCreator.postToDB = true;
 		
 		String propertyName = DevQsarConstants.SURFACE_TENSION;
 
@@ -1254,7 +1461,7 @@ public class DatasetCreatorScript {
 	public void createpKa_a() {
 		
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 
 		String propertyName = DevQsarConstants.PKA_A;
 		List<String> sources = Arrays.asList("prod_chemprop", "OPERA2.9");
@@ -1283,7 +1490,7 @@ public class DatasetCreatorScript {
 				listMappingParams);
 
 		List<String> excludedSources = new ArrayList<>();
-		excludedSources.add("OPERA");//we have OPERA2.9
+		excludedSources.add("OPERA2.8");//we have OPERA2.9
 		excludedSources.add("Data Warrior");// doesnt map well using automapper,already have OPERA2.9
 		
 		Dataset dataset=creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
@@ -1294,7 +1501,7 @@ public class DatasetCreatorScript {
 
 	public void createpKa_b() {
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 
 		String propertyName = DevQsarConstants.PKA_B;
 		List<String> sources = Arrays.asList("prod_chemprop", "OPERA2.9");
@@ -1323,7 +1530,7 @@ public class DatasetCreatorScript {
 				listMappingParams);
 
 		List<String> excludedSources = new ArrayList<>();
-		excludedSources.add("OPERA");//we have OPERA2.9
+		excludedSources.add("OPERA2.8");//we have OPERA2.9
 		excludedSources.add("Data Warrior");// doesnt map well using automapper,already have OPERA2.9
 		
 		Dataset dataset=creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
@@ -1336,7 +1543,7 @@ public class DatasetCreatorScript {
 
 		
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 
 		String propertyName = DevQsarConstants.CLINT;
 		List<String> sources = Arrays.asList("prod_chemprop", "OPERA2.9");
@@ -1362,7 +1569,7 @@ public class DatasetCreatorScript {
 				listMappingParams);
 
 		List<String> excludedSources = new ArrayList<>();
-		excludedSources.add("OPERA");//we have OPERA2.9
+		excludedSources.add("OPERA2.8");//we have OPERA2.9
 		Dataset dataset=creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
 		
 		System.out.println("property Id="+dataset.getProperty().getId());
@@ -1374,7 +1581,7 @@ public class DatasetCreatorScript {
 	public void createFUB() {
 		
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 
 		String propertyName = DevQsarConstants.FUB;
 		List<String> sources = Arrays.asList("prod_chemprop", "OPERA2.9");
@@ -1400,7 +1607,7 @@ public class DatasetCreatorScript {
 				listMappingParams);
 
 		List<String> excludedSources = new ArrayList<>();
-		excludedSources.add("OPERA");//we have OPERA2.9
+		excludedSources.add("OPERA2.8");//we have OPERA2.9
 		Dataset dataset=creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
 		
 		System.out.println("property Id="+dataset.getProperty().getId());
@@ -1412,7 +1619,7 @@ public class DatasetCreatorScript {
 	public void createOH() {
 		
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 
 		String propertyName = DevQsarConstants.OH;
 		List<String> sources = Arrays.asList("prod_chemprop", "OPERA2.9");
@@ -1438,7 +1645,7 @@ public class DatasetCreatorScript {
 				listMappingParams);
 
 		List<String> excludedSources = new ArrayList<>();
-		excludedSources.add("OPERA");//we have OPERA2.9
+		excludedSources.add("OPERA2.8");//we have OPERA2.9
 		excludedSources.add("PhysPropNCCT");//already have OPERA2.9
 		
 		Dataset dataset=creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
@@ -1452,9 +1659,12 @@ public class DatasetCreatorScript {
 	public void createVP_modeling() {
 		// comment for diff
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator.postToDB = false;
 
 		String propertyName = DevQsarConstants.VAPOR_PRESSURE;
-		String listName = "ExpProp_VP_WithChemProp_070822";
+//		String listName = "ExpProp_VP_WithChemProp_070822";
+		List<String> sources = Arrays.asList(DevQsarConstants.sourceNameOChem_2024_04_03);
+		ArrayList<String> listNameArray = getChemRegListNames2(sources);
 
 		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
 		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
@@ -1463,28 +1673,65 @@ public class DatasetCreatorScript {
 		BoundPropertyValue boundPV = new BoundPropertyValue(DevQsarConstants.MIN_VAPOR_PRESSURE_MMHG,
 				DevQsarConstants.MAX_VAPOR_PRESSURE_MMHG);
 
-		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, isNaive,
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, isNaive,
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
-				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, bounds, boundPV);
+				omitUvcbNames, listNameArray, omitSalts, validateStructure, validateMedian, bounds, boundPV);
 
 //		String datasetName = "VP v1";
 //		String datasetName = "VP v1 res_qsar";
-		String datasetName = "VP v1 modeling";
+//		String datasetName = "VP v1 modeling";
+		String datasetName = "VP "+DevQsarConstants.sourceNameOChem_2024_04_03;
 
 		String datasetDescription = "VP from exp_prop and chemprop where 1e-14 < VP(mmHg) < 1e6 and 20 < T(C) < 30 and "
 				+ "omit eChemPortalAPI, PubChem, OFMPub, ChemicalBook and Angus sources";
 
-		List<String> excludedSources = new ArrayList<>();
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+		
+//		List<String> excludedSources = new ArrayList<>();
+//		excludedSources.add("eChemPortalAPI");// high error rate
+//		excludedSources.add("PubChem");// high error rate
+//		excludedSources.add("OFMPub");// low quality data
+//		excludedSources.add("ChemicalBook");// chemical company
+//		excludedSources.add("ANGUS Chemical Company (Chemical company)");// chemical company
+//		creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
+		
+		List<String> includedSources = new ArrayList<>();
+		includedSources.add(DevQsarConstants.sourceNameOChem_2024_04_03);
+		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
 
-		excludedSources.add("eChemPortalAPI");// high error rate
-		excludedSources.add("PubChem");// high error rate
-		excludedSources.add("OFMPub");// low quality data
-		excludedSources.add("ChemicalBook");// chemical company
-		excludedSources.add("ANGUS Chemical Company (Chemical company)");// chemical company
+
+	}
+	
+	public void createVP_OChem() {
+		// comment for diff
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator.postToDB = true;
+
+		String propertyName = DevQsarConstants.VAPOR_PRESSURE;
+//		String listName = "ExpProp_VP_WithChemProp_070822";
+		List<String> sources = Arrays.asList(DevQsarConstants.sourceNameOChem_2024_04_03);
+		ArrayList<String> listNameArray = getChemRegListNames2(sources);
+
+		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
+		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+		bounds.add(temperatureBound);
+
+		BoundPropertyValue boundPV = new BoundPropertyValue(DevQsarConstants.MIN_VAPOR_PRESSURE_MMHG,
+				DevQsarConstants.MAX_VAPOR_PRESSURE_MMHG);
+
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, listNameArray, omitSalts, validateStructure, validateMedian, bounds, boundPV);
+
+		String datasetName = "VP "+DevQsarConstants.sourceNameOChem_2024_04_03;
+		String datasetDescription = "VP from OChem(retrieved on 4/3/2024)";
 
 		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
 				listMappingParams);
-		creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
+		
+		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, sources);
+
 
 	}
 
@@ -1528,7 +1775,7 @@ public class DatasetCreatorScript {
 		ArrayList<String> listNameArray = new ArrayList<String>();
 		listNameArray.add("ExpProp_PKAa_WithChemProp_011423");
 
-		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+//		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
 
 		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, isNaive,
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
@@ -1570,7 +1817,7 @@ public class DatasetCreatorScript {
 
 	public void createLogP() {
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 		
 		String propertyName = DevQsarConstants.LOG_KOW;
 
@@ -1605,7 +1852,7 @@ public class DatasetCreatorScript {
 
 
 		List<String> excludedSources = new ArrayList<>();
-		excludedSources.add("OPERA");// we are now using OPERA2.9
+		excludedSources.add("OPERA2.8");// we are now using OPERA2.9
 		excludedSources.add("PhysPropNCCT");//already have OPERA2.9
 
 
@@ -1622,17 +1869,22 @@ public class DatasetCreatorScript {
 	public void createLogP_modeling() {
 		// comment for diff
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator.postToDB = false;
 
 		String propertyName = DevQsarConstants.LOG_KOW;
 		// String listName = "ExpProp_HLC_WithChemProp_121421";
 
-		ArrayList<String> listNameArray = new ArrayList<String>();
-		listNameArray.add("ExpProp_LogP_import_1_to_20000");
-		listNameArray.add("ExpProp_LogP_import_20001_to_40000");
-		listNameArray.add("ExpProp_LogP_import_40001_to_60000");
-		listNameArray.add("ExpProp_LogP_import_60001_to_80000");
-		listNameArray.add("ExpProp_LogP_import_80001_to_100000");
-		listNameArray.add("ExpProp_LogP_import_100001_to_100850");
+//		ArrayList<String> listNameArray = new ArrayList<String>();
+//		listNameArray.add("ExpProp_LogP_import_1_to_20000");
+//		listNameArray.add("ExpProp_LogP_import_20001_to_40000");
+//		listNameArray.add("ExpProp_LogP_import_40001_to_60000");
+//		listNameArray.add("ExpProp_LogP_import_60001_to_80000");
+//		listNameArray.add("ExpProp_LogP_import_80001_to_100000");
+//		listNameArray.add("ExpProp_LogP_import_100001_to_100850");
+		
+		List<String> sources = Arrays.asList(DevQsarConstants.sourceNameOChem_2024_04_03);
+		ArrayList<String> listNameArray = getChemRegListNames2(sources);
+
 
 		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
 		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
@@ -1647,7 +1899,8 @@ public class DatasetCreatorScript {
 
 //		String datasetName = "LogP v1";
 //		String datasetName = "LogP v1 res_qsar";
-		String datasetName = "LogP v1 modeling";
+//		String datasetName = "LogP v1 modeling";
+		String datasetName = "LogP "+DevQsarConstants.sourceNameOChem_2024_04_03;
 
 		String datasetDescription = "LogP from exp_prop and chemprop with -6 < LogKow < 11 and 20 < T(C) < 30 and "
 				+ "omit eChemPortalAPI, PubChem, OFMPub and Angus sources";
@@ -1655,14 +1908,17 @@ public class DatasetCreatorScript {
 		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
 				listMappingParams);
 
-		List<String> excludedSources = new ArrayList<>();
+//		List<String> excludedSources = new ArrayList<>();
+//		excludedSources.add("OFMPub");// curation issues
+//		excludedSources.add("ANGUS Chemical Company (Chemical company)");// chemical company
+//		excludedSources.add("eChemPortalAPI");// bad data
+//		excludedSources.add("PubChem");// bad data
+//		creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
 
-		excludedSources.add("OFMPub");// curation issues
-		excludedSources.add("ANGUS Chemical Company (Chemical company)");// chemical company
-		excludedSources.add("eChemPortalAPI");// bad data
-		excludedSources.add("PubChem");// bad data
-
-		creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
+		
+		List<String> includedSources = new ArrayList<>();
+		includedSources.add(DevQsarConstants.sourceNameOChem_2024_04_03);
+		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
 
 	}
 
@@ -1670,7 +1926,7 @@ public class DatasetCreatorScript {
 	public void createHLC() {
 
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 
 		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
 		
@@ -1704,7 +1960,7 @@ public class DatasetCreatorScript {
 				listMappingParams);
 
 		List<String> excludedSources = new ArrayList<>();
-		excludedSources.add("OPERA");//we have OPERA2.9
+		excludedSources.add("OPERA2.8");//we have OPERA2.9
 		excludedSources.add("PhysPropNCCT");//already have OPERA2.9
 
 		Dataset dataset=creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
@@ -1713,17 +1969,79 @@ public class DatasetCreatorScript {
 
 
 	}
+	
+	public void createHLC2() {
+
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator.postToDB = true;
+
+		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
+		
+		List<String> sources = Arrays.asList("prod_chemprop", "OPERA2.9","eChemPortalAPI","OChem", "ICF");
+		ArrayList<String> listNameArray = getChemRegListNames(sources);
+		String listNameSander="exp_prop_2024_04_04_from_Sander_v5_2";		
+		listNameArray.add(listNameSander);
+		
+//		listNameArray=null;
+
+		useExperimentalDashboardSettings();
+		
+		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
+		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
+		List<BoundParameterValue> boundsParameters = new ArrayList<BoundParameterValue>();
+		boundsParameters.add(temperatureBound);
+		boundsParameters.add(phBound);
+
+		BoundPropertyValue boundPropertyValue=new BoundPropertyValue(DevQsarConstants.MIN_HENRYS_LAW_CONSTANT_ATM_M3_MOL/100.0,null);
+
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST,listNameSander, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, listNameArray, omitSalts, validateStructure, validateMedian, boundsParameters, boundPropertyValue);
+
+//		listMappingParams.createChemRegMapOutstandingSourceChemicals=true;
+		
+		
+		String propAbbrev=DevQsarConstants.getConstantNameByReflection(propertyName);
+		String datasetName = "exp_prop_"+propAbbrev+"_v2.0";
+		System.out.println("datasetName="+datasetName);
+		
+		String datasetDescription = propertyName + " data from chemprop, OPERA2.9, eChemPortalAPI, OChem, ICF, Sander_V5";
+		
+		//Note for OPERA2.9, if had DTXSID, the record was automapped, some mappings might be out of date, but allows one to have more mappings
+		//For chemprop data, DTXRID was used to retrieve dsstox record- but mapping only accepted if automapper accepts the mapping based on the original identifiers
+
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+
+		List<String> excludedSources = new ArrayList<>();
+		excludedSources.add("OPERA2.8");//we have OPERA2.9
+		excludedSources.add("PhysPropNCCT");//already have OPERA2.9
+		excludedSources.add("Sander");//we have Sander_v5 now
+		
+//		List<String> includedSources = Arrays.asList("Sander_v5");
+//		Dataset dataset=creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
+
+		Dataset dataset=creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
+
+		if(dataset!=null) addEntryForDatasetsInDashboard(dataset);
+
+
+	}
 
 	public void createHLC_modeling() {
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator.postToDB = false;
 
 		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
+		
 		// String listName = "ExpProp_HLC_WithChemProp_121421";
+//		ArrayList<String> listNameArray = new ArrayList<String>();
+//		listNameArray.add("ExpProp_hlc_WithChemProp_071922_ml_1_to_2000");
+//		listNameArray.add("ExpProp_hlc_WithChemProp_071922_ml_2001_to_4000");
+//		listNameArray.add("ExpProp_hlc_WithChemProp_071922_ml_4001_to_4849");		
+		List<String> sources = Arrays.asList(DevQsarConstants.sourceNameOChem_2024_04_03);
+		ArrayList<String> listNameArray = getChemRegListNames2(sources);
 
-		ArrayList<String> listNameArray = new ArrayList<String>();
-		listNameArray.add("ExpProp_hlc_WithChemProp_071922_ml_1_to_2000");
-		listNameArray.add("ExpProp_hlc_WithChemProp_071922_ml_2001_to_4000");
-		listNameArray.add("ExpProp_hlc_WithChemProp_071922_ml_4001_to_4849");
 
 		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
 		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
@@ -1741,7 +2059,8 @@ public class DatasetCreatorScript {
 
 //		String datasetName = "HLC v1";
 //		String datasetName = "HLC v1 res_qsar";
-		String datasetName = "HLC v1 modeling";
+//		String datasetName = "HLC v1 modeling";
+		String datasetName = "HLC "+DevQsarConstants.sourceNameOChem_2024_04_03;
 
 		String datasetDescription = "HLC from exp_prop and chemprop where "
 				+ "1e-13 < HLC (atm m^3/mol) < 1e2 , 20 < T (C) < 30, 6.5 < pH < 7.5 and "
@@ -1750,12 +2069,14 @@ public class DatasetCreatorScript {
 		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
 				listMappingParams);
 
-		List<String> excludedSources = new ArrayList<>();
-
-		excludedSources.add("eChemPortalAPI");// bad data
-		excludedSources.add("OChem");// bad data
-
-		creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
+//		List<String> excludedSources = new ArrayList<>();
+//		excludedSources.add("eChemPortalAPI");// bad data
+//		excludedSources.add("OChem");// bad data
+//		creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
+				
+		List<String> includedSources = new ArrayList<>();
+		includedSources.add(DevQsarConstants.sourceNameOChem_2024_04_03);
+		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
 
 //		creator.mapSourceChemicalsForProperty(listMappedParams);
 
@@ -1789,7 +2110,7 @@ public class DatasetCreatorScript {
 	public void createKM() {
 
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 
 		String propertyName = DevQsarConstants.KmHL;
 		List<String> sources = Arrays.asList("prod_chemprop", "OPERA2.9");
@@ -1816,7 +2137,7 @@ public class DatasetCreatorScript {
 				listMappingParams);
 
 		List<String> excludedSources = new ArrayList<>();
-		excludedSources.add("OPERA");//we have OPERA2.9
+		excludedSources.add("OPERA2.8");//we have OPERA2.9
 		excludedSources.add("PhysPropNCCT");//already have OPERA2.9
 
 		
@@ -1896,7 +2217,7 @@ public class DatasetCreatorScript {
 	public void createMP() {
 
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 		
 		String propertyName = DevQsarConstants.MELTING_POINT;
 
@@ -1936,7 +2257,7 @@ public class DatasetCreatorScript {
 
 		List<String> excludedSources = new ArrayList<>();
 
-		excludedSources.add("OPERA");// we are now using OPERA2.9
+		excludedSources.add("OPERA2.8");// we are now using OPERA2.9
 		excludedSources.add("LookChem");// OPERA2.9 has it when corroborated
 		excludedSources.add("PhysPropNCCT");//already have OPERA2.9
 
@@ -1970,6 +2291,139 @@ public class DatasetCreatorScript {
 		if(dataset!=null) addEntryForDatasetsInDashboard(dataset);
 
 	}
+	
+	
+	
+	public void createToxCast_TTR_Binding() {
+
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator.postToDB = true;
+		
+		String propertyName = DevQsarConstants.TTR_BINDING;
+		String set="training";
+		String listName="ToxCast_TTR_Binding";
+
+		List<BoundParameterValue> boundsParameterValues = null;
+		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
+
+		omitSalts=false;
+		
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
+
+		String datasetName = "TTR_Binding_"+set+"_remove_bad_max_conc";
+		System.out.println("datasetName="+datasetName);
+		String datasetDescription = propertyName+" "+set+" set (omit based on max_conc)";
+
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+
+		
+//		creator.createPropertyDataset(listMappedParams, false);
+		
+		Dataset datasetDB = creator.getDataset(listMappedParams);
+		if (datasetDB != null && DatasetCreator.postToDB) {
+			System.out.println("already have " + listMappedParams.datasetName + " in db");
+			return;
+		}
+
+		System.out.println("Selecting experimental property data for " + listMappedParams.propertyName + "...");
+		long t5 = System.currentTimeMillis();
+		List<PropertyValue> propertyValues = creator.getPropertyValues(listMappedParams,true,true);
+		long t6 = System.currentTimeMillis();
+		System.out.println("Selection time = " + (t6 - t5) / 1000.0 + " s");
+		System.out.println("Raw records:" + propertyValues.size());
+
+		updateTTR_Binding_PropertyValues(propertyValues,"training");
+		System.out.println("After updating property values:" + propertyValues.size());
+
+		
+//		System.out.println(Utilities.gson.toJson(propertyValues));
+
+		creator.convertPropertyValuesToDatapoints(propertyValues, listMappedParams, false);
+
+	}
+	
+	
+	public void createRatLC50_CoMPAIT() {
+
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator.postToDB = false;
+		
+		String unitsAbbrev=DevQsarConstants.LOG_PPM;
+		String unitsName=DevQsarConstants.getConstantNameByReflection(unitsAbbrev);
+		
+		String unitsContributorAbbrev=DevQsarConstants.PPM;
+		String unitsContributorName=DevQsarConstants.getConstantNameByReflection(unitsContributorAbbrev);
+		
+		String propertyName = DevQsarConstants.FOUR_HOUR_INHALATION_RAT_LC50;
+		String set="training";
+		String listName="4_hr_rat_inhalation_LC50_CoMPAIT";
+
+		creator.finalUnitsNameMap.put(propertyName, unitsName);
+		creator.contributorUnitsNameMap.put(propertyName, unitsContributorName);
+		
+		List<BoundParameterValue> boundsParameterValues = null;
+		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
+
+		omitSalts=true;
+		
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
+
+		String datasetName = propertyName+" in "+unitsAbbrev+"_CoMPAIT";
+		System.out.println("datasetName="+datasetName);
+		
+		String datasetDescription = datasetName;
+
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+
+		
+//		creator.createPropertyDataset(listMappedParams, false);
+		
+		Dataset datasetDB = creator.getDataset(listMappedParams);
+		if (datasetDB != null && DatasetCreator.postToDB) {
+			System.out.println("already have " + listMappedParams.datasetName + " in db");
+			return;
+		}
+
+		System.out.println("Selecting experimental property data for " + listMappedParams.propertyName + "...");
+		long t5 = System.currentTimeMillis();
+		List<PropertyValue> propertyValues = creator.getPropertyValues(listMappedParams,true,true);
+		long t6 = System.currentTimeMillis();
+		System.out.println("Selection time = " + (t6 - t5) / 1000.0 + " s");
+		System.out.println("Raw records:" + propertyValues.size());
+		
+		for(int i=0;i<propertyValues.size();i++) {
+			PropertyValue pv=propertyValues.get(i);
+			String abbrev=pv.getUnit().getAbbreviation();
+			if(!abbrev.equals(unitsAbbrev)) {
+				propertyValues.remove(i--);
+				continue;
+			} 
+		}
+		
+		System.out.println("After updating property values:" + propertyValues.size());
+//		System.out.println(Utilities.gson.toJson(propertyValues));
+		creator.convertPropertyValuesToDatapoints(propertyValues, listMappedParams, false);
+
+	}
+	
+	Object getParameterValue(PropertyValue propertyValue, String parameterName) {
+
+		for (ParameterValue pv:propertyValue.getParameterValues()) {
+			if(pv.getParameter().getName().equals(parameterName)) {
+				if(pv.getValuePointEstimate()!=null) return pv.getValuePointEstimate();
+				else if (pv.getValueText()!=null) return pv.getValueText();
+			}
+		}
+		return null;
+	}
+	
+	
 
 	/**
 	 * create melting point dataset from expprop records based on list registration
@@ -2048,19 +2502,53 @@ public class DatasetCreatorScript {
 
 	}
 	
+	
+	public void createMP_OChem() {
+
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator.postToDB = true;
+		
+		List<String> sources = Arrays.asList(DevQsarConstants.sourceNameOChem_2024_04_03);
+		ArrayList<String> listNameArray = getChemRegListNames2(sources);
+		if(listNameArray==null) {
+			return;
+		}
+
+		String propertyName = DevQsarConstants.MELTING_POINT;
+
+		BoundParameterValue PressureBound = new BoundParameterValue("Pressure", 740.0, 780.0, true);
+		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+		bounds.add(PressureBound);
+
+		BoundPropertyValue boundPV = new BoundPropertyValue(DevQsarConstants.MIN_MELTING_POINT_C,
+				DevQsarConstants.MAX_MELTING_POINT_C);
+
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, listNameArray, omitSalts, validateStructure, validateMedian, bounds, boundPV);
+
+		String datasetName = "MP "+DevQsarConstants.sourceNameOChem_2024_04_03;
+		String datasetDescription = "MP from OChem (retrieved on 4/3/2024)";
+
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+
+		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, sources);
+
+
+	}
+	
 	public void createFHM_96hr_LC50_Ecotox_modeling() {
 
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
-		creator.postToDB = false;//otherwise wont create the dataset
+		DatasetCreator.postToDB = false;//otherwise wont create the dataset
 		
 		String propertyName = DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
 		String propAbbrev=DevQsarConstants.getConstantNameByReflection(propertyName) ;
 		String sourceName="ECOTOX_2023_12_14";
 		String chemicalListName="exp_prop_"+sourceName;				
 		
-//		ArrayList<String> listNameArray = new ArrayList<String>();
-//		listNameArray.add("ExpProp_MP_WithChemProp_063022_1_to_40000");
 		
 		List<BoundParameterValue> boundsParameterValues = null;
 		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
@@ -2069,13 +2557,35 @@ public class DatasetCreatorScript {
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
 				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
 
-		
+
+		String typeAnimal="Fathead minnow";		
+		String datasetNameOriginal = "exp_prop_96HR_FHM_LC50_v1 modeling";
+
+//		excludeBasedOnMissingExposureType=false;
+//		excludeBasedOnPredictedWS=false;
+//		excludeBasedOnBaselineToxicity=false;
 //		String datasetName = "exp_prop_96HR_FHM_LC50_v1 modeling";
-//		String datasetDescription = "96HR_FHM_LC50 from "+sourceName;
+		
+//		excludeBasedOnMissingExposureType=true;
+//		excludeBasedOnPredictedWS=false;
+//		excludeBasedOnBaselineToxicity=false;
+//		String datasetName = "exp_prop_96HR_FHM_LC50_v2 modeling";
+				
+		excludeBasedOnMissingExposureType=true;
+		excludeBasedOnPredictedWS=true;
+		excludeBasedOnBaselineToxicity=false;
+		String datasetName = "exp_prop_96HR_FHM_LC50_v3 modeling";
 
-		String datasetName = "exp_prop_96HR_FHM_LC50_v2 modeling";
-		String datasetDescription = "96HR_FHM_LC50 from "+sourceName+" (omit property values that exceed predicted water solubility from XGB model)";
+//		excludeBasedOnMissingExposureType=true;
+//		excludeBasedOnPredictedWS=true;
+//		excludeBasedOnBaselineToxicity=true;
+//		String datasetName = "exp_prop_96HR_FHM_LC50_v4 modeling";
+		
 
+		String datasetDescription = "96HR_FHM_LC50 from "+sourceName+
+				", excludeBasedOnMissingExposureType="+excludeBasedOnMissingExposureType+
+				", excludeBasedOnPredictedWS="+excludeBasedOnPredictedWS+
+				", excludeBasedOnBaselineToxicity="+excludeBasedOnBaselineToxicity;
 		
 		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
 				listMappingParams);
@@ -2083,9 +2593,73 @@ public class DatasetCreatorScript {
 		List<String> includedSources = new ArrayList<>();
 		includedSources.add(sourceName);
 		
-		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
+//		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
 
+		creator.createPropertyDatasetWithSpecifiedSources(datasetNameOriginal,listMappedParams, false, includedSources, excludeBasedOnPredictedWS, excludeBasedOnBaselineToxicity,excludeBasedOnMissingExposureType,typeAnimal );
+		
 	}
+	
+	
+	public void createBG_96hr_LC50_Ecotox_modeling() {
+
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+
+		DatasetCreator.postToDB = true;//otherwise wont create the dataset
+		
+		String propertyName = DevQsarConstants.NINETY_SIX_HOUR_BLUEGILL_LC50;
+		String propAbbrev=DevQsarConstants.getConstantNameByReflection(propertyName) ;
+		String sourceName="ECOTOX_2023_12_14";
+		String chemicalListName="exp_prop_"+sourceName;				
+				
+		List<BoundParameterValue> boundsParameterValues = null;
+		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
+
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, chemicalListName, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
+
+
+		String typeAnimal="Fish";		
+		String datasetNameOriginal = "exp_prop_96HR_BG_LC50_v1 modeling";
+
+//		excludeBasedOnMissingExposureType=false;
+//		excludeBasedOnPredictedWS=false;
+//		excludeBasedOnBaselineToxicity=false;
+//		String datasetName = "exp_prop_96HR_BG_LC50_v1 modeling";
+		
+//		excludeBasedOnMissingExposureType=true;
+//		excludeBasedOnPredictedWS=false;
+//		excludeBasedOnBaselineToxicity=false;
+//		String datasetName = "exp_prop_96HR_BG_LC50_v2 modeling";
+//				
+//		excludeBasedOnMissingExposureType=true;
+//		excludeBasedOnPredictedWS=true;
+//		excludeBasedOnBaselineToxicity=false;
+//		String datasetName = "exp_prop_96HR_BG_LC50_v3 modeling";
+//
+		excludeBasedOnMissingExposureType=true;
+		excludeBasedOnPredictedWS=true;
+		excludeBasedOnBaselineToxicity=true;
+		String datasetName = "exp_prop_96HR_BG_LC50_v4 modeling";
+		
+		String datasetDescription = "96HR_FHM_LC50 from "+sourceName+
+				", excludeBasedOnMissingExposureType="+excludeBasedOnMissingExposureType+
+				", excludeBasedOnPredictedWS="+excludeBasedOnPredictedWS+
+				", excludeBasedOnBaselineToxicity="+excludeBasedOnBaselineToxicity;
+		
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+
+		List<String> includedSources = new ArrayList<>();
+		includedSources.add(sourceName);
+		
+//		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
+
+		creator.createPropertyDatasetWithSpecifiedSources(datasetNameOriginal,listMappedParams, false, includedSources, excludeBasedOnPredictedWS, excludeBasedOnBaselineToxicity,excludeBasedOnMissingExposureType,typeAnimal );
+		
+	}
+	
+	
 
 	/**
 	 * creates Boiling point dataset using records from chemreg with CAS
@@ -2166,22 +2740,22 @@ public class DatasetCreatorScript {
 
 	}
 
-	public void createBCF() {
-		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-
-		String propertyName = DevQsarConstants.LOG_BCF_FISH_WHOLEBODY;
-		String listName = "ExpProp_bcfwbf_072222";
-
-		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, false, true,
-				false, true, true, false, false, null, true, validateStructure, validateMedian, null, null);
-		String datasetName = "ExpProp BCF Fish_TMM";
-		String datasetDescription = "BCF values for fish with whole body tissue (measured ZEROS OMITTED)";
-
-		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
-				listMappingParams);
-		creator.createPropertyDataset(listMappedParams, false);
-
-	}
+//	public void createBCF() {
+//		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+//
+//		String propertyName = DevQsarConstants.LOG_BCF_FISH_WHOLEBODY;
+//		String listName = "ExpProp_bcfwbf_072222";
+//
+//		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, listName, false, true,
+//				false, true, true, false, false, null, true, validateStructure, validateMedian, null, null);
+//		String datasetName = "ExpProp BCF Fish_TMM";
+//		String datasetDescription = "BCF values for fish with whole body tissue (measured ZEROS OMITTED)";
+//
+//		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+//				listMappingParams);
+//		creator.createPropertyDataset(listMappedParams, false);
+//
+//	}
 
 	ArrayList<String> getChemRegListNames(List<String> sources) {
 
@@ -2211,6 +2785,42 @@ public class DatasetCreatorScript {
 
 		return listNames;
 	}
+	
+	
+	ArrayList<String> getChemRegListNames2(List<String> sources) {
+
+		ArrayList<String> listNames = new ArrayList<String>();
+
+		for (String source : sources) {
+
+			if (source.equals(DevQsarConstants.sourceNameOChem_2024_04_03)) {
+				for (int i = 1; i <= 13; i++) {
+					listNames.add("exp_prop_2024_04_03_from_OChem_40000_" + i);
+				}
+			
+			} else {
+				listNames.add("exp_prop_2024_02_02_from_" + source);
+			}
+		}
+
+		boolean missing=false;
+		
+		for (String listName : listNames) {
+			String sql = "select id from chemical_lists cl where cl.name='" + listName + "';";
+//			System.out.println(sql);
+			String id = SqlUtilities.runSQL(SqlUtilities.getConnectionDSSTOX(), sql);
+//			System.out.println(listName+"\t"+id);
+
+			if (id == null) {
+				System.out.println("Missing chemreg list for listName=" + listName);
+				missing=true;
+			}
+		}
+
+		if(missing) return null;
+		
+		return listNames;
+	}
 
 	/**
 	 * create boiling point dataset based on chemreg lists
@@ -2218,7 +2828,7 @@ public class DatasetCreatorScript {
 	public void createBP() {
 
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		creator.postToDB = true;
+		DatasetCreator.postToDB = true;
 		
 		String propertyName = DevQsarConstants.BOILING_POINT;
 
@@ -2255,7 +2865,7 @@ public class DatasetCreatorScript {
 
 		List<String> excludedSources = new ArrayList<>();
 
-		excludedSources.add("OPERA");// we are now using OPERA2.9
+		excludedSources.add("OPERA2.8");// we are now using OPERA2.9
 		excludedSources.add("LookChem");// OPERA2.9 has it when corroborated
 		excludedSources.add("PhysPropNCCT");//already have OPERA2.9
 //		excludedSources.add("ANGUS Chemical Company (Chemical company)");// chemical company
@@ -2282,6 +2892,7 @@ public class DatasetCreatorScript {
 //		excludedSources.add("SLI Technologies");// chemical company
 //		excludedSources.add("Helix Molecules");// chemical company
 
+
 		Dataset dataset=creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
 		if(dataset!=null) addEntryForDatasetsInDashboard(dataset);
 
@@ -2291,29 +2902,20 @@ public class DatasetCreatorScript {
 	 * create boiling point dataset based on chemreg lists
 	 */
 	public void createBP_modeling() {
-
-		ArrayList<String> listNameArray = new ArrayList<String>();
-		listNameArray.add("ExpProp_BP_072522_Import_1_to_20000");
-		listNameArray.add("ExpProp_BP_072522_Import_20001_to_40000");
-		listNameArray.add("ExpProp_BP_072522_Import_40001_to_60000");
-		listNameArray.add("ExpProp_BP_072522_Import_60001_to_80000");
-		listNameArray.add("ExpProp_BP_072522_Import_80001_to_100000_2");
-		listNameArray.add("ExpProp_BP_072522_Import_100001_to_120000");
-		listNameArray.add("ExpProp_BP_072522_Import_120001_to_140000");
-		listNameArray.add("ExpProp_BP_072522_Import_140001_to_160000_2");
-		listNameArray.add("ExpProp_BP_072522_Import_160001_to_180000");
-		listNameArray.add("ExpProp_BP_072522_Import_180001_to_200000");
-		listNameArray.add("ExpProp_BP_072522_Import_200001_to_220000");
-		listNameArray.add("ExpProp_BP_072522_Import_220001_to_240000");
-		listNameArray.add("ExpProp_BP_072522_Import_240001_to_260000");
-		listNameArray.add("ExpProp_BP_072522_Import_260001_to_280000");
-		listNameArray.add("ExpProp_BP_072522_Import_280001_to_300000");
-		listNameArray.add("ExpProp_BP_072522_Import_300001_to_320000");
-		listNameArray.add("ExpProp_BP_072522_Import_320001_to_340000");
-		listNameArray.add("ExpProp_BP_072522_Import_340001_to_360000");
-		listNameArray.add("ExpProp_BP_072522_Import_360001_to_363160");
-
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator.postToDB = true;
+		
+//		List<String> sources = Arrays.asList(DevQsarConstants.sourceNameOChem_2024_04_03);
+		
+		List<String> sources = Arrays.asList(DevQsarConstants.sourceNameOChem_2024_04_03,"OPERA2.8",
+				"prod_chemprop","ICF", "ThreeM");
+
+		ArrayList<String> listNameArray = getChemRegListNames2(sources);
+		
+		if(listNameArray==null) {
+			return;
+		}
+		
 
 		String propertyName = DevQsarConstants.BOILING_POINT;
 
@@ -2328,22 +2930,32 @@ public class DatasetCreatorScript {
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
 				omitUvcbNames, listNameArray, omitSalts, validateStructure, validateMedian, bounds, boundPropertyValue);
 
+		
+//		listMappingParams.createChemRegMapOutstandingSourceChemicals=true;
+		
 //		String datasetName = "BP v1";
 //		String datasetName = "BP v1 res_qsar";
-		String datasetName = "BP v1 modeling";
+//		String datasetName = "BP v1 modeling";
+//		String datasetName = "BP "+DevQsarConstants.sourceNameOChem_2024_04_03;
+		String datasetName = "BP v2 modeling";
 
-		String datasetDescription = "BP from exp_prop and chemprop for modeling";
+		String datasetDescription = "BP from exp_prop and chemprop for modeling, updated OChem";
 
 		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
 				listMappingParams);
 
 		List<String> excludedSources = new ArrayList<>();
+		excludedSources.add("OPERA2.9");//*** Better to use 2.8 because 2.9 has duplicate data
+		excludedSources.add("PhysPropNCCT");//we are using OPERA2.8 (which is derived from PhysPropNCCT)
+		excludedSources.add("OChem");//Have newer version
+		
 		excludedSources.add("eChemPortalAPI");// bad data
 		excludedSources.add("PubChem");// bad data
+		excludedSources.add("PubChem_2024_03_20");// bad data
 		excludedSources.add("Oxford University Chemical Safety Data (No longer updated)");// bad data
 		excludedSources.add("OFMPub");// bad data
-
 		excludedSources.add("LookChem");// chemical company, very large set, MAE 1.5x opera
+		
 		excludedSources.add("Alfa Aesar (Chemical company)");// chemical company
 		excludedSources.add("Biosynth (Chemical company)");// chemical company
 		excludedSources.add("SynQuest Labs (Chemical company)");// chemical company
@@ -2360,8 +2972,48 @@ public class DatasetCreatorScript {
 		excludedSources.add("MolMall");// chemical company
 		excludedSources.add("SLI Technologies");// chemical company
 		excludedSources.add("Helix Molecules");// chemical company
-
 		creator.createPropertyDatasetExcludeSources(listMappedParams, false, excludedSources);
+		
+//		List<String> includedSources = new ArrayList<>();
+//		includedSources.add(DevQsarConstants.sourceNameOChem_2024_04_03);
+//		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
+
+	}
+	
+	/**
+	 * create boiling point dataset based on chemreg lists
+	 */
+	public void createBP_OChem() {
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator.postToDB = true;
+		
+		List<String> sources = Arrays.asList(DevQsarConstants.sourceNameOChem_2024_04_03);
+		ArrayList<String> listNameArray = getChemRegListNames2(sources);
+		if(listNameArray==null) {
+			return;
+		}
+		
+		String propertyName = DevQsarConstants.BOILING_POINT;
+
+		BoundParameterValue PressureBound = new BoundParameterValue("Pressure", 740.0, 780.0, true);
+		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
+		bounds.add(PressureBound);
+
+		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(DevQsarConstants.MIN_BOILING_POINT_C,
+				DevQsarConstants.MAX_BOILING_POINT_C);
+
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, listNameArray, omitSalts, validateStructure, validateMedian, bounds, boundPropertyValue);
+
+		
+//		listMappingParams.createChemRegMapOutstandingSourceChemicals=true;
+		
+		String datasetName = "BP "+DevQsarConstants.sourceNameOChem_2024_04_03;
+		String datasetDescription = "BP from OChem (retrieved on 4/3/2024)";
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, sources);
 
 	}
 

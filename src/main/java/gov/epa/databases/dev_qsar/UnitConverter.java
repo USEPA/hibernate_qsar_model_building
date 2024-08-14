@@ -46,7 +46,7 @@ public class UnitConverter {
 			return value;
 		}
 		
-		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY) || propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)) {
+		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY) || propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50) || propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_BLUEGILL_LC50)) {
 			return handle_WATER_SOLUBILITY(propertyName, value, finalUnitName, chemicalId, dsstoxRecord, unitName);
 		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
 			return handle_HENRYS_LAW_CONSTANT(propertyName,value, finalUnitName, chemicalId, unitName);
@@ -60,10 +60,14 @@ public class UnitConverter {
 			return handle_OH(propertyName,value, finalUnitName, chemicalId, unitName);
 		} else if (propertyName.equals(DevQsarConstants.CLINT)) {
 			return handle_CLINT(propertyName,value, finalUnitName, chemicalId, unitName);
-		} else if (propertyName.equals(DevQsarConstants.FUB)) {
-			return handle_FUB(propertyName,value, finalUnitName, chemicalId, unitName);
+
+		} else if (propertyName.equals(DevQsarConstants.FUB) || propertyName.equals(DevQsarConstants.TTR_BINDING)) {
+			return handle_dimensionless(propertyName,value, finalUnitName, chemicalId, unitName);
+		
 		} else if (propertyName.equals(DevQsarConstants.RBIODEG)) {
 			return handle_binary(propertyName,value, finalUnitName, chemicalId, unitName);			
+		} else if (propertyName.equals(DevQsarConstants.FOUR_HOUR_INHALATION_RAT_LC50)) {
+			return handle_inhalation_LC50(propertyName,value, finalUnitName, chemicalId, unitName);
 		} else {			
 			System.out.println(chemicalId + ": Undefined property value conversion for property: " + propertyName+", "+unitName+" to "+finalUnitName);
 			return null;
@@ -72,12 +76,19 @@ public class UnitConverter {
 
 	
 
-	private static Double handle_FUB(String propertyName, double value, String finalUnitName, String chemicalId,
-			String unitName) {
-		// TODO Auto-generated method stub
-		if(finalUnitName.equals("DIMENSIONLESS") && unitName.equals("DIMENSIONLESS")) {
-			return value;
-		}
+	private static Double handle_inhalation_LC50(String propertyName, double value, String finalUnitName,
+			String chemicalId, String unitName) {
+		
+		if (finalUnitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.MG_L))) {
+			if(unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.LOG_MG_L))) {
+				return Math.pow(10, value);
+			}
+		} else	if (finalUnitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.PPM))) {
+			if(unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.LOG_PPM))) {
+				return Math.pow(10, value);
+			}
+		} 
+		
 		getErrorMessage(propertyName,finalUnitName, chemicalId, unitName);
 		return null;
 
@@ -104,6 +115,16 @@ public class UnitConverter {
 			String unitName) {
 		
 		if(finalUnitName.equals("BINARY") && unitName.equals("BINARY")) {
+			return value;
+		}
+		getErrorMessage(propertyName,finalUnitName, chemicalId, unitName);
+		return null;
+	}
+	
+	private static Double handle_dimensionless(String propertyName, double value, String finalUnitName, String chemicalId,
+			String unitName) {
+		
+		if(finalUnitName.equals("DIMENSIONLESS") && unitName.equals("DIMENSIONLESS")) {
 			return value;
 		}
 		getErrorMessage(propertyName,finalUnitName, chemicalId, unitName);
@@ -226,6 +247,7 @@ public class UnitConverter {
 					System.out.println(chemicalId + ": value=0 for "+dsstoxRecord.dsstoxSubstanceId+", so cant convert to "+finalUnitName);
 					return null;
 				} else if (dsstoxRecord.molWeight==null) {
+					//Will show up in discarded records spreadsheets as "Unit conversion failed" 
 					System.out.println(chemicalId + ": missing MW for "+dsstoxRecord.dsstoxSubstanceId+", so cant convert to "+finalUnitName);
 				}
 			} 
