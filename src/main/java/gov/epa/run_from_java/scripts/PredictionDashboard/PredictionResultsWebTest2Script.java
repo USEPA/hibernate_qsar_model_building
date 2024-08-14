@@ -1,6 +1,6 @@
 package gov.epa.run_from_java.scripts.PredictionDashboard;
 
-import java.io.File;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -61,13 +61,50 @@ public class PredictionResultsWebTest2Script {
 	public static void main(String[] args) {
 //		r.runChemical("DTXSID3039242");
 		PredictionResultsWebTest2Script script = new PredictionResultsWebTest2Script();
-		 script.runPredictionSnapshot();
+//		 script.runPredictionSnapshot();
 //		WebTEST2PredictionResponse predictSingleChemical = script.valery.predictSingleChemical("Br[Ga](Br)Br", "31", "2");
+		
+		script.sdfToSmilesFile();
+	}
+	
+	
+	void sdfToSmilesFile() {
+//		String folderSrc="C:\\Users\\cramslan\\Documents\\code\\java\\hibernate_qsar_modelbuilding\\data\\dsstox\\sdf\\";
+		String folderSrc="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\hibernate_qsar_model_building\\data\\dsstox\\sdf\\";
+		String fileName="snapshot_compounds1";
+		String fileNameSDF = fileName + ".sdf";
+		String filepathSDF=folderSrc+fileNameSDF;
+		String filePathDest=filepathSDF.replace(".sdf", ".smi");
+
+		AtomContainerSet acs= dpu.readSDFV3000(filepathSDF);
+		
+		try {
+			FileWriter fw=new FileWriter(filePathDest);
+
+			for(int i=0;i<acs.getAtomContainerCount();i++) {
+				AtomContainer ac=(AtomContainer)acs.getAtomContainer(i);
+				
+				if (ac.getProperty("smiles")==null) {
+					System.out.println("missing smiles for "+ac.getProperty("DTXCID"));
+					continue;
+				}
+				fw.write(ac.getProperty("smiles")+"\t"+ac.getProperty("DTXCID")+"\n");
+				
+			}
+			fw.flush();
+			fw.close();
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+
 	}
 	
 	private void runPredictionSnapshot() {
 		int maxCount=20;//number of chemicals to run
-		boolean skipMissingSID=false;//skip entries without an SDF
+		boolean skipMissingSID=false;//skip entries without an SID
 		
 //		String folderSrc="C:\\Users\\cramslan\\Documents\\code\\java\\hibernate_qsar_modelbuilding\\data\\dsstox\\sdf\\";
 		String folderSrc="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\hibernate_qsar_model_building\\data\\dsstox\\sdf\\";
@@ -83,7 +120,7 @@ public class PredictionResultsWebTest2Script {
 		
 		DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
 		DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
-		Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot);
+		Hashtable<String,Long> htCIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot,"dtxcid");
 
 		
 		//31 WS, 44 LLNA
@@ -244,7 +281,7 @@ public class PredictionResultsWebTest2Script {
 			if (dtxsid == null) {
 				dtxsid = "N/A";
 			}
-			Boolean isSalt = isSalt(ac);
+			Boolean isSalt = DashboardPredictionUtilities.isSalt(ac);
 			System.out.println(isSalt);
 			System.out.println("***"+count+"\t"+smiles);
 			
@@ -302,10 +339,6 @@ public class PredictionResultsWebTest2Script {
 	
 	
 	
-	private static boolean isSalt(AtomContainer ac) {
-		AtomContainerSet moleculeSet = (AtomContainerSet) ConnectivityChecker.partitionIntoMolecules(ac);
-		return (moleculeSet.getAtomContainerCount() > 2);
-	}
 
 }
 	
