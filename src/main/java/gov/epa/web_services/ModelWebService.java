@@ -32,13 +32,14 @@ public class ModelWebService extends WebService {
 		super(server, port);
 	}
 
-	public HttpResponse<byte[]> callTrain(String trainingSet, Boolean removeLogDescriptors, String qsarMethod, String modelId,
+	public HttpResponse<byte[]> callTrain(String trainingSet, String predictionSet,Boolean removeLogDescriptors, String qsarMethod, String modelId,
 			boolean use_pmml,boolean include_standardization_in_pmml) {
 		HttpResponse<byte[]> response = Unirest.post(address+"/models/{qsar_method}/train")
 				.routeParam("qsar_method", qsarMethod)
 				.field("use_pmml", use_pmml+"")
 				.field("include_standardization_in_pmml", include_standardization_in_pmml+"")
 				.field("training_tsv", trainingSet)
+				.field("prediction_tsv", predictionSet)
 				.field("num_jobs", String.valueOf(num_jobs))
 				.field("model_id", modelId)
 				.field("remove_log_p", String.valueOf(removeLogDescriptors))
@@ -74,13 +75,14 @@ public class ModelWebService extends WebService {
 	}
 
 	
-	public HttpResponse<byte[]> callTrainWithPreselectedDescriptors(String trainingSet, Boolean removeLogDescriptors, 
+	public HttpResponse<byte[]> callTrainWithPreselectedDescriptors(String trainingSet,String predictionSet, Boolean removeLogDescriptors, 
 			String qsarMethod, String modelId, String embeddingTsv,boolean use_pmml,boolean include_standardization_in_pmml) {
 		HttpResponse<byte[]> response = Unirest.post(address+"/models/{qsar_method}/train")
 				.routeParam("qsar_method", qsarMethod)
 				.field("use_pmml", use_pmml+"")
 				.field("include_standardization_in_pmml", include_standardization_in_pmml+"")
 				.field("training_tsv", trainingSet)
+				.field("prediction_tsv", predictionSet)
 				.field("model_id", modelId)
 				.field("num_jobs", String.valueOf(num_jobs))
 				.field("embedding_tsv", embeddingTsv)

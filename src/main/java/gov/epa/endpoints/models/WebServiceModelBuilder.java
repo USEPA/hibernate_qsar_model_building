@@ -431,12 +431,12 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		if (descriptorEmbedding != null) {
 			bytes = modelWebService
-					.callTrainWithPreselectedDescriptors(data.trainingSetInstances, data.removeLogP_Descriptors,
+					.callTrainWithPreselectedDescriptors(data.trainingSetInstances,data.predictionSetInstances, data.removeLogP_Descriptors,
 							methodName, strModelId, descriptorEmbedding.getEmbeddingTsv(), use_pmml, include_standardization_in_pmml)
 					.getBody();
 		} else {
 			bytes = modelWebService
-					.callTrain(data.trainingSetInstances, data.removeLogP_Descriptors, methodName, strModelId, use_pmml,include_standardization_in_pmml)
+					.callTrain(data.trainingSetInstances,data.predictionSetInstances, data.removeLogP_Descriptors, methodName, strModelId, use_pmml,include_standardization_in_pmml)
 					.getBody();
 		}
 		
