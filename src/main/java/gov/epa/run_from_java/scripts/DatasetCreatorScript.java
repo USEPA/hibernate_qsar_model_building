@@ -36,6 +36,7 @@ import gov.epa.endpoints.datasets.DatasetParams;
 import gov.epa.endpoints.datasets.ExplainedResponse;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
 import gov.epa.endpoints.datasets.dsstox_mapping.DsstoxMapper;
+import gov.epa.run_from_java.data_loading.ChangeKeptPropertyValues;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
@@ -298,7 +299,9 @@ public class DatasetCreatorScript {
 //		ds.deleteSQL(304L);
 		
 //		ds.deleteSQL(384L);
-		ds.deleteSQL(392L);
+//		ds.deleteSQL(397L);
+		
+		for(int i=402;i<=405;i++) ds.deleteSQL(i);
 		
 		
 		
@@ -359,20 +362,20 @@ public class DatasetCreatorScript {
 //	}
 //		if(true) return;
 
-		dcs.createFHM_96hr_LC50_Ecotox_modeling();
+//		dcs.createModelingDatasets();
+
+//		dcs.createFHM_96hr_LC50_Ecotox_modeling();
+//		dcs.createBG_96hr_LC50_Ecotox_modeling();
 //		dcs.createScud_96hr_LC50_Ecotox_modeling();
-		dcs.createRT_96hr_LC50_Ecotox_modeling();
+//		dcs.createRT_96hr_LC50_Ecotox_modeling();
+//		dcs.createDM_48hr_LC50_Ecotox_modeling();
+		dcs.createHLC_modeling();
 
 //		dcs.createDatasetsForDashboard();
 
-		
-//		dcs.createModelingDatasets();
 //		dcs.createFishToxModels();
 //		dcs.createBiodegDatasets();
 //		
-//		dcs.createFHM_96hr_LC50_Ecotox_modeling();
-		dcs.createBG_96hr_LC50_Ecotox_modeling();
-
 //		dcs.getAutoMappingsFromChemRegList();
 		
 //		dcs.getDatasetStats();//Get record counts for the papers
@@ -382,6 +385,7 @@ public class DatasetCreatorScript {
 
 
 	}
+
 
 	void testStandardize() {
 
@@ -1879,6 +1883,10 @@ public class DatasetCreatorScript {
 
 	}
 
+	
+	/**
+	 * When determining logKow (octanol-water partition coefficient), the most relevant pH value to use is typically pH 7 as it represents a neutral condition and allows for a more accurate comparison of the partitioning behavior of ionizable compounds under environmentally relevant conditions; however, for specific cases where the compound's pKa is very low or high, adjusting the pH to better reflect the dominant species might be necessary.
+	 */
 	public void createLogP_modeling() {
 		// comment for diff
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
@@ -2043,7 +2051,7 @@ public class DatasetCreatorScript {
 
 	public void createHLC_modeling() {
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-		DatasetCreator.postToDB = false;
+		DatasetCreator.postToDB = true;
 
 		String propertyName = DevQsarConstants.HENRYS_LAW_CONSTANT;
 		
@@ -2585,15 +2593,15 @@ public class DatasetCreatorScript {
 //		excludeBasedOnBaselineToxicity=false;
 //		String datasetName = "exp_prop_96HR_FHM_LC50_v2 modeling";
 				
-		excludeBasedOnMissingExposureType=true;
-		excludeBasedOnPredictedWS=true;
-		excludeBasedOnBaselineToxicity=false;
-		String datasetName = "exp_prop_96HR_FHM_LC50_v3 modeling";
-
 //		excludeBasedOnMissingExposureType=true;
 //		excludeBasedOnPredictedWS=true;
-//		excludeBasedOnBaselineToxicity=true;
-//		String datasetName = "exp_prop_96HR_FHM_LC50_v4 modeling";
+//		excludeBasedOnBaselineToxicity=false;
+//		String datasetName = "exp_prop_96HR_FHM_LC50_v3 modeling";
+
+		excludeBasedOnMissingExposureType=true;
+		excludeBasedOnPredictedWS=true;
+		excludeBasedOnBaselineToxicity=true;
+		String datasetName = "exp_prop_96HR_FHM_LC50_v4 modeling";
 		
 
 		String datasetDescription = "96HR_FHM_LC50 from "+sourceName+
@@ -2618,7 +2626,7 @@ public class DatasetCreatorScript {
 
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
 
-		DatasetCreator.postToDB = true;//otherwise wont create the dataset
+		DatasetCreator.postToDB = false;//otherwise wont create the dataset
 		
 		String propertyName = DevQsarConstants.NINETY_SIX_HOUR_BLUEGILL_LC50;
 		String propAbbrev=DevQsarConstants.getConstantNameByReflection(propertyName) ;
@@ -2645,12 +2653,12 @@ public class DatasetCreatorScript {
 //		excludeBasedOnPredictedWS=false;
 //		excludeBasedOnBaselineToxicity=false;
 //		String datasetName = "exp_prop_96HR_BG_LC50_v2 modeling";
-//				
+				
 //		excludeBasedOnMissingExposureType=true;
 //		excludeBasedOnPredictedWS=true;
 //		excludeBasedOnBaselineToxicity=false;
 //		String datasetName = "exp_prop_96HR_BG_LC50_v3 modeling";
-//
+
 		excludeBasedOnMissingExposureType=true;
 		excludeBasedOnPredictedWS=true;
 		excludeBasedOnBaselineToxicity=true;
@@ -2673,13 +2681,22 @@ public class DatasetCreatorScript {
 		
 	}
 	
-	public void createRT_96hr_LC50_Ecotox_modeling() {
+	public void createDM_48hr_LC50_Ecotox_modeling() {
 
-		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "lbatts");
 
 		creator.postToDB = true;//otherwise wont create the dataset
 		
-		String propertyName = DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50;
+//		int duration=96;
+//		String animalAbbrev="RT";
+//		String propertyName = DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50;
+//		String typeAnimal=ChangeKeptPropertyValues.Fish;
+		
+		int duration=48;
+		String animalAbbrev="DM";
+		String propertyName = DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50;
+		String typeAnimal=ChangeKeptPropertyValues.Daphnid;
+
 		String propAbbrev=DevQsarConstants.getConstantNameByReflection(propertyName) ;
 		String sourceName="ECOTOX_2023_12_14";
 		String chemicalListName="exp_prop_"+sourceName;				
@@ -2695,12 +2712,43 @@ public class DatasetCreatorScript {
 				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
 
 		
-//		String datasetName = "exp_prop_96HR_FHM_LC50_v1 modeling";
-//		String datasetDescription = "96HR_FHM_LC50 from "+sourceName;
+		
+		String datasetNameOriginal = "exp_prop_"+duration+"HR_"+animalAbbrev+"_LC50_v1 modeling";
 
-		String datasetName = "exp_prop_96HR_RT_LC50_v1 modeling";
-		String datasetDescription = "96HR_RT_LC50 from "+sourceName+" (omit property values that exceed predicted water solubility from XGB model)";
+		//*********************************************************************
 
+//		excludeBasedOnMissingExposureType=false;
+//		excludeBasedOnPredictedWS=false;
+//		excludeBasedOnBaselineToxicity=false;
+//		String datasetName = "exp_prop_"+duration+"HR_"+animalAbbrev+"_LC50_v1 modeling";
+		
+		//*********************************************************************
+	
+//		excludeBasedOnMissingExposureType=true;
+//		excludeBasedOnPredictedWS=false;
+//		excludeBasedOnBaselineToxicity=false;
+//		String datasetName = "exp_prop_"+duration+"HR_"+animalAbbrev+"_LC50_v2 modeling";
+		
+		//*********************************************************************
+		
+//		excludeBasedOnMissingExposureType=true;
+//		excludeBasedOnPredictedWS=true;
+//		excludeBasedOnBaselineToxicity=false;
+//		String datasetName = "exp_prop_"+duration+"HR_"+animalAbbrev+"_LC50_v3 modeling";
+
+		//*********************************************************************
+
+		excludeBasedOnMissingExposureType=true;
+		excludeBasedOnPredictedWS=true;
+		excludeBasedOnBaselineToxicity=true;
+		String datasetName = "exp_prop_"+duration+"HR_"+animalAbbrev+"_LC50_v4 modeling";
+
+		//*********************************************************************
+
+		String datasetDescription = duration+"HR_"+animalAbbrev+"_LC50 from "+sourceName+
+				", excludeBasedOnMissingExposureType="+excludeBasedOnMissingExposureType+
+				", excludeBasedOnPredictedWS="+excludeBasedOnPredictedWS+
+				", excludeBasedOnBaselineToxicity="+excludeBasedOnBaselineToxicity;
 		
 		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
 				listMappingParams);
@@ -2708,7 +2756,9 @@ public class DatasetCreatorScript {
 		List<String> includedSources = new ArrayList<>();
 		includedSources.add(sourceName);
 		
-		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
+//		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
+
+		creator.createPropertyDatasetWithSpecifiedSources(datasetNameOriginal,listMappedParams, false, includedSources, excludeBasedOnPredictedWS, excludeBasedOnBaselineToxicity,excludeBasedOnMissingExposureType,typeAnimal );
 
 	}
 	/**

@@ -163,7 +163,7 @@ public class ModelData {
 				String instance=generateInstance(id, qsar_property_value, descriptors);
 				
 				if (instance==null) {
-					System.out.println(id+"\tnull instance");
+					System.out.println(id+"\tnull instance\tdatasetName="+datasetName+"\tdescriptorSetName="+descriptorSetName);
 					continue;
 				}
 
@@ -544,7 +544,7 @@ public class ModelData {
 //		if (valuesTsv.toLowerCase().contains("infinity")) return null;
 //		if (valuesTsv.toLowerCase().contains("∞")) return null;
 		if (valuesTsv.toLowerCase().contains("error")) {
-			System.out.println(smiles+"\t"+valuesTsv);
+			System.out.println("error in tsv\t"+smiles+"\t"+valuesTsv);
 			return null;
 		}
 		return smiles + "\t" + qsar_property_value+ "\t" + valuesTsv + "\r\n";

@@ -358,17 +358,18 @@ public class DatasetFileWriter {
 		List<String>datasetNames=new ArrayList<>();
 		datasetNames.add("HLC from exp_prop and chemprop");
 //		datasetNames.add("ExpProp BCF Fish_TMM");
-//		datasetNames.add("WS from exp_prop and chemprop");
-//		datasetNames.add("VP from exp_prop and chemprop");
-//		datasetNames.add("LogP from exp_prop and chemprop");
-//		datasetNames.add("MP from exp_prop and chemprop");
-//		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("WS from exp_prop and chemprop");
+		datasetNames.add("VP from exp_prop and chemprop");
+		datasetNames.add("LogP from exp_prop and chemprop");
+		datasetNames.add("MP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop");
 		
 		String server="https://ccte-cced.epa.gov/";
 		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
 
 		String splittingName="RND_REPRESENTATIVE";
 		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\datasets\\";
+//		String folderMain="C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 Python\\pf_python_modelbuilding\\datasets_exp_prop\\";
 
 		for (String datasetName:datasetNames) {
 			System.out.println("writing dataset tsvs for "+datasetName);
@@ -486,15 +487,16 @@ public class DatasetFileWriter {
 		//**********************************************************
 
 //		String outputFolderPath="data/dev_qsar/dataset_files/";
-//		String descriptorSetName="WebTEST-default";
-//		String datasetName="HLC v1 modeling";
-//		String outputFolderPath="C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 Python\\pf_python_modelbuilding\\datasets\\"+datasetName;
-//		writer.writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE",datasetName,outputFolderPath,false,true);
+		String descriptorSetName="WebTEST-default";
+		String datasetName="LogP v1 modeling";
+		String outputFolderPath="C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 Python\\pf_python_modelbuilding\\datasets\\"+datasetName;
+		writer.writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE",datasetName,outputFolderPath,false,true);
 		
 		
 		//		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingPFASOnly,"Standard Water solubility from exp_prop",outputFolderPath);
 		
-		writer.createAquaticToxFiles();
+//		writer.createAquaticToxFiles();
+//		writer.write_exp_prop_datasets();
 		
 		
 //		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingPFASOnly,"Standard Water solubility from exp_prop",outputFolderPath);
@@ -524,13 +526,27 @@ public class DatasetFileWriter {
 	}
 
 	private void createAquaticToxFiles() {
-		String descriptorSetName="WebTEST-default";
-		for (int i=1;i<=4;i++) {
-//			String datasetName="exp_prop_96HR_FHM_LC50_v"+i+" modeling";
-			String datasetName="exp_prop_96HR_BG_LC50_v"+i+" modeling";
-			String outputFolderPath="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_exp_prop\\"+datasetName;
+//		String descriptorSetName="WebTEST-default";
+		
+		String[] sciDataExpertsDescriptorSetNames = {
+				"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
+		};
 
-			writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE",datasetName,outputFolderPath,false,true);
+		for (String descriptorSetName : sciDataExpertsDescriptorSetNames) {
+			for (int i = 1; i <= 4; i++) {
+//				String datasetName="exp_prop_96HR_FHM_LC50_v"+i+" modeling";
+				String datasetName="exp_prop_96HR_BG_LC50_v"+i+" modeling";
+//				String datasetName = "exp_prop_48HR_DM_LC50_v" + i + " modeling";
+
+//				String outputFolderPath = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_exp_prop\\"
+//						+ datasetName;
+
+				String outputFolderPath = "C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 Python\\pf_python_modelbuilding\\datasets_exp_prop\\"
+						+ datasetName;
+
+				
+				writeWithSplitting(descriptorSetName, "RND_REPRESENTATIVE", datasetName, outputFolderPath, false, true);
+			}
 		}
 	}
 
