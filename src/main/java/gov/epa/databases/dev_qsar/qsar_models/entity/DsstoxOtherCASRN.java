@@ -24,7 +24,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.OPERA.OPERA_lookups;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.OPERA_lookups;
 
 /**
 * @author TMARTI02

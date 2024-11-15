@@ -19,6 +19,7 @@ import gov.epa.databases.dev_qsar.exp_prop.dao.PropertyValueDaoImpl;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointContributor;
 import gov.epa.databases.dev_qsar.qsar_descriptors.QsarDescriptorsSession;
+import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 
 
 public class PropertyValueServiceImpl implements PropertyValueService {
@@ -217,6 +218,61 @@ public class PropertyValueServiceImpl implements PropertyValueService {
 		session.close();
 		
 	}
+
+	@Override
+	public boolean create(List<PropertyValue> propertyValues) throws ConstraintViolationException {
+		Session session = ExpPropSession.getSessionFactory().getCurrentSession();
+		return create(propertyValues, session);
+	}
+
+	@Override
+	public boolean create(List<PropertyValue> propertyValues, Session session)
+			throws ConstraintViolationException {
+
+
+		Transaction tx = session.beginTransaction();
+
+		int batchSize=100;
+
+		boolean success=true;
+		
+		try {
+
+			long t1=System.currentTimeMillis();
+
+			for (int i = 0; i < propertyValues.size(); i++) {
+				PropertyValue propertyValue = propertyValues.get(i);
+				session.save(propertyValue);
+
+				if ( i % batchSize == 0 ) { //20, same as the JDBC batch size
+					//flush a batch of inserts and release memory:
+					session.flush();
+					session.clear();
+					System.out.println("\t"+i);
+				}
+			}
+
+			session.flush();//do the remaining ones
+			session.clear();
+
+			long t2=System.currentTimeMillis();
+
+			System.out.println("using createBatch, time to post "+propertyValues.size()+" predictions using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
+
+			tx.commit();
+
+
+		} catch (org.hibernate.exception.ConstraintViolationException e) {
+			e.printStackTrace();
+			tx.rollback();
+			success=false;
+		}
+
+		session.close();
+		return success;
+	}
+		
+	
 
 	
 

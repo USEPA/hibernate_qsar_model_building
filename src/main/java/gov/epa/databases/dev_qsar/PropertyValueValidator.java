@@ -78,6 +78,7 @@ public class PropertyValueValidator {
 	private static Boolean checkUnits(String propertyName, String unitName) {
 
 		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)
+				|| propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_SCUD_LC50)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50)

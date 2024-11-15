@@ -111,8 +111,13 @@ public class PredictionDashboard {
 	@OneToOne(mappedBy="predictionDashboard", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	private PredictionReport predictionReport;
 	
-		
+
 	
+	public static String getHeader() {
+		return "id\tsmiles\tdtxsid\tdtxcid\tmodel_name\texperimentalString\texperimentalValue\tpredictionString\tpredictionValue\tpredictionError";	
+	}
+				
+
 	public String toTsv() {
 		
 		if(dsstoxRecord!=null) {

@@ -4,6 +4,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.TreeMap;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -28,8 +29,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.google.gson.JsonObject;
 
-import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.endpoints.datasets.ExplainedResponse;
 
 @Entity
 @Table(name = "property_values")
@@ -103,6 +102,10 @@ public class PropertyValue {
 
 	@Column(name = "value_original", length = 1000)
 	private String valueOriginal;
+	
+	@Column(name = "value_original_parsed", length = 1000)
+	private String valueOriginalParsed;
+
 
 	@Column(name = "notes", length = 1000)
 	private String notes;
@@ -549,6 +552,7 @@ public class PropertyValue {
 		jo.addProperty("propertyName", getProperty().getName());
 		jo.addProperty("valueQualifier", getValueQualifier());
 		jo.addProperty("valuePointEstimate", getValuePointEstimate());
+		jo.addProperty("valueText", getValueText());
 		jo.addProperty("unitsAbbreviation", getUnit().getAbbreviation());
 		jo.addProperty("keep", getKeep());
 		jo.addProperty("keep_reason", getKeepReason());
@@ -572,6 +576,44 @@ public class PropertyValue {
 
 	public void setFileName(String fileName) {
 		this.fileName = fileName;
+	}
+	
+	public static void getPropertyValuesBySource(List<PropertyValue>propertyValues) {
+		TreeMap <String,List<PropertyValue>>map=new TreeMap<String,List<PropertyValue>>();
+
+		for (PropertyValue pv:propertyValues) {
+			
+			String source=null;
+			
+			if(pv.getPublicSource()!=null) {
+				source=pv.getPublicSource().getName();
+			} else if(pv.getLiteratureSource()!=null) {
+				source=pv.getLiteratureSource().getName();
+			}
+			
+			if(map.get(source)==null) {
+				List<PropertyValue> recs=new ArrayList<PropertyValue>();
+				recs.add(pv);
+				map.put(source, recs);
+			} else {
+				List<PropertyValue> recs=map.get(source);
+				recs.add(pv);
+			}
+		}
+		
+		System.out.println("\nProperty values by source:");
+		for(String property:map.keySet()) {
+			System.out.println(property+"\t"+map.get(property).size());
+		}
+		System.out.println("");
+	}
+
+	public String getValueOriginalParsed() {
+		return valueOriginalParsed;
+	}
+
+	public void setValueOriginalParsed(String valueOriginalParsed) {
+		this.valueOriginalParsed = valueOriginalParsed;
 	}
 
 }

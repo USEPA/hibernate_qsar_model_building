@@ -1,17 +1,26 @@
 package gov.epa.databases.dev_qsar.qsar_models.service;
 
+import java.io.File;
+import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
@@ -19,6 +28,7 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.DsstoxRecordDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
 import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class DsstoxRecordServiceImpl  {
 
@@ -268,6 +278,65 @@ public class DsstoxRecordServiceImpl  {
 		System.out.println("Got look up from id to dsstox_records_id:"+htID_to_FK.size());
 		
 		return htID_to_FK;
+	}
+	
+	public Hashtable<String,DsstoxRecord> getDsstoxRecordsHashtableFromJsonExport(File fileJsonDsstoxRecords,String key) {
+		
+		System.out.println("Getting dsstox records from json files");
+		
+		Hashtable<String,DsstoxRecord>htID_to_FK=new Hashtable<>();
+		
+		try {
+			JsonArray ja = Utilities.gson.fromJson(new FileReader(fileJsonDsstoxRecords), JsonArray.class);
+			
+//			System.out.println(ja.size());
+			
+			List<DsstoxRecord>dsstoxRecords=new ArrayList<>();
+			
+			for (JsonElement je:ja) {
+				JsonObject jo=(JsonObject)je;
+				Set<Map.Entry<String, JsonElement>> entries = jo.entrySet();
+
+				DsstoxRecord rec=new DsstoxRecord();
+
+				for(Map.Entry<String, JsonElement> entry: entries) {
+					String fieldName=entry.getKey();
+					JsonElement value=entry.getValue();
+					
+					if (value.isJsonNull()) continue;
+					
+					if(fieldName.equals("id")) 	rec.setId(value.getAsLong());
+					if(fieldName.equals("cid"))	rec.setCid(value.getAsLong());
+					if(fieldName.equals("dtxcid")) 	rec.setDtxcid(value.getAsString());
+					if(fieldName.equals("dtxsid")) 	rec.setDtxsid(value.getAsString());
+					if(fieldName.equals("preferred_name")) 	rec.setPreferredName(value.getAsString());
+					if(fieldName.equals("casrn")) 	rec.setCasrn(value.getAsString());
+					if(fieldName.equals("smiles")) 	rec.setSmiles(value.getAsString());
+					if(fieldName.equals("mol_weight")) 	rec.setMolWeight(value.getAsDouble());
+					if(fieldName.equals("mol_image_png_available")) rec.setMolImagePNGAvailable(value.getAsBoolean());
+					
+				}
+
+				dsstoxRecords.add(rec);
+
+			}
+			
+			for(DsstoxRecord dr:dsstoxRecords) {
+				if(key.equals("dtxsid")) {
+					htID_to_FK.put(dr.getDtxsid(), dr);	
+				} else if (key.equals("dtxcid")) {
+					htID_to_FK.put(dr.getDtxcid(), dr);
+				}
+			}
+			
+			System.out.println("Done get dsstox record lookup");
+			return htID_to_FK;
+			
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	public void updateFkCompoundsIdBatchSQL(List<DsstoxRecord> records,String lanId) {
