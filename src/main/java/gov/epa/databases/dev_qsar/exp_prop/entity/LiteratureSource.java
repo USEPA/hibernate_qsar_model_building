@@ -29,8 +29,9 @@ public class LiteratureSource {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 	
-	@NotNull(message="Source name required")
-	@Column(name="name", unique=true)
+//	@NotNull(message="Source name required")
+//	@Column(name="name", unique=true)
+	@Column(name="name")//only citation needs to be unique, sometimes hard to set a unique name when only citation is provided
 	private String name;
 	
 	// Exact fields TBD
@@ -41,7 +42,7 @@ public class LiteratureSource {
 	private String author;
 	
 	@NotNull(message="Citation required")
-	@Column(name="citation", length=1000)
+	@Column(name="citation", length=1000, unique=true)
 	private String citation;
 
 

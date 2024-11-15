@@ -60,6 +60,11 @@ public class LiteratureSourceServiceImpl implements LiteratureSourceService {
 	public LiteratureSource create(LiteratureSource ls, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<LiteratureSource>> violations = validator.validate(ls);
 		if (!violations.isEmpty()) {
+			
+			for(ConstraintViolation<LiteratureSource>violation:violations) {
+				System.out.println(violation.getMessage());
+			}
+			
 			throw new ConstraintViolationException(violations);
 		}
 		
