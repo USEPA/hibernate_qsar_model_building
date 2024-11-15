@@ -24,8 +24,8 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import gov.epa.run_from_java.scripts.OPERA.HTML_Report_Creator_From_OPERA_Report;
-import gov.epa.run_from_java.scripts.OPERA.OPERA_lookups;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.HTMLReportCreatorOpera;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.OPERA_lookups;
 
 @Entity
 @Table(name="qsar_predicted_neighbors", uniqueConstraints={@UniqueConstraint(columnNames = {"fk_predictions_dashboard_id", "neighbor_number","fk_dsstox_records_id"})})

@@ -144,9 +144,12 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		tx.commit();
 		session.close();
 		
-		return predictionDashboards;
+		return predictionDashboards;//TODO this doesnt update with the stored id numbers
 	}
 	
+	/**
+	 * runs 100x faster than hibernate createBatch
+	 */
 	@Override
 	public void createSQL (List<PredictionDashboard> predictionDashboards) {
 
@@ -170,13 +173,15 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 					if(predictionDashboards.size()==0) break;
 				}
 				
-				List<Long>predictionDashboardIds=saveToPredictionsDashboardTable(predictionDashboards2, conn);
+				//TODO is it faster to use createBatch with hibernate (should cascade)
 				
-				saveToPredictionReportsTable(predictionDashboards2, predictionDashboardIds, conn);
+				saveToPredictionsDashboardTable(predictionDashboards2, conn);
+				saveToPredictionReportsTable(predictionDashboards2, conn);
+				saveToADTable(predictionDashboards2, conn);
+				saveToNeighborsTable(predictionDashboards2, conn);
 				
-				//TODO are these needed since already in reports?
-				saveToADTable(predictionDashboards2, predictionDashboardIds, conn);
-				saveToNeighborsTable(predictionDashboards2, predictionDashboardIds, conn);
+//				saveToPredictionsDashboardTableNoKeys(predictionDashboards2, conn);
+				
 				
 				if(predictionDashboards.size()==0) break;
 			}
@@ -210,7 +215,187 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		return sql;
 	}
 
-	private List<Long> saveToPredictionsDashboardTable(List<PredictionDashboard> predictionDashboards, Connection conn) throws SQLException {
+//	private List<Long> saveToPredictionsDashboardTable(List<PredictionDashboard> predictionDashboards, Connection conn) throws SQLException {
+//		
+//		long t1=System.currentTimeMillis();
+//		
+//		String [] fieldNames= {"canon_qsar_smiles", "fk_dsstox_records_id",	"fk_model_id", 
+//				"prediction_value", "prediction_string", "prediction_error",
+//				"experimental_string","experimental_value","dtxcid",  
+//				"created_by", "created_at",
+//				 };
+//
+//		
+//		String sql = createSqlInsert(fieldNames,"predictions_dashboard");	
+//		PreparedStatement prep = conn.prepareStatement(sql);
+//		
+//		List<Long>predictionDashboardIds=new ArrayList<>();
+//		Statement statement = conn.createStatement();
+//		
+//		for (int counter = 0; counter < predictionDashboards.size(); counter++) {
+//
+//			PredictionDashboard p=predictionDashboards.get(counter);
+//			prep.setString(1, p.getCanonQsarSmiles());
+//			prep.setLong(2, p.getDsstoxRecord().getId());
+//			prep.setLong(3, p.getModel().getId());
+//
+//			if (p.getPredictionValue()==null) {
+//				prep.setNull(4,Types.DOUBLE);
+//			} else {
+//				prep.setDouble(4, p.getPredictionValue());	
+//			}
+//
+//			prep.setString(5, p.getPredictionString());
+//			prep.setString(6, p.getPredictionError());
+//
+//			if (p.getExperimentalString()==null) {
+//				prep.setNull(7, Types.VARCHAR);
+//			} else {
+//				prep.setString(7, p.getExperimentalString());
+//			}
+//
+//			if (p.getExperimentalValue()==null) {
+//				prep.setNull(8,Types.DOUBLE);
+//			} else {
+//				prep.setDouble(8, p.getExperimentalValue());	
+//			}
+//
+//			prep.setString(9, p.getDtxcid());
+//			prep.setString(10, p.getCreatedBy());
+//			//			prep.addBatch();
+//
+//			//			System.out.println(prep);
+//
+//
+//
+//			prep.executeUpdate(prep.toString(),Statement.RETURN_GENERATED_KEYS);
+//
+//			ResultSet keys=prep.getGeneratedKeys();
+////			ResultSetMetaData metaData = keys.getMetaData();
+//
+//			//				for (int j = 0; j < metaData.getColumnCount(); j++) {
+//			//				    System.out.println("Col name: "+metaData.getColumnName(j+1));
+//			//				}
+//
+//			while (keys!=null && keys.next()) {
+//				Long key = keys.getLong(1);
+//				predictionDashboardIds.add(key);
+//				//		            System.out.println(p.getDtxcid()+"\t"+p.getModel().getId()+"\t"+key);
+//			}
+//
+//
+//
+//		}
+//
+//		long t2=System.currentTimeMillis();
+//		System.out.println("\ttime to post "+predictionDashboards.size()+" predictionsDashboard ="+(t2-t1)/1000.0 +" seconds");
+//
+//		
+//		return predictionDashboardIds;
+//	}	
+	
+	
+
+	/**
+	 * This version gets the generated keys in one batch
+	 * 
+	 * @param predictionDashboards
+	 * @param conn
+	 * @return
+	 * @throws SQLException
+	 */
+	private void saveToPredictionsDashboardTable(List<PredictionDashboard> predictionDashboards, Connection conn) throws SQLException {
+		
+		long t1=System.currentTimeMillis();
+		
+		String [] fieldNames= {"canon_qsar_smiles", "fk_dsstox_records_id",	"fk_model_id", 
+				"prediction_value", "prediction_string", "prediction_error",
+				"experimental_string","experimental_value","dtxcid",  
+				"created_by", "created_at",
+				 };
+
+		
+		String sql = createSqlInsert(fieldNames,"predictions_dashboard");	
+//		PreparedStatement prep = conn.prepareStatement(sql);
+		
+//		PreparedStatement prep = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);//slowww!
+
+//		https://stackoverflow.com/questions/4224228/preparedstatement-with-statement-return-generated-keys
+		PreparedStatement prep = conn.prepareStatement(sql, new String[]{"id"});//for some reason much faster than using Statement.RETURN_GENERATED_KEYS!
+		
+		List<Long>predictionDashboardIds=new ArrayList<>();
+		
+		for (int counter = 0; counter < predictionDashboards.size(); counter++) {
+
+			PredictionDashboard p=predictionDashboards.get(counter);
+			prep.setString(1, p.getCanonQsarSmiles());
+			prep.setLong(2, p.getDsstoxRecord().getId());
+			prep.setLong(3, p.getModel().getId());
+
+			if (p.getPredictionValue()==null) {
+				prep.setNull(4,Types.DOUBLE);
+			} else {
+				prep.setDouble(4, p.getPredictionValue());	
+			}
+
+			prep.setString(5, p.getPredictionString());
+			prep.setString(6, p.getPredictionError());
+
+			if (p.getExperimentalString()==null) {
+				prep.setNull(7, Types.VARCHAR);
+			} else {
+				prep.setString(7, p.getExperimentalString());
+			}
+
+			if (p.getExperimentalValue()==null) {
+				prep.setNull(8,Types.DOUBLE);
+			} else {
+				prep.setDouble(8, p.getExperimentalValue());	
+			}
+
+			prep.setString(9, p.getDtxcid());
+			prep.setString(10, p.getCreatedBy());
+			prep.addBatch();
+
+			//System.out.println(prep);
+
+		}
+
+		prep.executeBatch();
+		
+		long t1a=System.currentTimeMillis();
+		
+		ResultSet keys=prep.getGeneratedKeys();
+//		ResultSetMetaData metaData = keys.getMetaData();
+
+		//				for (int j = 0; j < metaData.getColumnCount(); j++) {
+		//				    System.out.println("Col name: "+metaData.getColumnName(j+1));
+		//				}
+
+		Iterator<PredictionDashboard> pdIterator=predictionDashboards.iterator();
+		
+//		
+		while (keys!=null && keys.next()) {
+			PredictionDashboard pd=pdIterator.next();
+			Long key = keys.getLong(1);
+			pd.setId(key);
+//			predictionDashboardIds.add(key);
+//			System.out.println(key);
+		}
+		
+		long t2=System.currentTimeMillis();
+
+//		System.out.println("\ttime to get keys ="+(t2-t1a)/1000.0 +" seconds");
+//		System.out.println("\ttime to post "+predictionDashboards.size()+" predictionsDashboard ="+(t2-t1)/1000.0 +" seconds");
+
+		
+//		return predictionDashboardIds;
+	}	
+	
+
+	private void saveToPredictionsDashboardTableNoKeys(List<PredictionDashboard> predictionDashboards, Connection conn) throws SQLException {
+		
+		long t1=System.currentTimeMillis();
 		
 		String [] fieldNames= {"canon_qsar_smiles", "fk_dsstox_records_id",	"fk_model_id", 
 				"prediction_value", "prediction_string", "prediction_error",
@@ -226,103 +411,85 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		Statement statement = conn.createStatement();
 		
 		for (int counter = 0; counter < predictionDashboards.size(); counter++) {
-			
+
 			PredictionDashboard p=predictionDashboards.get(counter);
 			prep.setString(1, p.getCanonQsarSmiles());
 			prep.setLong(2, p.getDsstoxRecord().getId());
 			prep.setLong(3, p.getModel().getId());
-			
+
 			if (p.getPredictionValue()==null) {
 				prep.setNull(4,Types.DOUBLE);
 			} else {
 				prep.setDouble(4, p.getPredictionValue());	
 			}
-			
+
 			prep.setString(5, p.getPredictionString());
 			prep.setString(6, p.getPredictionError());
-			
+
 			if (p.getExperimentalString()==null) {
 				prep.setNull(7, Types.VARCHAR);
 			} else {
 				prep.setString(7, p.getExperimentalString());
 			}
-			
+
 			if (p.getExperimentalValue()==null) {
 				prep.setNull(8,Types.DOUBLE);
 			} else {
 				prep.setDouble(8, p.getExperimentalValue());	
 			}
-			
+
 			prep.setString(9, p.getDtxcid());
 			prep.setString(10, p.getCreatedBy());
-//			prep.addBatch();
-			
-//			System.out.println(prep);
-			
-			prep.executeUpdate(prep.toString(),Statement.RETURN_GENERATED_KEYS);
-			
-			
-			ResultSet keys=prep.getGeneratedKeys();
-			ResultSetMetaData metaData = keys.getMetaData();
-
-//			for (int j = 0; j < metaData.getColumnCount(); j++) {
-//			    System.out.println("Col name: "+metaData.getColumnName(j+1));
-//			}
-			
-			while (keys!=null && keys.next()) {
-	            Long key = keys.getLong(1);
-	            predictionDashboardIds.add(key);
-//	            System.out.println(p.getDtxcid()+"\t"+p.getModel().getId()+"\t"+key);
-	        }
+			prep.addBatch();
+			//System.out.println(prep);
 		}
 
-//		prep.executeBatch();
-//		ResultSet rs=prep.getGeneratedKeys();
-//		if(rs==null) {
-//			System.out.println("generatedKeys ResultSet=null");
-//			return null;
-//		}
-//		List<Long>predictionDashboardIds=new ArrayList<>();
-//		
-//		while (rs.next()) {
-//            Long key = rs.getLong(1);
-//            predictionDashboardIds.add(key);
-//            System.out.println(key);
-//        }
-//		conn.commit();
-		return predictionDashboardIds;
+		prep.executeBatch();
+		
+		long t2=System.currentTimeMillis();
+		System.out.println("\ttime to post "+predictionDashboards.size()+" predictionsDashboard ="+(t2-t1)/1000.0 +" seconds");
+
+		
+		
 	}	
 	
+	
 
-	private void saveToPredictionReportsTable(List<PredictionDashboard> predictionDashboards, List<Long>fk_prediction_dashboard_ids, Connection conn) throws SQLException {
+	private void saveToPredictionReportsTable(List<PredictionDashboard> predictionDashboards, Connection conn) throws SQLException {
 		
 		String [] fieldNames= {"fk_predictions_dashboard_id","file","created_by", "created_at"};
 
 		String sql = createSqlInsert(fieldNames,"prediction_reports");	
 		PreparedStatement prep = conn.prepareStatement(sql);
 		
-		for (int counter = 0; counter < predictionDashboards.size(); counter++) {			
-			PredictionDashboard p=predictionDashboards.get(counter);
+		long t1=System.currentTimeMillis();
+		
+		Iterator<PredictionDashboard> pdIterator=predictionDashboards.iterator();
+		
+		while(pdIterator.hasNext())	 {		
+			PredictionDashboard pd=pdIterator.next();
 			
-			
-			if(p.getPredictionReport()==null) {
+			if(pd.getPredictionReport()==null) {
 				System.out.println("Missing a report so skipping saving to prediction_reports table");
 				return;
 			}
 			
-			PredictionReport pr=p.getPredictionReport();
+			PredictionReport pr=pd.getPredictionReport();
 			
-			prep.setLong(1, fk_prediction_dashboard_ids.get(counter));
+			prep.setLong(1, pd.getId());
 			prep.setBytes(2, pr.getFile());
 			prep.setString(3, pr.getCreatedBy());
 			prep.addBatch();
 		}
 		prep.executeBatch();
+		
+		long t2=System.currentTimeMillis();
+//		System.out.println("\ttime to post "+predictionDashboards.size()+" prediction reports ="+(t2-t1)/1000.0 +" seconds");
 	}		
 	
 	
 
-	private void saveToADTable(List<PredictionDashboard> predictionDashboards, List<Long>fk_prediction_dashboard_ids, Connection conn) throws SQLException {
+	private void saveToADTable(List<PredictionDashboard> predictionDashboards, Connection conn) throws SQLException {
 		
 		String [] fieldNames= {"fk_predictions_dashboard_id",
 				"fk_ad_method_id",
@@ -335,14 +502,16 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		String sql = createSqlInsert(fieldNames,"qsar_predicted_ad_estimates");	
 		PreparedStatement prep = conn.prepareStatement(sql);
 		
-		for (int counter = 0; counter < predictionDashboards.size(); counter++) {			
-			PredictionDashboard p=predictionDashboards.get(counter);
+		Iterator<PredictionDashboard> pdIterator=predictionDashboards.iterator();
+		
+		while(pdIterator.hasNext())	 {		
+			PredictionDashboard pd=pdIterator.next();
 			
-			if(p.getQsarPredictedADEstimates()==null) continue;
+			if(pd.getQsarPredictedADEstimates()==null) continue;
 			
-			for (QsarPredictedADEstimate adEstimate: p.getQsarPredictedADEstimates()) {
+			for (QsarPredictedADEstimate adEstimate: pd.getQsarPredictedADEstimates()) {
 
-				prep.setLong(1, fk_prediction_dashboard_ids.get(counter));
+				prep.setLong(1, pd.getId());
 				prep.setLong(2, adEstimate.getMethodAD().getId());
 				
 				if (adEstimate.getApplicabilityValue()==null) {
@@ -363,7 +532,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 					prep.setString(5, adEstimate.getReasoning());	
 				}
 				
-				prep.setString(6, p.getPredictionReport().getCreatedBy());				
+				prep.setString(6, pd.getPredictionReport().getCreatedBy());				
 				prep.addBatch();
 			}
 		}
@@ -372,7 +541,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 	
 	
 
-	private void saveToNeighborsTable(List<PredictionDashboard> predictionDashboards, List<Long>fk_prediction_dashboard_ids, Connection conn) throws SQLException {
+	private void saveToNeighborsTable(List<PredictionDashboard> predictionDashboards, Connection conn) throws SQLException {
 		
 		String [] fieldNames= {"fk_predictions_dashboard_id",
 				"fk_dsstox_records_id",
@@ -391,15 +560,16 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		String sql = createSqlInsert(fieldNames,"qsar_predicted_neighbors");	
 		PreparedStatement prep = conn.prepareStatement(sql);
 		
-		for (int counter = 0; counter < predictionDashboards.size(); counter++) {			
+		Iterator<PredictionDashboard> pdIterator=predictionDashboards.iterator();
+		
+		while(pdIterator.hasNext())	 {		
+			PredictionDashboard pd=pdIterator.next();
 			
-			PredictionDashboard p=predictionDashboards.get(counter);
+			if(pd.getQsarPredictedNeighbors()==null) continue;
 			
-			if(p.getQsarPredictedNeighbors()==null) continue;
-			
-			for (QsarPredictedNeighbor neighbor: p.getQsarPredictedNeighbors()) {
+			for (QsarPredictedNeighbor neighbor: pd.getQsarPredictedNeighbors()) {
 
-				prep.setLong(1, fk_prediction_dashboard_ids.get(counter));
+				prep.setLong(1, pd.getId());
 								
 				if(neighbor.getDsstoxRecord()==null) {					
 					prep.setNull(2, Types.BIGINT);
@@ -457,7 +627,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 					prep.setDouble(11, neighbor.getPredictedValue());	
 				}
 
-				prep.setString(12, p.getPredictionReport().getCreatedBy());				
+				prep.setString(12, pd.getPredictionReport().getCreatedBy());				
 				prep.addBatch();
 			}
 		}

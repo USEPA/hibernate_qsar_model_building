@@ -314,10 +314,14 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 //		Hashtable<String,Long>htPredictionDashboardIds=getHashtableLookupPredictionDashboardId(minModelId,maxModelId);		
 //		Hashtable<String,Long>htPredictionDashboardIds=getHashtableLookupPredictionDashboardId();
 		
+		if(predictionReports.size()==0) {
+			System.out.println("No reports to update");
+			return;
+		}
 		
 		Connection conn=SqlUtilities.getConnectionPostgres();
 
-		int batchSize=100;
+		int batchSize=1000;
 		
 		try {
 			conn.setAutoCommit(false);
@@ -336,9 +340,11 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 				prep.setLong(3,pr.getId());
 				prep.addBatch();
 				
+//				System.out.println(pr.getId()+"\t"+pr.getUpdatedBy());
+				
 				
 				if (counter % batchSize == 0 && counter!=0) {
-					System.out.println("\t"+counter);
+//					System.out.println("\t"+counter);
 					prep.executeBatch();
 					conn.commit();
 				}
@@ -413,6 +419,136 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 		
 	}
 	
+
+	/**
+	 * Use cross schema query so can get precise property name from dataset
+	 * 
+	 * @param dtxcid
+	 * @param propertyName
+	 * @param modelSource
+	 * @return
+	 */
+	public List<String> getReportsByDsstoxRecordId(String id) {
+		String type="dtxsid";
+		if(id.contains("CID")) type="dtxcid";
+		
+		String sql=" select pr.file as report from qsar_models.prediction_reports pr\n"+
+        "join qsar_models.predictions_dashboard pd on pr.fk_predictions_dashboard_id = pd.id\n"+
+        "join qsar_models.models m on pd.fk_model_id = m.id\n"+
+        "join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\n"+
+         "where dr."+type+" = '"+id+"' order by m.name;";
+
+		System.out.println(sql);
+		
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+		
+		try {
+			List<String>reports=new ArrayList<>();
+			
+			
+			while (rs.next()) {
+				byte[]bytes=rs.getBytes(1);
+				reports.add(new String(bytes));
+			}
+			
+			return reports;
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+		
+		
+	}
+	
+	
+	public List<PredictionReport> getReportsBySource(String sourceName,int offset,int limit) {
+		
+		String sql="select pr.id, pr.file from qsar_models.prediction_reports pr\n"+
+        "join qsar_models.predictions_dashboard pd on pr.fk_predictions_dashboard_id = pd.id\n"+
+        "join qsar_models.models m on pd.fk_model_id = m.id\n"+
+        "join qsar_models.sources s on m.fk_source_id = s.id\n"+
+         "where s.name='"+sourceName+"'"+
+         "LIMIT "+limit+" OFFSET "+offset+";";
+
+//		System.out.println(sql);
+		
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+		
+		try {
+			List<PredictionReport>reports=new ArrayList<>();
+			
+			
+			while (rs.next()) {
+				
+				long pr_id=rs.getLong(1);
+				byte[]bytes=rs.getBytes(2);
+				
+				PredictionReport pr=new PredictionReport();
+				pr.setId(pr_id);
+				pr.setFile(bytes);
+				reports.add(pr);
+			}
+			
+			return reports;
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+		
+		
+	}
+	
+
+	public List<PredictionReport> getReportsBySource(String sourceName,List<String>modelNames, int offset,int limit) {
+		
+		String names="";
+		
+		for(int i=0;i<modelNames.size();i++) {
+			names+="'"+modelNames.get(i)+"'";
+			if(i<modelNames.size()-1) names+=",";			
+		}
+	
+		String sql="select pr.id, pr.file from qsar_models.prediction_reports pr\n"+
+        "join qsar_models.predictions_dashboard pd on pr.fk_predictions_dashboard_id = pd.id\n"+
+        "join qsar_models.models m on pd.fk_model_id = m.id\n"+
+        "join qsar_models.sources s on m.fk_source_id = s.id\n"+
+         "where s.name='"+sourceName+"' and m.name in ("+names+") and pr.updated_by is null\n"+
+         "LIMIT "+limit+" OFFSET "+offset+";";
+
+//		System.out.println(sql);
+		
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+		
+		try {
+			List<PredictionReport>reports=new ArrayList<>();
+			
+			
+			while (rs.next()) {
+				
+				long pr_id=rs.getLong(1);
+				byte[]bytes=rs.getBytes(2);
+				
+				PredictionReport pr=new PredictionReport();
+				pr.setId(pr_id);
+				pr.setFile(bytes);
+				reports.add(pr);
+			}
+			
+			return reports;
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+		
+		
+	}
+
 	
 //	/**
 //	 * Use simpler query based on dataset name = propertyName + " "+modelSource
