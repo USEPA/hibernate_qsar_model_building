@@ -1,4 +1,4 @@
-package gov.epa.run_from_java.scripts.OPERA;
+package gov.epa.run_from_java.scripts.PredictionDashboard.OPERA;
 
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.service.MethodServiceImpl;

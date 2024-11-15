@@ -1,4 +1,4 @@
-package gov.epa.run_from_java.scripts.OPERA;
+package gov.epa.run_from_java.scripts.PredictionDashboard.OPERA;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -8,9 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.URL;
-import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -59,11 +57,11 @@ import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 import gov.epa.run_from_java.scripts.QsarModelsScript;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
-import gov.epa.run_from_java.scripts.OPERA.OPERA_Report.ADEstimate;
-import gov.epa.run_from_java.scripts.OPERA.OPERA_lookups.OtherCAS;
-import gov.epa.run_from_java.scripts.OPERA_Old.Lookup;
-import gov.epa.run_from_java.scripts.OPERA_Old.SqliteUtilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.CreatorScript;
+import gov.epa.run_from_java.scripts.PredictionDashboard.DatabaseUtilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.OPERA_lookups.OtherCAS;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA_Old.Lookup;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA_Old.SqliteUtilities;
 import gov.epa.util.StructureUtil;
 
 /**
@@ -80,7 +78,7 @@ public class OPERA_csv_to_PostGres_DB {
 	String userName="tmarti02";
 
 	long minModelId=1019;
-	long maxModelID=1051;
+	long maxModelId=1051;
 
 	boolean useLatestModelIds=false;//if false use plot images using legacy model ids 
 	boolean createReports=false;//if false use plot images using legacy model ids
@@ -294,6 +292,8 @@ public class OPERA_csv_to_PostGres_DB {
 			, OPERA_lookups lookups) {
 		List<PredictionReport>predictionReports=new ArrayList<>();
 
+		HTMLReportCreatorOpera h=new HTMLReportCreatorOpera();
+		
 		for (PredictionDashboard pd:predictionsDashboard) {
 			//			qsarPredictedADEstimates.addAll(pd.getQsarPredictedADEstimates());
 			//			qsarPredictedNeighbors.addAll(pd.getQsarPredictedNeighbors());
@@ -316,7 +316,7 @@ public class OPERA_csv_to_PostGres_DB {
 			File Folder=new File(folder);
 			Folder.mkdirs();
 
-			or.toHTMLFile(folder);
+			h.toHTMLFile(or, folder);
 			or.toJsonFile(folder);
 			//			System.out.println(Utilities.gson.toJson(or)+"\n\n*******************\n");
 
@@ -1348,7 +1348,7 @@ public class OPERA_csv_to_PostGres_DB {
 		//		int count=-1;
 
 
-		HashSet<String> pd_keys = getPredictionsDashboardKeysInDB(minModelId,maxModelID);
+		HashSet<String> pd_keys = getPredictionsDashboardKeysInDB(minModelId,maxModelId);
 		
 		System.out.println("Number of OPERA predictions already in the database:"+pd_keys.size());
 		
@@ -1914,21 +1914,23 @@ public class OPERA_csv_to_PostGres_DB {
 	}
 	
 	
-
+	void deleteRecords() {
+		DatabaseUtilities o=new DatabaseUtilities();
+		o.deleteAllRecords(minModelId,maxModelId);
+	}
+	
 		
 	public static void main(String[] args) {
 		OPERA_csv_to_PostGres_DB o= new OPERA_csv_to_PostGres_DB();
-
-//		o.deleteOPERA_Records();//delete from db so have fresh start
 
 		version="2.8";
 //		version="2.9";
 //		o.initializeOPERARecords();//create db entries in properties, datasets, models, statistics tables
 
 //		o.createRecordsFromCSV(false);
-//		o.createRecordsFromOPERA2_8_SqliteDB(false);
+		o.createRecordsFromOPERA2_8_SqliteDB(false);
 //		o.createToxValModelCSVFromOPERA2_8_SqliteDB();
-		o.compareResults();
+//		o.compareResults();
 
 		//View reports by generating them on the fly from database:
 		//		OPERA_Report_API ora=new OPERA_Report_API();
@@ -2002,136 +2004,6 @@ public class OPERA_csv_to_PostGres_DB {
 
 		return outputStream.toByteArray();
 	}
-
-	void deleteOPERA_Records() {
-		//		deleteRecords("qsar_predicted_neighbors",1);
-		//		deleteRecords("qsar_predicted_ad_estimates",1);
-		//		deleteRecords("prediction_reports",1);
-		//		deleteOPERA_Predictions();
-
-		deleteRecordsSimple("qsar_predicted_neighbors",minModelId,maxModelID);
-		deleteRecordsSimple("qsar_predicted_ad_estimates",minModelId,maxModelID);
-		deleteRecordsSimple("prediction_reports",minModelId,maxModelID);
-		deletePredictionsSimple(minModelId,maxModelID);
-
-
-	}
-
-	/**
-	 * Instead of complicated delete sql, find the records one by one and delete them
-	 */
-	public void deleteRecords(String table, int fk_source_id) {
-		System.out.print("Deleting from "+table);
-		String sql="select pr.id from qsar_models."+table+" pr\n"+
-				"join qsar_models.predictions_dashboard pd on pr.fk_predictions_dashboard_id = pd.id\n"+
-				"join qsar_models.models m on pd.fk_model_id = m.id\n"+
-				"where m.fk_source_id="+fk_source_id+";";//TODO maybe add join to sources table 
-
-		System.out.print("\n"+sql+"\n");
-
-		try {
-
-			Connection conn=SqlUtilities.getConnectionPostgres();
-
-
-			ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
-
-			while (rs.next()) {
-				String id=rs.getString(1);
-				sql="Delete from qsar_models."+table+" where id="+id+";";
-				SqlUtilities.runSQLUpdate(SqlUtilities.getConnectionPostgres(), sql);
-				System.out.println(id);
-			}
-
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		System.out.println("Done");
-
-	}
-
-
-	public void deleteRecordsSimple(String table, long minModelNumber,long maxModelNumber) {
-		long t1=System.currentTimeMillis();
-		System.out.print("Deleting from "+table+"...");
-		String sql="delete from qsar_models."+table+" pr using qsar_models.predictions_dashboard pd\n"+
-				"where pr.fk_predictions_dashboard_id = pd.id and pd.fk_model_id >="+minModelNumber+" and pd.fk_model_id <="+maxModelNumber+";";
-		SqlUtilities.runSQLUpdate(SqlUtilities.getConnectionPostgres(), sql);
-
-		long t2=System.currentTimeMillis();
-		System.out.println("Done in "+(t2-t1)/1000.0+" seconds");
-		//		System.out.println(sql);
-
-	}
-
-
-	public void deletePredictionsSimple(long minModelNumber,long maxModelNumber) {
-		long t1=System.currentTimeMillis();
-		System.out.print("Deleting from predictions_dashboard...");
-
-		String sql="delete from qsar_models.predictions_dashboard pd\n"+
-				"where pd.fk_model_id >="+minModelNumber+" and pd.fk_model_id <="+maxModelNumber+";";
-
-		SqlUtilities.runSQLUpdate(SqlUtilities.getConnectionPostgres(), sql);
-
-		long t2=System.currentTimeMillis();
-		System.out.println("Done in "+(t2-t1)/1000.0+" seconds");
-
-	}
-
-	public void deleteRecords(String table, String sourceName) {
-		System.out.print("Deleting from "+table);
-		String sql="select pr.id from qsar_models."+table+" pr\n"+
-				"join qsar_models.predictions_dashboard pd on pr.fk_predictions_dashboard_id = pd.id\n"+
-				"join qsar_models.models m on pd.fk_model_id = m.id\n"+
-				"join qsar_models.sources s on m.fk_source_id = s.id\n"+
-				"where s.name='"+sourceName+"';";//TODO maybe add join to sources table 
-
-		System.out.print("\n"+sql+"\n");
-
-		//		if(true)return;
-
-		try {
-
-			Connection conn=SqlUtilities.getConnectionPostgres();
-
-
-			ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
-
-			while (rs.next()) {
-				String id=rs.getString(1);
-				sql="Delete from qsar_models."+table+" where id="+id+";";
-
-				System.out.println(sql);
-
-				SqlUtilities.runSQLUpdate(SqlUtilities.getConnectionPostgres(), sql);
-				System.out.println(id);
-			}
-
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		System.out.println("Done");
-
-	}
-
-
-	/**
-	 * Delete with single query because less complicated
-	 */
-	void deleteOPERA_Predictions() {
-		System.out.print("Deleting from predictions_dashboard");
-
-		String sql="delete from qsar_models.predictions_dashboard pd using qsar_models.models m\n"+
-				"where pd.fk_model_id = m.id and m.fk_source_id=1;";
-
-		SqlUtilities.runSQLUpdate(SqlUtilities.getConnectionPostgres(), sql);
-
-		System.out.println("Done");
-	}
-
 
 	/**
 	 * Creates properties, datasets, and models for OPERA in the postgres db

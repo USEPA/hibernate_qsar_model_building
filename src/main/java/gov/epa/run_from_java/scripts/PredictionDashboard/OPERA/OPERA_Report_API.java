@@ -1,4 +1,4 @@
-package gov.epa.run_from_java.scripts.OPERA;
+package gov.epa.run_from_java.scripts.PredictionDashboard.OPERA;
 
 import java.io.File;
 import java.io.FileReader;
@@ -21,6 +21,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardService
 import gov.epa.databases.dev_qsar.qsar_models.service.QsarPredictedADEstimateServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.QsarPredictedNeighborServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
 
 /**
 * @author TMARTI02
@@ -42,7 +43,7 @@ public class OPERA_Report_API {
 	 * @param lookups 
 	 * @return
 	 */
-	OPERA_Report getOperaReportFromPredictionReport(String id,String modelName) {
+	PredictionReport getOperaReportFromPredictionReport(String id,String modelName) {
 		
 		String idCol="dtxcid";
 		if (id.contains("SID")) idCol="dtxsid";
@@ -59,7 +60,7 @@ public class OPERA_Report_API {
 
 			if (rs.next()) {
 				String json=new String(rs.getBytes(1));
-				return OPERA_Report.fromJson(json);
+				return PredictionReport.fromJson(json);
 			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -143,22 +144,24 @@ public class OPERA_Report_API {
 
 //		String [] propertyNames= {DevQsarConstants.RBIODEG,DevQsarConstants.ANDROGEN_RECEPTOR_AGONIST};
 
-		String [] propertyNames= {DevQsarConstants.WATER_SOLUBILITY};
-//		List<String> propertyNames=DevQsarConstants.getOPERA_PropertyNames();
+//		String [] propertyNames= {DevQsarConstants.WATER_SOLUBILITY};
+		List<String> propertyNames=DevQsarConstants.getOPERA_PropertyNames();
 		
 		
 		String folder="data\\opera\\reports";
 		
-		boolean regenerateReport=false;
+		boolean regenerateReport=true;
 		
 		boolean useModelImageAPI=false;//set to false for testing purposes to get a viewable image
+		
+		HTMLReportCreatorOpera h=new HTMLReportCreatorOpera();
 				
 		for (String propertyName:propertyNames) {
 			
 			String modelName=OPERA_csv_to_PostGres_DB.getModelName(propertyName);
 //			System.out.println(modelName);
 			
-			OPERA_Report or=null;
+			PredictionReport or=null;
 			
 			if(regenerateReport) or=getOperaReportFromPredictionDashboard(id,modelName,useModelImageAPI);
 			else or=getOperaReportFromPredictionReport(id,modelName);
@@ -169,7 +172,7 @@ public class OPERA_Report_API {
 			}
 			
 			String filename=or.chemicalIdentifiers.dtxcid+"_"+or.modelDetails.modelName+".html";
-			or.toHTMLFile(folder,filename);
+			h.toHTMLFile(or, folder,filename);
 			or.viewInWebBrowser(folder+File.separator+filename);
 		}
 		
