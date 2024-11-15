@@ -89,13 +89,18 @@ public class PropertyValueCreator {
 
 	private void setUnit(ExperimentalRecord er,PropertyValue pv) {
 
+		if(er.property_value_units_final==null) {
+//			System.out.println("No units");
+			return;
+		}
+		
 		String unitName=DevQsarConstants.getExpPropUnitName(er.property_name,er.property_value_units_final);
 
 		if (loader.unitsMap.containsKey(unitName)) {
 			pv.setUnit(loader.unitsMap.get(unitName));
 		} else {
 			//TODO should we add missing units to units table?
-			//			System.out.println("Unknown unitName:"+unitName);
+			System.out.println("Unknown unitName for "+er.property_value_units_final);
 		}
 	}
 
@@ -191,6 +196,10 @@ public class PropertyValueCreator {
 
 		String literatureSourceCitation=er.literatureSource.getCitation();//should already be set		
 
+//		if(er.literatureSource.getName()==null) {
+//			er.literatureSource.setName(literatureSourceCitation);
+//		}
+		
 				
 		if (loader.literatureSourcesMap.containsKey(literatureSourceCitation)) {
 			pv.setLiteratureSource(loader.literatureSourcesMap.get(literatureSourceCitation));
@@ -201,6 +210,7 @@ public class PropertyValueCreator {
 
 			if(createDB_Entries) {
 				try {
+					System.out.println("Creating ls, citation="+ls.getCitation());
 					ls = loader.literatureSourceService.create(ls);
 				} catch (Exception ex) {
 					ex.printStackTrace();
@@ -234,14 +244,19 @@ public class PropertyValueCreator {
 		
 		SourceChemical dbSourceChemical=null;
 
+//		if(loader.sourceChemicalMap.containsKey(sourceChemical.getKey())) {
+//			dbSourceChemical=loader.sourceChemicalMap.get(sourceChemical.getKey());
+//			if(debug) System.out.println("Found in map\t"+sourceChemical.getKey());
+//		} else if (!ExperimentalRecordLoader.loadSourceChemicalMap) {
+//			dbSourceChemical = sourceChemicalService.findMatch(sourceChemical);
+//			if(debug) System.out.println("Found by one at a time service\t"+sourceChemical.getKey());
+//		}
+		
 		if(loader.sourceChemicalMap.containsKey(sourceChemical.getKey())) {
 			dbSourceChemical=loader.sourceChemicalMap.get(sourceChemical.getKey());
 			if(debug) System.out.println("Found in map\t"+sourceChemical.getKey());
-		} else if (!ExperimentalRecordLoader.loadSourceChemicalMap) {
-			dbSourceChemical = sourceChemicalService.findMatch(sourceChemical);
-			if(debug) System.out.println("Found by one at a time service\t"+sourceChemical.getKey());
-		}			
-		
+		} 		
+
 		if (dbSourceChemical==null) {
 
 			if(createDB_Entries) {
@@ -278,6 +293,7 @@ public class PropertyValueCreator {
 				rec.property_value_qualitative.length()>255) { 
 			rec.property_value_qualitative = rec.property_value_qualitative.substring(0, 255);
 		}
+		
 		propertyValue.setValueText(rec.property_value_qualitative);
 		
 		if (rec.property_value_string!=null && 
@@ -285,6 +301,16 @@ public class PropertyValueCreator {
 			rec.property_value_string = rec.property_value_string.substring(0, 1000);
 		}
 		propertyValue.setValueOriginal(rec.property_value_string);
+		
+		
+		if (rec.property_value_string_parsed!=null && 
+				rec.property_value_string_parsed.length()>1000) { 
+			rec.property_value_string_parsed = rec.property_value_string_parsed.substring(0, 1000);
+		}
+		propertyValue.setValueOriginalParsed(rec.property_value_string_parsed);
+
+		
+		
 		propertyValue.setNotes(rec.note);
 		propertyValue.setQcFlag(rec.flag);
 		propertyValue.setKeep(rec.keep);

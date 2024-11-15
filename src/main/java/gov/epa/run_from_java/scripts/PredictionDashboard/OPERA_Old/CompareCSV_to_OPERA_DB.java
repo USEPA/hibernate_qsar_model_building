@@ -1,4 +1,4 @@
-package gov.epa.run_from_java.scripts.OPERA_Old;
+package gov.epa.run_from_java.scripts.PredictionDashboard.OPERA_Old;
 
 import org.json.CDL;
 import org.openscience.cdk.qsar.descriptors.bond.BondSigmaElectronegativityDescriptor;
@@ -383,12 +383,12 @@ public class CompareCSV_to_OPERA_DB {
 		// TODO Auto-generated method stub
 
 		 CompareCSV_to_OPERA_DB c=new  CompareCSV_to_OPERA_DB();
-//		 c.createRandomSamples("data\\opera\\csv2");
+		 c.createRandomSamples("data\\opera\\csv2");
 		 
 //		 String sid=c.getSID("DTXCID8071063");
 //		 System.out.println(sid);
 		 
-//		 c.compareToOPERA_DB(new File("data\\opera\\csv2\\json random sample\\OPERA_AOH.json"));
+		 c.compareToOPERA_DB(new File("data\\opera\\csv2\\json random sample\\OPERA_AOH.json"));
 
 		 c.compareFiles("data\\opera\\csv2\\json random sample");
 		 

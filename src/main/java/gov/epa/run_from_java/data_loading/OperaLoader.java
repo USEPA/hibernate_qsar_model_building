@@ -48,8 +48,8 @@ public class OperaLoader {
 	
 	
 	OperaLoader(boolean loadSC) {
-		ExperimentalRecordLoader.loadSourceChemicalMap=loadSC;
-		loader=new ExperimentalRecordLoader("tmarti02",true);
+//		ExperimentalRecordLoader.loadSourceChemicalMap=loadSC;
+		loader=new ExperimentalRecordLoader("tmarti02");
 	}
 	
 
@@ -554,6 +554,8 @@ public class OperaLoader {
 	
 	void loadPropertyValues() {
 		String sourceName="OPERA2.9";
+		
+		loader.mapTables(sourceName);
 
 //		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.BOILING_POINT,ExperimentalRecordLoader.typePhyschem,sourceName);
 //		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.MELTING_POINT,ExperimentalRecordLoader.typePhyschem,sourceName);
