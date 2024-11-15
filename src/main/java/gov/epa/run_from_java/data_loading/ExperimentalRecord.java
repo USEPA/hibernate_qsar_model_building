@@ -1,12 +1,19 @@
 package gov.epa.run_from_java.data_loading;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Hashtable;
+import java.util.List;
 
 import org.apache.commons.text.StringEscapeUtils;
+
+import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.exp_prop.entity.LiteratureSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 
 public class ExperimentalRecord {
@@ -31,6 +38,9 @@ public class ExperimentalRecord {
 	
 	//Property value fields:
 	public String property_value_string;//Store original string from source for checking later
+	
+	public String property_value_string_parsed;
+	
 	public Double property_value_min_original;//The minimum value of a property when a range of values is given
 	public Double property_value_max_original;//The maximum value of a property when a range of values is given
 	public Double property_value_point_estimate_original;// Point estimate of the property (when a single value is given)
@@ -75,6 +85,43 @@ public class ExperimentalRecord {
 	public boolean flag=false;
 	public String reason;//If keep=false or flag=true, why?
 	
+	
+	//Converting to ArrayList allows you to add to it later...
+		public final static List<String> outputFieldNames= new ArrayList<String>(Arrays.asList("id_physchem",
+				"keep",			
+				"reason",
+				"casrn",
+				"dsstox_substance_id",
+				"einecs",
+				"chemical_name",
+				"synonyms",
+				"smiles",
+				"source_name",
+				"property_name",
+				"property_value_point_estimate_original",
+				"property_value_min_original",
+				"property_value_max_original",
+				"property_value_units_original",
+				"property_value_string",
+				"property_value_string_parsed",
+				"property_value_qualitative",
+				"property_value_numeric_qualifier",
+				"property_value_point_estimate_final",
+				"property_value_min_final",
+				"property_value_max_final",
+				"property_value_units_final",
+				"pressure_mmHg",
+				"temperature_C",
+				"pH",
+				"measurement_method",
+				"note",
+				"flag",
+				"original_source_name",
+				"document_name",
+				"file_name",
+				"reference",
+				"url",
+				"date_accessed"));
 	
 	public SourceChemical getSourceChemical(String lanId,PublicSource publicSource,LiteratureSource literatureSource) {
 		SourceChemical sourceChemical = new SourceChemical();
@@ -150,5 +197,147 @@ public class ExperimentalRecord {
 		
 		comboID=CAS+del+EINECS+del+name+del+SMILES+del+DTXSID+del+DTXCID;
 		
+	}
+	
+	
+	
+	public String toString() {
+		return toString("|");
+	}
+	public String toString(String del) {
+		// TODO Auto-generated method stub
+		return toString(del,outputFieldNames);
+	}
+	
+	//convert to string by reflection:
+	public String toString(String del,List<String> fieldNames) {
+
+		String Line = "";
+		
+		for (int i = 0; i < fieldNames.size(); i++) {
+			try {
+
+
+				Field myField = this.getClass().getDeclaredField(fieldNames.get(i));
+
+				String val=null;
+
+//				System.out.println(fieldNames[i]+"\t"+myField.getType().getName());
+
+				if (myField.getType().getName().contains("Double")) {
+					if (myField.get(this)==null) {
+						val="";	
+					} else {
+						val=myField.get(this)+"";
+					}
+
+				} else if (myField.getType().getName().contains("Integer")) {
+					if (myField.get(this)==null) {
+						val="";	
+					} else {
+						val=myField.get(this)+"";
+					}
+				} else if (myField.getType().getName().contains("Boolean")) {
+					if (myField.get(this)==null) {
+						val="";	
+					} else {
+						val=myField.get(this)+"";
+					}
+					
+				} else if (myField.getType().getName().contains("boolean")) {
+					val=myField.getBoolean(this)+"";
+				
+				
+				} else {//string
+					if (myField.get(this)==null) {
+						//								val="\"\"";
+						val="";
+					} else {
+						//								val="\""+(String)myField.get(this)+"\"";
+						val=(String)myField.get(this);
+					} 
+				}
+
+				val=val.replace("\r\n","<br>");
+				val=val.replace("\n","<br>");
+
+				if (val.contains(del)) {
+					val=val.replace(del,"_");
+//					System.out.println("***WARNING***"+this.casrn+"\t"+val+"\thas delimiter in field "+fieldNames.get(i)+" del="+del);
+				}
+
+				Line += val;
+				if (i < fieldNames.size() - 1) {
+					Line += del;
+				}
+
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+		}
+
+		return Line;
+	}
+	
+	public String toJson(List<String> fieldNames) {
+
+		
+		JsonObject jo=new JsonObject();
+		
+		for (int i = 0; i < fieldNames.size(); i++) {
+			try {
+
+				Field myField = this.getClass().getDeclaredField(fieldNames.get(i));
+
+				String val=null;
+
+//				System.out.println(fieldNames[i]+"\t"+myField.getType().getName());
+
+				if (myField.getType().getName().contains("Double")) {
+					if (myField.get(this)==null) {
+						continue;	
+					} else {
+						val=myField.get(this)+"";
+					}
+
+				} else if (myField.getType().getName().contains("Integer")) {
+					if (myField.get(this)==null) {
+						continue;		
+					} else {
+						val=myField.get(this)+"";
+					}
+				} else if (myField.getType().getName().contains("Boolean")) {
+					if (myField.get(this)==null) {
+						continue;		
+					} else {
+						val=myField.get(this)+"";
+					}
+					
+				} else if (myField.getType().getName().contains("boolean")) {
+					val=myField.getBoolean(this)+"";
+				} else {//string
+					if (myField.get(this)==null) {
+						continue;	
+					} else {
+						//								val="\""+(String)myField.get(this)+"\"";
+						val=(String)myField.get(this);
+					} 
+				}
+
+				val=val.replace("\r\n","<br>");
+				val=val.replace("\n","<br>");
+
+				jo.addProperty(fieldNames.get(i), val);
+				
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+		}
+
+		return Utilities.gson.toJson(jo);
 	}
 }

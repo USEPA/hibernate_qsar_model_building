@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,11 +24,13 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalService;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalServiceImpl;
 import gov.epa.endpoints.datasets.dsstox_mapping.DsstoxMapper;
+import gov.epa.run_from_java.scripts.DatasetCreatorScript;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.util.ParseStringUtils;
 
@@ -35,6 +38,9 @@ import gov.epa.util.ParseStringUtils;
 * @author TMARTI02
 */
 public class SourceChemicalUtilities {
+
+	static String strFolderNewLists="data\\dev_qsar\\output\\000 new chemreg lists\\";
+	
 	Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
 	SourceChemicalService sourceChemicalService=new SourceChemicalServiceImpl(); 
@@ -90,7 +96,7 @@ public class SourceChemicalUtilities {
 		}
 		System.out.println(scList.size());
 		
-		String filepath="data\\dev_qsar\\output\\new chemreg lists\\exp_prop_2024_02_02_from_prod_chemprop.txt";
+		String filepath=strFolderNewLists+ "exp_prop_2024_02_02_from_prod_chemprop.txt";
 		
 		DsstoxMapper.writeChemRegImportFile(scList, filepath);
 		
@@ -138,7 +144,7 @@ public class SourceChemicalUtilities {
 			if(!sourceName.equals("OChem"))continue;
 			
 			System.out.println(sourceName+"\t"+mapBySource.get(sourceName).size());
-			String filepath="data\\dev_qsar\\output\\new chemreg lists\\exp_prop_2024_02_02_from_"+sourceName+".txt";
+			String filepath=strFolderNewLists+"exp_prop_2024_02_02_from_"+sourceName+".txt";
 
 			DsstoxMapper.writeChemRegImportFile(mapBySource.get(sourceName), filepath);
 
@@ -168,8 +174,8 @@ public class SourceChemicalUtilities {
 		}
 		
 		System.out.println(sourceName+":"+scList.size());
-//		String filepath="data\\dev_qsar\\output\\new chemreg lists\\exp_prop_2024_04_10_from_"+sourceName+".txt";
-		String filepath="data\\dev_qsar\\output\\new chemreg lists\\"+sourceName+"\\"+sourceName+".txt";
+//		String filepath=strFolderNewLists+"exp_prop_2024_04_10_from_"+sourceName+".txt";
+		String filepath=strFolderNewLists+sourceName+"\\"+sourceName+".txt";
 		
 		File file=new File(filepath);
 		System.out.println(file.getAbsolutePath());
@@ -182,11 +188,9 @@ public class SourceChemicalUtilities {
 	
 	void writeChemRegFileForPublicSource2() {
 		
-		List<SourceChemical>scList=new ArrayList<>();
-
 //		String sourceName="OChem_2024_04_03";
-//		String sourceName="PubChem_2024_03_20";
-		String sourceName="OPERA2.8";
+		String sourceName="PubChem_2024_03_20";
+//		String sourceName="OPERA2.8";
 		
 		PublicSource ps=new PublicSource();
 		ps.setName(sourceName);
@@ -197,12 +201,16 @@ public class SourceChemicalUtilities {
 
 		//		String filepath="data\\dev_qsar\\output\\new chemreg lists\\exp_prop_2024_04_10_from_"+sourceName+".txt";
 //		String filepath="data\\dev_qsar\\output\\new chemreg lists\\"+sourceName+"\\"+sourceName+".txt";
-		String filepath="data\\dev_qsar\\output\\new chemreg lists\\exp_prop_2024_02_02_from_"+sourceName+".txt";
+		
+		File folder=new File(strFolderNewLists+sourceName);
+		folder.mkdirs();
+		
+		String filepath=folder.getAbsolutePath()+File.separator+"exp_prop_2024_02_02_from_"+sourceName+".txt";
 		
 		File file=new File(filepath);
 		System.out.println(file.getAbsolutePath());
 		
-		DsstoxMapper.writeChemRegImportFile(scList, filepath,40000);
+		DsstoxMapper.writeChemRegImportFile(sourceChemicals, filepath,20000);
 		
 	}
 	void writeChemRegFileLiteratureSources() {
@@ -230,7 +238,7 @@ public class SourceChemicalUtilities {
 
 		for (String sourceName:mapBySource.keySet()) {
 			System.out.println(sourceName+"\t"+mapBySource.get(sourceName).size());
-			String filepath="data\\dev_qsar\\output\\new chemreg lists\\literature sources\\exp_prop_2024_02_02_from_"+sourceName+".txt";
+			String filepath=strFolderNewLists+"literature sources\\exp_prop_2024_02_02_from_"+sourceName+".txt";
 			DsstoxMapper.writeChemRegImportFile(mapBySource.get(sourceName), filepath,40000);
 		}
 		
@@ -466,6 +474,56 @@ public class SourceChemicalUtilities {
 
 	}
 	
+	void findMissingSourceChemicalsForPublicSource() {
+		
+//		String sourceName="OChem_2024_04_03";
+//		String sourceName="PubChem_2024_03_20";
+		String sourceName="OPERA2.8";
+		
+		PublicSource ps=new PublicSource();
+		ps.setName(sourceName);
+
+		System.out.println("Finding source chemicals for "+sourceName);
+		List<SourceChemical>sourceChemicals=sourceChemicalService.findAllFromSource(ps);
+		
+		
+		List<SourceChemical>sourceChemicalsMissing=new ArrayList<>();
+		Map<String,SourceChemical>mapList=new TreeMap<>();
+		
+		List<String>listNames=DatasetCreatorScript.getChemRegListNames2(Arrays.asList(sourceName));
+		
+		for (String listName:listNames) {
+			Map<String,SourceChemical>mapList2=getMapChemRegList(listName);
+			System.out.println(listName+"\t"+mapList2.size());
+			mapList.putAll(mapList2);
+		}
+				
+		for (SourceChemical sourceChemical:sourceChemicals) {
+			
+			if(!mapList.containsKey(sourceChemical.generateSrcChemId())) {
+				System.out.println(sourceChemical.generateSrcChemId()+"\tmissing in dsstox chemreg list");
+				sourceChemicalsMissing.add(sourceChemical);
+			} else {
+//				System.out.println(sourceChemical.getSourceCasrn()+"\t"+mapList.get(sourceChemical.generateSrcChemId()).getSourceCasrn());
+			}
+			
+		}
+		
+		System.out.println(sourceChemicals.size()+"\t"+mapList.size());
+		
+		if(sourceChemicalsMissing.size()>0) {
+			String strFolder=strFolderNewLists+sourceName+"\\";
+			File folder=new File(strFolder);
+			folder.mkdirs();
+			
+			String filepath=strFolder+sourceName+"_missing.txt";
+			DsstoxMapper.writeChemRegImportFile(sourceChemicalsMissing, filepath,40000);
+		} else {
+			System.out.println("No missing source chemicals in dsstox");	
+		}
+		
+	}
+	
 	
 	
 	public static void main(String[] args) {
@@ -476,12 +534,14 @@ public class SourceChemicalUtilities {
 //		scu.writeChemRegFilePublicSources();
 //		scu.writeChemRegFileLiteratureSources();//dont have any without dtxrids- all from chemprop
 
-		scu.writeChemRegFileForPublicSource2();
+//		scu.writeChemRegFileForPublicSource2();
+		
+//		scu.findMissingSourceChemicalsForPublicSource();
 		
 		
 //		SourceChemicalUtilities scu=new SourceChemicalUtilities(false);
-//		String folder="data\\dev_qsar\\output\\new chemreg lists\\check\\";
-//		String folder="data\\dev_qsar\\output\\new chemreg lists\\OChem 40K\\done\\";
+		String folder=strFolderNewLists+"check\\";		
+//		String folder=folderNewLists+"OChem 40K\\done\\";
 //		File FOLDER=new File(folder);
 //		for (File file:FOLDER.listFiles()) {
 //			scu.compareChemRegListToImportFile(file);

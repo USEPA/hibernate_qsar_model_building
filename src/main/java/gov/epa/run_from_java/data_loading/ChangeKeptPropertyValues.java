@@ -18,6 +18,9 @@ import gov.epa.run_from_java.scripts.SqlUtilities;
 */
 public class ChangeKeptPropertyValues {
 
+	public static String typeAnimalFish="Fish";
+	public static String typeAnimalDaphnid="Daphnid";
+	public static String typeAnimalFatheadMinnow="Fathead minnow";
 	
 	PropertyValueService propertyValueService = new PropertyValueServiceImpl();
 			
@@ -52,8 +55,14 @@ public class ChangeKeptPropertyValues {
 
 			if(!pv.getKeep()) continue;
 
-//			String chemicalName=pv.getSourceChemical().getSourceChemicalName();
+			String chemicalName=pv.getSourceChemical().getSourceChemicalName();
+			String CAS=pv.getSourceChemical().getSourceCasrn();
 			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
+			
+			if(dtxsid==null) {
+				System.out.println("Missing source dtxsid for "+chemicalName+" ("+CAS+")");
+				continue;
+			}
 
 			Double toxValue_g_L=null;
 
@@ -124,12 +133,18 @@ public class ChangeKeptPropertyValues {
 
 			String chemicalName=pv.getSourceChemical().getSourceChemicalName();
 			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
-			
+			String CAS=pv.getSourceChemical().getSourceCasrn();
+						
 //			System.out.println(pv.getUnit().getName());
 			
 			Double toxValue_g_L=null;
 
 			if(!pv.getKeep()) continue;
+			
+			if(dtxsid==null) {
+				System.out.println("Missing source dtxsid for "+chemicalName+" ("+CAS+")");
+				continue;
+			}
 			
 			if(htPred.containsKey(dtxsid)) {
 		
@@ -149,15 +164,15 @@ public class ChangeKeptPropertyValues {
 								
 				Double BaseLineTox_Log_mmol_L=null;
 				
-				if (typeAnimal.equals("Fish")) {
+				if (typeAnimal.equals(typeAnimalFish)) {
 					//ECOSAR manual, Baseline Toxicity Equation for Fish:
 					BaseLineTox_Log_mmol_L=-0.8981*logKowPred + 1.7108;	
-				} else if (typeAnimal.equals("Fathead minnow")) {					
+				} else if (typeAnimal.equals(typeAnimalFatheadMinnow)) {					
 					//FHM model for nonpolar compounds, Nendza and Russom, 1991:
 					BaseLineTox_Log_mmol_L=-0.79*logKowPred + 1.35;
 					//Note this ends up excluding some records for methanol!
 					//Is there a better model for FHM
-				} else if (typeAnimal.equals("Daphnid")) {
+				} else if (typeAnimal.equals(typeAnimalDaphnid)) {
 //					ECOSAR manual, Baseline Toxicity Equation for Daphnid:
 					BaseLineTox_Log_mmol_L=-0.8580*logKowPred + 1.3848;
 				} else {
@@ -272,7 +287,7 @@ public class ChangeKeptPropertyValues {
 				if(!parameterValue.getParameter().getName().equals("exposure_type")) continue;
 				String exposure_type=parameterValue.getValueText().toLowerCase();
 				if(exposure_type.contains("not reported")) {
-					System.out.println(dtxsid+"\texposure_type="+exposure_type);
+//					System.out.println(dtxsid+"\texposure_type="+exposure_type);
 					propertyValues.remove(i--);
 					break;
 				}
@@ -283,5 +298,36 @@ public class ChangeKeptPropertyValues {
 		return countBefore-countAfter;
 		
 	}
+	
+	public static int removeBasedOnConcentrationType(String datasetName, List<PropertyValue> propertyValues) {
+		
+		List<String>okTypes=Arrays.asList("active ingredient");
+		
+		int countBefore=propertyValues.size();
+		for (int i=0;i<propertyValues.size();i++) {
+			
+			PropertyValue pv=propertyValues.get(i);
+			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
+			
+			for (ParameterValue parameterValue:pv.getParameterValues()) {
+				
+				if(!parameterValue.getParameter().getName().equals("concentration_type")) continue;
+				
+				String concentration_type=parameterValue.getValueText().toLowerCase();
+				
+				if(!okTypes.contains(concentration_type)) {
+//					System.out.println(dtxsid+"\tconcentration_type="+concentration_type);
+					propertyValues.remove(i--);
+					break;
+				}
+				
+			}
+		}
+		int countAfter=propertyValues.size();
+		
+		return countBefore-countAfter;
+		
+	}
+
 
 }
