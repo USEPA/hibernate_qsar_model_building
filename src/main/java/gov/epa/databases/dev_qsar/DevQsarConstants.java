@@ -11,11 +11,12 @@ import java.util.List;
 import com.google.gson.Gson;
 
 
+
 public class DevQsarConstants {
 	
 	public static final String sourceNameOChem_2024_04_03="OChem_2024_04_03";
+	public static final String sourceNamePubChem_2024_03_20="PubChem_2024_03_20";
 	
-
 	public Gson gson;
 	
 	// Numerical constants for processing and modeling
@@ -310,8 +311,14 @@ public class DevQsarConstants {
 	
 	public static final String PCT_VOLUME="%v";
 	public static final String PCT_WEIGHT="%w";
+	public static final String PCT="%";
 	
 	public static final String TEXT="Text";
+	
+	public static final String G_KG_H20="g/kg H2O";
+	
+	
+	
 	
 	//ghs data gathering constants for reference (a lot of these get converted in ghs data gathering and dont make it into units table):
 	
@@ -407,6 +414,7 @@ public class DevQsarConstants {
 	public static final String RF = "rf";
 	public static final String DNN = "dnn";
 	public static final String REG = "reg";
+	public static final String LAS = "las";
 	public static final String CONSENSUS = "consensus";
 	
 	// Statistic names in qsar_models database
@@ -739,7 +747,7 @@ public class DevQsarConstants {
 		} else if(propertyNameDB.equals(OH)) {
 			return "OH rate constant for the atmospheric, gas-phase reaction between photochemically produced hydroxyl radicals and organic chemicals";
 		} else if(propertyNameDB.equals(RBIODEG)) {
-			return "Ready biodegradability of organic chemicals";
+			return "A binary classification in terms of the ready biodegradability of organic chemicals";
 
 		} else if(propertyNameDB.equals(BIODEG)) {
 			return "A binary classification in terms of the fast biodegradability of organic chemicals";
@@ -795,6 +803,8 @@ public class DevQsarConstants {
 		map.put(ANDROGEN_RECEPTOR_ANTAGONIST, "BINARY");
 		map.put(ANDROGEN_RECEPTOR_BINDING, "BINARY");
 
+		
+		map.put(OH, "CM3_MOLECULE_SEC");
 		
 		map.put(LOG_KOW, "LOG_UNITS");
 		map.put(LOG_KOA, "LOG_UNITS");
@@ -868,7 +878,7 @@ public class DevQsarConstants {
 
 		
 		//Percepta properties:
-		map.put(MOLAR_VOLUME, "CM3");
+		map.put(MOLAR_VOLUME, "CM3_MOL");
 		map.put(MOLAR_REFRACTIVITY, "CM3_MOL");
 		map.put(INDEX_OF_REFRACTION, "DIMENSIONLESS");
 		map.put(POLARIZABILITY, "CUBIC_ANGSTROM");

@@ -802,12 +802,13 @@ public class RunCaseStudiesTodd {
 //		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
 //		datasetNames.add("exp_prop_96HR_FHM_LC50_v2 modeling");
 //		datasetNames.add("exp_prop_96HR_FHM_LC50_v3 modeling");
+		datasetNames.add("exp_prop_96HR_FHM_LC50_v4 modeling");
 
 //		datasetNames.add("exp_prop_96HR_BG_LC50_v1 modeling");
 //		datasetNames.add("exp_prop_96HR_BG_LC50_v2 modeling");
 		
 //		datasetNames.add("TTR_Binding_training_remove_bad_max_conc");
-		datasetNames.add("exp_prop_96HR_scud_v1 modeling");
+//		datasetNames.add("exp_prop_96HR_scud_v1 modeling");
 		
 			
 		List<String>methods=new ArrayList<>();			
@@ -1176,7 +1177,7 @@ public class RunCaseStudiesTodd {
 	}
 	
 	
-	private static List<Long> buildConsensusModel2(String datasetName,String splittingName,String descriptorsetName,String []methodsConsensus) {
+	public static List<Long> buildConsensusModel2(String datasetName,String splittingName,String descriptorsetName,String []methodsConsensus) {
 		
 		
 		

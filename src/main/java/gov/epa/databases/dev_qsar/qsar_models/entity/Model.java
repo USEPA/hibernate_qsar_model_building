@@ -16,6 +16,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
@@ -25,7 +26,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 //TODO add name, version columns 
 
 @Entity
-@Table(name="models")
+@Table(name="models",uniqueConstraints={@UniqueConstraint(columnNames = {"name","fk_source_id"})})
 public class Model {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
@@ -287,6 +288,14 @@ public class Model {
 
 	public void setModelsInConsensusModel(List<ModelInConsensusModel> modelsInConsensusModel) {
 		this.modelsInConsensusModel = modelsInConsensusModel;
+	}
+
+	public Boolean getIs_public() {
+		return is_public;
+	}
+
+	public void setIs_public(Boolean is_public) {
+		this.is_public = is_public;
 	}
 
 //	public String getUrlScatterPlot() {
