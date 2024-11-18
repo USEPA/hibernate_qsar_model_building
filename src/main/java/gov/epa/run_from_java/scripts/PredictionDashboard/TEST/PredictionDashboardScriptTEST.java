@@ -1,4 +1,4 @@
-package gov.epa.run_from_java.scripts.PredictionDashboard;
+package gov.epa.run_from_java.scripts.PredictionDashboard.TEST;
 
 import java.awt.Desktop;
 import java.io.*;
@@ -52,9 +52,11 @@ import gov.epa.databases.dev_qsar.qsar_models.service.SourceServiceImpl;
 import gov.epa.databases.dsstox.DsstoxSession;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
-import gov.epa.run_from_java.scripts.OPERA.OPERA_Report;
-import gov.epa.run_from_java.scripts.OPERA.OPERA_csv_to_PostGres_DB;
-import gov.epa.run_from_java.scripts.OPERA.OPERA_lookups;
+import gov.epa.run_from_java.scripts.PredictionDashboard.CreatorScript;
+import gov.epa.run_from_java.scripts.PredictionDashboard.DatabaseUtilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.OPERA_Report;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.OPERA_csv_to_PostGres_DB;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.OPERA_lookups;
 
 
 /**
@@ -1336,7 +1338,7 @@ public class PredictionDashboardScriptTEST  {
 	
 	
 	void deleteTEST_Records() {
-		OPERA_csv_to_PostGres_DB o=new OPERA_csv_to_PostGres_DB();
+		DatabaseUtilities o=new DatabaseUtilities();
 		
 		o.deleteRecordsSimple("prediction_reports",minModelId,maxModelID);
 		o.deleteRecordsSimple("qsar_predicted_ad_estimates",minModelId,maxModelID);

@@ -1,4 +1,4 @@
-package gov.epa.run_from_java.scripts.PredictionDashboard;
+package gov.epa.run_from_java.scripts.PredictionDashboard.Episuite;
 
 import java.io.*;
 import java.text.DecimalFormat;
@@ -12,6 +12,9 @@ import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.AtomContainerSet;
 import org.openscience.cdk.interfaces.IAtomContainer;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.srcinc.episuite.biodegradationrate.BiodegradationRateResults;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
@@ -25,6 +28,7 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
+import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Source;
 import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxRecordServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxSnapshotServiceImpl;
@@ -39,8 +43,12 @@ import gov.epa.run_from_java.scripts.EpiSuite.EpisuiteResults;
 import gov.epa.run_from_java.scripts.EpiSuite.EpisuiteWebserviceScript;
 import gov.epa.run_from_java.scripts.EpiSuite.GetBiodegFragmentCounts;
 import gov.epa.run_from_java.scripts.EpiSuite.RunBiowinFromJava;
+import gov.epa.run_from_java.scripts.EpiSuite.EpisuiteResults.PropertyResult2;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
-import gov.epa.run_from_java.scripts.OPERA.RecordToxValModel;
+import gov.epa.run_from_java.scripts.PredictionDashboard.CreatorScript;
+import gov.epa.run_from_java.scripts.PredictionDashboard.DashboardPredictionUtilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.OPERA_lookups;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.RecordToxValModel;
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.ValeryBody;
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.WebTEST2PredictionResponse;
 import kong.unirest.HttpResponse;
@@ -60,6 +68,8 @@ public class PredictionResultsEPISUITEScript {
 	
 	String version="API_1.0";
 	String lanId="tmarti02";
+	
+	static Gson gson=new Gson();
 	
 	private void runPredictionSnapshot() {
 //		int maxCount=20;//number of chemicals to run
@@ -962,70 +972,6 @@ public class PredictionResultsEPISUITEScript {
 		
 	}
 
-	void compileApiJsonResultsFromFolder(String folderpath,String endpoint) {
-		
-		LinkedHashMap<String,String>hmModelNameToPropertyName=getModelNameToPropertyNameMap();
-		
-		DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
-		DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
-		Hashtable<String,Long> htDTXSIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot,"dtxsid");
-
-		HashMap<String, Model>hmMap=createModels();		
-
-		List<Model> models=new ArrayList<>();
-		
-		for(String modelName:hmModelNameToPropertyName.keySet()) {
-			System.out.println(modelName);
-			String property=hmModelNameToPropertyName.get(modelName);
-			if(endpoint.equals(property))models.add(hmMap.get(modelName));
-		}
-
-		
-//		for(String modelName:modelNames) {
-//			System.out.println(modelName);
-//		}
-
-//		if(true)return;
-
-//		String modelName="EPISUITE_BCF";
-		
-		File folder=new File(folderpath);
-		Hashtable<String,PredictionDashboard>allPreds=new Hashtable<>();
-		
-		for (File file:folder.listFiles()) {
-			if(!file.getName().contains(".json")) continue;
-			if(file.getName().contains("sample")) continue;
-
-			if(!file.getName().equals("episuite results 9012.json")) continue;
-			
-//			System.out.println(file.getName());
-
-//			Model model=hmMap.get(modelName);
-						
-			
-			List<PredictionDashboard>results=getResultsFromAPIJsonFile(file.getAbsolutePath(),models);
-
-			for(PredictionDashboard pd:results) {
-				String dtxsid=pd.getDsstoxRecord().getDtxsid();
-				pd.getDsstoxRecord().setId(htDTXSIDtoDsstoxRecordId.get(dtxsid));
-				
-				String key=pd.getDsstoxRecord().getId()+"\t"+pd.getModel().getId();
-				if(allPreds.get(key)!=null) continue;//we already have this dtxsid (duplicate)
-				
-				allPreds.put(key, pd);
-				System.out.println(dtxsid+"\t"+key+"\t"+pd.getModel().getName()+"\t"+pd.getExperimentalValue()+"\t"+pd.getPredictionValue()+"\t"+pd.getPredictionError());
-			}
-			
-			System.out.println(file.getName()+"\t"+results.size()+"\t"+allPreds.size());
-
-			
-//			System.out.println(file.getName()+"\t"+results.size());
-		}
-		
-//		writeChemicalsToRunFile(folderpath, allPreds);
-		
-		
-	}
 	
 	/**
 	 * Gets results from a json file from the api
@@ -1035,13 +981,148 @@ public class PredictionResultsEPISUITEScript {
 	 * @param models
 	 * @return
 	 */
-	public static List<PredictionDashboard> getResultsFromAPIJsonFile(String filepath,List<Model> models) {
+	public static List<PredictionDashboard> getResultsFromAPIJsonFile(String filepath,List<Model> models,Hashtable<String,DsstoxRecord> htDTXSIDtoDsstoxRecord,Hashtable<String,Dataset>htModelNameToDataset) {
 
 		String user="tmarti02";
 
 		try {
 
 			List<PredictionDashboard>allResults=new ArrayList<>();		
+
+			BufferedReader br=new BufferedReader(new FileReader(filepath));
+
+			String Line=null;
+
+			int counter=0;
+
+			long t1= System.currentTimeMillis();
+
+			while (true) {
+				counter++;
+				Line=br.readLine();
+				//			System.out.println(Line);
+				if(Line==null) break;
+
+				EpisuiteResults results=EpisuiteResults.getResults(Line);
+				//			JsonObject results=Utilities.gson.fromJson(Line,JsonObject.class);
+
+				if(!results.dtxsid.contains("DTXSID")) {
+					continue;
+					//				System.out.println(results.dtxsid+"\t"+results.smiles+"\t"+results.bioconcentration.bioaccumulationFactor);
+				}
+
+				if(counter%1000==0) {
+					long t2= System.currentTimeMillis();
+					System.out.println("\t"+counter+"\t"+(t2-t1)+" ms");
+					t1=t2;
+				}
+
+				//			System.out.println(endpoint);
+				convertEpisuiteResultsToPredictionDashboard(models, user, allResults, results, htDTXSIDtoDsstoxRecord,htModelNameToDataset);
+
+			}
+
+			//		System.out.println(lastLine);
+
+			return allResults;
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+
+	}
+	
+
+	public static List<PredictionDashboard> getResultsFromAPIJsonFile(String filepath,List<Model> models,String dtxsid,
+			Hashtable<String,DsstoxRecord> htDTXSIDtoDsstoxRecord,Hashtable<String,Dataset>htModelNameToDataset) {
+
+		String json=GetJson(dtxsid, filepath);
+		if(json==null) return null;
+		
+		JsonObject jo=Utilities.gson.fromJson(json, JsonObject.class);		
+		System.out.println(Utilities.gson.toJson(jo));
+				
+		EpisuiteResults results=EpisuiteResults.getResults(json);
+		
+		List<PredictionDashboard>allResults=new ArrayList<>();
+		String user="tmarti02";
+		convertEpisuiteResultsToPredictionDashboard(models, user, allResults, 
+				results, htDTXSIDtoDsstoxRecord,htModelNameToDataset);
+		
+		return allResults;
+
+	}
+	
+	public static List<PredictionDashboard> getResultsFromAPI(String dtxsid,List<Model> models,
+			Hashtable<String,DsstoxRecord> htDTXSIDtoDsstoxRecord,Hashtable<String,Dataset>htModelNameToDataset) {
+
+		String smiles=htDTXSIDtoDsstoxRecord.get(dtxsid).getSmiles();
+		
+		String json=EpisuiteWebserviceScript.runEpiwin(smiles);
+		if(json==null) return null;
+		
+		JsonObject jo=Utilities.gson.fromJson(json, JsonObject.class);		
+//		System.out.println(Utilities.gson.toJson(jo));
+		
+		jo.addProperty("dtxsid", dtxsid);
+		
+		
+		json=gson.toJson(jo);
+		
+		Utilities.jsonToPrettyJson(json,"data\\episuite\\sample reports\\EPISUITE_RESULTS.json" );
+		
+		EpisuiteResults results=EpisuiteResults.getResults(json);
+		
+		List<PredictionDashboard>allResults=new ArrayList<>();
+		String user="tmarti02";
+		convertEpisuiteResultsToPredictionDashboard(models, user, allResults, results, 
+				htDTXSIDtoDsstoxRecord,htModelNameToDataset);
+		
+		return allResults;
+
+	}
+
+
+	private static void convertEpisuiteResultsToPredictionDashboard(List<Model> models, String user,
+			List<PredictionDashboard> allResults, EpisuiteResults results,
+			Hashtable<String,DsstoxRecord> htDTXSIDtoDsstoxRecord,
+			Hashtable<String,Dataset>htModelNameToDataset) {
+		
+		
+		
+		for(Model model:models) {
+
+			PredictionDashboard pd=new PredictionDashboard();
+			pd.setCanonQsarSmiles("N/A");
+			pd.setCreatedBy(user);
+			pd.setUpdatedBy(user);
+
+//			DsstoxRecord dr=new DsstoxRecord();
+//			dr.setDtxsid(results.dtxsid);
+//			dr.setSmiles(results.smiles);
+//			pd.setDsstoxRecord(dr);
+			
+			pd.setDsstoxRecord(htDTXSIDtoDsstoxRecord.get(results.dtxsid));			
+
+			pd.setModel(model);
+			results.setExpPred(pd,htModelNameToDataset);
+			allResults.add(pd);
+			
+									
+		}
+	}
+	
+	
+	public static List<String> getChemicalsFromAPIJsonFile(String filepath) {
+
+		String user="tmarti02";
+
+		try {
+			
+			File file=new File(filepath);
+
+			List<String>allChemicals=new ArrayList<>();		
 
 			BufferedReader br=new BufferedReader(new FileReader(filepath));
 
@@ -1072,32 +1153,14 @@ public class PredictionResultsEPISUITEScript {
 				}
 
 
-				//			System.out.println(endpoint);
-
-				for(Model model:models) {
-
-					PredictionDashboard pd=new PredictionDashboard();
-					pd.setCanonQsarSmiles("N/A");
-					pd.setCreatedBy(user);
-					pd.setUpdatedBy(user);
-
-					DsstoxRecord dr=new DsstoxRecord();
-					dr.setDtxsid(results.dtxsid);
-					dr.setSmiles(results.smiles);
-					pd.setDsstoxRecord(dr);
-
-					pd.setModel(model);
-					results.setExpPred(pd,model);
-					allResults.add(pd);
-				}
-
+				String line=results.dtxsid+"\t"+results.smiles+"\t"+file.getName();
 				
-
+				allChemicals.add(line);
 			}
 
 			//		System.out.println(lastLine);
 
-			return allResults;
+			return allChemicals;
 
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -1105,7 +1168,6 @@ public class PredictionResultsEPISUITEScript {
 		}
 
 	}
-	
 	
 
 	void compileApiJsonResultsFromFolder(String folderpath) {
@@ -1115,8 +1177,11 @@ public class PredictionResultsEPISUITEScript {
 		
 		DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
 		DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
-		Hashtable<String,Long> htDTXSIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot,"dtxsid");
+//		Hashtable<String,Long> htDTXSIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot,"dtxsid");
+//		Hashtable<String,Long> htDTXSIDtoDsstoxRecordId=dsstoxRecordService.getDsstoxRecordsHashtableFromJsonExport(OPERA_lookups.fileJsonDsstoxRecords,"dtxsid");
+		Hashtable<String,DsstoxRecord> htDTXSIDtoDsstoxRecord=dsstoxRecordService.getDsstoxRecordsHashtableFromJsonExport(OPERA_lookups.fileJsonDsstoxRecords,"dtxsid");
 
+		
 		HashMap<String, Model>hmMap=createModels();		
 
 		List<Model> models=new ArrayList<>();
@@ -1125,6 +1190,8 @@ public class PredictionResultsEPISUITEScript {
 //			System.out.println(modelName);
 			models.add(hmMap.get(modelName));
 		}
+
+		Hashtable<String,Dataset>htModelNameToDataset=createDatasets();
 
 
 //		if(true)return;
@@ -1135,25 +1202,23 @@ public class PredictionResultsEPISUITEScript {
 		
 		List<PredictionDashboard>resultsAll=new ArrayList<>();
 
-		
-		
-		
+					
 		for (File file:folder.listFiles()) {
 			if(!file.getName().contains(".json")) continue;
 			if(file.getName().contains("sample")) continue;
 
-//			if(!file.getName().equals("episuite results 9012.json")) continue;
-			if(!file.getName().equals("snapshot_chemicals_to_run_9000.json")) continue;
+			if(!file.getName().equals("episuite results 9013.json")) continue;
+//			if(!file.getName().equals("snapshot_chemicals_to_run_9000.json")) continue;
 			
 			
-//			System.out.println(file.getName());
+			System.out.println(file.getName());
 
-			List<PredictionDashboard>results=getResultsFromAPIJsonFile(file.getAbsolutePath(),models);
+			List<PredictionDashboard>results=getResultsFromAPIJsonFile(file.getAbsolutePath(),models,htDTXSIDtoDsstoxRecord,htModelNameToDataset);
 
 			
 			for(PredictionDashboard pd:results) {
 				String dtxsid=pd.getDsstoxRecord().getDtxsid();
-				pd.getDsstoxRecord().setId(htDTXSIDtoDsstoxRecordId.get(dtxsid));
+				
 				
 				if(!dtxsids.contains(dtxsid)) dtxsids.add(dtxsid);
 				
@@ -1161,13 +1226,14 @@ public class PredictionResultsEPISUITEScript {
 					System.out.println(pd.toTsv());	
 				}
 				
+//				addMetadataToReport(htModelNameToDataset, pd);
+				
 //				System.out.println(dtxsid+"\t"+key+"\t"+pd.getModel().getName()+"\t"+pd.getExperimentalValue()+"\t"+pd.getPredictionValue()+"\t"+pd.getPredictionError());
 //				System.out.println(dtxsid+"\t"+pd.getModel().getName()+"\t"+pd.getExperimentalValue()+"\t"+pd.getPredictionValue()+"\t"+pd.getPredictionString()+"\t"+pd.getPredictionError());
 				resultsAll.add(pd);
 			}
 			
 			System.out.println(file.getName()+"\t"+results.size()+"\t"+resultsAll.size()+"\t"+dtxsids.size());
-
 			
 //			System.out.println(file.getName()+"\t"+results.size());
 		}
@@ -1180,6 +1246,206 @@ public class PredictionResultsEPISUITEScript {
 		
 		
 	}
+	
+	void convertRecordToPredictionsDashboard(String filepath,String dtxsid) {
+		
+		
+		boolean writeToDB=false;
+		
+		LinkedHashMap<String,String>hmModelNameToPropertyName=getModelNameToPropertyNameMap();
+		
+		DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
+		DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
+
+//		Hashtable<String,Long> htDTXSIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot,"dtxsid");
+		Hashtable<String,DsstoxRecord> htDTXSIDtoDsstoxRecord=dsstoxRecordService.getDsstoxRecordsHashtableFromJsonExport(OPERA_lookups.fileJsonDsstoxRecords,"dtxsid");
+
+		HashMap<String, Model>hmMap=createModels();		
+
+		Hashtable<String,Dataset>htModelNameToDataset=createDatasets();
+		
+		List<Model> models=new ArrayList<>();
+		
+		for(String modelName:hmModelNameToPropertyName.keySet()) {
+			models.add(hmMap.get(modelName));
+		}
+
+		List<PredictionDashboard>results=getResultsFromAPIJsonFile(filepath,models,dtxsid, htDTXSIDtoDsstoxRecord,htModelNameToDataset);
+				
+		System.out.println(PredictionDashboard.getHeader());
+		
+		for(PredictionDashboard pd:results) {
+//			pd.getDsstoxRecord().setId(htDTXSIDtoDsstoxRecord.get(dtxsid).getId());
+//			if(pd.getExperimentalValue()!=null) {
+//				System.out.println(pd.toTsv());	
+//			}
+			
+			System.out.println(pd.toTsv());
+
+//			addMetadataToReport(htModelNameToDataset, pd);
+			
+			String json=new String(pd.getPredictionReport().getFile());
+			String filepathJsonReport="data\\episuite\\sample reports\\"+pd.getModel().getName()+".json";
+			String json2=Utilities.jsonToPrettyJson(json,filepathJsonReport);
+			
+			if(json.contains("output")) {
+				System.out.println(pd.getModel().getName()+"\tHas output");
+			}
+			
+			
+//			if(pd.getPredictionReport()!=null) {
+//				String report=new String(pd.getPredictionReport().getFile());
+//				JsonObject jo=Utilities.gson.fromJson(report, JsonObject.class);
+//				String prettyReport=Utilities.gson.toJson(jo);
+//				System.out.println(prettyReport);
+//			}
+			
+//			System.out.println(dtxsid+"\t"+key+"\t"+pd.getModel().getName()+"\t"+pd.getExperimentalValue()+"\t"+pd.getPredictionValue()+"\t"+pd.getPredictionError());
+//			System.out.println(dtxsid+"\t"+pd.getModel().getName()+"\t"+pd.getExperimentalValue()+"\t"+pd.getPredictionValue()+"\t"+pd.getPredictionString()+"\t"+pd.getPredictionError());
+		}
+		
+		if(writeToDB) predictionDashboardService.createSQL(results);//write to DB
+		
+	}
+	
+
+	void convertSmilesToPredictionsDashboard(String dtxsid) {
+		
+		
+		boolean writeToDB=false;
+		
+		LinkedHashMap<String,String>hmModelNameToPropertyName=getModelNameToPropertyNameMap();
+		
+		DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
+		DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
+
+//		Hashtable<String,Long> htDTXSIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot,"dtxsid");
+		Hashtable<String,DsstoxRecord> htDTXSIDtoDsstoxRecord=dsstoxRecordService.getDsstoxRecordsHashtableFromJsonExport(OPERA_lookups.fileJsonDsstoxRecords,"dtxsid");
+
+		HashMap<String, Model>hmMap=createModels();		
+
+		Hashtable<String,Dataset>htModelNameToDataset=createDatasets();
+		
+		List<Model> models=new ArrayList<>();
+		
+		for(String modelName:hmModelNameToPropertyName.keySet()) {
+			models.add(hmMap.get(modelName));
+		}
+		
+		List<PredictionDashboard>results=getResultsFromAPI(dtxsid,models, htDTXSIDtoDsstoxRecord,htModelNameToDataset);
+				
+		System.out.println(PredictionDashboard.getHeader());
+		
+		for(PredictionDashboard pd:results) {
+			pd.getDsstoxRecord().setId(htDTXSIDtoDsstoxRecord.get(dtxsid).getId());
+//			if(pd.getExperimentalValue()!=null) {
+//				System.out.println(pd.toTsv());	
+//			}
+			
+			System.out.println(pd.toTsv());
+
+			long t1=System.currentTimeMillis();
+//			addMetadataToReport(htModelNameToDataset, pd);
+			long t2=System.currentTimeMillis();
+			
+//			System.out.println((t2-t1)+" milliseconds");
+			
+			String json=new String(pd.getPredictionReport().getFile());
+			String filepathJsonReport="data\\episuite\\sample reports\\"+pd.getModel().getName()+".json";
+			String json2=Utilities.jsonToPrettyJson(json,filepathJsonReport);
+			
+			PropertyResult2 pr2=gson.fromJson(json, PropertyResult2.class);
+			
+			EpisuiteReport er=new EpisuiteReport(pr2, pd, htModelNameToDataset.get(pd.getModel().getName()));			
+			String json3=Utilities.saveJson(er,filepathJsonReport.replace(".json", "_2.json"));
+			
+			
+			if(json.contains("output")) {
+				System.out.println(pd.getModel().getName()+"\tHas output");
+			}
+			
+			
+//			System.out.println(dtxsid+"\t"+key+"\t"+pd.getModel().getName()+"\t"+pd.getExperimentalValue()+"\t"+pd.getPredictionValue()+"\t"+pd.getPredictionError());
+//			System.out.println(dtxsid+"\t"+pd.getModel().getName()+"\t"+pd.getExperimentalValue()+"\t"+pd.getPredictionValue()+"\t"+pd.getPredictionString()+"\t"+pd.getPredictionError());
+		}
+		
+		if(writeToDB) predictionDashboardService.createSQL(results);//write to DB
+		
+	}
+
+//	private void addMetadataToReport(Hashtable<String, Dataset> htModelToDataset, PredictionDashboard pd) {
+//
+//		PredictionReport pr=pd.getPredictionReport();
+//		
+//		String json=new String(pr.getFile());
+//		JsonObject jo=gson.fromJson(json, JsonObject.class);
+//		
+//		Dataset dataset=htModelToDataset.get(pd.getModel().getName());
+//		String propertyName=dataset.getProperty().getName();
+//		
+////		System.out.println(propertyName);
+//		
+//		//Convert model to array to make it consistent:
+//		jo.addProperty("propertyName",propertyName);
+//		jo.addProperty("propertyDescription",dataset.getProperty().getDescription());
+//
+//		json=gson.toJson(jo);
+////		System.out.println(json);
+//		
+//		pr.setFile(json.getBytes());
+//	}
+	
+	
+	void compileApiJsonResultsFromFolderToChemicalCSV(String folderpath) {
+		
+		File folder=new File(folderpath);
+//		Hashtable<String,PredictionDashboard>allPreds=new Hashtable<>();
+		HashSet<String>dtxsids=new HashSet<>();
+		
+		List<PredictionDashboard>resultsAll=new ArrayList<>();
+		
+		
+		try {
+
+			FileWriter fw=new FileWriter(folderpath+"chemicals ran by api.txt");
+
+			fw.write("DTXSID\tsmiles\tfilename\r\n");
+			
+			for (File file:folder.listFiles()) {
+				if(!file.getName().contains(".json")) continue;
+				if(file.getName().contains("sample")) continue;
+
+				//			if(!file.getName().equals("episuite results 9012.json")) continue;
+				//			if(!file.getName().equals("snapshot_chemicals_to_run_9000.json")) continue;
+				//			System.out.println(file.getName());
+
+				List<String>lines=getChemicalsFromAPIJsonFile(file.getAbsolutePath());
+				System.out.println(file.getName()+"\t"+lines.size());
+
+
+				for (String line:lines) {
+					fw.write(line+"\r\n");
+				}
+
+				fw.flush();
+
+				//			System.out.println(file.getName()+"\t"+results.size()+"\t"+resultsAll.size()+"\t"+dtxsids.size());
+
+
+				//			System.out.println(file.getName()+"\t"+results.size());
+			}
+			
+			fw.close();
+
+			//		System.out.println(Utilities.gson.toJson(resultsAll));
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+	}
+	
+	
+	
 	
 	void writeToxvalModelRecordsFromJsonResultsFromFolder(String folderpath) {
 		boolean writeToDB=false;
@@ -1197,7 +1463,10 @@ public class PredictionResultsEPISUITEScript {
 		List<Model> models=new ArrayList<>();
 		for(String modelName:desiredModelNames) models.add(hmMap.get(modelName));
 	
+		Hashtable<String,DsstoxRecord> htDTXSIDtoDsstoxRecord=dsstoxRecordService.getDsstoxRecordsHashtableFromJsonExport(OPERA_lookups.fileJsonDsstoxRecords,"dtxsid");
 
+		Hashtable<String,Dataset>htModelNameToDataset=createDatasets();
+		
 		//		if(true)return;
 
 		File folder=new File(folderpath);
@@ -1226,7 +1495,7 @@ public class PredictionResultsEPISUITEScript {
 
 				//			System.out.println(file.getName());
 
-				List<PredictionDashboard>results=getResultsFromAPIJsonFile(file.getAbsolutePath(),models);
+				List<PredictionDashboard>results=getResultsFromAPIJsonFile(file.getAbsolutePath(),models,htDTXSIDtoDsstoxRecord,htModelNameToDataset);
 
 
 				for(PredictionDashboard pd:results) {
@@ -1357,6 +1626,8 @@ public class PredictionResultsEPISUITEScript {
 		hm.put("EPISUITE_VP",DevQsarConstants.VAPOR_PRESSURE);
 		hm.put("EPISUITE_HLC",DevQsarConstants.HENRYS_LAW_CONSTANT);
 		
+		hm.put("EPISUITE_AOH",DevQsarConstants.OH);
+		
 		hm.put("EPISUITE_BIOWIN1",DevQsarConstants.BIODEG);
 		hm.put("EPISUITE_BIOWIN2",DevQsarConstants.BIODEG);
 		hm.put("EPISUITE_BIOWIN3",DevQsarConstants.ULTIMATE_BIODEG);
@@ -1369,13 +1640,14 @@ public class PredictionResultsEPISUITEScript {
 		hm.put("EPISUITE_BioHCWIN",DevQsarConstants.BIODEG_HL_HC);
 		hm.put("EPISUITE_KOC",DevQsarConstants.KOC);
 		
-		hm.put("EPISUITE_BCF",DevQsarConstants.BCF);
 		hm.put("EPISUITE_BCF_UPPER_TROPHIC",DevQsarConstants.BCF);
 		hm.put("EPISUITE_BAF_UPPER_TROPHIC",DevQsarConstants.BAF);
 		hm.put("EPISUITE_BIOTRANS_HL",DevQsarConstants.KmHL);
 
+		hm.put("EPISUITE_BCF",DevQsarConstants.BCF);
 		
 		
+
 		return hm;
 	}
 	
@@ -1386,9 +1658,12 @@ public class PredictionResultsEPISUITEScript {
 	}
 	
 	
-	void createDatasets() {
+	Hashtable<String,Dataset> createDatasets() {
 
 
+		Hashtable<String,Dataset>htModelNameToDataset=new Hashtable<>();
+		
+		
 		HashMap<String, String>hmUnitsDatasetContributor=DevQsarConstants.getContributorUnitsNameMap();
 		HashMap<String,String>hmModelNameToPropertyName=getModelNameToPropertyNameMap();
 		
@@ -1424,11 +1699,16 @@ public class PredictionResultsEPISUITEScript {
 			Dataset dataset=new Dataset(datasetName, datasetDescription, property, unit, unitContributor,
 					dsstoxMappingStrategy, lanId);
 
-			CreatorScript.createDataset(dataset);
+			dataset=CreatorScript.createDataset(dataset);
+			
+			htModelNameToDataset.put(modelName,dataset);
 
-			System.out.println(dataset.getName()+"\t"+dataset.getDescription()+"\t"+dataset.getUnit().getName()+"\t"+dataset.getUnitContributor().getName());
+//			System.out.println(dataset.getName()+"\t"+dataset.getDescription()+"\t"+dataset.getUnit().getName()+"\t"+dataset.getUnitContributor().getName());
 		}
 
+		System.out.println("Got datasets");
+		
+		return htModelNameToDataset;
 
 
 	}
@@ -1461,6 +1741,9 @@ public class PredictionResultsEPISUITEScript {
 			model=CreatorScript.createModel(model);
 			hmModels.put(modelName, model);
 		}
+		
+		System.out.println("Got models");
+		
 		return hmModels;
 	}
 	
@@ -1539,14 +1822,198 @@ public class PredictionResultsEPISUITEScript {
 		
 	}
 	
+	class ResultChemical{
+		String DTXSID;
+		String smiles;
+		String filename;
+	}
+	
+	
+	/*
+	 * Find duplicates from the text file list of chemicals generated by compileApiJsonResultsFromFolderToChemicalCSV()
+	 */
+	void lookAtRanChemicals() {
+		String folder="data\\episuite\\";
+		
+		
+		List<String>dupFiles=new ArrayList<>();
+		
+		Hashtable<String,List<ResultChemical>>htFixed=new Hashtable<>();
+		
+//		
+		
+		try {
+			
+			BufferedReader brFixed=new BufferedReader(new FileReader(folder+"snapshot_compounds_fixed.txt"));
+			while (true) {
+				String Line=brFixed.readLine();
+				if(Line==null) { 
+					break;
+				}
+				String [] vals=Line.split("\t");
+				ResultChemical rc=new ResultChemical();
+				rc.smiles=vals[0];
+				rc.DTXSID=vals[1];
+				
+				if(htFixed.containsKey(rc.DTXSID)) {
+					List<ResultChemical>resultChemicals=htFixed.get(rc.DTXSID);
+					resultChemicals.add(rc);
+					System.out.println("Duplicated in fixed file for "+rc.DTXSID);
+				} else {
+					List<ResultChemical>resultChemicals=new ArrayList<>();
+					resultChemicals.add(rc);
+					htFixed.put(rc.DTXSID, resultChemicals);
+				}
+			}			
+			brFixed.close();
+
+			System.out.println(htFixed.size()+"\tnumber of unique dtxsids in \"snapshot_compounds_fixed.txt\" smiles file");
+			
+			
+			Hashtable<String,List<ResultChemical>>ht=new Hashtable<>();
+			BufferedReader br=new BufferedReader(new FileReader(folder+"chemicals ran by api.txt"));
+			br.readLine();//header
+			
+			while (true) {
+				String Line=br.readLine();
+				
+				if(Line==null) { 
+					break;
+				}
+				
+				String [] vals=Line.split("\t");
+				
+				ResultChemical rc=new ResultChemical();
+				rc.DTXSID=vals[0];
+				rc.smiles=vals[1];
+				rc.filename=vals[2];
+				
+				if(ht.containsKey(rc.DTXSID)) {
+					List<ResultChemical>resultChemicals=ht.get(rc.DTXSID);
+					resultChemicals.add(rc);
+				} else {
+					List<ResultChemical>resultChemicals=new ArrayList<>();
+					resultChemicals.add(rc);
+					ht.put(rc.DTXSID, resultChemicals);
+				}
+				
+			}
+			
+			System.out.println(ht.size()+"\tnumber of unique dtxsids in json files");
+			
+			for (String DTXSID:ht.keySet()) {
+				List<ResultChemical>resultChemicals=ht.get(DTXSID);
+				
+				if(resultChemicals.size()==2) {
+					
+					ResultChemical rc1=resultChemicals.get(0);
+					ResultChemical rc2=resultChemicals.get(1);
+
+					String dupLine=rc1.filename+"\t"+rc2.filename;
+//					String dupLine=DTXSID+"\t"+rc1.filename+"\t"+rc2.filename;
+					
+					if(!dupFiles.contains(dupLine)) {
+						dupFiles.add(dupLine);
+					}
+					
+//					for(ResultChemical rc:resultChemicals) {
+//						System.out.println(rc.DTXSID+"\t"+rc.smiles+"\t"+rc.filename);
+//					}
+				}
+			}
+
+			//Print out which files have duplicates with each other
+			Collections.sort(dupFiles);
+			for(String line:dupFiles) {
+				System.out.println("Duplicate:\t"+line);
+			}
+
+			//Print out DTXSIDs are in the fixed file but missing in the json file
+			for(String dtxsid:htFixed.keySet()) {
+				if(!ht.containsKey(dtxsid)) {
+					String smiles=htFixed.get(dtxsid).get(0).smiles;
+					System.out.println(dtxsid+"\t"+smiles+"\tmissing in json files");
+				}
+			}
+			
+			
+			
+			
+			
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+	}
+	
+	void loadData() {
+		String folder="data\\episuite\\";
+		
+		
+//		createModels();
+//		compileApiJsonResultsFromFolder(folder);
+		
+//		compileApiJsonResultsFromFolderToChemicalCSV("data\\episuite\\");
+//		lookAtRanChemicals();
+		
+//		convertRecordToPredictionsDashboard(folder+"episuite results 9000.json","DTXSID2021739");
+
+//		convertRecordToPredictionsDashboard(folder+"snapshot_chemicals_to_run_9011.json","DTXSID10338866");
+
+		//Has error:
+//		convertRecordToPredictionsDashboard(folder+"snapshot_chemicals_to_run_9011.json","DTXSID00983369");
+		
+//		convertSmilesToPredictionsDashboard("DTXSID10338866");
+//		convertSmilesToPredictionsDashboard("DTXSID3039242");
+	
+//		convertSmilesToPredictionsDashboard("DTXSID0020523");//has exp BCF
+		
+//		convertSmilesToPredictionsDashboard("DTXSID8025545");//methane has exp AOH
+		convertSmilesToPredictionsDashboard("DTXSID3039242");//benzene
+//		convertSmilesToPredictionsDashboard("DTXSID6026296");//water inorganic
+		
+		
+		
+	}
+	
+	
+	
+	 static String GetJson(String dtxsid,String filepath) {
+
+		try {
+			BufferedReader br=new BufferedReader(new FileReader(filepath));
+
+			int counter=0;
+			
+			while (true) {
+				String Line=br.readLine();
+				if(Line==null) {
+					break;
+				} 
+				counter++;
+		
+				if(Line.contains("\"dtxsid\":\""+dtxsid+"\"")) {
+					return Line;
+				}
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		return null;
+
+	 }
+
+	
+	
 	public static void main(String[] args) {
 		PredictionResultsEPISUITEScript script = new PredictionResultsEPISUITEScript();
 		
-//		script.createDatasets();
-//		script.createModels();
-//		script.compileApiJsonResultsFromFolder("data\\episuite\\");
+		script.loadData();
+		
 //		script.writeToxvalModelRecordsFromJsonResultsFromFolder("data\\episuite\\");
-		script.compareResults();
+//		script.compareResults();
 		
 //		 script.runPredictionSnapshot();
 //		script.runEPISUITE("CCCCO", "butanol","Biowin3 (Ultimate Survey Model)");

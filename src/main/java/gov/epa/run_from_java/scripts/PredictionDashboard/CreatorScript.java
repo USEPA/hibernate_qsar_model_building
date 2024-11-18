@@ -97,7 +97,17 @@ public class CreatorScript {
 			if(currentModel.getName()==null) continue;
 
 			//If have same name and source id then we have a match:
+			
+//			if(model.getDatasetName().contains("LogKow: Octanol-Water Percepta2020.2.1")) {
+//				System.out.println(model.getName()+"\t"+model.getSource().getName());
+//				System.out.println(currentModel.getName()+"\t"+currentModel.getSource().getName());
+//				System.out.println("");
+//			}
+
+			
 			if(!currentModel.getName().equals(model.getName()))continue;
+			
+			
 			if(!currentModel.getSource().getName().equals(model.getSource().getName()))continue;
 			return currentModel;
 		}
