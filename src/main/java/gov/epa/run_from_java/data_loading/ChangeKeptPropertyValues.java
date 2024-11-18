@@ -22,6 +22,7 @@ public class ChangeKeptPropertyValues {
 	public static String typeAnimalDaphnid="Daphnid";
 	public static String typeAnimalFatheadMinnow="Fathead minnow";
 	
+
 	PropertyValueService propertyValueService = new PropertyValueServiceImpl();
 			
 	
@@ -38,11 +39,11 @@ public class ChangeKeptPropertyValues {
 
 
 		//Folder for storing prediction hashtable:
-		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\ECOTOX_2023_12_14\\";
-		String filePathPreds=folder+datasetNameOriginal+"_WS.json";
+//		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\ECOTOX_2023_12_14\\";
+//		String filePathPreds=folder+datasetNameOriginal+"_WS.json";
 
-		Hashtable<String, Double> htPred = getPredictionHashtable(datasetNameOriginal, generateNewPredictions, modelId, ps,
-				propertyNameModel,filePathPreds);
+		Hashtable<String, Double> htPred = getPredictionHashtable(datasetNameOriginal,modelId, ps,
+				propertyNameModel);
 
 		List<DsstoxRecord>records=PredictScript.getDsstoxRecords();
 		Hashtable<String, DsstoxRecord> htDsstox=PredictScript.getDsstoxHashtableByDTXSID(records);
@@ -56,17 +57,21 @@ public class ChangeKeptPropertyValues {
 			if(!pv.getKeep()) continue;
 
 			String chemicalName=pv.getSourceChemical().getSourceChemicalName();
+
+			String dtxsid=pv.getSourceChemical().getSourceDtxsid();			
+
 			String CAS=pv.getSourceChemical().getSourceCasrn();
-			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
+//			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
 			
 			if(dtxsid==null) {
 				System.out.println("Missing source dtxsid for "+chemicalName+" ("+CAS+")");
 				continue;
 			}
 
+
 			Double toxValue_g_L=null;
 
-			if(!htPred.containsKey(dtxsid)) {
+			if(dtxsid==null || !htPred.containsKey(dtxsid)) {
 //				System.out.println("prediction hashtable missing "+dtxsid);
 				continue;
 			}
@@ -110,13 +115,16 @@ public class ChangeKeptPropertyValues {
 		String propertyNameModel=ps.getPropertyNameModel(modelId);
 		
 		//Folder for storing prediction hashtable:
-		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\ECOTOX_2023_12_14\\";
+//		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\ECOTOX_2023_12_14\\";
 //		String filePathPreds=folder+propertyNameDataset+"_LogKow.json";
-		String filePathPreds=folder+datasetName+"_LogKow.json";
+//		String filePathPreds=folder+datasetName+"_LogKow.json";
 		
-		Hashtable<String, Double> htPred = getPredictionHashtable(datasetName, generateNewPredictions, modelId, ps,
-				propertyNameModel,filePathPreds);
-						
+//		Hashtable<String, Double> htPred = getPredictionHashtable(datasetName, generateNewPredictions, modelId, ps,
+//				propertyNameModel,filePathPreds);
+
+		Hashtable<String, Double> htPred = getPredictionHashtable(datasetName, modelId, ps,
+				propertyNameModel);
+
 		List<DsstoxRecord>records=PredictScript.getDsstoxRecords();
 		Hashtable<String, DsstoxRecord> htDsstox=PredictScript.getDsstoxHashtableByDTXSID(records);
 		
@@ -141,10 +149,12 @@ public class ChangeKeptPropertyValues {
 
 			if(!pv.getKeep()) continue;
 			
+
 			if(dtxsid==null) {
 				System.out.println("Missing source dtxsid for "+chemicalName+" ("+CAS+")");
 				continue;
 			}
+
 			
 			if(htPred.containsKey(dtxsid)) {
 		
@@ -168,11 +178,14 @@ public class ChangeKeptPropertyValues {
 					//ECOSAR manual, Baseline Toxicity Equation for Fish:
 					BaseLineTox_Log_mmol_L=-0.8981*logKowPred + 1.7108;	
 				} else if (typeAnimal.equals(typeAnimalFatheadMinnow)) {					
+
 					//FHM model for nonpolar compounds, Nendza and Russom, 1991:
 					BaseLineTox_Log_mmol_L=-0.79*logKowPred + 1.35;
 					//Note this ends up excluding some records for methanol!
 					//Is there a better model for FHM
+
 				} else if (typeAnimal.equals(typeAnimalDaphnid)) {
+
 //					ECOSAR manual, Baseline Toxicity Equation for Daphnid:
 					BaseLineTox_Log_mmol_L=-0.8580*logKowPred + 1.3848;
 				} else {
@@ -228,6 +241,13 @@ public class ChangeKeptPropertyValues {
 		return htPred;
 	}
 
+
+	private  static Hashtable<String, Double> getPredictionHashtable(String datasetName, 
+			long modelId, PredictScript ps, String propertyNameModel) {
+		Hashtable<String, Double>htPred=null;
+
+		return ps.predict(null,modelId, datasetName);
+	}
 
 
 	private String getPropertyNameForDataset(String datasetName) {

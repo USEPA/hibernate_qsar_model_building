@@ -141,6 +141,18 @@ public class ParameterValueCreator {
 			return null;
 		}
 	}
+//		if (rec.temperature_C=null) {
+//			ParameterValue pressureValue = new ParameterValue();
+//			pressureValue.setCreatedBy(loader.lanId);
+//			if (parseStringColumn(rec.temperature_C, pressureValue)) {
+//				return pressureValue;
+//			} else {
+//				return null;
+//			}
+//		} else {
+//			return null;
+//		}
+//	}
 
 	private ParameterValue getPhValue(ExperimentalRecord rec) {
 		if (rec.pH!=null) {

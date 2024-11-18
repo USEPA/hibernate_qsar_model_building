@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -407,17 +408,18 @@ public class DatasetFileWriter {
 //		datasetNames.add("VP v1 modeling");
 		datasetNames.add("BP v1 modeling");
 //		datasetNames.add("ExpProp BCF Fish_TMM");
-//		datasetNames.add("WS from exp_prop and chemprop");
-//		datasetNames.add("VP from exp_prop and chemprop");
-//		datasetNames.add("LogP from exp_prop and chemprop");
-//		datasetNames.add("MP from exp_prop and chemprop");
-//		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("WS from exp_prop and chemprop");
+		datasetNames.add("VP from exp_prop and chemprop");
+		datasetNames.add("LogP from exp_prop and chemprop");
+		datasetNames.add("MP from exp_prop and chemprop");
+		datasetNames.add("BP from exp_prop and chemprop");
 		
 		String server="https://ccte-cced.epa.gov/";
 		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
 
 		String splittingName="RND_REPRESENTATIVE";
 		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\datasets\\";
+//		String folderMain="C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 Python\\pf_python_modelbuilding\\datasets_exp_prop\\";
 
 		
 
@@ -542,15 +544,19 @@ public class DatasetFileWriter {
 		//**********************************************************
 
 //		String outputFolderPath="data/dev_qsar/dataset_files/";
-//		String descriptorSetName="WebTEST-default";
-//		String datasetName="HLC v1 modeling";
-//		String outputFolderPath="C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 Python\\pf_python_modelbuilding\\datasets\\"+datasetName;
-//		writer.writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE",datasetName,outputFolderPath,false,true);
+		String descriptorSetName="WebTEST-default";
+		String datasetName="LogP v1 modeling";
+		String outputFolderPath="C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 Python\\pf_python_modelbuilding\\datasets\\"+datasetName;
+		writer.writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE",datasetName,outputFolderPath,false,true);
 		
 		
 		//		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingPFASOnly,"Standard Water solubility from exp_prop",outputFolderPath);
 		
 //		writer.createAquaticToxFiles();
+<<<<<<< HEAD
+=======
+//		writer.write_exp_prop_datasets();
+>>>>>>> 4e0711aed3b74679513c33686523b623fc936ec4
 		
 		
 //		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingPFASOnly,"Standard Water solubility from exp_prop",outputFolderPath);
@@ -579,17 +585,53 @@ public class DatasetFileWriter {
 
 	}
 
-	private void createAquaticToxFiles() {
-		String descriptorSetName="WebTEST-default";
-		for (int i=1;i<=4;i++) {
-//			String datasetName="exp_prop_96HR_FHM_LC50_v"+i+" modeling";
-//			String datasetName="exp_prop_96HR_BG_LC50_v"+i+" modeling";
-//			String datasetName="exp_prop_96HR_RT_LC50_v"+i+" modeling";
-			String datasetName="exp_prop_48HR_DM_LC50_v"+i+" modeling";
-			
-			String outputFolderPath="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_exp_prop\\"+datasetName;
+	
+	
+	private void createAquaticToxFilesMultipleDescriptorSet() {
 
-			writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE",datasetName,outputFolderPath,false,true);
+		String[] sciDataExpertsDescriptorSetNames = {
+				"PaDEL-default", "RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"};
+
+		for (String descriptorSetName : sciDataExpertsDescriptorSetNames) {
+			for (int i = 1; i <= 5; i++) {
+//				String datasetName="exp_prop_96HR_FHM_LC50_v"+i+" modeling";
+				String datasetName="exp_prop_96HR_BG_LC50_v"+i+" modeling";
+//				String datasetName = "exp_prop_48HR_DM_LC50_v" + i + " modeling";
+
+//				String outputFolderPath = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_exp_prop\\"
+//						+ datasetName;
+
+				String outputFolderPath = "C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 Python\\pf_python_modelbuilding\\datasets_exp_prop\\"
+						+ datasetName;
+
+				
+				writeWithSplitting(descriptorSetName, "RND_REPRESENTATIVE", datasetName, outputFolderPath, false, true);
+			}
+		}
+	}
+
+	
+
+	private void createAquaticToxFilesV5Sets() {
+
+		
+		List<String>dataSets=Arrays.asList("exp_prop_96HR_FHM_LC50_v5 modeling", "exp_prop_96HR_BG_LC50_v5 modeling","exp_prop_96HR_RT_LC50_v5 modeling");
+		
+		String[] sciDataExpertsDescriptorSetNames = {
+				"PaDEL-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"};
+
+		for (String descriptorSetName : sciDataExpertsDescriptorSetNames) {
+
+			for (String dataset:dataSets) {
+//				String outputFolderPath = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_exp_prop\\"
+//						+ datasetName;
+
+				String outputFolderPath = "C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 Python\\pf_python_modelbuilding\\datasets_exp_prop\\"
+						+ dataset;
+
+				
+				writeWithSplitting(descriptorSetName, "RND_REPRESENTATIVE", dataset, outputFolderPath, false, true);
+			}
 		}
 	}
 

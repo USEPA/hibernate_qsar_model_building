@@ -12,7 +12,7 @@ import kong.unirest.Unirest;
 public class SplittingGeneratorScript {
 
 	private static void splitDatasets() {
-		String lanId = "tmarti02";
+		String lanId = "lbatts";
 		int portSplittingWS=DevQsarConstants.PORT_REPRESENTATIVE_SPLIT;//matches value in dataset_splitting_ws.py if running local
 		
 		
@@ -59,7 +59,6 @@ public class SplittingGeneratorScript {
 		datasetNames.add("exp_prop_96HR_BG_LC50_v5 modeling");
 		datasetNames.add("exp_prop_48HR_DM_LC50_v5 modeling");
 
-		
 //		datasetNames.add("exp_prop_96HR_scud_v1 modeling");
 		
 		System.out.println(splittingWebService.address);

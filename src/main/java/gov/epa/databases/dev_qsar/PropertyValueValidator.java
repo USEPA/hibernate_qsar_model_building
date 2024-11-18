@@ -82,7 +82,8 @@ public class PropertyValueValidator {
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_SCUD_LC50)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50)
-				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_BLUEGILL_LC50)) {
+				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_BLUEGILL_LC50)
+				|| propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)) {
 			return (unitName.equals("G_L") || unitName.equals("MOLAR"));
 		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
 			return unitName.equals("MMHG");

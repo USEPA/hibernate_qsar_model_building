@@ -315,9 +315,9 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 		
 		System.out.println(canonQsarSmilesToCalculate.size()+"\tremaining to run");
 		
-		for (String smiles:canonQsarSmilesToCalculate) {
-			System.out.println(smiles);
-		}
+//		for (String smiles:canonQsarSmilesToCalculate) {
+//			System.out.println(smiles);
+//		}
 		
 
 //		//Run in batches(TMM):
@@ -670,7 +670,7 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 			DescriptorValues dv=new DescriptorValues(smiles,descriptorSet,descriptors,lanId);
 			valuesArray.add(dv);
 //			writeDescriptorValuesToDatabase(mapDescriptors, descriptorSet,lanId);
-			System.out.println(smiles+"\t"+descriptors);			
+//			System.out.println(smiles+"\t"+descriptors);			
 //			if(true) break;
 		}
 		
