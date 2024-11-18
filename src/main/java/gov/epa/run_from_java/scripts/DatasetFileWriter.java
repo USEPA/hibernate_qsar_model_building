@@ -83,26 +83,39 @@ public class DatasetFileWriter {
 	public static void writeWithSplitting(String descriptorSetName,String splittingName,String datasetName,String outputFolderPath, boolean omitBadColumns,boolean useDTXCIDs) {
 
 		//TODO need to add code to figure out which columns have bad columns in either set
+
 		
-		ModelBuilder mb=new ModelBuilder("tmarti02");
-				
-		//Get training and test set instances as strings using TEST descriptors:
-		ModelData md=ModelData.initModelData(datasetName, descriptorSetName,splittingName, false,useDTXCIDs);
-
-		File outputFolder = new File(outputFolderPath);
-		outputFolder.mkdirs();
-
 		String outputFileNameTraining = datasetName + "_" + descriptorSetName+"_"+splittingName + "_training.tsv";
 		String outputFilePathTraining = outputFolderPath + (outputFolderPath.endsWith("/") ? "" : "/") + outputFileNameTraining;
 		
 		String outputFileNamePrediction = datasetName + "_" + descriptorSetName+"_"+splittingName + "_prediction.tsv";
 		String outputFilePathPrediction = outputFolderPath + (outputFolderPath.endsWith("/") ? "" : "/") + outputFileNamePrediction;
 
+
+		ModelBuilder mb=new ModelBuilder("tmarti02");
+				
+		//Get training and test set instances as strings using TEST descriptors:
+		ModelData md=ModelData.initModelData(datasetName, descriptorSetName,splittingName, false,useDTXCIDs);
+
+		System.out.println(datasetName+"\t"+descriptorSetName+"\t"+md.countTraining+"\t"+md.countPrediction);
+
+		File fileTraining=new File(outputFilePathTraining);
+		if(fileTraining.exists()) {
+//			System.out.println(outputFilePathTraining+" exists");
+			return;
+		}
+
+		
+		File outputFolder = new File(outputFolderPath);
+		outputFolder.mkdirs();
+
+
 		try {
 			
 			FileWriter fw=new FileWriter(outputFilePathTraining);
 			
-			System.out.println(outputFilePathTraining);
+			
+//			System.out.println(outputFilePathTraining);
 			
 			fw.write(md.trainingSetInstances);
 			fw.flush();
@@ -349,6 +362,39 @@ public class DatasetFileWriter {
 		}
 	}
 
+	private void writeBatch() {
+		
+		String server="https://ccte-cced.epa.gov/";
+		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
+		String splittingName="RND_REPRESENTATIVE";
+		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\datasets\\";
+
+		List<String>datasetNames=new ArrayList<>();
+		
+		datasetNames.add("exp_prop_96HR_FHM_LC50_v5 modeling");
+		datasetNames.add("exp_prop_96HR_RT_LC50_v5 modeling");
+		datasetNames.add("exp_prop_96HR_BG_LC50_v5 modeling");
+		datasetNames.add("exp_prop_48HR_DM_LC50_v5 modeling");
+
+		
+		List<String>descriptorSetNames=new ArrayList<>();
+
+		descriptorSetNames.add(DevQsarConstants.DESCRIPTOR_SET_WEBTEST);
+//		descriptorSetNames.add("PaDEL-default");
+		descriptorSetNames.add("Mordred-default");
+//		descriptorSetNames.add("ToxPrints-default");
+//		descriptorSetNames.add("RDKit-default");
+
+		
+		for (String datasetName:datasetNames) {
+			for (String descriptorSetName:descriptorSetNames) {
+				String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_exp_prop\\"+datasetName;
+				writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true,false);
+			}
+		}
+	}
+	
+	
 	
 	private void write_exp_prop_datasets() {
 		String lanId = "tmarti02";
@@ -356,7 +402,10 @@ public class DatasetFileWriter {
 		String descriptorSetName = DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
 		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("HLC from exp_prop and chemprop");
+//		datasetNames.add("HLC v1 modeling");
+//		datasetNames.add("VP v1 modeling");
+		datasetNames.add("BP v1 modeling");
 //		datasetNames.add("ExpProp BCF Fish_TMM");
 //		datasetNames.add("WS from exp_prop and chemprop");
 //		datasetNames.add("VP from exp_prop and chemprop");
@@ -370,19 +419,25 @@ public class DatasetFileWriter {
 		String splittingName="RND_REPRESENTATIVE";
 		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\datasets\\";
 
+		
+
 		for (String datasetName:datasetNames) {
 			System.out.println("writing dataset tsvs for "+datasetName);
-			String folder=folderMain+datasetName+"\\";
+
+//			String folder=folderMain+datasetName+"\\";
+			
+			String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_exp_prop\\"+datasetName;
+
 			
 			//Just in case run descriptor generation to make sure have descriptor for each datapoint:
 //			calc.calculateDescriptors_useSqlToExcludeExisting(datasetName,  descriptorSetName, true,1);
 
 //			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true);
 //			writeTrainingSetNotInOperaTestSet(descriptorSetName, splittingName, datasetName, folder);
-			writeTestSetNotInOperaTrainingSet(descriptorSetName, splittingName, datasetName, folder);
+//			writeTestSetNotInOperaTrainingSet(descriptorSetName, splittingName, datasetName, folder);
 
 			writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true,false);
-			writeTrainingSetNotInOperaTestSet(descriptorSetName, splittingName, datasetName, folder);
+//			writeTrainingSetNotInOperaTestSet(descriptorSetName, splittingName, datasetName, folder);
 			
 		}
 	}
@@ -475,6 +530,7 @@ public class DatasetFileWriter {
 //		writer.writeOPERAFiles();
 //		writer.writeTEST_Toxicity_Files();
 //		writer.write_exp_prop_datasets();
+		writer.writeBatch();
 		
 //		String outputFolderPath="data/dev_qsar/dataset_files/";
 //		String datasetName="exp_prop_96HR_FHM_LC50_v1 modeling";
@@ -494,7 +550,7 @@ public class DatasetFileWriter {
 		
 		//		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingPFASOnly,"Standard Water solubility from exp_prop",outputFolderPath);
 		
-		writer.createAquaticToxFiles();
+//		writer.createAquaticToxFiles();
 		
 		
 //		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingPFASOnly,"Standard Water solubility from exp_prop",outputFolderPath);
@@ -527,7 +583,10 @@ public class DatasetFileWriter {
 		String descriptorSetName="WebTEST-default";
 		for (int i=1;i<=4;i++) {
 //			String datasetName="exp_prop_96HR_FHM_LC50_v"+i+" modeling";
-			String datasetName="exp_prop_96HR_BG_LC50_v"+i+" modeling";
+//			String datasetName="exp_prop_96HR_BG_LC50_v"+i+" modeling";
+//			String datasetName="exp_prop_96HR_RT_LC50_v"+i+" modeling";
+			String datasetName="exp_prop_48HR_DM_LC50_v"+i+" modeling";
+			
 			String outputFolderPath="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_exp_prop\\"+datasetName;
 
 			writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE",datasetName,outputFolderPath,false,true);

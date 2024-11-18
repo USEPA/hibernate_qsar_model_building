@@ -76,7 +76,7 @@ public class ExperimentalRecordLoader {
 	ExpPropUnitService expPropUnitService = new ExpPropUnitServiceImpl();
 	LiteratureSourceService literatureSourceService = new LiteratureSourceServiceImpl();
 	PublicSourceService publicSourceService = new PublicSourceServiceImpl();
-	SourceChemicalService sourceChemicalService=new SourceChemicalServiceImpl(); 
+	SourceChemicalServiceImpl sourceChemicalService=new SourceChemicalServiceImpl(); 
 	
 	ParameterAcceptableUnitService parameterAcceptableUnitService=new ParameterAcceptableUnitServiceImpl();
 	PropertyAcceptableUnitService propertyAcceptableUnitService=new PropertyAcceptableUnitServiceImpl();  
@@ -170,11 +170,17 @@ public class ExperimentalRecordLoader {
 		PublicSource ps=this.publicSourceService.findByName(publicSourceName);
 		
 		System.out.print("Loading sourceChemical map...");
-		List<SourceChemical> sourceChemicals = sourceChemicalService.findAllFromSource(ps);
+//		List<SourceChemical> sourceChemicals = sourceChemicalService.findAllFromSource(ps);//slowwwww
+
+		List<SourceChemical> sourceChemicals = sourceChemicalService.findAllFromSourceSql(ps);
+		
 		for (SourceChemical sourceChemical:sourceChemicals) {
+//			System.out.println(Utilities.gson.toJson(sourceChemical));
 			sourceChemicalMap.put(sourceChemical.getKey(),sourceChemical);
 		}
 		System.out.println("Done:"+sourceChemicalMap.size()+" source chemicals");
+		
+		//TODO this will only have literature source with an id. If want full ls, need to pass a source chemical map by id to look it up
 		
 	}
 	
@@ -280,6 +286,8 @@ public class ExperimentalRecordLoader {
 	
 	public List<PropertyValue> load(List<ExperimentalRecord> records, String type, boolean createDBEntries,String sourceName, String propertyName) {
 
+		System.out.println("\nStart loading "+propertyName+"\t"+records.size());
+		
 		ExperimentalRecords failedRecords = new ExperimentalRecords();
 		ExperimentalRecords loadedRecords = new ExperimentalRecords();
 		List<PropertyValue> loadedPropertyValues = new ArrayList<>();
@@ -1149,9 +1157,9 @@ public class ExperimentalRecordLoader {
 //		String propertyName=DevQsarConstants.MELTING_POINT;//loaded
 //		
 //		String propertyName=DevQsarConstants.BOILING_POINT;//done
-		String propertyName=DevQsarConstants.VAPOR_PRESSURE;
+//		String propertyName=DevQsarConstants.VAPOR_PRESSURE;//done
 		
-//		String propertyName=DevQsarConstants.WATER_SOLUBILITY;
+		String propertyName=DevQsarConstants.WATER_SOLUBILITY;
 //		String propertyName=DevQsarConstants.LOG_KOW;
 		
 //		String propertyName=null;
@@ -1170,10 +1178,12 @@ public class ExperimentalRecordLoader {
 //			}
 //		}
 		
+//		int countAlreadyLoaded=56790;
+//		for (int i=1;i<=countAlreadyLoaded;i++) records.remove(0);		
+//		System.out.println("After removing already ran: "+records.size());
+		
 		
 //		if(true)return;
-		
-		
 //		String folderPath="data/dev_qsar/exp_prop/" + type + "/"+ sourceName + "/6-12-24";
 //		ExperimentalRecords records=getExperimentalRecords(propertyName, folderPath,"Experimental Records-Failed");
 //		if(true) return;
@@ -1182,6 +1192,41 @@ public class ExperimentalRecordLoader {
 		System.out.println("experimentalRecords.size()="+records.size());
 		
 		printPropertiesInExperimentalRecords(records);
+		
+		long t1=System.currentTimeMillis();
+		
+//		createLiteratureSources(records);
+//		loadAsBatch(records, type, createDBEntries,sourceName,propertyName);
+		load(records, type, createDBEntries,sourceName,propertyName);
+		
+		long t2=System.currentTimeMillis();
+		
+		System.out.println("Load time="+(t2-t1)/1000.0+" seconds");
+
+	}
+	
+
+	private void loadPubChem(ExperimentalRecords experimentalRecords, String sourceName, String propertyName,boolean createDBEntries) {
+		
+		debug=true;//prints values loaded from database like property
+
+
+		String type=typePhyschem;
+
+		ExperimentalRecords records=new ExperimentalRecords();
+		
+		for (ExperimentalRecord er:experimentalRecords) {
+			if(er.property_name.equals(propertyName)) records.add(er);
+		}
+		
+//		printUniqueUnitsListInExperimentalRecords(records);
+		
+//		for(ExperimentalRecord er:records) {
+////	if(er.property_value_units_final==null && er.property_value_qualitative==null) {
+//	if(er.property_value_units_final==null) {
+//		System.out.println(er.toJson(er.outputFieldNames));
+//	}
+//}
 		
 		long t1=System.currentTimeMillis();
 		
@@ -1350,13 +1395,13 @@ public class ExperimentalRecordLoader {
 	
 	private void printPropertiesInExperimentalRecords(ExperimentalRecords records) {
 		//Following gets list of unique units in experimental records:
-		List<String>list=new ArrayList();
+		List<String>properties=new ArrayList<String>();
 		for (ExperimentalRecord er:records) {
 //			System.out.println(er.property_value_units_final);
-			if (!list.contains(er.property_name)) list.add(er.property_name);
+			if (!properties.contains(er.property_name)) properties.add(er.property_name);
 		}
-		for (String units:list) {
-			System.out.println(units);
+		for (String property:properties) {
+			System.out.println(property);
 		}
 	}
 	
@@ -1587,7 +1632,10 @@ public class ExperimentalRecordLoader {
 
 		
 //		loader.loadOChem();
+
+//		loader.loadPubchemMultiple();
 		loader.loadPubChem();
+		
 //		deleteByPublicSourceName();
 //		
 
@@ -1611,6 +1659,36 @@ public class ExperimentalRecordLoader {
 		
 		
 //		
+	}
+
+	private void loadPubchemMultiple() {
+		
+		boolean createDBEntries=true;
+
+		String sourceName=DevQsarConstants.sourceNamePubChem_2024_03_20;
+		mapTables(sourceName);
+
+		
+//		Appearance, Autoignition temperature, Density, Flash point, Odor, Surface tension, Vapor density, viscosity
+
+		List<String> propertyNames = Arrays.asList(DevQsarConstants.HENRYS_LAW_CONSTANT,DevQsarConstants.LOG_KOW, 
+				DevQsarConstants.MELTING_POINT,	DevQsarConstants.BOILING_POINT, 
+				DevQsarConstants.VAPOR_PRESSURE,DevQsarConstants.WATER_SOLUBILITY);
+		
+		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+
+		//Initial loading attempt:
+		String folderPath=mainFolder+"data\\experimental\\"+sourceName;
+		String substring=sourceName+" Experimental Records ";
+		ExperimentalRecords records=getExperimentalRecords(null, folderPath,substring);		
+
+		System.out.println("experimentalRecords.size()="+records.size());
+
+//		printPropertiesInExperimentalRecords(records);
+		
+		for (String propertyName:propertyNames) {
+			loadPubChem(records, sourceName, propertyName, createDBEntries);
+		}
 	}
 
 }

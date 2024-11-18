@@ -48,12 +48,17 @@ public class SplittingGeneratorScript {
 //		datasetNames.add("MP v1 modeling");
 		
 
-		String abbrev="BG";
-		int duration=96;
-		for(int i=1;i<=4;i++) {
-			datasetNames.add("exp_prop_"+duration+"HR_"+abbrev+"_LC50_v"+i+" modeling");			
-		}
+//		String abbrev="BG";
+//		int duration=96;
+//		for(int i=1;i<=4;i++) {
+//			datasetNames.add("exp_prop_"+duration+"HR_"+abbrev+"_LC50_v"+i+" modeling");			
+//		}
 		
+		datasetNames.add("exp_prop_96HR_FHM_LC50_v5 modeling");
+		datasetNames.add("exp_prop_96HR_RT_LC50_v5 modeling");
+		datasetNames.add("exp_prop_96HR_BG_LC50_v5 modeling");
+		datasetNames.add("exp_prop_48HR_DM_LC50_v5 modeling");
+
 		
 //		datasetNames.add("exp_prop_96HR_scud_v1 modeling");
 		
