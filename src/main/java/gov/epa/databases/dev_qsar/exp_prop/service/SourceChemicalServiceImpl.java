@@ -1,5 +1,9 @@
 package gov.epa.databases.dev_qsar.exp_prop.service;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -16,9 +20,14 @@ import gov.epa.databases.dev_qsar.exp_prop.dao.ParameterDao;
 import gov.epa.databases.dev_qsar.exp_prop.dao.ParameterDaoImpl;
 import gov.epa.databases.dev_qsar.exp_prop.dao.SourceChemicalDao;
 import gov.epa.databases.dev_qsar.exp_prop.dao.SourceChemicalDaoImpl;
+import gov.epa.databases.dev_qsar.exp_prop.entity.LiteratureSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.Parameter;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
+import gov.epa.databases.dsstox.entity.DsstoxCompound;
+import gov.epa.databases.dsstox.entity.GenericSubstance;
+import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 
 public class SourceChemicalServiceImpl implements SourceChemicalService {
 	
@@ -104,6 +113,65 @@ public class SourceChemicalServiceImpl implements SourceChemicalService {
 		return parameters;
 	}
 
+	
+	/**
+	 * SQL way of getting source chemicals for a public source. The literature source will only have an id filled in
+	 * 
+	 * @param ps
+	 * @return
+	 */
+	public List<SourceChemical> findAllFromSourceSql(PublicSource ps) {
 
+		List<SourceChemical>sourceChemicals=new ArrayList<>();
+
+		String sql="SELECT id,source_dtxcid,source_dtxsid,source_dtxrid,source_smiles, source_casrn,"
+				+ "source_chemical_name,fk_literature_source_id,"
+				+ "created_at,created_by,updated_at,updated_by from exp_prop.source_chemicals\n"
+				+ "where fk_public_source_id="+ps.getId()+"\n";  
+
+//		System.out.println(sql);
+
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		
+		ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+
+		try {
+			while (rs.next()) {
+				SourceChemical sc=new SourceChemical();				
+
+				sc.setId(rs.getLong(1));
+				sc.setSourceDtxcid(rs.getString(2));
+				sc.setSourceDtxsid(rs.getString(3));
+				sc.setSourceDtxrid(rs.getString(4));
+				sc.setSourceSmiles(rs.getString(5));
+				sc.setSourceCasrn(rs.getString(6));
+				sc.setSourceChemicalName(rs.getString(7));
+				
+				if(rs.getLong(8)!=0) {
+					LiteratureSource ls=new LiteratureSource();
+					ls.setId(rs.getLong(8));
+					sc.setLiteratureSource(ls);
+				}
+
+				sc.setPublicSource(ps);
+
+				sc.setCreatedAt(rs.getTimestamp(9));
+				sc.setCreatedBy(rs.getString(10));
+				
+				sc.setUpdatedAt(rs.getTimestamp(11));
+				sc.setUpdatedBy(rs.getString(12));
+				
+				sourceChemicals.add(sc);
+
+			}
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		//		System.out.println(compounds.size());
+		return sourceChemicals;
+	}
 
 }

@@ -27,6 +27,7 @@ import com.google.gson.JsonObject;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
+import gov.epa.databases.dev_qsar.exp_prop.service.PublicSourceServiceImpl;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalService;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalServiceImpl;
 import gov.epa.endpoints.datasets.dsstox_mapping.DsstoxMapper;
@@ -43,7 +44,9 @@ public class SourceChemicalUtilities {
 	
 	Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
-	SourceChemicalService sourceChemicalService=new SourceChemicalServiceImpl(); 
+	PublicSourceServiceImpl publicSourceService=new PublicSourceServiceImpl(); 
+	
+	SourceChemicalServiceImpl sourceChemicalService=new SourceChemicalServiceImpl(); 
 //	Map<String, SourceChemical> sourceChemicalMap = new HashMap<String, SourceChemical>();
 	Map<String, SourceChemical> sourceChemical = new HashMap<String, SourceChemical>();
 	List<SourceChemical> sourceChemicals;
@@ -477,15 +480,16 @@ public class SourceChemicalUtilities {
 	void findMissingSourceChemicalsForPublicSource() {
 		
 //		String sourceName="OChem_2024_04_03";
-//		String sourceName="PubChem_2024_03_20";
-		String sourceName="OPERA2.8";
+		String sourceName="PubChem_2024_03_20";
+//		String sourceName="OPERA2.8";
 		
-		PublicSource ps=new PublicSource();
-		ps.setName(sourceName);
-
+		PublicSource ps=publicSourceService.findByName(sourceName);
+		
 		System.out.println("Finding source chemicals for "+sourceName);
-		List<SourceChemical>sourceChemicals=sourceChemicalService.findAllFromSource(ps);
+//		List<SourceChemical>sourceChemicals=sourceChemicalService.findAllFromSource(ps);
+		List<SourceChemical>sourceChemicals=sourceChemicalService.findAllFromSourceSql(ps);
 		
+		System.out.println(sourceChemicals.size());
 		
 		List<SourceChemical>sourceChemicalsMissing=new ArrayList<>();
 		Map<String,SourceChemical>mapList=new TreeMap<>();
@@ -516,8 +520,8 @@ public class SourceChemicalUtilities {
 			File folder=new File(strFolder);
 			folder.mkdirs();
 			
-			String filepath=strFolder+sourceName+"_missing.txt";
-			DsstoxMapper.writeChemRegImportFile(sourceChemicalsMissing, filepath,40000);
+			String filepath=strFolder+sourceName+"_missing_v2.txt";
+			DsstoxMapper.writeChemRegImportFile(sourceChemicalsMissing, filepath,20000);
 		} else {
 			System.out.println("No missing source chemicals in dsstox");	
 		}
@@ -536,7 +540,7 @@ public class SourceChemicalUtilities {
 
 //		scu.writeChemRegFileForPublicSource2();
 		
-//		scu.findMissingSourceChemicalsForPublicSource();
+		scu.findMissingSourceChemicalsForPublicSource();
 		
 		
 //		SourceChemicalUtilities scu=new SourceChemicalUtilities(false);

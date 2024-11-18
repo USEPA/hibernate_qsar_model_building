@@ -550,6 +550,10 @@ public class PropertyValue {
 		}
 
 		jo.addProperty("propertyName", getProperty().getName());
+		
+		jo.addProperty("valueOriginal", getValueOriginal());
+		jo.addProperty("valueOriginalParsed", getValueOriginalParsed());
+		
 		jo.addProperty("valueQualifier", getValueQualifier());
 		jo.addProperty("valuePointEstimate", getValuePointEstimate());
 		jo.addProperty("valueText", getValueText());
