@@ -177,4 +177,20 @@ public class BoundParameterValue {
 		
 		return new ExplainedResponse(true, "Parameter value satisfies max bound");
 	}
+
+	public Double getValueMin() {
+		return valueMin;
+	}
+
+	public void setValueMin(Double valueMin) {
+		this.valueMin = valueMin;
+	}
+
+	public Double getValueMax() {
+		return valueMax;
+	}
+
+	public void setValueMax(Double valueMax) {
+		this.valueMax = valueMax;
+	}
 }

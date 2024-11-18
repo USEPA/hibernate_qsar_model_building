@@ -544,19 +544,17 @@ public class DatasetFileWriter {
 		//**********************************************************
 
 //		String outputFolderPath="data/dev_qsar/dataset_files/";
-		String descriptorSetName="WebTEST-default";
-		String datasetName="LogP v1 modeling";
-		String outputFolderPath="C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 Python\\pf_python_modelbuilding\\datasets\\"+datasetName;
-		writer.writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE",datasetName,outputFolderPath,false,true);
+//		String descriptorSetName="WebTEST-default";
+//		String datasetName="LogP v1 modeling";
+//		String outputFolderPath="C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 Python\\pf_python_modelbuilding\\datasets\\"+datasetName;
+//		writer.writeWithSplitting(descriptorSetName,"RND_REPRESENTATIVE",datasetName,outputFolderPath,false,true);
 		
 		
 		//		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingPFASOnly,"Standard Water solubility from exp_prop",outputFolderPath);
 		
 //		writer.createAquaticToxFiles();
-<<<<<<< HEAD
-=======
+
 //		writer.write_exp_prop_datasets();
->>>>>>> 4e0711aed3b74679513c33686523b623fc936ec4
 		
 		
 //		writer.writeWithSplitting(descriptorSetName,PFAS_SplittingGenerator.splittingPFASOnly,"Standard Water solubility from exp_prop",outputFolderPath);

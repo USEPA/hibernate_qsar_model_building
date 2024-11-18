@@ -697,6 +697,10 @@ public class DatasetCreator {
 
 		System.out.println("Raw records:" + propertyValues.size());
 		excludePropertyValues(excludedSources, propertyValues);
+		
+		PropertyValue.getPropertyValuesBySource(propertyValues);
+		
+		
 		if (excludedSources.size() > 0)
 			System.out.println("Raw records after source exclusion:" + propertyValues.size());
 
@@ -906,6 +910,9 @@ public class DatasetCreator {
 		if (includedSources.size() > 0)
 			System.out.println("Raw records after source exclusion:" + propertyValues.size());
 		
+		
+		PropertyValue.getPropertyValuesBySource(propertyValues);
+		
 		return convertPropertyValuesToDatapoints(propertyValues, params, useStdevFilter);
 
 	}
@@ -921,7 +928,7 @@ public class DatasetCreator {
 	 */
 	public Dataset createPropertyDatasetWithSpecifiedSources(String datasetNameOriginal, DatasetParams params, boolean useStdevFilter,
 			List<String> includedSources, boolean excludeBasedOnPredictedWS, 
-			boolean excludeBasedOnBaselineToxicity,boolean excludeBasedOnMissingExposureType,String typeAnimal) {
+			boolean excludeBasedOnBaselineToxicity,boolean excludeBasedOnMissingExposureType,boolean excludeBasedOnConcentrationType,String typeAnimal) {
 		HashMap<String, Compound> hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
 
 		System.out.println("Enter createPropertyDatasetWithSpecifiedSources");
@@ -950,19 +957,29 @@ public class DatasetCreator {
 		if(excludeBasedOnMissingExposureType) {
 			int removed=ChangeKeptPropertyValues.removeBasedOnMissingExposureType(params.datasetName, propertyValues);
 			System.out.println("Removed based on missing exposure type="+removed);
+			System.out.println("Remaining="+propertyValues.size());
 		}
 
 		
 		if(excludeBasedOnPredictedWS) {
 			int removed=ChangeKeptPropertyValues.removeBasedOnPredictedWS(datasetNameOriginal, propertyValues);
 			System.out.println("Removed based on predicted WS="+removed);
-
+			System.out.println("Remaining="+propertyValues.size());
 		}
 		
 		if(excludeBasedOnBaselineToxicity) {
 			int removed=ChangeKeptPropertyValues.removeBasedOnBaselineToxicity(datasetNameOriginal, propertyValues, typeAnimal);
 			System.out.println("Removed based on baseline toxicity="+removed);
+			System.out.println("Remaining="+propertyValues.size());
 		}
+		
+		
+		if(excludeBasedOnConcentrationType) {
+			int removed=ChangeKeptPropertyValues.removeBasedOnConcentrationType(datasetNameOriginal, propertyValues);
+			System.out.println("Removed based on concentration type="+removed);
+			System.out.println("Remaining="+propertyValues.size());
+		}
+
 
 		return convertPropertyValuesToDatapoints(propertyValues, params, useStdevFilter);
 
@@ -1146,6 +1163,7 @@ public class DatasetCreator {
 	}
 
 	private String [] createFieldsArray(Map<String, List<MappedPropertyValue>> unifiedPropertyValues) {
+		
 		List<String> fields = new ArrayList<String>(Arrays.asList("canon_qsar_smiles", "exp_prop_id", "source_chemical_id", "source_dtxrid", "source_dtxsid",
 				"source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name", "mapped_dtxcid",
 				"mapped_dtxsid", "mapped_chemical_name", "mapped_cas", "mapped_smiles", "mapped_molweight",
@@ -1157,7 +1175,7 @@ public class DatasetCreator {
 			
 		addParamNamesToFields(unifiedPropertyValues, fields);
 		 
-		List<String> fields2 = Arrays.asList("value_qualifier", "value_original",
+		List<String> fields2 = Arrays.asList("value_qualifier", "value_original","value_original_parsed",
 				"value_text", "value_max", "value_min", "value_point_estimate", "value_units", "qsar_property_value",
 				"qsar_property_units" );
 		
@@ -1187,25 +1205,24 @@ public class DatasetCreator {
 					
 					String paramName=paramValue.getParameter().getName();
 					
-					if(paramName.equals("Temperature") && !fields.contains("temperature_c")) {
-						fields.add("temperature_c");
-					} else if(paramName.equals("Pressure") && !fields.contains("pressure_mmHg")) {
-						fields.add("pressure_mmHg");
-					} else if(paramName.equals("pH") && !fields.contains("pH")) {
-						fields.add("pH");
+					if(paramName.equals("Temperature")) {						
+						if(!fields.contains("temperature_c")) fields.add("temperature_c");
+					} else if(paramName.equals("Pressure")) {
+						if(!fields.contains("pressure_mmHg")) fields.add("pressure_mmHg");
+					} else if(paramName.equals("pH") ) {
+						if(!fields.contains("pH"))fields.add("pH");
 //					} else if(paramValue.getUnit().getName().equals("TEXT")) {
 //						if(!fields.contains(paramName)) {
 //							System.out.println(paramName);
 //							fields.add(paramName);
 //						}
-//						
 //					} else if(paramValue.getValuePointEstimate()!=null) {
 //						fields.add(paramName);
 //					}
-					
+
 					} else  {
 						if(!fields.contains(paramName)) {
-							System.out.println(paramName);
+							System.out.println("Extra param added to field list: "+paramName);
 							fields.add(paramName);
 						}
 					}
@@ -1297,6 +1314,7 @@ public class DatasetCreator {
 
 		jo.addProperty("value_qualifier", pv.getValueQualifier());
 		jo.addProperty("value_original", pv.getValueOriginal());
+		jo.addProperty("value_original_parsed", pv.getValueOriginalParsed());
 		jo.addProperty("value_text", pv.getValueText());
 
 		jo.addProperty("value_max", pv.getValueMax());
@@ -1310,6 +1328,9 @@ public class DatasetCreator {
 			
 			if(name.equals("Temperature")) {
 				jo.addProperty("temperature_c", parameterValue.getValuePointEstimate());
+				
+//				System.out.println("tempc="+parameterValue.getValuePointEstimate());
+				
 			} else if(name.equals("Pressure")) {
 				jo.addProperty("pressure_mmHg", parameterValue.getValuePointEstimate());
 			} else if(name.equals("pH")) {

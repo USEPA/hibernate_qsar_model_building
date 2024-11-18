@@ -272,12 +272,6 @@ public class DatasetCreatorScript {
 		
 	}
 	
-	void createFishToxModels() {
-//		createFHM_LC50();
-//		createFHM_96hr_LC50_Ecotox_modeling();
-//		createBG_96hr_LC50_Ecotox_modeling();
-
-	}
 	
 	void createBiodegDatasets() {
 //		createRBIODEG_NITE_OPPT();
@@ -288,6 +282,8 @@ public class DatasetCreatorScript {
 	void deletePubchemDatasets() {
 		
 		String sql="select id,name from qsar_datasets.datasets d where name like '%PubChem_2024_03_20%';";
+		
+		DatasetServiceImpl ds=new DatasetServiceImpl();
 		
 		try {
 			ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
@@ -372,47 +368,15 @@ public class DatasetCreatorScript {
 		
 //		dcs.createToxCast_TTR_Binding();
 //		dcs.createRatLC50_CoMPAIT();
+		
 //		dcs.deleteDatasets();
-		
 
-//		ds.deleteSQL(273L);
-//		ds.deleteSQL(238L);
-//		ds.deleteSQL(239L);
-//		for (Long i=236L;i<=237L;i++) {
-//		ds.deleteSQL(i);	
-//	}
-//		if(true) return;
-
-<<<<<<< HEAD
-		
-		
-//		dcs.createHLC_modeling();
-		
-//		dcs.createFHM_96hr_LC50_Ecotox_modeling();
-//		dcs.createScud_96hr_LC50_Ecotox_modeling();
-//		dcs.createRT_96hr_LC50_Ecotox_modeling();
-=======
 //		dcs.createModelingDatasets();
-
-//		dcs.createFHM_96hr_LC50_Ecotox_modeling();
-//		dcs.createBG_96hr_LC50_Ecotox_modeling();
-//		dcs.createScud_96hr_LC50_Ecotox_modeling();
-//		dcs.createRT_96hr_LC50_Ecotox_modeling();
-//		dcs.createDM_48hr_LC50_Ecotox_modeling();
-		dcs.createHLC_modeling();
->>>>>>> 4e0711aed3b74679513c33686523b623fc936ec4
-
 //		dcs.createDatasetsForDashboard();
 
 //		dcs.createFishToxModels();
 //		dcs.createBiodegDatasets();
 //		
-<<<<<<< HEAD
-//		dcs.createFHM_96hr_LC50_Ecotox_modeling();
-//		dcs.createBG_96hr_LC50_Ecotox_modeling();
-
-=======
->>>>>>> 4e0711aed3b74679513c33686523b623fc936ec4
 //		dcs.getAutoMappingsFromChemRegList();
 		
 //		dcs.getDatasetStats();//Get record counts for the papers
@@ -2136,7 +2100,6 @@ public class DatasetCreatorScript {
 
 	public void createHLC_modeling() {
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-<<<<<<< HEAD
 		DatasetCreator.postToDB = false;
 		
 		String propertyAbbrev="HLC";
@@ -2149,6 +2112,7 @@ public class DatasetCreatorScript {
 		
 		BoundParameterValue temperatureBound = new BoundParameterValue("Temperature", 20.0, 30.0, true);
 		BoundParameterValue phBound = new BoundParameterValue("pH", 6.5, 7.5, true);
+
 		List<BoundParameterValue> bounds = new ArrayList<BoundParameterValue>();
 		bounds.add(temperatureBound);
 		bounds.add(phBound);
@@ -2156,9 +2120,6 @@ public class DatasetCreatorScript {
 		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(
 				DevQsarConstants.MIN_HENRYS_LAW_CONSTANT_ATM_M3_MOL,
 				DevQsarConstants.MAX_HENRYS_LAW_CONSTANT_ATM_M3_MOL);
-=======
-		DatasetCreator.postToDB = true;
->>>>>>> 4e0711aed3b74679513c33686523b623fc936ec4
 
 		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, null, isNaive,
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
@@ -2736,52 +2697,12 @@ public class DatasetCreatorScript {
 	public void create_LC50_Ecotox_modeling() {
 
 		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
-
-<<<<<<< HEAD
-		DatasetCreator.postToDB = true;//otherwise wont create the dataset
-=======
+//		DatasetCreator.postToDB = true;//otherwise wont create the dataset
 		DatasetCreator.postToDB = false;//otherwise wont create the dataset
 		
-		String propertyName = DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
-		String propAbbrev=DevQsarConstants.getConstantNameByReflection(propertyName) ;
 		String sourceName="ECOTOX_2023_12_14";
 		String chemicalListName="exp_prop_"+sourceName;				
 		
-		
-		List<BoundParameterValue> boundsParameterValues = null;
-		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
-
-		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, chemicalListName, isNaive,
-				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
-				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
-
-
-		String animalAbbrev="FHM";
-		String typeAnimal="Fathead minnow";		
-		String datasetNameOriginal = "exp_prop_96HR_"+animalAbbrev+"_LC50_v1 modeling";
-
-//		excludeBasedOnMissingExposureType=false;
-//		excludeBasedOnPredictedWS=false;
-//		excludeBasedOnBaselineToxicity=false;
-//		String datasetName = "exp_prop_96HR_FHM_LC50_v1 modeling";
-		
-//		excludeBasedOnMissingExposureType=true;
-//		excludeBasedOnPredictedWS=false;
-//		excludeBasedOnBaselineToxicity=false;
-//		String datasetName = "exp_prop_96HR_FHM_LC50_v2 modeling";
-				
-//		excludeBasedOnMissingExposureType=true;
-//		excludeBasedOnPredictedWS=true;
-//		excludeBasedOnBaselineToxicity=false;
-//		String datasetName = "exp_prop_96HR_FHM_LC50_v3 modeling";
-
-		excludeBasedOnMissingExposureType=true;
-		excludeBasedOnPredictedWS=true;
-		excludeBasedOnBaselineToxicity=true;
-		String datasetName = "exp_prop_96HR_FHM_LC50_v4 modeling";
-		
->>>>>>> 4e0711aed3b74679513c33686523b623fc936ec4
-
 //		String duration="96HR";
 //		String animalAbbrev="FHM";
 //		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFatheadMinnow;		
@@ -2801,26 +2722,12 @@ public class DatasetCreatorScript {
 		String animalAbbrev="DM";
 		String typeAnimal=ChangeKeptPropertyValues.typeAnimalDaphnid;		
 		String propertyName = DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50;
-
-<<<<<<< HEAD
-=======
-		DatasetCreator.postToDB = false;//otherwise wont create the dataset
->>>>>>> 4e0711aed3b74679513c33686523b623fc936ec4
 		
-		String sourceName="ECOTOX_2023_12_14";
-		String chemicalListName="exp_prop_"+sourceName;				
-				
-		List<BoundParameterValue> boundsParameterValues = null;
-		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
-
-		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, chemicalListName, isNaive,
-				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
-				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
-
 		
+		String propAbbrev=DevQsarConstants.getConstantNameByReflection(propertyName) ;
 		String endpoint=duration+"_"+animalAbbrev+"_LC50";
-		
 		String datasetNameOriginal = "exp_prop_"+endpoint+"_v1 modeling";
+
 
 //		excludeBasedOnMissingExposureType=false;
 //		excludeBasedOnPredictedWS=false;
@@ -2830,17 +2737,14 @@ public class DatasetCreatorScript {
 //		excludeBasedOnMissingExposureType=true;
 //		excludeBasedOnPredictedWS=false;
 //		excludeBasedOnBaselineToxicity=false;
-<<<<<<< HEAD
 //		String datasetName = "exp_prop_"+endpoint+"_v2 modeling";
-=======
-//		String datasetName = "exp_prop_96HR_BG_LC50_v2 modeling";
->>>>>>> 4e0711aed3b74679513c33686523b623fc936ec4
-				
+
+		
 //		excludeBasedOnMissingExposureType=true;
 //		excludeBasedOnPredictedWS=true;
 //		excludeBasedOnBaselineToxicity=false;
-<<<<<<< HEAD
 //		String datasetName = "exp_prop_"+endpoint+"_v3 modeling";
+
 
 //		excludeBasedOnMissingExposureType=true;
 //		excludeBasedOnPredictedWS=true;
@@ -2848,15 +2752,19 @@ public class DatasetCreatorScript {
 //		String datasetName = "exp_prop_"+endpoint+"_v4 modeling";
 
 		
-=======
-//		String datasetName = "exp_prop_96HR_BG_LC50_v3 modeling";
-
->>>>>>> 4e0711aed3b74679513c33686523b623fc936ec4
 		excludeBasedOnMissingExposureType=true;
 		excludeBasedOnPredictedWS=true;
 		excludeBasedOnBaselineToxicity=true;
 		excludeBasedOnConcentrationType=true;
 		String datasetName = "exp_prop_"+endpoint+"_v5 modeling";
+
+
+		List<BoundParameterValue> boundsParameterValues = null;
+		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
+
+		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, chemicalListName, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
 
 
 		String datasetDescription = endpoint+" from "+sourceName+
@@ -2871,100 +2779,12 @@ public class DatasetCreatorScript {
 		List<String> includedSources = new ArrayList<>();
 		includedSources.add(sourceName);
 		
-//		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
-
 		creator.createPropertyDatasetWithSpecifiedSources(datasetNameOriginal, listMappedParams, false, includedSources,
 				excludeBasedOnPredictedWS, excludeBasedOnBaselineToxicity, excludeBasedOnMissingExposureType,
 				excludeBasedOnConcentrationType, typeAnimal);
 		
 	}
 	
-<<<<<<< HEAD
-		
-	
-	
-=======
-	public void createDM_48hr_LC50_Ecotox_modeling() {
-
-		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "lbatts");
-
-		creator.postToDB = true;//otherwise wont create the dataset
-		
-//		int duration=96;
-//		String animalAbbrev="RT";
-//		String propertyName = DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50;
-//		String typeAnimal=ChangeKeptPropertyValues.Fish;
-		
-		int duration=48;
-		String animalAbbrev="DM";
-		String propertyName = DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50;
-		String typeAnimal=ChangeKeptPropertyValues.Daphnid;
-
-		String propAbbrev=DevQsarConstants.getConstantNameByReflection(propertyName) ;
-		String sourceName="ECOTOX_2023_12_14";
-		String chemicalListName="exp_prop_"+sourceName;				
-		
-//		ArrayList<String> listNameArray = new ArrayList<String>();
-//		listNameArray.add("ExpProp_MP_WithChemProp_063022_1_to_40000");
-		
-		List<BoundParameterValue> boundsParameterValues = null;
-		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
-
-		MappingParams listMappingParams = new MappingParams(DevQsarConstants.MAPPING_BY_LIST, chemicalListName, isNaive,
-				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
-				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
-
-		
-		
-		String datasetNameOriginal = "exp_prop_"+duration+"HR_"+animalAbbrev+"_LC50_v1 modeling";
-
-		//*********************************************************************
-
-//		excludeBasedOnMissingExposureType=false;
-//		excludeBasedOnPredictedWS=false;
-//		excludeBasedOnBaselineToxicity=false;
-//		String datasetName = "exp_prop_"+duration+"HR_"+animalAbbrev+"_LC50_v1 modeling";
-		
-		//*********************************************************************
-	
-//		excludeBasedOnMissingExposureType=true;
-//		excludeBasedOnPredictedWS=false;
-//		excludeBasedOnBaselineToxicity=false;
-//		String datasetName = "exp_prop_"+duration+"HR_"+animalAbbrev+"_LC50_v2 modeling";
-		
-		//*********************************************************************
-		
-//		excludeBasedOnMissingExposureType=true;
-//		excludeBasedOnPredictedWS=true;
-//		excludeBasedOnBaselineToxicity=false;
-//		String datasetName = "exp_prop_"+duration+"HR_"+animalAbbrev+"_LC50_v3 modeling";
-
-		//*********************************************************************
-
-		excludeBasedOnMissingExposureType=true;
-		excludeBasedOnPredictedWS=true;
-		excludeBasedOnBaselineToxicity=true;
-		String datasetName = "exp_prop_"+duration+"HR_"+animalAbbrev+"_LC50_v4 modeling";
-
-		//*********************************************************************
-
-		String datasetDescription = duration+"HR_"+animalAbbrev+"_LC50 from "+sourceName+
-				", excludeBasedOnMissingExposureType="+excludeBasedOnMissingExposureType+
-				", excludeBasedOnPredictedWS="+excludeBasedOnPredictedWS+
-				", excludeBasedOnBaselineToxicity="+excludeBasedOnBaselineToxicity;
-		
-		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
-				listMappingParams);
-
-		List<String> includedSources = new ArrayList<>();
-		includedSources.add(sourceName);
-		
-//		creator.createPropertyDatasetWithSpecifiedSources(listMappedParams, false, includedSources);
-
-		creator.createPropertyDatasetWithSpecifiedSources(datasetNameOriginal,listMappedParams, false, includedSources, excludeBasedOnPredictedWS, excludeBasedOnBaselineToxicity,excludeBasedOnMissingExposureType,typeAnimal );
-
-	}
->>>>>>> 4e0711aed3b74679513c33686523b623fc936ec4
 	/**
 	 * creates Boiling point dataset using records from chemreg with CAS
 	 * registration

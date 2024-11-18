@@ -1742,7 +1742,7 @@ public class DsstoxMapper {
 				"public_source_original_name", "public_source_original_description", "public_source_original_url",
 				"literature_source_citation", "literature_source_doi", "page_url", "notes", "document_name",
 				"file_name",
-				"qc_flag", "temperature_c", "pressure_mmHg", "pH", "value_qualifier", "value_original", "value_text",
+				"qc_flag", "temperature_c", "pressure_mmHg", "pH", "value_qualifier", "value_original","value_original_parsed", "value_text",
 				"value_max", "value_min", "value_point_estimate", "value_units" };
 
 		JsonArray jaAll = convertDiscardedRecordsToJsonArray(values);
