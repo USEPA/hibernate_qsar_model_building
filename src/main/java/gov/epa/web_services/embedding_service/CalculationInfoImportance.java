@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.endpoints.models.ModelData;
 
 /**
 * @author TMARTI02
@@ -39,6 +40,7 @@ public class CalculationInfoImportance extends CalculationInfo{
 	@Expose
 	public boolean use_wards=false;
 	
+	
 	//Add remove_correlated_descriptors variable? i.e. removes ones that are 0.95 correlated if not using wards
 
 
@@ -50,8 +52,9 @@ public class CalculationInfoImportance extends CalculationInfo{
 		this.splittingName=ci.splittingName;
 		this.remove_log_p=ci.remove_log_p;
 		this.save_to_database=ci.save_to_database;
-		this.tsv_training=ci.tsv_training;
-		this.tsv_prediction=ci.tsv_prediction;
+		
+//		this.tsv_training=ci.tsv_training;
+//		this.tsv_prediction=ci.tsv_prediction;
 		this.qsarMethodEmbedding=ci.qsarMethodEmbedding;
 		
 		if (qsarMethodEmbedding.equals(DevQsarConstants.RF)) {

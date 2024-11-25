@@ -42,8 +42,7 @@ public class EmbeddingWebService2 extends WebService {
 
 		try {			
 			ModelData md=ModelData.initModelData(ci, false);//TODO make it store it directly in ci?
-			ci.tsv_training = md.trainingSetInstances;
-			ci.tsv_prediction = md.predictionSetInstances;
+			ci.modelData=md;
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -129,13 +128,19 @@ public class EmbeddingWebService2 extends WebService {
 
 		//Following sets min number of descriptors based on data set size, it has to load the data sets though which takes time
 		
-		
 		CalculationInfoImportance ciImportance=new CalculationInfoImportance(calculationInfo);
 		
+		if (checkDBForEmbedding) {
+			DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ciImportance);		
+			if (descriptorEmbedding != null) {
+				System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
+				return descriptorEmbedding; 
+			} 
+		}
+
 		try {			
 			ModelData md=ModelData.initModelData(ciImportance, false);//TODO make it store it directly in ci?
-			ciImportance.tsv_training = md.trainingSetInstances;
-			ciImportance.tsv_prediction = md.predictionSetInstances;
+			ciImportance.modelData=md;;
 			
 			int minDescriptors2=(int)Math.round(md.countTraining/ciImportance.datapoints_to_descriptors_ratio);
 			
@@ -146,15 +151,6 @@ public class EmbeddingWebService2 extends WebService {
 			// TODO Auto-generated catch block
 			System.out.println("Cant retrieve tsv for "+ciImportance.datasetName);
 			return null;
-		}
-		
-		
-		if (checkDBForEmbedding) {
-			DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ciImportance);		
-			if (descriptorEmbedding != null) {
-				System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
-				return descriptorEmbedding; 
-			} 
 		}
 		
 				
@@ -183,6 +179,56 @@ public class EmbeddingWebService2 extends WebService {
 			return descriptorEmbedding;
 		}
 		
+	}
+	
+	public DescriptorEmbedding generateLassoEmbedding(CalculationInfo ci, String lanId, boolean checkDBForEmbedding, boolean storeInDB) {
+		
+		CalculationInfoLasso ciLasso=new CalculationInfoLasso(ci);
+		
+		if (checkDBForEmbedding) {
+			DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ciLasso);		
+			if (descriptorEmbedding != null) {
+				System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
+				return descriptorEmbedding; 
+			} 
+		}
+		
+		try {			
+			ModelData md=ModelData.initModelData(ci, false);//TODO make it store it directly in ci?
+			ciLasso.modelData=md;
+			
+//			System.out.println(ci.tsv_prediction);
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			System.out.println("Cant retrieve tsv for "+ci.datasetName);
+			return null;
+		}
+			
+		
+		System.out.println("Dont have embedding, creating a new one...");
+		
+		HttpResponse<String> response = find_Lasso_Embedding_API_Call(ciLasso);
+		System.out.println(response.getStatus());
+		
+		String data = response.getBody();
+		
+		Gson gson = new Gson();		
+		CalculationResponse cr = gson.fromJson(data, CalculationResponse.class);
+		String embedding = cr.embedding.stream().map(Object::toString).collect(Collectors.joining("\t"));
+		
+		DescriptorEmbedding descriptorEmbedding = new DescriptorEmbedding(ciLasso, embedding,lanId);
+		System.out.println("New embedding from web service:"+descriptorEmbedding.getEmbeddingTsv());
+		
+		if (storeInDB) {
+			Date date = new Date();
+			Timestamp timestamp2 = new Timestamp(date.getTime());
+			descriptorEmbedding.setCreatedAt(timestamp2);
+			DescriptorEmbeddingService deSer = new DescriptorEmbeddingServiceImpl();
+			return deSer.create(descriptorEmbedding);
+		} else {
+			return descriptorEmbedding;
+		}
 	}
 	
 //	private static void runGA_Embedding(String propertyName, String datasetName, String lanId, String descriptorSetName,
@@ -261,10 +307,10 @@ public class EmbeddingWebService2 extends WebService {
 		
 		HttpResponse<String> response = Unirest.post(address+ "/models/{qsar_method}/embedding")
 				.routeParam("qsar_method", calculationInfo.qsarMethodEmbedding)
-				.field("training_tsv",calculationInfo.tsv_training)
+				.field("training_tsv",calculationInfo.modelData.trainingSetInstances)
 				//				.field("save_to_database",calculationInfo.save_to_database)
 				.field("remove_log_p",String.valueOf(calculationInfo.remove_log_p))
-				.field("prediction_tsv", calculationInfo.tsv_prediction)
+				.field("prediction_tsv", calculationInfo.modelData.predictionSetInstances)
 				.field("threshold", String.valueOf(calculationInfo.threshold))
 				.field("num_optimizers",String.valueOf(calculationInfo.num_optimizers))
 				.field("num_jobs",String.valueOf(calculationInfo.num_jobs))
@@ -283,9 +329,9 @@ public class EmbeddingWebService2 extends WebService {
 				
 		HttpResponse<String> response = Unirest.post(address+ "/models/{qsar_method}/embedding_importance")
 				.routeParam("qsar_method", calculationInfo.qsarMethodEmbedding)
-				.field("training_tsv",calculationInfo.tsv_training)
+				.field("training_tsv",calculationInfo.modelData.trainingSetInstances)
 				.field("remove_log_p",String.valueOf(calculationInfo.remove_log_p))
-				.field("prediction_tsv", calculationInfo.tsv_prediction)
+				.field("prediction_tsv", calculationInfo.modelData.predictionSetInstances)
 				.field("num_generations",String.valueOf(calculationInfo.num_generations))
 				.field("n_threads",String.valueOf(calculationInfo.n_threads))
 				.field("use_permutative", String.valueOf(calculationInfo.use_permutative))
@@ -294,6 +340,21 @@ public class EmbeddingWebService2 extends WebService {
 				.field("min_descriptor_count",String.valueOf(calculationInfo.min_descriptor_count))
 				.field("max_descriptor_count",String.valueOf(calculationInfo.max_descriptor_count))
 				.field("use_wards",String.valueOf(calculationInfo.use_wards))
+				.asString();
+
+		return response;
+	}
+	
+	public HttpResponse<String> find_Lasso_Embedding_API_Call(CalculationInfoLasso calculationInfo) {
+//		System.out.println(address+ "/models/" + calculationInfo.qsarMethodEmbedding +"/embedding_importance");
+				
+		HttpResponse<String> response = Unirest.post(address+ "/models/{qsar_method}/embedding_lasso")
+				.routeParam("qsar_method", calculationInfo.qsarMethodEmbedding)
+				.field("training_tsv",calculationInfo.modelData.trainingSetInstances)
+				.field("remove_log_p",String.valueOf(calculationInfo.remove_log_p))
+				.field("prediction_tsv", calculationInfo.modelData.predictionSetInstances)
+				.field("n_threads",String.valueOf(calculationInfo.n_threads))
+				.field("run_rfe", String.valueOf(calculationInfo.run_rfe))
 				.asString();
 
 		return response;

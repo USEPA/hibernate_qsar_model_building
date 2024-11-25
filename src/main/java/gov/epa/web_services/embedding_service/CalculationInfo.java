@@ -1,5 +1,6 @@
 package gov.epa.web_services.embedding_service;
 
+import gov.epa.endpoints.models.ModelData;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 /**
@@ -7,10 +8,12 @@ import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 */
 public class CalculationInfo {
 
+
+	public transient ModelData modelData;
 	
 	public Boolean save_to_database;
-	public String tsv_training;
-	public String tsv_prediction;
+//	public String tsv_training;
+//	public String tsv_prediction;
 
 	//added additional non exposed params for convenience (TMM):
 	public String datasetName;

@@ -196,6 +196,10 @@ public class ModelData {
 		this.countTraining=counterTrain;
 		this.countPrediction=counterTest;
 		
+		System.out.println("CountTraining="+countTraining);
+		System.out.println("CountPrediction="+countPrediction);
+		
+		
 	}
 	
 
