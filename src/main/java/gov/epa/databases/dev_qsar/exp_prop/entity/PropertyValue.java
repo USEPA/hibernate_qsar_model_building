@@ -118,11 +118,13 @@ public class PropertyValue {
 	private Boolean keep;
 
 	@Column(name = "keep_reason")
-	private String keepReason;
+	private String keepReason;//TODO change back to reason if dont add flagReason field
 
 	@NotNull(message = "Flag required to create property value")
 	@Column(name = "qc_flag")
 	private Boolean qcFlag;
+	
+	//TODO need to add separate flagReason because sometimes keep=true and the reason refers to the flag=true (confusing)
 
 	@Column(name = "qc_notes")
 	private String qcNotes;

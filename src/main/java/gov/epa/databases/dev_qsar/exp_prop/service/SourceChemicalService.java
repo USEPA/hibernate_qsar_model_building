@@ -1,5 +1,7 @@
 package gov.epa.databases.dev_qsar.exp_prop.service;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 
 import javax.validation.ConstraintViolationException;
@@ -26,5 +28,25 @@ public interface SourceChemicalService {
 	public List<SourceChemical> findAllFromSource(PublicSource ps);
 
 	public List<SourceChemical> findAllFromSource(PublicSource ps, Session session);
+
+	/**
+	 * SQL way of getting source chemicals for a public source. The literature source will only have an id filled in
+	 * 
+	 * @param ps
+	 * @return
+	 */
+	public List<SourceChemical> findAllFromSourceSql(PublicSource ps);
+
+	/**
+	 * This version gets the generated keys in one batch
+	 * 
+	 * @param predictionDashboards
+	 * @param conn
+	 * @return
+	 * @throws SQLException
+	 */
+	public void createBatchSql(List<SourceChemical> sourceChemicals, Connection conn) throws SQLException;
+
+	public List<SourceChemical> findAllSql();
 
 }

@@ -26,6 +26,9 @@ import org.hibernate.validator.constraints.Length;
 @Table(name = "source_chemicals", uniqueConstraints = {
 		@UniqueConstraint(columnNames = { "source_casrn", "source_smiles", "source_chemical_name", "source_dtxsid",
 				"source_dtxcid", "source_dtxrid", "fk_public_source_id", "fk_literature_source_id" }) })
+
+//TODO TMM: if all Strings are stored as nulls, then the unique constraint will fail to block the creation of duplicates
+
 public class SourceChemical {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
