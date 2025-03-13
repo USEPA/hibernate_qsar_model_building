@@ -1,20 +1,42 @@
 package gov.epa.run_from_java.scripts.PredictionDashboard;
 
+import java.awt.Desktop;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.DecimalFormat;
+import java.util.Base64;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.run_from_java.scripts.QsarModelsScript;
+import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.Model;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.OPERA_Report_API;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.PredictionDashboardScriptOPERA;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.ADEstimate;
+import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.PredictionIndividualMethod;
 
 
 
 /**
+ * TODO make html using Jsoup from the very beginning- rather than converting to pretty json at end
+ * https://stackoverflow.com/questions/29196699/pretty-html-snippet-output
+ * 
+ * https://www.quora.com/What-is-the-best-way-to-tell-if-there-is-a-missing-closing-tag-in-HTML-CSS-or-JavaScript-code
+ * https://validator.w3.org/#validate_by_upload
+ * 
+ * 
 * @author TMARTI02
 */
 public class HTMLReportCreator {
@@ -25,6 +47,8 @@ public class HTMLReportCreator {
 	protected String detailsURL="https://comptox.epa.gov/dashboard/chemical/details/";
 
 	protected boolean debug=false;
+
+	QsarModelsScript qms=new QsarModelsScript("tmarti02");
 
 	
 	/**
@@ -83,10 +107,18 @@ public class HTMLReportCreator {
 		
 	}
 	
-	public static String getFormattedValue(Double dvalue,String propertyName) {
+	public static String getFormattedValue(boolean isPropertyBinary,Double dvalue,String propertyName) {
+		return getFormattedValue( isPropertyBinary, dvalue, propertyName, 3);
+	}
+	
+	
+	
+	public static String getFormattedValue(boolean formatAsInteger, Double dvalue,String propertyName,int nsig) {
 
-		int nsig=3;
-
+		if(dvalue==null) {
+			return "N/A";
+		}
+		
 		DecimalFormat dfSci=new DecimalFormat("0.00E00");
 		DecimalFormat dfInt=new DecimalFormat("0");
 
@@ -95,14 +127,13 @@ public class HTMLReportCreator {
 		
 		try {
 			
-			
-			if(propertyName.equals(DevQsarConstants.RBIODEG) || propertyName.contains("receptor"))
+			if(formatAsInteger)
 				return dfInt.format(dvalue);
 			
 //			if(propertyName.equals(DevQsarConstants.BOILING_POINT) || propertyName.equals(DevQsarConstants.MELTING_POINT)) 
 //				return df4.format(dvalue);
 			
-			if(Math.abs(dvalue)<0.01 && dvalue!=0) {
+			if(dvalue!=0 && (Math.abs(dvalue)<0.01 || Math.abs(dvalue)>1e3)) {
 				return dfSci.format(dvalue);
 			}
 //			System.out.println(dvalue+"\t"+setSignificantDigits(dvalue, nsig));
@@ -125,19 +156,42 @@ public class HTMLReportCreator {
 				  "<span class=\"tooltiptext\">Experimental value from "+or.modelDetails.modelSourceName+"</span></div>");
 
 		if (or.modelResults.experimentalValue!=null) {
-			String formattedValue=getFormattedValue(or.modelResults.experimentalValue,or.modelDetails.propertyName);
+			
+			String formattedValue=getFormattedValue(or.modelDetails.propertyIsBinary,or.modelResults.experimentalValue,or.modelDetails.propertyName);
 			strExp+="&nbsp;"+formattedValue+"&nbsp;"+or.modelResults.standardUnit;//add units
 			
 			if(or.modelResults.experimentalString!=null) {
 				strExp+=("&nbsp;("+or.modelResults.experimentalString+")");
 			}
 		} else if(or.modelResults.experimentalString!=null) {
-			strExp+=("&nbsp;"+or.modelResults.experimentalString+"");
+			 try {
+				 double dexp=Double.parseDouble(or.modelResults.experimentalString);				 
+				 String formattedValue=getFormattedValue(or.modelDetails.propertyIsBinary,dexp,or.modelDetails.propertyName);
+				 strExp+="&nbsp;"+formattedValue;//add units
+			 } catch (Exception ex) {
+				strExp+=("&nbsp;"+or.modelResults.experimentalString+"");				 
+			 }
+			
+			if(!or.modelDetails.propertyIsBinary) {
+				strExp+="&nbsp;"+or.modelResults.standardUnit;
+			}
+			
 		} else {
 			strExp+="&nbsp;N/A";
 		}
 
 		fw.write(strExp+"<br>");
+		
+		
+		if (or.modelResults.experimentalSource!=null) {
+			fw.write("<b>Experimental source: </b>"+or.modelResults.experimentalSource+"<br>\n");
+		}
+		
+		if (or.modelResults.experimentalSet!=null) {
+			fw.write("<b>Experimental set: </b>"+or.modelResults.experimentalSet+"<br>\n");
+		}
+
+
 	}
 
 	
@@ -149,7 +203,7 @@ public class HTMLReportCreator {
 		String strExp="";
 		
 		if(experimentalValue!=null) {
-			String formattedValue=getFormattedValue(experimentalValue,or.modelDetails.propertyName);
+			String formattedValue=getFormattedValue(or.modelDetails.propertyIsBinary, experimentalValue,or.modelDetails.propertyName);
 			strExp+="&nbsp;"+formattedValue+"&nbsp;"+or.modelResults.standardUnit;
 			
 			if(experimentalString!=null) {
@@ -171,15 +225,15 @@ public class HTMLReportCreator {
 	
 
 	
-	protected void writePredNeighbor(PredictionReport or, Writer fw, Double predictedValue,String predictedString) throws IOException {
-		
+	protected void writePredNeighbor(PredictionReport or, Writer fw, Double predictedValue,String predictedString,String predictionToolTip) throws IOException {
+
 		fw.write("<div class=\"tooltip\"><b>Predicted:</b>"+
-				  "<span class=\"tooltiptext\">Five fold cross validation prediction for the neighbor</span></div>");
+				  "<span class=\"tooltiptext\">"+predictionToolTip+"</span></div>");
 		
 		String strPred="";
 		
 		if(predictedValue!=null) {
-			String formattedValue=getFormattedValue(predictedValue,or.modelDetails.propertyName);
+			String formattedValue=getFormattedValue(or.modelDetails.propertyIsBinary, predictedValue,or.modelDetails.propertyName);
 			strPred+="&nbsp;"+formattedValue+"&nbsp;&nbsp;"+or.modelResults.standardUnit;
 //			System.out.println("pred formattedValue="+formattedValue);
 			
@@ -194,8 +248,7 @@ public class HTMLReportCreator {
 			
 		}
 		
-		
-		if(strPred.isBlank()) strPred="N/A";
+		if(strPred.isBlank()) strPred="&nbsp;N/A";
 		
 		fw.write(strPred+"<br><br>");
 	}
@@ -218,7 +271,7 @@ public class HTMLReportCreator {
 				+ "	  border-width: 5px;\r\n" + "	  border-style: solid;\r\n"
 				+ "	  border-color: #555 transparent transparent transparent;\r\n" + "	}\r\n" + "\r\n"
 				+ "	.tooltip:hover .tooltiptext {\r\n" + "	  visibility: visible;\r\n" + "	  opacity: 1;\r\n"
-				+ "	}\r\n" + "	</style>";
+				+ "	}\r\n" + "</style>\n";
 		
 				
 		fw.write(style);
@@ -229,10 +282,10 @@ public class HTMLReportCreator {
 		fw.write("<div class=\"tooltip\"><b>Predicted value: </b> "+
 				  "<span class=\"tooltiptext\">Predicted value from the model</span></div>");
 
-		String strPred="N/A";
+		String strPred="&nbsp;N/A";
 		
 		if(or.modelResults.predictedValue!=null) {
-			String formattedValue=getFormattedValue(or.modelResults.predictedValue,or.modelDetails.propertyName);
+			String formattedValue=getFormattedValue(or.modelDetails.propertyIsBinary, or.modelResults.predictedValue,or.modelDetails.propertyName);
 			strPred=" "+formattedValue+"&nbsp;"+or.modelResults.standardUnit;
 //			System.out.println("pred formattedValue="+formattedValue);
 		}
@@ -284,11 +337,40 @@ public class HTMLReportCreator {
 	}    
 
 	
-	public void writeCenteredTD(Writer fw, String text) throws IOException {
+	protected void writeCenteredTD(Writer fw, String text) throws IOException {
 		fw.write("<td align=center>"+text+"</td>\n");
 	}
 	
-	public void writeCenteredTD(Writer fw, Double value) throws IOException {
+	
+//	public String writeHtmlHead(PredictionReport or) throws IOException {
+//		
+//		StringWriter fw=new StringWriter();
+//		
+//		fw.write("<!DOCTYPE html><html>\n");
+//		fw.write("<head>\n");
+////		fw.write("<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">\n");
+//		this.writeStyles(fw);
+//		fw.write("<title>"+or.modelDetails.modelSourceName+" results for " + or.chemicalIdentifiers.dtxcid + " for " + or.modelDetails.modelName+" model");
+//		fw.write("</title>\n");
+//		fw.write("</head>\n");
+//		return fw.toString();
+//		
+//	}
+	
+	
+	protected void writeHtmlHead(PredictionReport or,StringWriter fw) throws IOException {
+		
+		fw.write("<!DOCTYPE html><html>\n");
+		fw.write("<head>\n");
+		fw.write("<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">\n");
+		this.writeStyles(fw);
+		fw.write("<title>"+or.modelDetails.modelSourceName+" results for " + or.chemicalIdentifiers.dtxcid + " for " + or.modelDetails.modelName+" model");
+		fw.write("</title>\n");
+		fw.write("</head>\n");
+	}
+
+	
+	protected void writeCenteredTD(Writer fw, Double value) throws IOException {
 		
 		if(value==null) {
 			fw.write("<td align=center>N/A</td>\n");	
@@ -311,8 +393,10 @@ public class HTMLReportCreator {
 		fw.write("<td>");
 
 		fw.write("<b>Model name:</b> "+or.modelDetails.modelName+"<br>");
-		fw.write("<b>Model source:</b> "+or.modelDetails.modelSourceName+"<br>\n");
+		
+		fw.write("<b>Model source:</b> <a href=\""+or.modelDetails.modelSourceURL+"\">"+or.modelDetails.modelSourceName+"</a><br>\n");
 
+		
 //		fw.write("<b>Model source description:</b> "+or.modelDetails.sourceDescription+"<br>\n");
 		
 //		fw.write("<b>Model source:</b>");
@@ -327,6 +411,7 @@ public class HTMLReportCreator {
 		writePredictionError(or, fw);
 		writeAD(or,fw);
 		
+		
 //		this.writeGlobalAD(or, fw);
 //		this.writeLocalAD(or, fw, df);
 //		this.writeConfidenceIndex(or, fw, df);
@@ -335,9 +420,168 @@ public class HTMLReportCreator {
 
 		fw.write("</td>\n");
 		fw.write("\t</tr>\n");
-		fw.write("</table>");
+		fw.write("</table>\n");
 	}
 
+	
+	protected void addPlotFromResQsarDB(Integer pixels, Long modelId, Long fileType, Writer fw, String altText)
+			throws IOException {
+		byte[]fileBytes=qms.downloadModelFile(modelId, fileType);
+		String base64 = Base64.getEncoder().encodeToString(fileBytes);
+		String imgSrc="data:image/png;base64,"+base64;
+		
+		
+		if(pixels==null) {
+			fw.write("<td width=30%><img src=\"" + imgSrc
+					+ "\" alt=\""+altText+"\"></td>");
+		} else {
+//			fw.write("<td width=30%><img src=\"" + imgSrc
+//					+ "\" alt=\""+altText+"\" height="+pixels+" width="+pixels+"></td>");
+			
+			fw.write("<td width=30%><img src=\"" + imgSrc
+					+ "\" alt=\""+altText+"\" height="+pixels+"></td>");
+
+			
+		}
+	}
+
+	protected void addPlotsTable(PredictionReport or, Writer fw) throws IOException {
+
+		fw.write("<table border=0 width=100%>\n");
+		
+//		fw.write("<colgroup>\r\n"
+//				+ "<col span=\"1\" style=\"width: 50%;\">\r\n"
+//				+ "<col span=\"1\" style=\"width: 50%;\">\r\n"
+//				+ "</colgroup>\r\n");
+		
+		fw.write("\t<tr>\n");
+		
+		String altTextScatterPlot=or.modelDetails.propertyName+" Model Results";
+		String altTextHistogram="Histogram of "+or.modelDetails.propertyName+" Data";
+
+		if(or.modelDetails.hasScatterPlot) {
+
+//			if(or.modelDetails.loadPlotsFromDB) {
+//				addPlotFromResQsarDB(500, or.modelDetails.modelId, 3L, fw, altTextScatterPlot);
+//			} else if (or.modelDetails.useModelIdLegacy) {
+//				fw.write("<td width=30%><img src=\"" + or.modelDetails.urlScatterPlotAPI_Legacy
+//						+ or.modelDetails.modelIdLegacy + "\"" + " alt=\"" + altTextScatterPlot + "\"></td>");
+//			} else {
+//				fw.write("<td width=30%><img src=\""+or.modelDetails.urlScatterPlotAPI + 
+//						or.modelDetails.modelId+"\" alt=\""+altTextScatterPlot+"\"></td>");
+//			}
+
+			
+			fw.write("<td><img src=\""+or.modelDetails.urlModelAPI+"?modelId="+
+					or.modelDetails.modelId+"&typeId=3\" alt=\""+altTextScatterPlot+"\" height=400></td>");
+
+		}
+		
+		if(or.modelDetails.hasHistogram) {
+//			if(or.modelDetails.loadPlotsFromDB) {
+//				addPlotFromResQsarDB(500,or.modelDetails.modelId, 4L, fw, altTextHistogram);
+//			} else if (or.modelDetails.useModelIdLegacy) {
+//				fw.write("<td width=30%><img src=\""+or.modelDetails.urlHistogramAPI_Legacy +
+//						or.modelDetails.modelIdLegacy+"\" alt=\""+altTextHistogram+"\"></td>");
+//
+//			} else {
+//				fw.write("<td width=30%><img src=\""+or.modelDetails.urlHistogramAPI +
+//						or.modelDetails.modelId+"\" alt=\""+altTextHistogram+"\"></td>");
+//			}
+			
+			fw.write("<td><img src=\""+or.modelDetails.urlModelAPI+"?modelId="+
+					or.modelDetails.modelId+"&typeId=4\" alt=\""+altTextHistogram+"\" height=400></td>");
+
+		}
+		
+		
+		fw.write("</tr></table>\n");
+	}
+	
+	
+	protected void writeQmrfLink(PredictionReport or, Writer fw) throws IOException {
+		
+		if (or.modelDetails.hasQmrfPdf) {
+			
+//			if(or.modelDetails.useModelIdLegacy) {
+//				fw.write("<span class=\"border\"><a href=\""+or.modelDetails.urlQMRF_API+or.modelDetails.modelIdLegacy+"\" target=\"_blank\"> "
+//						+ "Model summary in QSAR Model Reporting Format (QMRF)"
+//						+ "</a></span>"+
+//				"<style>.border {border: 2px solid darkblue; padding: 2px 4px 2px;}</style><br><br>");
+//				
+//			} else {
+//				fw.write("<span class=\"border\"><a href=\""+or.modelDetails.urlQMRF_API+or.modelDetails.modelId+"\" target=\"_blank\"> "
+//						+ "Model summary in QSAR Model Reporting Format (QMRF)"
+//						+ "</a></span>"+
+//				"<style>.border {border: 2px solid darkblue; padding: 2px 4px 2px;}</style><br><br>");
+//				
+//			}
+
+			fw.write("<span class=\"border\"><a href=\"" + or.modelDetails.urlModelAPI + "?modelId="
+					+ or.modelDetails.modelId + "&typeId=1\" target=\"_blank\"> "
+					+ "Model summary in QSAR Model Reporting Format (QMRF)</a></span>"
+					+ "<style>.border {border: 2px solid darkblue; padding: 2px 4px 2px;}</style><br><br>");
+			
+		}
+	}
+
+	protected String toPrettyHtml(Writer w) throws IOException {
+//		System.out.println(doc);
+		
+//		String head=writeHtmlHead(or);
+//		String html=head+w.toString();
+		
+//		Document doc = Jsoup.parseBodyFragment(w.toString());
+//		doc.outputSettings().indentAmount(2);
+//		String body=doc.body().html().toString();
+//		return head+"\r\n<body>\n"+body+"\n</body>\n</html>";
+		
+		Document doc = Jsoup.parse(w.toString());
+		doc.outputSettings().indentAmount(2);
+		return doc.toString();
+
+	}
+
+	
+
+	public static void viewHTMLReportsFromMaterializedView(String id) {
+		
+		String idCol="dtxcid";
+		if (id.contains("SID")) idCol="dtxsid";
+
+		String sql="Select model_name, report_html from mv_predicted_reports where "+idCol+"='"+id+"'";
+		
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+		HTMLReportCreator h=new HTMLReportCreator();
+		
+		String folder="data\\mv_predicted_reports\\";
+		String destFolder=folder+File.separator+id;
+		
+		File DF=new File(destFolder);
+		if(!DF.exists())DF.mkdirs();
+
+		try {
+			while (rs.next()) {
+				
+				String model_name=rs.getString(1);
+				String file_html=new String(rs.getBytes(2));
+				
+				String filename=id+"_"+model_name+".html";
+				h.writeStringToFile(file_html, destFolder, filename);
+				
+				System.out.println(filename);
+				
+				PredictionReport.viewInWebBrowser(destFolder+File.separator+filename);
+				
+				
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		
+	}
 	
 	protected void writeFirstRow(PredictionReport or, Writer fw) throws IOException {
 		fw.write("<table border=0 width=100%>\n");
@@ -360,6 +604,14 @@ public class HTMLReportCreator {
 		writeModelResults(or, fw);
 		fw.write("</td>\r\n");
 		
+		
+		if(or.modelDetails.consensusPredictions!=null) {
+			fw.write("<td valign=\"top\">");
+			writeIndividualModelsSummary(or, fw);
+			fw.write("</td>\r\n");
+		}
+		
+		
 		fw.write("\t</tr>\n");
 		
 		fw.write("</table>\n");
@@ -375,10 +627,17 @@ public class HTMLReportCreator {
 
 			String name=adEstimate.adMethod.name;
 			String description=adEstimate.adMethod.description;
-
+			
+			//Dont need extra rows since have combined AD:
+			
+			if(or.modelResults.useCombinedApplicabilityDomain) {
+				if(name.toLowerCase().contains("local") || name.toLowerCase().contains("global")) continue;
+			} else {
+				if (name.equals("Combined applicability domain")) continue;
+			}
+			
 			fw.write("<div class=\"tooltip\"><b>"+name+":</b>&nbsp;"+
 					"<span class=\"tooltiptext\">"+description+"</span></div>");
-
 
 			if (name.equals("Combined applicability domain")) {
 				fw.write(adEstimate.reasoningHtml+"<br>");
@@ -386,7 +645,6 @@ public class HTMLReportCreator {
 				if (adEstimate.conclusion==null) {
 					fw.write(" "+adEstimate.value+"<br>");
 				} else {
-					
 					
 					if (adEstimate.conclusion.contentEquals("Inside")) {
 						fw.write("<span class=\"borderAD_Green\">Inside</span>"+
@@ -422,7 +680,7 @@ public class HTMLReportCreator {
 
 	}
 
-	public void writeChemicalInfo(PredictionReport or, Writer fw) throws IOException {
+	protected void writeChemicalInfo(PredictionReport or, Writer fw) throws IOException {
 		fw.write("<table border=0 width=100%>\n");
 		
 		fw.write("\t<tr bgcolor=\"black\">\n");
@@ -444,9 +702,21 @@ public class HTMLReportCreator {
 		if (or.chemicalIdentifiers.casrn!=null)		
 			fw.write("<b>CASRN:</b> "+or.chemicalIdentifiers.casrn+"<br>");
 		
-		if (or.chemicalIdentifiers.smiles!=null)		
-			fw.write("<b>SMILES:</b> "+or.chemicalIdentifiers.smiles+"<br>");
+//		if (or.chemicalIdentifiers.smiles!=null) {		
+//			fw.write("<b>SMILES:</b> "+or.chemicalIdentifiers.smiles+"<br>");
+//			
+////			String smiles=or.chemicalIdentifiers.smiles;
+////			String smilesShort=smiles;
+////			if(smiles.length()>20) {
+////				smilesShort=smiles.substring(0,20)+"...";
+////			}
+////			fw.write("<b>SMILES:</b> "+"<div class=\"tooltip\">"+smilesShort+"</b> "+
+////					  "<span class=\"tooltiptext\">"+smiles+"</span></div>"+"<br>");
+//
+//		}
 
+		if (or.chemicalIdentifiers.molWeight!=null)		
+			fw.write("<b>Molecular weight:</b> "+or.chemicalIdentifiers.molWeight+"<br>");
 		
 		fw.write("</td>\n");
 		
@@ -460,12 +730,38 @@ public class HTMLReportCreator {
 	}
 	
 	
-	public void toHTMLFile(PredictionReport or, String folder,String filename) {
+	protected void writeStatsTable(PredictionReport or, Writer fw) throws IOException {
+		System.out.println("need to override");
+	}
+	
+	public String toHTMLFile(PredictionReport or, String folder,String filename) {
+//		System.out.println("Enter toHTMLFile with filename");
 		
 		try {
-			FileWriter fw=new FileWriter(folder+File.separator+filename);
+			String filepath=folder+File.separator+filename;
+			FileWriter fw=new FileWriter(filepath);
+			
+//			System.out.println(folder+File.separator+filename);
 			String htmlReport=createReport(or);
-			fw.write(htmlReport);
+			
+			writeStringToFile(htmlReport, folder, filename);
+			return filepath;
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+
+	}
+	
+	public void writeStringToFile(String strFileHtml, String folder,String filename) {
+//		System.out.println("Enter toHTMLFile with filename");
+		
+		try {
+			String filepath=folder+File.separator+filename;
+			FileWriter fw=new FileWriter(filepath);
+//			System.out.println(folder+File.separator+filename);
+			fw.write(strFileHtml);
 			fw.flush();
 			fw.close();
 		} catch (Exception ex) {
@@ -474,10 +770,78 @@ public class HTMLReportCreator {
 
 	}
 
+	protected void writeIndividualModelsSummary (PredictionReport er,Writer fw) throws IOException {
 	
-	public void toHTMLFile(PredictionReport or, String folder) {
-		toHTMLFile(or, folder, or.chemicalIdentifiers.dtxcid+"_"+or.modelDetails.modelName+".html");
+		fw.write("<table border=0 width=100%>\n");
+		
+		fw.write("\t<tr bgcolor=\"black\">\n");
+		fw.write("\t\t<td><font color=\"white\">Consensus predictions</color></td>\n");
+		fw.write("\t</tr>\n");
+
+		fw.write("\t<tr><td>\n");
+		
+		fw.write("<table border=1 cellpadding=0 cellspacing=0>\n");
+		fw.write("<caption>Predictions used in consensus prediction</caption>\n");
+
+		fw.write("\t<tr bgcolor=\"lightgray\">\n");
+		fw.write("\t<th>Method</th>\n");
+		fw.write("\t<th>Predicted value "+er.modelDetails.consensusPredictions.unitsPrediction+"</th>\n");
+		fw.write("\t</tr>\n");
+		
+		for(PredictionIndividualMethod pim:er.modelDetails.consensusPredictions.predictionsIndividualMethod) {
+			fw.write("\t<tr>\n");
+			writeCenteredTD(fw, pim.method);
+			writeCenteredTD(fw, pim.predictedValue);
+			fw.write("\t</tr>\n");
+		}
+		
+		fw.write("</table>\n");
+		
+		fw.write("\t</td></tr>\n");
+
+		fw.write("</table>\n");
 	}
+
+
+	public static void viewInWebBrowser(String filepath) {
+		
+        Desktop desktop = Desktop.getDesktop();
+        try {
+            desktop.browse(new File(filepath).toURI());
+            return;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+	}
+	public String toHTMLFile(PredictionReport or, String folder) {
+//		System.out.println("Enter toHTMLFile");
+		return toHTMLFile(or, folder, or.chemicalIdentifiers.dtxsid+"_"+or.modelDetails.modelName+".html");
+	}
+
+	void getSamplePlotFromMaterializedView() {
+		
+		String sql="select mf.file_bytes from mv_model_files mf\n"+
+                     "where model_name='OPERA_AOH' and file_type_name='Histogram plot';";
+		
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+		
+		try {
+			rs.next();
+			byte[] fileBites=rs.getBytes(1);
+			FileOutputStream fos = new FileOutputStream("test.png");
+			fos.write(fileBites);
+			fos.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	
+	public static void main(String[] args) {
+//		viewHTMLReportsFromMaterializedView("DTXSID7020182");
+		HTMLReportCreator h=new HTMLReportCreator();
+		h.getSamplePlotFromMaterializedView();
+	}	
 
 
 }

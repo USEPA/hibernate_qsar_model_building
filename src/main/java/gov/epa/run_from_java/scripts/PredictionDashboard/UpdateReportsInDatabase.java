@@ -57,7 +57,7 @@ public class UpdateReportsInDatabase {
 		
 		for (PredictionReport pr:reports) {
 			counter++;
-			String json=new String(pr.getFile());
+			String json=new String(pr.getFileJson());
 //			System.out.println(json);
 			
 			if(sourceName.toLowerCase().contains("percepta")) {
@@ -79,7 +79,7 @@ public class UpdateReportsInDatabase {
 		if(!report.updated) return;
 
 		String jsonNew=	gson.toJson(report);
-		pr.setFile(jsonNew.getBytes());
+		pr.setFileJson(jsonNew.getBytes());
 		pr.setUpdatedBy(userName);				
 		reportsToUpdate.add(pr);
 //		System.out.println(pr.getId()+"\t"+counter+"\t"+jsonNew);

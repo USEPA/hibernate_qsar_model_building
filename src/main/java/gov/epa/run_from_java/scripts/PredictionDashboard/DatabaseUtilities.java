@@ -3,7 +3,10 @@ package gov.epa.run_from_java.scripts.PredictionDashboard;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
 
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Source;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 
 /**
@@ -55,7 +58,7 @@ public class DatabaseUtilities {
 		
 		int fk_source_id=Integer.parseInt(SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sql));
 
-		System.out.println(fk_source_id);
+		System.out.println("Source id="+fk_source_id);
 		
 		deletePredictionsDashboard(fk_source_id);
 		
@@ -74,6 +77,39 @@ public class DatabaseUtilities {
 	
 	}
 
+	
+	/**
+	 * Gets unique values of PredictionDashboard keys (see PredictionDashboard.getKey())
+	 * 
+	 * @param source
+	 * @param snapshot
+	 * @return
+	 */
+	public static HashSet<String>getLoadedKeys(Source source,DsstoxSnapshot snapshot) {
+		
+		String sql="select distinct pd.canon_qsar_smiles, dr.id, m.id from qsar_models.predictions_dashboard pd\r\n";
+		sql+="join qsar_models.models m on m.id=pd.fk_model_id\r\n";
+		sql+="join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\r\n";
+		sql+="where m.fk_source_id="+source.getId()+" and dr.fk_dsstox_snapshot_id="+snapshot.getId()+";";
+
+		HashSet<String>values=new HashSet<>();
+		
+		try {
+			Connection conn=gov.epa.run_from_java.scripts.SqlUtilities.getConnectionPostgres();
+			ResultSet rs=SqlUtilities.runSQL2(conn , sql);	
+			
+			while (rs.next()) {
+				values.add(rs.getString(1)+"\t"+rs.getLong(2)+"\t"+rs.getLong(3));
+			}
+			
+		} catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		return values;
+		
+	}
+	
 	/**
 	 * Delete with single query 
 	 * In child tables should have cascade on delete for fk_predictions_dashboard foreign settings in datagrip
@@ -135,6 +171,45 @@ public class DatabaseUtilities {
 		System.out.println("Done");
 	
 	}
+	
+	/**
+	 * Gets report from cached json report in prediction_reports table
+	 * 
+	 * @param id
+	 * @param modelName
+	 * @param lookups 
+	 * @return
+	 */
+	public static String getPredictionReport(String id,String modelName,Long dsstox_records_id) {
+		
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		
+		String idCol="dtxcid";
+		if (id.contains("SID")) idCol="dtxsid";
+		
+				
+		String sql="select file from qsar_models.prediction_reports pr\r\n"
+				+ "join qsar_models.predictions_dashboard pd on pr.fk_predictions_dashboard_id = pd.id\r\n"
+				+ "join qsar_models.models m on pd.fk_model_id = m.id\r\n"
+				+ "where pd.fk_dsstox_records_id='"+dsstox_records_id+"' and m.name='"+modelName+"';";
+				
+//		System.out.println(sql);
+		
+		
+		try {
+			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+
+			if (rs.next()) {
+				String json=new String(rs.getBytes(1));
+				return json;
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+		
+	}
 
 	public void deleteRecords(String table, String sourceName) {
 		System.out.print("Deleting from "+table);
@@ -173,10 +248,66 @@ public class DatabaseUtilities {
 	
 	}
 	
+	//	private Double getCategoryEPA(String strvalue) {
+	//
+	//		if(strvalue.equals("501-5000")) return 3.0;
+	//				
+	//		double value=Double.parseDouble(strvalue);
+	//		if (value<=50) return 1.0;
+	//		else if (value<=500) return 2.0;
+	//		else if(value<=5000) return 3.0;
+	//		else if(value>5000) return 4.0;
+	//		else return null;
+	//	}
+	//	
+	//	private Double getCategoryGHS(String strvalue) {
+	//		double value=Double.parseDouble(strvalue);
+	//		if (value<=5) return 1.0;
+	//		else if (value<=50) return 2.0;
+	//		else if(value<=300) return 3.0;
+	//		else if(value<=2000) return 4.0;
+	//		else if(value>2000) return 5.0;
+	//		else return null;
+	//	}
+	
+	
+	
+	@Deprecated
+	public static HashSet<String> getPredictionsDashboardKeysInDB(long minModelId,long maxModelId)  {
+	
+		try {
+	
+			HashSet<String> pd_keys=new HashSet<>();
+	
+			String sql="select canon_qsar_smiles, fk_dsstox_records_id, fk_model_id from qsar_models.predictions_dashboard pd\n"+
+					"where fk_model_id>="+minModelId+" and fk_model_id<="+maxModelId+";";
+	
+			ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+	
+			while (rs.next()) {
+				String canon_qsar_smiles=rs.getString(1);
+				Long fk_dsstox_records_id=rs.getLong(2);
+				String fk_model_id=rs.getString(3);
+				String key=canon_qsar_smiles+"\t"+fk_dsstox_records_id+"\t"+fk_model_id;
+				//				System.out.println(key);
+				pd_keys.add(key);
+			}
+	
+			//			System.out.println("Got keys for test predictions in predictions dashboard:"+pd_keys.size());
+	
+			return pd_keys;
+	
+		} catch (Exception ex) {
+			return null;
+		}
+	}
+
+
+
 	public static void main(String[] args) {
 		DatabaseUtilities d=new DatabaseUtilities();
 //		d.deleteAllRecords("Percepta2020.2.1");
-		d.deleteAllRecords("Percepta2023.1.2");
+//		d.deleteAllRecords("Percepta2023.1.2");
 		
 	}
 

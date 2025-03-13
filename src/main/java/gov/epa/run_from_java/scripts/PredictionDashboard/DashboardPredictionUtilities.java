@@ -5,6 +5,10 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -16,12 +20,18 @@ import org.openscience.cdk.graph.ConnectivityChecker;
 import org.openscience.cdk.interfaces.IAtomContainer;
 import org.openscience.cdk.io.MDLV2000Reader;
 import org.openscience.cdk.io.MDLV3000Reader;
+import org.openscience.cdk.io.MDLV3000Writer;
 import org.openscience.cdk.smiles.SmiFlavor;
 import org.openscience.cdk.smiles.SmilesGenerator;
 import org.openscience.cdk.smiles.SmilesParser;
 
+import com.epam.indigo.Indigo;
+import com.epam.indigo.IndigoObject;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.util.StructureUtil;
 
 public class DashboardPredictionUtilities {
 	
@@ -32,12 +42,19 @@ public class DashboardPredictionUtilities {
 
 	}
 	
+	static final String strIndigo="Indigo";
+	static final String strCDK="CDK";
+	public String smilesGeneratorMethod=strIndigo;
+
 	
 	public static boolean isSalt(AtomContainer ac) {
 		AtomContainerSet moleculeSet = (AtomContainerSet) ConnectivityChecker.partitionIntoMolecules(ac);
 		return (moleculeSet.getAtomContainerCount() >= 2);
 	}
 
+	
+	
+	
 	/**
 	 * Writing my own V3000 reader because CDK sucks and cant read SDFs for all the dashboard chemicals and get the properties too
 	 * 
@@ -52,6 +69,10 @@ public class DashboardPredictionUtilities {
 
 		AtomContainerSet acs = new AtomContainerSet();
 		
+		Indigo indigo = new Indigo();
+		indigo.setOption("ignore-stereochemistry-errors", true);
+
+		
 		try {
 
 			FileInputStream fis=new FileInputStream(sdfFilePath);
@@ -65,19 +86,16 @@ public class DashboardPredictionUtilities {
 
 				while (true) {
 					String Line=br.readLine();
-
 					if(Line==null) {
 						stop=true;
 						break;
 					}
-
 					//				System.out.println(Line);
 					strStructure+=Line+"\r\n";
 					if(Line.contains("M  END"))break;
 				}
 
 				if(stop)break;
-
 
 				InputStream stream = new ByteArrayInputStream(strStructure.getBytes());
 				mr.setReader(stream);
@@ -89,29 +107,22 @@ public class DashboardPredictionUtilities {
 				} catch (Exception ex) {
 					molecule=new AtomContainer();
 				}
-
 				
 				while (true) {
 					String Line=br.readLine();
 					//				System.out.println(Line);
 
 					if(Line.contains(">  <")) {
-						
 						String field=Line.substring(Line.indexOf("<")+1,Line.length()-1);
-						
 						String value="";
-						
 						while(true) {//read until blank line to get value for the field (sometimes value can have carriage return)
 							String lineMeta=br.readLine();
 							if(lineMeta.trim().isEmpty()) break;
 							value+=lineMeta;
 						}
-						
 //						System.out.println(field+"\t"+value);
 						molecule.setProperty(field, value);
-						//					System.out.println(field);
 					}
-
 					if(Line.contains("$$$"))break;
 				}
 
@@ -149,10 +160,25 @@ public class DashboardPredictionUtilities {
 					String smiles=molecule.getProperty("smiles");
 					
 					if(smiles==null) {
-						smiles=sg.create(molecule);
+						
 						String DTXCID=molecule.getProperty("DTXCID");
-						molecule.setProperty("smiles", smiles);
-//						System.out.println(DTXCID+"\t"+smiles);
+						
+						if(this.smilesGeneratorMethod.contentEquals(strCDK)) {
+							smiles=sg.create(molecule);
+							molecule.setProperty("smiles", smiles);
+//							System.out.println(DTXCID+"\t"+smiles);
+							
+						} else if(this.smilesGeneratorMethod.contentEquals(strIndigo)) {
+							
+							try {
+								IndigoObject indigoMolecule = indigo.loadMolecule(strStructure);		
+								smiles=indigoMolecule.smiles();
+								molecule.setProperty("smiles", smiles);
+//								System.out.println(DTXCID+"\t"+smiles);
+							} catch (Exception ex) {
+//								System.out.println(DTXCID+"\t"+ex.getMessage());
+							}
+						}
 					}
 				}
 				
@@ -296,6 +322,33 @@ public class DashboardPredictionUtilities {
 		return acs2;
 	}
 
+public AtomContainerSet filterAtomContainerSet(AtomContainerSet acs, boolean skipMissingSID, boolean skipSalts, int maxCount) {
+
+		
+		int count=0;
+		
+		Iterator<IAtomContainer> iterator= acs.atomContainers().iterator();
+
+		AtomContainerSet acs2=new AtomContainerSet();
+
+		
+		while (iterator.hasNext()) {
+			AtomContainer ac=(AtomContainer) iterator.next();
+			
+			String SID=ac.getProperty("DTXSID");
+			if(skipMissingSID && SID==null) continue;
+			
+			if(skipSalts && StructureUtil.isSalt(ac)) continue;
+			
+			acs2.addAtomContainer(ac);
+			count++;
+//			System.out.println(ac.getProperty("DTXSID")+"\t"+ac.getProperty("smiles"));
+//			WebTEST4.checkAtomContainer(ac);//theoretically the webservice has its own checking
+			
+			if(count==maxCount)break;
+		}
+		return acs2;
+	}
 
 
 }

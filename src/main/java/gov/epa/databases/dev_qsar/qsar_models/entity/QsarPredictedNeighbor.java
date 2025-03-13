@@ -3,6 +3,7 @@ package gov.epa.databases.dev_qsar.qsar_models.entity;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 
 import javax.persistence.Column;
@@ -24,11 +25,13 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionDashboardTableMaps;
 import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.HTMLReportCreatorOpera;
-import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.OPERA_lookups;
 
 @Entity
-@Table(name="qsar_predicted_neighbors", uniqueConstraints={@UniqueConstraint(columnNames = {"fk_predictions_dashboard_id", "neighbor_number","fk_dsstox_records_id"})})
+//@Table(name="qsar_predicted_neighbors", uniqueConstraints={@UniqueConstraint(columnNames = {"fk_predictions_dashboard_id", "neighbor_number","fk_dsstox_records_id"})})
+@Table(name="qsar_predicted_neighbors", uniqueConstraints={@UniqueConstraint(columnNames = {"fk_predictions_dashboard_id", "neighbor_number","casrn","dtxsid","split_num"})})
+
 public class QsarPredictedNeighbor {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
@@ -107,6 +110,14 @@ public class QsarPredictedNeighbor {
 	private String predictedString;////used to checking match to OPERA values from sqlite database
 
 	
+	@Column(name="split_num")
+	private Integer splitNum; //0 = training set, 1=test set
+
+
+	@Column(name="similarity_coefficient")
+	private Double similarityCoefficient; //0 = training set, 1=test set
+	
+	
 	@Column(name="updated_at")
 	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
@@ -126,29 +137,19 @@ public class QsarPredictedNeighbor {
 	
 	public QsarPredictedNeighbor() {}
 	
-//	public QsarPredictedNeighbor(int neighborNumber,String casrn,String dtxsid,String inchiKey, String exp,String pred, String user,PredictionDashboard pd) {
-//		
-//		this.neighborNumber=neighborNumber;
-//		this.casrn=casrn;
-//		this.dtxsid=dtxsid;
-//		this.inchiKey=inchiKey;
-//
-//		this.exp=exp;
-//		this.pred=pred;
-//		this.createdBy=user;
-//		this.updatedBy=user;
-//		this.predictionDashboard=pd;
-//	}
-	
-
-	public QsarPredictedNeighbor(int neighborNumber,Double experimentalValue,String experimentalString,Double predictedValue,String predictedString,String dtxsid, String casrn, String user,PredictionDashboard pd) {
+	public QsarPredictedNeighbor(int neighborNumber,
+			Double experimentalValue,String experimentalString,
+			Double predictedValue,String predictedString,
+			String dtxsid, String casrn, 
+			String user,PredictionDashboard pd,
+			Integer splitNum) {
 		
 		this.neighborNumber=neighborNumber;
 
 		this.experimentalValue=experimentalValue;
-		this.predictedValue=predictedValue;
-
 		this.experimentalString=experimentalString;
+
+		this.predictedValue=predictedValue;
 		this.predictedString=predictedString;
 
 		this.dtxsid=dtxsid;
@@ -158,7 +159,31 @@ public class QsarPredictedNeighbor {
 		this.updatedBy=user;
 		this.predictionDashboard=pd;
 		
+		this.splitNum=splitNum;
+		
 	}
+	
+	
+//	public QsarPredictedNeighbor(QsarPredictedNeighbor n) {//clone but cant use if splitting a neighbor by dtxsid or casrn
+//		
+//		this.neighborNumber=n.neighborNumber;
+//
+//		this.experimentalValue=n.experimentalValue;
+//		this.predictedValue=n.predictedValue;
+//
+//		this.experimentalString=n.experimentalString;
+//		this.predictedString=n.predictedString;
+//
+//		this.dtxsid=n.dtxsid;
+//		this.casrn=n.casrn;
+//		
+//		this.createdBy=n.createdBy;
+//		this.updatedBy=n.updatedBy;
+//		
+//		this.predictionDashboard=n.predictionDashboard;
+//		this.splitNum=n.splitNum;
+//		
+//	}
 
 	public Integer getNeighborNumber() {
 		return neighborNumber;
@@ -300,7 +325,7 @@ public class QsarPredictedNeighbor {
 	 * @param propertyName - used for print statements
 	 * @param lookups
 	 */
-	public static List<QsarPredictedNeighbor> splitNeighbors(List<QsarPredictedNeighbor> neighbors, String propertyName,OPERA_lookups lookups) {
+	public static List<QsarPredictedNeighbor> splitNeighbors(List<QsarPredictedNeighbor> neighbors, String propertyName,PredictionDashboardTableMaps lookups) {
 		
 		List<QsarPredictedNeighbor> neighborsNew=new ArrayList<QsarPredictedNeighbor>();
 		
@@ -329,14 +354,22 @@ public class QsarPredictedNeighbor {
 		
 		for (int j=0; j<casrns.size(); j++) {
 			String casrn=casrns.get(j).trim();
-			QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),n.getExperimentalValue(),n.getExperimentalString(),
-					n.getPredictedValue(),n.getPredictedString(), n.getDtxsid(), 
-					casrn, n.getCreatedBy(),n.getPredictionDashboard());
+			
+			QsarPredictedNeighbor nnew = new QsarPredictedNeighbor(n.getNeighborNumber(), 
+					n.getExperimentalValue(),n.getPredictedString(), 
+					n.getPredictedValue(),n.getPredictedString(),
+					null, casrn, 
+					n.getCreatedBy(), n.getPredictionDashboard(),
+					n.getSplitNum());
+			
+//			nnew.setDsstoxRecord(n.getDsstoxRecord());
+			
+
 			neighborsNew.add(nnew);
 		}
 	}
 
-	private static void handleMultipleSIDs(QsarPredictedNeighbor n, List<QsarPredictedNeighbor> neighborsNew, OPERA_lookups lookups) {
+	private static void handleMultipleSIDs(QsarPredictedNeighbor n, List<QsarPredictedNeighbor> neighborsNew, PredictionDashboardTableMaps lookups) {
 		String [] sidsArray=n.getDtxsid().split("\\|");
 		String [] casrnsArray=n.getCasrn().split("\\|");
 		
@@ -368,14 +401,15 @@ public class QsarPredictedNeighbor {
 				
 //				System.out.println("unequal array sizes:"+j+"\t"+dtxsid+"\t"+casrnDB);
 				
-//				QsarPredictedNeighbor nnew = new QsarPredictedNeighbor(n.getNeighborNumber(), n.getExp(), n.getPred(),
-//						dtxsid, casrnDB, n.getCreatedBy(), n.getPredictionDashboard());
+				QsarPredictedNeighbor nnew = new QsarPredictedNeighbor(n.getNeighborNumber(), 
+						n.getExperimentalValue(),n.getPredictedString(), 
+						n.getPredictedValue(),n.getPredictedString(),
+						dtxsid, casrnDB, 
+						n.getCreatedBy(), n.getPredictionDashboard(),
+						n.getSplitNum());
 				
-				QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),n.getExperimentalValue(),
-						n.getExperimentalString(),n.getPredictedValue(),n.getPredictedString(), 
-						dtxsid, casrnDB, n.getCreatedBy(),n.getPredictionDashboard());
-				
-				
+//				nnew.setDsstoxRecord(n.getDsstoxRecord());
+//				System.out.println(n.getDtxsid()+"\t"+dtxsid);
 				
 				neighborsNew.add(nnew);
 			}
@@ -386,17 +420,16 @@ public class QsarPredictedNeighbor {
 				String casrn=casrns.get(j);
 //						System.out.println("equal array sizes:"+j+"\t"+dtxsid+"\t"+casrn);
 
-//				QsarPredictedNeighbor nnew = new QsarPredictedNeighbor(n.getNeighborNumber(), n.getExp(), n.getPred(),
-//						dtxsid, casrn, n.getCreatedBy(), n.getPredictionDashboard());
+				QsarPredictedNeighbor nnew = new QsarPredictedNeighbor(n.getNeighborNumber(), 
+						n.getExperimentalValue(),n.getPredictedString(), 
+						n.getPredictedValue(),n.getPredictedString(),
+						dtxsid, casrn, 
+						n.getCreatedBy(), n.getPredictionDashboard(),
+						n.getSplitNum());
 
-				QsarPredictedNeighbor nnew=new QsarPredictedNeighbor(n.getNeighborNumber(),n.getExperimentalValue(),
-						n.getExperimentalString(),n.getPredictedValue(),n.getPredictedString(), 
-						dtxsid, casrn, n.getCreatedBy(),n.getPredictionDashboard());
-
+//				nnew.setDsstoxRecord(n.getDsstoxRecord());
 				
 //				System.out.println(j+"\t"+n.getPred());
-
-				
 				neighborsNew.add(nnew);
 			}
 
@@ -409,11 +442,11 @@ public class QsarPredictedNeighbor {
 	 * Attempts to add DSSTOX metadata to neighbors
 	 * TODO might need to update the info later due to changes in DSSTOX
 	 * 
-	 * @param lookups
+	 * @param tableMaps
 	 * @param propertyName - used for print statements
 	 * @param neighbors
 	 */
-	public static void addNeighborMetadata(OPERA_lookups lookups, String propertyName, List<QsarPredictedNeighbor> neighbors) {
+	public static void addNeighborMetadata(PredictionDashboardTableMaps tableMaps, String propertyName, List<QsarPredictedNeighbor> neighbors) {
 
 //		String matchBy="";
 
@@ -423,12 +456,16 @@ public class QsarPredictedNeighbor {
 			
 			n.setMatchBy("None");
 			
-			if(n.getDtxsid()==null || lookups.mapDsstoxRecordsBySID.get(n.getDtxsid())==null) {
+//			if(n.getCasrn()!=null && n.getCasrn().equals("97964-54-0")) {
+//				System.out.println("97964-54-0\t"+n.getDtxsid()+"\t"+propertyName);
+//			}
+			
+			if(n.getDtxsid()==null || tableMaps.mapDsstoxRecordsBySID.get(n.getDtxsid())==null) {
 
 				if(n.getCasrn()!=null) {
 
-					if(lookups.mapDsstoxRecordsByCAS.get(n.getCasrn())!=null) {
-						dr=lookups.mapDsstoxRecordsByCAS.get(n.getCasrn());
+					if(tableMaps.mapDsstoxRecordsByCAS.get(n.getCasrn())!=null) {
+						dr=tableMaps.mapDsstoxRecordsByCAS.get(n.getCasrn());
 
 						if(dr.getCasrn().equals(dr.getCasrn())) {
 							n.setMatchBy("CASRN");
@@ -447,8 +484,8 @@ public class QsarPredictedNeighbor {
 
 			} else {
 
-				if(lookups.mapDsstoxRecordsBySID.get(n.getDtxsid())!=null) {
-					dr=lookups.mapDsstoxRecordsBySID.get(n.getDtxsid());
+				if(tableMaps.mapDsstoxRecordsBySID.get(n.getDtxsid())!=null) {
+					dr=tableMaps.mapDsstoxRecordsBySID.get(n.getDtxsid());
 					n.setMatchBy("DTXSID");
 				} 
 			}
@@ -457,7 +494,15 @@ public class QsarPredictedNeighbor {
 			if (dr!=null) {
 				if(dr.getDtxsid()!=null) n.setDtxsid(dr.getDtxsid());
 				n.setDsstoxRecord(dr);
+				
+//				System.out.println("\t"+dr.getDtxsid()+"\t"+dr.getPreferredName());
+				
 			} 
+			
+//			if(n.getDtxsid()!=null && n.getDtxsid().equals("DTXSID0050479")) {
+//				System.out.println("Found DTXSID0050479\t"+tableMaps.mapDsstoxRecordsBySID.get(n.getDtxsid()));
+//			}
+			
 
 //			if(!n.getMatchBy().equals("DTXSID")) {
 //				System.out.println(n.getMatchBy());
@@ -466,6 +511,27 @@ public class QsarPredictedNeighbor {
 
 		}//end loop over neighbors
 	}
+	
+	String getKey() {
+		return predictionDashboard.getDtxcid()+"\t"+neighborNumber+"\t"+ casrn +"\t"+ dtxsid;
+	}
+	
+	
+	public static void removeDuplicates(String propertyName, List<QsarPredictedNeighbor> neighbors) {
+		
+		HashSet<String>keys=new HashSet<String>();
+		
+		for(int i=0;i<neighbors.size();i++) {
+			QsarPredictedNeighbor qpn=neighbors.get(i);
+			if(keys.contains(qpn.getKey())) {
+//				System.out.println("Duplicate neighbor:"+propertyName+"\t"+qpn.getKey());
+				neighbors.remove(i--);
+			} else {
+				keys.add(qpn.getKey());
+			}
+		}
+	}
+	
 
 	public DsstoxRecord getDsstoxRecord() {
 		return dsstoxRecord;
@@ -513,6 +579,22 @@ public class QsarPredictedNeighbor {
 
 	public void setPredictedString(String predictedString) {
 		this.predictedString = predictedString;
+	}
+
+	public Integer getSplitNum() {
+		return splitNum;
+	}
+
+	public void setSplitNum(Integer splitNum) {
+		this.splitNum = splitNum;
+	}
+
+	public Double getSimilarityCoefficient() {
+		return similarityCoefficient;
+	}
+
+	public void setSimilarityCoefficient(Double similarityCoefficient) {
+		this.similarityCoefficient = similarityCoefficient;
 	}
 
 //	public Boolean getMolImagePNGAvailable() {

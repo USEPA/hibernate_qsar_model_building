@@ -26,6 +26,8 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointContributor;
@@ -99,7 +101,7 @@ public class PredictionDashboard {
 	private String createdBy;
 	
 	public String getKey() {
-		return canonQsarSmiles+"\t"+getDsstoxRecord().getId()+"\t"+model.getId();
+		return canonQsarSmiles+"\t"+getDsstoxRecord().getId()+"\t"+model.getId();//TODO dont need smiles..
 	}
 
 	@OneToMany(mappedBy="predictionDashboard", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
@@ -121,7 +123,7 @@ public class PredictionDashboard {
 	public String toTsv() {
 		
 		if(dsstoxRecord!=null) {
-			return dsstoxRecord.getId()+"\t"+dsstoxRecord.getSmiles()+"\t"+ dsstoxRecord.getDtxsid()+"\t"+dtxcid + "\t" + model.getName() + "\t"
+			return dsstoxRecord.getId()+"\t"+dsstoxRecord.getSmiles()+"\t"+ dsstoxRecord.getDtxsid()+"\t"+dsstoxRecord.getDtxcid() + "\t" + model.getName() + "\t"
 					+ experimentalString + "\t" + experimentalValue + "\t" + predictionString + "\t"
 					+ predictionValue + "\t" + predictionError;
 			
@@ -180,30 +182,76 @@ public class PredictionDashboard {
 	
 	
 	public String toJson() {
-		
-		JsonObject jo=new JsonObject();
-		jo.addProperty("canonQsarSmiles", canonQsarSmiles);
-		jo.addProperty("dtxsid", this.getDsstoxRecord().getDtxsid());
-		jo.addProperty("experimentalString", experimentalString);
-		jo.addProperty("modelName", model.getName());
-		
-		jo.addProperty("predictionError", predictionError);
+		JsonObject jo = toJsonObject();
+		return Utilities.gson.toJson(jo);
+	}
+	
+	/**
+	 * Makes json without carriage returns
+	 * 
+	 * @return
+	 */
+	public String toJsonOneLine() {
+		JsonObject jo = toJsonObject();
+		Gson gson=new Gson();
+		return gson.toJson(jo);
+	}
 
+	private JsonObject toJsonObject() {
+		JsonObject jo=new JsonObject();
+		
+		jo.addProperty("dtxsid", this.getDsstoxRecord().getDtxsid());
+		jo.addProperty("dtxcid", this.getDsstoxRecord().getDtxcid());
+		jo.addProperty("casrn", this.getDsstoxRecord().getCasrn());
+		jo.addProperty("preferredName", this.getDsstoxRecord().getPreferredName());
+		jo.addProperty("smiles", this.getDsstoxRecord().getSmiles());
+		jo.addProperty("canonQsarSmiles", canonQsarSmiles);
+		
 		jo.addProperty("experimentalString", experimentalString);
 		jo.addProperty("experimentalValue", experimentalValue);
-
 		
+//		if(experimentalString!=null) {
+//			System.out.println(this.getDsstoxRecord().getCasrn()+"\t"+model.getName()+"\t"+experimentalString);
+//		}
+//		
+//		if(experimentalValue!=null) {
+//			System.out.println(this.getDsstoxRecord().getCasrn()+"\t"+model.getName()+"\t"+experimentalValue);
+//		}
+
+		jo.addProperty("modelName", model.getName_ccd());
+		
+		jo.addProperty("predictionError", predictionError);
 		jo.addProperty("predictionString", predictionString);
 		jo.addProperty("predictionValue", predictionValue);
+
+		if(predictionReport!=null) {
+			String jsonReport=new String(predictionReport.getFileJson());
+			JsonObject joReport=Utilities.gson.fromJson(jsonReport, JsonObject.class);
+//			jo.addProperty("predictionReport", jsonReport);
+			jo.addProperty("predictionReport", Utilities.gson.toJson(joReport));
+		}
 		
-		if(predictionReport!=null)
-			jo.addProperty("predictionReport", new String(predictionReport.getFile()));
+		JsonArray jaAD=new JsonArray();
+		
+		for (QsarPredictedADEstimate ad:qsarPredictedADEstimates) {
+			JsonObject joAD=new JsonObject();
+			joAD.addProperty("name", ad.getMethodAD().getName());
+			joAD.addProperty("value", ad.getApplicabilityValue());
+			joAD.addProperty("conclusion", ad.getConclusion());
+			joAD.addProperty("reasoning", ad.getReasoning());
+			jaAD.add(joAD);
+		}
+		
+		jo.add("applicabilityDomains",jaAD);
 		
 //		jo.addProperty("createdAt", createdAt.toString());
 //		jo.addProperty("createdBy", createdBy);
-		return Utilities.gson.toJson(jo);
-		
+
+		return jo;
 	}
+	
+
+	
 	
 
 

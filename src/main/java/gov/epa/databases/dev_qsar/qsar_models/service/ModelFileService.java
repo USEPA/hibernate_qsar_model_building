@@ -12,10 +12,14 @@ public interface ModelFileService {
 	
 	public ModelFile findByModelId(Long modelId, Long fileTypeId, Session session);
 	
-	public ModelFile create(ModelFile modelQmrf) throws ConstraintViolationException;
+	public ModelFile create(ModelFile modelFile) throws ConstraintViolationException;
 	
-	public ModelFile create(ModelFile modelQmrf, Session session) throws ConstraintViolationException;
+	public ModelFile create(ModelFile modelFile, Session session) throws ConstraintViolationException;
+
+	public ModelFile update(ModelFile modelFile) throws ConstraintViolationException;
 	
+	public ModelFile update(ModelFile modelFile, Session session) throws ConstraintViolationException;
+
 	public void delete(ModelFile modelFile);
 	
 	public void delete(ModelFile modelFile, Session session);

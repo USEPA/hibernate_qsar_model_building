@@ -63,16 +63,52 @@ public class Utilities {
 		 return ja;
 	}
 	
-	public static void saveJson(Object obj, String filepath)  {
+	public static String jsonToPrettyJson(String json)  {
+		JsonObject jo=gson.fromJson(json, JsonObject.class);
+		return Utilities.gson.toJson(jo);
+	}
+	
+	
+	public static String jsonToPrettyJson(String json,String filepath)  {
+		JsonObject jo=gson.fromJson(json, JsonObject.class);
+		return saveJson(jo,filepath);
+	}
+
+
+	
+	
+	public static String saveJson(Object obj, String filepath)  {
 		try {
 
 			FileWriter fw=new FileWriter(filepath);			
-			fw.write(gson.toJson(obj));
+			
+			String json=gson.toJson(obj);
+			fw.write(json);
 			fw.flush();
 			fw.close();
+			
+			return json;
 
 		} catch (Exception ex) {
 			ex.printStackTrace();
+			return null;
+		}
+	}
+	
+	
+	public static String saveJson(String json, String filepath)  {
+		try {
+
+			FileWriter fw=new FileWriter(filepath);			
+			fw.write(json);
+			fw.flush();
+			fw.close();
+			
+			return json;
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
 		}
 	}
 

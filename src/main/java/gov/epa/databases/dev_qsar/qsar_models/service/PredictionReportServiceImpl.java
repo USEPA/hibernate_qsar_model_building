@@ -153,7 +153,6 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 				ht.put(key,value );
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		long t2=System.currentTimeMillis();
@@ -169,7 +168,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 
 		List<PredictionReport>reports=new ArrayList<>();
 
-		String sql="SELECT id, file, created_by, created_at, fk_predictions_dashboard_id from qsar_models.prediction_reports\n";  
+		String sql="SELECT id, file_json, created_by, created_at, fk_predictions_dashboard_id from qsar_models.prediction_reports\n";  
 		sql+="where updated_by is null\n";
 		sql+="ORDER BY id\n";
 		sql+="LIMIT "+limit+" OFFSET "+offset;
@@ -185,7 +184,8 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 				PredictionReport pr=new PredictionReport();				
 
 				pr.setId(rs.getLong(1));
-				pr.setFile(rs.getBytes(2));
+				pr.setFileJson(rs.getBytes(2));
+				//TODO also store fileHtml?
 				pr.setCreatedBy(rs.getString(3));
 				pr.setCreatedAt(rs.getDate(4));
 				
@@ -214,7 +214,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 		
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		
-		String [] fieldNames= {"fk_predictions_dashboard_id", "file","created_by", "created_at"};
+		String [] fieldNames= {"fk_predictions_dashboard_id", "file_json","file_html","created_by", "created_at"};
 
 		int batchSize=1000;
 		
@@ -262,8 +262,9 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 				
 				prep.setLong(1, Long.parseLong(fk_prediction_dashboard_id));
 //				prep.setLong(1, fk_prediction_dashboard_id);
-				prep.setBytes(2, pr.getFile());
-				prep.setString(3, pr.getCreatedBy());
+				prep.setBytes(2, pr.getFileJson());
+				prep.setBytes(3, pr.getFileHtml());
+				prep.setString(4, pr.getCreatedBy());
 				prep.addBatch();
 				
 				if (counter % batchSize == 0 && counter!=0) {
@@ -285,6 +286,10 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 		
 	}
 	
+	/**
+	 * 
+	 * @param pr
+	 */
 	public static void updateSQL (PredictionReport pr) 	{
 		
 		try	{
@@ -293,12 +298,13 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 			
 			// create our java preparedstatement using a sql update query
 			PreparedStatement prep = conn.prepareStatement(
-					"UPDATE qsar_models.prediction_reports SET file = ?, updated_by = ?, updated_at=current_timestamp WHERE id = ?");
+					"UPDATE qsar_models.prediction_reports SET file_json = ?, file_html = ?, updated_by = ?, updated_at=current_timestamp WHERE id = ?");
 
 			// set the preparedstatement parameters
-			prep.setBytes(1,pr.getFile());
-			prep.setString(2,pr.getUpdatedBy());
-			prep.setLong(3,pr.getId());
+			prep.setBytes(1,pr.getFileJson());
+			prep.setBytes(2,pr.getFileHtml());
+			prep.setString(3,pr.getUpdatedBy());
+			prep.setLong(4,pr.getId());
 
 			// call executeUpdate to execute our sql update statement
 			prep.executeUpdate();
@@ -309,6 +315,41 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 		}
 	}
 	
+	/**
+	 * 
+	 * 
+	 * @param pr
+	 */
+	public static void updateSQL_by_predictionDashboardId (PredictionReport pr) 	{
+		
+		try	{
+			
+			Connection conn=SqlUtilities.getConnectionPostgres();
+			
+			// create our java preparedstatement using a sql update query
+			PreparedStatement prep = conn.prepareStatement(
+					"UPDATE qsar_models.prediction_reports SET file_json = ?,file_html = ?, updated_by = ?, updated_at=current_timestamp WHERE fk_predictions_dashboard_id = ?");
+
+			// set the preparedstatement parameters
+			prep.setBytes(1,pr.getFileJson());
+			prep.setBytes(2,pr.getFileHtml());
+			prep.setString(3,pr.getUpdatedBy());
+			prep.setLong(4,pr.getPredictionDashboard().getId());
+
+			// call executeUpdate to execute our sql update statement
+			prep.executeUpdate();
+			prep.close();
+		}  catch (Exception se)  {
+			// log the exception
+			se.printStackTrace();
+		}
+	}
+
+	/**
+	 * To do need to update the html as well
+	 * 
+	 * @param predictionReports
+	 */
 	public void updateSQL(List<PredictionReport> predictionReports) {
 
 //		Hashtable<String,Long>htPredictionDashboardIds=getHashtableLookupPredictionDashboardId(minModelId,maxModelId);		
@@ -327,7 +368,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 			conn.setAutoCommit(false);
 
 			PreparedStatement prep = conn.prepareStatement(
-					"UPDATE qsar_models.prediction_reports SET file = ?, updated_by = ?, updated_at=current_timestamp WHERE id = ?");
+					"UPDATE qsar_models.prediction_reports SET file_json = ?, updated_by = ?, updated_at=current_timestamp WHERE id = ?");
 
 			long t1=System.currentTimeMillis();
 
@@ -335,7 +376,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 				
 				PredictionReport pr=predictionReports.get(counter);
 				
-				prep.setBytes(1,pr.getFile());
+				prep.setBytes(1,pr.getFileJson());
 				prep.setString(2,pr.getUpdatedBy());
 				prep.setLong(3,pr.getId());
 				prep.addBatch();
@@ -387,14 +428,15 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 	/**
 	 * Use cross schema query so can get precise property name from dataset
 	 * 
+	 * 
 	 * @param dtxcid
 	 * @param propertyName
-	 * @param modelSource
-	 * @return
+	 * @param modelSource 
+	 * @return Json report
 	 */
 	public String getReport(String dtxsid, String propertyName, String modelSource) {
 		
-		String sql=" select pr.file as report from qsar_models.prediction_reports pr\n"+
+		String sql=" select pr.file_json as report from qsar_models.prediction_reports pr\n"+
         "join qsar_models.predictions_dashboard pd on pr.fk_prediction_dashboard_id = pd.id\n"+
         "join qsar_models.models m on pd.fk_model_id = m.id\n"+
         "join qsar_datasets.datasets d on d.\"name\" = m.dataset_name\n"+
@@ -426,13 +468,13 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 	 * @param dtxcid
 	 * @param propertyName
 	 * @param modelSource
-	 * @return
+	 * @return list of Json reports
 	 */
 	public List<String> getReportsByDsstoxRecordId(String id) {
 		String type="dtxsid";
 		if(id.contains("CID")) type="dtxcid";
 		
-		String sql=" select pr.file as report from qsar_models.prediction_reports pr\n"+
+		String sql=" select pr.file_json as report from qsar_models.prediction_reports pr\n"+
         "join qsar_models.predictions_dashboard pd on pr.fk_predictions_dashboard_id = pd.id\n"+
         "join qsar_models.models m on pd.fk_model_id = m.id\n"+
         "join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\n"+
@@ -454,7 +496,6 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 			return reports;
 			
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return null;
 		}
@@ -465,7 +506,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 	
 	public List<PredictionReport> getReportsBySource(String sourceName,int offset,int limit) {
 		
-		String sql="select pr.id, pr.file from qsar_models.prediction_reports pr\n"+
+		String sql="select pr.id, pr.file_json from qsar_models.prediction_reports pr\n"+
         "join qsar_models.predictions_dashboard pd on pr.fk_predictions_dashboard_id = pd.id\n"+
         "join qsar_models.models m on pd.fk_model_id = m.id\n"+
         "join qsar_models.sources s on m.fk_source_id = s.id\n"+
@@ -487,7 +528,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 				
 				PredictionReport pr=new PredictionReport();
 				pr.setId(pr_id);
-				pr.setFile(bytes);
+				pr.setFileJson(bytes);
 				reports.add(pr);
 			}
 			
@@ -512,7 +553,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 			if(i<modelNames.size()-1) names+=",";			
 		}
 	
-		String sql="select pr.id, pr.file from qsar_models.prediction_reports pr\n"+
+		String sql="select pr.id, pr.file_json from qsar_models.prediction_reports pr\n"+
         "join qsar_models.predictions_dashboard pd on pr.fk_predictions_dashboard_id = pd.id\n"+
         "join qsar_models.models m on pd.fk_model_id = m.id\n"+
         "join qsar_models.sources s on m.fk_source_id = s.id\n"+
@@ -534,7 +575,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 				
 				PredictionReport pr=new PredictionReport();
 				pr.setId(pr_id);
-				pr.setFile(bytes);
+				pr.setFileJson(bytes);
 				reports.add(pr);
 			}
 			

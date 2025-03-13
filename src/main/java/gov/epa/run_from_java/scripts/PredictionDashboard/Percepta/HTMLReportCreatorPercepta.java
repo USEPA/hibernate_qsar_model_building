@@ -2,6 +2,9 @@ package gov.epa.run_from_java.scripts.PredictionDashboard.Percepta;
 
 import java.io.StringWriter;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
 import gov.epa.run_from_java.scripts.PredictionDashboard.HTMLReportCreator;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
 
@@ -20,9 +23,7 @@ public class HTMLReportCreatorPercepta extends HTMLReportCreator {
 			
 			StringWriter fw=new StringWriter();
 
-			fw.write("<html>\n");
-			fw.write("<head>\n");
-			this.writeStyles(fw);
+			writeHtmlHead(or, fw);
 			
 			fw.write("<title>Percepta results for " + or.chemicalIdentifiers.dtxcid + " for " + or.modelDetails.modelName+" model");
 			fw.write("</title>\n");
@@ -37,8 +38,8 @@ public class HTMLReportCreatorPercepta extends HTMLReportCreator {
 			fw.write("</table></html>\r\n");
 			fw.flush();
 			
-            return fw.toString();
-
+//            return fw.toString();
+			return toPrettyHtml(fw);			
 			
 		} catch (Exception ex) {
 			ex.printStackTrace();

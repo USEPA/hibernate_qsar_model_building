@@ -40,6 +40,29 @@ public class ResQsarPrediction {
 		this.unit=pred.unit;
 		this.source_name=pred.source;
 	}
+	
+	public static ResQsarPrediction getResQsarPrediction(ChemicalProperty.Datum datum,ChemicalProperty chemicalProperty,String source) {
+
+		if(datum.predicted==null) return null;
+		
+		for (ChemicalProperty.Rawdatum rawdatum:datum.predicted.rawdata) {
+			if(rawdatum.source.contains(source)) {
+				ResQsarPrediction r=new ResQsarPrediction();
+				r.dtxsid=chemicalProperty.dtxsid;
+				r.property_name=datum.name;		
+				r.unit=datum.unit;
+//				System.out.println(Utilities.gson.toJson(rawdatum));
+				r.prediction_value=rawdatum.value;
+				r.source_name=rawdatum.source;
+				return r;
+			}
+		}
+		return null;
+		
+	}
+	
+	
+
 
 	void exportPerceptaPredictions() {
 
@@ -77,7 +100,7 @@ public class ResQsarPrediction {
 
 	}
 	
-	void exportSamplePerceptaPredictions() {
+	void exportSamplePerceptaPredictions(int count) {
 
 		
 		Gson gson=new Gson();
@@ -86,12 +109,14 @@ public class ResQsarPrediction {
 			
 			String folder="data//percepta//";
 			
-			File file=new File(folder+"materialized_view_2024_11_06_sample.json");
+//			int count=5000;
+			
+			File file=new File(folder+"materialized_view_2024_11_06_sample_"+count+".json");
 			FileWriter fw=new FileWriter(file);
 
 			Connection conn=SqlUtilities.getConnectionPostgres();
 
-			HashSet<String>dtxsidsSample=compare.getDtxsidsFromTextFile(folder+"sampleDtxsids.txt");
+			HashSet<String>dtxsidsSample=CompareResQsarToDatahub.getDtxsidsFromTextFile(folder+"sampleDtxsids"+count+".txt");
 			
 			List<ResQsarPrediction>dps=getMaterializedViewPredictions(dtxsidsSample,conn);
 
@@ -177,7 +202,10 @@ public class ResQsarPrediction {
 				dp.property_name=rs.getString(2);
 				dp.model_name=rs.getString(3);
 
-				if(rs.getDouble(4)!=0.0) dp.prediction_value=rs.getDouble(4);
+//				if(rs.getDouble(4)!=0.0) dp.prediction_value=rs.getDouble(4);
+				
+				//https://stackoverflow.com/questions/2920364/checking-for-a-null-int-value-from-a-java-resultset
+				dp.prediction_value = rs.getObject(4) != null ? rs.getDouble(4) : null;
 				
 				dp.unit=rs.getString(5);
 				dp.prediction_error=rs.getString(6);
@@ -213,7 +241,7 @@ public class ResQsarPrediction {
 				dp.dtxsid=rs.getString(1);
 				dp.property_name=rs.getString(2);
 				dp.model_name=rs.getString(3);
-				dp.prediction_value=rs.getDouble(4);
+				dp.prediction_value = rs.getObject(4) != null ? rs.getDouble(4) : null;
 				dp.unit=rs.getString(5);
 				dp.prediction_error=rs.getString(5);
 
@@ -256,7 +284,7 @@ public class ResQsarPrediction {
 		try {
 			Connection conn=SqlUtilities.getConnectionPostgres();
 			List<String>dtxsids=getDTXSIDs(conn);
-			compare.dtxsidsToFile("data/percepta/v_predicted_data_percepta_dtxsids.txt", dtxsids);
+			CompareResQsarToDatahub.dtxsidsToFile("data/percepta/v_predicted_data_percepta_dtxsids.txt", dtxsids);
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -271,9 +299,9 @@ public class ResQsarPrediction {
 //		r.exportPerceptaPredictions();
 		
 //		r.exportDtxsids();
-//		r.exportSamplePerceptaPredictions();
+		r.exportSamplePerceptaPredictions(1000);
 
-		r.getPredictionsFromJsonFile("data//percepta//materialized_view_2024_11_06_sample.json");
+//		r.getPredictionsFromJsonFile("data//percepta//materialized_view_2024_11_06_sample.json");
 		
 
 	}

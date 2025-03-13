@@ -46,8 +46,15 @@ public class PredictionReport {
 	@JoinColumn(name="fk_predictions_dashboard_id")
 	private PredictionDashboard predictionDashboard;
 	
-	@Column(name="file", length=32767)
-	private byte[] file;
+//	@Column(name="file", length=32767)
+//	private byte[] file;
+	
+	@Column(name="file_json")
+	private byte[] fileJson;
+
+	@Column(name="file_html")
+	private byte[] fileHtml;
+	
 	
 	@Column(name="updated_at")
 	@UpdateTimestamp
@@ -68,10 +75,13 @@ public class PredictionReport {
 	
 	public PredictionReport() {}
 	
-	public PredictionReport(PredictionDashboard predictionDashboard, byte[] bytes, String createdBy) {
+	public PredictionReport(PredictionDashboard predictionDashboard, String fileJson,String fileHtml, String createdBy) {
 		this.setPredictionDashboard(predictionDashboard);
-		this.setFile(bytes);
-		this.setCreatedBy(createdBy);
+		this.predictionDashboard=predictionDashboard;
+		
+		if(fileJson!=null) this.fileJson=fileJson.getBytes();
+		if (fileHtml!=null) this.fileHtml=fileHtml.getBytes();
+		this.createdBy=createdBy;
 	}
 
 	public Long getId() {
@@ -82,14 +92,6 @@ public class PredictionReport {
 		this.id = id;
 	}
 
-
-	public byte[] getFile() {
-		return file;
-	}
-
-	public void setFile(byte[] file) {
-		this.file = file;
-	}
 
 	public Date getUpdatedAt() {
 		return updatedAt;
@@ -156,5 +158,21 @@ public class PredictionReport {
             throw new AssertionError(e);
         }
     }
+
+	public byte[] getFileJson() {
+		return fileJson;
+	}
+
+	public byte[] getFileHtml() {
+		return fileHtml;
+	}
+
+	public void setFileJson(byte[] fileJson) {
+		this.fileJson = fileJson;
+	}
+
+	public void setFileHtml(byte[] fileHtml) {
+		this.fileHtml = fileHtml;
+	}
 
 }

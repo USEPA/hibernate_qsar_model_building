@@ -1,4 +1,4 @@
-package gov.epa.run_from_java.scripts.PredictionDashboard.OPERA;
+package gov.epa.run_from_java.scripts.PredictionDashboard.TEST;
 
 import java.io.File;
 import java.io.FileReader;
@@ -24,13 +24,12 @@ import gov.epa.databases.dev_qsar.qsar_models.service.QsarPredictedNeighborServi
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.DatabaseUtilities;
-import gov.epa.run_from_java.scripts.PredictionDashboard.HTMLReportCreator;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
 
 /**
 * @author TMARTI02
 */
-public class OPERA_Report_API {
+public class TEST_Report_API {
 
 		
 	DatasetService ds=new DatasetServiceImpl();
@@ -50,7 +49,7 @@ public class OPERA_Report_API {
 	 * @param modelName: name of model
 	 * @return
 	 */
-	OPERA_Report getOperaReportFromPredictionDashboard(String id,String modelName,boolean useLegacyModelIds,Long dsstoxRecordId) {
+	TEST_Report getReportFromPredictionDashboard(String id,String modelName,boolean useLegacyModelIds,Long dsstoxRecordId) {
 		
 		String sql="Select m.id from qsar_models.models m\n"+ 
 		"join qsar_models.sources s on m.fk_source_id = s.id "+
@@ -88,7 +87,10 @@ public class OPERA_Report_API {
 		Dataset dataset=ds.findByName(datasetName);
 		Property property=dataset.getProperty();
 		String unitAbbreviation=dataset.getUnitContributor().getAbbreviation_ccd();
-		OPERA_Report or=new OPERA_Report(pd,property,unitAbbreviation,useLegacyModelIds);
+		String unitAbbreviationNeighbor=dataset.getUnit().getAbbreviation_ccd();
+		
+		//TODO need the plots which arent stored in pd (stored in PredictionResults)
+		TEST_Report or=new TEST_Report(pd,null, property,unitAbbreviation,unitAbbreviationNeighbor, useLegacyModelIds);
 		
 		String json=Utilities.gson.toJson(or);
 		
@@ -106,21 +108,8 @@ public class OPERA_Report_API {
 	public void viewReportsFromDatabase(String id,boolean regenerateReport,boolean useLegacyModelIds,int fk_dsstox_snapshot_id) {
 		
 		
-		PredictionDashboardScriptOPERA.version="2.8";
+		int fk_snapshot_id=2;
 		
-//		String id="DTXCID1015";
-//		String id="DTXSID7020001";
-//		String id="DTXCID505";
-//		String id="DTXCID101";
-		
-//		String [] propertyNames= {DevQsarConstants.ORAL_RAT_LD50,
-//				DevQsarConstants.WATER_SOLUBILITY,
-//				DevQsarConstants.RBIODEG,
-//				DevQsarConstants.ANDROGEN_RECEPTOR_AGONIST};
-
-//		String [] propertyNames= {DevQsarConstants.RBIODEG,DevQsarConstants.ANDROGEN_RECEPTOR_AGONIST};
-
-//		String [] propertyNames= {DevQsarConstants.WATER_SOLUBILITY};
 		List<String> propertyNames=DevQsarConstants.getOPERA_PropertyNames();
 		
 		
@@ -130,13 +119,13 @@ public class OPERA_Report_API {
 		File DF=new File(destFolder);
 		if(!DF.exists())DF.mkdirs();
 		
-		HTMLReportCreatorOpera h=new HTMLReportCreatorOpera();
+		HTMLReportCreatorTEST h=new HTMLReportCreatorTEST();
+		
+		PredictionDashboardScriptTEST p=new PredictionDashboardScriptTEST(); 
 		
 		
 		Long dsstoxRecordId = getDsstoxRecordId(id, fk_dsstox_snapshot_id);
 
-		
-		PredictionDashboardScriptOPERA p=new PredictionDashboardScriptOPERA();
 		
 		for (String propertyName:propertyNames) {
 			
@@ -149,7 +138,7 @@ public class OPERA_Report_API {
 			String json=null;
 			
 			if(regenerateReport) {
-				or=getOperaReportFromPredictionDashboard(id,modelName,useLegacyModelIds,dsstoxRecordId);
+				or=getReportFromPredictionDashboard(id,modelName,useLegacyModelIds,dsstoxRecordId);
 				json=Utilities.gson.toJson(or);
 			}
 			else {
@@ -168,15 +157,13 @@ public class OPERA_Report_API {
 
 			String filename=id+"_"+or.modelDetails.modelName+".html";
 			h.toHTMLFile(or, destFolder,filename);
-			PredictionReport.viewInWebBrowser(destFolder+File.separator+filename);
+//			or.viewInWebBrowser(destFolder+File.separator+filename);
 			
 			
 			
 		}
 		
 	}
-	
-	
 
 	private Long getDsstoxRecordId(String id, int fk_dsstox_snapshot_id) {
 		String idCol="dtxcid";
@@ -218,19 +205,20 @@ public class OPERA_Report_API {
 	}
 	
 	public static void main(String[] args) {
-		OPERA_Report_API o=new OPERA_Report_API();
+		TEST_Report_API o=new TEST_Report_API();
 		
 //		String id="DTXSID80943885";
 //		String id="DTXSID50943897";
 //		String id="DTXSID301346793";
 		
 		String id="DTXSID7020182";//bisphenol-A
-//		boolean regenerate=true;
-//		boolean useLegacyModelIds=true;
-//		int fk_dsstox_snapshot_id=2;
-//		o.viewReportsFromDatabase(id,regenerate,useLegacyModelIds, fk_dsstox_snapshot_id);
-//		o.transposeCSV_Row(id);
 		
+		
+		boolean regenerate=true;
+		boolean useLegacyModelIds=true;
+		int fk_dsstox_snapshot_id=2;
+		o.viewReportsFromDatabase(id,regenerate,useLegacyModelIds, fk_dsstox_snapshot_id);
+//		o.transposeCSV_Row(id);
 	}	
 
 }

@@ -1,4 +1,4 @@
-package gov.epa.run_from_java.scripts.PredictionDashboard.OPERA;
+package gov.epa.run_from_java.scripts.PredictionDashboard;
 
 import java.io.File;
 import java.io.FileReader;
@@ -35,13 +35,12 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
-import gov.epa.run_from_java.scripts.PredictionDashboard.CreatorScript;
 
 
 /**
 * @author TMARTI02
 */
-public class OPERA_lookups {
+public class PredictionDashboardTableMaps {
 
 	public  TreeMap<String,DsstoxRecord>mapDsstoxRecordsByCID=new TreeMap<>();
 	public  TreeMap<String,DsstoxRecord>mapDsstoxRecordsBySID=new TreeMap<>();
@@ -66,21 +65,25 @@ public class OPERA_lookups {
 	public TreeMap<String, Statistic>mapStatistics=null;
 	
 //	Following files are used to fix the neighbors which are missing dtxsids- but might need to pull info from prod_dsstox instead???
-	public static File fileJsonDsstoxRecords=new File("data\\dsstox\\json\\2023_04_snapshot_dsstox_records_2024_01_09.json");
-	public static File fileJsonOtherCAS=new File("data\\dsstox\\json\\2023_04_snapshot_other_casrn lookup.json");
+	public static File fileJsonDsstoxRecords2023_04_04=new File("data\\dsstox\\snapshot-2023-04-04\\json\\2023_04_snapshot_dsstox_records_2024_01_09.json");
+	public static File fileJsonDsstoxRecords2024_11_12=new File("data\\dsstox\\snapshot-2024-11-12\\json\\2024_11_12_snapshot_dsstox_records.json");
+	
+	
+	public static File fileJsonOtherCAS2023_04_04=new File("data\\dsstox\\snapshot-2023-04-04\\json\\2023_04_snapshot_other_casrn lookup.json");
+	public static File fileJsonOtherCAS2024_11_12=new File("data\\dsstox\\snapshot-2024-11-12\\json\\2024_11_12_snapshot_other_casrn lookup.json");
 
 	
-	class OtherCAS {
+	public class OtherCAS {
 		String casrn;
 		String dsstox_substance_id;
 	}
 	
 	
 	
-	public OPERA_lookups(File fileJsonDsstoxRecords) {
+	public PredictionDashboardTableMaps(File fileJsonDsstoxRecords,File fileJsonOtherCAS) {
 		
 		if (fileJsonDsstoxRecords!=null) {
-			getDsstoxRecordsFromJsonExport(fileJsonDsstoxRecords);//loads from fileJsonDsstoxRecords
+			getDsstoxRecordsFromJsonExport(fileJsonDsstoxRecords,fileJsonOtherCAS);//loads from fileJsonDsstoxRecords
 		} else {
 			getDsstoxRecordsFromDatabase();	
 		}		
@@ -91,11 +94,13 @@ public class OPERA_lookups {
 //		DsstoxRecord dr=mapDsstoxRecordsByOtherCAS.get("725266-05-7");
 //		System.out.println(dr.getPreferredName());
 		
+		
+		long t1=System.currentTimeMillis();
 		System.out.println("Getting maps");
 		
 		System.out.println("Getting property map");
-		mapProperties=CreatorScript.getPropertyMap(); 
-
+		mapProperties=CreatorScript.getPropertyMap();
+		
 		System.out.println("Getting dataset map");
 		mapDatasets=CreatorScript.getDatasetsMap();
 		
@@ -104,6 +109,10 @@ public class OPERA_lookups {
 		
 		System.out.println("Getting methodAD map");
 		mapMethodAD=CreatorScript.getMethodAD_Map();
+		
+		long t2=System.currentTimeMillis();
+		
+		System.out.println("Time to load other maps:\t"+(t2-t1)/1000+" secs");
 		
 //		System.out.println("Getting statistic map");
 //		mapStatistics=getStatisticsMap();
@@ -169,7 +178,10 @@ public class OPERA_lookups {
 
 	
 	
-	public  List<OtherCAS> getOtherCASMapFromJson() {
+	public  List<OtherCAS> getOtherCASMapFromJson(File fileJsonOtherCAS) {
+		
+		if(fileJsonOtherCAS==null)return null;
+		
 		List<OtherCAS>recsOtherCAS=null;
 		Type listType2 = new TypeToken<ArrayList<OtherCAS>>(){}.getType();
 		
@@ -179,6 +191,11 @@ public class OPERA_lookups {
 			for (OtherCAS oc:recsOtherCAS) {
 				
 				DsstoxRecord dr=mapDsstoxRecordsBySID.get(oc.dsstox_substance_id);
+				
+				if(dr==null) {
+//					System.out.println("Dont have oc.dsstox_substance_id="+oc.dsstox_substance_id+" in map");
+					continue;
+				}
 				mapDsstoxRecordsByCAS.put(oc.casrn,dr);
 				
 				DsstoxOtherCASRN d=new DsstoxOtherCASRN();
@@ -239,14 +256,21 @@ public class OPERA_lookups {
 	/**
 	 * Gets dsstox records from json file export from dsstox snapshot and creates hashtables for look up for neighbors
 	 */
-	public void getDsstoxRecordsFromJsonExport(File fileJsonDsstoxRecords) {
+	public void getDsstoxRecordsFromJsonExport(File fileJsonDsstoxRecords,File fileJsonOtherCAS) {
 		
 		System.out.println("Getting dsstox records from json files");
 		
 		dsstoxRecords=new ArrayList<>();
 		
 		try {
-			JsonArray ja = Utilities.gson.fromJson(new FileReader(fileJsonDsstoxRecords), JsonArray.class);
+
+			
+			
+//			JsonArray ja = Utilities.gson.fromJson(new FileReader(fileJsonDsstoxRecords), JsonArray.class);
+
+			//When exporting from dbeaver it puts array inside a json object with the query as the object name:
+			JsonObject jo2 = Utilities.gson.fromJson(new FileReader(fileJsonDsstoxRecords), JsonObject.class);
+			JsonArray ja =jo2.get("select * from qsar_models.dsstox_records where fk_dsstox_snapshot_id=2").getAsJsonArray();
 			
 //			System.out.println(ja.size());
 			
@@ -286,8 +310,11 @@ public class OPERA_lookups {
 				mapDsstoxRecordsByCAS.put(rec.getCasrn(),rec);
 			}
 			
-			getOtherCASMapFromJson(); //loads from fileJsonOtherCAS
 			
+			
+			getOtherCASMapFromJson(fileJsonOtherCAS); //loads from fileJsonOtherCAS
+			
+//			System.out.println(mapDsstoxRecordsBySID.size());
 			System.out.println("Done");
 			
 
@@ -303,7 +330,7 @@ public class OPERA_lookups {
 	 * 
 	 */
 	public void getDsstoxRecordsFromDatabase() {
-		int fk_snapshot_id=1;
+		int fk_snapshot_id=2;
 		
 		dsstoxRecords=new ArrayList<>();
 

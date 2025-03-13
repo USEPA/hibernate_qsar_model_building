@@ -16,6 +16,8 @@ public class DevQsarConstants {
 	
 	public static final String sourceNameOChem_2024_04_03="OChem_2024_04_03";
 	public static final String sourceNamePubChem_2024_03_20="PubChem_2024_03_20";
+	public static final String sourceNamePubChem_2024_11_27="PubChem_2024_11_27";
+	
 	
 	public Gson gson;
 	
@@ -97,6 +99,7 @@ public class DevQsarConstants {
 	// Descriptor set names
 	public static final String DESCRIPTOR_SET_TEST = "T.E.S.T. 5.1";
 	public static final String DESCRIPTOR_SET_WEBTEST = "WebTEST-default";
+	public static final String DESCRIPTOR_SET_MORDRED = "Mordred-default";
 	public static final String DESCRIPTOR_SET_PADEL_SINGLE = "Padelpy webservice single";
 	public static final String DESCRIPTOR_SET_PADEL_BATCH = "Padelpy_batch";
 	
@@ -134,6 +137,7 @@ public class DevQsarConstants {
 	
 	public static final String VAPOR_PRESSURE = "Vapor pressure";//OPERA
 	public static final String DENSITY = "Density";
+	public static final String VAPOR_DENSITY = "Vapor density";
 	public static final String BOILING_POINT = "Boiling point";//OPERA
 	public static final String FLASH_POINT = "Flash point";
 	public static final String VISCOSITY = "Viscosity";
@@ -146,6 +150,10 @@ public class DevQsarConstants {
 	public static final String PARACHOR = "Parachor";
 	public static final String INDEX_OF_REFRACTION = "Index of refraction";
 	public static final String DIELECTRIC_CONSTANT = "Dielectric constant";
+	
+	public static final String AUTOIGNITION_TEMPERATURE = "Autoignition temperature";
+	
+	
 	
 	public static final String APPEARANCE = "Appearance";
 		
@@ -253,8 +261,15 @@ public class DevQsarConstants {
 	public static final String COUNT = "Count";
 	public static final String DIMENSIONLESS = "Dimensionless";
 	public static final String BINARY = "Binary";
+	
 	public static final String G_L = "g/L";
 	public static final String MG_L = "mg/L";
+	
+	public static final String DPM_ML="dpm/mL";
+	public static final String BQ_ML="Bq/mL";
+	public static final String MBQ_ML="mBq/mL";
+	public static final String CI_MOL="Ci/mol";
+	
 	public static final String MG_KG = "mg/kg";
 	public static final String L_KG = "L/kg";
 	public static final String DEG_C = "C";
@@ -263,13 +278,16 @@ public class DevQsarConstants {
 	public static final String LOG_M = "log10(M)";
 	public static final String NEG_LOG_M = "-log10(M)";
 	public static final String NEG_LOG_MOL_KG = "-log10(mol/kg)";
+	public static final String LOG_MOL_KG = "log10(mol/kg)";
 	public static final String MOL_KG = "mol/kg";
+	public static final String UL_KG = "uL/kg";
 	public static final String LOG_L_KG = "log10(L/kg)";
 	public static final String G_CM3 = "g/cm3";
 	public static final String PPM = "ppm";
 	
 	public static final String LOG_PPM="log10(ppm)";
 	public static final String LOG_MG_L="log10(mg/L)";
+	public static final String LOG_MG_KG="log10(mg/kg)";
 			
 	public static final String POUNDS = "lbs";
 
@@ -283,6 +301,7 @@ public class DevQsarConstants {
 
 	
 	public static final String ATM_M3_MOL = "atm-m3/mol";
+	public static final String PA_M3_MOL = "Pa-m3/mol";
 	public static final String NEG_LOG_ATM_M3_MOL = "-log10(atm-m3/mol)";
 	public static final String LOG_ATM_M3_MOL = "log10(atm-m3/mol)";
 	public static final String MMHG = "mmHg";
@@ -308,6 +327,7 @@ public class DevQsarConstants {
 	
 	public static final String LOG_CP = "log10(cP)";
 	public static final String CP = "cP";
+	public static final String CST = "cSt";
 	
 	public static final String PCT_VOLUME="%v";
 	public static final String PCT_WEIGHT="%w";
@@ -316,8 +336,6 @@ public class DevQsarConstants {
 	public static final String TEXT="Text";
 	
 	public static final String G_KG_H20="g/kg H2O";
-	
-	
 	
 	
 	//ghs data gathering constants for reference (a lot of these get converted in ghs data gathering and dont make it into units table):
@@ -431,9 +449,11 @@ public class DevQsarConstants {
 	public static final String POS_CONCORDANCE = "PosConcordance";
 	public static final String NEG_CONCORDANCE = "NegConcordance";
 	public static final String PEARSON_RSQ = "PearsonRSQ";
+	
 	public static final String TAG_TEST = "_Test";
 	public static final String TAG_TRAINING = "_Training";
-
+	public static final String TAG_CV = "_CV";
+	
 	public static final String SOURCE_CHEMINFORMATICS_MODULES = "Cheminformatics Modules";
 
 	public static final String R2_TEST = R2+TAG_TEST;
@@ -443,7 +463,6 @@ public class DevQsarConstants {
 	public static final String MAE_TEST = MAE+TAG_TEST;
 	public static final String RMSE_TEST = RMSE+TAG_TEST;
 
-	private static final String TAG_CV = "_CV";
 
 	public static final String MAE_CV_TRAINING=MAE+TAG_CV+TAG_TRAINING;
 	public static final String PEARSON_RSQ_CV_TRAINING=PEARSON_RSQ+TAG_CV+TAG_TRAINING;
@@ -454,9 +473,12 @@ public class DevQsarConstants {
 
 	
 	public static final String R2_TRAINING = R2+TAG_TRAINING;
+	public static final String MAE_TRAINING = MAE+TAG_TRAINING;
 	public static final String RMSE_TRAINING = RMSE+TAG_TRAINING;
 
 	public static final String COVERAGE = "Coverage";
+	public static final String COVERAGE_TRAINING = "Coverage"+TAG_TRAINING;
+	public static final String COVERAGE_TEST = "Coverage"+TAG_TEST;
 	
 	public static final String BA_TRAINING=BALANCED_ACCURACY+TAG_TRAINING;
 	public static final String SN_TRAINING=SENSITIVITY+TAG_TRAINING;
@@ -543,8 +565,8 @@ public class DevQsarConstants {
 		map.put(IGC50, "NEG_LOG_M");
 		map.put(LD50, "NEG_LOG_MOL_KG");
 		
-		map.put(AMES_MUTAGENICITY,"BINARY");
 		map.put(DEVELOPMENTAL_TOXICITY,"BINARY");
+		map.put(AMES_MUTAGENICITY,"BINARY");
 		
 		map.put(NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50, "NEG_LOG_M");
 		map.put(NINETY_SIX_HOUR_BLUEGILL_LC50, "NEG_LOG_M");
@@ -597,7 +619,7 @@ public class DevQsarConstants {
 		map.put(KmHL, "LOG_DAYS");
 		map.put(OH, getConstantNameByReflection(LOG_CM3_MOLECULE_SEC));
 		map.put(CACO2, getConstantNameByReflection(LOG_CM_SEC));
-		map.put(CLINT, getConstantNameByReflection(LOG_UL_MIN_1MM_CELLS));
+		map.put(CLINT, getConstantNameByReflection(UL_MIN_1MM_CELLS));
 		
 		
 		map.put(ESTROGEN_RECEPTOR_AGONIST,"BINARY");
@@ -627,34 +649,49 @@ public class DevQsarConstants {
 	public static List<String> getOPERA_PropertyNames() {
 		List<String>propertyNames = new ArrayList<>();
 		
-		propertyNames.add(DevQsarConstants.OH);
-		propertyNames.add(DevQsarConstants.BCF);
+		//In order of OPERA GUI checkboxes:
+
+		propertyNames.add(DevQsarConstants.LOG_KOW);
+		propertyNames.add(DevQsarConstants.MELTING_POINT);
+		propertyNames.add(DevQsarConstants.BOILING_POINT);
+		propertyNames.add(DevQsarConstants.VAPOR_PRESSURE);
+		propertyNames.add(DevQsarConstants.WATER_SOLUBILITY);
 		propertyNames.add(DevQsarConstants.HENRYS_LAW_CONSTANT);
 		propertyNames.add(DevQsarConstants.LOG_KOA);
-		propertyNames.add(DevQsarConstants.KOC);
-		propertyNames.add(DevQsarConstants.KmHL);
-		propertyNames.add(DevQsarConstants.RBIODEG);
-		propertyNames.add(DevQsarConstants.BIODEG_HL_HC);
-		propertyNames.add(DevQsarConstants.BOILING_POINT);
 		propertyNames.add(DevQsarConstants.RT);
-		propertyNames.add(DevQsarConstants.WATER_SOLUBILITY);
-		propertyNames.add(DevQsarConstants.VAPOR_PRESSURE);
-		propertyNames.add(DevQsarConstants.LOG_KOW);
+
+		propertyNames.add(DevQsarConstants.PKA_A);
+		propertyNames.add(DevQsarConstants.PKA_B);
+		
+		propertyNames.add(DevQsarConstants.LogD_pH_5_5);
+		propertyNames.add(DevQsarConstants.LogD_pH_7_4);
+
+		propertyNames.add(DevQsarConstants.BCF);
+		propertyNames.add(DevQsarConstants.OH);
+		propertyNames.add(DevQsarConstants.BIODEG_HL_HC);
+		propertyNames.add(DevQsarConstants.RBIODEG);
+
+		propertyNames.add(DevQsarConstants.KmHL);
+		propertyNames.add(DevQsarConstants.KOC);
+		
 		propertyNames.add(DevQsarConstants.ESTROGEN_RECEPTOR_BINDING);
 		propertyNames.add(DevQsarConstants.ESTROGEN_RECEPTOR_AGONIST);
 		propertyNames.add(DevQsarConstants.ESTROGEN_RECEPTOR_ANTAGONIST);
+		
 		propertyNames.add(DevQsarConstants.ANDROGEN_RECEPTOR_BINDING);
 		propertyNames.add(DevQsarConstants.ANDROGEN_RECEPTOR_AGONIST);
 		propertyNames.add(DevQsarConstants.ANDROGEN_RECEPTOR_ANTAGONIST);
-		propertyNames.add(DevQsarConstants.CACO2);
-		propertyNames.add(DevQsarConstants.CLINT);
-		propertyNames.add(DevQsarConstants.FUB);
-		propertyNames.add(DevQsarConstants.MELTING_POINT);
+
+		propertyNames.add(DevQsarConstants.ORAL_RAT_LD50);
 //		propertyNames.add(DevQsarConstants.ORAL_RAT_VERY_TOXIC);
 //		propertyNames.add(DevQsarConstants.ORAL_RAT_NON_TOXIC);
 //		propertyNames.add(DevQsarConstants.ORAL_RAT_EPA_CATEGORY);
 //		propertyNames.add(DevQsarConstants.ORAL_RAT_GHS_CATEGORY);
-		propertyNames.add(DevQsarConstants.ORAL_RAT_LD50);
+
+		propertyNames.add(DevQsarConstants.CACO2);
+		propertyNames.add(DevQsarConstants.CLINT);
+		propertyNames.add(DevQsarConstants.FUB);
+		
 		return propertyNames;
 	}
 

@@ -36,6 +36,8 @@ public class Model {
 	@Column(name="name")
 	private String name;
 
+	@Column(name="name_ccd")
+	private String name_ccd;
 	
 	@NotNull(message="Method required")
 	@ManyToOne
@@ -89,6 +91,11 @@ public class Model {
 	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
+	
+	
+	@Column(name="has_qmrf")
+	private Boolean hasQmrf;
+
 	
 //	@Column(name="url_scatter_plot")
 //	private String urlScatterPlot;
@@ -296,6 +303,14 @@ public class Model {
 
 	public void setIs_public(Boolean is_public) {
 		this.is_public = is_public;
+	}
+
+	public String getName_ccd() {
+		return name_ccd;
+	}
+
+	public void setName_ccd(String name_ccd) {
+		this.name_ccd = name_ccd;
 	}
 
 //	public String getUrlScatterPlot() {

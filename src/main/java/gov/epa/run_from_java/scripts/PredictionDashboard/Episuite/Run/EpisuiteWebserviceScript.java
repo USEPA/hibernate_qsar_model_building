@@ -1,8 +1,10 @@
-package gov.epa.run_from_java.scripts.EpiSuite;
+package gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run;
 
 import java.io.*;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+
 import com.srcinc.episuite.EpiSuite;
 import com.srcinc.episuite.EpiSuiteResults;
 
@@ -10,11 +12,12 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
-import gov.epa.run_from_java.scripts.EpiSuite.EpisuiteResults.PropertyResult;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.PropertyResult;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -2056,7 +2059,7 @@ public class EpisuiteWebserviceScript {
 
 	}
 
-	public String runEpiwin(String smiles) {
+	public static String runEpiwin(String smiles) {
 
 		HttpResponse<String> response =Unirest.get("https://episuite.app/EpiWebSuite/api/submit")
 				.queryString("smiles", smiles).asString();
@@ -2070,6 +2073,22 @@ public class EpisuiteWebserviceScript {
 		}
 
 	}
+	
+	public static String runEpiwin(String smiles,String baseUrl) {
+
+		HttpResponse<String> response =Unirest.get(baseUrl+"EpiWebSuite/api/submit")
+				.queryString("smiles", smiles).asString();
+
+		if(response.isSuccess()) {
+			//			System.out.println(response.getBody().toString());
+			return response.getBody().toString();
+		} else {
+			//			System.out.println(response.getStatus());
+			return "error:"+response.getStatus();
+		}
+
+	}
+
 
 	public String runEpiwinLocal(int port, String smiles) {
 
@@ -2123,7 +2142,7 @@ public class EpisuiteWebserviceScript {
 
 	}
 
-	String getLastDTXSID(String filepath) {
+	String getLastID(String filepath,String idName) {
 
 		try {
 			BufferedReader br=new BufferedReader(new FileReader(filepath));
@@ -2131,8 +2150,18 @@ public class EpisuiteWebserviceScript {
 			String Line=null;
 			String lastLine=null;
 
+			int counter=0;
+			
 			while (true) {
 				Line=br.readLine();
+				
+				counter++;
+				
+				if(counter%1000==0) {
+					System.out.println("\t"+counter);
+				}
+				
+				
 				if(Line==null) {
 					break;
 				} else {
@@ -2146,7 +2175,7 @@ public class EpisuiteWebserviceScript {
 
 			JsonObject jo=gson.fromJson(lastLine, JsonObject.class);
 
-			return jo.get("dtxsid").getAsString();
+			return jo.get(idName).getAsString();
 
 
 		} catch (Exception ex) {
@@ -2156,14 +2185,70 @@ public class EpisuiteWebserviceScript {
 
 	}
 
-	String getFirstDTXSID(String filepath) {
+	
+
+	
+	
+	int removeBeforeDTXSID(String dtxsid,String filepath) {
+
+		try {
+			BufferedReader br=new BufferedReader(new FileReader(filepath));
+
+			int counter=0;
+			
+			boolean found=false;
+			
+			while (true) {
+				String Line=br.readLine();
+				if(Line==null) {
+					break;
+				} 
+				counter++;
+				if(Line.contains("\"dtxsid\":\""+dtxsid+"\"")) {
+					found=true;
+					break;
+				}
+			}
+
+			
+			if(!found) {
+				return -1;
+			}
+			
+			FileWriter fw=new FileWriter(filepath.replace(".json", "_deduplicated.json"));
+			
+			while (true) {
+				String Line=br.readLine();
+				if(Line==null) {
+					break;
+				}
+				fw.write(Line+"\r\n");
+				fw.flush();
+				
+			}			
+			
+			fw.close();
+			return counter;
+
+			//			System.out.println(lastLine);
+//			return jo.get("dtxsid").getAsString();
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return -1;
+		}
+
+	}
+
+
+	String getFirstID(String filepath,String idName) {
 
 		try {
 			BufferedReader br=new BufferedReader(new FileReader(filepath));
 			String firstLine=br.readLine();
 			Gson gson=new Gson();
 			JsonObject jo=gson.fromJson(firstLine, JsonObject.class);
-			return jo.get("dtxsid").getAsString();
+			return jo.get(idName).getAsString();
 		} catch (Exception ex) {
 			//			ex.printStackTrace();
 			return null;
@@ -2209,7 +2294,11 @@ public class EpisuiteWebserviceScript {
 
 
 	/**
+ 	 * Runs episuite predictions using api at given port
+ 	 * 
+ 	 * It uses a single smiles file for input (it takes a subset on the fly)
 	 * TODO this code needs fixing because it doesnt seem to stop running at right place
+	 * 
 	 * 
 	 * @param filepath
 	 * @param outputFolder
@@ -2217,7 +2306,7 @@ public class EpisuiteWebserviceScript {
 	 * @param portMin
 	 * @param portMax
 	 */
-	void runSubsetOfSmilesFile(String filepath, String outputFolder, int port,int portMin,int portMax) {
+	void runSubsetOfSmilesFile(String idName, String filepath, String outputFolder, int port,int portMin,int portMax) {
 
 		//ports go from 9000 to 9015
 		System.out.println("Running "+port);
@@ -2233,12 +2322,12 @@ public class EpisuiteWebserviceScript {
 
 			FileWriter fw=null;
 
-			String lastDTXSID=null;
+			String lastID=null;
 
 			if(new File(fout).exists()) {
 				fw=new FileWriter(fout,true);
-				lastDTXSID=getLastDTXSID(fout);
-				System.out.println("lastDTXSID="+lastDTXSID);
+				lastID=getLastID(fout,idName);
+				System.out.println("lastID="+lastID);
 
 			} else {
 				fw=new FileWriter(fout,false);	
@@ -2262,7 +2351,7 @@ public class EpisuiteWebserviceScript {
 			int counter=0;
 
 			boolean start=false;
-			if(lastDTXSID==null) start=true;
+			if(lastID==null) start=true;
 
 
 			for (String line:lines) {
@@ -2276,7 +2365,7 @@ public class EpisuiteWebserviceScript {
 					String smiles=values[0];
 					String dtxsid=values[1];
 
-					if(lastDTXSID!=null && dtxsid.contentEquals(lastDTXSID)) {
+					if(lastID!=null && dtxsid.contentEquals(lastID)) {
 						start=true;
 						counter++;
 						continue;
@@ -2335,64 +2424,7 @@ public class EpisuiteWebserviceScript {
 	}
 
 
-	void splitSmilesFile(String folderpath, String filename, int portMin,int portMax) {
-
-		int nFiles=portMax-portMin+1;
-
-		try {
-
-			BufferedReader br=new BufferedReader(new FileReader(folderpath+filename));
-
-			List<String>lines=new ArrayList<String>();
-
-			while (true) {
-				String Line=br.readLine();
-				if(Line==null) break;
-				lines.add(Line);
-			}
-
-			int chemicalsPerPort=lines.size()/nFiles;
-			//			System.out.println(chemicalsPerPort);
-
-			int currentPort=portMin;
-			int counter=0;
-
-			FileWriter fw=new FileWriter(folderpath+filename.substring(0,filename.indexOf("."))+"_"+currentPort+".txt");
-
-
-			for (String line:lines) {
-
-				String [] values=line.split("\t");
-
-				if(values.length>2) {//hopefully new files will already be fixed for things like |^1:0,1,2,3| separated by tab in the smiles
-					String smiles=values[0]+" "+values[1];
-					String dtxsid=values[2];
-					fw.write(smiles+"\t"+dtxsid+"\r\n");
-					System.out.println(smiles+"\t"+dtxsid);
-				} else {
-					fw.write(line+"\r\n");	
-				}
-
-				fw.flush();
-				counter++;
-
-				if(counter==chemicalsPerPort && currentPort<portMax) {
-					currentPort++;
-					counter=0;
-					fw=new FileWriter(folderpath+filename.substring(0,filename.indexOf("."))+"_"+currentPort+".txt");
-				}
-			}
-			br.close();
-			fw.close();
-
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-
-
-
-
-	}
+	
 
 
 
@@ -2435,9 +2467,104 @@ public class EpisuiteWebserviceScript {
 
 	}
 
+	
+	void runSmilesComparisonFile () {
+
+		
+		Unirest.config()
+        .followRedirects(true)   
+		.socketTimeout(000)
+           .connectTimeout(000);
+
+		
+		String urlBase = "https://episuite.dev/";
+		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 scientists\\wen lee\\";
+		String filepathInput=folder+"smiles list logKow.txt";
+
+		try {
+			
+			BufferedReader br=new BufferedReader(new FileReader(filepathInput));
+			br.readLine();
+			
+			FileWriter fw=new FileWriter(folder+"logKow results.txt");
+			
+			System.out.println("allMatch\tsmilesList\tpreds");
+			fw.write("allMatch\tsmilesList\tpreds\r\n");
+			
+			while (true) {
+				String Line=br.readLine();
+				if(Line==null)break;
+				
+				String [] vals=Line.split("\t");
+				
+				String smiles1=vals[0];
+				String smiles2=vals[1];
+				
+				String []vals2=smiles2.split(";");
+				
+				List<String>smilesList=new ArrayList<>();
+				
+				smilesList.add(smiles1);
+				
+				for (String smiles:vals2) {
+					smilesList.add(smiles);
+				}
+				
+//				System.out.println(smilesList.size());
+				
+				List<Double>preds=new ArrayList<>();
+				
+				for (String smiles:smilesList) {
+					String json=runEpiwin(smiles, urlBase);
+					
+					TimeUnit.SECONDS.sleep(1);
+					
+					try {
+						EpisuiteResults results=EpisuiteResults.getResults(json);
+						Double pred=results.logKow.estimatedValue.value;
+//						System.out.println("\t"+smiles+"\t"+pred);
+						preds.add(pred);
+					} catch (JsonSyntaxException ex) {
+						preds.add(Double.valueOf(-9999.0));
+					}
+				}
+				
+				boolean allMatch=true;
+				
+				for (int i=0;i<preds.size();i++) {
+					double pred=preds.get(i);
+					
+					for (int j=1;j<preds.size();j++) {
+						double pred2=preds.get(j);
+						
+						if(Math.abs(pred-pred2)>0.01) {
+							allMatch=false;
+							break;
+						}
+						
+						if(!allMatch)break;
+					}
+				}
+				
+				System.out.println(allMatch+"\t"+smilesList+"\t"+preds);
+				fw.write(allMatch+"\t"+smilesList+"\t"+preds+"\r\n");
+				fw.flush();
+				
+			}
+			
+			fw.close();
+			
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		
+		
+	}
 
 
-	void runSmilesFile(String filepath, String outputFolder, int port) {
+	public void runSmilesFile(String idName, String filepath, String outputFolder, int port) {
 
 		//ports go from 9000 to 9015
 		System.out.println("Running "+port);
@@ -2451,12 +2578,12 @@ public class EpisuiteWebserviceScript {
 
 			FileWriter fw=null;
 
-			String lastDTXSID=null;
+			String lastID=null;
 
 			if(new File(fout).exists()) {
 				fw=new FileWriter(fout,true);
-				lastDTXSID=getLastDTXSID(fout);
-				System.out.println("lastDTXSID="+lastDTXSID);
+				lastID=getLastID(fout,idName);
+				System.out.println("lastID="+lastID);
 
 			} else {
 				fw=new FileWriter(fout,false);	
@@ -2478,7 +2605,7 @@ public class EpisuiteWebserviceScript {
 
 
 			boolean start=false;
-			if(lastDTXSID==null) start=true;
+			if(lastID==null) start=true;
 
 
 			for (String line:lines) {
@@ -2488,9 +2615,9 @@ public class EpisuiteWebserviceScript {
 				String []values=line.split("\t");
 
 				String smiles=values[0];
-				String dtxsid=values[1];
+				String id=values[1];
 
-				if(lastDTXSID!=null && dtxsid.contentEquals(lastDTXSID)) {
+				if(lastID!=null && id.contentEquals(lastID)) {
 					start=true;
 					continue;
 				}
@@ -2512,7 +2639,7 @@ public class EpisuiteWebserviceScript {
 					jo=gson.fromJson(json, JsonObject.class);
 					JsonObject joBioconcentration=jo.get("bioconcentration").getAsJsonObject();
 					double BCF=joBioconcentration.get("bioconcentrationFactor").getAsDouble();
-					System.out.println(dtxsid+"\t"+smiles+"\t"+BCF+"\t"+((t2-t1)/1000.0)+" secs");
+					System.out.println(id+"\t"+smiles+"\t"+BCF+"\t"+((t2-t1)/1000.0)+" secs");
 
 				} catch (Exception ex) {
 					jo=new JsonObject();
@@ -2520,7 +2647,7 @@ public class EpisuiteWebserviceScript {
 				}
 
 				jo.addProperty("smiles", smiles);
-				jo.addProperty("dtxsid", dtxsid);
+				jo.addProperty(idName, id);
 
 				fw.write(gson.toJson(jo)+"\r\n");
 				fw.flush();
@@ -2539,6 +2666,9 @@ public class EpisuiteWebserviceScript {
 
 
 	}
+	
+	
+
 
 	void getJsonCounts(String folderPath) {
 		File folder=new File(folderPath);
@@ -2559,7 +2689,7 @@ public class EpisuiteWebserviceScript {
 
 	}
 
-	void getLastDTXSID_InFiles(String folderPath) {
+	void getLastID_InFiles(String idName, String folderPath) {
 		File folder=new File(folderPath);
 
 		List<String>dtxsids=getDTXSIDs(folderPath+"snapshot_compounds.tsv");
@@ -2569,8 +2699,8 @@ public class EpisuiteWebserviceScript {
 			if(!file.getName().contains(".json")) continue;
 			if(file.getName().equals("sample.json")) continue;
 
-			String dtxsidFirst=getFirstDTXSID(file.getAbsolutePath());
-			String dtxsidLast=getLastDTXSID(file.getAbsolutePath());
+			String dtxsidFirst=getFirstID(file.getAbsolutePath(),idName);
+			String dtxsidLast=getLastID(file.getAbsolutePath(),idName);
 
 
 			int indexFirst=dtxsids.indexOf(dtxsidFirst);
@@ -2585,62 +2715,89 @@ public class EpisuiteWebserviceScript {
 
 
 
+	void runSingleChemicalFromAPI() {
 
-
-
-	public static void main(String[] args) {
-		EpisuiteWebserviceScript b=new EpisuiteWebserviceScript();
-
-		//		String smiles="CC1=CC=CC=C1NC(=O)C1=CC=CC=C1C";
-		String smiles="CCCO";
-		//		String json=b.runEpiwin(smiles);
-
-		//		int port =9002;
-		////		
-		//		System.out.println(port);
-		//		for (int i=1;i<=10;i++) { 
-		//			String json=b.runEpiwinLocal(port,smiles);
-		//		}
-
-		//		startLocalCopies(9000,9000);
-		//		startLocalCopies(9000,9011);
-		//		startLocalCopies(9013,9013);
-//		startLocalCopies(9006,9006);
-		//		******************************************************************
-		//		String of="data\\episuite\\";
-		//		int port=9000;
-		//		int portMin=9000;
-		//		int portMax=9015;
-		//		b.runSubsetOfSmilesFile(of+"snapshot_compounds.tsv", of, port,portMin,portMax);
-		//		b.runSmilesFile(of+"snapshot_compounds_caret.tsv", of, 9013);
-
-		//		******************************************************************
-		String of="data\\episuite\\";
-		int port=9006;
-//		b.runSmilesFile(of+"snapshot_chemicals_to_run_"+port+".txt", of, port);
-//		b.getJsonCounts(of);
-		//b.getLastDTXSID_InFiles(of);
+		String smiles="C1=CC(=CC(=C1)Cl)N";//108-42-9
+//		String smiles="CN1CCOCCOCCOCCN(C)C1=S";
+//		String smiles="CCCO";
+//		String smiles="C1=CC23C=CC45C=CC67C=CC11C=CC89C=CC%10(C=C2)C=CC2(C=C4)C=CC(C=C6)(C=C8)C46C77C11C33C57C24C%103C961";
 		
-		//		b.splitSmilesFile(of,"snapshot_chemicals_to_run.txt", 9000, 9011);
-		//		b.fixSmilesFile(of+"snapshot_compounds.tsv", of);
-		//		
-		//		String results=b.runEpiwinLocal(9013, "Cl.NC(N)=N\\N=C\\C1=C(Cl)C=CC=C1Cl");
-		//		System.out.println(results);
+		String json=runEpiwin(smiles);
+		System.out.println(json);
 
-		//		List<EpisuiteResults>allResults=b.getResults(of+"episuite results 9000.json");
+//		startLocalCopies(9000, 9000);
+//		String json=runEpiwinLocal(9000,smiles);
+//		System.out.println(json);
 
-
-		//		String json=b.runEpiwinLocal(port,smiles);
-		//		System.out.println(json);
-
-		//		Double predBiowin3=b.getBiowin3(json);
-		//		System.out.println(smiles+"\t"+predBiowin3);
-		//		b.getBiowin3(b.sampleOutput);
-
+//		Double predBiowin3=getBiowin3(json);
+//		System.out.println(smiles+"\t"+predBiowin3);
+		//		getBiowin3(sampleOutput);
 
 	}
 
-	private static void startLocalCopies(int portMin,int portMax) {
+
+	void removeDuplicates() {
+		
+		
+		String folder="data\\episuite\\";
+		
+		for(int i=9007;i<=9012;i++) {
+			
+			String filepath1=folder+"episuite results "+i+".json";
+			String filepath2=folder+"episuite results "+(i+1)+".json";
+			
+			
+			System.out.println("episuite results "+i+".json");
+			String dtxsid=getLastID(filepath1,"dtxsid");
+			
+			int counter=removeBeforeDTXSID(dtxsid, filepath2);
+			
+			System.out.println((i+1)+"\t"+dtxsid+"\t"+counter);
+			
+		}
+		
+		
+	}
+
+	
+	
+	
+	
+
+	public static void main(String[] args) {
+		EpisuiteWebserviceScript b=new EpisuiteWebserviceScript();
+				
+//		b.runSingleChemicalFromAPI();
+//		b.fixSmilesFile(of+"snapshot_compounds.tsv", of);
+
+//		startLocalCopies(9000,9011);
+//		b.startLocalCopies(9000,9000);
+
+		//******************************************************************
+//		String of="data\\episuite\\";
+//		int port=9000;
+//		int portMin=9000;
+//		int portMax=9011;
+//		b.runSubsetOfSmilesFile("dtxcid",of+"snapshot_compounds.tsv", of, port,portMin,portMax);
+
+		//		******************************************************************
+
+//		 String of="data\\episuite\\";
+//		int port=9006;
+//		b.runSmilesFile("dtxcid",of+"snapshot_chemicals_to_run_"+port+".txt", of, port);
+		
+		//Run the caret ones that got messed up:
+//		b.runSmilesFile(of+"snapshot_compounds_caret.tsv", of, 9013);
+
+//		b.removeDuplicates();
+		
+//		b.runSmilesComparisonFile();
+		
+		b.runSingleChemicalFromAPI();
+		
+	}
+
+	public void startLocalCopies(int portMin,int portMax) {
 		try {
 
 			//			int port=9003;
@@ -2648,9 +2805,7 @@ public class EpisuiteWebserviceScript {
 			for (int port=portMin;port<=portMax;port++) {
 				//				String jarPath="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\episuite\\EpiSuite-1.0.jar";
 				String jarPath="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\episuite\\EpiSuite-1.0 "+port+".jar";
-
 				String command="java -jar \""+jarPath+"\" -api -port "+port;
-
 				Process proc = Runtime.getRuntime().exec(command);
 				//				proc.waitFor();
 				System.out.println(port);

@@ -2,6 +2,8 @@ package gov.epa.run_from_java.scripts.PredictionDashboard.OPERA;
 
 import java.io.File;
 import java.io.Writer;
+
+
 import java.io.IOException;
 import java.io.StringWriter;
 
@@ -40,17 +42,9 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 			
 			StringWriter fw=new StringWriter();
 
-			fw.write("<html>\n");
-			fw.write("<head>\n");
-			this.writeStyles(fw);
-			
-			fw.write("<title>OPERA results for " + or.chemicalIdentifiers.dtxcid + " for " + or.modelDetails.modelName+" model");
-			fw.write("</title>\n");
-			fw.write("</head>\n");
-			
+			writeHtmlHead(or, fw);
 			
 			fw.write("<h3>OPERA Model Calculation Details: "+or.modelDetails.propertyName+"</h3>\r\n");
-						
 			
 //			fw.write("<h2>OPERA Model Calculation Details: "+"<div class=\"tooltip\">"+or.modelDetails.propertyName+
 //					  "<span class=\"tooltiptext\">"+or.modelDetails.propertyDescription+"</span></div>"+"</h2>\r\n");
@@ -72,8 +66,12 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 			fw.write("</table></html>\r\n");
 			fw.flush();
 			
-            return fw.toString();
-
+			String prettyHtml=toPrettyHtml(fw);
+			
+//			System.out.println(prettyHtml);
+			
+			
+			return prettyHtml;
 			
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -82,75 +80,70 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 		
 	}
 
+	
+
 	private void writeModelPerformance(PredictionReport or, Writer fw) throws IOException {
 		fw.write("<table border=0 width=100%>\n");
 		
-		fw.write("\t<tr bgcolor=\"black\">\n");
+		fw.write("\t<tr bgcolor=\"black\">\n");//Header bar row
 		fw.write("\t\t<td><font color=\"white\">Model Performance</color></td>\n");
 		fw.write("\t</tr>\n");
 
-		fw.write("\t<tr>\n");
-		
-		fw.write("<table border=0 width=100%>\n");
+		fw.write("\t<tr><td>\n");
+		addPlotsTable(or, fw);//from parent 
+		fw.write("\t</td></tr>\n");
 
-		fw.write("\t<tr>\n");
+		fw.write("\t<tr><td>\n");
+		writeStatsTable(or,fw);//local
+		fw.write("\t</td></tr>\n");
 		
-		if (or.modelDetails.urlHistogram!=null) {
-			fw.write("<td width=30%><img src=\""+or.modelDetails.urlHistogram+"\" alt=\"Histogram of property values for the training and test sets for "+or.modelDetails.propertyName+"\"></td>");
-			fw.write("<td width=30%><img src=\""+or.modelDetails.urlScatterPlot+"\" alt=\"Scatter plot of experimental vs predicted values for the test set for "+or.modelDetails.propertyName+"\"></td>");
-		} else {
-			//do nothing?
-		}
-				
+		fw.write("\t<tr><td><br>\n");//blank row
+		fw.write("\t</td></tr>\n");
 		
-		fw.write("</tr></table>\n");
-
-//		fw.write("\t<td>\n");
-		writeStatsTable(or,fw);
-		
-		if (or.modelDetails.hasQmrfPdf==1) {
-			fw.write("<span class=\"border\"><a href=\""+or.modelDetails.qmrfReportUrl+"\" target=\"_blank\"> "
-					+ "Model summary in QSAR Model Reporting Format (QMRF)"
-					+ "</a></span>"+
-			"<style>.border {border: 2px solid darkblue; padding: 2px 4px 2px;}</style><br><br>");
-		}
+		fw.write("\t<tr><td>\n");
+		writeQmrfLink(or, fw);//parent
+		fw.write("\t</td></tr>\n");
 		
 //		fw.write("\t</td>\n");
 
-				
-		fw.write("\t</tr>\n");
 		fw.write("</table>");
 	}
 
-	
-	private void writeStatsTable(PredictionReport or, Writer fw) throws IOException {
+
+
+	@Override
+	protected void writeStatsTable(PredictionReport or, Writer fw) throws IOException {
 
 		if (or.modelDetails.performance.train.R2!=null) { 
 			fw.write("<table width=40% border=1 cellpadding=0 cellspacing=0><caption>Weighted kNN model statistics</caption>\n");
 			
 			fw.write("<tr>\n");
-			fw.write("<td colspan=2 align=center>5-fold CV (75%)</td>\n");
 			fw.write("<td colspan=2 align=center>Training (75%)</td>\n");
+			fw.write("<td colspan=2 align=center>5-fold CV (75%)</td>\n");
 			fw.write("<td colspan=2 align=center>Test (25%)</td>\n");
 			fw.write("</tr>\n");
 			
 			fw.write("<tr>\n");
-			writeCenteredTD(fw, "Q<sup>2</sup>");
-			writeCenteredTD(fw, "RMSE");
+
 			writeCenteredTD(fw, "R<sup>2</sup>");
 			writeCenteredTD(fw, "RMSE");
+
+			writeCenteredTD(fw, "Q<sup>2</sup>");
+			writeCenteredTD(fw, "RMSE");
+			
 			writeCenteredTD(fw, "R<sup>2</sup>");
 			writeCenteredTD(fw, "RMSE");
 			fw.write("</tr>\n");
 
 			fw.write("<tr>\n");
+
 			
+			writeCenteredTD(fw, or.modelDetails.performance.train.R2);
+			writeCenteredTD(fw, or.modelDetails.performance.train.RMSE);
+
 			writeCenteredTD(fw, or.modelDetails.performance.fiveFoldICV.Q2);
 			writeCenteredTD(fw, or.modelDetails.performance.fiveFoldICV.RMSE);
 
-			writeCenteredTD(fw, or.modelDetails.performance.train.R2);
-			writeCenteredTD(fw, or.modelDetails.performance.train.RMSE);
-			
 			writeCenteredTD(fw, or.modelDetails.performance.external.R2);
 			writeCenteredTD(fw, or.modelDetails.performance.external.RMSE);
 			
@@ -163,8 +156,8 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 			fw.write("<table width=40% border=1 cellpadding=0 cellspacing=0><caption>Weighted kNN model</caption>\n");
 			
 			fw.write("<tr>\n");
-			fw.write("<td colspan=3 align=center>5-fold CV (75%)</td>\n");
 			fw.write("<td colspan=3 align=center>Training (75%)</td>\n");
+			fw.write("<td colspan=3 align=center>5-fold CV (75%)</td>\n");
 			fw.write("<td colspan=3 align=center>Test (25%)</td>\n");
 			fw.write("</tr>\n");
 			
@@ -178,15 +171,16 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 			fw.write("</tr>\n");
 
 			fw.write("<tr>\n");
-			
-			writeCenteredTD(fw, or.modelDetails.performance.fiveFoldICV.BA);
-			writeCenteredTD(fw, or.modelDetails.performance.fiveFoldICV.SN);
-			writeCenteredTD(fw, or.modelDetails.performance.fiveFoldICV.SP);
+
 			
 			writeCenteredTD(fw, or.modelDetails.performance.train.BA);
 			writeCenteredTD(fw, or.modelDetails.performance.train.SN);
 			writeCenteredTD(fw, or.modelDetails.performance.train.SP);
+
 			
+			writeCenteredTD(fw, or.modelDetails.performance.fiveFoldICV.BA);
+			writeCenteredTD(fw, or.modelDetails.performance.fiveFoldICV.SN);
+			writeCenteredTD(fw, or.modelDetails.performance.fiveFoldICV.SP);
 			
 			writeCenteredTD(fw, or.modelDetails.performance.external.BA);
 			writeCenteredTD(fw, or.modelDetails.performance.external.SN);
@@ -200,18 +194,18 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 			//Do nothing, no stats available
 		}
 		
-		fw.write("<br>\n");
+//		fw.write("<br>\n");
 		
 	}
 	
 	private void writeNeighbors(PredictionReport or, Writer fw) throws IOException {
 		
-		if (or.neighborsTraining.size()==0) return;
+		if (or.neighborResultsTraining.neighbors.size()==0) return;
 		
 		fw.write("<table border=0 width=100%>\n");
 		
 		fw.write("\t<tr bgcolor=\"black\">\n");
-		fw.write("\t\t<td><font color=\"white\">Nearest Neighbors from Model Knowledge Base</color></td>\n");
+		fw.write("\t\t<td><font color=\"white\">"+or.neighborResultsTraining.title+"</color></td>\n");
 		fw.write("\t</tr>\n");
 
 		fw.write("\t<tr><td>\n");
@@ -226,12 +220,19 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 	private void writeNeighborsTableOpera(PredictionReport or, Writer fw) throws IOException {
 		
 		boolean haveMissingExpVal=false;
-				
-		fw.write("<table border=0 width=100%>\n");
+		int maxNeighbors=5;
 		
+		if (or.neighborResultsTraining.neighbors.size()<maxNeighbors) {
+			maxNeighbors=or.neighborResultsTraining.neighbors.size();
+		}
+		
+		int percent=(int)(20*maxNeighbors);
+		fw.write("<table border=0 width="+percent+"%>\n");
+//		fw.write("<caption>Results for nearest neighbors in "+or.modelResults.standardUnit+"</caption>\n");
 		fw.write("\t<tr>\n");
 		
-		for (int i=1;i<=5;i++) {
+		
+		for (int i=1;i<=maxNeighbors;i++) {
 			
 			Double experimentalValue=null;
 			String experimentalString=null;
@@ -240,7 +241,7 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 			String predictedString=null; 
 			
 			
-			for (Neighbor n:or.neighborsTraining) {
+			for (Neighbor n:or.neighborResultsTraining.neighbors) {
 				if(n.neighborNumber==i) {
 					experimentalValue=n.experimentalValue;
 					experimentalString=n.experimentalString;
@@ -250,7 +251,7 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 				}
 			}
 			
-			if(experimentalValue==null && predictedValue==null && experimentalString==null && predictedString==null) continue;//no match for neighbor number
+//			if(experimentalValue==null && predictedValue==null && experimentalString==null && predictedString==null) continue;//no match for neighbor number
 
 			fw.write("\t\t<td valign=\"top\" width=20%>");
 			fw.write("<b>Neighbor</b>: "+i+"<br>");
@@ -258,19 +259,38 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 			if(experimentalValue==null && experimentalString==null) haveMissingExpVal=true;
 			
 			writeExpNeighbor(or, fw, experimentalValue,experimentalString);
-			writePredNeighbor(or, fw, predictedValue,predictedString);
+			writePredNeighbor(or, fw, predictedValue,predictedString,or.neighborResultsTraining.predictedValueToolTip);
 			
-			for (Neighbor n:or.neighborsTraining) {
+			for (Neighbor n:or.neighborResultsTraining.neighbors) {
+
 				if(n.neighborNumber!=i) continue;
 								
 				if(n.molImagePNGAvailable) {
-					fw.write("<img src=\""+this.imgURLCid+n.dtxcid+"\" height=150 width=150 border=1 "
+
+					fw.write("<img src=\""+this.imgURLCid+n.dtxcid+"\" width=150 height=150 border=1 "
 							+ "alt=\"Structural image of "+n.preferredName+"\"><br>");
 					fw.write("<a href=\""+this.detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.preferredName+"</a></figcaption><br>");
+
+//					fw.write("<table border=1 cellpadding=0 cellspacing=0 width=100%>\n");
+					
+//					fw.write("<tr><td>\n");
+//					fw.write("<img src=\""+this.imgURLCid+n.dtxcid+"\" width=100% border=1 "
+//							+ "alt=\"Structural image of "+n.preferredName+"\"><br>");
+//					fw.write("</td><tr>\n");
+					
+//					fw.write("<tr bgcolor=\"lightgray\"><td>\n");
+//					fw.write("<a href=\""+this.detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.preferredName+"</a></figcaption><br>");
+//					fw.write("</td><tr>\n");
+//					
+//					fw.write("</table>\n");
+					
+
 //					fw.write("<figure><img src=\""+imageURL+n.getDtxcid()+"\"\" height=150 width=150 border=1>");
 //					fw.write("<figcaption><a href=\""+detailsURL+n.getDtxsid()+"\" target=\"_blank\">"+n.getPreferredName()+"</a></figcaption>");
 //					fw.write("</figure>\n");
+
 				} else if(n.dtxsid!=null) {
+				
 					if(!n.molImagePNGAvailable) {
 						if(debug) System.out.println("Here1, for "+or.modelDetails.propertyName+ " for "+or.chemicalIdentifiers.dtxcid+ ", No dsstox record for "+n.dtxsid);
 						
@@ -280,8 +300,7 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 						} else {
 							fw.write("No structure image<br><a href=\""+detailsURL+n.dtxsid+"\" target=\"_blank\">"+n.dtxsid+"</a></figcaption><br>");	
 						}
-						
-						
+												
 					} else {
 						if(n.dtxcid!=null)	 {					
 							if(debug) System.out.println("Here 2, For "+or.modelDetails.propertyName+" for "+or.chemicalIdentifiers.dtxcid+", have dsstox record for "+n.dtxsid+" (" +n.preferredName+")but no image for neighbor");
@@ -306,10 +325,10 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 		}
 		
 		fw.write("\t</tr>\n");
-		fw.write("</table>");
+		fw.write("</table>\n");
 		
 		if(haveMissingExpVal) {
-			fw.write("* Some chemicals in the evaluation set do not have readily available experimental values");
+			fw.write("* "+or.neighborResultsTraining.missingExperimentalValueNote);
 		}
 	}
 
@@ -365,7 +384,81 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 
 		HTMLReportCreatorOpera h=new HTMLReportCreatorOpera();
 		
-		File folder=new File("data\\opera\\reports");
+//		h.regenReports();
+//		
+//		h.regenReports("DTXSID7020182");//bisphenol-A
+		h.displayReports("DTXSID7020182");//bisphenol-A
+//		
+//		h.regenReports("DTXSID3039242");//benzene
+//		h.regenReports("DTXSID20879997");
+		
+//		h.regenReports("DTXSID9020584");//ethanol- large LD50
+		
+		
+		
+		
+	}
+	
+	private void regenReports(String dtxsid) {
+		File folder=new File("data\\opera2.8\\reports\\"+dtxsid);
+		
+		int count=0;
+		
+		for (File file:folder.listFiles()) {
+
+			if (file.getName().contains(".json")) {
+				
+//				if(!file.getName().toLowerCase().contains("logd"))continue;
+//				if(!file.getName().toLowerCase().contains("pka"))continue;
+//				if(file.getName().toLowerCase().contains("cerapp"))continue;
+//				if(file.getName().toLowerCase().contains("compara"))continue;
+				
+//				if(!file.getName().contains("CERAPP-Antagonist"))continue;
+				
+				
+				PredictionReport or=OPERA_Report.fromJsonFile(file.getAbsolutePath());
+//				if(or.modelResults.standardUnit.contentEquals("°C")) continue;
+//				or.modelDetails.loadPlotsFromDB=true;//load from postgres for testing
+				
+				String filepath=toHTMLFile(or, folder.getAbsolutePath());
+				System.out.println(++count+"\t"+file.getName());
+				viewInWebBrowser(filepath);
+//				if(count==5)break;
+				
+//				if(true)break;
+			}
+			
+		}
+	}
+	
+	private void displayReports(String dtxsid) {
+		File folder=new File("data\\opera2.8\\reports\\"+dtxsid);
+		
+		int count=0;
+		
+		for (File file:folder.listFiles()) {
+
+			if (file.getName().contains(".html")) {
+				
+//				if(!file.getName().toLowerCase().contains("logd"))continue;
+//				if(!file.getName().toLowerCase().contains("pka"))continue;
+//				if(file.getName().toLowerCase().contains("cerapp"))continue;
+//				if(file.getName().toLowerCase().contains("compara"))continue;
+				
+//				if(!file.getName().contains("CERAPP-Antagonist"))continue;
+				
+				System.out.println(++count+"\t"+file.getName());
+				viewInWebBrowser(file.getAbsolutePath());
+//				if(count==5)break;
+//				if(true)break;
+			}
+			
+		}
+	}
+
+
+	private void regenReports() {
+		File folder=new File("data\\opera2.8\\reports");
 		
 		for (File file:folder.listFiles()) {
 			
@@ -374,22 +467,18 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 				for (File file2:file.listFiles()) {
 					if (file2.getName().contains(".json")) {
 						PredictionReport or=OPERA_Report.fromJsonFile(file2.getAbsolutePath());
-						h.toHTMLFile(or, file.getAbsolutePath());
+						toHTMLFile(or, file.getAbsolutePath());
 						System.out.println(file2.getName());
 					}
-					
 				}
-				
 			}
 			
 			if (file.getName().contains(".json")) {
 				PredictionReport or=OPERA_Report.fromJsonFile(file.getAbsolutePath());
-				h.toHTMLFile(or, folder.getAbsolutePath());
+				toHTMLFile(or, folder.getAbsolutePath());
 				System.out.println(file.getName());
 			}
 			
 		}
-		
-		
 	}
 }
