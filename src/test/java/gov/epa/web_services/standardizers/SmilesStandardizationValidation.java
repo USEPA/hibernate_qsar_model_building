@@ -32,6 +32,8 @@ import org.apache.poi.ss.usermodel.Picture;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.util.Units;
 import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
 import org.apache.poi.xssf.usermodel.XSSFDrawing;
@@ -197,7 +199,6 @@ public class SmilesStandardizationValidation {
 			//			for (Integer index:indices) {
 			//				System.out.println(index);
 			//			}
-
 			//			if (true) return;
 
 			Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
@@ -239,7 +240,7 @@ public class SmilesStandardizationValidation {
 					//					System.out.println(currentLine);
 				}
 
-				if (jaResults.size() % 10 == 0)
+				if (jaResults.size() % 10 == 0 && jaResults.size()!=0)
 					System.out.println(jaResults.size());
 
 				LinkedList<String> values = ParseStringUtils.Parse3(line, ",");
@@ -247,17 +248,19 @@ public class SmilesStandardizationValidation {
 				String DSSTOX_COMPOUND_ID = values.get(htCols.get("DSSTOX_COMPOUND_ID"));
 				String Original_SMILES = values.get(htCols.get("Original_SMILES"));
 				String QSAR_Ready_SMILES_OPERA = values.get(htCols.get("Canonical_QSARr"));
-				String QSAR_Ready_InchiKey_OPERA = values.get(htCols.get("InChI Key_QSARr"));// we recalculate it
-				// anyways
-
-								
-
+//				String QSAR_Ready_InchiKey_OPERA = values.get(htCols.get("InChI Key_QSARr"));// we recalculate it
+				String Salt_Solvent=values.get(htCols.get("Salt_Solvent"));
+				
+//				if(!Salt_Solvent.isEmpty()) {//add salt_solvent back in (TMM, 5/3/24):
+//					QSAR_Ready_SMILES_OPERA+="."+Salt_Solvent;
+//				}
 
 				try {
 					JsonObject jo = new JsonObject();
 					jo.addProperty("DSSTOX_COMPOUND_ID", DSSTOX_COMPOUND_ID);
 					jo.addProperty("Original_SMILES", Original_SMILES);
 					jo.addProperty("QSAR_Ready_SMILES_OPERA", QSAR_Ready_SMILES_OPERA);
+					jo.addProperty("OPERA_Salt_Solvent", Salt_Solvent);
 
 					Inchi inchiOPERA = toInchiIndigo(QSAR_Ready_SMILES_OPERA);
 					if (inchiOPERA != null) {
@@ -268,7 +271,7 @@ public class SmilesStandardizationValidation {
 					}
 
 					
-					boolean full=false;
+					boolean full=true;
 
 					HttpResponse<String>response=standardizer.callQsarReadyStandardizePost(Original_SMILES,full);
 					String jsonResponse=standardizer.getResponseBody(response, full);
@@ -279,30 +282,36 @@ public class SmilesStandardizationValidation {
 						jo.addProperty("inchiKey_SDE", "N/A");
 					} else {
 						jo.addProperty("QSAR_Ready_SMILES_SDE", qsarSmiles);
-						String inchiKey_SDE_Canonical_Indigo = toInchiIndigo(qsarSmiles).inchiKey;
-						jo.addProperty("inchiKey_SDE", inchiKey_SDE_Canonical_Indigo);
+
+						Inchi inchi=toInchiIndigo(qsarSmiles);
+
+						if(inchi!=null) {
+							String inchiKey_SDE_Canonical_Indigo = inchi.inchiKey;
+							jo.addProperty("inchiKey_SDE", inchiKey_SDE_Canonical_Indigo);
+						}
 					}
-
 					
-//					String json = runStandardize(Original_SMILES, server, workFlow);
-//					if (json.equals("[]")) {
-//						jo.addProperty("QSAR_Ready_SMILES_SDE", "N/A");
-//						jo.addProperty("inchiKey_SDE", "N/A");
-//						// System.out.println(gson.toJson(jo));
-//					} else {
-//						JsonArray joArray = gson.fromJson(json, JsonArray.class);
-//						if (joArray.size() == 1) {
-//							JsonObject joResult = gson.fromJson(json, JsonArray.class).get(0).getAsJsonObject();
-//							String QSAR_Ready_SMILES_SDE = joResult.get("canonicalSmiles").getAsString();
-//							String inchiKey_SDE_Canonical_Indigo = toInchiIndigo(QSAR_Ready_SMILES_SDE).inchiKey;
-//							jo.addProperty("QSAR_Ready_SMILES_SDE", QSAR_Ready_SMILES_SDE);
-//							jo.addProperty("inchiKey_SDE", inchiKey_SDE_Canonical_Indigo);
-//						} else {
-//							jo.addProperty("QSAR_Ready_SMILES_SDE", "N/A");
-//							jo.addProperty("inchiKey_SDE", "N/A");
-//						}
-//					}
+					String changes=null;
+					String issues=null;
+					
+					if (full) {
+						changes=SciDataExpertsStandardizer.getChangesApplied(jsonResponse);
+						if(changes.isEmpty()) changes="None";
+						
+						issues=SciDataExpertsStandardizer.getIssues(jsonResponse);
+						if(issues.isEmpty()) issues="None";
 
+					}
+					
+					jo.addProperty("changes", changes);
+					jo.addProperty("issues", issues);
+					
+					if(jo.get("inchiKey_OPERA")!=null && jo.get("inchiKey_SDE")!=null) {
+						if(!jo.get("inchiKey_OPERA").getAsString().equals(jo.get("inchiKey_SDE").getAsString())) {
+							System.out.println(gson.toJson(jo));
+						}
+					}
+					
 					jaResults.add(jo);
 
 				} catch (Exception ex) {
@@ -324,7 +333,6 @@ public class SmilesStandardizationValidation {
 
 			fw.write(gson.toJson(jaResults));
 			fw.flush();
-
 			fw.close();
 
 			// System.out.println(jaResults.size());
@@ -671,47 +679,61 @@ public class SmilesStandardizationValidation {
 			JsonArray ja = gson.fromJson(reader, JsonArray.class);
 
 			JsonArray vecMismatchHaveSDE = new JsonArray();
-			JsonArray vecDontHaveSDE = new JsonArray();
+			JsonArray vecMulticomponent = new JsonArray();
 			JsonArray vecMatch = new JsonArray();
 
+			List<String>issuesList=new ArrayList<>();
+			
 			for (int i = 0; i < ja.size(); i++) {
 				JsonObject jo = ja.get(i).getAsJsonObject();
 
 				String inchiKey_OPERA = jo.get("inchiKey_OPERA").getAsString();
-				String inchiKey_SDE = jo.get("inchiKey_SDE").getAsString();
 
-				if (!inchiKey_SDE.equals("N/A")) {
-					if (!inchiKey_OPERA.equals(inchiKey_SDE)) {
-						//						System.out.println("*"+gson.toJson(jo));
-						vecMismatchHaveSDE.add(jo);
-					} else {
-						//						System.out.println(jo.get("Original_SMILES").getAsString()+"\tSDE qsar ready smiles matches OPERA");
-						vecMatch.add(jo);
+				String issues="";
+				
+				if (jo.get("issues")!=null) {
+					issues=jo.get("issues").getAsString();
+					
+					if(!issuesList.contains(issues)) {
+						issuesList.add(issues);
+						System.out.println(issues);
 					}
-
-				} else {
-					vecDontHaveSDE.add(jo);
-					//					System.out.println(jo.get("Original_SMILES").getAsString()+"\tSDE qsar ready smiles = blank");
+					
 				}
+				
+				if(jo.get("inchiKey_SDE")==null) {
+					vecMismatchHaveSDE.add(jo);
+					continue;
+				}
+				
+				
+				String inchiKey_SDE = jo.get("inchiKey_SDE").getAsString();
+				
+				if (inchiKey_OPERA.equals(inchiKey_SDE)) {
+					vecMatch.add(jo);
+					continue;
+				}
+
+				if (issues.contains("Is multi-component?")) {
+					vecMulticomponent.add(jo);
+				} else {
+					vecMismatchHaveSDE.add(jo);
+				}
+
 			}
+			
+			if(true) return;
+			
 
 			XSSFWorkbook workbook = new XSSFWorkbook();
 
-
-
-			writeRows(workbook,"InchiMismatch",vecMismatchHaveSDE);
-			writeRows(workbook,"Multicomponent",vecDontHaveSDE);
-			//			writeRows(fw, vecMismatchHaveSDE);
-			//			writeRows(fw, vecDontHaveSDE);
-
+			writeRows(workbook,workFlow,"Rest",vecMismatchHaveSDE);
+			writeRows(workbook,workFlow,"Multicomponent",vecMulticomponent);
 
 			FileOutputStream saveExcel = new FileOutputStream(outputPath);
 
 			workbook.write(saveExcel);
 			workbook.close();
-			//			saveExcel.close();
-
-
 
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -920,56 +942,109 @@ public class SmilesStandardizationValidation {
 	}
 
 
-	private void writeRows(Workbook workbook,String sheetName,JsonArray vecMismatchHaveSDE) throws IOException, CDKException {
+	private void writeRows(Workbook workbook,String workflow, String sheetName,JsonArray vecMismatchHaveSDE) throws IOException, CDKException {
 
 
 		Sheet sheet=workbook.createSheet(sheetName);
 
-		Row row1 = sheet.createRow(0);
-		row1.createCell(0).setCellValue("DTXCID");
-		row1.createCell(1).setCellValue("Original");
-		row1.createCell(2).setCellValue("OPERA_QSAR_READY");
-		row1.createCell(3).setCellValue("SDE_QSAR_READY");
-		row1.createCell(4).setCellValue("SDE matches OPERA");
+		
+		Row recSubtotalRow = sheet.createRow(0);
+
+
+		
+		Row rowHeader = sheet.createRow(1);
+		rowHeader.createCell(0).setCellValue("DTXCID");
+		rowHeader.createCell(1).setCellValue("Original");
+		rowHeader.createCell(2).setCellValue("OPERA_QSAR_READY");
+		rowHeader.createCell(3).setCellValue(workflow);
+		rowHeader.createCell(4).setCellValue("SDE matches OPERA");
+		rowHeader.createCell(5).setCellValue("OPERA_Salt_Solvent");
+		rowHeader.createCell(6).setCellValue("changes");
+		rowHeader.createCell(7).setCellValue("issues");
 
 		sheet.setColumnWidth(0, 20*256);
-		sheet.setColumnWidth(1, 60*256);
-		sheet.setColumnWidth(2, 60*256);
-		sheet.setColumnWidth(3, 60*256);
+
+		for(int i=1;i<=7;i++) sheet.setColumnWidth(i, 60*256);
 
 		for (int i = 0; i < vecMismatchHaveSDE.size(); i++) {
 
 			JsonObject jo = vecMismatchHaveSDE.get(i).getAsJsonObject();
 
-			int irow=(i+1);
+			int irow=(i+2);
 			Row rowi = sheet.createRow(irow);
 
 
 			String CID = jo.get("DSSTOX_COMPOUND_ID").getAsString();
 			String Original_Smiles = jo.get("Original_SMILES").getAsString();
-			System.out.println(Original_Smiles);
+//			System.out.println(Original_Smiles);
 			String QSAR_Ready_SMILES_OPERA = jo.get("QSAR_Ready_SMILES_OPERA").getAsString();
-			String QSAR_Ready_SMILES_SDE = jo.get("QSAR_Ready_SMILES_SDE").getAsString();
+
+			String OPERA_Salt_Solvent=jo.get("OPERA_Salt_Solvent").getAsString();
+
+			String changes="";
+			if (jo.get("changes")!=null) {
+				changes=jo.get("changes").getAsString();
+			}
 			
-			String inchiKeyOPERA=toInchiIndigo(QSAR_Ready_SMILES_OPERA).inchiKey;
-			String inchiKeySDE=toInchiIndigo(QSAR_Ready_SMILES_SDE).inchiKey;
+			String issues="";
+			if(jo.get("issues")!=null) {
+				issues=jo.get("issues").getAsString();
+			}
+			
+			
+			String inchiKeySDE=null;
+			String QSAR_Ready_SMILES_SDE=null;
+			
+			if (!jo.get("QSAR_Ready_SMILES_SDE").isJsonNull()) {
+				QSAR_Ready_SMILES_SDE = jo.get("QSAR_Ready_SMILES_SDE").getAsString();
+				Inchi inchiSDE=toInchiIndigo(QSAR_Ready_SMILES_SDE);
+				if(inchiSDE!=null)	inchiKeySDE=inchiSDE.inchiKey;
+			}
+			
+			
+			Inchi inchiOPERA=toInchiIndigo(QSAR_Ready_SMILES_OPERA);
+			String inchiKeyOPERA=null;
+			if (inchiOPERA!=null)	inchiKeyOPERA=inchiOPERA.inchiKey;
 			
 
 			rowi.createCell(0).setCellValue(CID);
 			rowi.createCell(1).setCellValue(Original_Smiles);
 			rowi.createCell(2).setCellValue(QSAR_Ready_SMILES_OPERA);
 			rowi.createCell(3).setCellValue(QSAR_Ready_SMILES_SDE);
-			rowi.createCell(4).setCellValue(inchiKeyOPERA.equals(inchiKeySDE));
+			
+			if (inchiKeyOPERA!=null && inchiKeySDE!=null) {
+				rowi.createCell(4).setCellValue(inchiKeyOPERA.equals(inchiKeySDE));
+			} else {
+				rowi.createCell(4).setCellValue("N/A");
+			}
+			
+			rowi.createCell(5).setCellValue(OPERA_Salt_Solvent);
+			rowi.createCell(6).setCellValue(changes);
+			rowi.createCell(7).setCellValue(issues);
 			
 			rowi.setHeight((short)2000);
 
 			createImage(Original_Smiles, irow, 1, sheet, 1);
 			createImage(QSAR_Ready_SMILES_OPERA, irow, 2, sheet, 1);
 			createImage(QSAR_Ready_SMILES_SDE, irow, 3, sheet, 1);
+			createImage(OPERA_Salt_Solvent, irow, 5, sheet, 1);
 			
 			rowi.setHeight((short)(2000*1.15));//add some space for smiles at bottom
 
 		}
+		
+		
+		for (int i = 0; i < 7; i++) {
+			String col = CellReference.convertNumToColString(i);
+			String recSubtotal = "SUBTOTAL(3,"+col+"$3:"+col+"$"+(vecMismatchHaveSDE.size()+2)+")";
+			recSubtotalRow.createCell(i).setCellFormula(recSubtotal);
+		}
+
+
+		String lastCol = CellReference.convertNumToColString(7-1);
+		sheet.setAutoFilter(CellRangeAddress.valueOf("A2:"+lastCol+vecMismatchHaveSDE.size()+2));
+		sheet.createFreezePane(0, 2);
+
 
 	}
 	
@@ -1400,12 +1475,14 @@ public class SmilesStandardizationValidation {
 
 		System.out.println("enter rerunChemicalsInExcelFile");
 		
-        String workflowNew="QSAR-ready_CNL_edits_TMM_2";
-        String server = "http://v2626umcth819.rtord.epa.gov:443";	        
+		String workflowNew="QSAR-ready_CNL_edits";
+//        String workflowNew="QSAR-ready_CNL_edits_TMM_2";
+//        String server = "http://v2626umcth819.rtord.epa.gov:443";
+        String server = "http://v2626umcth889.rtord.epa.gov:8801";	 
         Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 
 		
-		String folder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 qsar ready standardizer\\results_819_QSAR-ready_CNL_edits_TMM\\";
+//		String folder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 qsar ready standardizer\\results_819_QSAR-ready_CNL_edits_TMM\\";
 //		String fileName="results_rnd100000.xlsx";
 //		String fileName="results_rnd10000.xlsx";
 //		String fileName="results_rnd100000 small list only inchi mismatch.xlsx";
@@ -1420,14 +1497,18 @@ public class SmilesStandardizationValidation {
 //        String colNameSmilesOriginal="Original";
 //		String colNameOperaSmiles="OPERA_QSAR_READY";
 		
-		String fileName="results_rnd100000 small list only inchi mismatch3.xlsx";
-        String colNameSmilesOriginal="OPERA_QSAR_READY";
-		String colNameOperaSmiles="OPERA_QSAR_READY";
-		String fileNameOut="results_rnd100000 small list only inchi mismatch3_rerun_smilesOriginal="+colNameSmilesOriginal+"_"+workflowNew+".xlsx";		
-				
 //		String fileName="results_rnd100000 small list only inchi mismatch3.xlsx";
-//        String strSmilesOriginalColumnName="Original";
-//		String fileNameOut="results_rnd100000 small list only inchi mismatch3_rerun_original_QSAR-ready_CNL_edits_TMM_2.xlsx";
+//        String colNameSmilesOriginal="OPERA_QSAR_READY";
+//		String colNameOperaSmiles="OPERA_QSAR_READY";
+//		String fileNameOut="results_rnd100000 small list only inchi mismatch3_rerun_smilesOriginal="+colNameSmilesOriginal+"_"+workflowNew+".xlsx";		
+
+        
+        String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 qsar ready standardizer\\results_889\\";
+		String fileName="structures for checking QSAR ready rules.xlsx";
+        String colNameSmilesOriginal="Original";
+		String colNameOperaSmiles="OPERA";
+		String fileNameOut=fileName+"_"+workflowNew+".xlsx";		
+
 
 		FileInputStream inputStream;
 		try {
@@ -1448,20 +1529,20 @@ public class SmilesStandardizationValidation {
 	        
 	        JsonArray vec=new JsonArray();
 	        
+//	        System.out.println(sheet.getLastRowNum());
 	        
 	        for (int i=1;i<=sheet.getLastRowNum();i++) {
 	        	Row row=sheet.getRow(i);
 	        	String DTXCID=row.getCell(htColNames.get("DTXCID")).getStringCellValue();
 	        	
 	        	String Type=row.getCell(htColNames.get("Type")).getStringCellValue();	        	
-	        	if (!Type.toLowerCase().contains("double bond placement")) continue;
 	        	
 	        	
 	        	if (row.getCell(colSmilesOriginal)==null) continue;
 	        	
 	        	String Original_SMILES=row.getCell(colSmilesOriginal).getStringCellValue();
 	        	
-//	        	System.out.println(Original_SMILES);
+	        	System.out.println(Original_SMILES);
 //	        	if (true) continue;
 	        	
 	        	String SmilesOpera=row.getCell(htColNames.get(colNameOperaSmiles)).getStringCellValue();
@@ -1482,6 +1563,8 @@ public class SmilesStandardizationValidation {
 //				System.out.println(DTXCID+"\t"+Original_SMILES+"\t"+SmilesSDE_new);
 
 				if (i%10==0) System.out.println(i);
+				
+//				if(i==10) break;
 
 	        }
 	        
@@ -1489,8 +1572,13 @@ public class SmilesStandardizationValidation {
 	        workbook.close();
 	        
 	        
+	        FileWriter fw = new FileWriter(folder+fileNameOut.replace(".xlsx", ".json"));
+			fw.write(gson.toJson(vec));
+			fw.flush();
+	        
+	        
 			workbook = new XSSFWorkbook();
-			writeRows(workbook,workflowNew,vec);
+			writeRows(workbook,workflowNew,"mismatches",vec);
 			
 			//			writeRows(fw, vecMismatchHaveSDE);
 			//			writeRows(fw, vecDontHaveSDE);
@@ -1642,14 +1730,15 @@ public class SmilesStandardizationValidation {
 		configUnirest();
 
 //		String server = "http://v2626umcth819.rtord.epa.gov:443";
-		String server="https://hcd.rtpnc.epa.gov";
-		
+//		String server="https://hcd.rtpnc.epa.gov";
+		String server="https://hazard-dev.sciencedataexperts.com";
 		
 		//		String server="https://hazard-dev.sciencedataexperts.com";
 		//		String workFlow="QSAR-ready_CNL_edits";
 //		String workFlow = "QSAR-ready_CNL_edits_TMM";
-		String workFlow = "QSAR-ready_CNL_edits_TMM_2";
+//		String workFlow = "QSAR-ready_CNL_edits_TMM_2";
 		//		String workFlow="qsar-ready";
+		String workFlow = "qsar-ready_08232023";
 
 		String folder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 qsar ready standardizer\\";
 		//		s.go(server,workFlow,folder,start,stop);		
@@ -1659,15 +1748,17 @@ public class SmilesStandardizationValidation {
 		//		s.goThroughResults2(server,workFlow,folder, start, stop);
 
 		
-		int count = 10000;
+		int count = 100000;
 		
-//		System.out.println(count);
+		System.out.println(count);
 //		s.goRnd(server, workFlow, folder, count);
+//		s.goRndAllWorkflows(server, folder, count);
 		
-		s.goRndAllWorkflows(server, folder, count);
+		s.goThroughResultsRnd(server, workFlow, folder, count);
 		
-//		s.goThroughResultsRnd(server, workFlow, folder, count);
+		
 //		s.rerunChemicalsInExcelFile();
+//		s.goThroughResultsRnd(server, workFlow, folder, count);
 		
 //		s.rerunChemicalsInJsonFile();
 //		s.compareResultsInJsonFile();
@@ -1680,3 +1771,4 @@ public class SmilesStandardizationValidation {
 	}
 
 }
+

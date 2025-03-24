@@ -35,11 +35,11 @@ public class RawExpDataTableGenerator {
 	public static final String sqlGetFields="select p.name_ccd    as property,\r\n"
 			+ "d.\"name\"    as dataset,\r\n"
 			+ "dr.preferred_name  as chemical_name,\r\n"
+			+ "dr.casrn,\r\n"
 			+ "dpc.dtxsid,\r\n"
 			+ "dpc.dtxcid,\r\n"
 			+ "dp.canon_qsar_smiles,\r\n"
-			+ "dpc.smiles,\r\n"
-
+			+ "dpc.smiles,\r\n"			
 			+ "dp.qsar_exp_prop_property_values_id as median_exp_prop_property_values_id,\r\n"
 			+ "dpc.exp_prop_property_values_id as exp_prop_property_values_id,\r\n"
 			+ "pv.id exp_prop_property_values_id,\r\n"
@@ -210,7 +210,7 @@ public class RawExpDataTableGenerator {
 
 		try  {
 
-			String sql="select * from public.v_experimental_data\n"
+			String sql="select * from public.mv_experimental_data\n"
 					+"where name=? and dtxsid=?\r\norder by prop_value;";
 			//		System.out.println(sql);
 
@@ -238,24 +238,36 @@ public class RawExpDataTableGenerator {
 	 * 
 	 * @param ja
 	 */
-	private void convertViewFieldNames(JsonArray ja) {
+	public static void convertViewFieldNames(JsonArray ja) {
 		Hashtable<String,String>ht=new Hashtable<>();
 
 		ht.put("prop_value", "property_value");
 		ht.put("unit", "property_units");
 		ht.put("name", "property");
+
 		ht.put("prop_value_text", "property_value_text");
+		ht.put("prop_value_original", "property_value_original");
+		
 		ht.put("direct_url", "direct_link");
 		ht.put("ls_name", "literature_source_name");
 		ht.put("brief_citation", "short_citation");
 		ht.put("ls_citation", "literature_source_description");
 		ht.put("ls_doi", "literature_source_doi");
-
+		
+		ht.put("temperature_c", "temperature_C");
+		ht.put("pressure_mmhg", "pressure_mmHg");
+		ht.put("ph", "pH");
+		
 		for (int i=0;i<ja.size();i++) {
 			JsonObject jo=ja.get(i).getAsJsonObject();
 			for (String key:ht.keySet()) {
 				if(jo.get(key)!=null && !jo.get(key).isJsonNull()) {
 					jo.addProperty(ht.get(key), jo.get(key).getAsString());	
+					
+//					System.out.println(key+"\t"+ht.get(key)+"\t"+jo.get(key));
+					
+					
+					jo.remove(key);
 				}
 			}
 		}
@@ -335,7 +347,7 @@ public class RawExpDataTableGenerator {
 	}
 
 
-	private JsonArray getJsonArray(ResultSet rs) throws SQLException {
+	public static JsonArray getJsonArray(ResultSet rs) throws SQLException {
 		JsonArray ja=new JsonArray();
 
 		while (rs.next()) {
@@ -448,10 +460,11 @@ public class RawExpDataTableGenerator {
 
 			if(displayStructureImages) {
 				html+="\t\t<td width=150px valign=\"top\"><img src=\""+imgURL+"\" height=150 width=150 border=2>"
-						+ jo.get("chemical_name").getAsString()+ "</td>\n";
+						+ jo.get("chemical_name").getAsString()+"<br>"+jo.get("casrn")+ "</td>\n";
 
 			} else {
-				html+="\t\t<td width=150px valign=\"top\">"+ jo.get("chemical_name").getAsString()+ "</td>\n";
+				html += "\t\t<td width=150px valign=\"top\">" + jo.get("dtxsid").getAsString() + "<br>"
+						+ jo.get("chemical_name").getAsString() + "<br>" + jo.get("casrn").getAsString() + "</td>\n";
 			}
 
 
@@ -572,6 +585,162 @@ public class RawExpDataTableGenerator {
 		html+="</table>\r\n";
 		return html;
 	}
+	
+	String convertJsonToHTML_Separate_ID_Columns(JsonArray ja,boolean flagMedian,String set, boolean displayStructureImages) {
+		String imgURLSid="https://comptox.epa.gov/dashboard-api/ccdapp1/chemical-files/image/by-dtxsid/";
+
+		String html=writeStyles();
+
+		html+="<table border=1>\r\n";
+		html+="<tr>\r\n";		
+
+		html+="<th>DTXSID</th>\r\n";
+		html+="<th>CASRN</th>\r\n";
+		html+="<th>Name</th>\r\n";
+
+		if (set!=null) {
+			html+="<th>Property value (from "+set+" set)</th>\r\n";			
+		} else {
+			html+="<th>Property value</th>\r\n";
+		}
+
+		html+="<th>Source</th>\r\n";
+		html+="<th>Experimental Conditions</th>\r\n";		
+		html+="</tr>\r\n";
+
+		for (int i=0;i<ja.size();i++) {
+			JsonObject jo=ja.get(i).getAsJsonObject();
+			html+="<tr>\r\n";		
+
+			String imgURL=imgURLSid+jo.get("dtxsid").getAsString();
+
+			if(displayStructureImages) {
+				html+="\t\t<td width=150px valign=\"top\"><img src=\""+imgURL+"\" height=150 width=150 border=2>"+ jo.get("dtxsid").getAsString()+"</td>\n";
+			} else {
+				html += "\t\t<td width=150px valign=\"top\">" + jo.get("dtxsid").getAsString()+"</td>\n";
+			}
+
+			html += "\t\t<td width=150px valign=\"top\">" + jo.get("chemical_name").getAsString()+"</td>\n";
+			html += "\t\t<td width=150px valign=\"top\">" + jo.get("casrn").getAsString()+"</td>\n";
+
+			boolean flag=false;
+			if(flagMedian) {
+				String median_exp_prop_property_values_id=jo.get("median_exp_prop_property_values_id").getAsString();
+				String exp_prop_property_values_id=jo.get("exp_prop_property_values_id").getAsString();
+				String []ids=median_exp_prop_property_values_id.split("\\|");
+				List<String>idList=Arrays.asList(ids);
+
+				if(idList.contains(exp_prop_property_values_id)) {
+					System.out.println("Flag "+exp_prop_property_values_id);
+					flag=true;
+				}
+
+			}
+
+
+			String propertyValue=jo.get("property_value").getAsString();
+			String property=jo.get("property").getAsString();
+
+			if(flag && flagMedian) {				
+				String value1=getFormattedValue(propertyValue,property)+" "+jo.get("property_units").getAsString();
+				String value2="<span class=\"borderAD\">"+value1+"</span>"+
+						"<style>.borderAD {border: 2px solid green; padding: 0px 4px 0px}</style>";
+
+				html+="<td><b><font color=darkgreen><div class=\"tooltip\">"+value2+
+						"<span class=\"tooltiptext\">Median value used in dataset</span></div><br>";
+				html+="</font></b></td>\r\n";
+
+			} else {
+				html+="<td>"+getFormattedValue(propertyValue,property)+" "+jo.get("property_units").getAsString();
+				html+="</td>\r\n";
+			}
+
+			String sourceHtml="";
+
+			if( !jo.get("public_source_name").isJsonNull()) {				
+				String source_name=jo.get("public_source_name").getAsString();
+				String source_description=jo.get("public_source_description").getAsString();
+				String source_url=jo.get("public_source_url").getAsString();
+
+				sourceHtml+="<a href=\""+source_url+"\" target=\"_blank\"><div class=\"tooltip\">"+source_name+
+						"<span class=\"tooltiptext\">"+source_description+"</span></div></a><br>";
+			}
+
+			if( !jo.get("public_source_original_name").isJsonNull()) {				
+				String source_name=jo.get("public_source_original_name").getAsString();
+				String source_description=jo.get("public_source_original_description").getAsString();
+				String source_url=jo.get("public_source_original_url").getAsString();
+
+				sourceHtml+="<a href=\""+source_url+"\" target=\"_blank\"><div class=\"tooltip\">"+source_name+
+						"<span class=\"tooltiptext\">"+source_description+"</span></div></a><br>";
+			}
+
+
+			if( !jo.get("literature_source_name").isJsonNull()) {				
+				String source_name=jo.get("literature_source_name").getAsString();
+				String source_description=jo.get("literature_source_description").getAsString();
+
+				String source_url=null;
+				if( !jo.get("literature_source_url").isJsonNull()) {	
+					source_url=jo.get("literature_source_url").getAsString();
+
+					sourceHtml+="<a href=\""+source_url+"\" target=\"_blank\"><div class=\"tooltip\">"+source_name+
+							"<span class=\"tooltiptext\">"+source_description+"</span></div></a><br>";
+
+
+				} else {
+					sourceHtml+="<div class=\"tooltip\">"+source_name+
+							"<span class=\"tooltiptext\">"+source_description+"</span></div><br>";
+
+				}
+
+
+			}
+
+
+			if( !jo.get("direct_link").isJsonNull()) {
+				String source_url=jo.get("direct_link").getAsString();
+				sourceHtml+="<a href=\""+source_url+"\" target=\"_blank\"><div class=\"tooltip\">Direct link"+
+						"<span class=\"tooltiptext\">Webpage for the specific property value</span></div></a><br>";
+
+			}
+
+			if( !jo.get("short_citation").isJsonNull()) {
+				sourceHtml+="<div class=\"tooltip\">"+jo.get("short_citation").getAsString()+
+						"<span class=\"tooltiptext\">Citation name for the property value. A complete citation is not available</span></div><br>";
+
+			}
+
+
+
+			html+="<td>"+sourceHtml+"</td>\r\n";
+
+			String parametersHTML="Not specified";
+
+			if (!jo.get("temperature_c").isJsonNull() || !jo.get("pressure_mmhg").isJsonNull() || !jo.get("ph").isJsonNull()) {
+				parametersHTML="";
+
+				if (!jo.get("temperature_c").isJsonNull()) {
+					parametersHTML+="Temperature: "+jo.get("temperature_c").getAsString()+" C<br>";
+				}
+
+				if (!jo.get("pressure_mmhg").isJsonNull()) {
+					parametersHTML+="Pressure: "+jo.get("pressure_mmhg").getAsString()+" mmHg<br>";
+				}
+
+				if (!jo.get("ph").isJsonNull()) {
+					parametersHTML+="pH: "+jo.get("ph").getAsString()+"<br>";
+				}
+			}
+
+			html+="<td>"+parametersHTML+"</td>\r\n";		
+			html+="</tr>\r\n";
+		}
+
+		html+="</table>\r\n";
+		return html;
+	}
+
 
 	String convertJsonToHTML2(String property, JsonArray ja,boolean flagMedian,String set, boolean forDashboard) {
 
@@ -1109,6 +1278,25 @@ public class RawExpDataTableGenerator {
 		String filepath2=toHTMLFile("data\\reports", "Dashboard "+dtxsid+" "+property.replace(":", "_")+".html", html2);
 		viewInWebBrowser(filepath2);
 	}
+	
+	void createReportForDashboard(List<String> dtxsids, String property) {
+
+		JsonArray jaAllDtxsids=new JsonArray();
+
+		for (String dtxsid:dtxsids) {
+			JsonArray ja=getRawRecordsChemicalsDashboardByPropertyNameAndDTXSID(property,dtxsid );
+			jaAllDtxsids.addAll(ja);
+		}
+		
+		System.out.println(gson.toJson(jaAllDtxsids));
+		
+		boolean displayImages=false;
+		
+		String html2=convertJsonToHTML_Separate_ID_Columns(jaAllDtxsids,false,null, displayImages);
+		String filepath2=toHTMLFile("data\\reports", "Dashboard "+property.replace(":", "_")+".html", html2);
+		viewInWebBrowser(filepath2);
+	}
+
 
 	void createReportsForModulesAllProperties(String qsarSmiles) {
 
@@ -1159,19 +1347,34 @@ public class RawExpDataTableGenerator {
 
 		//****************************************************************************************
 		//Create reports for all properties for dashboard:
-		String dtxsid="DTXSID3039242";//benzene
+//		String dtxsid="DTXSID3039242";//benzene
+		
+//		String dtxsid="DTXSID1024207";
 		//		String dtxsid="DTXSID7020182";//BPA
 		//		String dtxsid="DTXSID7021360";//toluene
 		//		String dtxsid="DTXSID8031865";//PFOA
 		//		String dtxsid="DTXSID3031864";//PFOS
 		//				String dtxsid="DTXSID0020573";//beta-estradiol - endocrine active
 
-		//		String dtxsid="DTXSID0037522";//10311-84-9
 
-		//		r.createReportsForDashboardAllProperties(dtxsid);
+//		String dtxsid="DTXSID5030030";//10311-84-9
+//		String dtxsid="DTXSID001027667";
+		String dtxsid="DTXSID5044572";
+		
 
-//		boolean useView=false;
-//		r.createReportsForDashboardAllPropertiesTabbed(dtxsid,useView);
+		
+//		r.createReportsForDashboardAllProperties(dtxsid);
+		
+
+//		List<String> dtxsids =Arrays.asList( "DTXSID0024135", "DTXSID2020684",
+//				"DTXSID2020686", "DTXSID5024134", "DTXSID7020685", "DTXSID7020687", "DTXSID901310407");
+//		String property="Vapor Pressure";
+//		r.createReportForDashboard(dtxsids, property);
+		
+		
+		boolean useView=false;
+		r.createReportsForDashboardAllPropertiesTabbed(dtxsid,useView);
+//		r.createReportsForDashboardAllProperties(dtxsid);
 
 		//****************************************************************************************
 		//Create reports for all properties for modules:
@@ -1186,10 +1389,10 @@ public class RawExpDataTableGenerator {
 //				r.createReportForModules(qsarSmiles, modelID);
 		//****************************************************************************************
 		//Display the data associated with the modeling dataset for the property:
-				String qsarSmiles="CC=CCC";
-				String property=DevQsarConstants.WATER_SOLUBILITY;
+//				String qsarSmiles="CC=CCC";
+//				String property=DevQsarConstants.WATER_SOLUBILITY;
 //		String property=DevQsarConstants.BCF;
-				createReportForModules(r, qsarSmiles, property);
+//				createReportForModules(r, qsarSmiles, property);
 
 
 

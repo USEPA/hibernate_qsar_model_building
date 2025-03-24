@@ -6,8 +6,10 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
@@ -69,8 +71,6 @@ public class ApplicabilityDomainScript {
 	}
 	
 	public void runCaseStudyExpProp_All_Endpoints() {
-
-		
 
 		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
 		portModelBuilding=5004;
@@ -1018,17 +1018,24 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 			ApplicabilityDomainPrediction pred=new ApplicabilityDomainPrediction();
 			
 			JsonObject jo=Utilities.gson.fromJson(line, JsonObject.class);
-			
+
+
 			pred.id=jo.get("idTest").getAsString();
 			pred.AD=jo.get("AD").getAsBoolean();
 			
 			if (storeNeighbors) {
 				pred.idNeighbors=new ArrayList<>();
-
-				List<String> keys = jo.entrySet()
-						.stream()
-						.map(i -> i.getKey())
-						.collect(Collectors.toCollection(ArrayList::new));
+				
+				List<String> keys=new ArrayList<>();
+				Set<Map.Entry<String, JsonElement>> entries = jo.entrySet();//will return members of your object
+				for (Map.Entry<String, JsonElement> entry: entries) {
+				    keys.add(entry.getKey());
+				}
+				
+//				List<String> keys = jo.entrySet()
+//						.stream()
+//						.mapByExternalID(i -> i.getKey())//doesnt work anymore
+//						.collect(Collectors.toCollection(ArrayList::new));
 
 				for (String key:keys) {
 					if(key.contains("Neighbor")) {
@@ -1059,7 +1066,7 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 		ApplicabilityDomainScript ads=new ApplicabilityDomainScript();
 		
 		ads.runCaseStudyExpProp_All_Endpoints_modelSpecificAD();
-//		ads.runCaseStudyExpProp_All_Endpoints_allDescriptorsAD();
+		ads.runCaseStudyExpProp_All_Endpoints_allDescriptorsAD();
 		
 //		ads.runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN();
 //		ads.runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN();

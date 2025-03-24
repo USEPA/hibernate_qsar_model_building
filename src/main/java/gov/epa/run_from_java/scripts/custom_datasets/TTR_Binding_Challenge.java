@@ -355,8 +355,9 @@ public class TTR_Binding_Challenge {
 	void goThroughExcelFile() {
 		try {
 			String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\000 Papers\\2024 tetko challenge\\";
-			String filepath=folder+"ttr-supplemental-tables.xlsx";
-			String filepathOut=folder+"ttr-supplemental-tables-annotated.xlsx";
+//			String filepath=folder+"ttr-supplemental-tables.xlsx";
+			String filepath=folder+"ttr-supplemental-tables-with-leaderboard_values.xlsx";
+//			String filepathOut=folder+"ttr-supplemental-tables-annotated.xlsx";
 			
 			FileInputStream fis = new FileInputStream(new File(filepath));
 			Workbook wb = WorkbookFactory.create(fis);
@@ -383,9 +384,20 @@ public class TTR_Binding_Challenge {
 				JsonObject jo=ja.get(i).getAsJsonObject();
 				
 				String dtxsid=jo.get("DTXSID").getAsString();
+				String dataset=jo.get("dataset").getAsString();
+				
+//				if(dataset.equals("training")) continue;
+				
 				getDSSTOXInfo(jo);
 				
+//				if(jo.get("Median % activity")==null || jo.get("Median % activity").isJsonNull()) {
+//					System.out.println(dtxsid+"\t"+dataset+"\tnull activity");	
+//				}
+				
+//				double activity=jo.get("Median % activity").getAsDouble();
+
 				String smiles=null;
+				
 				if(jo.get("smiles_DSSTOX")!=null && !jo.get("smiles_DSSTOX").isJsonNull()) {
 					smiles=jo.get("smiles_DSSTOX").getAsString();	
 				}
@@ -401,7 +413,7 @@ public class TTR_Binding_Challenge {
 								useFullStandardize);
 						
 						jo.addProperty("qsarSmilesSDE", qsarSmilesSDE);
-						System.out.println(smiles+"\t"+qsarSmilesSDE);
+						System.out.println(i+"\t"+smiles+"\t"+qsarSmilesSDE);
 					} 
 				}
 				
@@ -674,6 +686,9 @@ public class TTR_Binding_Challenge {
 	void goThroughJson() {
 		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\000 Papers\\2024 tetko challenge\\";
 		String filepath=folder+"ttr-supplemental-tables.json";
+		List<String>validSets=new ArrayList<String>();
+		validSets.add("training");
+
 		
 		double tolerance=10;
 		
@@ -684,7 +699,7 @@ public class TTR_Binding_Challenge {
 			
 			int countFailsQsarSmiles=filterOnQsarSmiles(ja);
 			int countFailsMaxConc=filterOnMaxConc(ja, tolerance);
-			int countFailsFlattening = filterOnFlattening(ja,tolerance);
+			int countFailsFlattening = filterOnFlattening(ja,tolerance,validSets);
 			
 			for (int i=0;i<ja.size();i++) {
 				JsonObject jo=ja.get(i).getAsJsonObject();
@@ -731,6 +746,7 @@ public class TTR_Binding_Challenge {
 
 				
 			}
+			
 			if(true) return;
 			
 			String[] fields = { "DTXSID","fails_any", "fails_qsar_ready_smiles_SDE","fails_max_conc", "fails_flattening", "Chemical", "CASRN", "SMILES", "Library", "Max conc", "Median % activity",
@@ -747,8 +763,105 @@ public class TTR_Binding_Challenge {
 			
 //			String filepathSplitting=folder+"modeling\\TTR training 5 fold splitting file.tsv";
 
-			List<DataPoint>dpsFlat=makeFlatTrainingSet(ja);
+			
+			List<DataPoint>dpsFlat=makeFlatTrainingSet(ja,validSets);
 			String filepathSplitting=folder+"modeling\\TTR training 5 fold splitting file.csv";
+			createSplittingFileTraining(dpsFlat, filepathSplitting, 5);
+			
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+
+	}
+	
+	void goThroughJsonWithLeaderboard() {
+		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\000 Papers\\2024 tetko challenge\\";
+		String filepath=folder+"ttr-supplemental-tables-with-leaderboard_values.json";
+				
+		double tolerance=10;
+		List<String>validSets=new ArrayList<String>();
+		validSets.add("training");
+		validSets.add("leaderboard");
+
+		int countFailsTotal=0;
+		
+		try {
+			JsonArray ja=Utilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
+			
+			int countFailsQsarSmiles=filterOnQsarSmiles(ja);
+			int countFailsMaxConc=filterOnMaxConc(ja, tolerance);
+			int countFailsFlattening = filterOnFlattening(ja,tolerance,validSets);
+			
+			for (int i=0;i<ja.size();i++) {
+				JsonObject jo=ja.get(i).getAsJsonObject();
+				
+				String DTXSID=jo.get("DTXSID").getAsString();
+				
+				String smilesDSSTOX=null;
+				
+				if (jo.get("smiles_DSSTOX")!=null) {
+					smilesDSSTOX=jo.get("smiles_DSSTOX").getAsString();
+				}
+				
+				boolean fails_qsar_ready_smiles_SDE=jo.get("fails_qsar_ready_smiles_SDE").getAsBoolean();
+				boolean fails_max_conc=jo.get("fails_max_conc").getAsBoolean();
+				boolean fails_flattening=jo.get("fails_flattening").getAsBoolean();
+				
+				if(fails_qsar_ready_smiles_SDE || fails_max_conc || fails_flattening) {
+					jo.addProperty("fails_any", true);
+					countFailsTotal++;
+				} else {
+					jo.addProperty("fails_any", false);
+				}
+				
+//				if(DTXSID.equals("DTXSID9021477") || DTXSID.equals("DTXSID6027345") || DTXSID.equals("DTXSID1020194")) {
+//					System.out.println(DTXSID+"\t"+fails_qsar_ready_smiles_SDE+"\t"+fails_max_conc+"\t"+fails_flattening);
+//				}
+				
+				Double activity=null;
+				if(jo.get("Median % activity")!=null) {
+					activity=jo.get("Median % activity").getAsDouble();
+				}
+				
+//				if(fails_qsar_ready_smiles_SDE && smilesDSSTOX!=null && activity!=null && !smilesDSSTOX.contains("*") && !smilesDSSTOX.contains("|")) {
+//					System.out.println(DTXSID+"\t"+smilesDSSTOX+"\t"+activity);
+//				}
+				
+				String dataset=jo.get("dataset").getAsString();
+
+				
+				if(fails_qsar_ready_smiles_SDE ) {
+//					System.out.println(DTXSID+"\t"+smilesDSSTOX+"\t"+activity+"\t"+dataset);					
+				}
+
+				
+			}
+			
+			String[] fields = { "DTXSID","fails_any", "fails_qsar_ready_smiles_SDE","fails_max_conc", "fails_flattening", "Chemical", "CASRN", "SMILES", "Library", "Max conc", "Median % activity",
+			"Tested in CR?", "dataset", "substance_type", "relationship", "chemical_type", "organic_form",
+			"smiles_DSSTOX", "qsarSmilesOPERA", "qsarSmilesSDE" };
+	
+			String filepathOut=folder+"modeling\\ttr dataset.xlsx";
+			ExcelCreator.createExcel2(ja, filepathOut, fields, null);
+			System.out.println("countFailsMaxConc="+countFailsMaxConc);
+			System.out.println("countFailsFlattening="+countFailsFlattening);
+			System.out.println("countFailsQsarSmiles="+countFailsQsarSmiles);
+			System.out.println("countFailsTotal="+countFailsTotal);
+//			System.out.println(Utilities.gson.toJson(ja));
+			
+//			String filepathSplitting=folder+"modeling\\TTR training 5 fold splitting file.tsv";
+
+
+			
+			List<DataPoint>dpsFlat=makeFlatTrainingSet(ja,validSets);
+			System.out.println(dpsFlat.size());
+						
+			String filepathTraining=folder+"modeling\\TTR training with leaderboard.csv";
+			createTraining(dpsFlat, filepathTraining);
+			
+			String filepathSplitting=folder+"modeling\\TTR training + leaderboard 5 fold splitting file.csv";
 			createSplittingFileTraining(dpsFlat, filepathSplitting, 5);
 			
 			
@@ -808,11 +921,63 @@ public class TTR_Binding_Challenge {
 
 	}
 	
+	
+	void createBlindSmilesFileFromJsonFile() {
+		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\000 Papers\\2024 tetko challenge\\";
+		String filepath=folder+"ttr-supplemental-tables-with-leaderboard_values.json";
+		
+		try {
+			JsonArray ja=Utilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
+			
+			FileWriter fw=new FileWriter(folder+"modeling\\TTR blind.csv");
+			fw.write("DTXSID,QsarSmiles,dataset\r\n");
+			
+			for (int i=0;i<ja.size();i++) {
+				JsonObject jo=ja.get(i).getAsJsonObject();
+				
+				String dataset=jo.get("dataset").getAsString();
+				
+				if(!dataset.equals("blind test")) continue;
+				
+				String DTXSID=jo.get("DTXSID").getAsString();
+				String SMILES=jo.get("SMILES").getAsString();
+				
+				if(jo.get("qsarSmilesSDE")==null) {
+					System.out.println(DTXSID+"\t"+SMILES+"\t"+dataset+"\tqsarSmiles=null");
+					continue;
+				} 
+				
+				String qsarSmilesSDE=jo.get("qsarSmilesSDE").getAsString();
+				if(qsarSmilesSDE.contains(".")) {
+					System.out.println(DTXSID+"\t"+SMILES+"\t"+dataset+"\tqsarSmiles=mixture");
+				}
+				
+				fw.write(DTXSID+","+qsarSmilesSDE+","+dataset+"\r\n");
+//				
+//				String DTXSID=jo.get("DTXSID").getAsString();
+//				boolean fails_qsar_ready_smiles_SDE=jo.get("fails_qsar_ready_smiles_SDE").getAsBoolean();
+//				boolean fails_max_conc=jo.get("fails_max_conc").getAsBoolean();
+//				boolean fails_flattening=jo.get("fails_flattening").getAsBoolean();
+			}
+			
+			fw.flush();
+			fw.close();
+
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+
+	}
+	
 	void goThroughJsonWithAQC() {
 		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\000 Papers\\2024 tetko challenge\\";
 		String filepath=folder+"ttr-supplemental-tables.json";
 		String filepathAqc=folder+"TTR-supplemental-tables_with Annotations_AJW_0719_2024.json";
-		
+		List<String>validSets=new ArrayList<String>();
+		validSets.add("training");
+
 		double tolerance=10;
 		
 		int countFailsTotal=0;
@@ -824,7 +989,7 @@ public class TTR_Binding_Challenge {
 			int countFailsAQC=filterOnAQC(ja,jaAQC);
 			int countFailsQsarSmiles=filterOnQsarSmiles(ja);
 			int countFailsMaxConc=filterOnMaxConc(ja, tolerance);
-			int countFailsFlattening = filterOnFlattening(ja,tolerance);
+			int countFailsFlattening = filterOnFlattening(ja,tolerance,validSets);
 
 			for (int i=0;i<ja.size();i++) {
 				JsonObject jo=ja.get(i).getAsJsonObject();
@@ -859,7 +1024,8 @@ public class TTR_Binding_Challenge {
 			
 			String filepathSplitting=folder+"modeling\\TTR training 5 fold splitting file with AQC 0719_2024.csv";
 						
-			List<DataPoint>dpsFlat=makeFlatTrainingSet(ja);
+			
+			List<DataPoint>dpsFlat=makeFlatTrainingSet(ja,validSets);
 			createSplittingFileTraining(dpsFlat, filepathSplitting, 5);
 			
 			List<DataPoint>dpsFlatFailAQC=getTrainingDataFailsAQC(ja,folder+"modeling\\TTR training fails AQC.csv");
@@ -875,20 +1041,29 @@ public class TTR_Binding_Challenge {
 	
 	
 	
-	private List<DataPoint> makeFlatTrainingSet(JsonArray ja) {
+	private List<DataPoint> makeFlatTrainingSet(JsonArray ja,List<String>validSets) {
 		
 		Hashtable<String,List<DataPoint>>htDP=new Hashtable<>();
 		
 		for (int i=0;i<ja.size();i++) {
 			JsonObject jo=ja.get(i).getAsJsonObject();
 			
+			String DTXSID=jo.get("DTXSID").getAsString();
 			String strDataset=jo.get("dataset").getAsString();
-			if(!strDataset.equals("training")) continue;
+			
+			if(!validSets.contains(strDataset)) continue;
 			
 			boolean fails_any=jo.get("fails_any").getAsBoolean();			
 			if(fails_any) continue;
 
 			String canonQsarSmiles=jo.get("qsarSmilesSDE").getAsString();
+			
+			if(jo.get("Median % activity")==null) {
+				System.out.println(DTXSID+"\tNo activity\t"+strDataset);
+				continue;
+			}
+			
+			
 			Double qsarPropertyValue=jo.get("Median % activity").getAsDouble();
 			
 			DataPoint dp=new DataPoint(canonQsarSmiles, qsarPropertyValue, null, false, "tmarti02");
@@ -917,6 +1092,21 @@ public class TTR_Binding_Challenge {
 				dps.get(0).setQsarPropertyValue(valAvg);
 				dpsFlat.add(dps.get(0));
 //				System.out.println(canonQsarSmiles+"\t"+val1+"\t"+val2);	
+			} else if (dps.size()==3) {
+								
+				Collections.sort(dps, new Comparator<DataPoint>() {
+					@Override
+					public int compare(DataPoint u1, DataPoint u2) {
+						return u1.getQsarPropertyValue().compareTo(u2.getQsarPropertyValue());
+					}
+				});				
+
+//				System.out.println("0\t"+dps.get(0).getQsarPropertyValue());
+//				System.out.println("1\t"+dps.get(1).getQsarPropertyValue());
+//				System.out.println("2\t"+dps.get(2).getQsarPropertyValue());
+				
+				dpsFlat.add(dps.get(1));
+			
 			} else {
 				//TODO code to calculate median value
 				System.out.println("need to handle dps.size()="+dps.size());
@@ -1069,6 +1259,30 @@ public class TTR_Binding_Challenge {
 	
 	
 
+	void createTraining(List<DataPoint>dps, String filepathOut) {
+		
+		String del="\t";
+		if(filepathOut.contains(".csv")) del=",";
+		
+		try {
+			
+			FileWriter fw=new FileWriter(filepathOut);
+			fw.write("QsarSmiles"+del+"median_activity_%\r\n");
+			
+			for (DataPoint dp:dps) {
+				fw.write( dp.getCanonQsarSmiles()+del+dp.getQsarPropertyValue()+"\r\n");		
+			}
+			
+			fw.flush();
+			fw.close();
+			
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+
 	private int filterOnAQC(JsonArray ja, JsonArray jaAQC) {
 		int countFailsAQC=0;
 		
@@ -1105,7 +1319,7 @@ public class TTR_Binding_Challenge {
 		return countFailsAQC;
 	}
 
-	private int filterOnFlattening(JsonArray ja, double tolerance) {
+	private int filterOnFlattening(JsonArray ja, double tolerance,List<String>validSets) {
 		
 		Hashtable<String,JsonArray>htQsarSmiles=new Hashtable<String,JsonArray>();
 		
@@ -1114,7 +1328,11 @@ public class TTR_Binding_Challenge {
 			JsonObject jo=ja.get(i).getAsJsonObject();
 			jo.addProperty("fails_flattening", false);
 			String dataset=jo.get("dataset").getAsString();
-			if(!dataset.equals("training")) continue;
+			
+			
+//			if(!dataset.equals("training")) continue;
+			if(!validSets.contains(dataset)) continue;
+			
 			if(jo.get("qsarSmilesSDE")==null) continue;
 			
 			boolean fails_qsar_ready_smiles_SDE=jo.get("fails_qsar_ready_smiles_SDE").getAsBoolean();
@@ -1151,7 +1369,10 @@ public class TTR_Binding_Challenge {
 		
 		for (String smiles:htQsarSmiles.keySet()) {
 			JsonArray ja2=htQsarSmiles.get(smiles);
+			
 			if(ja2.size()<2) continue;
+			
+//			System.out.println(ja2.size());
 			
 			if(ja2.size()==2) {
 				
@@ -1172,6 +1393,14 @@ public class TTR_Binding_Challenge {
 //					System.out.println(Utilities.gson.toJson(jo1));
 				}
 				
+			} else if(ja2.size()==3) {
+				JsonObject jo0=ja2.get(0).getAsJsonObject();
+				JsonObject jo1=ja2.get(1).getAsJsonObject();
+				JsonObject jo2=ja2.get(2).getAsJsonObject();
+				double val1=jo0.get("Median % activity").getAsDouble();
+				double val2=jo1.get("Median % activity").getAsDouble();
+				double val3=jo2.get("Median % activity").getAsDouble();
+//				System.out.println(val1+"\t"+val2+"\t"+val3);
 			} else {
 				System.out.println("Need code for ja.size="+ja2.size());
 			}
@@ -1377,6 +1606,10 @@ public class TTR_Binding_Challenge {
 		
 //		t.goThroughExcelFile();//		
 //		t.goThroughJson();
+		
+		t.goThroughJsonWithLeaderboard();
+//		t.createBlindSmilesFileFromJsonFile();
+		
 //		t.createExternalSmilesFileFromJsonFile();
 //		t.calculateDescriptors();
 		
@@ -1384,7 +1617,7 @@ public class TTR_Binding_Challenge {
 //		t.goThroughJsonWithAQC();
 		
 //		t.createFilesFailsQsarSmiles();
-		t.createFilesFailsQsarSmiles2();
+//		t.createFilesFailsQsarSmiles2();
 		
 	}
 

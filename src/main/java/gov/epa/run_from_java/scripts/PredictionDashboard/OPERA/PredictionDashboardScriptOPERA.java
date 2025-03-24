@@ -1339,8 +1339,8 @@ public class PredictionDashboardScriptOPERA {
 
 			version="2.8";
 			int batchSize=1000;
-			int count=1000;//number of rows in sqlite db to use
-			//		int count=-1;
+//			int count=1000;//number of rows in sqlite db to use
+			int count=-1;
 
 			int limit=-1;
 			if(count!=-1) limit=count;
@@ -1741,18 +1741,21 @@ public class PredictionDashboardScriptOPERA {
 		useLegacyModelIds=false;
 
 		//****************************************************************************************
-		DatabaseUtilities d=new DatabaseUtilities();
-		d.deleteAllRecords("OPERA2.8");
+//		DatabaseUtilities d=new DatabaseUtilities();
+//		d.deleteAllRecords("OPERA2.8");
 		//		o.initializeDB.initializeOPERARecords();//create db entries in properties, datasets, models, statistics tables
 		
 		// Run all in db:		
-//		o.loader.createRecordsFromOPERA2_8_SqliteDB(true);
+		o.loader.createRecordsFromOPERA2_8_SqliteDB(true);
 //		o.loader.createRecordsFromOPERA2_8_SqliteDB(true,"DTXSID301346793");
 
 		//		boolean printValues=true;//print OPERA Results record as key-value pairs
 		boolean printValues=false;//print OPERA Results record as key-value pairs
 		boolean writeToDB=true;
-		o.loader.createRecordsFromOPERA2_8_SqliteDB(writeToDB,"DTXSID7020182",printValues);//bisphenol-A
+//		o.loader.createRecordsFromOPERA2_8_SqliteDB(writeToDB,"DTXSID7020182",printValues);//bisphenol-A
+//		o.loader.createRecordsFromOPERA2_8_SqliteDB(writeToDB,"DTXSID2021315",printValues);//bisphenol-A
+		
+		
 		//		o.loader.createRecordsFromOPERA2_8_SqliteDB(writeToDB,"DTXSID3039242",printValues);//bz
 		//		o.loader.createRecordsFromOPERA2_8_SqliteDB(writeToDB,"DTXSID20879997",printValues);//long SMILES
 		//		o.loader.createRecordsFromOPERA2_8_SqliteDB(writeToDB,"DTXSID1022681",printValues);//first in catmos sdf

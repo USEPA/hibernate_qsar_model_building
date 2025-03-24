@@ -56,7 +56,7 @@ import gov.epa.endpoints.datasets.DatasetCreator;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.CreatorScript;
-import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.OPERA_lookups;
+import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionDashboardTableMaps;
 import gov.epa.databases.chemprop.ChemPropParameter;
 import gov.epa.databases.chemprop.ChemPropParameterValue;
 import gov.epa.databases.chemprop.CollectionDetail;
@@ -1103,6 +1103,7 @@ public class ChemPropLoader {
 				try (BufferedWriter bw = new BufferedWriter(new FileWriter(JSON_FOLDER_PATH + "/failed/" + endpoint + "_021622.json"))) {
 					Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 					bw.write(gson.toJson(failedMeasuredProperties));
+					
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

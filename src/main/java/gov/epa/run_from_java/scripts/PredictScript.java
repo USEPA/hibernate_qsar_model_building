@@ -58,10 +58,16 @@ public class PredictScript {
 		List<DsstoxRecord>records=new ArrayList<>();
 		
 		
-		String filepath="data\\dsstox\\json\\2023_04_snapshot_dsstox_records_2024_01_09.json";
+//		String filepath="data\\dsstox\\json\\2023_04_snapshot_dsstox_records_2024_01_09.json";
+		
+		String filepath="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\hibernate_qsar_model_building\\data\\dsstox\\snapshot-2024-11-12\\json\\2024_11_12_snapshot_dsstox_records.json";
 
 		try {
-			JsonArray ja = Utilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
+			
+			JsonObject jo2 = Utilities.gson.fromJson(new FileReader(filepath), JsonObject.class);
+			JsonArray ja =jo2.get("select * from qsar_models.dsstox_records where fk_dsstox_snapshot_id=2").getAsJsonArray();
+			
+//			JsonArray ja = Utilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
 
 			for (JsonElement je:ja) {
 				JsonObject jo=(JsonObject)je;
@@ -96,7 +102,7 @@ public class PredictScript {
 
 	}
 	
-	Hashtable<String, DsstoxRecord> getDsstoxHashtableByDTXCID(List<DsstoxRecord>records) {
+	public static Hashtable<String, DsstoxRecord> getDsstoxHashtableByDTXCID(List<DsstoxRecord>records) {
 		Hashtable<String, DsstoxRecord> ht=new Hashtable<>();
 		
 		for (DsstoxRecord record:records) {
@@ -105,6 +111,17 @@ public class PredictScript {
 		}
 		return ht;
 	}
+	
+	public static Hashtable<String, DsstoxRecord> getDsstoxHashtableByCASRN(List<DsstoxRecord>records) {
+		Hashtable<String, DsstoxRecord> ht=new Hashtable<>();
+		
+		for (DsstoxRecord record:records) {
+			if(record.getCasrn()==null) continue;
+			ht.put(record.getCasrn(),record);
+		}
+		return ht;
+	}
+
 	
 	public static Hashtable<String, DsstoxRecord> getDsstoxHashtableByDTXSID(List<DsstoxRecord>records) {
 		Hashtable<String, DsstoxRecord> ht=new Hashtable<>();
@@ -262,7 +279,42 @@ public class PredictScript {
 		}
 	}
 	
-	
+
+	public ModelPrediction[] predict(Long modelId,String predictionTSV) throws ConstraintViolationException {
+		
+		try {
+			
+			boolean use_pmml=false;
+			boolean use_sklearn2pmml=false;
+					
+			Model model=modelService.findById(modelId);
+			
+//			System.out.println(predictionTSV);
+			
+			byte[] bytes = modelBytesService.getBytesSql(modelId, use_pmml);
+
+			String strModelId = String.valueOf(modelId);
+
+			//Following may not be necessary if webservice hasnt been restarted:
+			if (use_pmml) {
+				String details=new String(model.getDetails());
+				modelWebService.callInitPmml(bytes, strModelId, details,use_sklearn2pmml);
+			} else {
+				modelWebService.callInitPickle(bytes,strModelId);
+			}
+
+			String predictResponse = modelWebService.callPredict(predictionTSV, strModelId).getBody();
+			ModelPrediction[] modelPredictionsArray = Utilities.gson.fromJson(predictResponse, ModelPrediction[].class);
+			
+			return modelPredictionsArray;
+			
+//			System.out.println(predictResponse);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 
 	public String getPropertyNameModel(Long modelId) {
 		String sql="select p.name from qsar_models.models m\r\n"

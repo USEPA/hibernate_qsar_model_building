@@ -21,7 +21,9 @@ import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class DsstoxRecord {
 	public String dsstoxRecordId;
-	public String externalId;
+	public String externalId;//from SourceSubstance
+	public Long sourceSubstanceId;//from SourceSubstance, for cases were we dont have externalId
+	
 	public String connectionReason;
 	public Double linkageScore;
 	public Boolean curatorValidated;
@@ -33,6 +35,10 @@ public class DsstoxRecord {
 	public String substanceType;
 	public String smiles;
 	public Double molWeight;
+	
+	public String jchemInchikey;
+	public String indigoInchikey;
+	
 	public String qsarReadySmiles;
 	public String msReadySmiles;
 	public String synonymQuality;

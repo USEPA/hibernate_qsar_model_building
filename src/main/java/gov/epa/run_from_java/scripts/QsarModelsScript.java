@@ -55,13 +55,14 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.WebServiceModelBuilder;
 import gov.epa.run_from_java.scripts.RecalcStatsScript.SplitPredictions;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.web_services.ModelWebService;
 import kong.unirest.Unirest;
 
 public class QsarModelsScript {
 	
 	private ModelService modelService = new ModelServiceImpl();
-	private ModelFileService modelFileService = new ModelFileServiceImpl();
+	private ModelFileServiceImpl modelFileService = new ModelFileServiceImpl();
 	private ModelSetService modelSetService = new ModelSetServiceImpl();
 	
 	
@@ -166,9 +167,16 @@ public class QsarModelsScript {
 		return file;
 	}
 	
+	public byte[] downloadModelFile(Long modelId, Long fileTypeId) {
+		ModelFile modelFile = modelFileService.findByModelId(modelId,fileTypeId);
+		return modelFile.getFile();
+	}
+	
 	
 	
 	public void uploadModelFile(Long modelId, Long fileTypeId,String reportFilePath) throws IOException, ConstraintViolationException {
+
+		System.out.println(reportFilePath);
 		byte[] bytes = Files.readAllBytes(Paths.get(reportFilePath));
 		
 		System.out.println("Uploading filetype "+fileTypeId+" with bytecount " + bytes.length);
@@ -179,8 +187,9 @@ public class QsarModelsScript {
 		FileType fileType=new FileType();
 		fileType.setId(fileTypeId);
 		
-		ModelFile modelSetReport = new ModelFile(model, fileType, bytes, lanId);
-		modelFileService.create(modelSetReport);
+		ModelFile modelFile = new ModelFile(model, fileType, bytes, lanId);
+		
+		modelFileService.create(modelFile);
 	}
 	
 	public void uploadModelFile(Long modelId, Long fileTypeId,byte[] bytes) throws IOException, ConstraintViolationException {
@@ -193,9 +202,30 @@ public class QsarModelsScript {
 		FileType fileType=new FileType();
 		fileType.setId(fileTypeId);
 		
-		ModelFile modelSetReport = new ModelFile(model, fileType, bytes, lanId);
-		modelFileService.create(modelSetReport);
+		ModelFile modelFile = new ModelFile(model, fileType, bytes, lanId);
+		modelFileService.create(modelFile);
 	}
+	
+	public void updateModelFile(Long modelId, Long fileTypeId,byte[] bytes) throws IOException, ConstraintViolationException {
+
+		System.out.println("Updating filetype "+fileTypeId+" with bytecount " + bytes.length);
+		
+		Model model=new Model();
+		model.setId(modelId);
+		
+		FileType fileType=new FileType();
+		fileType.setId(fileTypeId);
+		
+		ModelFile modelFile= new ModelFile(model, fileType, bytes, lanId);
+		modelFile.setUpdatedBy(lanId);
+		
+//		System.out.println(Utilities.gson.toJson(modelFile));
+		
+//		modelFileService.update(modelFile);//for some reason not working...
+		
+		modelFileService.updateSql(modelFile);
+	}
+
 	
 	
 	public void uploadModelFile(Model model, FileType fileType,String reportFilePath) throws IOException, ConstraintViolationException {
@@ -236,7 +266,7 @@ public class QsarModelsScript {
 	}
 	
 	
-	public URI safelyWriteBytes(String pathToFile, byte[] bytes, boolean browse) {
+	public static URI safelyWriteBytes(String pathToFile, byte[] bytes, boolean browse) {
 		File file = new File(pathToFile);
 		file.getParentFile().mkdirs();
 		
@@ -637,12 +667,20 @@ public class QsarModelsScript {
 	}
 	
 	
+	void deleteFishToxModels() {
+		String sql="delete from qsar_models.models m\nwhere dataset_name like 'exp_prop_%LC50%modeling';";
+		SqlUtilities.runSQLUpdate(SqlUtilities.getConnectionPostgres(), sql);
+	}
+	
 	
 	public static void main(String[] args) {
 		String lanId="tmarti02";
 
 		QsarModelsScript script = new QsarModelsScript(lanId);
 //		script.deletePMMLModels();
+		
+//		script.deleteFishToxModels();
+			
 
 		//****************************************************************************************
 
@@ -672,8 +710,12 @@ public class QsarModelsScript {
 		
 //		script.deleteModel(859L);
 //		for (int i=1102;i>=1099;i--) script.deleteModel(i);
-		for (int i=1103;i<=1106;i++) script.deleteModel(i);
+//		for (int i=1103;i<=1106;i++) script.deleteModel(i);
 		
+
+//		for (int i=1113;i<=1120;i++) script.deleteModel(i);		
+//		script.deleteModel(1189L);
+			
 
 //		script.downloadModelFile(1065L, 2L,"data\\reports\\model files download\\");
 //		script.downloadModelFile(1065L, 1L,"data\\reports\\model files download\\");

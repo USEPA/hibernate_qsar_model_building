@@ -139,7 +139,7 @@ public class GetExpPropInfo {
 			//			"source_url", "source_doi",
 			//			"source_name", "source_description", "source_type", "source_authors", "source_title", "source_dtxrid",
 			"source_dtxsid", "source_casrn", "source_chemical_name", "source_smiles", "mapped_dtxcid", "mapped_dtxsid",
-			"mapped_cas", "mapped_chemical_name", "mapped_smiles", "mapped_molweight", "value_original", "value_max",
+			"mapped_cas", "mapped_chemical_name", "mapped_smiles", "mapped_molweight", "value_original","value_original_parsed", "value_max",
 			"value_min", "value_point_estimate", "value_units", 
 			"qsar_property_value", "qsar_property_units",
 			"experimental_median","predicted_CV","predicted_CV_Error",
@@ -1325,13 +1325,15 @@ public class GetExpPropInfo {
 		//**TODO need to annotate the ICF spreadsheets with good/bad then can set keep value in exp_prop with code
 
 		List<DatasetParameters>paramList=new ArrayList<DatasetParameters>();
-		
-		paramList.add(new DatasetParameters(DevQsarConstants.WATER_SOLUBILITY,"WS OChem_2024_04_03","PFAS WS_For EPA_2023_12_15.xlsx"));
-		paramList.add(new DatasetParameters(DevQsarConstants.HENRYS_LAW_CONSTANT,"HLC OChem_2024_04_03","PFAS HLC for EPA_23-09-26.xlsx"));
-		paramList.add(new DatasetParameters(DevQsarConstants.LOG_KOW,"LogP OChem_2024_04_03","PFAS LogP for EPA_23-07-18.xlsx"));
+
 		paramList.add(new DatasetParameters(DevQsarConstants.BOILING_POINT,"BP OChem_2024_04_03","PFAS BP_for EPA_2024_03_26.xlsx"));
 		paramList.add(new DatasetParameters(DevQsarConstants.VAPOR_PRESSURE,"VP OChem_2024_04_03","PFAS VP_for EPA_2024-04-25.xlsx"));
 		paramList.add(new DatasetParameters(DevQsarConstants.MELTING_POINT,"MP OChem_2024_04_03","PFAS MP_for EPA_2024_06_10.xlsx"));
+		paramList.add(new DatasetParameters(DevQsarConstants.HENRYS_LAW_CONSTANT,"HLC OChem_2024_04_03","PFAS HLC for EPA_23-09-26.xlsx"));
+
+		//These 2 datasets arent in the db but there are json files for them:
+		paramList.add(new DatasetParameters(DevQsarConstants.WATER_SOLUBILITY,"WS OChem_2024_04_03","PFAS WS_For EPA_2023_12_15.xlsx"));
+		paramList.add(new DatasetParameters(DevQsarConstants.LOG_KOW,"LogP OChem_2024_04_03","PFAS LogP for EPA_23-07-18.xlsx"));
 		
 		String filePathAqSolDBRecords="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\AqSolDB\\AqSolDB Experimental Records.json";
 		ExperimentalRecords erAqSolDB=ExperimentalRecords.loadFromJson(filePathAqSolDBRecords, Utilities.gson);
@@ -1339,13 +1341,41 @@ public class GetExpPropInfo {
 		String folderICF_Results="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\ICF\\primary source checking results\\";
 		String copyFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\ICF\\checking spreadsheets OChem_2024_04_03\\";
 		for(DatasetParameters dp:paramList) {
-			compareNewOChemDataToICF(dp, folderICF_Results,copyFolder,erAqSolDB);
+			compareNewDataToICF(dp, folderICF_Results,copyFolder,erAqSolDB);
+		}
+		
+		
+	}
+	
+	void compareNewPubChemDataToICF() {
+
+		//**TODO need to annotate the ICF spreadsheets with good/bad then can set keep value in exp_prop with code
+
+		List<DatasetParameters>paramList=new ArrayList<DatasetParameters>();
+
+		String sourceName="PubChem_2024_03_20";
+		
+		paramList.add(new DatasetParameters(DevQsarConstants.BOILING_POINT,"BP "+sourceName,"PFAS BP_for EPA_2024_03_26.xlsx"));
+		paramList.add(new DatasetParameters(DevQsarConstants.VAPOR_PRESSURE,"VP "+sourceName,"PFAS VP_for EPA_2024-04-25.xlsx"));
+		paramList.add(new DatasetParameters(DevQsarConstants.MELTING_POINT,"MP "+sourceName,"PFAS MP_for EPA_2024_06_10.xlsx"));
+		paramList.add(new DatasetParameters(DevQsarConstants.HENRYS_LAW_CONSTANT,"HLC "+sourceName,"PFAS HLC for EPA_23-09-26.xlsx"));
+		paramList.add(new DatasetParameters(DevQsarConstants.WATER_SOLUBILITY,"WS "+sourceName,"PFAS WS_For EPA_2023_12_15.xlsx"));
+		paramList.add(new DatasetParameters(DevQsarConstants.LOG_KOW,"LogP "+sourceName,"PFAS LogP for EPA_23-07-18.xlsx"));
+		
+		String filePathAqSolDBRecords="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\AqSolDB\\AqSolDB Experimental Records.json";
+		ExperimentalRecords erAqSolDB=ExperimentalRecords.loadFromJson(filePathAqSolDBRecords, Utilities.gson);
+		
+		String folderICF_Results="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\ICF\\primary source checking results\\";
+		String copyFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\ICF\\checking spreadsheets PubChem_2024_03_20\\";
+		for(DatasetParameters dp:paramList) {
+			compareNewDataToICF(dp, folderICF_Results,copyFolder,erAqSolDB);
 		}
 		
 		
 	}
 
-	private void compareNewOChemDataToICF(DatasetParameters dp,String folderICF_Results,String copyFolder, ExperimentalRecords recsAqSolDB) {
+
+	private void compareNewDataToICF(DatasetParameters dp,String folderICF_Results,String copyFolder, ExperimentalRecords recsAqSolDB) {
 		
 		boolean flagLargeCVError=true;
 		
@@ -1382,25 +1412,25 @@ public class GetExpPropInfo {
 			HashSet<String>arrayPFAS_CIDs=new HashSet<>();
 			for (DsstoxRecord dr:dsstoxRecords) arrayPFAS_CIDs.add(dr.dsstoxCompoundId);
 
-			JsonArray jaOChemNew=Utilities.getJsonArrayFromJsonFile(filePathMapped);
+			JsonArray jaNew=Utilities.getJsonArrayFromJsonFile(filePathMapped);
 			
-			System.out.println("For "+dp.propertyName+", number of OCHEM records="+jaOChemNew.size());
+			System.out.println("For "+dp.propertyName+", number of records="+jaNew.size());
 			
-			JsonArray jaOChemPFAS=new JsonArray();
-			for (JsonElement je : jaOChemNew) {
+			JsonArray jaNewPFAS=new JsonArray();
+			for (JsonElement je : jaNew) {
 				JsonObject jo=je.getAsJsonObject();
 				String mapped_dtxcid=jo.get("mapped_dtxcid").getAsString();
 				if (arrayPFAS_CIDs.contains(mapped_dtxcid)) {
-					jaOChemPFAS.add(jo);				
+					jaNewPFAS.add(jo);				
 				}
 			}
 			
-			System.out.println("Number of OCHEM PFAS records="+jaOChemPFAS.size());
+			System.out.println("Number of New PFAS records="+jaNewPFAS.size());
 
-			HashMap<String, JsonArray>hmBySmilesOChemPFAS=convertJsonArrayToMapBySmiles(jaOChemPFAS);
+			HashMap<String, JsonArray>hmBySmilesNewPFAS=convertJsonArrayToMapBySmiles(jaNewPFAS);
 			
 			//Here is where the magic happens:
-			JsonArray []jas=a_compareToICF(dp.propertyName, hmBySmiles_ICF, hmBySmilesOChemPFAS,hmBySmiles_EPA,recsAqSolDB,htOutliers);
+			JsonArray []jas=a_compareToICF(dp.propertyName, hmBySmiles_ICF, hmBySmilesNewPFAS,hmBySmiles_EPA,recsAqSolDB,htOutliers);
 
 			Hashtable<String,String>htDescriptions=ExcelCreator.getColumnDescriptions();
 
@@ -1408,14 +1438,20 @@ public class GetExpPropInfo {
 			JsonArray jaCurate=jas[0];
 			JsonArray jaAlreadyCurated=jas[1];
 			
+			new File(copyFolder).mkdirs();
+			
 			String excelFileName="PFAS "+dataSetName2+"_PFASSTRUCTV4_to_curate.xlsx";
 			String excelFilePath=folder+excelFileName;
 			ExcelCreator.createExcel2(jaCurate, excelFilePath,fieldsFinalNew,htDescriptions);
+
+			new File(copyFolder+"to curate").mkdirs();
 			Files.copy(Paths.get(excelFilePath), Paths.get(copyFolder+"to curate\\"+excelFileName), StandardCopyOption.REPLACE_EXISTING);
 
 			excelFileName="PFAS "+dataSetName2+"_PFASSTRUCTV4_already_curated.xlsx";
 			excelFilePath=folder+excelFileName;
 			ExcelCreator.createExcel2(jaAlreadyCurated, excelFilePath,fieldsFinalNew,htDescriptions);
+
+			new File(copyFolder+"already curated").mkdirs();
 			Files.copy(Paths.get(excelFilePath), Paths.get(copyFolder+"already curated\\"+excelFileName), StandardCopyOption.REPLACE_EXISTING);
 
 		
@@ -1526,7 +1562,9 @@ public class GetExpPropInfo {
 //					if(exp_prop_id_OChem.equals("3650383")) System.out.println("HERE2");
 //					System.out.println("No ICF match");
 					
-					if(hmBySmiles_EPA!=null) {
+					if(hmBySmiles_EPA!=null && hmBySmiles_EPA.containsKey(smiles)) {
+						
+						
 						JsonArray jaEPA=hmBySmiles_EPA.get(smiles);
 						JsonObject joEPABestMatch=getEPABestMatch(jaEPA, propertyName, qsar_property_value_OChem);
 						
@@ -1544,6 +1582,11 @@ public class GetExpPropInfo {
 					} else {
 						if(debug) System.out.println(smiles+"\t"+exp_prop_id_OChem+"\tN/A"+"\t"+qsar_property_value_OChem+"\tNo ICF smiles match, No EPA spreadsheet");
 						jaToCurate.add(joOChem);					
+						
+						if(hmBySmiles_EPA!=null && !hmBySmiles_EPA.containsKey(smiles)) {
+							System.out.println(smiles +" not in EPA file");
+						}
+						
 					}
 					continue;
 				}
@@ -1576,7 +1619,7 @@ public class GetExpPropInfo {
 
 					//				System.out.println("OChem:"+Utilities.gson.toJson(joOChem)+"\nICF:"+Utilities.gson.toJson(joBestMatchICF)+"\n\n");
 				} else {
-					if(debug) System.out.println(smiles+"\t"+exp_prop_id_OChem+"\t"+qsar_property_value_OChem+"\tNo reviewed ICF match");
+//					if(debug) System.out.println(smiles+"\t"+exp_prop_id_OChem+"\t"+qsar_property_value_OChem+"\tNo reviewed ICF match");
 					jaToCurate.add(joOChem);
 				}
 				//			System.out.println("OChem:"+Utilities.gson.toJson(joOChem)+"\nICF:"+Utilities.gson.toJson(joBestMatchICF)+"\n\n");
@@ -1729,8 +1772,9 @@ public class GetExpPropInfo {
 //		g.writePFASDsstoxRecords();
 
 //		g.compareNewOChemDataToICF();
+		g.compareNewPubChemDataToICF();
 		
-		createCheckingSpreadsheets();
+//		createCheckingSpreadsheets();
 //		checkOmittedRecordsCVError();
 		//		createPFAS_text_File();
 
@@ -1793,7 +1837,7 @@ public class GetExpPropInfo {
 		}
 		return hmBySmiles;
 	}
-	public JsonArray parseRecordsFromExcel(Sheet sheet,boolean setBlankToNull,int rowHeader) {
+	public static JsonArray parseRecordsFromExcel(Sheet sheet,boolean setBlankToNull,int rowHeader) {
 
 		
 		String [] headers=getHeaders(sheet,rowHeader);
@@ -1871,7 +1915,7 @@ public class GetExpPropInfo {
 		}
 		return records;
 	}
-	public String[] getHeaders(Sheet sheet,int row) {
+	public static String[] getHeaders(Sheet sheet,int row) {
 		Row headerRow = sheet.getRow(row);
 		
 		int numHeaders = headerRow.getLastCellNum();

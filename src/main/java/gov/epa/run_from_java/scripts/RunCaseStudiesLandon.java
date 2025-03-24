@@ -58,6 +58,7 @@ public class RunCaseStudiesLandon {
 		
 		List<String>datasetNames=new ArrayList<>();
 		List<String>speciesAbbrevs=Arrays.asList("FHM","BG","RT");
+		
 		for (String speciesAbbrev:speciesAbbrevs) {
 			for (int version=1;version<=5;version++) {
 				datasetNames.add("exp_prop_96HR_"+speciesAbbrev+"_LC50_v"+version+" modeling");//create dataset names programmatically
@@ -68,7 +69,8 @@ public class RunCaseStudiesLandon {
 			
 		String descriptorSetName="Mordred-default";
 		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;	
-		String method="rf";
+//		String method="rf";
+		String method="las";
 		
 		for (String datasetName:datasetNames) {
 			List<Long>modelIds=new ArrayList<>();
@@ -127,7 +129,7 @@ public class RunCaseStudiesLandon {
 		methods.add(DevQsarConstants.XGB);
 		methods.add(DevQsarConstants.KNN);
 		methods.add(DevQsarConstants.SVM);
-		methods.add(DevQsarConstants.LAS);//Not sure if working if called from Java?
+//		methods.add(DevQsarConstants.LAS);//Not sure if working if called from Java?
 		
 		List<String>descriptorSets=new ArrayList<>();
 		descriptorSets.add("WebTEST-default");
@@ -174,8 +176,8 @@ public class RunCaseStudiesLandon {
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		compare_Acute_Aquatic_Tox_Versions_No_Embedding();
-//		compare_Qsar_Methods_No_Embedding();
+//		compare_Acute_Aquatic_Tox_Versions_No_Embedding();
+		compare_Qsar_Methods_No_Embedding();
 	}
 
 }

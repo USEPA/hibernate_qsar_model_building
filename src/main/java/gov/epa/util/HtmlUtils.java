@@ -15,6 +15,8 @@ import java.nio.file.Paths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
+
+
 import org.w3c.dom.Document;
 import org.w3c.tidy.Tidy;
 
@@ -27,6 +29,9 @@ public class HtmlUtils {
 
 	/**
 	 * Creates a tidy version of HTML
+	 * 
+	 * See https://www.baeldung.com/java-html-to-pdf for alterative way that doesnt use tidy
+	 * 
 	 * 
 	 * @param htmlPath
 	 *            - Path to HTML file
@@ -57,7 +62,7 @@ public class HtmlUtils {
 			tidy.setMakeClean(true);
 
 			Document xmlDoc = tidy.parseDOM(fis, null);
-
+			
 			fos = new FileOutputStream(xhtmlPath);
 			tidy.pprint(xmlDoc, fos);
 		} catch (IOException e) {

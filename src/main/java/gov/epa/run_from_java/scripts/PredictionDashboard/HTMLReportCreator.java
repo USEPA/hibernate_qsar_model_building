@@ -836,11 +836,49 @@ public class HTMLReportCreator {
 		}
 	}
 	
+
+	void getHtmlReportsFromPredictionReportsTable(long fk_source_id,String dtxsid,String folder) {
+		
+		String sql="select file_html,m.name_ccd\r\n"
+				+ "from qsar_models.prediction_reports pr\r\n"
+				+ "join qsar_models.predictions_dashboard  pd on pr.fk_predictions_dashboard_id = pd.id\r\n"
+				+ "join qsar_models.models m on pd.fk_model_id = m.id\r\n"
+				+ "join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\r\n"
+				+ "where m.fk_source_id="+fk_source_id+" and dr.dtxsid='"+dtxsid+"';";
+		
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+		
+		try {
+			
+			while (rs.next()) {
+				
+				byte[] fileBites=rs.getBytes(1);
+				String modelName=rs.getString(2);
+				
+				File folderOut=new File(folder+dtxsid);
+				folderOut.mkdirs();
+				
+				File fout=new File(folderOut.getAbsolutePath()+File.separator+dtxsid+"_"+modelName+".html");
+				FileOutputStream fos = new FileOutputStream(fout);
+				fos.write(fileBites);
+				fos.close();
+				
+				viewInWebBrowser(fout.getAbsolutePath());
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
 	
 	public static void main(String[] args) {
 //		viewHTMLReportsFromMaterializedView("DTXSID7020182");
 		HTMLReportCreator h=new HTMLReportCreator();
-		h.getSamplePlotFromMaterializedView();
+//		h.getSamplePlotFromMaterializedView();
+		
+		h.getHtmlReportsFromPredictionReportsTable(6, "DTXSID00943887", "data\\OPERA2.8\\reportsFromPredictionReportsTable\\");
+		
 	}	
 
 

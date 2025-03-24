@@ -19,6 +19,8 @@ import java.util.Vector;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.CellValue;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Hyperlink;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -136,6 +138,8 @@ public class ExcelSourceReader {
 			e.printStackTrace();
 		}
 	}
+	
+	
 	
 	// Gets the creation date of any file as a string
 	public static String getStringCreationDate(String filepath) {
@@ -312,19 +316,27 @@ public class ExcelSourceReader {
 					
 					
 					String content = "";
+					
+					FormulaEvaluator evaluator = sheet.getWorkbook().getCreationHelper().createFormulaEvaluator();
+					CellValue cellValue = evaluator.evaluate(cell);
 
 					try {
 						
 						CellType type = cell.getCellType();
 	                    if (type == CellType.STRING) {
-	                    	content=cell.getStringCellValue();
+	                    	content=cellValue.getStringValue();
 	                    } else if (type == CellType.NUMERIC) {
-	                    	content=cell.getNumericCellValue()+"";
+	                    	content=cellValue.getNumberValue()+"";
 	                    } else if (type == CellType.BOOLEAN) {
-	                    	content=cell.getBooleanCellValue()+"";		                    	
+	                    	content=cellValue.getBooleanValue()+"";		                    	
 	                    } else if (type == CellType.BLANK) {
-	                    	content="";
+	                    	content="";	                    
 	                    }
+	                    
+//	                    if (hmFieldNames.get(k).equals("Median % activity")) {	                    	
+//	                    	System.out.println(hmFieldNames.get(k)+"\t"+content+"\t"+cellValue.getCellType());	
+//	                    }
+	                    
 //						content = row.getCell(k,MissingCellPolicy.CREATE_NULL_AS_BLANK).getStringCellValue();
 					} catch (Exception ex) {
 						System.out.println(hmFieldNames.get(k)+"\t"+ex.getMessage());
@@ -349,6 +361,118 @@ public class ExcelSourceReader {
 		return records;
 	}
 	
+	
+	private String getContent(boolean setBlankToNull, FormulaEvaluator evaluator, Cell cell) {
+
+		CellType type = cell.getCellType();
+		
+		String content=null;
+		if (type == CellType.STRING) {
+			content = cell.getStringCellValue();
+		} else if (type == CellType.NUMERIC) {
+			content = cell.getNumericCellValue() + "";
+		} else if (type == CellType.BOOLEAN) {
+			content = cell.getBooleanCellValue() + "";
+		} else if (type == CellType.BLANK) {
+			content = "";
+			if (setBlankToNull)
+				content = null;
+		} else if (type == CellType.FORMULA) {//2024-01-23 (TMM)
+			type = evaluator.evaluateFormulaCell(cell);
+			if (type == CellType.STRING) {
+				content = cell.getStringCellValue();
+			} else if (type == CellType.NUMERIC) {
+				content = cell.getNumericCellValue() + "";
+			} else if (type == CellType.BOOLEAN) {
+				content = cell.getBooleanCellValue() + "";
+			} else if (type == CellType.BLANK) {
+				content = "";
+				if (setBlankToNull)
+					content = null;
+			}
+		} else {
+			System.out.println(type);
+		}
+		return content;
+	}
+	
+	/**
+	 * Writes records from a spreadsheet to JSON original records format consistent
+	 * with field names of an existing Record[SourceName] class
+	 * 
+	 * @param hmFieldNames      Matches column numbers to output fields of a
+	 *                          Record[SourceName] class
+	 * @param chemicalNameIndex Column index containing chemical names (for special
+	 *                          escape character treatment)
+	 */
+	public JsonArray parseRecordsFromExcel(String filepathExcel, int tabNum, int headerRowNum, boolean setBlankToNull) {
+		
+		try {
+			FileInputStream fis = new FileInputStream(new File(filepathExcel));
+			Workbook wb = WorkbookFactory.create(fis);
+			sheet = wb.getSheetAt(tabNum);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		
+		String[] fieldNames = getHeaders(headerRowNum);
+		HashMap<Integer,String> hmFieldNames = generateDefaultMap(fieldNames, 0);
+		
+		JsonArray records = new JsonArray();
+		FormulaEvaluator evaluator = sheet.getWorkbook().getCreationHelper().createFormulaEvaluator();
+
+		int numRows = sheet.getLastRowNum();
+		
+		for (int i = headerRowNum+1; i <= numRows; i++) {
+			Row row = sheet.getRow(i);
+			if (row == null) {
+				continue;
+			}
+			JsonObject jo = new JsonObject();
+			boolean hasAnyFields = false;
+			for (int k : hmFieldNames.keySet()) {
+				Cell cell = row.getCell(k);
+				if (cell == null) {
+					continue;
+				}
+				// cell.setCellType(CELL_TYPE_STRING);
+
+				String content = "";
+
+				try {
+					content = getContent(setBlankToNull, evaluator, cell);
+					if(content!=null && content.contentEquals("filtered out")) content=null;
+
+				} catch (Exception ex) {
+					ex.printStackTrace();
+					System.out.println("Error parsing for col " + k + "\tfor row " + i);
+				}
+
+				// if(content.contains("Cadmium sulphate")) System.out.println("here1:
+				// "+content);
+
+				if (content != null && !content.isBlank()) {
+					hasAnyFields = true;
+					content=content.trim();
+				}
+				
+				if(content!=null && content.isBlank() && setBlankToNull) content=null;
+				
+				jo.addProperty(hmFieldNames.get(k), content);
+				
+			}
+			
+			jo.addProperty("lastUpdated", lastUpdated);
+
+			
+			if (hasAnyFields) {
+				records.add(jo);
+			}
+		}
+		return records;
+	}
+
 	
 	/**
 	 * Writes records from a spreadsheet to JSON original records format consistent with field names of an existing Record[SourceName] class
@@ -431,13 +555,13 @@ public class ExcelSourceReader {
 	 * @param chemicalNameIndex		Column index containing chemical names (for special escape character treatment)
 	 */
 	public JsonArray parseRecordsFromExcel(int chemicalNameIndex) {
-		String[] fieldNames = getHeaders();
+		String[] fieldNames = getHeaders(0);
 		HashMap<Integer,String> hm = generateDefaultMap(fieldNames, 0);
 		return parseRecordsFromExcel(hm, chemicalNameIndex,false);
 	}
 	
 	public JsonArray parseRecordsFromExcel(int chemicalNameIndex,boolean setBlankToNull) {
-		String[] fieldNames = getHeaders();
+		String[] fieldNames = getHeaders(0);
 		HashMap<Integer,String> hm = generateDefaultMap(fieldNames, 0);
 		return parseRecordsFromExcel(hm, chemicalNameIndex,setBlankToNull);
 	}
@@ -447,8 +571,8 @@ public class ExcelSourceReader {
 	 * Gets column headers in appropriate format for field naming (alphanumeric and _ only)
 	 * @return	Formatted column headers as a string array
 	 */
-	public String[] getHeaders() {
-		Row headerRow = sheet.getRow(0);
+	public String[] getHeaders(int headerRowNum) {
+		Row headerRow = sheet.getRow(headerRowNum);
 		int numHeaders = headerRow.getLastCellNum();
 		String[] headers = new String[numHeaders];
 		for (int i = 0; i < numHeaders; i++) {

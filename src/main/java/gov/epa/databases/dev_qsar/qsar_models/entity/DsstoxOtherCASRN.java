@@ -24,7 +24,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.OPERA_lookups;
+import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionDashboardTableMaps;
 
 /**
 * @author TMARTI02
@@ -91,7 +91,7 @@ public class DsstoxOtherCASRN {
 			
 			ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionDSSTOX(), sql);
 			
-			OPERA_lookups ol=new OPERA_lookups(OPERA_lookups.fileJsonDsstoxRecords);
+			PredictionDashboardTableMaps ol=new PredictionDashboardTableMaps(PredictionDashboardTableMaps.fileJsonDsstoxRecords2024_11_12,null);
 			
 			while (rs.next()) {
 				DsstoxOtherCASRN oc=new DsstoxOtherCASRN();

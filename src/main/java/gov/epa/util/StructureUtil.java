@@ -1,5 +1,15 @@
 package gov.epa.util;
 
+import java.io.BufferedReader;
+import java.io.StringReader;
+
+import org.openscience.cdk.AtomContainerSet;
+import org.openscience.cdk.DefaultChemObjectBuilder;
+import org.openscience.cdk.exception.CDKException;
+import org.openscience.cdk.graph.ConnectivityChecker;
+import org.openscience.cdk.interfaces.IAtomContainer;
+import org.openscience.cdk.io.MDLV3000Reader;
+
 import com.epam.indigo.Indigo;
 import com.epam.indigo.IndigoException;
 import com.epam.indigo.IndigoInchi;
@@ -11,6 +21,12 @@ import uk.ac.cam.ch.wwmm.opsin.OpsinResult;
 public class StructureUtil {
 	
 //	private static final Logger opsinLogger = LogManager.getLogger("uk.ac.cam.ch.wwmm.opsin");
+	
+	
+	public static boolean isSalt(IAtomContainer molecule) {
+		AtomContainerSet  AtomContainerSet2 = (AtomContainerSet)ConnectivityChecker.partitionIntoMolecules(molecule);
+		return AtomContainerSet2.getAtomContainerCount() > 1; 
+	}
 	
 	public static class SimpleOpsinResult {
 		public String smiles;
@@ -123,4 +139,15 @@ public class StructureUtil {
 		String inchiKey=indigoInchikeyFromSmiles("ClC1=C(Cl)[C@]2(Cl)[C@@H]3[C@@H]4CC(C=C4)[C@@H]3C1(Cl)C2(Cl)Cl");
 		System.out.println(inchiKey);
 	}
+	
+	public static IAtomContainer fromMolString(String mol3000) throws Exception {
+		
+		MDLV3000Reader mr=new MDLV3000Reader();
+		StringReader reader = new StringReader(mol3000);
+		mr.setReader(new BufferedReader(reader));
+		return mr.readMolecule(DefaultChemObjectBuilder.getInstance());
+			// TODO Auto-generated catch block
+		
+	}
+	
 }

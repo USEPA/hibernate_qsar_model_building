@@ -1,8 +1,12 @@
 package gov.epa.run_from_java.scripts;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -12,11 +16,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 
-import javax.validation.ConstraintViolationException;
 
-import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.DefaultChemObjectBuilder;
 import org.openscience.cdk.exception.CDKException;
 import org.openscience.cdk.interfaces.IAtomContainer;
@@ -25,32 +26,22 @@ import org.openscience.cdk.smiles.SmiFlavor;
 import org.openscience.cdk.smiles.SmilesGenerator;
 
 import com.epam.indigo.Indigo;
-import com.epam.indigo.IndigoInchi;
 import com.epam.indigo.IndigoObject;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
-import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport;
 import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxRecordServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.DsstoxSnapshotServiceImpl;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.entity.GenericSubstance;
 import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
+import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
-import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponse;
-import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponseWithStatus;
-import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponse.Standardization;
 import kong.unirest.HttpResponse;
 
 /**
@@ -62,10 +53,15 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 	SmilesGenerator sg=new SmilesGenerator(SmiFlavor.Canonical);
 	CompoundServiceImpl compoundService = new CompoundServiceImpl();
 	DsstoxSnapshotServiceImpl  dsstoxSnapshotService=new DsstoxSnapshotServiceImpl ();
-	DsstoxRecordServiceImpl  dsstoxRecordService=new DsstoxRecordServiceImpl();
+	public DsstoxRecordServiceImpl  dsstoxRecordService=new DsstoxRecordServiceImpl();
 	
 	String serverHost="https://hcd.rtpnc.epa.gov";
 	String workflow="qsar-ready";
+	
+	static final String strIndigo="Indigo";
+	static final String strCDK="CDK";
+	String smilesGeneratorMethod=strIndigo;
+	
 
 	
 	SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,workflow,serverHost);
@@ -159,13 +155,17 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 	}
 	
 	
-	List<DsstoxRecord> getDsstoxRecordsNoCompound(DsstoxSnapshot snapshot,String lanId) {
+	public List<DsstoxRecord> getDsstoxRecordsNoCompound(DsstoxSnapshot snapshot,String lanId,String sqlUpdatedAt) {
 
 		List<DsstoxRecord>records=new ArrayList<>();
 
-		String sql="select dsstox_substance_id, casrn,preferred_name from generic_substances gs\r\n"
+		String sql="select dsstox_substance_id, casrn,preferred_name, gs.updated_at from generic_substances gs\r\n"
 				+ "left join generic_substance_compounds gsc on gs.id = gsc.fk_generic_substance_id\r\n"
-				+ "where gsc.id is null order by dsstox_substance_id;";
+				+ "where gsc.id is null";
+		
+		if(sqlUpdatedAt!=null) sql+=" and "+sqlUpdatedAt;
+		sql+="order by dsstox_substance_id;";
+		
 
 //		System.out.println(sql);
 
@@ -186,6 +186,10 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 					record.setPreferredName(rs.getString(3));
 //					System.out.println("preferredName="+rs.getString(8));
 
+				}
+				
+				if (rs.getTimestamp(4)!=null) {
+					record.setGenericSubstanceUpdatedAt(rs.getTimestamp(4));
 				}
 				record.setDsstoxSnapshot(snapshot);
 				record.setCreatedBy(lanId);
@@ -216,7 +220,14 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		}
 		
 		try {
-			assignSmilesUsingIndigo(compound, dtxsid);			
+			
+			if(this.smilesGeneratorMethod.contentEquals(strIndigo)) {
+				assignSmilesUsingIndigo(compound, dtxsid);	
+			} else if(this.smilesGeneratorMethod.contentEquals(strCDK)) {
+				assignSmilesUsingCDK(compound,dtxsid);
+			}
+			
+						
 		} catch (Exception e) {
 			try {
 				assignSmilesUsingCDK(compound, dtxsid);
@@ -241,7 +252,7 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		System.out.println("CDK:"+compound.getDsstoxCompoundId()+"\t"+dtxsid+"\t"+smilesCDK);
 	}
 
-	private void assignSmilesUsingIndigo(DsstoxCompound compound, String dtxsid) {
+	private void assignSmilesUsingIndigo(DsstoxCompound compound, String dtxsid) throws Exception {
 		Indigo indigo = new Indigo();
 		indigo.setOption("ignore-stereochemistry-errors", true);
 
@@ -251,11 +262,8 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		System.out.println("Indigo:"+compound.getDsstoxCompoundId()+"\t"+dtxsid+"\t"+smilesIndigo);
 	}
 	
-	DsstoxSnapshot getSnapshot() {
-		
-		String name="DSSTOX Snapshot 04/23";
-		String description ="DSSTOX snapshot taken on 4/23";
-		
+	DsstoxSnapshot getSnapshot(String name,String description) {
+				
 		DsstoxSnapshot snapshot=dsstoxSnapshotService.findByName(name);
 		
 		if (snapshot==null) {
@@ -267,6 +275,13 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		}
 		return snapshot;
 	}
+	
+	public DsstoxSnapshot getSnapshot(String name) {
+		
+		DsstoxSnapshot snapshot=dsstoxSnapshotService.findByName(name);
+		return snapshot;
+	}
+
 	
 	HashSet<String> getCidsAlreadyInSnapshot(DsstoxSnapshot snapshot) {
 		
@@ -302,7 +317,12 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		
 //		HashMap<String,String>hmStandardized=getQsarSmilesLookupFromDB("SCI_DATA_EXPERTS_QSAR_READY");
 		
-		DsstoxSnapshot snapshot=getSnapshot();
+		String name="DSSTOX Snapshot 04/23";
+		String description ="DSSTOX snapshot taken on 4/23";
+
+		
+		
+		DsstoxSnapshot snapshot=getSnapshot(name,description);
 		HashSet<String>cids=getCidsAlreadyInSnapshot(snapshot);
 					
 		while (true) {
@@ -341,10 +361,106 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		}
 	}
 	
+	void createDsstoxRecordsUsingCompoundsRecordsFromJsons() {
+		
+		boolean requireSID=true;
+		
+		int totalCount=0;
+		
+//		HashMap<String,String>hmStandardized=getQsarSmilesLookupFromDB("SCI_DATA_EXPERTS_QSAR_READY");
+		
+		String name="DSSTOX Snapshot 11/12/2024";
+		String description ="DSSTOX snapshot taken on 11/12/2024";
+
+		DsstoxSnapshot snapshot=getSnapshot(name,description);
+		
+		HashSet<String>cids=getCidsAlreadyInSnapshot(snapshot);
+
+		//TODO need to make sure we dont have 2 dtxsids with different dtxcids
+					
+		String folder="data\\dsstox\\snapshot-2024-11-12\\json\\";
+		
+		File Folder=new File(folder);
+
+		Type listDsstoxCompoundType = new TypeToken<List<DsstoxCompound>>() {}.getType();
+		
+		for(File file:Folder.listFiles()) {
+
+			if(!file.getName().contains("json")) {
+				continue;
+			}
+			
+//			if(file.getName().equals("prod_compounds_updated_gte_2023-04-04_and_lt_2024-11-12.json"))continue;
+
+			if(file.getName().contains("gte"))continue;
+			if(file.getName().contains("previous"))continue;
+			if(file.getName().contains("dsstox_records"))continue;
+			if(file.getName().contains("other_casrn"))continue;
+			
+//			if(!file.getName().equals("prod_compounds_updated_gte_2024-11-12_markush.json"))continue;
+			
+			
+//			if(!file.getName().contains("markush"))continue;
+			
+			System.out.println(file.getName());
+			
+//			if(true) continue;
+			
+			totalCount += createDsstoxRecordsUsingCompoundsRecordsFromJson(snapshot, cids,
+					listDsstoxCompoundType, file);
+
+		}
+	}
+
+
+	private int createDsstoxRecordsUsingCompoundsRecordsFromJson(DsstoxSnapshot snapshot,
+			HashSet<String> cids, Type listDsstoxCompoundType, File file) {
+		try {
+			List<DsstoxCompound>dsstoxCompounds=Utilities.gson.fromJson(new FileReader(file), listDsstoxCompoundType);
+
+//				standardize(compounds, hmStandardized);
+
+			for (int i=0;i<dsstoxCompounds.size();i++) {
+				DsstoxCompound dsstoxCompound=dsstoxCompounds.get(i);
+				
+//					System.out.println(Utilities.gson.toJson(dsstoxCompound));
+
+				if(cids.contains(dsstoxCompound.getDsstoxCompoundId())) {//already have in db so remove it
+					dsstoxCompounds.remove(i--);
+				} else {
+					addSmiles(dsstoxCompound);
+				}
+			}
+
+			if(dsstoxCompounds.size()>0) {//post them
+				List<DsstoxRecord> records = DsstoxRecord.getRecords(dsstoxCompounds, snapshot,lanId);
+				try {
+					dsstoxRecordService.createBatchSQL(records);
+				} catch (Exception ex) {
+					System.out.println(ex.getMessage());
+				}
+			} else {
+				//System.out.println("Already have all compounds in records table from query");
+			}
+
+			System.out.println(file.getName()+"\t"+dsstoxCompounds.size());
+		
+			return dsstoxCompounds.size();
+		
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return 0;
+		}
+		
+	}
+	
 	void createDsstoxRecordsUsingCompoundsRecordsNoDTXCID() {
 		
-		DsstoxSnapshot snapshot=getSnapshot();
-		List<DsstoxRecord>records=getDsstoxRecordsNoCompound(snapshot,lanId);
+		String name="DSSTOX Snapshot 04/23";
+		String description ="DSSTOX snapshot taken on 4/23";
+
+		DsstoxSnapshot snapshot=getSnapshot(name,description);
+		List<DsstoxRecord>records=getDsstoxRecordsNoCompound(snapshot,lanId,null);
 		
 		try {
 			dsstoxRecordService.createBatchSQLNoCompound(records);
@@ -366,7 +482,8 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		int totalCount=0;
 		
 		
-		DsstoxSnapshot snapshot=getSnapshot();
+		String name="DSSTOX Snapshot 04/23";
+		DsstoxSnapshot snapshot=getSnapshot(name);
 		
 					
 		while (true) {
@@ -404,8 +521,8 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		
 		int totalCount=0;
 		
-		
-		DsstoxSnapshot snapshot=getSnapshot();
+		String name="DSSTOX Snapshot 04/23";
+		DsstoxSnapshot snapshot=getSnapshot(name);
 		
 					
 		while (true) {
@@ -445,8 +562,8 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		
 		int totalCount=0;
 		
-		
-		DsstoxSnapshot snapshot=getSnapshot();
+		String name="DSSTOX Snapshot 04/23";
+		DsstoxSnapshot snapshot=getSnapshot(name);
 		
 					
 		while (true) {
@@ -576,7 +693,8 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		
-		Hashtable<String,Long>htCID_to_Record_Id=dsstoxRecordService.getRecordIdHashtable(getSnapshot(),"dtxcid");
+		String name="DSSTOX Snapshot 04/23";
+		Hashtable<String,Long>htCID_to_Record_Id=dsstoxRecordService.getRecordIdHashtable(getSnapshot(name),"dtxcid");
 		
 		System.out.println("retrieved snapshot ht");
 	
@@ -636,18 +754,244 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		
 	}
 	
+
+	/**
+	 * Looks at old records in prev snapshot and compare to records taken just after new snapshot (so wont have missing records in dsstox_records table 
+	 */
+	void compareCompoundsInJsonWithDsstox() {
+		//TODO Compare records in following jsons with what's in the previous snapshot
+		//prod_compounds_updated_gte_2024-11-12.json
+		//prod_compounds_updated_gte_2024-11-12_markush.json 
+		
+		try {
+			String folder="data\\dsstox\\snapshot-2024-11-12\\json\\";
+			String filepath=folder+"prod_compounds_updated_gte_2024-11-12.json";
+
+			Type listOfMyClassObject = new TypeToken<List<DsstoxCompound>>() {}.getType();
+
+			List<DsstoxCompound>dsstoxCompounds=Utilities.gson.fromJson(new FileReader(filepath), listOfMyClassObject);
+		
+			List<String>dtxsids=new ArrayList<>();
+			List<String>dtxcids=new ArrayList<>();
+			
+			for (DsstoxCompound dsstoxCompound:dsstoxCompounds) {
+				dtxsids.add(dsstoxCompound.getGenericSubstanceCompound().getGenericSubstance().getDsstoxSubstanceId());
+				dtxcids.add(dsstoxCompound.getDsstoxCompoundId());
+			}			
+			
+//			GenericSubstanceServiceImpl gss=new GenericSubstanceServiceImpl();
+//			List<gov.epa.databases.dsstox.DsstoxRecord>dsstoxRecordsOldSnapshot=gss.findAsDsstoxRecordsByDtxsidIn(dtxsids);
+
+			DsstoxCompoundServiceImpl dss=new DsstoxCompoundServiceImpl();
+			List<gov.epa.databases.dsstox.entity.DsstoxCompound>dsstoxRecordsOldSnapshot=dss.getCompoundsBySQL(dtxcids);
+			
+			Hashtable<String,gov.epa.databases.dsstox.entity.DsstoxCompound>htOldSnapshot=new Hashtable<>();
+			
+			for(gov.epa.databases.dsstox.entity.DsstoxCompound dsstoxCompound:dsstoxRecordsOldSnapshot) {				
+//				System.out.println(dsstoxCompound.getDsstoxCompoundId());
+				htOldSnapshot.put(dsstoxCompound.getDsstoxCompoundId(),dsstoxCompound);
+			}
+			System.out.println("\n\n");
+			
+			List<gov.epa.databases.dsstox.entity.DsstoxCompound>oldRecords=new ArrayList<>();
+			
+			
+			for (DsstoxCompound dsstoxCompound:dsstoxCompounds) {
+//				System.out.println(Utilities.gson.toJson(dsstoxCompound));
+//				System.out.println(dsstoxCompound.getJchemInchikey());
+				
+				String dtxcid=dsstoxCompound.getDsstoxCompoundId();
+				
+				if(htOldSnapshot.containsKey(dtxcid)) {
+					
+					gov.epa.databases.dsstox.entity.DsstoxCompound dsstoxRecordOld=htOldSnapshot.get(dtxcid);
+					
+					if(dsstoxRecordOld.getGenericSubstanceCompound()==null) {
+						System.out.println(dtxcid+"\tOld substance is null for this dtxcid");
+						continue;
+					}
+
+					boolean match=dsstoxRecordOld.getJchemInchikey().contentEquals(dsstoxCompound.getJchemInchikey());
+					
+					System.out.println(dtxcid+"\t"+dsstoxRecordOld.getJchemInchikey()+"\t"+dsstoxCompound.getJchemInchikey()+"\t"+match);
+					
+					oldRecords.add(dsstoxRecordOld);
+					
+				} else {
+//					System.out.println(dtxcid+"\tNot in old snapshot");//new compounds
+				}
+			}
+			
+			System.out.println(dsstoxCompounds.size()+"\t"+htOldSnapshot.size()+"\t"+oldRecords.size());
+			try {
+				
+				FileWriter fw=new FileWriter(folder+"previous snapshot compounds that were updated after 2024-11-12.json");
+				fw.write(Utilities.gson.toJson(oldRecords));
+				fw.flush();
+				fw.close();
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	void compareCompoundsInJsonWithDsstoxMarkush() {
+		//TODO Compare records in following jsons with what's in the previous snapshot
+		//prod_compounds_updated_gte_2024-11-12.json
+		//prod_compounds_updated_gte_2024-11-12_markush.json 
+		
+		try {
+			String folder="data\\dsstox\\snapshot-2024-11-12\\json\\";
+			String filepath=folder+"prod_compounds_updated_gte_2024-11-12_markush.json";
+
+			Type listOfMyClassObject = new TypeToken<List<DsstoxCompound>>() {}.getType();
+
+			List<DsstoxCompound>dsstoxCompounds=Utilities.gson.fromJson(new FileReader(filepath), listOfMyClassObject);
+		
+			List<String>dtxsids=new ArrayList<>();
+			List<String>dtxcids=new ArrayList<>();
+			
+			for (DsstoxCompound dsstoxCompound:dsstoxCompounds) {
+				dtxsids.add(dsstoxCompound.getGenericSubstanceCompound().getGenericSubstance().getDsstoxSubstanceId());
+				dtxcids.add(dsstoxCompound.getDsstoxCompoundId());
+			}			
+			
+//			GenericSubstanceServiceImpl gss=new GenericSubstanceServiceImpl();
+//			List<gov.epa.databases.dsstox.DsstoxRecord>dsstoxRecordsOldSnapshot=gss.findAsDsstoxRecordsByDtxsidIn(dtxsids);
+
+			DsstoxCompoundServiceImpl dss=new DsstoxCompoundServiceImpl();
+			List<gov.epa.databases.dsstox.entity.DsstoxCompound>dsstoxRecordsOldSnapshot=dss.getCompoundsBySQL(dtxcids);
+			
+			Hashtable<String,gov.epa.databases.dsstox.entity.DsstoxCompound>htOldSnapshot=new Hashtable<>();
+			
+			for(gov.epa.databases.dsstox.entity.DsstoxCompound dsstoxCompound:dsstoxRecordsOldSnapshot) {				
+//				System.out.println(dsstoxCompound.getDsstoxCompoundId());
+				htOldSnapshot.put(dsstoxCompound.getDsstoxCompoundId(),dsstoxCompound);
+			}
+//			System.out.println("\n\n");
+			
+			List<gov.epa.databases.dsstox.entity.DsstoxCompound>oldRecords=new ArrayList<>();
+			
+			
+			for (DsstoxCompound dsstoxCompound:dsstoxCompounds) {
+//				System.out.println(Utilities.gson.toJson(dsstoxCompound));
+//				System.out.println(dsstoxCompound.getJchemInchikey());
+				
+				String dtxcid=dsstoxCompound.getDsstoxCompoundId();
+				
+				if(htOldSnapshot.containsKey(dtxcid)) {
+					
+					gov.epa.databases.dsstox.entity.DsstoxCompound dsstoxRecordOld=htOldSnapshot.get(dtxcid);
+					
+					if(dsstoxRecordOld.getGenericSubstanceCompound()==null) {
+						System.out.println(dtxcid+"\tOld substance is null");
+						continue;
+					}
+
+					boolean match=dsstoxRecordOld.getJchemInchikey().contentEquals(dsstoxCompound.getJchemInchikey());
+					System.out.println(dtxcid+"\t"+dsstoxRecordOld.getJchemInchikey()+"\t"+dsstoxCompound.getJchemInchikey()+"\t"+match);
+					oldRecords.add(dsstoxRecordOld);
+					
+				} else {
+					System.out.println(dtxcid+"\tNot in old snapshot");//new compounds
+				}
+			}
+			
+			System.out.println(dsstoxCompounds.size()+"\t"+htOldSnapshot.size()+"\t"+oldRecords.size());
+			try {
+				
+				FileWriter fw=new FileWriter(folder+"previous markush snapshot compounds that were updated after 2024-11-12.json");
+				fw.write(Utilities.gson.toJson(oldRecords));
+				fw.flush();
+				fw.close();
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	
+	void create_Snapshot_11_2024() {
+
+//		compareCompoundsInJsonWithDsstox();//gets the records that were changed in the 1-2 days after the snapshot date and replace with prev snapshot record
+//		compareCompoundsInJsonWithDsstoxMarkush();//no records
+		
+		//this uses the records that were taken from dsstox to create the dsstox_records for Nov 24 snapshot:
+		createDsstoxRecordsUsingCompoundsRecordsFromJsons();
+		
+		
+		//TODO add records where dtxcid are null - see createDsstoxRecordsUsingCompoundsRecordsNoDTXCID()
+		// Might not need them since have no experimental/predicted values with no dtxcid in materialized views
+		// and need for opera neighbors
+
+		//compare records that were changed after the snapshot data with what's in dsstox_records:
+//		compareJsonToDsstoxRecordsInDB();
+		
+	}
+
+
+	/**
+	 * Looks like chemicals changed after the snapshot date (Nov 12 &13, 2024), didnt change the structure
+	 */
+	private void compareJsonToDsstoxRecordsInDB() {
+		try {
+			Type listDsstoxCompoundType = new TypeToken<List<DsstoxCompound>>() {}.getType();
+			String folder="data\\dsstox\\snapshot-2024-11-12\\json\\";
+			File file=new File(folder+"/prod_compounds_updated_gte_2024-11-12.json");
+			List<DsstoxCompound>dsstoxCompounds=Utilities.gson.fromJson(new FileReader(file), listDsstoxCompoundType);
+//			System.out.println(dsstoxCompounds.size());
+			
+			Connection conn=SqlUtilities.getConnectionPostgres();
+			
+			for(DsstoxCompound dsstoxCompound:dsstoxCompounds) {
+				
+				String dtxsid=dsstoxCompound.getGenericSubstanceCompound().getGenericSubstance().getDsstoxSubstanceId();
+				
+				String sql="select * from qsar_models.dsstox_records where dtxsid='"+dtxsid+"' and fk_dsstox_snapshot_id=2;";
+				ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+				
+				if(rs.next()) {
+					String smiles=rs.getString(6);
+					String indigoInchikey=rs.getString(15);
+					
+					if(indigoInchikey==null || dsstoxCompound.getIndigoInchikey()==null) continue;
+
+					if(smiles.contentEquals(dsstoxCompound.getSmiles())) continue;
+
+					if(indigoInchikey.contentEquals(dsstoxCompound.getIndigoInchikey())) continue;
+					
+					System.out.println(dtxsid+"\t"+smiles+"\t"+	dsstoxCompound.getSmiles());
+					
+				} else {
+//					System.out.println(dtxsid+"\tnot in dsstox_records table");
+				}
+			}
+			
+			
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
 	
 	public static void main(String[] args) {
 		DsstoxSnapshotCreatorScriptDSSTOX d=new DsstoxSnapshotCreatorScriptDSSTOX();
-		
+
+		d.create_Snapshot_11_2024();
+
 //		d.getSnapshot();
 		
 //		List<DsstoxCompound>compounds=d.getCompoundsBySQL(0, 10,true);
 		
 //		 d.createDsstoxRecordsUsingCompoundsRecords();
-		 d.createDsstoxRecordsUsingCompoundsRecordsNoDTXCID();
-		 
-		 
+//		 d.createDsstoxRecordsUsingCompoundsRecordsNoDTXCID();
+
+		
 		 
 //		 d.updateFkCompoundIdUsingCompoundsRecords();
 //		 d.updateMolWeightUsingCompoundsRecords();

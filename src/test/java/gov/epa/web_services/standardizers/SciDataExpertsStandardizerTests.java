@@ -44,8 +44,8 @@ import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
-import gov.epa.run_from_java.scripts.OPERA.Lookup;
-import gov.epa.run_from_java.scripts.OPERA.SqliteUtilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA_Old.Lookup;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA_Old.SqliteUtilities;
 import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithStatus;
 import kong.unirest.HttpResponse;
 
@@ -61,14 +61,18 @@ public class SciDataExpertsStandardizerTests {
 
 	//	String serverEPA = "https://ccte-cced.epa.gov/api/stdizer/";
 	String serverEPA="https://hcd.rtpnc.epa.gov/api/stdizer";
-	static String serverHost="https://hcd.rtpnc.epa.gov";
+//	static String serverHost="https://hcd.rtpnc.epa.gov";
+	static String serverHost="https://hazard-dev.sciencedataexperts.com";
+	
 
 //		static String workflow = "QSAR-ready_CNL_edits";
-	//	static String workflow="QSAR-ready_CNL_edits_TMM";
-	static String workflow = "QSAR-ready_CNL_edits_TMM_2";
+//		static String workflow="QSAR-ready_CNL_edits_TMM";
+//	static String workflow = "QSAR-ready_CNL_edits_TMM_2";
+	static String workflow = "qsar-ready_08232023";
+	
 	//	String workflow = "qsar-ready";
 
-	boolean full=true;//whether to have full output from stdizer
+	static boolean full=true;//whether to have full output from stdizer
 
 	
 	static Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -492,9 +496,17 @@ public class SciDataExpertsStandardizerTests {
 			HttpResponse<String>response=standardizer.callQsarReadyStandardizePost(smiles,full);
 			String jsonResponse=SciDataExpertsStandardizer.getResponseBody(response, full);
 			String qsarSmiles=SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse, full);
-			String changes=SciDataExpertsStandardizer.getChangesApplied(jsonResponse);
 
-			if(changes.isEmpty()) changes="None";
+			String changes=null;
+			
+			if (full) {
+				changes=SciDataExpertsStandardizer.getChangesApplied(jsonResponse);
+				if(changes.isEmpty()) changes="None";
+			}
+
+//			if(smiles.equals("CC[O+]=NC.[O-]Cl(=O)(=O)=O")) {
+//				System.out.println("Here:"+qsarSmiles);
+//			}
 			
 			
 //			System.out.println(smiles+"\t"+qsarSmiles);
@@ -520,6 +532,12 @@ public class SciDataExpertsStandardizerTests {
 
 				String inchiKey1=toInchiKey(ht.get(smiles));
 				String inchiKey2=toInchiKey(qsarSmiles);
+				
+				if(smiles.contains("[2H]")) {
+					System.out.println(ht.get(smiles)+"\t"+inchiKey1);
+					System.out.println(qsarSmiles+"\t"+inchiKey2);
+				}
+				
 
 				if (inchiKey1!=null && inchiKey2!=null && (qsarSmiles.equals(ht.get(smiles)) || inchiKey1.equals(inchiKey2))) {
 					countMatch++;
@@ -705,14 +723,14 @@ public class SciDataExpertsStandardizerTests {
 		row1.createCell(4).setCellValue("Smiles_SDE");
 		row1.createCell(5).setCellValue("SDE Matches Expected");
 		row1.createCell(6).setCellValue("Type");
-		row1.createCell(7).setCellValue("Changes");
-
 		
-		for (int i=1;i<=7;i++) {
-			sheet.setColumnWidth(i, 60*256);	
+		if(full) {
+			row1.createCell(7).setCellValue("Changes");
+			for (int i=1;i<=7;i++) sheet.setColumnWidth(i, 60*256);	
+		} else {
+			for (int i=1;i<=6;i++) sheet.setColumnWidth(i, 60*256);
 		}
 		
-
 		for (int i = 0; i < jaResults.size(); i++) {
 
 			JsonObject jo = jaResults.get(i).getAsJsonObject();
@@ -736,7 +754,6 @@ public class SciDataExpertsStandardizerTests {
 			String smilesSDE = jo.get("smilesSDE").getAsString();
 			boolean match = jo.get("match").getAsBoolean();
 			String type = jo.get("type").getAsString();
-			String changes = jo.get("changes").getAsString();
 
 			//				String inchiKeyOPERA=toInchiIndigo(QSAR_Ready_SMILES_OPERA).inchiKey;
 			//				String inchiKeySDE=toInchiIndigo(QSAR_Ready_SMILES_SDE).inchiKey;
@@ -750,7 +767,11 @@ public class SciDataExpertsStandardizerTests {
 
 			rowi.createCell(5).setCellValue(match);
 			rowi.createCell(6).setCellValue(type);
-			rowi.createCell(7).setCellValue(changes);
+			
+			if(full) {
+				String changes = jo.get("changes").getAsString();
+				rowi.createCell(7).setCellValue(changes);
+			}
 
 			//				rowi.createCell(4).setCellValue(inchiKeyOPERA.equals(inchiKeySDE));
 
@@ -772,7 +793,7 @@ public class SciDataExpertsStandardizerTests {
 	@Test
 	public void runIsotopes() {
 		LinkedHashMap<String, String> ht = new LinkedHashMap<>();// preserves order
-		ht.put("[2H]C1C([2H])=C([2H])C([2H])=C([2H])C=1[2H]","[2H]C1C([2H])=C([2H])C([2H])=C([2H])C=1[2H]");//OPERA gets rid of isotope info
+		ht.put("[2H]C1C([2H])=C([2H])C([2H])=C([2H])C=1[2H]","C1C=CC=CC=1");//OPERA gets rid of isotope info
 		runChemicalsInHashtable(ht, "Isotopes");
 	}
 

@@ -144,7 +144,7 @@ public class OperaLoader {
 
 	private void addLiteratureSource(boolean createDB_Entries, PropertyValue pv, String key, String reference) {
 		LiteratureSource lsNew = createLiteratureSource(reference);
-		LiteratureSource ls = loader.literatureSourcesMap.get(lsNew.getCitation());
+		LiteratureSource ls = loader.pvc.literatureSourcesMap.get(lsNew.getCitation());
 
 		if (ls!=null) {
 			pv.setLiteratureSource(ls);
@@ -154,13 +154,13 @@ public class OperaLoader {
 			if(createDB_Entries) {
 				try {
 					System.out.println("Creating lsNew="+ls.getCitation());
-					ls = loader.literatureSourceService.create(ls);
+					ls = loader.pvc.literatureSourceService.create(ls);
 				} catch (Exception ex) {
 					System.out.println(ex.getMessage()+"\tFailed to create " +reference+" for "+key);
 					
 				}
 			}
-			loader.literatureSourcesMap.put(ls.getCitation(), ls);
+			loader.pvc.literatureSourcesMap.put(ls.getCitation(), ls);
 			pv.setLiteratureSource(ls);
 		}
 	}
@@ -234,7 +234,7 @@ public class OperaLoader {
 		
 		int numFiles=2;
 				
-		ExpPropProperty prop=loader.propertiesMap.get(propertyName);
+		ExpPropProperty prop=loader.pvc.propertiesMap.get(propertyName);
 		
 		if(prop==null) {
 			System.out.println(propertyName +" missing in exp_prop schema");
@@ -265,12 +265,12 @@ public class OperaLoader {
 //		System.out.println(Utilities.gson.toJson(recordsAll));
 //		printUniqueUnitsListInExperimentalRecords(records);
 		System.out.println("experimentalRecords.size()="+recordsAll.size());
-		loader.load(recordsAll,type,true,sourceName,propertyName);
+		loader.loaders.load(recordsAll,type,true,sourceName,propertyName);
 	}
 	
 	void reloadFailedPropertyValuesFromOPERA_ExperimentalRecordsFile(String propertyName,String type,String sourceName) {
 		
-		ExpPropProperty prop=loader.propertiesMap.get(propertyName);
+		ExpPropProperty prop=loader.pvc.propertiesMap.get(propertyName);
 		
 		if(prop==null) {
 			System.out.println(propertyName +" missing in exp_prop schema");
@@ -304,7 +304,8 @@ public class OperaLoader {
 //		System.out.println(Utilities.gson.toJson(recordsAll));
 //		printUniqueUnitsListInExperimentalRecords(records);
 		System.out.println("experimentalRecords.size()="+recordsAll.size());
-		loader.load(recordsAll,type,true,sourceName,propertyName);
+		loader.loaders.load(recordsAll,type,true,sourceName,propertyName);
+		
 	}
 
 	
@@ -335,7 +336,7 @@ public class OperaLoader {
 			String key=er.casrn+"\t"+er.smiles+"\t"+er.chemical_name+"\t"+er.dsstox_substance_id+"\t"+
 			"null\tnull\t12\tnull";
 					
-			if(!loader.sourceChemicalMap.containsKey(key)) {
+			if(!loader.pvc.sourceChemicalMap.containsKey(key)) {
 				System.out.println("Missing\t"+key);
 				SourceChemical sc=createSourceChemical(er);
 				System.out.println(sc==null);
@@ -372,20 +373,20 @@ public class OperaLoader {
 		}
 		
 		
-		sourceChemical.setPublicSource(loader.publicSourcesMap.get("OPERA"));
+		sourceChemical.setPublicSource(loader.pvc.publicSourcesMap.get("OPERA"));
 		
 //		if(pv.getLiteratureSource()!=null) {
 //			sourceChemical.setLiteratureSource(pv.getLiteratureSource());
 //		}
 
 		
-		if (loader.sourceChemicalMap.containsKey(sourceChemical.getKey())) {
-			sourceChemical=loader.sourceChemicalMap.get(sourceChemical.getKey());
+		if (loader.pvc.sourceChemicalMap.containsKey(sourceChemical.getKey())) {
+			sourceChemical=loader.pvc.sourceChemicalMap.get(sourceChemical.getKey());
 //			System.out.println("Found sc in map:\t"+sourceChemical.getKey());
 		} else {
 			try {
-				sourceChemical = loader.sourceChemicalService.create(sourceChemical);
-				loader.sourceChemicalMap.put(sourceChemical.getKey(), sourceChemical);
+				sourceChemical = loader.pvc.sourceChemicalService.create(sourceChemical);
+				loader.pvc.sourceChemicalMap.put(sourceChemical.getKey(), sourceChemical);
 				System.out.println("Created sc:\t"+sourceChemical.getKey());
 			} catch (Exception ex) {
 				ex.printStackTrace();
@@ -473,8 +474,8 @@ public class OperaLoader {
 
 	private void createProperty(String propertyName, PropertyService propertyService, ExpPropUnit unitExpProp) {
 		Property property=propertyService.findByName(propertyName);
-		ExpPropProperty propertyExpProp=loader.getProperty(property.getName(), property.getDescription());
-		loader.addPropertyAcceptableUnit(unitExpProp, propertyExpProp);
+		ExpPropProperty propertyExpProp=loader.pvc.getProperty(property.getName(), property.getDescription());
+		loader.pvc.addPropertyAcceptableUnit(unitExpProp, propertyExpProp);
 		System.out.println(property.getName()+"\t"+unitExpProp.getName());
 
 	}
@@ -496,8 +497,8 @@ public class OperaLoader {
 
 		List<SourceChemical>listSC=new ArrayList<>();
 
-		for (String key:loader.sourceChemicalMap.keySet()) {
-			SourceChemical sc=loader.sourceChemicalMap.get(key);
+		for (String key:loader.pvc.sourceChemicalMap.keySet()) {
+			SourceChemical sc=loader.pvc.sourceChemicalMap.get(key);
 			if(sc.getPublicSource()==null) continue;
 			if(!sc.getPublicSource().getName().equals(source)) continue;
 			listSC.add(sc);
@@ -520,8 +521,8 @@ public class OperaLoader {
 
 		List<SourceChemical>listSC=new ArrayList<>();
 
-		for (String key:loader.sourceChemicalMap.keySet()) {
-			SourceChemical sc=loader.sourceChemicalMap.get(key);
+		for (String key:loader.pvc.sourceChemicalMap.keySet()) {
+			SourceChemical sc=loader.pvc.sourceChemicalMap.get(key);
 			
 //			if(sc.getPublicSource()==null) continue;
 //			if(!sc.getPublicSource().getName().equals("OPERA")) continue;
@@ -555,7 +556,7 @@ public class OperaLoader {
 	void loadPropertyValues() {
 		String sourceName="OPERA2.9";
 		
-		loader.mapTables(sourceName);
+		loader.pvc.mapTables(sourceName);
 
 //		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.BOILING_POINT,ExperimentalRecordLoader.typePhyschem,sourceName);
 //		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.MELTING_POINT,ExperimentalRecordLoader.typePhyschem,sourceName);
