@@ -527,7 +527,8 @@ public class PropertyValue {
 							parameterValue.getValueText());
 				} else if (parameterValue.getValuePointEstimate() != null) {
 					jo.addProperty("parameter_" + parameterValue.getParameter().getName(),
-							parameterValue.getValuePointEstimate());
+							parameterValue.toString());
+
 				}
 			}
 		}

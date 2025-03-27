@@ -228,7 +228,10 @@ public class SourceChemicalUtilities {
 //		String sourceName="PubChem_2024_03_20";
 //		String sourceName="PubChem_2024_11_27";
 //		String sourceName="OPERA2.8";
-		String sourceName="Arnot 2006";
+//		
+//		String sourceName="Arnot 2006";
+//		String sourceName="ECOTOX_2024_12_12";
+		String sourceName="QSAR_Toolbox";
 
 		List<SourceChemical>sourceChemicals=loadSourceChemicalsForPublicSource(sourceName);
 		System.out.println(sourceChemicals.size());		
@@ -237,8 +240,11 @@ public class SourceChemicalUtilities {
 		folder.mkdirs();
 		
 //		String filepath=folder.getAbsolutePath()+File.separator+"exp_prop_2025_01_27_from_"+sourceName+".txt";
-		String filepath=folder.getAbsolutePath()+File.separator+"exp_prop_"+sourceName+".txt";
+
+		String date="2025_03_25";
+		String filepath=folder.getAbsolutePath()+File.separator+"exp_prop_"+date+"_"+sourceName+".txt";
 		
+//		exp_prop_2025_03_25_Arnot 2006
 		File file=new File(filepath);
 		System.out.println(file.getAbsolutePath());
 		
@@ -576,8 +582,13 @@ public class SourceChemicalUtilities {
 	void findMissingSourceChemicalsForPublicSource() {
 		
 //		String sourceName="OChem_2024_04_03";
-		String sourceName="PubChem_2024_03_20";
+//		String sourceName="PubChem_2024_03_20";
 //		String sourceName="OPERA2.8";
+		
+//		String sourceName="Arnot 2006";
+//		String sourceName="ECOTOX_2024_12_12";
+		String sourceName="Burkhard";
+		
 		
 		PublicSource ps=publicSourceService.findByName(sourceName);
 		
@@ -590,7 +601,7 @@ public class SourceChemicalUtilities {
 		List<SourceChemical>sourceChemicalsMissing=new ArrayList<>();
 		Map<String,SourceChemical>mapList=new TreeMap<>();
 		
-		List<String>listNames=DatasetCreatorScript.getChemRegListNames2(Arrays.asList(sourceName));
+		List<String>listNames=DatasetCreatorScript.getChemRegListNames(Arrays.asList(sourceName));
 		
 		for (String listName:listNames) {
 			Map<String,SourceChemical>mapList2=getMapChemRegListByExternalID(listName);
@@ -601,7 +612,7 @@ public class SourceChemicalUtilities {
 		for (SourceChemical sourceChemical:sourceChemicals) {
 			
 			if(!mapList.containsKey(sourceChemical.generateSrcChemId())) {
-				System.out.println(sourceChemical.generateSrcChemId()+"\tmissing in dsstox chemreg list");
+//				System.out.println(sourceChemical.generateSrcChemId()+"\tmissing in dsstox chemreg list");
 				sourceChemicalsMissing.add(sourceChemical);
 			} else {
 //				System.out.println(sourceChemical.getSourceCasrn()+"\t"+mapList.get(sourceChemical.generateSrcChemId()).getSourceCasrn());
@@ -641,9 +652,9 @@ public class SourceChemicalUtilities {
 //		scu.writeChemRegFilePublicSources();
 //		scu.writeChemRegFileLiteratureSources();//dont have any without dtxrids- all from chemprop
 
-		scu.writeChemRegFileForPublicSource2();
+//		scu.writeChemRegFileForPublicSource2();
 		
-//		scu.findMissingSourceChemicalsForPublicSource();
+		scu.findMissingSourceChemicalsForPublicSource();
 		
 		
 //		SourceChemicalUtilities scu=new SourceChemicalUtilities(false);

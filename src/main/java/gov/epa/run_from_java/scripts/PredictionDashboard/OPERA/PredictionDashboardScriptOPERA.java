@@ -1344,7 +1344,8 @@ public class PredictionDashboardScriptOPERA {
 
 			int limit=-1;
 			if(count!=-1) limit=count;
-			int offset=0;			
+			
+			int offset=200000;//already loaded these			
 
 			boolean skipMissingDsstoxRecordID=true;
 
@@ -1371,7 +1372,7 @@ public class PredictionDashboardScriptOPERA {
 			List<PredictionDashboard>predictionsDashboard=new ArrayList<>();
 
 			try {
-				String sql=Lookup.createSQLAll(offset,limit);
+				String sql=Lookup.createSQLAllSort(offset,limit,"DSSTOX_COMPOUND_ID");
 				//			String sql="select * from Results where DSSTOX_COMPOUND_ID='DTXCID20135';";
 
 				Statement sqliteStatement=SqliteUtilities.getStatement(Lookup.conn);
@@ -3089,10 +3090,21 @@ public class PredictionDashboardScriptOPERA {
 
 //				System.out.println(pd.getDtxcid()+"\t"+pd.getModel().getName_ccd()+"\t"+pd.getPredictionValue());
 				
+				
 				if(pd.getDsstoxRecord()!=null && pd_keys.contains(pd.getKey()) && !writeReportToHardDrive) {
-					System.out.println("Already have in db: "+pd.getKey());
+//					System.out.println("Already have in db: "+pd.getKey());
 					continue;
 				}
+				
+				if(pd.getDsstoxRecord()==null) {
+//					System.out.println("Null DsstoxRecord for "+pd.getDtxcid());
+					continue;
+				}
+
+				//Add it to list of keys so that DTXCID duplicates in kamels db don't mess up 
+				// batch insert, could fix his db but need to be done carefully
+				pd_keys.add(pd.getKey());//hashsets dont store duplicates:
+
 				
 //				if(pd.getPredictionValue()==null) {
 					//System.out.println(pd.getModel().getName()+"\t"+pd.getPredictionValue());

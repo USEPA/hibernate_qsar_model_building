@@ -59,7 +59,7 @@ public class UnitConverter {
 			return handle_KMHL(propertyName,value, finalUnitName, chemicalId, unitName);
 		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
 			return handle_VAPOR_PRESSURE(propertyName,value, finalUnitName, chemicalId, unitName);
-		} else if (propertyName.equals(DevQsarConstants.KOC) || propertyName.equals(DevQsarConstants.BCF)) {
+		} else if (propertyName.equals(DevQsarConstants.KOC) || propertyName.equals(DevQsarConstants.BCF)|| propertyName.equals(DevQsarConstants.BAF)) {
 			return handle_KOC(propertyName,value, finalUnitName, chemicalId, unitName);
 		} else if (propertyName.equals(DevQsarConstants.OH)) {
 			return handle_OH(propertyName,value, finalUnitName, chemicalId, unitName);
@@ -290,6 +290,7 @@ public class UnitConverter {
 				} else if (dsstoxRecord.molWeight==null) {
 					//Will show up in discarded records spreadsheets as "Unit conversion failed" 
 					System.out.println(chemicalId + ": missing MW for "+dsstoxRecord.dsstoxSubstanceId+", so cant convert to "+finalUnitName);
+					return null;
 				}
 			} 
 

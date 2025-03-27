@@ -407,11 +407,37 @@ public class PropertyValueCreator {
 			}
 			
 		}
-		
-		
-		
-
 	}
+	
+	
+	public void updateParameter(String parameterName,List<String>unitAbbrevs) {
+		
+		if(this.parametersMap.get(parameterName)==null) {
+			System.out.println("Dont have "+parameterName+" in map");
+			return;
+		}
+		
+		Parameter parameter=parametersMap.get(parameterName);
+		
+		for (String unitAbbrev:unitAbbrevs) {
+			
+			String unitName=DevQsarConstants.getConstantNameByReflection(unitAbbrev);
+			
+			ExpPropUnit unit=this.unitsMap.get(unitName);
+			
+			if(unit==null) {
+				System.out.println("No unit in database with abbrev="+unitAbbrev+" for parameter name="+parameter.getName());
+				continue;
+			} else {
+				if(!isAcceptableUnitForParameter(unit, parameter)) {
+					System.out.println("Adding acceptable unit "+unitAbbrev+" for parameter "+parameter.getName());
+					addParameterAcceptableUnit(unit, parameter);
+				}
+			}
+			
+		}
+	}
+
 	
 	public HashSet<String> getMissingParameters (ExperimentalRecords records) {
 
@@ -479,6 +505,19 @@ public class PropertyValueCreator {
 
 		return parameter;
 	}
+	
+	Parameter getParameter(String name) {
+		Parameter parameter=parametersMap.get(name);
+
+		if (parameter!=null) {
+			if (debug) System.out.println("already have parameter in db: "+parameter.getName()+"\t"+parameter.getDescription());
+			return parameter;
+		} else {
+			return null;
+		}
+
+	}
+
 
 	void addParameterAcceptableUnit(ExpPropUnit unit, Parameter parameter) {
 
@@ -496,6 +535,9 @@ public class PropertyValueCreator {
 		parameterAcceptableUnit.setUnit(unit);
 		parameterAcceptableUnit.setParameter(parameter);					
 		parameterAcceptableUnitService.create(parameterAcceptableUnit);
+		
+		this.parameterAcceptableUnits.add(parameterAcceptableUnit);
+		
 	}
 
 	void addPropertyAcceptableParameter(Parameter parameter, ExpPropProperty property) {
@@ -743,9 +785,13 @@ public class PropertyValueCreator {
 	
 			String publicSourceOriginalName=rec.original_source_name;
 			if(rec.publicSourceOriginal!=null) publicSourceOriginalName=rec.publicSourceOriginal.getName();
+			
 			if (publicSourceOriginalName!=null && !publicSourcesMap.containsKey(publicSourceOriginalName)) {
+				
 				PublicSource psO = new PublicSource();
-				psO.setName(rec.source_name);
+				psO.setName(publicSourceOriginalName);
+//				System.out.println("PSO="+rec.source_name);
+				
 				psO.setDescription("TODO");
 				psO.setCreatedBy(lanId);
 				publicSourcesMap.put(publicSourceOriginalName,psO);
@@ -799,9 +845,12 @@ public class PropertyValueCreator {
 		
 		try {
 
-			for (int i=0;i<sourceChemicals.size();i++) {
+			for (SourceChemical sourceChemical:sourceChemicals) {
+
+//				if(sourceChemical.getSourceChemicalName()!=null && sourceChemical.getSourceChemicalName().length()>500) 
+//					System.out.println(sourceChemical.getSourceChemicalName().length()+"\t"+sourceChemical.getSourceChemicalName());
 				
-				sourceChemicals2.add(sourceChemicals.get(i));
+				sourceChemicals2.add(sourceChemical);
 				
 				if(sourceChemicals2.size()==batchSize) {
 					sourceChemicalService.createBatchSql(sourceChemicals2, SqlUtilities.getConnectionPostgres());
@@ -844,7 +893,7 @@ public class PropertyValueCreator {
 				
 				if(!isAcceptableUnitForParameter(unit, parameter)) {
 					unitAbbrevs.add(unit.getAbbreviation());
-//					System.out.println("Missing units:\t"+unitName+" for parameter:"+parameterValue.getParameter().getName()+", unitAbbrev="+unit.getAbbreviation());
+					System.out.println("Missing units:\t"+unitName+" for parameter:"+parameterValue.getParameter().getName()+", unitAbbrev="+unit.getAbbreviation());
 				}
 			}
 	

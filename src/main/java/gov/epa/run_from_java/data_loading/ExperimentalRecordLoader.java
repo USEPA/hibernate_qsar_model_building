@@ -1,74 +1,20 @@
 package gov.epa.run_from_java.data_loading;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.*;
-import java.util.regex.Pattern;
-
-import javax.persistence.Column;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.validation.ConstraintViolationException;
-import javax.validation.constraints.NotNull;
-
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.validator.constraints.Length;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropUnit;
-import gov.epa.databases.dev_qsar.exp_prop.entity.LiteratureSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.Parameter;
-import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterAcceptableUnit;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
-import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyAcceptableParameter;
-import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyAcceptableUnit;
-import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyCategory;
-import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyInCategory;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
-import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
-import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
-import gov.epa.databases.dev_qsar.exp_prop.service.ExpPropPropertyService;
-import gov.epa.databases.dev_qsar.exp_prop.service.ExpPropPropertyServiceImpl;
-import gov.epa.databases.dev_qsar.exp_prop.service.ExpPropUnitService;
-import gov.epa.databases.dev_qsar.exp_prop.service.ExpPropUnitServiceImpl;
-import gov.epa.databases.dev_qsar.exp_prop.service.LiteratureSourceService;
-import gov.epa.databases.dev_qsar.exp_prop.service.LiteratureSourceServiceImpl;
-import gov.epa.databases.dev_qsar.exp_prop.service.ParameterAcceptableUnitService;
-import gov.epa.databases.dev_qsar.exp_prop.service.ParameterAcceptableUnitServiceImpl;
-import gov.epa.databases.dev_qsar.exp_prop.service.ParameterService;
-import gov.epa.databases.dev_qsar.exp_prop.service.ParameterServiceImpl;
-import gov.epa.databases.dev_qsar.exp_prop.service.PropertyAcceptableParameterService;
-import gov.epa.databases.dev_qsar.exp_prop.service.PropertyAcceptableParameterServiceImpl;
-import gov.epa.databases.dev_qsar.exp_prop.service.PropertyAcceptableUnitService;
-import gov.epa.databases.dev_qsar.exp_prop.service.PropertyAcceptableUnitServiceImpl;
-import gov.epa.databases.dev_qsar.exp_prop.service.PropertyCategoryService;
-import gov.epa.databases.dev_qsar.exp_prop.service.PropertyCategoryServiceImpl;
-import gov.epa.databases.dev_qsar.exp_prop.service.PropertyInCategoryService;
-import gov.epa.databases.dev_qsar.exp_prop.service.PropertyInCategoryServiceImpl;
-import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueService;
-import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueServiceImpl;
-import gov.epa.databases.dev_qsar.exp_prop.service.PublicSourceService;
-import gov.epa.databases.dev_qsar.exp_prop.service.PublicSourceServiceImpl;
-import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalService;
-import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.util.JSONUtilities;
 
 public class ExperimentalRecordLoader {
@@ -109,12 +55,14 @@ public class ExperimentalRecordLoader {
 		
 			//		String sourceName=DevQsarConstants.sourceNameOChem_2024_04_03;
 //			String sourceName=DevQsarConstants.sourceNamePubChem_2024_03_20;
-			String sourceName=DevQsarConstants.sourceNamePubChem_2024_11_27;
+//			String sourceName=DevQsarConstants.sourceNamePubChem_2024_11_27;
+//			String sourceName=DevQsarConstants.sourceNameOPERA28;
+			String sourceName=DevQsarConstants.sourceNameArnot2006;
 		
 			String sqlSourceName="select id from exp_prop.public_sources where name='"+sourceName+"';";
 			int publicSourceId=Integer.parseInt(SqlUtilities.runSQL(conn, sqlSourceName));
 		
-			System.out.println(publicSourceId+"\t"+sourceName);
+			System.out.println(sourceName+"\t"+publicSourceId);
 		
 			//Parameter values cascade on deleting the property values- so shouldnt need to delete separately:
 			//		String sqlParameters="delete from exp_prop.parameter_values pv2 using exp_prop.property_values pv\n"+
@@ -122,6 +70,49 @@ public class ExperimentalRecordLoader {
 			//		SqlUtilities.runSQLUpdate(conn, sqlParameters);//NOTE: not needed if foreign key to property value is set to cascade on delete
 		
 			String sqlPropertyValues="delete from exp_prop.property_values pv where fk_public_source_id="+publicSourceId+";";
+			System.out.println(sqlPropertyValues);
+			SqlUtilities.runSQLUpdate(conn, sqlPropertyValues);
+		
+			//		String sqlSourceCHemicals="delete from exp_prop.source_chemicals sc where sc.fk_public_source_id="+publicSourceId+" and created_by='tmarti02'";
+			//		SqlUtilities.runSQLUpdate(conn, sqlSourceCHemicals);
+		
+			//TODO delete literature sources associated with public source if no longer need
+			//TODO delete public source original sources associated with public source if no longer need
+		}
+		
+		void deleteByPublicSourceNameAndProperty() {
+			
+			
+			Connection conn=SqlUtilities.getConnectionPostgres();
+		
+			//		String sourceName=DevQsarConstants.sourceNameOChem_2024_04_03;
+//			String sourceName=DevQsarConstants.sourceNamePubChem_2024_03_20;
+//			String sourceName=DevQsarConstants.sourceNamePubChem_2024_11_27;
+
+//			String sourceName=DevQsarConstants.sourceNameOPERA28;
+//			String propertyName=DevQsarConstants.ESTROGEN_RECEPTOR_BINDING;
+
+//			String sourceName="Burkhard";
+			String sourceName="ECOTOX_2024_12_12";
+			String propertyName=DevQsarConstants.BCF;
+			
+			
+			String sqlProperty="select id from exp_prop.properties where name='"+propertyName+"';";
+			int propertyId=Integer.parseInt(SqlUtilities.runSQL(conn, sqlProperty));
+			System.out.println(propertyId+"\t"+propertyName);
+
+			String sqlSourceName="select id from exp_prop.public_sources where name='"+sourceName+"';";
+			int publicSourceId=Integer.parseInt(SqlUtilities.runSQL(conn, sqlSourceName));
+			System.out.println(publicSourceId+"\t"+sourceName);
+		
+			//Parameter values cascade on deleting the property values- so shouldnt need to delete separately:
+			//		String sqlParameters="delete from exp_prop.parameter_values pv2 using exp_prop.property_values pv\n"+
+			//				"where pv2.fk_property_value_id=pv.id and pv.fk_public_source_id="+publicSourceId;
+			//		SqlUtilities.runSQLUpdate(conn, sqlParameters);//NOTE: not needed if foreign key to property value is set to cascade on delete
+		
+			
+			String sqlPropertyValues="delete from exp_prop.property_values pv where fk_public_source_id="+publicSourceId+" and fk_property_id="+propertyId+";";
+			System.out.println(sqlPropertyValues);
 			SqlUtilities.runSQLUpdate(conn, sqlPropertyValues);
 		
 			//		String sqlSourceCHemicals="delete from exp_prop.source_chemicals sc where sc.fk_public_source_id="+publicSourceId+" and created_by='tmarti02'";
@@ -132,6 +123,7 @@ public class ExperimentalRecordLoader {
 			//		SqlUtilities.runSQLUpdate(conn, sqlPublicSources);
 		
 		}
+
 
 		void deleteEcotoxData() {
 		
@@ -596,13 +588,13 @@ public class ExperimentalRecordLoader {
 			boolean createDBEntries=true;
 		
 			String sourceName="Burkhard";
-			String propertyName=DevQsarConstants.BCF;
+//			String propertyName=DevQsarConstants.BCF;
+			String propertyName=DevQsarConstants.BAF;
+			
 			String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
-			String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+"_"+propertyName+" Experimental Records.json";
+			String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+propertyName+"\\"+sourceName+" Experimental Records.json";
 			File jsonFile=new File(filePath);
-		
 			System.out.println(filePath+"\t"+jsonFile.exists());
-		
 		
 			pvc.mapTables(sourceName);
 		
@@ -637,7 +629,52 @@ public class ExperimentalRecordLoader {
 			records.printUniqueUnitsListInExperimentalRecords();
 			System.out.println("experimentalRecords.size()="+records.size());
 		
-			load(records, typeOther, createDBEntries,sourceName,propertyName);
+			loadBatchWise(records, typeOther, createDBEntries,sourceName,propertyName);
+		
+		}
+		
+		
+		private void loadBCFDataNITE() {
+			
+			debug=true;//prints values loaded from database like property
+		
+			boolean createDBEntries=true;
+		
+			String sourceName="QSAR_Toolbox";
+			String sourceNameOriginal="BCF NITE";
+			String propertyName=DevQsarConstants.BCF;
+			
+			String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+			String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceNameOriginal+"\\"+propertyName+"\\"+sourceName+" Experimental Records.json";
+			File jsonFile=new File(filePath);
+			System.out.println(filePath+"\t"+jsonFile.exists());
+			
+			if(!jsonFile.exists())return;
+		
+			pvc.mapTables(sourceName);
+		
+			//**********************************************************************************************
+			//First create the property
+			ExpPropProperty property=pvc.getProperty(propertyName, DevQsarConstants.BCF);
+
+			List<Parameter>params=new ArrayList<>();
+			params.add(pvc.getParameter("Test guideline","Test guideline used"));
+					
+//			List<String>unitsParameterWaterConcentrationNew=Arrays.asList("Bq/L","Ci/L","cpm/L","ueq/L","M");
+//			pvc.updateParameter("Water concentration", unitsParameterWaterConcentrationNew);
+			
+			ExpPropUnit unitText=pvc.getUnit("TEXT","");
+			for(Parameter param:params) {
+				pvc.addParameterAcceptableUnit(unitText, param);	
+			}
+
+			//*******************************************************************************************************
+		
+			ExperimentalRecords records=ExperimentalRecords.loadFromJson(filePath, gson);
+			records.printUniqueUnitsListInExperimentalRecords();
+			System.out.println("experimentalRecords.size()="+records.size());
+		
+			loadBatchWise(records, typeOther, createDBEntries,sourceName,propertyName);
 		
 		}
 		
@@ -650,7 +687,8 @@ public class ExperimentalRecordLoader {
 			String type=typeOther;
 			String sourceName="Arnot 2006";
 			pvc.mapTables(sourceName);
-			String propertyName=DevQsarConstants.BCF;
+//			String propertyName=DevQsarConstants.BCF;
+			String propertyName=DevQsarConstants.BAF;
 			
 			String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
 			String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+propertyName+"\\"+sourceName+" Experimental Records.json";
@@ -696,16 +734,20 @@ public class ExperimentalRecordLoader {
 			pvc.createTextParameter("Species supercategory","Type of organism (e.g. fish)");
 			pvc.createTextParameter("Organism classification","Organism classification (e.g. vertebrate)");
 
-			
-			pvc.createTextParameter("Exposure Duration (in days or Lifetime)","Exposure Duration (in days or Lifetime)");
-			
 			pvc.getUnit("CI_MOL", "Ci/mol");
 			pvc.getUnit("BQ_ML", "Bq/mL");
 			pvc.getUnit("DPM_ML", "dpm/mL");
 			
+			
+			
 			HashSet<String>abbrevsWaterConc=getUnitAbbreviations(records, "Water concentration");
 			pvc.createParameter("Water concentration", "Concentration in water",abbrevsWaterConc);
 
+			HashSet<String>abbrevsExposureDuration=getUnitAbbreviations(records, "Exposure duration");
+			pvc.createParameter("Exposure duration", "Time exposed to chemical",abbrevsExposureDuration);
+
+			//Old parameter:
+//			pvc.createTextParameter("Exposure Duration (in days or Lifetime)","Exposure Duration (in days or Lifetime)");
 			
 			loadBatchWise(records, type, createDBEntries,sourceName,propertyName);
 		
@@ -971,10 +1013,14 @@ public class ExperimentalRecordLoader {
 		
 			boolean createDBEntries=true;
 		
-			String sourceName="ECOTOX_2023_12_14";
-			String propertyName=DevQsarConstants.BCF;
+//			String sourceName="ECOTOX_2023_12_14";
+			String sourceName="ECOTOX_2024_12_12";
+						
+//			String propertyName=DevQsarConstants.BCF;
+			String propertyName=DevQsarConstants.BAF;
+			
 			String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
-			String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+"_"+propertyName+" Experimental Records.json";
+			String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+propertyName+"\\"+sourceName+" Experimental Records.json";
 			File jsonFile=new File(filePath);
 		
 			System.out.println(filePath+"\t"+jsonFile.exists());
@@ -1001,7 +1047,15 @@ public class ExperimentalRecordLoader {
 			params.add(pvc.getParameter("Response site","Part of organism tested for the chemical"));
 			params.add(pvc.getParameter("Test location","Where the test was performed (e.g. laboratory"));
 			params.add(pvc.getParameter("Exposure concentration","Water concentration"));
-		
+					
+			pvc.getUnit("BQ_L", "Bq/L");
+			pvc.getUnit("CI_L", "Ci/L");
+			pvc.getUnit("CPM_L", "cpm/L");
+			pvc.getUnit("UEQ_L", "ueq/L");
+			
+			List<String>unitsParameterWaterConcentrationNew=Arrays.asList("Bq/L","Ci/L","cpm/L","ueq/L","M");
+			pvc.updateParameter("Water concentration", unitsParameterWaterConcentrationNew);
+			
 			ExpPropUnit unitText=pvc.getUnit("TEXT","");
 			for(Parameter param:params) {
 				pvc.addParameterAcceptableUnit(unitText, param);	
@@ -1013,7 +1067,7 @@ public class ExperimentalRecordLoader {
 			records.printUniqueUnitsListInExperimentalRecords();
 			System.out.println("experimentalRecords.size()="+records.size());
 		
-			load(records, typeOther, createDBEntries,sourceName,propertyName);
+			loadBatchWise(records, typeOther, createDBEntries,sourceName,propertyName);
 		
 		}
 
@@ -1529,21 +1583,32 @@ public class ExperimentalRecordLoader {
 	
 	
 	public static void main(String[] args) {
+		
+		
 		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("tmarti02");
 
+//		loader.delete.deleteExpPropData();
+//		loader.delete.deleteByPublicSourceName();
+//		loader.delete.deleteByPublicSourceNameAndProperty();
+//		loader.delete.deleteByPublicSourceName();
+		
+//		loader.loaders.loadBCFArnot();//loaded
+//		loader.loaders.loadBCFDataEcotox();//loaded
+		loader.loaders.loadBCFDataBurkhard();//loaded
+//		loader.loaders.loadBCFDataNITE();//need to run
+		
 		//		loader.loadOChem();
 //		loader.loaders.loadPubchemMultiple();
 //		loader.loaders.loadPubChem();
-		
-		//		deleteByPublicSourceName();
-//				loader.delete.deleteExpPropData();
-//		loader.delete.deleteByPublicSourceName();
 
-		loader.loaders.loadAcuteAquaticToxicityDataEcotox();
-//		loader.loaders.loadBCFArnot();
+//		loader.loaders.loadAcuteAquaticToxicityDataEcotox();
+//		
+		
+		
 		//		deleteEcotoxData();
 
 	}
 
 }
+
 

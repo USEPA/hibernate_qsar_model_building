@@ -431,6 +431,20 @@ public class SqlUtilities {
 		return sql;
 	}
 	
+	
+	public static Integer setDate (PreparedStatement prep, Date accessDate, Integer i) throws SQLException {
+		
+		i++;
+		if(accessDate==null) {
+			prep.setNull(i, Types.TIMESTAMP);
+		} else {
+			java.sql.Timestamp sqlTimeStamp = new java.sql.Timestamp(accessDate.getTime());
+			prep.setTimestamp(i, sqlTimeStamp);
+		}
+		return i;
+
+	}
+	
 	public static Integer setString(PreparedStatement prep, String str, Integer i) throws SQLException {		
 		
 		i++;

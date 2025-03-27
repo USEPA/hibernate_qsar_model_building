@@ -3,7 +3,9 @@ package gov.epa.databases.dev_qsar.exp_prop.service;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -79,19 +81,21 @@ public class PublicSourceServiceImpl implements PublicSourceService {
 		try {
 			PreparedStatement prep = conn.prepareStatement(sql, new String[]{"id"});//for some reason much faster than using Statement.RETURN_GENERATED_KEYS!
 
+			
+//			SqlUtilities.batchCreate("public_sources","exp_prop", fieldNames, publicSources, conn);
+			
+//			List<Long>predictionDashboardIds=new ArrayList<>();
 
-
-			List<Long>predictionDashboardIds=new ArrayList<>();
-
-			for (PublicSource sc:publicSources) {
+			for (PublicSource ps:publicSources) {
 
 				Integer i=0;
-				i=SqlUtilities.setString(prep, sc.getName(), i);
-				i=SqlUtilities.setString(prep, sc.getDescription(), i);
-				i=SqlUtilities.setString(prep, sc.getType(), i);
-				i=SqlUtilities.setString(prep, sc.getUrl(), i);
-				i=SqlUtilities.setString(prep, sc.getAccessDate()+"", i);
-				i=SqlUtilities.setString(prep, sc.getCreatedBy(), i);
+				i=SqlUtilities.setString(prep, ps.getName(), i);
+				i=SqlUtilities.setString(prep, ps.getDescription(), i);
+				i=SqlUtilities.setString(prep, ps.getType(), i);
+				i=SqlUtilities.setString(prep, ps.getUrl(), i);
+//				i=SqlUtilities.setString(prep, sc.getAccessDate()+"", i);
+				i=SqlUtilities.setDate(prep, ps.getAccessDate(), i);
+				i=SqlUtilities.setString(prep, ps.getCreatedBy(), i);
 
 				prep.addBatch();
 

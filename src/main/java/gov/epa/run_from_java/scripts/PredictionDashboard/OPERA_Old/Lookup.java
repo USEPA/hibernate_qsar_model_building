@@ -933,6 +933,18 @@ public class Lookup {
 	}
 	
 	
+	public static String createSQLAllSort(int offset,int limit,String orderBy) {
+
+		String SQL="SELECT * from Results order by "+orderBy+"\r\n";							
+
+		if (limit!=-1)
+			SQL+="LIMIT "+limit+" OFFSET "+offset+" \n";
+		
+		return SQL;
+	}
+
+	
+	
 	
 	public static void main(String[] args) {
 //		createLookupBySID("CERAPP_Bind","");

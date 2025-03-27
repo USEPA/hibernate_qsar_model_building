@@ -83,6 +83,7 @@ public class PredictionDashboardTableMaps {
 	public PredictionDashboardTableMaps(File fileJsonDsstoxRecords,File fileJsonOtherCAS) {
 		
 		if (fileJsonDsstoxRecords!=null) {
+			System.out.println(fileJsonDsstoxRecords.getAbsolutePath());
 			getDsstoxRecordsFromJsonExport(fileJsonDsstoxRecords,fileJsonOtherCAS);//loads from fileJsonDsstoxRecords
 		} else {
 			getDsstoxRecordsFromDatabase();	

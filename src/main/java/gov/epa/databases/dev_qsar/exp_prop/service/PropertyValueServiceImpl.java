@@ -336,6 +336,8 @@ public class PropertyValueServiceImpl implements PropertyValueService {
 
 			for (PropertyValue propertyValue : propertyValues) {
 
+				if(propertyValue.getParameterValues()==null)continue;
+				
 				for (ParameterValue pv : propertyValue.getParameterValues()) {
 
 					Integer i = 0;

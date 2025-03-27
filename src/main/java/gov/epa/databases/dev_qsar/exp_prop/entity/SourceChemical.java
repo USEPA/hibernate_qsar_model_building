@@ -41,8 +41,9 @@ public class SourceChemical {
 	@Length(max = 1000)
 	private String sourceSmiles;
 
-	@Column(name = "source_chemical_name", length = 255)
-	@Length(max = 500)
+//	@Column(name = "source_chemical_name", length = 255)
+//	@Length(max = 500)
+	@Column(name = "source_chemical_name")
 	private String sourceChemicalName;
 
 	@ManyToOne

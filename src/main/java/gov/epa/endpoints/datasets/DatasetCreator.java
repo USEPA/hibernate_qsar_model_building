@@ -1305,7 +1305,7 @@ public class DatasetCreator {
 			}
 		}
 		
-		Collections.sort(fields);
+//		Collections.sort(fields);
 		
 //		fields.add("temperature_c");
 //		fields.add("pressure_mmHg");

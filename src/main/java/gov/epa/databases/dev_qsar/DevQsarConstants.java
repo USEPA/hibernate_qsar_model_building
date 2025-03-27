@@ -14,6 +14,9 @@ import com.google.gson.Gson;
 
 public class DevQsarConstants {
 	
+	public static final String sourceNameArnot2006="Arnot 2006";
+	public static final String sourceNameOPERA28="OPERA2.8";
+	public static final String sourceNameOChem="OChem";
 	public static final String sourceNameOChem_2024_04_03="OChem_2024_04_03";
 	public static final String sourceNamePubChem_2024_03_20="PubChem_2024_03_20";
 	public static final String sourceNamePubChem_2024_11_27="PubChem_2024_11_27";
@@ -267,8 +270,14 @@ public class DevQsarConstants {
 	
 	public static final String DPM_ML="dpm/mL";
 	public static final String BQ_ML="Bq/mL";
+	public static final String BQ_L="Bq/L";
 	public static final String MBQ_ML="mBq/mL";
 	public static final String CI_MOL="Ci/mol";
+	public static final String CI_L="Ci/L";
+	
+	public static final String CPM_L="cpm/L";
+	public static final String UEQ_L="ueq/L";
+	
 	
 	public static final String MG_KG = "mg/kg";
 	public static final String L_KG = "L/kg";
@@ -539,6 +548,7 @@ public class DevQsarConstants {
 
 		map.put(KOC,getConstantNameByReflection(LOG_L_KG));
 		map.put(BCF,getConstantNameByReflection(LOG_L_KG));
+		map.put(BAF,getConstantNameByReflection(LOG_L_KG));
 		map.put(OH, getConstantNameByReflection(LOG_CM3_MOLECULE_SEC));
 		
 //		map.put(CLINT, getUnitNameByReflection(LOG_UL_MIN_1MM_CELLS));

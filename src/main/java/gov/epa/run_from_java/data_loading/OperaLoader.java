@@ -265,7 +265,8 @@ public class OperaLoader {
 //		System.out.println(Utilities.gson.toJson(recordsAll));
 //		printUniqueUnitsListInExperimentalRecords(records);
 		System.out.println("experimentalRecords.size()="+recordsAll.size());
-		loader.loaders.load(recordsAll,type,true,sourceName,propertyName);
+//		loader.loaders.load(recordsAll,type,true,sourceName,propertyName);
+		loader.loaders.loadBatchWise(recordsAll,type,true,sourceName,propertyName);
 	}
 	
 	void reloadFailedPropertyValuesFromOPERA_ExperimentalRecordsFile(String propertyName,String type,String sourceName) {
@@ -554,7 +555,8 @@ public class OperaLoader {
 	}
 	
 	void loadPropertyValues() {
-		String sourceName="OPERA2.9";
+		String sourceName="OPERA2.8";
+//		String sourceName="OPERA2.9";
 		
 		loader.pvc.mapTables(sourceName);
 
@@ -574,12 +576,14 @@ public class OperaLoader {
 //		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.KOC,ExperimentalRecordLoader.typePhyschem,sourceName);
 //		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.KmHL,ExperimentalRecordLoader.typePhyschem,sourceName);
 //		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.ORAL_RAT_LD50,ExperimentalRecordLoader.typePhyschem,sourceName);
-//		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.ESTROGEN_RECEPTOR_BINDING,ExperimentalRecordLoader.typePhyschem,sourceName);
+//		
+		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.ESTROGEN_RECEPTOR_BINDING,ExperimentalRecordLoader.typePhyschem,sourceName);
 		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.ESTROGEN_RECEPTOR_AGONIST,ExperimentalRecordLoader.typePhyschem,sourceName);
 		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.ESTROGEN_RECEPTOR_ANTAGONIST,ExperimentalRecordLoader.typePhyschem,sourceName);
 		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.ANDROGEN_RECEPTOR_BINDING,ExperimentalRecordLoader.typePhyschem,sourceName);
 		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.ANDROGEN_RECEPTOR_AGONIST,ExperimentalRecordLoader.typePhyschem,sourceName);
 		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.ANDROGEN_RECEPTOR_ANTAGONIST,ExperimentalRecordLoader.typePhyschem,sourceName);
+//		
 //		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.CLINT,ExperimentalRecordLoader.typePhyschem,sourceName);//log
 //		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.FUB,ExperimentalRecordLoader.typePhyschem,sourceName);
 //		loadPropertyValuesFromOPERA_ExperimentalRecordsFile(DevQsarConstants.CACO2,ExperimentalRecordLoader.typePhyschem,sourceName);
