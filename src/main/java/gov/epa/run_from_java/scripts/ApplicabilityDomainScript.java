@@ -37,6 +37,9 @@ public class ApplicabilityDomainScript {
 	
 	static int portModelBuilding=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
 	static String serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+//	static String serverModelBuilding="http://127.0.0.1";
+	
+	
 //	static String serverModelBuilding=DevQsarConstants.SERVER_819;
 
 	static String descriptorSetName = DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
@@ -255,10 +258,10 @@ public class ApplicabilityDomainScript {
 
 		List<String>datasetNames=new ArrayList<>();
 		datasetNames.add("HLC v1 modeling");
-		datasetNames.add("WS v1 modeling");
 		datasetNames.add("VP v1 modeling");
-		datasetNames.add("LogP v1 modeling");
 		datasetNames.add("BP v1 modeling");
+		datasetNames.add("WS v1 modeling");
+		datasetNames.add("LogP v1 modeling");
 		datasetNames.add("MP v1 modeling");
 		
 //		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
@@ -613,6 +616,12 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 		//Run AD calculations using webservice:	
 		
 		String strResponse=null;
+		
+//		System.out.println("Model Descriptors="+prmm.descriptorEmbeddingTsv);
+		
+//		System.out.println(mws.callInfo("xgb").getBody().toString());
+		
+//		System.out.println(data.predictionSetInstances);
 		
 		if (prmm.descriptorEmbeddingTsv!=null) {
 			strResponse=mws.callPredictionApplicabilityDomain(data.trainingSetInstances,data.predictionSetInstances,
@@ -1066,7 +1075,7 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 		ApplicabilityDomainScript ads=new ApplicabilityDomainScript();
 		
 		ads.runCaseStudyExpProp_All_Endpoints_modelSpecificAD();
-		ads.runCaseStudyExpProp_All_Endpoints_allDescriptorsAD();
+//		ads.runCaseStudyExpProp_All_Endpoints_allDescriptorsAD();
 		
 //		ads.runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN();
 //		ads.runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN();

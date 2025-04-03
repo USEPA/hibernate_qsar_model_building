@@ -212,7 +212,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 			sql+="?";
 			if (i<fieldNames.length-1)sql+=",";			 		
 		}
-		sql+="current_timestamp)";
+		sql+="current_timestamp) ON CONFLICT DO NOTHING";
 		return sql;
 	}
 
@@ -477,6 +477,8 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 			
 			PredictionReport pr=pd.getPredictionReport();
 			
+			if(pd.getId()==null) continue;
+			
 			prep.setLong(1, pd.getId());
 			prep.setBytes(2, pr.getFileJson());
 			prep.setBytes(3, pr.getFileHtml());
@@ -508,6 +510,8 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		
 		while(pdIterator.hasNext())	 {		
 			PredictionDashboard pd=pdIterator.next();
+			
+			if(pd.getId()==null) continue;
 			
 			if(pd.getQsarPredictedADEstimates()==null) continue;
 			
@@ -571,6 +575,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		while(pdIterator.hasNext())	 {		
 			PredictionDashboard pd=pdIterator.next();
 			
+			if(pd.getId()==null) continue;
 			if(pd.getQsarPredictedNeighbors()==null) continue;
 			
 			for (QsarPredictedNeighbor neighbor: pd.getQsarPredictedNeighbors()) {

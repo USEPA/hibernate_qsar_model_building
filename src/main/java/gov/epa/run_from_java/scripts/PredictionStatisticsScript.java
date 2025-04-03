@@ -68,17 +68,17 @@ public class PredictionStatisticsScript {
 		// datasetNames.add("BP v1 res_qsar");
 		// datasetNames.add("MP v1 res_qsar");
 
-//		datasetNames.add("HLC v1 modeling");
-//		datasetNames.add("WS v1 modeling");
-//		datasetNames.add("VP v1 modeling");
-//		datasetNames.add("BP v1 modeling");
-//		datasetNames.add("LogP v1 modeling");
-//		datasetNames.add("MP v1 modeling");
+		datasetNames.add("HLC v1 modeling");
+		datasetNames.add("VP v1 modeling");
+		datasetNames.add("BP v1 modeling");
+		datasetNames.add("WS v1 modeling");
+		datasetNames.add("LogP v1 modeling");
+		datasetNames.add("MP v1 modeling");
 		
 //		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
 		
-		datasetNames.add("exp_prop_96HR_BG_LC50_v1 modeling");
-		datasetNames.add("exp_prop_96HR_BG_LC50_v2 modeling");
+//		datasetNames.add("exp_prop_96HR_BG_LC50_v1 modeling");
+//		datasetNames.add("exp_prop_96HR_BG_LC50_v2 modeling");
 
 
 	}
@@ -296,6 +296,7 @@ public class PredictionStatisticsScript {
 //		 String statisticName="Q2_Test";
 		// String statisticName="Q2_CV_Training";
 //		String statisticName = DevQsarConstants.Q2_F3_TEST;
+		
 //		 String statisticName="PearsonRSQ_CV_Training";
 		 String statisticName="MAE_CV_Training";
 		 		 
@@ -2402,11 +2403,15 @@ public class PredictionStatisticsScript {
 	
 	
 
+	/**
+	 * Create json and excel reports
+	 * 
+	 */
 	void createPredictionReportForMethodArrays() {
 		
 		
 		List<String>modelSets=new ArrayList<>();		
-		modelSets.add("WebTEST2.0");
+//		modelSets.add("WebTEST2.0");
 		modelSets.add("WebTEST2.1");
 		
 //		List<String>dataSets=new ArrayList<>();
@@ -2576,6 +2581,8 @@ public class PredictionStatisticsScript {
 		// ms.createSummaryTableForMethod_Rnd_Representative();
 
 //		 ms.createSummaryTableForMethod();
+		 
+		 
 //		 ms.createSummaryTableForSet();
 //		 ms.createSummaryTableForSet2();
 //		 ms.createSummaryTableForSet3();

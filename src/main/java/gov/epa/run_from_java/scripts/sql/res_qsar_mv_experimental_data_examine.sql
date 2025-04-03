@@ -54,3 +54,6 @@ join exp_prop.properties p on pv.fk_property_id = p.id
 join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
 where p.name='Bioconcentration factor'
 group by ps.name;
+
+select count(distinct dtxcid) from mv_experimental_data
+where prop_name='Henry''s Law Constant';

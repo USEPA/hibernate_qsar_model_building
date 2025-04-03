@@ -1,5 +1,7 @@
 package gov.epa.run_from_java.scripts.PredictionDashboard;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -87,20 +89,55 @@ public class DatabaseUtilities {
 	 */
 	public static HashSet<String>getLoadedKeys(Source source,DsstoxSnapshot snapshot) {
 		
-		String sql="select distinct pd.canon_qsar_smiles, dr.id, m.id from qsar_models.predictions_dashboard pd\r\n";
-		sql+="join qsar_models.models m on m.id=pd.fk_model_id\r\n";
-		sql+="join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\r\n";
-		sql+="where m.fk_source_id="+source.getId()+" and dr.fk_dsstox_snapshot_id="+snapshot.getId()+";";
-
+		int limit=50000;
 		HashSet<String>values=new HashSet<>();
 		
 		try {
 			Connection conn=gov.epa.run_from_java.scripts.SqlUtilities.getConnectionPostgres();
-			ResultSet rs=SqlUtilities.runSQL2(conn , sql);	
+						
+			int i=0;
 			
-			while (rs.next()) {
-				values.add(rs.getString(1)+"\t"+rs.getLong(2)+"\t"+rs.getLong(3));
+			while (true) {
+				
+				String sql="select pd.canon_qsar_smiles, dr.id, m.id from qsar_models.predictions_dashboard pd\r\n";
+				sql+="join qsar_models.models m on m.id=pd.fk_model_id\r\n";
+				sql+="join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\r\n";
+//				sql+="where m.fk_source_id="+source.getId()+" and dr.fk_dsstox_snapshot_id="+snapshot.getId()+"\r\n";
+				sql+="where m.fk_source_id="+source.getId()+"\r\n";
+
+//				String sql="select pd.canon_qsar_smiles, dr.id, pd.fk_model_id\r\n"
+//						+ "from qsar_models.predictions_dashboard pd\r\n"
+//						+ "join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\r\n"
+//						+ "where fk_model_id in (1161,1162,1163,1164,1165,1166,1167,1168,1169,1170,1171,1172,1173,\r\n"
+//						+ "                      1174,1175,1176,1177,1178,1179,1180,1181,1182,1183,1184,1491,\r\n"
+//						+ "                      1492,1493,1494)\n";
+				
+				
+				sql+="limit "+limit+" offset "+limit*i+";";
+//				System.out.println(sql);
+				
+				long t1=System.currentTimeMillis();
+				
+				ResultSet rs=SqlUtilities.runSQL2(conn , sql);	
+				int count=0;
+				
+				long t2=System.currentTimeMillis();
+				while (rs.next()) {
+					values.add(rs.getString(1)+"\t"+rs.getLong(2)+"\t"+rs.getLong(3));
+					count++;
+				}
+				long t3=System.currentTimeMillis();
+				
+				System.out.println("Time to get result set:"+(t2-t1));
+				System.out.println("Time to iterate result set:"+(t3-t2));
+				
+				if(count==0) break;
+				
+				System.out.println(values.size());
+				
+				i++;
 			}
+			
 			
 		} catch(Exception ex) {
 			ex.printStackTrace();
@@ -108,6 +145,62 @@ public class DatabaseUtilities {
 		
 		return values;
 		
+	}
+	
+	public static HashSet<String>getLoadedKeys2(Source source,DsstoxSnapshot snapshot) {
+
+		HashSet<String>values=new HashSet<>();
+
+		try {
+			Connection conn=gov.epa.run_from_java.scripts.SqlUtilities.getConnectionPostgres();
+
+			String sql="select pd.canon_qsar_smiles, dr.id, m.id from qsar_models.predictions_dashboard pd\r\n";
+			sql+="join qsar_models.models m on m.id=pd.fk_model_id\r\n";
+			sql+="join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\r\n";
+			//				sql+="where m.fk_source_id="+source.getId()+" and dr.fk_dsstox_snapshot_id="+snapshot.getId()+"\r\n";
+			sql+="where m.fk_source_id="+source.getId()+"\r\n";
+
+			long t1=System.currentTimeMillis();
+			ResultSet rs=SqlUtilities.runSQL2(conn , sql);	
+			long t2=System.currentTimeMillis();
+			System.out.println("Time to get result set:"+(t2-t1));
+			
+			while (rs.next()) {
+				values.add(rs.getString(1)+"\t"+rs.getLong(2)+"\t"+rs.getLong(3));
+			}
+			long t3=System.currentTimeMillis();
+
+			System.out.println("Time to iterate result set:"+(t3-t2));
+			System.out.println(values.size());
+
+		} catch(Exception ex) {
+			ex.printStackTrace();
+		}
+
+		return values;
+
+	}
+	
+	public static HashSet<String>getLoadedKeys(String filepath) {
+
+		HashSet<String>values=new HashSet<>();
+
+		try {
+			
+			BufferedReader br=new BufferedReader(new FileReader(filepath));
+			br.readLine();
+			
+			while (true) {
+				String Line=br.readLine();
+				if(Line==null)break;
+				values.add(Line);
+			}
+			br.close();
+		} catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		return values;
+
 	}
 	
 	/**
@@ -309,6 +402,30 @@ public class DatabaseUtilities {
 //		d.deleteAllRecords("Percepta2020.2.1");
 //		d.deleteAllRecords("Percepta2023.1.2");
 		
+	}
+
+
+
+	public static HashSet<String> getLoadedCIDs(Source source, DsstoxSnapshot snapshot) {
+		HashSet<String>values=new HashSet<>();
+		
+		String sql="select distinct (dr.dtxcid)\r\n"
+				+ "from qsar_models.predictions_dashboard pd\r\n"
+				+ "join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\r\n"
+				+ "join qsar_models.models m on m.id=pd.fk_model_id\r\n"
+				+ "where m.fk_source_id="+source.getId()+" and dr.fk_dsstox_snapshot_id="+snapshot.getId()+";";
+				
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres() , sql);
+		
+		try {
+			while (rs.next()) {
+				values.add(rs.getString(1));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return values;
 	}
 
 }

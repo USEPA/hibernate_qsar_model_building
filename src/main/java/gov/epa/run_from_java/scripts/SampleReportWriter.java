@@ -1,6 +1,10 @@
 package gov.epa.run_from_java.scripts;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelFile;
@@ -97,11 +101,34 @@ public class SampleReportWriter {
 		
 		ads.runAD(methodName, splittingName, descriptorSetName, applicability_domain,datasetName,predictionReport);
 
+		if(true)return null;
+		
 		filepathReport = "data/reports/" + modelSetName +"/"+ datasetName+"_"+methodName + "_PredictionReport_with_AD.json";
 		predictionReport.toFile(filepathReport);
 		
-		String filepathExcel = outputFolder + File.separator + String.join("_", datasetName, splittingName, methodName,"with_AD") + ".xlsx";
+		System.out.println(filepathReport);
+		
+		String fileNameExcel=String.join("_", datasetName, splittingName, methodName,"with_AD") + ".xlsx";
+		String filepathExcel = outputFolder + File.separator + fileNameExcel;
 		createExcelReport(methodName, predictionReport, filepathExcel, overWriteJsonReport);
+		
+//		System.out.println(filepathExcel);
+		
+
+		// Copy excel files to paper folder:		
+		try {
+			
+			String folderDest="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\000 Papers\\2023 8.4.11 papers\\00000 2025 paper\\";
+			folderDest+=modelSetName+"\\";
+			new File(folderDest).mkdirs();
+
+			Files.copy(Paths.get(filepathExcel),
+			        Paths.get(folderDest+fileNameExcel), StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		
 		
 		return predictionReport;
 		

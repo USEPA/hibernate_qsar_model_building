@@ -520,7 +520,7 @@ public class DatasetCreatorScript {
 
 //		dcs.deleteDatasets();
 
-		dcs.createDatasetsForDashboard();
+//		dcs.createDatasetsForDashboard();
 		
 //		dcs.createSingleSourceDatasets();
 		
@@ -539,7 +539,7 @@ public class DatasetCreatorScript {
 //		dcs.getAutoMappingsFromChemRegList();
 		
 //		dcs.getDatasetStats();//Get record counts for the papers
-//		dcs.getDatasetStatsUsingSql();//Get record counts for the papers
+		dcs.getDatasetStatsUsingSql();//Get record counts for the papers
 //		getDatasetStatsForOneDataset();
 //		dcs.getMappedRecordCountsBySourceAndProperty();
 

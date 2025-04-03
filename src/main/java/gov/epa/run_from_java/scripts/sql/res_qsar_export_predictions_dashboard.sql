@@ -68,6 +68,9 @@ where dr.fk_dsstox_snapshot_id=2 -- 2024-11-12 snapshot
 refresh materialized view mv_predicted_data;
 VACUUM (ANALYZE, VERBOSE, FULL) qsar_models.predictions_dashboard;
 
+VACUUM (ANALYZE, VERBOSE, FULL) qsar_models.dsstox_records;
+VACUUM (ANALYZE, VERBOSE, FULL) qsar_models.models;
+
 GRANT SELECT ON mv_predicted_data TO arashid;
 GRANT SELECT ON mv_predicted_data TO app_pentaho;
 create index mv_predicted_data_dtxsid_index  on mv_predicted_data (dtxsid);
@@ -190,6 +193,40 @@ join qsar_models.models m on m.id=pd.fk_model_id
 where m.fk_source_id=6;
 
 
+--get OPERA 2.8 dtxcids loaded:
+select count(distinct (dr.dtxcid))
+from qsar_models.predictions_dashboard pd
+join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
+join qsar_models.models m on m.id=pd.fk_model_id
+where m.fk_source_id=6 and dr.fk_dsstox_snapshot_id=2;
+
+
+-- find dtxcids with less than 28 opera predictions
+select dr.dtxcid, count(pd.id) as countPD
+from qsar_models.predictions_dashboard pd
+join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
+join qsar_models.models m on m.id=pd.fk_model_id
+where m.fk_source_id=6 and dr.fk_dsstox_snapshot_id=2
+group by dr.dtxcid
+having count(pd.id)<28;
+
+
+
+--get OPERA 2.8 unique dtxcids:
+select distinct (dr.id)
+from qsar_models.predictions_dashboard pd
+join qsar_models.models m on m.id=pd.fk_model_id
+join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
+where m.fk_source_id=6;
+
+
+
+select concat(pd.canon_qsar_smiles, chr(9),dr.id, chr(9),m.id) as pd_key from qsar_models.predictions_dashboard pd
+			join qsar_models.models m on m.id=pd.fk_model_id
+			join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
+			where m.fk_source_id=6;
+
+
 select count(1) from qsar_models.prediction_reports pr;
 
 select distinct s.name from qsar_models.prediction_reports pr
@@ -197,6 +234,13 @@ join qsar_models.predictions_dashboard pd on pr.fk_predictions_dashboard_id = pd
 join qsar_models.models on pd.fk_model_id = models.id
 join qsar_models.sources s on models.fk_source_id = s.id;
 
+select * from qsar_models.models
+limit 1 offset 1;
+
+
+SELECT * from qsar_models.models m
+order by m.name
+OFFSET 1;
 
 
 select pr.id, s.name from qsar_models.prediction_reports pr
@@ -220,3 +264,9 @@ limit 1;
 -- 27011093  to 75328711
 
 
+
+
+select pd.canon_qsar_smiles, dr.id, m.id from qsar_models.predictions_dashboard pd
+		join qsar_models.models m on m.id=pd.fk_model_id
+    join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
+		where m.fk_source_id=6 and dr.fk_dsstox_snapshot_id=2 limit 1000;

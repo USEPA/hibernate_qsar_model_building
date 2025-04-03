@@ -91,14 +91,55 @@ AND    n.nspname = 'qsar_models';
 
 --find ones missing reports:
 -- to do determine which pd.ids are missing reports and then delete them and reload
-select  count(pd.id)  from qsar_models.predictions_dashboard pd
+-- select  count(pd.id)  from qsar_models.predictions_dashboard pd
+select  distinct dr.dtxcid from qsar_models.predictions_dashboard pd
 left join qsar_models.prediction_reports pr on pd.id = pr.fk_predictions_dashboard_id
 join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
 join qsar_models.models m on pd.fk_model_id = m.id
 join qsar_models.sources s on m.fk_source_id = s.id
 where pr.id is null and s.name='OPERA2.8';
 
+--query of a query
+select * from qsar_models.models m where
+m.name  in ( select m2.name from qsar_models.models m2
+join qsar_models.sources s on m2.fk_source_id = s.id
+-- where s.name='OPERA2.8'
+where m2.fk_source_id=6
+);
+
+
+select  concat('1',chr(9),'2',chr(9),'3');
 
 
 
+
+--pd keys with missing reports
+select  concat(pd.canon_qsar_smiles,chr(9),dr.id,chr(9),m.id) as pd_key, pd.id as pd_id from qsar_models.predictions_dashboard pd
+left join qsar_models.prediction_reports pr on pd.id = pr.fk_predictions_dashboard_id
+join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
+join qsar_models.models m on pd.fk_model_id = m.id
+join qsar_models.sources s on m.fk_source_id = s.id
+where pr.id is null and s.name='OPERA2.8';
+
+select concat(pd.canon_qsar_smiles,chr(9),dr.id,chr(9),m.id) as pd_key from qsar_models.predictions_dashboard pd
+	join qsar_models.models m on m.id=pd.fk_model_id
+	join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
+	where m.fk_source_id=6 and dr.fk_dsstox_snapshot_id=2
+limit 500 offset 100000;
+
+select pd.canon_qsar_smiles, dr.id, pd.fk_model_id
+from qsar_models.predictions_dashboard pd
+            join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
+where fk_model_id in (1161,1162,1163,1164,1165,1166,1167,1168,1169,1170,1171,1172,1173,
+                      1174,1175,1176,1177,1178,1179,1180,1181,1182,1183,1184,1491,
+                      1492,1493,1494)
+limit 50000 offset 0;
+
+
+
+
+
+
+
+select id from qsar_models.models where fk_source_id=6 order by id;
 

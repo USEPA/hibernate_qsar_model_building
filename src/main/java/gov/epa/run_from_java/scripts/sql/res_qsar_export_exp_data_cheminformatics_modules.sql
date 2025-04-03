@@ -203,5 +203,32 @@ where sc.source_chemical_name='Perflenapent' and p.name='Vapor pressure'
 
 
 
+-- Get counts by public source
+select p.name, ps.name,count(dp.id)
+from qsar_datasets.data_points dp
+         join qsar_datasets.data_point_contributors dpc on dpc.fk_data_point_id = dp.id
+         join exp_prop.property_values pv on dpc.exp_prop_property_values_id = pv.id
+         left join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
+         join qsar_datasets.datasets d on dp.fk_dataset_id = d.id
+         join qsar_datasets.properties p on d.fk_property_id = p.id
+         join qsar_datasets.datasets_in_cheminformatics_modules did on did.fk_property_id = d.fk_property_id
+where d.id = did.fk_datasets_id and keep=true and ps.name is not null
+group by ps.name,p.name
+order by p.name,ps.name;
+
+
+
+-- Get datapoint counts
+select p.name,count(dp.id)
+from qsar_datasets.data_points dp
+         join qsar_datasets.datasets d on dp.fk_dataset_id = d.id
+         join qsar_datasets.properties p on d.fk_property_id = p.id
+         join qsar_datasets.datasets_in_cheminformatics_modules did on did.fk_property_id = d.fk_property_id
+            join qsar_descriptors.descriptor_values dv on dv.canon_qsar_smiles=dp.canon_qsar_smiles
+join qsar_descriptors.descriptor_sets ds on dv.fk_descriptor_set_id = ds.id
+where d.id = did.fk_datasets_id and ds.name='WebTEST-default' and dv.values_tsv is not null
+group by p.name
+order by p.name;
+
 
 

@@ -1331,7 +1331,7 @@ public class PredictionDashboardScriptOPERA {
 
 		}
 
-		public void createRecordsFromOPERA2_8_SqliteDB(boolean writeToDB) {
+		public void createRecordsFromOPERA2_8_SqliteDB(boolean writeToDB, int offset) {
 
 
 			boolean writeReportsToHardDrive=false;
@@ -1341,12 +1341,11 @@ public class PredictionDashboardScriptOPERA {
 			int batchSize=1000;
 //			int count=1000;//number of rows in sqlite db to use
 			int count=-1;
+//			int count=1;
 
 			int limit=-1;
 			if(count!=-1) limit=count;
 			
-			int offset=200000;//already loaded these			
-
 			boolean skipMissingDsstoxRecordID=true;
 
 			String snapshotName="DSSTOX Snapshot 11/12/2024";		
@@ -1360,7 +1359,15 @@ public class PredictionDashboardScriptOPERA {
 
 			//		HashSet<String> pd_keys = getPredictionsDashboardKeysInDB(minModelId,maxModelId);
 			//		HashSet<String> pd_keys=new HashSet<String>();
-			HashSet<String> pd_keys=DatabaseUtilities.getLoadedKeys(source, snapshot);
+			
+			String filepathKeys="data\\OPERA2.8\\reports\\keys.csv";
+			
+//			HashSet<String> pd_keys=DatabaseUtilities.getLoadedKeys(source, snapshot);
+			HashSet<String> pd_keys=DatabaseUtilities.getLoadedKeys(filepathKeys);
+			
+//			HashSet<String> pd_keys=new HashSet<>();
+			
+			
 			System.out.println("Loaded keys: "+pd_keys.size());
 
 
@@ -1375,6 +1382,8 @@ public class PredictionDashboardScriptOPERA {
 				String sql=Lookup.createSQLAllSort(offset,limit,"DSSTOX_COMPOUND_ID");
 				//			String sql="select * from Results where DSSTOX_COMPOUND_ID='DTXCID20135';";
 
+				System.out.println(sql);
+				
 				Statement sqliteStatement=SqliteUtilities.getStatement(Lookup.conn);
 
 				List<OPERA_Structure>operaStructures=OPERA_Structure.readStructureTableFromSqlite(sqliteStatement);
@@ -1671,6 +1680,7 @@ public class PredictionDashboardScriptOPERA {
 		
 			//
 			int recordsRead=0;
+			
 		
 			while (rsResultsTable.next()) {
 		
@@ -1693,7 +1703,8 @@ public class PredictionDashboardScriptOPERA {
 		
 				recordsRead++;
 		
-				if(recordsRead%1000==0) {
+//				if(recordsRead%10000==0) {
+				if(recordsRead%10==0) {
 					System.out.println(recordsRead);
 				}
 		
@@ -1730,11 +1741,212 @@ public class PredictionDashboardScriptOPERA {
 		
 			System.out.println("time to load:"+(t2-t1)/1000.0+" seconds");
 		}
+		
+		void findMissingPredictionDashboardKeysOpera() {
+		
+			System.out.println("Enter findMissingPredictionDashboardKeysOpera()");
+			String snapshotName="DSSTOX Snapshot 11/12/2024";		
+			DsstoxSnapshotServiceImpl snapshotService = new DsstoxSnapshotServiceImpl();
+			DsstoxSnapshot snapshot = snapshotService.findByName(snapshotName);
+			System.out.println("Snapshot id="+snapshot.getId());
+			
+			SourceService sourceService=new SourceServiceImpl();
+			String sourceName="OPERA" + version;
+			Source source=sourceService.findByName(sourceName);
+			System.out.println("Source id="+source.getId());
+			
+			HashSet<String> pd_keysLoaded=DatabaseUtilities.getLoadedKeys2(source, snapshot);
+			System.out.println("Loaded pd_keys: "+pd_keysLoaded.size());
+
+			Statement sqliteStatement=SqliteUtilities.getStatement(Lookup.conn);
+			List<OPERA_Structure>operaStructures=OPERA_Structure.readStructureTableFromSqlite(sqliteStatement);
+			//Following is needed to lookup OPERA QSAR ready smiles:
+			Hashtable<String,OPERA_Structure>htDTXCIDToOperaStructure=new Hashtable<>();
+			for (OPERA_Structure s:operaStructures) htDTXCIDToOperaStructure.put(s.DSSTOX_COMPOUND_ID, s);
+			System.out.println("Loaded OPERA structure lookup:"+htDTXCIDToOperaStructure.size());
+						
+			PredictionDashboardTableMaps tableMaps=new PredictionDashboardTableMaps(PredictionDashboardTableMaps.fileJsonDsstoxRecords2024_11_12,PredictionDashboardTableMaps.fileJsonOtherCAS2024_11_12);//creates lookup maps for database objects so dont have to keep query the database
+			System.out.println("Loaded tableMaps");
+			
+			String sqlDTXCIDS_OPERA_Results="select distinct DSSTOX_COMPOUND_ID from Results;";
+			ResultSet rsDTXCIDS_OPERA_Results=SqlUtilities.runSQL2(Lookup.conn, sqlDTXCIDS_OPERA_Results);
+			
+			List<String>propertyNamesOPERA=DevQsarConstants.getOPERA_PropertyNames();
+			
+			HashSet<String> pd_keysMissing=new HashSet<>();
+
+
+			try {
+				
+				int counter=0;
+				
+				while (rsDTXCIDS_OPERA_Results.next()) {//go through dtxcids in OPERA results
+					
+					String dtxcid=rsDTXCIDS_OPERA_Results.getString(1);
+					
+					if(!tableMaps.mapDsstoxRecordsByCID.containsKey(dtxcid)) {
+						System.out.println(dtxcid+"\tNot in snapshot");
+						continue;
+					}
+					
+					if(!htDTXCIDToOperaStructure.containsKey(dtxcid)) continue;
+					
+					String qsarSmiles=htDTXCIDToOperaStructure.get(dtxcid).Canonical_QSARr;
+					DsstoxRecord dsstoxRecord=tableMaps.mapDsstoxRecordsByCID.get(dtxcid);
+					
+					for (String propertyName:propertyNamesOPERA) {
+						
+						counter++;
+						Model model=tableMaps.mapModels.get(initializeDB.getModelName(propertyName));
+						
+						String pd_key=qsarSmiles+"\t"+dsstoxRecord.getId()+"\t"+model.getId();
+						
+						if(pd_keysLoaded.contains(pd_key)) continue;
+						pd_keysMissing.add(pd_key);
+						
+						if(pd_keysMissing.size()%10000==0) {
+							System.out.println(pd_keysMissing.size());
+						}
+//						if (counter==100)return;
+					}
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+				
+		}
+		
+		void runMissingDtxcids(boolean writeToDB) {
+			
+			boolean writeReportsToHardDrive=false;
+			boolean useLegacyModelIds=false;
+
+			version="2.8";
+			int batchSize=1000;
+//			int count=1000;//number of rows in sqlite db to use
+			int count=-1;
+//			int count=1;
+
+			int limit=-1;
+			if(count!=-1) limit=count;
+			
+			boolean skipMissingDsstoxRecordID=true;
+			
+			System.out.println("Enter findMissingPredictionDashboardKeysOpera()");
+			String snapshotName="DSSTOX Snapshot 11/12/2024";		
+			DsstoxSnapshotServiceImpl snapshotService = new DsstoxSnapshotServiceImpl();
+			DsstoxSnapshot snapshot = snapshotService.findByName(snapshotName);
+			System.out.println("Snapshot id="+snapshot.getId());
+			
+			SourceService sourceService=new SourceServiceImpl();
+			String sourceName="OPERA" + version;
+			Source source=sourceService.findByName(sourceName);
+			System.out.println("Source id="+source.getId());
+			
+//			HashSet<String> pd_keysLoaded=DatabaseUtilities.getLoadedKeys2(source, snapshot);
+//			System.out.println("Loaded pd_keys: "+pd_keysLoaded.size());
+
+			HashSet<String> dtxcidsLoaded=DatabaseUtilities.getLoadedCIDs(source, snapshot);
+			System.out.println("Loaded dtxcids: "+dtxcidsLoaded.size());
+
+			
+			Statement sqliteStatement=SqliteUtilities.getStatement(Lookup.conn);
+			List<OPERA_Structure>operaStructures=OPERA_Structure.readStructureTableFromSqlite(sqliteStatement);
+			//Following is needed to lookup OPERA QSAR ready smiles:
+			Hashtable<String,OPERA_Structure>htDTXCIDToOperaStructure=new Hashtable<>();
+			for (OPERA_Structure s:operaStructures) htDTXCIDToOperaStructure.put(s.DSSTOX_COMPOUND_ID, s);
+			System.out.println("Loaded OPERA structure lookup:"+htDTXCIDToOperaStructure.size());
+						
+			PredictionDashboardTableMaps tableMaps=new PredictionDashboardTableMaps(PredictionDashboardTableMaps.fileJsonDsstoxRecords2024_11_12,PredictionDashboardTableMaps.fileJsonOtherCAS2024_11_12);//creates lookup maps for database objects so dont have to keep query the database
+			System.out.println("Loaded tableMaps");
+			
+			String sqlDTXCIDS_OPERA_Results="select distinct DSSTOX_COMPOUND_ID from Results;";
+			ResultSet rsDTXCIDS_OPERA_Results=SqlUtilities.runSQL2(Lookup.conn, sqlDTXCIDS_OPERA_Results);
+			
+			List<String>propertyNamesOPERA=DevQsarConstants.getOPERA_PropertyNames();
+			
+//			HashSet<String> pd_keysMissing=new HashSet<>();
+
+			
+			List<PredictionDashboard>predictionsDashboard=new ArrayList<>();
+			HashSet<String> pd_keys=new HashSet<>();
+
+
+			try {
+				
+
+				HashSet<String> dtxcidsMissing = getDtxcidsWithNoPredictionsDashboard(dtxcidsLoaded,
+						htDTXCIDToOperaStructure, tableMaps, rsDTXCIDS_OPERA_Results);
+				
+				
+				dtxcidsMissing.add("DTXCID90141698");//has only 20 preds
+				
+				//TODO query to get the dtxcids that have some missing reports
+				
+				
+				System.out.println("Dtxcids missing="+dtxcidsMissing.size());
+
+				HashSet<String>dtxcidsToLoad=new HashSet<>();
+
+				for (String dtxcid:dtxcidsMissing) {
+
+					dtxcidsToLoad.add(dtxcid);
+					
+					if(dtxcidsToLoad.size()==batchSize) {
+						
+						dtxcidsLoaded.addAll(dtxcidsToLoad);
+						
+						String sql=Lookup.createSQLByDTXCIDs(dtxcidsToLoad);
+						
+//						System.out.println(sql);
+						
+//						if(true)return;
+						
+						ResultSet rsResultsTable=SqliteUtilities.getRecords(sqliteStatement, sql);
+						
+						goThroughResultsRecords(writeToDB,writeReportsToHardDrive, batchSize, count,
+								skipMissingDsstoxRecordID, pd_keys, tableMaps, predictionsDashboard, htDTXCIDToOperaStructure,
+								rsResultsTable,false);
+						
+						dtxcidsToLoad.clear();
+						
+						System.out.println(dtxcidsLoaded.size());
+						
+					}
+
+				}
+				
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+				
+		}
+
+		private HashSet<String> getDtxcidsWithNoPredictionsDashboard(HashSet<String> dtxcidsLoaded,
+				Hashtable<String, OPERA_Structure> htDTXCIDToOperaStructure, PredictionDashboardTableMaps tableMaps,
+				ResultSet rsDTXCIDS_OPERA_Results) throws SQLException {
+			
+			HashSet<String>dtxcidsMissing=new HashSet<>();
+			
+			while (rsDTXCIDS_OPERA_Results.next()) {//go through dtxcids in OPERA results
+				String dtxcid=rsDTXCIDS_OPERA_Results.getString(1);
+				if(!tableMaps.mapDsstoxRecordsByCID.containsKey(dtxcid)) {
+//						System.out.println(dtxcid+"\tNot in snapshot");
+					continue;
+				}
+			
+				if(!htDTXCIDToOperaStructure.containsKey(dtxcid)) continue;
+				if(dtxcidsLoaded.contains(dtxcid)) continue;
+				
+				dtxcidsMissing.add(dtxcid);
+			}
+			return dtxcidsMissing;
+		}
 
 
 
 	}
-
+	
 	public static void main(String[] args) {
 		PredictionDashboardScriptOPERA o= new PredictionDashboardScriptOPERA();
 
@@ -1747,15 +1959,19 @@ public class PredictionDashboardScriptOPERA {
 		//		o.initializeDB.initializeOPERARecords();//create db entries in properties, datasets, models, statistics tables
 		
 		// Run all in db:		
-		o.loader.createRecordsFromOPERA2_8_SqliteDB(true);
+//		o.loader.createRecordsFromOPERA2_8_SqliteDB(true,0);//already loaded these);
 //		o.loader.createRecordsFromOPERA2_8_SqliteDB(true,"DTXSID301346793");
 
+//		o.loader.findMissingPredictionDashboardKeysOpera();
+		
+		
 		//		boolean printValues=true;//print OPERA Results record as key-value pairs
 		boolean printValues=false;//print OPERA Results record as key-value pairs
-		boolean writeToDB=true;
+		boolean writeToDB=false;
 //		o.loader.createRecordsFromOPERA2_8_SqliteDB(writeToDB,"DTXSID7020182",printValues);//bisphenol-A
 //		o.loader.createRecordsFromOPERA2_8_SqliteDB(writeToDB,"DTXSID2021315",printValues);//bisphenol-A
 		
+		o.loader.runMissingDtxcids(writeToDB);
 		
 		//		o.loader.createRecordsFromOPERA2_8_SqliteDB(writeToDB,"DTXSID3039242",printValues);//bz
 		//		o.loader.createRecordsFromOPERA2_8_SqliteDB(writeToDB,"DTXSID20879997",printValues);//long SMILES
@@ -3070,6 +3286,8 @@ public class PredictionDashboardScriptOPERA {
 					System.out.println("colnames are null for "+propertyName);
 					continue;
 				}
+				
+				boolean skip=false;
 
 				for (String colName:colNamesCSV_Property) {
 					if(colNamesCSV.indexOf(colName)==-1) {
@@ -3086,15 +3304,24 @@ public class PredictionDashboardScriptOPERA {
 
 					columnHandler.handleColumn(lookups, htDTXCIDToOperaStructure, propertyName, pd, qsarPredictedADEstimates, 
 							unitName, unitNameContributor, colName, value);
+					
+					if(pd.getDsstoxRecord()!=null && pd_keys.contains(pd.getKey()) && !writeReportToHardDrive) {
+//						System.out.println("skip:\t"+pd.getKey());
+						skip=true;
+						break;
+					}
+					
+					
 				}//done iterating over col names for property
 
 //				System.out.println(pd.getDtxcid()+"\t"+pd.getModel().getName_ccd()+"\t"+pd.getPredictionValue());
+
+				if(skip)continue;
 				
-				
-				if(pd.getDsstoxRecord()!=null && pd_keys.contains(pd.getKey()) && !writeReportToHardDrive) {
-//					System.out.println("Already have in db: "+pd.getKey());
-					continue;
-				}
+//				if(pd.getDsstoxRecord()!=null && pd_keys.contains(pd.getKey()) && !writeReportToHardDrive) {
+////					System.out.println("Already have in db: "+pd.getKey());
+//					continue;
+//				}
 				
 				if(pd.getDsstoxRecord()==null) {
 //					System.out.println("Null DsstoxRecord for "+pd.getDtxcid());
@@ -3153,7 +3380,7 @@ public class PredictionDashboardScriptOPERA {
 
 			return predictionsDashboard;
 		}
-
+		
 		private void createReport(PredictionDashboard pd,PredictionDashboardTableMaps lookups,boolean useLegacyModelIds,boolean writeReportToHarddrive) {
 
 			long t1=System.currentTimeMillis();

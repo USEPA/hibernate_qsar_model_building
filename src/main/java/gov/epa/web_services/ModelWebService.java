@@ -125,6 +125,8 @@ public class ModelWebService extends WebService {
 	public HttpResponse<String> callPredictionApplicabilityDomain(String trainingSet,String testSet, Boolean removeLogDescriptors,
 			String embeddingTsv, String applicability_domain) {
 		
+//		System.out.println(address + "/models/prediction_applicability_domain");
+		
 		HttpResponse<String> response= Unirest.post(address + "/models/prediction_applicability_domain")
 				.field("training_tsv", trainingSet)
 				.field("test_tsv", testSet)
@@ -132,6 +134,8 @@ public class ModelWebService extends WebService {
 				.field("remove_log_p", String.valueOf(removeLogDescriptors))
 				.field("applicability_domain", applicability_domain).asString();
 
+//		System.out.println(response.getStatus()+"\t"+response.getStatusText());
+		
 		return response;
 	}
 

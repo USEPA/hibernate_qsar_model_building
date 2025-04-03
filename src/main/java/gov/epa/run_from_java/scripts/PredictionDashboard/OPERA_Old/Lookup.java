@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
@@ -923,28 +924,39 @@ public class Lookup {
 	}
 	
 	public static String createSQLAll(int offset,int limit) {
-
 		String SQL="SELECT * from Results\r\n";							
-
-		if (limit!=-1)
-			SQL+="LIMIT "+limit+" OFFSET "+offset+"\n";
-		
+		SQL+=" LIMIT "+limit;
+		SQL+=" OFFSET "+offset;
+		SQL+=";";
 		return SQL;
 	}
 	
 	
 	public static String createSQLAllSort(int offset,int limit,String orderBy) {
+		String SQL="SELECT * from Results order by "+orderBy;							
+		SQL+=" LIMIT "+limit;
+		SQL+=" OFFSET "+offset;
+		SQL+=";";
+		return SQL;
+	}
+	
+	public static String createSQLByDTXCIDs(HashSet<String>dtxcids) {
 
-		String SQL="SELECT * from Results order by "+orderBy+"\r\n";							
-
-		if (limit!=-1)
-			SQL+="LIMIT "+limit+" OFFSET "+offset+" \n";
+		String strDtxcids="";
 		
+		int count=0;
+		for(String dtxcid:dtxcids) {
+			count++;
+			strDtxcids+="'"+dtxcid+"'";
+			if(count<dtxcids.size()) strDtxcids+=",";			
+		}
+
+		String SQL="SELECT * from Results where DSSTOX_COMPOUND_ID in ("+strDtxcids+")";							
+		SQL+=";";
 		return SQL;
 	}
 
-	
-	
+
 	
 	public static void main(String[] args) {
 //		createLookupBySID("CERAPP_Bind","");
