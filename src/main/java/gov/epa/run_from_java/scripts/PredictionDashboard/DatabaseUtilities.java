@@ -281,7 +281,7 @@ public class DatabaseUtilities {
 		if (id.contains("SID")) idCol="dtxsid";
 		
 				
-		String sql="select file from qsar_models.prediction_reports pr\r\n"
+		String sql="select file_json from qsar_models.prediction_reports pr\r\n"
 				+ "join qsar_models.predictions_dashboard pd on pr.fk_predictions_dashboard_id = pd.id\r\n"
 				+ "join qsar_models.models m on pd.fk_model_id = m.id\r\n"
 				+ "where pd.fk_dsstox_records_id='"+dsstox_records_id+"' and m.name='"+modelName+"';";

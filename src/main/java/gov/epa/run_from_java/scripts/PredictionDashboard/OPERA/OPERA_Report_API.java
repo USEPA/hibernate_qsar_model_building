@@ -124,7 +124,7 @@ public class OPERA_Report_API {
 		List<String> propertyNames=DevQsarConstants.getOPERA_PropertyNames();
 		
 		
-		String folder="data\\opera\\reports";
+		String folder="data\\opera2.8\\reports";
 		String destFolder=folder+File.separator+id;
 		
 		File DF=new File(destFolder);
@@ -141,10 +141,12 @@ public class OPERA_Report_API {
 		for (String propertyName:propertyNames) {
 			
 			String modelName=p.initializeDB.getModelName(propertyName);
-//			System.out.println(modelName);
+			if(!modelName.equals("BP OPERA2.8")) continue;
+			System.out.println(modelName);
+			
+//			System.out.println(or.modelDetails.modelName);
 			
 			PredictionReport or=null;
-
 
 			String json=null;
 			
@@ -156,21 +158,21 @@ public class OPERA_Report_API {
 				json=DatabaseUtilities.getPredictionReport(id,modelName,dsstoxRecordId);
 				or=PredictionReport.fromJson(json);
 			}
-
-			String filenameJson=id+"_"+or.modelDetails.modelName+".json";
-			Utilities.jsonToPrettyJson(json, destFolder+File.separator+filenameJson.replace(".html", ".json"));
-
 			
-			if(or==null) {
-				System.out.println("No report for "+propertyName);
-				continue;
-			}
+			
 
+//			String filenameJson=id+"_"+or.modelDetails.modelName+".json";
+//			Utilities.jsonToPrettyJson(json, destFolder+File.separator+filenameJson.replace(".html", ".json"));
+//
+//			
+//			if(or==null) {
+//				System.out.println("No report for "+propertyName);
+//				continue;
+//			}
+//
 			String filename=id+"_"+or.modelDetails.modelName+".html";
 			h.toHTMLFile(or, destFolder,filename);
 			PredictionReport.viewInWebBrowser(destFolder+File.separator+filename);
-			
-			
 			
 		}
 		
@@ -225,10 +227,12 @@ public class OPERA_Report_API {
 //		String id="DTXSID301346793";
 		
 		String id="DTXSID7020182";//bisphenol-A
-//		boolean regenerate=true;
-//		boolean useLegacyModelIds=true;
-//		int fk_dsstox_snapshot_id=2;
-//		o.viewReportsFromDatabase(id,regenerate,useLegacyModelIds, fk_dsstox_snapshot_id);
+		boolean regenerate=false;
+		boolean useLegacyModelIds=false;
+		int fk_dsstox_snapshot_id=2;
+		
+		
+		o.viewReportsFromDatabase(id,regenerate,useLegacyModelIds, fk_dsstox_snapshot_id);
 //		o.transposeCSV_Row(id);
 		
 	}	

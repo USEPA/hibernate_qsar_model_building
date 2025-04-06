@@ -243,11 +243,11 @@ public class ApplicabilityDomainScript {
 		
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_Kernel_Density;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_global_index;
-//		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_local_index;
+		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_local_index;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Cosine;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;		
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine; 		
-		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
 		
 		System.out.println(applicability_domain+"\t"+splittingName+"\t"+"limitToPFAS="+limitToPFAS);
 		

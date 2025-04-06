@@ -386,7 +386,7 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 		
 //		h.regenReports();
 //		
-//		h.regenReports("DTXSID7020182");//bisphenol-A
+		h.regenReports("DTXSID7020182");//bisphenol-A
 //		h.displayReports("DTXSID7020182");//bisphenol-A
 		
 		h.displayReports("DTXSID00943887");

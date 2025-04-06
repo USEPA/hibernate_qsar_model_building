@@ -1704,7 +1704,7 @@ public class PredictionDashboardScriptOPERA {
 				recordsRead++;
 		
 //				if(recordsRead%10000==0) {
-				if(recordsRead%10==0) {
+				if(recordsRead%100==0) {
 					System.out.println(recordsRead);
 				}
 		
@@ -1741,6 +1741,92 @@ public class PredictionDashboardScriptOPERA {
 		
 			System.out.println("time to load:"+(t2-t1)/1000.0+" seconds");
 		}
+		
+		void deleteAllPDsForDtxcidsThatHaveAmissingReport() {
+			
+			//Find all dtxcids that have a missing report:
+			
+			String sql="select  distinct (dr.dtxcid) from qsar_models.predictions_dashboard pd\r\n"
+					+ "			left join qsar_models.prediction_reports pr on pd.id = pr.fk_predictions_dashboard_id\r\n"
+					+ "			join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\r\n"
+					+ "			join qsar_models.models m on pd.fk_model_id = m.id\r\n"
+					+ "			join qsar_models.sources s on m.fk_source_id = s.id\r\n"
+					+ "			where pr.id is null and s.name='OPERA2.8';";
+			
+			
+			try {
+				
+				ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+				
+				List<String>dtxcids=new ArrayList<>();
+				
+				while (rs.next()) {
+					String dtxcid=rs.getString(1);
+					dtxcids.add(dtxcid);
+//					System.out.println(dtxcid);
+				}
+				
+				System.out.println(dtxcids.size());
+				
+				
+				String strDtxcids="";
+				
+				int count=0;
+				for(String dtxcid:dtxcids) {
+					count++;
+					strDtxcids+="'"+dtxcid+"'";
+					if(count<dtxcids.size()) strDtxcids+=",";			
+				}
+				
+				sql="select pd.id from qsar_models.predictions_dashboard pd\r\n"
+						+ "join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\r\n"
+						+ "join qsar_models.models m on pd.fk_model_id = m.id\r\n"
+						+ "join qsar_models.sources s on m.fk_source_id = s.id\r\n"
+						+ "where s.name='OPERA2.8' and dr.dtxcid in ("+strDtxcids+");";
+				
+				System.out.println(sql);
+				
+				rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+				
+				List<String>dp_ids=new ArrayList<>();
+				
+				while (rs.next()) {
+					String dp_id=rs.getString(1);
+					dp_ids.add(dp_id);
+//					System.out.println(dp_id);
+				}
+				
+				System.out.println(dp_ids.size());
+				
+				String strDP_ids="";
+				count=0;
+				for(String dp_id:dp_ids) {				
+					count++;
+					strDP_ids+=dp_id;
+					if(count<dp_ids.size()) strDP_ids+=",";			
+				}
+				
+//				sql="select  pd.id,dr.dtxsid, pr.file_html is null from qsar_models.predictions_dashboard pd\r\n"
+//						+ "join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\r\n"
+//						+ "left join qsar_models.prediction_reports pr on pd.id = pr.fk_predictions_dashboard_id\r\n"
+//						+ "where pd.id in ("+strDP_ids+");";
+				
+
+				sql="delete from qsar_models.predictions_dashboard pd\r\n"
+						+ "where pd.id in ("+strDP_ids+");";
+				
+				System.out.println(sql);
+
+				SqlUtilities.runSQLUpdate(SqlUtilities.getConnectionPostgres(), sql);
+				
+				
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			
+
+		}
+		
 		
 		void findMissingPredictionDashboardKeysOpera() {
 		
@@ -1860,30 +1946,23 @@ public class PredictionDashboardScriptOPERA {
 			PredictionDashboardTableMaps tableMaps=new PredictionDashboardTableMaps(PredictionDashboardTableMaps.fileJsonDsstoxRecords2024_11_12,PredictionDashboardTableMaps.fileJsonOtherCAS2024_11_12);//creates lookup maps for database objects so dont have to keep query the database
 			System.out.println("Loaded tableMaps");
 			
-			String sqlDTXCIDS_OPERA_Results="select distinct DSSTOX_COMPOUND_ID from Results;";
-			ResultSet rsDTXCIDS_OPERA_Results=SqlUtilities.runSQL2(Lookup.conn, sqlDTXCIDS_OPERA_Results);
-			
-			List<String>propertyNamesOPERA=DevQsarConstants.getOPERA_PropertyNames();
-			
-//			HashSet<String> pd_keysMissing=new HashSet<>();
-
 			
 			List<PredictionDashboard>predictionsDashboard=new ArrayList<>();
-			HashSet<String> pd_keys=new HashSet<>();
-
+			HashSet<String> pd_keys=new HashSet<>();//dont bother to look up- takes too long and just use dtxcids as way to filter out loaded ones
 
 			try {
-				
+
+				HashSet<String> dtxcidsInOperaResults = getDtxcidsInOperaResults();
 
 				HashSet<String> dtxcidsMissing = getDtxcidsWithNoPredictionsDashboard(dtxcidsLoaded,
-						htDTXCIDToOperaStructure, tableMaps, rsDTXCIDS_OPERA_Results);
+						htDTXCIDToOperaStructure, tableMaps, dtxcidsInOperaResults);
+				
+				HashSet<String> dtxcidsMissingSnapshot = getSnapshotDtxcidsWithNoOPERA_Predictions(dtxcidsLoaded,
+						htDTXCIDToOperaStructure, tableMaps, dtxcidsInOperaResults);
+
 				
 				
-				dtxcidsMissing.add("DTXCID90141698");//has only 20 preds
-				
-				//TODO query to get the dtxcids that have some missing reports
-				
-				
+//				dtxcidsMissing.add("DTXCID90141698");//has only 20 preds
 				System.out.println("Dtxcids missing="+dtxcidsMissing.size());
 
 				HashSet<String>dtxcidsToLoad=new HashSet<>();
@@ -1895,11 +1974,8 @@ public class PredictionDashboardScriptOPERA {
 					if(dtxcidsToLoad.size()==batchSize) {
 						
 						dtxcidsLoaded.addAll(dtxcidsToLoad);
-						
 						String sql=Lookup.createSQLByDTXCIDs(dtxcidsToLoad);
-						
 //						System.out.println(sql);
-						
 //						if(true)return;
 						
 						ResultSet rsResultsTable=SqliteUtilities.getRecords(sqliteStatement, sql);
@@ -1909,12 +1985,17 @@ public class PredictionDashboardScriptOPERA {
 								rsResultsTable,false);
 						
 						dtxcidsToLoad.clear();
-						
 						System.out.println(dtxcidsLoaded.size());
-						
 					}
-
 				}
+
+				//Do remaining
+				String sql=Lookup.createSQLByDTXCIDs(dtxcidsToLoad);
+				ResultSet rsResultsTable=SqliteUtilities.getRecords(sqliteStatement, sql);
+				goThroughResultsRecords(writeToDB,writeReportsToHardDrive, batchSize, count,
+						skipMissingDsstoxRecordID, pd_keys, tableMaps, predictionsDashboard, htDTXCIDToOperaStructure,
+						rsResultsTable,false);
+				System.out.println(dtxcidsLoaded.size());
 				
 			} catch (SQLException e) {
 				e.printStackTrace();
@@ -1922,14 +2003,27 @@ public class PredictionDashboardScriptOPERA {
 				
 		}
 
-		private HashSet<String> getDtxcidsWithNoPredictionsDashboard(HashSet<String> dtxcidsLoaded,
-				Hashtable<String, OPERA_Structure> htDTXCIDToOperaStructure, PredictionDashboardTableMaps tableMaps,
-				ResultSet rsDTXCIDS_OPERA_Results) throws SQLException {
-			
-			HashSet<String>dtxcidsMissing=new HashSet<>();
+		private HashSet<String> getDtxcidsInOperaResults() throws SQLException {
+			HashSet<String>dtxcidsInOperaResults=new HashSet<>();
+
+			String sqlDTXCIDS_OPERA_Results="select distinct DSSTOX_COMPOUND_ID from Results;";
+			ResultSet rsDTXCIDS_OPERA_Results=SqlUtilities.runSQL2(Lookup.conn, sqlDTXCIDS_OPERA_Results);
 			
 			while (rsDTXCIDS_OPERA_Results.next()) {//go through dtxcids in OPERA results
 				String dtxcid=rsDTXCIDS_OPERA_Results.getString(1);
+				dtxcidsInOperaResults.add(dtxcid);
+			}
+			return dtxcidsInOperaResults;
+		}
+
+		private HashSet<String> getDtxcidsWithNoPredictionsDashboard(HashSet<String> dtxcidsLoaded,
+				Hashtable<String, OPERA_Structure> htDTXCIDToOperaStructure, PredictionDashboardTableMaps tableMaps,
+				HashSet<String> dtxcidsInOperaResults) throws SQLException {
+			
+			HashSet<String>dtxcidsMissing=new HashSet<>();
+			
+			for(String dtxcid: dtxcidsInOperaResults) {//go through dtxcids in OPERA results
+
 				if(!tableMaps.mapDsstoxRecordsByCID.containsKey(dtxcid)) {
 //						System.out.println(dtxcid+"\tNot in snapshot");
 					continue;
@@ -1942,13 +2036,36 @@ public class PredictionDashboardScriptOPERA {
 			}
 			return dtxcidsMissing;
 		}
+		
+		
+		private HashSet<String> getSnapshotDtxcidsWithNoOPERA_Predictions(HashSet<String> dtxcidsLoaded,
+				Hashtable<String, OPERA_Structure> htDTXCIDToOperaStructure, PredictionDashboardTableMaps tableMaps,
+				HashSet<String> dtxcidsInOperaResults) throws SQLException {
+			
+			HashSet<String>dtxcidsMissing=new HashSet<>();
+			
+			for (String dtxcid:tableMaps.mapDsstoxRecordsByCID.keySet()) {
+				if(dtxcidsLoaded.contains(dtxcid)) continue;
+				dtxcidsMissing.add(dtxcid);
+				System.out.println(tableMaps.mapDsstoxRecordsByCID.get(dtxcid).getSmiles()+"\t"+dtxcidsInOperaResults.contains(dtxcid));
+				
+			}
+			
+			System.out.println(dtxcidsMissing.size());
+			
+			return dtxcidsMissing;
+		}
 
 
 
 	}
 	
 	public static void main(String[] args) {
+		
 		PredictionDashboardScriptOPERA o= new PredictionDashboardScriptOPERA();
+
+		boolean printValues=false;//print OPERA Results record as key-value pairs
+		boolean writeToDB=true;
 
 		version="2.8";
 		useLegacyModelIds=false;
@@ -1959,19 +2076,23 @@ public class PredictionDashboardScriptOPERA {
 		//		o.initializeDB.initializeOPERARecords();//create db entries in properties, datasets, models, statistics tables
 		
 		// Run all in db:		
-//		o.loader.createRecordsFromOPERA2_8_SqliteDB(true,0);//already loaded these);
+		o.loader.runMissingDtxcids(writeToDB);
+//		o.loader.deleteAllPDsForDtxcidsThatHaveAmissingReport();
+		
+		//TODO delete all pds for a given dtxcid where any one of the pds is missing a report
+		//then rerun runMissingDtxcids
+		
+		
+		//		o.loader.createRecordsFromOPERA2_8_SqliteDB(true,0);//already loaded these);
 //		o.loader.createRecordsFromOPERA2_8_SqliteDB(true,"DTXSID301346793");
 
 //		o.loader.findMissingPredictionDashboardKeysOpera();
 		
 		
 		//		boolean printValues=true;//print OPERA Results record as key-value pairs
-		boolean printValues=false;//print OPERA Results record as key-value pairs
-		boolean writeToDB=false;
 //		o.loader.createRecordsFromOPERA2_8_SqliteDB(writeToDB,"DTXSID7020182",printValues);//bisphenol-A
 //		o.loader.createRecordsFromOPERA2_8_SqliteDB(writeToDB,"DTXSID2021315",printValues);//bisphenol-A
 		
-		o.loader.runMissingDtxcids(writeToDB);
 		
 		//		o.loader.createRecordsFromOPERA2_8_SqliteDB(writeToDB,"DTXSID3039242",printValues);//bz
 		//		o.loader.createRecordsFromOPERA2_8_SqliteDB(writeToDB,"DTXSID20879997",printValues);//long SMILES

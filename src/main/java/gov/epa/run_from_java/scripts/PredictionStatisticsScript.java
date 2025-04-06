@@ -272,6 +272,7 @@ public class PredictionStatisticsScript {
 		}
 
 		System.out.println(sb.toString());
+		System.out.println("data/reports/stats/" + statName + "_" + modelSetName + ".txt");
 
 		try {
 			FileWriter fw = new FileWriter("data/reports/stats/" + statName + "_" + modelSetName + ".txt");
@@ -2573,7 +2574,7 @@ public class PredictionStatisticsScript {
 		
 		//Create summary json report and excel file
 //		ms.createPredictionReportForMethod();
-		ms.createPredictionReportForMethodArrays();
+//		ms.createPredictionReportForMethodArrays();
 
 		
 		// ms.createSpreadsheetExample();
@@ -2584,7 +2585,7 @@ public class PredictionStatisticsScript {
 		 
 		 
 //		 ms.createSummaryTableForSet();
-//		 ms.createSummaryTableForSet2();
+		 ms.createSummaryTableForSet2();
 //		 ms.createSummaryTableForSet3();
 
 //		 ms.createSummaryTableForSetSermacs();
