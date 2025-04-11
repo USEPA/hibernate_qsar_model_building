@@ -1242,3 +1242,11 @@ select * from qsar_models.dsstox_records where fk_dsstox_snapshot_id=2;
 
 
 select * from qsar_models.models m where m.name like '%Martin%'
+
+
+select embedding_tsv,m2.name from qsar_models.models m
+join qsar_datasets.datasets d on m.dataset_name=d.name
+join qsar_models.descriptor_embeddings de on m.fk_descriptor_embedding_id = de.id
+join qsar_models.methods m2 on m.fk_method_id = m2.id
+where d.name='WS v1 modeling' and m.splitting_name='RND_REPRESENTATIVE' and fk_descriptor_embedding_id is not null;
+

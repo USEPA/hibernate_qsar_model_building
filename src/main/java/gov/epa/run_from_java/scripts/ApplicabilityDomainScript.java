@@ -215,18 +215,18 @@ public class ApplicabilityDomainScript {
 	public void runCaseStudyExpProp_All_Endpoints_modelSpecificAD() {
 
 		
-		String modelSetName="WebTEST2.1";
-		String splittingName =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+//		String modelSetName="WebTEST2.1";
+//		String splittingName =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+////		boolean limitToPFAS=false; 
 //		boolean limitToPFAS=true;
-		boolean limitToPFAS=false;
 
 //		String modelSetName="WebTEST2.1 PFAS";
 //		String splittingName =SplittingGeneratorPFAS_Script.splittingPFASOnly;
 //		boolean limitToPFAS=false;
 		
-//		String modelSetName="WebTEST2.1 All but PFAS";
-//		String splittingName =SplittingGeneratorPFAS_Script.splittingAllButPFAS;
-//		boolean limitToPFAS=false;
+		String modelSetName="WebTEST2.1 All but PFAS";
+		String splittingName =SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+		boolean limitToPFAS=false;
 		
 		
 		String statName="MAE_Test";
@@ -243,11 +243,11 @@ public class ApplicabilityDomainScript {
 		
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_Kernel_Density;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_global_index;
-		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_local_index;
+//		String applicability_domain=DevQsarConstants.Applicability_Domain_OPERA_local_index;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Cosine;
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;		
 //		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Cosine; 		
-//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
+		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
 		
 		System.out.println(applicability_domain+"\t"+splittingName+"\t"+"limitToPFAS="+limitToPFAS);
 		

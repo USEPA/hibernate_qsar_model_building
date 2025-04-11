@@ -289,6 +289,7 @@ public class ExcelPredictionReportGenerator {
 			
 			
 			if(smilesList!=null && !smilesList.contains(smiles)) {
+//				System.out.println("skipping smiles="+smiles)
 				ja.remove(i--);
 			}
 		}
