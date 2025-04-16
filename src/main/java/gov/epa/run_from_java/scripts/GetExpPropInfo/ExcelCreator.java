@@ -355,6 +355,128 @@ public class ExcelCreator {
 	}
 	
 	
+	/**
+	 *	This version doesnt set any colors
+	 *
+	 * Create excel file using data in JsonArray with fields in specified order
+	 * 
+	 * @param ja
+	 * @param excelFilePath
+	 * @param fields
+	 */
+	public static void createExcel3(JsonArray ja,String excelFilePath,String []fields,Hashtable<String,String>htDescriptions) {
+		try {
+
+			Workbook wb = new XSSFWorkbook();
+
+			CellStyle styleURL=createStyleURL(wb);			
+
+			if(htDescriptions!=null)
+				createDescriptionsTab(wb,htDescriptions,fields);
+			
+			
+			Sheet sheet = wb.createSheet("Records");
+			
+			Row recSubtotalRow = sheet.createRow(0);
+			Row recHeaderRow = sheet.createRow(1);
+
+//			CellStyle csLtBlue=wb.createCellStyle();
+//			csLtBlue.setFillForegroundColor(IndexedColors.LIGHT_BLUE.getIndex());
+//		    csLtBlue.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+//		    
+//			CellStyle csLtGreen=wb.createCellStyle();
+//			csLtGreen.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+//		    csLtGreen.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+//
+//			CellStyle csLtGrey=createStyleHeader(wb);
+//
+//			CellStyle csYellow=wb.createCellStyle();
+//			csYellow.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
+//		    csYellow.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+		    
+		    
+			for (int i=0;i<fields.length;i++) {
+				Cell cell=recHeaderRow.createCell(i);
+				cell.setCellValue(fields[i]);
+				
+//				if (fields[i].contains("ICF")) {
+//					cell.setCellStyle(csLtGrey);
+//				} else if(fields[i].contains("mapped_")) {
+//					cell.setCellStyle(csLtBlue);
+//				} else if (fields[i].contains("source_")) {
+//					cell.setCellStyle(csLtGreen);
+//				}
+			}
+
+			for (int i=0;i<fields.length;i++) {
+				sheet.autoSizeColumn(i);
+				//				sheet.setColumnWidth(i, sheet.getColumnWidth(i)+20);
+			}
+
+			int rowNum=2;
+
+			for (int i=0;i<ja.size();i++) {
+				JsonObject jo=ja.get(i).getAsJsonObject();
+
+				Row row=sheet.createRow(rowNum++);	
+
+				for (int k=0;k<fields.length;k++) {
+					Cell cell=row.createCell(k);
+
+//					if(jo.get("predicted_CV")!=null) {
+//						cell.setCellStyle(csYellow);
+//					}
+
+					if (jo.get(fields[k])==null) continue;
+					if (jo.get(fields[k]).isJsonNull()) continue;
+					if (jo.get(fields[k]).getAsString().isBlank()) continue;
+					
+
+					String value=jo.get(fields[k]).getAsString();
+
+					try {//Use brute force- first set as double then as string if that fails:
+						cell.setCellValue(Double.parseDouble(value));	
+					} catch (Exception ex) {
+						//						System.out.println("Error setting cell value = "+value+" for "+fields[k]);
+						cell.setCellValue(value);	
+					}
+
+					if (fields[k].contains("url")) {
+						try {
+							Hyperlink link = wb.getCreationHelper().createHyperlink(HyperlinkType.URL);
+							link.setAddress(value);
+							cell.setHyperlink(link);
+							cell.setCellStyle(styleURL);
+						} catch (Exception ex) {
+							//							System.out.println(ex.getMessage());
+						}
+					}
+
+				}
+			}
+
+			for (int i = 0; i < fields.length; i++) {
+				String col = CellReference.convertNumToColString(i);
+				String recSubtotal = "SUBTOTAL(3,"+col+"$3:"+col+"$"+(ja.size()+2)+")";
+				recSubtotalRow.createCell(i).setCellFormula(recSubtotal);
+			}
+
+
+			String lastCol = CellReference.convertNumToColString(fields.length-1);
+			sheet.setAutoFilter(CellRangeAddress.valueOf("A2:"+lastCol+ja.size()+2));
+			sheet.createFreezePane(0, 2);
+
+
+
+			OutputStream fos = new FileOutputStream(excelFilePath);
+			wb.write(fos);
+			wb.close();
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
 	private static void createDescriptionsTab(Workbook wb,Hashtable <String,String>htDesc,String []fieldnames) {
 
 		CellStyle cs=createStyleHeader(wb);
@@ -637,6 +759,7 @@ public class ExcelCreator {
 		htDescriptions.put("mapped_molweight","DSSTOX molecular weight  for the record mapped to the source chemical");
 		
 		htDescriptions.put("value_original","Original property value from the source");
+		htDescriptions.put("value_original_parsed","Original property value from the source that was parsed (sometimes there are multiple semicolon delimited values)");
 		htDescriptions.put("value_max","Original maximum property value from the source");
 		htDescriptions.put("value_min","Original minimum property value from the source");
 		htDescriptions.put("value_point_estimate","Point estimate for the property value derived from value_original or value_max and value_min");

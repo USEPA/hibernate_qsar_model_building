@@ -25,7 +25,8 @@ public class Percepta_Report extends PredictionReport {
 		
 		setModelDetails(pd,property);
 		setModelResults(pd, unitAbbreviation);
-		setNeighbors(pd);
+		
+//		setNeighbors(pd);//has no neighbors
 //		System.out.println(this.modelDetails.description);
 	}
 	
@@ -53,8 +54,9 @@ public class Percepta_Report extends PredictionReport {
 		
 		this.modelDetails.category="QSAR";
 		
-		this.modelDetails.hasQmrfPdf=0;
-		this.modelDetails.hasPlots=0;
+		this.modelDetails.hasQmrfPdf=false;
+		this.modelDetails.hasScatterPlot=false;
+		this.modelDetails.hasHistogram=false;
 		
 		
 	}

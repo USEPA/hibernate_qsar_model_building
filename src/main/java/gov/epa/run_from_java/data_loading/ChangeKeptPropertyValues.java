@@ -4,6 +4,9 @@ import java.io.FileReader;
 import java.text.DecimalFormat;
 import java.util.*;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.exp_prop.service.*;
@@ -12,6 +15,7 @@ import gov.epa.endpoints.datasets.DatasetCreator;
 
 import gov.epa.run_from_java.scripts.PredictScript;
 import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 /**
 * @author TMARTI02
@@ -102,6 +106,278 @@ public class ChangeKeptPropertyValues {
 		
 		return countBefore-countAfter;
 
+	}
+	
+	
+	public static int removeBasedOnWaterConcentrationAndPredictedWS(String datasetNameOriginal, List<PropertyValue> propertyValues) {
+
+		DecimalFormat df=new DecimalFormat("0.00E00");
+		DecimalFormat df2=new DecimalFormat("0.0");
+		
+//		boolean generateNewPredictions=true;
+		
+		long modelId=1066L;
+		PredictScript ps=new PredictScript();
+		String propertyNameModel=ps.getPropertyNameModel(modelId);
+
+		//Folder for storing prediction hashtable:
+//		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\ECOTOX_2023_12_14\\";
+//		String filePathPreds=folder+datasetNameOriginal+"_WS.json";
+
+		Hashtable<String, Double> htPred = getPredictionHashtable(datasetNameOriginal,modelId, ps,
+				propertyNameModel);
+
+		
+		List<DsstoxRecord>records=PredictScript.getDsstoxRecords();
+		Hashtable<String, DsstoxRecord> htDsstox=PredictScript.getDsstoxHashtableByCASRN(records);
+
+		int countBefore=propertyValues.size();
+
+		for (int i=0;i<propertyValues.size();i++) {
+
+			PropertyValue pv=propertyValues.get(i);
+
+			if(!pv.getKeep()) continue;
+
+			String chemicalName=pv.getSourceChemical().getSourceChemicalName();
+
+//			String dtxsid=pv.getSourceChemical().getSourceDtxsid();			
+
+			String CAS=pv.getSourceChemical().getSourceCasrn();
+			
+			
+//			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
+			
+			if(CAS==null) {
+				System.out.println("Missing CAS for "+chemicalName);
+				continue;
+			}
+			
+			if(htDsstox.get(CAS)==null || htDsstox.get(CAS).getDtxsid()==null) {
+				System.out.println(CAS+ " missing in dsstox records");
+				continue;
+			}
+			
+			DsstoxRecord dsstoxRecord =htDsstox.get(CAS);
+
+
+			if(!htPred.containsKey(dsstoxRecord.getDtxsid())) {
+//				System.out.println("prediction hashtable missing "+CAS);
+				continue;
+			}
+			
+			ParameterValue parameterValueCriterionWS=pv.getParameterValue("Criterion 3- Aqueous Solubility");
+			
+			String criterionWS=null;
+			if(parameterValueCriterionWS!=null) {
+				criterionWS=parameterValueCriterionWS.getValueText();
+			}
+
+			Double waterConc_g_L=null;
+			
+			if(pv.getParameterValue("Water concentration")==null) {
+				
+				if(!criterionWS.equals("2C")) {
+					System.out.println(CAS+"\twater concentration unavailable\tcriterionWS="+criterionWS);
+				}
+				continue;
+			} else {
+				ParameterValue parameterValue=pv.getParameterValue("Water concentration");
+				
+				if(parameterValue.getUnit().getAbbreviation().equals("g/L")) {
+					waterConc_g_L=parameterValue.getValuePointEstimate();
+				} else {
+					System.out.println(CAS+"\twater concentration units= "+parameterValue.getUnit().getAbbreviation());
+					continue;
+				}
+			}
+			
+			double mol_weight=dsstoxRecord.getMolWeight();
+			double pred_Neg_Log_molar=htPred.get(dsstoxRecord.getDtxsid());
+			double pred_molar=Math.pow(10.0, -pred_Neg_Log_molar);
+			double waterSolubility_g_L=pred_molar*mol_weight;
+			
+//			if(waterConc_g_L>10.0*waterSolubility_g_L) {				
+//				System.out.println(dtxsid+"\t"+df.format(WaterConc_g_L)+"\t"+df.format(wsValue_g_L)+"\tWS ratio="+df2.format(WaterConc_g_L/wsValue_g_L));
+//				propertyValues.remove(i--);
+//			}
+			
+			boolean failsWS=waterConc_g_L>5.0*waterSolubility_g_L;
+			boolean failsCriterion=criterionWS.contains("3");
+			boolean match=failsWS==failsCriterion;
+				
+			if(!match && !failsWS)				
+				System.out.println(CAS+"\t"+df.format(waterConc_g_L)+"\t"+df.format(waterSolubility_g_L)+"\tWS ratio="+df2.format(waterConc_g_L/waterSolubility_g_L)+"\t"+criterionWS+"\t"+match);
+ 			
+		}
+		
+		int countAfter=propertyValues.size();
+		return countBefore-countAfter;
+
+	}
+	
+	
+	public static int removeBasedOnExposureDurationAndPredictedLogKow(String datasetNameOriginal, List<PropertyValue> propertyValues) {
+
+		DecimalFormat df=new DecimalFormat("0.00E00");
+		DecimalFormat df2=new DecimalFormat("0.0");
+		
+//		boolean generateNewPredictions=true;
+		
+		long modelId=1069L;
+		PredictScript ps=new PredictScript();
+		String propertyNameModel=ps.getPropertyNameModel(modelId);
+
+		//Folder for storing prediction hashtable:
+//		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\ECOTOX_2023_12_14\\";
+//		String filePathPreds=folder+datasetNameOriginal+"_WS.json";
+
+		Hashtable<String, Double> htPred = getPredictionHashtable(datasetNameOriginal,modelId, ps,
+				propertyNameModel);
+
+		
+		List<DsstoxRecord>records=PredictScript.getDsstoxRecords();
+		Hashtable<String, DsstoxRecord> htDsstox=PredictScript.getDsstoxHashtableByCASRN(records);
+
+		int countBefore=propertyValues.size();
+
+		for (int i=0;i<propertyValues.size();i++) {
+
+			PropertyValue pv=propertyValues.get(i);
+
+			if(!pv.getKeep()) continue;
+
+			String chemicalName=pv.getSourceChemical().getSourceChemicalName();
+
+//			String dtxsid=pv.getSourceChemical().getSourceDtxsid();			
+
+			String CAS=pv.getSourceChemical().getSourceCasrn();
+			
+			
+//			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
+			
+			if(CAS==null) {
+				System.out.println("Missing CAS for "+chemicalName);
+				continue;
+			}
+			
+			if(htDsstox.get(CAS)==null || htDsstox.get(CAS).getDtxsid()==null) {
+				System.out.println(CAS+ " missing in dsstox records");
+				continue;
+			}
+			
+			DsstoxRecord dsstoxRecord =htDsstox.get(CAS);
+
+
+			if(!htPred.containsKey(dsstoxRecord.getDtxsid())) {
+//				System.out.println("prediction hashtable missing "+CAS);
+				continue;
+			}
+			
+			ParameterValue parameterValueCriterionED=pv.getParameterValue("Criterion 4- Exposure Duration");
+			
+			String criterionED=null;
+			if(parameterValueCriterionED!=null) {
+				criterionED=parameterValueCriterionED.getValueText();
+			}
+
+			Double exposureDurationDays=null;
+			
+			
+			
+			if(pv.getParameterValue("Exposure Duration (in days or Lifetime)")==null) {
+				System.out.println(CAS+"\tExposure duration unavailable\tcriterionWS="+criterionED);
+				continue;
+			} else {
+				ParameterValue parameterValue=pv.getParameterValue("Exposure Duration (in days or Lifetime)");
+				
+				if(parameterValue.getValueText().equals("Lifetime")) {
+					System.out.println("Lifetime exposure\t"+criterionED);
+					continue;
+				
+				} else if(parameterValue.getValueText().equals("N/A")) {
+					System.out.println("Duration=N/A\t"+criterionED);
+					continue;
+				} else {
+					
+					try {
+						exposureDurationDays=Double.parseDouble(parameterValue.getValueText());
+					} catch (Exception ex) {
+						System.out.println("Failed to parse exposure duration="+parameterValue.getValueText());
+						continue;
+					}
+				}
+			}
+			
+			
+			double LogKow=htPred.get(dsstoxRecord.getDtxsid());
+			double t80=calcT80(LogKow);
+			
+//			if(WaterConc_g_L>10.0*wsValue_g_L) {				
+//				System.out.println(dtxsid+"\t"+df.format(WaterConc_g_L)+"\t"+df.format(wsValue_g_L)+"\tWS ratio="+df2.format(WaterConc_g_L/wsValue_g_L));
+//				propertyValues.remove(i--);
+//			}
+			
+			boolean failsED=t80>exposureDurationDays;
+			boolean failsCriterion=criterionED.contains("3");
+			boolean match=failsED==failsCriterion;
+				
+			double ratio=t80/exposureDurationDays;
+			
+			//108-70-3 8 days
+			
+			if(!match && failsCriterion) {				
+				System.out.println(CAS+"\t"+LogKow+"\t"+df.format(exposureDurationDays)+"\t"+df.format(t80)+"\t"+df.format(ratio)+"\t"+criterionED);
+//				System.out.println(CAS+"\t"+df.format(ratio)+"\t"+criterionED);
+			}
+		}
+		
+		int countAfter=propertyValues.size();
+		return countBefore-countAfter;
+
+	}
+
+	
+
+	static double calcT80(double logKow) {
+		
+		double W=0.002;
+		double Dox=7.1;
+		double Gv=980*Math.pow(W,0.65)/Dox;
+		double Lb=0.05;
+		double NLOMb=0.2;
+		double NLOMg=0.24;
+		double B=0.035;
+		double Gd=0.015*W;
+		double Gf=0.5*Gd;
+		double Lg=0.012;
+		double WCg=0.74;
+		double WCb=1-(Lb+NLOMb);
+		double T=21;
+		
+		double Kow=Math.pow(10,logKow);
+		double Ed=1/(3e-7*Kow+2);
+		double Kgb=(Lg*Kow + NLOMg*B*Kow +WCg)/(Lb*Kow+NLOMb*B*Kow+WCb);
+		double Ew=0.006;
+		if(logKow>=0) Ew=1/(1.85+155/Kow);
+		
+//		double BCF=Math.pow(10,logBCF);
+//		double Cb=BCF*Cw_g_L;//organism concentration in g/kg
+		
+		
+		double k1=Ew*Gv/W;
+		double k2=k1/(Lb*Kow+NLOMb*Kow*B+WCb);
+		double ke=Gf*Ed*Kgb/W;
+		double kg=0.00586*Math.pow(1.13,T-20)*Math.pow(1000*W,-0.2);		
+		double km=0;//assumed to not be metabolized- not true for esters
+		double kt=k2+ke+kg+km;
+		
+		double t80=1.6/kt;
+		
+//		System.out.println(t80);
+		
+		return t80;
+		
 	}
 
 	
@@ -347,6 +623,39 @@ public class ChangeKeptPropertyValues {
 		
 		return countBefore-countAfter;
 		
+	}
+
+
+
+	public static int removeBasedOnParameterString(List<PropertyValue> propertyValues, String parameterName, String parameterValueText) {
+		
+		int countBefore=propertyValues.size();
+		
+		for (int i=0;i<propertyValues.size();i++) {
+			
+			PropertyValue pv=propertyValues.get(i);
+			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
+			
+			for (ParameterValue parameterValue:pv.getParameterValues()) {
+				
+				if(!parameterValue.getParameter().getName().equals(parameterName)) continue;
+				
+				if(!parameterValue.getValueText().equalsIgnoreCase(parameterValueText)) {
+					propertyValues.remove(i--);
+					break;
+				}
+			}
+		}
+		
+		int countAfter=propertyValues.size();
+		return countBefore-countAfter;
+	}
+
+
+
+	public static int removeBasedOnResponseSite(List<PropertyValue> propertyValues, String typeAnimal) {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 

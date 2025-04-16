@@ -111,7 +111,9 @@ public class PropertyValueValidator {
 				|| propertyName.equals(DevQsarConstants.PKA_B)
 				|| propertyName.equals(DevQsarConstants.PKA)) {
 			return unitName.equals("LOG_UNITS");
-		} else if (propertyName.equals(DevQsarConstants.KOC) || propertyName.equals(DevQsarConstants.BCF)) {
+		} else if (propertyName.equals(DevQsarConstants.KOC) || 
+				propertyName.equals(DevQsarConstants.BCF)||
+				propertyName.equals(DevQsarConstants.BAF)) {
 			return unitName.equals("L_KG");// LOG_UNITS is not 100% correct
 		} else if (propertyName.equals(DevQsarConstants.BIODEG_HL_HC) || propertyName.equals(DevQsarConstants.KmHL)) {
 			return unitName.equals("DAYS");// LOG_UNITS is not 100% correct		
@@ -174,7 +176,7 @@ public class PropertyValueValidator {
 				|| propertyName.equals(DevQsarConstants.OH)
 				|| propertyName.equals(DevQsarConstants.CLINT)
 				|| propertyName.equals(DevQsarConstants.SURFACE_TENSION)
-				|| propertyName.equals(DevQsarConstants.KOC) || propertyName.equals(DevQsarConstants.BCF)
+				|| propertyName.equals(DevQsarConstants.KOC) || propertyName.equals(DevQsarConstants.BCF) || propertyName.equals(DevQsarConstants.BAF)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_SCUD_LC50)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50)
@@ -214,7 +216,7 @@ public class PropertyValueValidator {
 				|| propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)
 				|| propertyName.equals(DevQsarConstants.OH)
 				|| propertyName.equals(DevQsarConstants.CLINT)
-				|| propertyName.equals(DevQsarConstants.KmHL) || propertyName.equals(DevQsarConstants.BCF)
+				|| propertyName.equals(DevQsarConstants.KmHL) || propertyName.equals(DevQsarConstants.BCF) || propertyName.equals(DevQsarConstants.BAF)
 				|| propertyName.equals(DevQsarConstants.KOC) || propertyName.equals(DevQsarConstants.BIODEG_HL_HC)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)
 				|| propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_SCUD_LC50)

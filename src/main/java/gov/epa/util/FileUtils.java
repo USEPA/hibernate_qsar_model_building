@@ -9,6 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FileUtils {
 	/**
@@ -67,5 +69,48 @@ public class FileUtils {
 			return -1;
 		}
 
+	}
+	
+	static void goThroughFolder(File folder,List<File>allFiles) {
+
+		
+		for (File file: folder.listFiles()) {
+			if(file.isDirectory()) {
+				
+//				System.out.println(file.getAbsolutePath());
+				
+				goThroughFolder(file,allFiles);
+			} else {
+				
+				if(file.length()>10e6)				
+					allFiles.add(file);
+			}
+			
+		}
+		
+		
+
+		
+	}
+	
+	
+	static void findLargeFiles() {
+		String strFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\";
+		
+		File folder=new File(strFolder);
+		
+		List<File>allFiles=new ArrayList<>();
+		
+		goThroughFolder(folder,allFiles);
+		
+		for(File file:allFiles) {
+			System.out.println(file.getAbsolutePath()+"\t"+file.length());
+		}
+		
+	}
+	
+	public static void main(String[] args) {
+		
+		findLargeFiles();
 	}
 }

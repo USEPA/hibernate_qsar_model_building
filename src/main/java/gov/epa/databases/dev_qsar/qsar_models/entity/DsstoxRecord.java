@@ -30,6 +30,9 @@ import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+
+import com.google.gson.annotations.SerializedName;
+
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 
 @Entity
@@ -56,37 +59,60 @@ public class DsstoxRecord {
 	@Column(name="casrn")
 	private String casrn;
 	
+	@SerializedName(value="preferred_name") //when export from database software it will use the database column name not the Java variable name
 	@Column(name="preferred_name")
 	private String preferredName;
 	
+	@SerializedName(value="jchem_inchi_key")
+	@Column(name="jchem_inchi_key")
+	private String jchemInchikey;
+
+	
+	@SerializedName(value="indigo_inchi_key")
+	@Column(name="indigo_inchi_key")
+	private String indigoInchikey;
+
+	
 	//These should all be true for the records with both sid and cid
+	@SerializedName(value="mol_image_png_available")
 	@Column(name="mol_image_png_available")
 	private Boolean molImagePNGAvailable;
 	
 	@ManyToOne
 	@NotNull(message="DsstoxSnapshot required")
 	@JoinColumn(name="fk_dsstox_snapshot_id")
+//	@SerializedName(value="fk_dsstox_snapshot_id") //cant regenerate this object from json file this way
 	private DsstoxSnapshot dsstoxSnapshot;
 	
+
+	@Column(name="generic_substance_updated_at")
+	@SerializedName(value="generic_substance_updated_at")
+	@Temporal(TemporalType.TIMESTAMP)
+	private Date genericSubstanceUpdatedAt;
+
 	
 	@Column(name="updated_at")
+	@SerializedName(value="updated_at")
 	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date updatedAt;
 	
 	@Column(name="updated_by")
+	@SerializedName(value="updated_by")
 	private String updatedBy;
 	
 	@Column(name="created_at")
+	@SerializedName(value="created_at")
 	@CreationTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
 	
 	@NotNull(message="Creator required")
 	@Column(name="created_by")
+	@SerializedName(value="created_by")
 	private String createdBy;
 
-	
+	@SerializedName(value="mol_weight")
 	@Column(name="mol_weight")
 	private Double molWeight;
 
@@ -97,6 +123,20 @@ public class DsstoxRecord {
 
 	public DsstoxRecord() {}
 	
+	
+	public DsstoxRecord(gov.epa.databases.dsstox.DsstoxRecord dr) {
+		
+		this.dtxcid=dr.dsstoxCompoundId;
+		this.molWeight=dr.molWeight;
+		this.smiles=dr.smiles;
+		this.jchemInchikey=dr.jchemInchikey;
+		this.indigoInchikey=dr.indigoInchikey;
+
+		this.dtxsid=dr.dsstoxSubstanceId;
+		this.casrn=dr.casrn;
+		this.preferredName=dr.preferredName;
+		
+	}
 	
 	public static List<DsstoxRecord> getRecords(List<DsstoxCompound> compounds, DsstoxSnapshot snapshot,String lanId) {
 
@@ -111,12 +151,15 @@ public class DsstoxRecord {
 				dtxsid=c.getGenericSubstanceCompound().getGenericSubstance().getDsstoxSubstanceId();
 				casrn=c.getGenericSubstanceCompound().getGenericSubstance().getCasrn();
 				preferredName=c.getGenericSubstanceCompound().getGenericSubstance().getPreferredName();
+//				System.out.println(dtxsid+"\t"+casrn+"\t"+preferredName);
 			}
 			
-			DsstoxRecord record=new DsstoxRecord(snapshot, c.getMolWeight(), c.getId(),  dtxsid, c.getDsstoxCompoundId(),c.getSmiles(),c.isMolImagePNGAvailable(),casrn,preferredName,lanId);
+			DsstoxRecord record=new DsstoxRecord(snapshot, c.getId(),c.getDsstoxCompoundId(), c.getSmiles(),
+					c.getMolWeight(),c.getIndigoInchikey(),c.getJchemInchikey(),
+					dtxsid, casrn,preferredName,lanId,c.getGenericSubstanceCompound().getGenericSubstance().getUpdatedAt(),c.isMolImagePNGAvailable());
 			
-			if (!c.isMolImagePNGAvailable())
-				System.out.println(dtxsid+"\t"+c.isMolImagePNGAvailable());
+//			if (!c.isMolImagePNGAvailable())
+//				System.out.println(dtxsid+"\t"+c.isMolImagePNGAvailable());
 			
 			
 			records.add(record);
@@ -124,17 +167,25 @@ public class DsstoxRecord {
 		return records;
 	}
 	
-	public DsstoxRecord(DsstoxSnapshot dsstoxSnapshot,Double mol_weight, Long fk_compounds_id, String DTXSID,String DTXCID, String smiles,boolean isMolImageAvailable, String casrn, String preferredName, String createdBy) {
-		this.molWeight=mol_weight;
-		this.cid=fk_compounds_id;
+	public DsstoxRecord(DsstoxSnapshot dsstoxSnapshot,Long fk_compounds_id,
+			String DTXCID, String smiles,Double mol_weight, String indigoInchiKey,String jchemInchikey, 
+			String DTXSID,String casrn, String preferredName, String createdBy,Date genericSubstanceUpdatedAt,boolean isMolImageAvailable) {
+
 		this.dsstoxSnapshot=dsstoxSnapshot;
+
+		this.cid=fk_compounds_id;
 		this.dtxcid=DTXCID;
-		this.dtxsid=DTXSID;
 		this.smiles=smiles;
+		this.molWeight=mol_weight;
+		this.indigoInchikey=indigoInchiKey;
+		this.jchemInchikey=jchemInchikey;
+		
+		this.dtxsid=DTXSID;
 		this.createdBy=createdBy;
 		this.casrn=casrn;
 		this.preferredName=preferredName;
-		this.setMolImagePNGAvailable(isMolImageAvailable);
+		this.molImagePNGAvailable=isMolImageAvailable;
+		this.genericSubstanceUpdatedAt=genericSubstanceUpdatedAt;
 	}
 
 
@@ -298,6 +349,36 @@ public class DsstoxRecord {
 
 	public void setOtherCasrns(List<DsstoxOtherCASRN> otherCasrns) {
 		this.otherCasrns = otherCasrns;
+	}
+
+
+	public String getJchemInchikey() {
+		return jchemInchikey;
+	}
+
+
+	public void setJchemInchikey(String jchemInchikey) {
+		this.jchemInchikey = jchemInchikey;
+	}
+
+
+	public String getIndigoInchikey() {
+		return indigoInchikey;
+	}
+
+
+	public void setIndigoInchikey(String indigoInchikey) {
+		this.indigoInchikey = indigoInchikey;
+	}
+
+
+	public Date getGenericSubstanceUpdatedAt() {
+		return genericSubstanceUpdatedAt;
+	}
+
+
+	public void setGenericSubstanceUpdatedAt(Date genericSubstanceUpdatedAt) {
+		this.genericSubstanceUpdatedAt = genericSubstanceUpdatedAt;
 	}
 
 

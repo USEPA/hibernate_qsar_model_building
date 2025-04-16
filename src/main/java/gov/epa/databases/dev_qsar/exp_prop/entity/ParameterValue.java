@@ -1,5 +1,9 @@
 package gov.epa.databases.dev_qsar.exp_prop.entity;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.Date;
 
 import javax.persistence.Column;
@@ -209,5 +213,97 @@ public class ParameterValue {
 
 	public void setValueQualifier(String valueQualifier) {
 		this.valueQualifier = valueQualifier;
+	}
+	
+	public static String getFormattedValue(Double dvalue,int nsig) {
+
+		if(dvalue==null) {
+			return "N/A";
+		}
+		DecimalFormat dfSci=new DecimalFormat("0.00E00");
+		DecimalFormat dfInt=new DecimalFormat("0");
+		try {
+			if(dvalue!=0 && (Math.abs(dvalue)<0.01 || Math.abs(dvalue)>1e3)) {
+				return dfSci.format(dvalue);
+			}
+//			System.out.println(dvalue+"\t"+setSignificantDigits(dvalue, nsig));
+			return setSignificantDigits(dvalue, nsig);
+		} catch (Exception ex) {
+			return null;
+		}
+	}
+	
+	public static String setSignificantDigits(double value, int significantDigits) {
+	    if (significantDigits < 0) throw new IllegalArgumentException();
+
+	    // this is more precise than simply doing "new BigDecimal(value);"
+	    BigDecimal bd = new BigDecimal(value, MathContext.DECIMAL64);
+	    bd = bd.round(new MathContext(significantDigits, RoundingMode.HALF_UP));
+	    final int precision = bd.precision();
+	    if (precision < significantDigits)
+	    bd = bd.setScale(bd.scale() + (significantDigits-precision));
+	    return bd.toPlainString();
+	}  
+	
+	@Override
+	public String toString() {
+		
+		if(getUnit()==null) {
+			return toStringNoUnits();
+		} else {
+			return toStringWithUnits();
+		}
+	}
+	
+	
+	public String toStringWithUnits() {
+		
+		int n=3;
+		String pointEstimate=getFormattedValue(valuePointEstimate,n);
+		String strValMin=getFormattedValue(valueMin,n);
+		String strValMax=getFormattedValue(valueMax,n);
+
+		String unitAbbreviation=unit.getAbbreviation();
+		
+		if(valuePointEstimate!=null) {
+			if(valueQualifier!=null) {
+				return valueQualifier+" "+pointEstimate+" "+unitAbbreviation;
+			} else {
+				return pointEstimate+" "+unitAbbreviation;
+			}
+		} else if (valueMin!=null && valueMax!=null) {
+			return strValMin+ " "+unitAbbreviation+" < value < " +strValMax+ " "+unitAbbreviation;
+		} else if (valueMin!=null) {
+			return " > "+strValMin+" "+unitAbbreviation;
+		} else if (valueMax!=null) {
+			return " < "+strValMax+" "+unitAbbreviation;	
+		} else {
+			return null;
+		}
+	}
+
+	
+	public String toStringNoUnits() {
+		
+		int n=3;
+		String pointEstimate=getFormattedValue(valuePointEstimate,n);
+		String strValMin=getFormattedValue(valueMin,n);
+		String strValMax=getFormattedValue(valueMax,n);
+
+		if(valuePointEstimate!=null) {
+			if(valueQualifier!=null) {
+				return valueQualifier+" "+pointEstimate;
+			} else {
+				return pointEstimate;
+			}
+		} else if (valueMin!=null && valueMax!=null) {
+			return strValMin+ " < value < " +strValMax;
+		} else if (valueMin!=null) {
+			return " > "+strValMin;
+		} else if (valueMax!=null) {
+			return " < "+strValMax;	
+		} else {
+			return null;
+		}
 	}
 }

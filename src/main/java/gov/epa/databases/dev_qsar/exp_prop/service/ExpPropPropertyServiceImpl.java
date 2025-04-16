@@ -2,14 +2,11 @@ package gov.epa.databases.dev_qsar.exp_prop.service;
 
 import java.util.List;
 import java.util.Set;
-
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
-
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-
 import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.exp_prop.ExpPropSession;
 import gov.epa.databases.dev_qsar.exp_prop.dao.ExpPropPropertyDao;
@@ -121,6 +118,8 @@ public class ExpPropPropertyServiceImpl implements ExpPropPropertyService {
 		}
 		
 	}
+
+	
 
 
 }

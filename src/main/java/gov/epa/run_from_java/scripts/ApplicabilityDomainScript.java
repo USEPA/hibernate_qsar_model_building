@@ -6,8 +6,10 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
@@ -35,6 +37,9 @@ public class ApplicabilityDomainScript {
 	
 	static int portModelBuilding=DevQsarConstants.PORT_PYTHON_MODEL_BUILDING;
 	static String serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
+//	static String serverModelBuilding="http://127.0.0.1";
+	
+	
 //	static String serverModelBuilding=DevQsarConstants.SERVER_819;
 
 	static String descriptorSetName = DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
@@ -69,8 +74,6 @@ public class ApplicabilityDomainScript {
 	}
 	
 	public void runCaseStudyExpProp_All_Endpoints() {
-
-		
 
 		serverModelBuilding=DevQsarConstants.SERVER_LOCAL;
 		portModelBuilding=5004;
@@ -212,18 +215,18 @@ public class ApplicabilityDomainScript {
 	public void runCaseStudyExpProp_All_Endpoints_modelSpecificAD() {
 
 		
-		String modelSetName="WebTEST2.1";
-		String splittingName =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+//		String modelSetName="WebTEST2.1";
+//		String splittingName =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+////		boolean limitToPFAS=false; 
 //		boolean limitToPFAS=true;
-		boolean limitToPFAS=false;
 
 //		String modelSetName="WebTEST2.1 PFAS";
 //		String splittingName =SplittingGeneratorPFAS_Script.splittingPFASOnly;
 //		boolean limitToPFAS=false;
 		
-//		String modelSetName="WebTEST2.1 All but PFAS";
-//		String splittingName =SplittingGeneratorPFAS_Script.splittingAllButPFAS;
-//		boolean limitToPFAS=false;
+		String modelSetName="WebTEST2.1 All but PFAS";
+		String splittingName =SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+		boolean limitToPFAS=false;
 		
 		
 		String statName="MAE_Test";
@@ -255,10 +258,10 @@ public class ApplicabilityDomainScript {
 
 		List<String>datasetNames=new ArrayList<>();
 		datasetNames.add("HLC v1 modeling");
-		datasetNames.add("WS v1 modeling");
 		datasetNames.add("VP v1 modeling");
-		datasetNames.add("LogP v1 modeling");
 		datasetNames.add("BP v1 modeling");
+		datasetNames.add("WS v1 modeling");
+		datasetNames.add("LogP v1 modeling");
 		datasetNames.add("MP v1 modeling");
 		
 //		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
@@ -613,6 +616,12 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 		//Run AD calculations using webservice:	
 		
 		String strResponse=null;
+		
+//		System.out.println("Model Descriptors="+prmm.descriptorEmbeddingTsv);
+		
+//		System.out.println(mws.callInfo("xgb").getBody().toString());
+		
+//		System.out.println(data.predictionSetInstances);
 		
 		if (prmm.descriptorEmbeddingTsv!=null) {
 			strResponse=mws.callPredictionApplicabilityDomain(data.trainingSetInstances,data.predictionSetInstances,
@@ -1018,17 +1027,24 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 			ApplicabilityDomainPrediction pred=new ApplicabilityDomainPrediction();
 			
 			JsonObject jo=Utilities.gson.fromJson(line, JsonObject.class);
-			
+
+
 			pred.id=jo.get("idTest").getAsString();
 			pred.AD=jo.get("AD").getAsBoolean();
 			
 			if (storeNeighbors) {
 				pred.idNeighbors=new ArrayList<>();
-
-				List<String> keys = jo.entrySet()
-						.stream()
-						.map(i -> i.getKey())
-						.collect(Collectors.toCollection(ArrayList::new));
+				
+				List<String> keys=new ArrayList<>();
+				Set<Map.Entry<String, JsonElement>> entries = jo.entrySet();//will return members of your object
+				for (Map.Entry<String, JsonElement> entry: entries) {
+				    keys.add(entry.getKey());
+				}
+				
+//				List<String> keys = jo.entrySet()
+//						.stream()
+//						.mapByExternalID(i -> i.getKey())//doesnt work anymore
+//						.collect(Collectors.toCollection(ArrayList::new));
 
 				for (String key:keys) {
 					if(key.contains("Neighbor")) {

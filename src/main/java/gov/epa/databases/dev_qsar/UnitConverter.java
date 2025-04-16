@@ -59,7 +59,7 @@ public class UnitConverter {
 			return handle_KMHL(propertyName,value, finalUnitName, chemicalId, unitName);
 		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
 			return handle_VAPOR_PRESSURE(propertyName,value, finalUnitName, chemicalId, unitName);
-		} else if (propertyName.equals(DevQsarConstants.KOC) || propertyName.equals(DevQsarConstants.BCF)) {
+		} else if (propertyName.equals(DevQsarConstants.KOC) || propertyName.equals(DevQsarConstants.BCF)|| propertyName.equals(DevQsarConstants.BAF)) {
 			return handle_KOC(propertyName,value, finalUnitName, chemicalId, unitName);
 		} else if (propertyName.equals(DevQsarConstants.OH)) {
 			return handle_OH(propertyName,value, finalUnitName, chemicalId, unitName);
@@ -92,6 +92,42 @@ public class UnitConverter {
 			if(unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.LOG_PPM))) {
 				return Math.pow(10, value);
 			}
+		} 
+		
+		getErrorMessage(propertyName,finalUnitName, chemicalId, unitName);
+		return null;
+
+	}
+	
+	private static Double handle_LD50(String propertyName, double value, String finalUnitName, String chemicalId,
+			DsstoxRecord dsstoxRecord, String unitName) {
+		
+		if (finalUnitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.NEG_LOG_MOL_KG))) {
+			
+			if (unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.LOG_MOL_KG))) {
+				return -value;
+			} else if (unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.MOL_KG)) && value!=0) {
+				return -Math.log10(value);
+			} else if (unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.MG_KG))) {
+
+				if (dsstoxRecord.molWeight!=null) {
+					return -Math.log10(value/1000.0/dsstoxRecord.molWeight);	
+				} else if (value==0) {
+					System.out.println(chemicalId + ": value=0 for "+dsstoxRecord.dsstoxSubstanceId+", so cant convert to "+finalUnitName);
+					return null;
+				} else if (dsstoxRecord.molWeight==null) {
+					//Will show up in discarded records spreadsheets as "Unit conversion failed" 
+					System.out.println(chemicalId + ": missing MW for "+dsstoxRecord.dsstoxSubstanceId+", so cant convert to "+finalUnitName);
+				}
+			} else if (unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.UL_KG))) {
+				//we didnt have a density to convert it earlier in data gathering project
+				return null;
+			}
+
+		} else if (finalUnitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.MOL_KG))) {
+			if(unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.NEG_LOG_MOL_KG))) {
+				return Math.pow(10, -value);
+			} 
 		} 
 		
 		getErrorMessage(propertyName,finalUnitName, chemicalId, unitName);
@@ -254,6 +290,7 @@ public class UnitConverter {
 				} else if (dsstoxRecord.molWeight==null) {
 					//Will show up in discarded records spreadsheets as "Unit conversion failed" 
 					System.out.println(chemicalId + ": missing MW for "+dsstoxRecord.dsstoxSubstanceId+", so cant convert to "+finalUnitName);
+					return null;
 				}
 			} 
 

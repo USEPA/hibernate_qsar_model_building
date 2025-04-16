@@ -151,11 +151,10 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 	 * runs 100x faster than hibernate createBatch
 	 */
 	@Override
-	public void createSQL (List<PredictionDashboard> predictionDashboards) {
+	public void createSQL(List<PredictionDashboard> predictionDashboards) {
 
 //		if(true)return;
 		
-		int size=predictionDashboards.size();
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		int batchSize=1000;
 
@@ -163,31 +162,33 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 //			conn.setAutoCommit(false);
 			long t1=System.currentTimeMillis();
 
-			while (true) {
-				List<PredictionDashboard> predictionDashboards2=new ArrayList<>();
+			List<PredictionDashboard> predictionDashboards2=new ArrayList<>();
+
+			for (int i=0;i<predictionDashboards.size();i++) {
 				
-				if(predictionDashboards.size()==0) break;
-				
-				for (int i=1;i<=batchSize;i++) {
-					predictionDashboards2.add(predictionDashboards.remove(0));
-					if(predictionDashboards.size()==0) break;
+				predictionDashboards2.add(predictionDashboards.get(i));
+
+				if(predictionDashboards2.size()==batchSize) {
+					saveToPredictionsDashboardTable(predictionDashboards2, conn);//
+					saveToPredictionReportsTable(predictionDashboards2, conn);
+					saveToADTable(predictionDashboards2, conn);
+					saveToNeighborsTable(predictionDashboards2, conn);
+					predictionDashboards2.clear();
 				}
-				
 				//TODO is it faster to use createBatch with hibernate (should cascade)
-				
-				saveToPredictionsDashboardTable(predictionDashboards2, conn);
-				saveToPredictionReportsTable(predictionDashboards2, conn);
-				saveToADTable(predictionDashboards2, conn);
-				saveToNeighborsTable(predictionDashboards2, conn);
-				
 //				saveToPredictionsDashboardTableNoKeys(predictionDashboards2, conn);
 				
-				
-				if(predictionDashboards.size()==0) break;
 			}
+
+			//Do what's left:
+			saveToPredictionsDashboardTable(predictionDashboards2, conn);//
+			saveToPredictionReportsTable(predictionDashboards2, conn);
+			saveToADTable(predictionDashboards2, conn);
+			saveToNeighborsTable(predictionDashboards2, conn);
+
 			
 			long t2=System.currentTimeMillis();
-			System.out.println("using createSQL2, time to post "+size+" predictions using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
+//			System.out.println("using createSQL2, time to post "+predictionDashboards.size()+" predictions using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
 //			conn.commit();
 			
 			
@@ -211,7 +212,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 			sql+="?";
 			if (i<fieldNames.length-1)sql+=",";			 		
 		}
-		sql+="current_timestamp)";
+		sql+="current_timestamp) ON CONFLICT DO NOTHING";
 		return sql;
 	}
 
@@ -457,7 +458,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 
 	private void saveToPredictionReportsTable(List<PredictionDashboard> predictionDashboards, Connection conn) throws SQLException {
 		
-		String [] fieldNames= {"fk_predictions_dashboard_id","file","created_by", "created_at"};
+		String [] fieldNames= {"fk_predictions_dashboard_id","file_json","file_html","created_by", "created_at"};
 
 		String sql = createSqlInsert(fieldNames,"prediction_reports");	
 		PreparedStatement prep = conn.prepareStatement(sql);
@@ -476,9 +477,12 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 			
 			PredictionReport pr=pd.getPredictionReport();
 			
+			if(pd.getId()==null) continue;
+			
 			prep.setLong(1, pd.getId());
-			prep.setBytes(2, pr.getFile());
-			prep.setString(3, pr.getCreatedBy());
+			prep.setBytes(2, pr.getFileJson());
+			prep.setBytes(3, pr.getFileHtml());
+			prep.setString(4, pr.getCreatedBy());
 			prep.addBatch();
 		}
 		prep.executeBatch();
@@ -498,7 +502,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 				"reasoning",
 				"created_by", 
 				"created_at"};
-
+		
 		String sql = createSqlInsert(fieldNames,"qsar_predicted_ad_estimates");	
 		PreparedStatement prep = conn.prepareStatement(sql);
 		
@@ -506,6 +510,8 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		
 		while(pdIterator.hasNext())	 {		
 			PredictionDashboard pd=pdIterator.next();
+			
+			if(pd.getId()==null) continue;
 			
 			if(pd.getQsarPredictedADEstimates()==null) continue;
 			
@@ -537,25 +543,29 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 			}
 		}
 		prep.executeBatch();
+		
+		
 	}	
 	
 	
 
 	private void saveToNeighborsTable(List<PredictionDashboard> predictionDashboards, Connection conn) throws SQLException {
 		
-		String [] fieldNames= {"fk_predictions_dashboard_id",
-				"fk_dsstox_records_id",
-				"dtxsid",
-				"casrn",
-				"inchi_key_qsar_ready",
-				"match_by",
-				"neighbor_number",
-				"experimental_string",
-				"experimental_value",
-				"predicted_string",
-				"predicted_value",
-				"created_by", 
-				"created_at"};
+		String [] fieldNames= {"fk_predictions_dashboard_id",//1
+				"fk_dsstox_records_id",//2
+				"dtxsid",//3
+				"casrn",//4
+				"inchi_key_qsar_ready",//5
+				"match_by",//6
+				"neighbor_number",//7
+				"experimental_string",//8
+				"experimental_value",//9
+				"predicted_string",//10
+				"predicted_value",//11
+				"split_num",//12
+				"similarity_coefficient",//13
+				"created_by", //14
+				"created_at"};//15
 
 		String sql = createSqlInsert(fieldNames,"qsar_predicted_neighbors");	
 		PreparedStatement prep = conn.prepareStatement(sql);
@@ -565,6 +575,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		while(pdIterator.hasNext())	 {		
 			PredictionDashboard pd=pdIterator.next();
 			
+			if(pd.getId()==null) continue;
 			if(pd.getQsarPredictedNeighbors()==null) continue;
 			
 			for (QsarPredictedNeighbor neighbor: pd.getQsarPredictedNeighbors()) {
@@ -626,8 +637,20 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 				} else {
 					prep.setDouble(11, neighbor.getPredictedValue());	
 				}
+				
+				if (neighbor.getSplitNum()==null) {
+					prep.setNull(12,Types.INTEGER);
+				} else {
+					prep.setInt(12, neighbor.getSplitNum());	
+				}
+				
+				if (neighbor.getSimilarityCoefficient()==null) {
+					prep.setNull(13,Types.DOUBLE);
+				} else {
+					prep.setDouble(13, neighbor.getSimilarityCoefficient());	
+				}
 
-				prep.setString(12, pd.getPredictionReport().getCreatedBy());				
+				prep.setString(14, pd.getPredictionReport().getCreatedBy());				
 				prep.addBatch();
 			}
 		}

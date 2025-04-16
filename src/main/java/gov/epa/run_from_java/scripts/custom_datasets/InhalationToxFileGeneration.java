@@ -11,6 +11,7 @@ import org.json.CDL;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorSet;
@@ -18,6 +19,8 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetServiceImpl;
 import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValuesCalculator;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
+import kong.unirest.HttpResponse;
 
 /**
 * @author TMARTI02
@@ -331,12 +334,13 @@ public static Hashtable<String,String> getDescriptorsHashtableOPERA(String filep
 		String inputFileName="LC50_Tr.csv";
 		
 //		String descriptorSetName="WebTEST-default";
-//		String descriptorSetName="Mordred-default";
-		String descriptorSetName="RDKit-default";
+		String descriptorSetName="Mordred-default";
+//		String descriptorSetName="RDKit-default";
 
 		
-		String server="https://hazard-dev.sciencedataexperts.com";
-		SciDataExpertsDescriptorValuesCalculator descriptorCalculator=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
+//		String serverHost="https://hazard-dev.sciencedataexperts.com";
+		String serverHost = "https://hcd.rtpnc.epa.gov";
+		SciDataExpertsDescriptorValuesCalculator descriptorCalculator=new SciDataExpertsDescriptorValuesCalculator(serverHost, "tmarti02");
 
 		
 		try {
@@ -350,8 +354,13 @@ public static Hashtable<String,String> getDescriptorsHashtableOPERA(String filep
 			String descriptorAbbrev=descriptorSet.getDescriptorService();
 			
 			String outputFileName="LC50_Tr_descriptors_"+descriptorAbbrev+".tsv";
-			FileWriter fw=new FileWriter(folder+outputFileName);
+			String outputFilePath=folder+outputFileName;
+			File of=new File(outputFilePath);
+			Hashtable<String,String>ht=new Hashtable<String,String>();
 			
+			boolean haveOF=of.exists();
+			
+			if(haveOF) ht=getDescriptorsHashtable(outputFilePath);
 
 //			System.out.println(csvAsString);
 
@@ -363,14 +372,18 @@ public static Hashtable<String,String> getDescriptorsHashtableOPERA(String filep
 			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
 
 
-
+			FileWriter fw=new FileWriter(outputFilePath,of.exists());
 			
-			fw.write("QSAR_READY_SMILES\t"+descriptorSet.getHeadersTsv()+"\r\n");
+			if(!haveOF)
+				fw.write("QSAR_READY_SMILES\t"+descriptorSet.getHeadersTsv()+"\r\n");	
 			
 			for (int i=0;i<ja.size();i++) {
 				JsonObject jo=ja.get(i).getAsJsonObject();
 				
 				String QSAR_READY_SMILES=jo.get("QSAR_READY_SMILES").getAsString();
+				
+				if(ht.containsKey(QSAR_READY_SMILES)) continue;
+				
 				String descriptorsTsv=null;
 				descriptorsTsv=descriptorCalculator.calculateDescriptors(QSAR_READY_SMILES, descriptorSet);
 
@@ -381,6 +394,7 @@ public static Hashtable<String,String> getDescriptorsHashtableOPERA(String filep
 					
 				} else {
 					fw.write(QSAR_READY_SMILES+"\t"+descriptorsTsv+"\r\n");
+					ht.put(QSAR_READY_SMILES, descriptorsTsv);
 				}
 				fw.flush();
 			}		
@@ -391,13 +405,171 @@ public static Hashtable<String,String> getDescriptorsHashtableOPERA(String filep
 		}
 	}
 	
+	void generateDescriptorFilePrediction() {
+
+		String folder="data\\modeling\\CoMPAIT\\";
+		String inputFileName="PredictionSet.csv";
+		
+//		String descriptorSetName="WebTEST-default";
+		String descriptorSetName="Mordred-default";
+//		String descriptorSetName="RDKit-default";
+
+		String serverHost = "https://hcd.rtpnc.epa.gov";
+//		String serverHost="https://hazard-dev.sciencedataexperts.com";
+		
+		SciDataExpertsDescriptorValuesCalculator descriptorCalculator=new SciDataExpertsDescriptorValuesCalculator(serverHost, "tmarti02");
+
+		String workflow = "qsar-ready_08232023";
+//		String serverHost = "https://hazard-dev.sciencedataexperts.com";
+		
+		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,
+				workflow, serverHost);
+		boolean useFullStandardize=false;
+		
+		
+		
+		try {
+			InputStream inputStream= new FileInputStream(folder+inputFileName);
+
+			BufferedReader br=new BufferedReader(new InputStreamReader(inputStream));
+			String csvAsString = br.lines().collect(Collectors.joining("\n"));
+
+			DescriptorSet descriptorSet = descriptorSetService.findByName(descriptorSetName);
+
+			String descriptorAbbrev=descriptorSet.getDescriptorService();
+			
+			String outputFileName="LC50_Prediction_descriptors_"+descriptorAbbrev+".tsv";
+			String outputFilePath=folder+outputFileName;
+			
+			String predictionEditSmilesPath=folder+"LC50_Prediction_descriptors_edit_smiles.tsv";
+			File of=new File(outputFilePath);
+			
+			Hashtable<String,String>ht=new Hashtable<String,String>();
+			
+			boolean haveOF=of.exists();
+			
+			if(haveOF) ht=getDescriptorsHashtable(outputFilePath);
+			
+			System.out.println(ht.size()+"\talready ran");
+			
+//			if(true)return;
+			
+
+//			System.out.println(csvAsString);
+
+			br.close();
+
+			String json = CDL.toJSONArray(csvAsString).toString();
+			//		System.out.println("Done loading results file");
+
+			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+
+			
+			FileWriter fw=new FileWriter(outputFilePath,of.exists());
+			FileWriter fw2=new FileWriter(predictionEditSmilesPath);	
+
+			fw2.write("DSSTOX_SUBSTANCE_ID\tOriginal_SMILES\tQSAR_READY_SMILES_OPERA\tQSAR_READY_SMILES_SDE\tQSAR_READY_SMILES_SDE_LONGEST\r\n");
+			
+			if(!haveOF)
+				fw.write("QSAR_READY_SMILES\t"+descriptorSet.getHeadersTsv()+"\r\n");
+			
+			for (int i=0;i<ja.size();i++) {
+				JsonObject jo=ja.get(i).getAsJsonObject();
+				
+				String QSAR_READY_SMILES_OPERA=jo.get("QSAR_READY_SMILES").getAsString();
+				String Original_SMILES=jo.get("Original_SMILES").getAsString();
+				String DSSTOX_SUBSTANCE_ID=jo.get("DSSTOX_SUBSTANCE_ID").getAsString();;
+				
+				if(QSAR_READY_SMILES_OPERA.equals("CC(O)C(=O)OC(C)C(=O)OC(C)C(=O)OC(C)C(=O)OC(COC(=O)C(C)OC(=O)C(C)OC(=O)C(C)OC(=O)C(C)O)C(OC(=O)C(C)OC(=O)C(C)OC(=O)C(C)OC(=O)C(C)O)C(OC(=O)C(C)OC(=O)C(C)OC(=O)C(C)OC(=O)C(C)O)C(COC(=O)C(C)OC(=O)C(C)OC(=O)C(C)OC(=O)C(C)O)OC(=O)C(C)OC(=O)C(C)OC(=O)C(C)OC(=O)C(C)O")) {
+					System.out.println("Found long one");
+					System.out.println(ht.containsKey(QSAR_READY_SMILES_OPERA));
+				}
+					
+				
+				
+				if(ht.containsKey(QSAR_READY_SMILES_OPERA)) continue;
+				
+				String descriptorsTsv=null;
+				descriptorsTsv=descriptorCalculator.calculateDescriptors(QSAR_READY_SMILES_OPERA, descriptorSet);
+
+//				System.out.println((i+1)+"\t"+QSAR_READY_SMILES+"\t"+descriptorsTsv);
+				
+				
+				if(i%100==0) System.out.println(i);
+				
+				if (descriptorsTsv==null) {
+					
+					HttpResponse<String> standardizeResponse = standardizer.callQsarReadyStandardizePost(Original_SMILES, useFullStandardize);
+					if (standardizeResponse.getStatus() == 200) {
+						String jsonResponse = SciDataExpertsStandardizer.getResponseBody(standardizeResponse, useFullStandardize);
+						String qsarSmilesSDE = SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse,
+								useFullStandardize);
+						
+
+						String qsarSmilesSDE_Longest="";
+						List<String>smilesList=new ArrayList<String>();
+						String [] smilesSplit=qsarSmilesSDE.split("\\.");
+						
+						smilesList.add(qsarSmilesSDE);
+						for(String smiles:smilesSplit) {
+							if(smiles.length()>qsarSmilesSDE_Longest.length()) qsarSmilesSDE_Longest=smiles;
+							if(!smilesList.contains(smiles)) smilesList.add(smiles);
+						}
+						
+						System.out.println("\n"+qsarSmilesSDE);
+						
+						for(int j=0;j<smilesList.size();j++) {
+							String smiles=smilesList.get(j);
+							if(ht.containsKey(smiles)) continue;
+							
+							System.out.println("\t"+j+"\t"+smiles);
+							
+							descriptorsTsv=descriptorCalculator.calculateDescriptors(smiles, descriptorSet);
+
+							if(descriptorsTsv!=null) {
+								fw.write(smiles+"\t"+descriptorsTsv+"\r\n");
+								ht.put(smiles, descriptorsTsv);
+								fw.flush();
+							}
+
+						}
+						fw2.write(DSSTOX_SUBSTANCE_ID+"\t"+Original_SMILES+"\t"+QSAR_READY_SMILES_OPERA+"\t"+qsarSmilesSDE+"\t"+qsarSmilesSDE_Longest+"\r\n");
+						fw2.flush();
+						
+						
+					} else {
+						System.out.println((i+1)+"\t"+Original_SMILES+"\tstatus="+standardizeResponse.getStatus());
+						fw2.write(DSSTOX_SUBSTANCE_ID+"\t"+Original_SMILES+"\t"+QSAR_READY_SMILES_OPERA+"\tN/A\tN/A"+"\r\n");
+
+					}
+
+					
+//					fw.write(QSAR_READY_SMILES+"\tError\r\n");
+//					System.out.println((i+1)+"\t"+QSAR_READY_SMILES+"\tError");
+				} else {
+//					System.out.println((i+1)+"\t"+QSAR_READY_SMILES+"\tOK");
+					fw.write(QSAR_READY_SMILES_OPERA+"\t"+descriptorsTsv+"\r\n");
+					ht.put(QSAR_READY_SMILES_OPERA, descriptorsTsv);
+					fw.flush();
+				}
+				
+			}		
+			fw.close();
+			fw2.flush();
+			fw2.flush();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 	
 	
 	public static void main(String[] args) {
 		InhalationToxFileGeneration i=new InhalationToxFileGeneration();
 //		i.generateDescriptorFile();
+		i.generateDescriptorFilePrediction();
 //		i.createSplittingFiles();
-		i.createSplittingFilesIncludeOPERA();
+//		i.createSplittingFilesIncludeOPERA();
 //		i.getDescriptorsHashtable();
 //		i.getDescriptorsHashtableOPERA();
 

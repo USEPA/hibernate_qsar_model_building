@@ -175,7 +175,7 @@ public class DatahubPrediction {
 
 	}
 	
-	void exportPerceptaPredictionsSample() {
+	void exportPerceptaPredictionsSample(int count) {
 
 		
 		Gson gson=new Gson();
@@ -184,16 +184,19 @@ public class DatahubPrediction {
 			
 			String folder="data//percepta//";
 			
-			File file=new File(folder+"chemical_properties_2024_11_06_sample.json");
+			String sampleFileName="sampleDtxsids"+count+".txt";
+			File file=new File(folder+"chemical_properties_2024_11_06_sample_"+count+".json");
+
+//			String sampleFileName="sampleDtxsids.txt";
+//			File file=new File(folder+"chemical_properties_2024_11_06_sample.json");
+
+			
 			FileWriter fw=new FileWriter(file);
-
 			Connection conn=SqlUtilities.getConnectionPostgres();
-
-
-			HashSet<String>dtxsidsSample=compare.getDtxsidsFromTextFile(folder+"sampleDtxsids.txt");
-
+			HashSet<String>dtxsidsSample=CompareResQsarToDatahub.getDtxsidsFromTextFile(folder+sampleFileName);
 			List<DatahubPrediction>dps=getDashboardPredictionsSample(dtxsidsSample,conn);
-				
+			
+			//TODO should i just convert to ResQsarPrediction object here:
 			for (DatahubPrediction dp:dps) {
 				fw.write(gson.toJson(dp)+"\r\n");
 			}
@@ -210,7 +213,8 @@ public class DatahubPrediction {
 	private List<DatahubPrediction> getDashboardPredictionsSample(HashSet<String> dtxsidsSample, Connection conn) {
 		List<DatahubPrediction>dps=new ArrayList<>();
 
-		String sql="select dtxsid,unit,name,value,source from ccd_app.chemical_properties cp where cp.\"source\" like 'ACD%' and \n";
+		String sourceAbbrev="Percepta2023.1.2";
+		String sql="select dtxsid,unit,name,value,source from ccd_app.chemical_properties cp where cp.\"source\" = '"+sourceAbbrev+"' and \n";
 		
 		Iterator<String> it=dtxsidsSample.iterator();
 		String strDtxsids="";
@@ -234,9 +238,9 @@ public class DatahubPrediction {
 				dp.dtxsid=rs.getString(1);
 				dp.unit=rs.getString(2);
 				dp.name=rs.getString(3);
-				
-//				dp.value=rs.getDouble(4);				
-				if(rs.getDouble(4)!=0.0) dp.value=rs.getDouble(4);
+
+				//Need this code because sometimes Percepta prediction is zero or null:
+				dp.value = rs.getObject(4) != null ? rs.getDouble(4) : null;
 				
 				dp.source=rs.getString(5);
 
@@ -256,7 +260,7 @@ public class DatahubPrediction {
 		try {
 			Connection conn=SqlUtilities.getConnectionPostgres();
 			List<String>dtxsids=getDTXSIDs(conn);
-			compare.dtxsidsToFile("data/percepta/chemical_properties_percepta_dtxsids.txt", dtxsids);
+			CompareResQsarToDatahub.dtxsidsToFile("data/percepta/chemical_properties_percepta_dtxsids.txt", dtxsids);
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -346,7 +350,9 @@ public class DatahubPrediction {
 //		cp.exportPerceptaPredictions();
 
 //		cp.exportDtxsids();
-		cp.exportPerceptaPredictionsSample();
+		
+		cp.exportPerceptaPredictionsSample(1000);
+		cp.exportPerceptaPredictionsSample(5000);
 		
 //		cp.getPredictionsFromJsonFile("data//percepta//chemical_properties_2024_11_06_sample.json",true);
 		

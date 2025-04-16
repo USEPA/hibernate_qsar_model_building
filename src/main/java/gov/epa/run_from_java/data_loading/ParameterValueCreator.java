@@ -14,11 +14,13 @@ import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 public class ParameterValueCreator {
 
 	
-	private ExperimentalRecordLoader loader;
+	private PropertyValueCreator pvc;
 
-	public ParameterValueCreator(ExperimentalRecordLoader experimentalRecordLoader) {
-		this.loader=experimentalRecordLoader;
+	public ParameterValueCreator(PropertyValueCreator pvc) {
+		this.pvc=pvc;
 	}
+	
+	
 	
 	/**
 	 * This method assumes there are explicit temperature_C, pressure_mmHg, and pH fields in ExperimentalRecord
@@ -26,13 +28,13 @@ public class ParameterValueCreator {
 	 * @param rec
 	 * @param propertyValue
 	 */
-	public void addPhyschemParameterValues(ExperimentalRecord rec,PropertyValue propertyValue) {
+	private void addPhyschemParameterValues(ExperimentalRecord rec,PropertyValue propertyValue) {
 
 		ParameterValue pressureValue = getPressureValue(rec);
 		if (pressureValue!=null) {
 			pressureValue.setPropertyValue(propertyValue);
-			pressureValue.setParameter(loader.parametersMap.get("Pressure"));
-			pressureValue.setUnit(loader.unitsMap.get(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.MMHG)));
+			pressureValue.setParameter(pvc.parametersMap.get("Pressure"));
+			pressureValue.setUnit(pvc.unitsMap.get(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.MMHG)));
 			//				QueryExpPropDb.postParameterValue(expPropDbUrl, pressureValue);
 			propertyValue.addParameterValue(pressureValue);
 		}
@@ -42,8 +44,8 @@ public class ParameterValueCreator {
 		ParameterValue temperatureValue = getTemperatureValue(rec);
 		if (temperatureValue!=null) {
 			temperatureValue.setPropertyValue(propertyValue);
-			temperatureValue.setParameter(loader.parametersMap.get("Temperature"));
-			temperatureValue.setUnit(loader.unitsMap.get(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.DEG_C)));
+			temperatureValue.setParameter(pvc.parametersMap.get("Temperature"));
+			temperatureValue.setUnit(pvc.unitsMap.get(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.DEG_C)));
 			//				QueryExpPropDb.postParameterValue(expPropDbUrl, temperatureValue);
 			propertyValue.addParameterValue(temperatureValue);
 		}
@@ -54,8 +56,8 @@ public class ParameterValueCreator {
 
 		if (phValue!=null) {
 			phValue.setPropertyValue(propertyValue);
-			phValue.setParameter(loader.parametersMap.get("pH"));
-			phValue.setUnit(loader.unitsMap.get(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.LOG_UNITS)));
+			phValue.setParameter(pvc.parametersMap.get("pH"));
+			phValue.setUnit(pvc.unitsMap.get(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.LOG_UNITS)));
 			//				QueryExpPropDb.postParameterValue(expPropDbUrl, phValue);
 			propertyValue.addParameterValue(phValue);
 		}
@@ -66,8 +68,8 @@ public class ParameterValueCreator {
 
 		if (measurementMethodValue!=null) {
 			measurementMethodValue.setPropertyValue(propertyValue);
-			measurementMethodValue.setParameter(loader.parametersMap.get("Measurement method"));
-			measurementMethodValue.setUnit(loader.unitsMap.get("TEXT"));
+			measurementMethodValue.setParameter(pvc.parametersMap.get("Measurement method"));
+			measurementMethodValue.setUnit(pvc.unitsMap.get("TEXT"));
 			//				QueryExpPropDb.postParameterValue(expPropDbUrl, measurementMethodValue);
 			propertyValue.addParameterValue(measurementMethodValue);
 		}
@@ -77,7 +79,7 @@ public class ParameterValueCreator {
 	private ParameterValue getMeasurementMethodValue(ExperimentalRecord rec) {
 		if (rec.measurement_method!=null) {
 			ParameterValue measurementMethodValue = new ParameterValue();
-			measurementMethodValue.setCreatedBy(loader.lanId);
+			measurementMethodValue.setCreatedBy(pvc.lanId);
 			measurementMethodValue.setValueText(rec.measurement_method);
 //			System.out.println(measurementMethodValue.getValueText());
 			return measurementMethodValue;
@@ -90,7 +92,7 @@ public class ParameterValueCreator {
 	private ParameterValue getPressureValue(ExperimentalRecord rec) {
 		if (rec.pressure_mmHg!=null) {
 			ParameterValue pressureValue = new ParameterValue();
-			pressureValue.setCreatedBy(loader.lanId);
+			pressureValue.setCreatedBy(pvc.lanId);
 			if (parseStringColumn(rec.pressure_mmHg, pressureValue)) {
 				return pressureValue;
 			} else {
@@ -103,7 +105,13 @@ public class ParameterValueCreator {
 	
 	private static boolean parseStringColumn(String columnContents, ParameterValue value) {
 
-		Matcher matcher = ExperimentalRecordLoader.STRING_COLUMN_PATTERN.matcher(columnContents);
+		
+		if(columnContents.isBlank()) {
+//			System.out.println("blank parameter value");
+			return false;
+		}
+		
+		Matcher matcher = PropertyValueCreator.STRING_COLUMN_PATTERN.matcher(columnContents);
 
 		if (matcher.find()) {
 			String qualifier = matcher.group(1);
@@ -134,7 +142,7 @@ public class ParameterValueCreator {
 	private ParameterValue getTemperatureValue(ExperimentalRecord rec) {
 		if (rec.temperature_C!=null) {
 			ParameterValue temperatureValue = new ParameterValue();
-			temperatureValue.setCreatedBy(loader.lanId);
+			temperatureValue.setCreatedBy(pvc.lanId);
 			temperatureValue.setValuePointEstimate(rec.temperature_C);
 			return temperatureValue;
 		} else {
@@ -157,7 +165,7 @@ public class ParameterValueCreator {
 	private ParameterValue getPhValue(ExperimentalRecord rec) {
 		if (rec.pH!=null) {
 			ParameterValue phValue = new ParameterValue();
-			phValue.setCreatedBy(loader.lanId);
+			phValue.setCreatedBy(pvc.lanId);
 			
 			if (parseStringColumn(rec.pH, phValue)) {
 				return phValue;
@@ -170,15 +178,15 @@ public class ParameterValueCreator {
 	}
 
 
-	public void addToxParameterValues(ExperimentalRecord rec,PropertyValue propertyValue) {
+	private void addToxParameterValues(ExperimentalRecord rec,PropertyValue propertyValue) {
 		
 		//could also just store these values in rec rather than constructing from the the propertyName or make the propertyName very specific
 		
 		ParameterValue speciesValue = getSpeciesValue(rec);
 		if (speciesValue!=null) {
 			speciesValue.setPropertyValue(propertyValue);
-			speciesValue.setParameter(loader.parametersMap.get("Species"));
-			speciesValue.setUnit(loader.unitsMap.get("Text"));
+			speciesValue.setParameter(pvc.parametersMap.get("Species"));
+			speciesValue.setUnit(pvc.unitsMap.get("Text"));
 			propertyValue.addParameterValue(speciesValue);
 		}
 
@@ -186,8 +194,8 @@ public class ParameterValueCreator {
 
 		if (adminRouteValue!=null) {
 			adminRouteValue.setPropertyValue(propertyValue);
-			adminRouteValue.setParameter(loader.parametersMap.get("Route of administration"));
-			adminRouteValue.setUnit(loader.unitsMap.get("Text"));
+			adminRouteValue.setParameter(pvc.parametersMap.get("Route of administration"));
+			adminRouteValue.setUnit(pvc.unitsMap.get("Text"));
 			propertyValue.addParameterValue(adminRouteValue);
 		}
 		
@@ -195,8 +203,8 @@ public class ParameterValueCreator {
 		
 		if (purityValue!=null) {
 			purityValue.setPropertyValue(propertyValue);
-			purityValue.setParameter(loader.parametersMap.get("Purity"));
-			purityValue.setUnit(loader.unitsMap.get("%"));
+			purityValue.setParameter(pvc.parametersMap.get("Purity"));
+			purityValue.setUnit(pvc.unitsMap.get("%"));
 			propertyValue.addParameterValue(purityValue);
 			System.out.println(purityValue.generateConciseValueString());
 		}
@@ -205,7 +213,7 @@ public class ParameterValueCreator {
 	private ParameterValue getSpeciesValue(ExperimentalRecord rec) {
 		if (rec.property_name!=null) {
 			ParameterValue speciesValue = new ParameterValue();
-			speciesValue.setCreatedBy(loader.lanId);
+			speciesValue.setCreatedBy(pvc.lanId);
 			if (rec.property_name.equals("SkinSensitizationLLNA")) {
 				speciesValue.setValueText("Mouse");
 			} else if (rec.property_name.startsWith("guinea_pig_")) {
@@ -228,7 +236,7 @@ public class ParameterValueCreator {
 	private ParameterValue getAdminRouteValue(ExperimentalRecord rec) {
 		if (rec.property_name!=null) {
 			ParameterValue adminRouteValue = new ParameterValue();
-			adminRouteValue.setCreatedBy(loader.lanId);
+			adminRouteValue.setCreatedBy(pvc.lanId);
 			if (rec.property_name.contains("_skin_")) {
 				adminRouteValue.setValueText("Dermal");
 			} else if (rec.property_name.contains("_oral_")) {
@@ -247,7 +255,7 @@ public class ParameterValueCreator {
 	private ParameterValue getPurityValue(ExperimentalRecord rec) {
 		if (rec.note!=null && rec.note.startsWith("Purity: ")) {
 			ParameterValue purityValue = new ParameterValue();
-			purityValue.setCreatedBy(loader.lanId);
+			purityValue.setCreatedBy(pvc.lanId);
 			if (parseStringColumn(rec.note, purityValue)) {
 				return purityValue;
 			} else {
@@ -258,12 +266,58 @@ public class ParameterValueCreator {
 		}
 	}
 	
+	public  boolean addParameters(String type, ExperimentalRecord rec, PropertyValue pv) {
+		
+		if (type.equals(ExperimentalRecordLoader.typePhyschem)) {
+			addPhyschemParameterValues(rec, pv);
+		} else if (type.equals(ExperimentalRecordLoader.typeTox)) {
+			addToxParameterValues(rec, pv);
+		} else {
+			//typeOther: dont need to pull parameters from fields in rec
+		}
+		
+		setReliabilityValue(rec,pv);
+		
+		addGenericParametersValues(rec,pv);
+		
+		addParametersValues(rec, pv);
+				
+		if(pv.getParameterValues()!=null) {
+			for (ParameterValue paramValue : pv.getParameterValues()) {
+				if(paramValue.getUnit()==null) {
+					//TMM bail right away if we have a parameter missing a unit:
+					System.out.println("Missing parameter unit for "+paramValue.getParameter().getName());
+					return false;
+				}
+			}
+		}
+
+		return true;
+		
+	}
+	
+	
+	public void setReliabilityValue(ExperimentalRecord rec,PropertyValue pv) {
+
+		if (rec.reliability!=null) {
+			ParameterValue reliabilityValue = new ParameterValue();
+			reliabilityValue.setCreatedBy(pvc.lanId);
+			reliabilityValue.setValueText(rec.reliability);
+			reliabilityValue.setPropertyValue(pv);
+			reliabilityValue.setParameter(pvc.parametersMap.get("Reliability"));
+			reliabilityValue.setUnit(pvc.unitsMap.get("TEXT"));
+			pv.addParameterValue(reliabilityValue);
+		} 
+	}
+
+	
 	/**
+	 * Get parameters from experimental_parameters hashtable in ExperimentalRecord
 	 * TODO these properties wont post unless the parameters are in properties_acceptable_parameters for the given property
 	 * 
 	 * @param rec
 	 */
-	public void addGenericParametersValues(ExperimentalRecord rec,PropertyValue propertyValue) {
+	private void addGenericParametersValues(ExperimentalRecord rec,PropertyValue propertyValue) {
 
 		if (rec.experimental_parameters==null) return;
 
@@ -276,7 +330,7 @@ public class ParameterValueCreator {
 
 
 			ParameterValue parameterValue = new ParameterValue();
-			parameterValue.setCreatedBy(loader.lanId);
+			parameterValue.setCreatedBy(pvc.lanId);
 
 			if (value instanceof Double) {
 				parameterValue.setValuePointEstimate((Double)value);
@@ -286,7 +340,7 @@ public class ParameterValueCreator {
 
 //			System.out.println(parameterName);
 			
-			Parameter parameter=loader.parametersMap.get(parameterName);
+			Parameter parameter=pvc.parametersMap.get(parameterName);
 			
 			if(parameter==null) {
 				System.out.println("Missing "+parameterName+" in parameters table");
@@ -296,7 +350,7 @@ public class ParameterValueCreator {
 			
 //			System.out.println(parameterName);
 			
-			ExpPropUnit unit=loader.unitsMap.get("TEXT");//assume it's text otherwise we need store detailed parameter value objects in the experimental record json
+			ExpPropUnit unit=pvc.unitsMap.get("TEXT");//assume it's text otherwise we need store detailed parameter value objects in the experimental record json
 
 			parameterValue.setPropertyValue(propertyValue);
 			parameterValue.setParameter(parameter);//need to add parameter to Parameters table first
@@ -311,4 +365,56 @@ public class ParameterValueCreator {
 		//			System.out.println("done add generic params");
 
 	}
+	
+	/**
+	 * Get parameters from the parameter_values list in ExperimentalRecord
+	 * 
+	 * @param rec
+	 * @param propertyValue
+	 */
+	private void addParametersValues(ExperimentalRecord rec,PropertyValue propertyValue) {
+
+		if (rec.parameter_values==null) return;
+
+		for (ParameterValue parameterValue:rec.parameter_values) {
+
+			parameterValue.setCreatedBy(pvc.lanId);
+			Parameter parameter=pvc.parametersMap.get(parameterValue.getParameter().getName());
+			
+			if(parameter==null) {
+				System.out.println("Missing "+parameterValue.getParameter().getName()+" in parameters table");
+				return;
+			}
+			
+			String unitName=DevQsarConstants.getConstantNameByReflection(parameterValue.getUnit().getAbbreviation());
+			
+			ExpPropUnit unit=pvc.unitsMap.get(unitName);
+			
+			if(unit==null) {
+				System.out.println("Missing unit abbrev "+parameterValue.getUnit().getName()+" in units table");
+				return;
+			}
+			
+			parameterValue.setPropertyValue(propertyValue);
+			parameterValue.setParameter(parameter);//need to add parameter to Parameters table first
+			parameterValue.setUnit(unit);
+			propertyValue.addParameterValue(parameterValue);
+//			System.out.println(parameter.getName()+"\t"+parameterValue.getUnit().getName());
+		}
+		
+		//TODO should ParameterValue have been stored in experimental_parameters all along?
+		
+		//Store parameter values in experimental_parameters so as to not mess up serialized to json of loaded records:
+		if(rec.parameter_values!=null) {
+			for (int i=0;i<rec.parameter_values.size();i++) {
+				ParameterValue parameterValue=rec.parameter_values.get(i);
+				String strValue=parameterValue.getValuePointEstimate()+" "+parameterValue.getUnit().getAbbreviation();
+				rec.experimental_parameters.put(parameterValue.getParameter().getName(),strValue);
+			}
+			rec.parameter_values=null;
+		}
+
+	}
+	
+
 }

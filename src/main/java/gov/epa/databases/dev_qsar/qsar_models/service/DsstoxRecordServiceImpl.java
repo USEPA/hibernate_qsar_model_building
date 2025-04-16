@@ -2,11 +2,13 @@ package gov.epa.databases.dev_qsar.qsar_models.service;
 
 import java.io.File;
 import java.io.FileReader;
+import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
@@ -18,15 +20,20 @@ import javax.validation.Validator;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.reflect.TypeToken;
 
 import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
 import gov.epa.databases.dev_qsar.qsar_models.dao.DsstoxRecordDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
+import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
@@ -130,11 +137,14 @@ public class DsstoxRecordServiceImpl  {
 	 */
 	public void createBatchSQL (List<DsstoxRecord> records) {
 
+		System.out.println("in create batchSQL records="+records.size());
+		
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		
 		Long fk_snapshot_id=records.get(0).getDsstoxSnapshot().getId();
 		
-		String [] fieldNames= {"dtxcid","dtxsid","smiles","fk_dsstox_snapshot_id","created_by","created_at"};
+		String [] fieldNames= {"fk_dsstox_snapshot_id","dtxcid","smiles","mol_weight","jchem_inchi_key","indigo_inchi_key",
+				"dtxsid","casrn","preferred_name","generic_substance_updated_at", "created_by","created_at"};
 		int batchSize=1000;
 		
 		String sql="INSERT INTO qsar_models.dsstox_records (";
@@ -161,11 +171,32 @@ public class DsstoxRecordServiceImpl  {
 			for (int counter = 0; counter < records.size(); counter++) {
 				DsstoxRecord record=records.get(counter);
 				
-				prep.setString(1, record.getDtxcid());
-				prep.setString(2, record.getDtxsid());
-				prep.setString(3, record.getSmiles());				
-				prep.setLong(4,record.getDsstoxSnapshot().getId());
-				prep.setString(5, record.getCreatedBy());
+				int i=1;
+				
+				prep.setLong(i++,record.getDsstoxSnapshot().getId());
+
+				prep.setString(i++, record.getDtxcid());
+				prep.setString(i++, record.getSmiles());				
+				
+				if(record.getMolWeight()==null) {
+					prep.setNull(i++, Types.DOUBLE);
+				} else {
+					prep.setDouble(i++, record.getMolWeight());	
+				}
+								
+				prep.setString(i++, record.getJchemInchikey());
+				prep.setString(i++, record.getIndigoInchikey());
+				
+//				System.out.println(record.getIndigoInchikey());
+				
+				prep.setString(i++, record.getDtxsid());
+				prep.setString(i++, record.getCasrn());
+				prep.setString(i++, record.getPreferredName());
+				
+				java.sql.Timestamp sqlTimeStamp = new java.sql.Timestamp(record.getGenericSubstanceUpdatedAt().getTime());
+				prep.setTimestamp(i++, sqlTimeStamp);
+				
+				prep.setString(i++, record.getCreatedBy());
 				prep.addBatch();
 				
 				if (counter % batchSize == 0 && counter!=0) {
@@ -192,7 +223,7 @@ public class DsstoxRecordServiceImpl  {
 		
 		Long fk_snapshot_id=records.get(0).getDsstoxSnapshot().getId();
 		
-		String [] fieldNames= {"dtxsid","casrn","preferred_name","mol_image_png_available","fk_dsstox_snapshot_id","created_by","created_at"};
+		String [] fieldNames= {"dtxsid","casrn","preferred_name","mol_image_png_available","fk_dsstox_snapshot_id","generic_substance_updated_at", "created_by","created_at"};
 
 		int batchSize=1000;
 		
@@ -225,7 +256,10 @@ public class DsstoxRecordServiceImpl  {
 				prep.setString(3, record.getPreferredName());
 				prep.setBoolean(4, false);
 				prep.setLong(5,record.getDsstoxSnapshot().getId());
-				prep.setString(6, record.getCreatedBy());
+				
+				java.sql.Timestamp sqlTimeStamp = new java.sql.Timestamp(record.getGenericSubstanceUpdatedAt().getTime());
+				prep.setTimestamp(6, sqlTimeStamp);
+				prep.setString(7, record.getCreatedBy());
 				
 				prep.addBatch();
 				
@@ -325,6 +359,47 @@ public class DsstoxRecordServiceImpl  {
 				if(key.equals("dtxsid")) {
 					htID_to_FK.put(dr.getDtxsid(), dr);	
 				} else if (key.equals("dtxcid")) {
+					htID_to_FK.put(dr.getDtxcid(), dr);
+				}
+			}
+			
+			System.out.println("Done get dsstox record lookup");
+			return htID_to_FK;
+			
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+
+	/**
+	 * This version makes use of @SerializedName tags to deserialize in one line using TypeToken
+	 * 
+	 * @param fileJsonDsstoxRecords
+	 * @param key
+	 * @return
+	 */
+	public Hashtable<String,DsstoxRecord> getDsstoxRecordsHashtableFromJsonExport2(File fileJsonDsstoxRecords,String key) {
+		
+		System.out.println("Getting dsstox records from json files");
+		
+		Hashtable<String,DsstoxRecord>htID_to_FK=new Hashtable<>();
+		
+		GsonBuilder gsonBuilder=new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss");
+		Gson gson=gsonBuilder.create();
+		
+		try {
+			
+			Type listType = new TypeToken<List<DsstoxRecord>>() {}.getType();
+			List<DsstoxRecord> dsstoxRecords = gson.fromJson(new FileReader(fileJsonDsstoxRecords),listType);
+//			System.out.println(ja.size());
+
+			for(DsstoxRecord dr:dsstoxRecords) {
+				if(key.equals("dtxsid")) {
+					htID_to_FK.put(dr.getDtxsid(), dr);	
+				} else if (key.equals("dtxcid") && dr.getDtxcid()!=null) {
 					htID_to_FK.put(dr.getDtxcid(), dr);
 				}
 			}

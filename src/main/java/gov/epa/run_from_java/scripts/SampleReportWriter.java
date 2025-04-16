@@ -1,6 +1,11 @@
 package gov.epa.run_from_java.scripts;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.HashSet;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelFile;
@@ -64,6 +69,13 @@ public class SampleReportWriter {
 	public PredictionReport createPredictionReportMethod(String modelSetName, String descriptorSetName, String methodName, String datasetName, 
 			String splittingName,boolean overWriteJsonReport, boolean includeDescriptors,boolean includeOriginalCompounds) {
 		
+
+//		String listName = "PFASSTRUCTV4";
+//		String folder = "data/dev_qsar/dataset_files/";
+//		String filePathPFAS = folder + listName + "_qsar_ready_smiles.txt";// TODO pass as parameter
+//		HashSet<String> smilesArray = SplittingGeneratorPFAS_Script.getPFASSmiles(filePathPFAS);
+
+		
 		PredictionReport predictionReport = null;
 
 		String filepathReport = "data/reports/" + modelSetName +"/"+ datasetName+"_"+methodName + "_PredictionReport.json";
@@ -78,7 +90,10 @@ public class SampleReportWriter {
 			predictionReport = GenerateWebTestReport.loadDataSetFromJson(filepathReport);
 			System.out.println("Loaded:" + filepathReport);
 		}
-		
+
+//		if(limitToPFAS) {
+//			PredictionStatisticsScript.limitPredictionReportToPFAS(smilesArray, predictionReport);
+//		}
 		
 		String outputFolder = "data/reports/prediction reports upload/"+modelSetName;
 		
@@ -94,14 +109,47 @@ public class SampleReportWriter {
 			applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
 		}
 		
-		
 		ads.runAD(methodName, splittingName, descriptorSetName, applicability_domain,datasetName,predictionReport);
 
-		filepathReport = "data/reports/" + modelSetName +"/"+ datasetName+"_"+methodName + "_PredictionReport_with_AD.json";
+//		if(true)return null;
+		
+		String fileNameReport=datasetName+"_"+methodName + "_PredictionReport_with_AD.json";
+		
+//		if(limitToPFAS)fileNameReport=fileNameReport.replace(".json", "_only_PFAS.json");
+		
+		filepathReport = "data/reports/" + modelSetName +"/"+fileNameReport ;
 		predictionReport.toFile(filepathReport);
 		
-		String filepathExcel = outputFolder + File.separator + String.join("_", datasetName, splittingName, methodName,"with_AD") + ".xlsx";
+		System.out.println(filepathReport);
+		
+		String fileNameExcel=String.join("_", datasetName, splittingName, methodName,"with_AD") + ".xlsx";
+		
+//		if(limitToPFAS)fileNameExcel=fileNameReport.replace(".xlsx", "_only_PFAS.xlsx");
+		
+		String filepathExcel = outputFolder + File.separator + fileNameExcel;
 		createExcelReport(methodName, predictionReport, filepathExcel, overWriteJsonReport);
+		
+//		System.out.println(filepathExcel);
+		
+
+		// Copy excel files to paper folder:		
+		try {
+			
+			String folderDest="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\000 Papers\\2023 8.4.11 papers\\00000 2025 paper\\";
+			folderDest+=modelSetName+"\\";
+			new File(folderDest).mkdirs();
+
+			Files.copy(Paths.get(filepathExcel),
+			        Paths.get(folderDest+fileNameExcel), StandardCopyOption.REPLACE_EXISTING);
+			
+			Files.copy(Paths.get(filepathReport),
+			        Paths.get(folderDest+fileNameReport), StandardCopyOption.REPLACE_EXISTING);
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		
 		
 		return predictionReport;
 		
@@ -198,7 +246,7 @@ public class SampleReportWriter {
 			ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
 			eprg.generate(predictionReport, filepath,null,null);
 		} else {
-			System.out.println("Excel report already exists at"+filepath);
+			System.out.println("Excel report already exists at "+filepath);
 		}
 		
 		return filepath;
@@ -210,7 +258,7 @@ public class SampleReportWriter {
 			ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
 			eprg.generate(predictionReport, outputFilePath,null,null);
 		} else {
-			System.out.println("Excel report already exists at"+outputFilePath);
+			System.out.println("Excel report already exists at "+outputFilePath);
 		}
 	}
 		

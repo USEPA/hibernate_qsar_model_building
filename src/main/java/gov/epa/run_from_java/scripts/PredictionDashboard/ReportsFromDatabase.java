@@ -8,7 +8,7 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionReportServiceImpl;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.HTMLReportCreatorOpera;
-import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.OPERA_csv_to_PostGres_DB;
+import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.PredictionDashboardScriptOPERA;
 import gov.epa.run_from_java.scripts.PredictionDashboard.Percepta.HTMLReportCreatorPercepta;
 
 /**

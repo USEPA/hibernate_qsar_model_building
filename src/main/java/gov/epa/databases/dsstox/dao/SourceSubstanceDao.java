@@ -15,4 +15,5 @@ public interface SourceSubstanceDao {
 	
 	public List<DsstoxRecord> findAsDsstoxRecordsWithSourceSubstanceByIdentifier(String identifier, Session session);
 
+
 }

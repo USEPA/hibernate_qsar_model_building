@@ -1,7 +1,11 @@
 package gov.epa.databases.dsstox.service;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
@@ -13,6 +17,9 @@ import gov.epa.databases.dsstox.DsstoxSession;
 import gov.epa.databases.dsstox.dao.DsstoxCompoundDao;
 import gov.epa.databases.dsstox.dao.DsstoxCompoundDaoImpl;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
+import gov.epa.databases.dsstox.entity.GenericSubstance;
+import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class DsstoxCompoundServiceImpl implements DsstoxCompoundService {
@@ -200,6 +207,164 @@ public class DsstoxCompoundServiceImpl implements DsstoxCompoundService {
 		t.rollback();
 		return compounds;
 	}
+	
+	
+	List<DsstoxCompound> getCompoundsBySQL(int offset,int limit) {
+
+		Connection conn=SqlUtilities.getConnectionDSSTOX();
+		
+		List<DsstoxCompound>compounds=new ArrayList<>();
+
+		String sql="SELECT dsstox_compound_id,mol_file,smiles, jchem_inchi_key,indigo_inchi_key,mol_weight,"
+				+ "gs.dsstox_substance_id, gs.casrn, gs.preferred_name\n";  
+		sql+="FROM compounds c\n";
+		sql+="left join generic_substance_compounds gsc on gsc.fk_compound_id =c.id\n";
+		sql+="left join generic_substances gs on gs.id=gsc.fk_generic_substance_id\n"; 
+		//		sql+="where (mol_weight is not null and mol_weight !=0) and (indigo_inchi_key is not null or jchem_inchi_key is not null) and gs.dsstox_substance_id is not null\n";
+//		sql+="where (mol_weight is not null and mol_weight !=0) and (indigo_inchi_key is not null or jchem_inchi_key is not null)\n";
+		sql+="ORDER BY dsstox_compound_id\n";
+		sql+="LIMIT "+limit+" OFFSET "+offset;
+
+		System.out.println(sql);
+
+		ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+
+		try {
+			while (rs.next()) {
+				DsstoxCompound compound=new DsstoxCompound();				
+
+				compound.setDsstoxCompoundId(rs.getString(1));
+
+				if (rs.getString(2)!=null)
+					compound.setMolFile(rs.getString(2));
+
+				if (rs.getString(3)!=null)
+					compound.setSmiles(rs.getString(3));
+
+				if (rs.getString(4)!=null)
+					compound.setJchemInchikey(rs.getString(4));
+
+				if (rs.getString(5)!=null)
+					compound.setIndigoInchikey(rs.getString(5));				
+
+				if (rs.getString(6)!=null)
+					compound.setMolWeight(Double.parseDouble(rs.getString(6)));
+
+				if (rs.getString(7)!=null) {
+					GenericSubstanceCompound gsc=new GenericSubstanceCompound();
+					GenericSubstance gs=new GenericSubstance(); 
+					compound.setGenericSubstanceCompound(gsc);
+					gsc.setGenericSubstance(gs);
+					gs.setDsstoxSubstanceId(rs.getString(7));
+
+					if (rs.getString(8)!=null) {
+						gs.setCasrn(rs.getString(8));
+					}
+					
+					if (rs.getString(9)!=null) {
+						gs.setPreferredName(rs.getString(9));
+					}
+
+
+				}
+
+				compounds.add(compound);
+
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		//		System.out.println(compounds.size());
+		return compounds;
+	}
+	
+	
+	public List<DsstoxCompound> getCompoundsBySQL(List<String>dtxcids) {
+
+		Connection conn=SqlUtilities.getConnectionDSSTOX();
+		
+		List<DsstoxCompound>compounds=new ArrayList<>();
+
+		String sql="SELECT dsstox_compound_id,mol_file,smiles, jchem_inchi_key,indigo_inchi_key,mol_weight,"
+				+ "gs.dsstox_substance_id, gs.casrn, gs.preferred_name, gs.updated_at\n";  
+		sql+="FROM compounds c\n";
+		sql+="left join generic_substance_compounds gsc on gsc.fk_compound_id =c.id\n";
+		sql+="left join generic_substances gs on gs.id=gsc.fk_generic_substance_id\n"; 
+		//		sql+="where (mol_weight is not null and mol_weight !=0) and (indigo_inchi_key is not null or jchem_inchi_key is not null) and gs.dsstox_substance_id is not null\n";
+//		sql+="where (mol_weight is not null and mol_weight !=0) and (indigo_inchi_key is not null or jchem_inchi_key is not null)\n";
+		
+		Iterator<String> it=dtxcids.iterator();
+		String strDtxcids="";
+		while (it.hasNext()) {
+			strDtxcids+="'"+it.next()+"'";
+			if(it.hasNext()) strDtxcids+=",";
+		}
+		
+		sql+="where dsstox_compound_id in ("+strDtxcids+")\n";
+		sql+="ORDER BY dsstox_compound_id\n";
+		
+
+		System.out.println(sql);
+
+		ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+
+		try {
+			while (rs.next()) {
+				DsstoxCompound compound=new DsstoxCompound();				
+
+				compound.setDsstoxCompoundId(rs.getString(1));
+
+				if (rs.getString(2)!=null)
+					compound.setMolFile(rs.getString(2));
+
+				if (rs.getString(3)!=null)
+					compound.setSmiles(rs.getString(3));
+
+				if (rs.getString(4)!=null)
+					compound.setJchemInchikey(rs.getString(4));
+
+				if (rs.getString(5)!=null)
+					compound.setIndigoInchikey(rs.getString(5));				
+
+				if (rs.getString(6)!=null)
+					compound.setMolWeight(Double.parseDouble(rs.getString(6)));
+
+				if (rs.getString(7)!=null) {
+					GenericSubstanceCompound gsc=new GenericSubstanceCompound();
+					GenericSubstance gs=new GenericSubstance(); 
+					compound.setGenericSubstanceCompound(gsc);
+					gsc.setGenericSubstance(gs);
+					gs.setDsstoxSubstanceId(rs.getString(7));
+
+					if (rs.getString(8)!=null) {
+						gs.setCasrn(rs.getString(8));
+					}
+					
+					if (rs.getString(9)!=null) {
+						gs.setPreferredName(rs.getString(9));
+					}
+
+					if (rs.getTimestamp(10)!=null) {
+						gs.setUpdatedAt(rs.getTimestamp(10));
+					}
+
+				}
+
+				compounds.add(compound);
+
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		//		System.out.println(compounds.size());
+		return compounds;
+	}
+	
+	
 	
 	public static void main(String[] args) {
 //		DsstoxCompoundServiceImpl d=new DsstoxCompoundServiceImpl();

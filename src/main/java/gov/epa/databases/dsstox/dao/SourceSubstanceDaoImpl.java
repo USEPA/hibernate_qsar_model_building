@@ -16,6 +16,7 @@ public class SourceSubstanceDaoImpl implements SourceSubstanceDao {
 	private static final String HQL_SELECT_AS_DSSTOX_RECORDS_WITH_SOURCE_SUBSTANCE = 
 			"select distinct ss.dsstoxRecordId as dsstoxRecordId, "
 			+ "ss.externalId as externalId, "
+			+ "ss.id as sourceSubstanceId,"
 			+ "sgsm.connectionReason as connectionReason, "
 			+ "sgsm.linkageScore as linkageScore, "
 			+ "sgsm.curatorValidated as curatorValidated, "
@@ -34,6 +35,11 @@ public class SourceSubstanceDaoImpl implements SourceSubstanceDao {
 			+ "left join gsc.compound c "
 			+ "left join c.successorRelationships cr with cr.compoundRelationshipType.id = 1 "
 			+ "left join DsstoxCompound c2 on cr.successorCompound = c2 ";
+	
+	
+	private static final String HQL_ORDER_BY_SS_ID="order by ss.id";
+	
+	
 	private static final String HQL_WHERE_BY_CHEMICAL_LIST_NAME = "join ss.chemicalList cl "
 			+ "where cl.name = :chemicalListName";
 	private static final String HQL_WHERE_BY_IDENTIFIER = "join SourceSubstanceIdentifier ssi on ssi.sourceSubstance = ss "

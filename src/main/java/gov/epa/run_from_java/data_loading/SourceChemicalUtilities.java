@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -45,25 +46,31 @@ public class SourceChemicalUtilities {
 	Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
 	PublicSourceServiceImpl publicSourceService=new PublicSourceServiceImpl(); 
+	SourceChemicalServiceImpl sourceChemicalService=new SourceChemicalServiceImpl();
 	
-	SourceChemicalServiceImpl sourceChemicalService=new SourceChemicalServiceImpl(); 
 //	Map<String, SourceChemical> sourceChemicalMap = new HashMap<String, SourceChemical>();
-	Map<String, SourceChemical> sourceChemical = new HashMap<String, SourceChemical>();
-	List<SourceChemical> sourceChemicals;
+//	Map<String, SourceChemical> sourceChemical = new HashMap<String, SourceChemical>();
+//	List<SourceChemical> sourceChemicals;
 	
-	SourceChemicalUtilities(boolean load) {
-		if(load)loadSourceChemicals();
-	}
+//	SourceChemicalUtilities(boolean load) {
+//		if(load)loadSourceChemicals();
+//	}
 
-	void loadSourceChemicals() {
+	List<SourceChemical> loadSourceChemicalsAll() {
+		
 		System.out.print("Loading sourceChemical map...");
-		sourceChemicals = sourceChemicalService.findAll();
+
+		List<SourceChemical>sourceChemicals = sourceChemicalService.findAllSql();
+		
 //		for (SourceChemical sourceChemical:sourceChemicals) {
 //			if(sourceChemical.generateSrcChemId().equals("SCH000000571295")) {
 //				System.out.println("Found it in map:"+gson.toJson(sourceChemical));
 //			}
+//			System.out.println(sourceChemical.getId()+"\t"+sourceChemical.getKey());
 //		}
+		
 		System.out.println("Done");
+		return sourceChemicals;
 	}
 	
 //	void writeChemRegFileLiteratureSources() {
@@ -92,8 +99,10 @@ public class SourceChemicalUtilities {
 		//129476
 		
 		List<SourceChemical>scList=new ArrayList<>();
+		
+		List<SourceChemical>scAll=loadSourceChemicalsAll();
 	
-		for (SourceChemical sc:this.sourceChemicals) {
+		for (SourceChemical sc:scAll) {
 			if (sc.getSourceDtxrid()==null) continue;
 			scList.add(sc);
 		}
@@ -114,7 +123,9 @@ public class SourceChemicalUtilities {
 
 		Map<String, List<SourceChemical>> mapBySource = new HashMap<>();
 		
-		for (SourceChemical sc:sourceChemicals) {
+		List<SourceChemical>scAll=loadSourceChemicalsAll();
+		
+		for (SourceChemical sc:scAll) {
 			if(sc.getPublicSource()==null) continue;
 			String sourceName=sc.getPublicSource().getName();
 			sourceChemicalsPS.add(sc);
@@ -161,13 +172,18 @@ public class SourceChemicalUtilities {
 	void writeChemRegFileForPublicSource() {
 		
 		List<SourceChemical>scList=new ArrayList<>();
+//		Hashtable<String,SourceChemical>htSourceChemicals=new Hashtable<>();//avoids duplicates
 
 //		String sourceName="OChem_2024_04_03";
 //		String sourceName="PubChem_2024_03_20";
-		String sourceName="OPERA2.8";
+//		String sourceName="OPERA2.8";
+		String sourceName="PubChem_2024_11_27";
 		
-		for (SourceChemical sc:this.sourceChemicals) {
+		List<SourceChemical>scAll=loadSourceChemicalsAll();
+		
+		for (SourceChemical sc:scAll) {
 			if(sc.getPublicSource()==null) continue;
+			
 			if(sc.getPublicSource().getName().equals(sourceName)) {
 				scList.add(sc);
 			}
@@ -188,39 +204,83 @@ public class SourceChemicalUtilities {
 	}
 
 	
+	List<SourceChemical> loadSourceChemicalsForPublicSource(String publicSourceName) {
+		
+		PublicSource ps=this.publicSourceService.findByName(publicSourceName);
+		if(ps==null) {
+			System.out.println("Public source="+publicSourceName+" doesnt exist");
+			return null;
+		}
+		System.out.print("Loading sourceChemical map for "+ps.getName()+"...");
+		//		List<SourceChemical> sourceChemicals = sourceChemicalService.findAllFromSource(ps);//slowwwww
+		List<SourceChemical> sourceChemicals = sourceChemicalService.findAllFromSourceSql(ps);
+		System.out.println("done");
+		return sourceChemicals;
+	}
+
 	
+	/**
+	 * Just retrieves source chemicals for that source to speed retrieval of source chemicals
+	 */
 	void writeChemRegFileForPublicSource2() {
 		
 //		String sourceName="OChem_2024_04_03";
-		String sourceName="PubChem_2024_03_20";
+//		String sourceName="PubChem_2024_03_20";
+//		String sourceName="PubChem_2024_11_27";
 //		String sourceName="OPERA2.8";
-		
-		PublicSource ps=new PublicSource();
-		ps.setName(sourceName);
+//		
+//		String sourceName="Arnot 2006";
+//		String sourceName="ECOTOX_2024_12_12";
+		String sourceName="QSAR_Toolbox";
 
-		System.out.println("Finding source chemicals for "+sourceName);
-		List<SourceChemical>sourceChemicals=sourceChemicalService.findAllFromSource(ps);
-		System.out.println("Found "+sourceChemicals.size()+" source chemicals");
-
-		//		String filepath="data\\dev_qsar\\output\\new chemreg lists\\exp_prop_2024_04_10_from_"+sourceName+".txt";
-//		String filepath="data\\dev_qsar\\output\\new chemreg lists\\"+sourceName+"\\"+sourceName+".txt";
+		List<SourceChemical>sourceChemicals=loadSourceChemicalsForPublicSource(sourceName);
+		System.out.println(sourceChemicals.size());		
 		
 		File folder=new File(strFolderNewLists+sourceName);
 		folder.mkdirs();
 		
-		String filepath=folder.getAbsolutePath()+File.separator+"exp_prop_2024_02_02_from_"+sourceName+".txt";
+//		String filepath=folder.getAbsolutePath()+File.separator+"exp_prop_2025_01_27_from_"+sourceName+".txt";
+
+		String date="2025_03_25";
+		String filepath=folder.getAbsolutePath()+File.separator+"exp_prop_"+date+"_"+sourceName+".txt";
 		
+//		exp_prop_2025_03_25_Arnot 2006
 		File file=new File(filepath);
 		System.out.println(file.getAbsolutePath());
 		
 		DsstoxMapper.writeChemRegImportFile(sourceChemicals, filepath,20000);
 		
+		
+	}
+
+	private void removePubChemSIDNames(List<SourceChemical> sourceChemicals) {
+		for (int i=0;i<sourceChemicals.size();i++) {
+			SourceChemical sc=sourceChemicals.get(i);
+			
+			if(sc.getSourceChemicalName()==null) continue;
+			
+			for(int j=1;j<=9;j++) {
+				if(sc.getSourceChemicalName().indexOf("SID"+j)==0) {
+//					System.out.println(sc.getKey());
+					sourceChemicals.remove(i--);
+					
+//					String sql="delete from exp_prop.source_chemicals where id="+sc.getId()+";";
+//					System.out.println(sc.getSourceChemicalName());
+//					SqlUtilities.runSQLUpdate(SqlUtilities.getConnectionPostgres(), sql);
+					
+//					System.out.println(+"\t"+sc.getSourceChemicalName());
+					break;
+				}
+			}
+		}
 	}
 	void writeChemRegFileLiteratureSources() {
 		
 		Map<String, List<SourceChemical>> mapBySource = new HashMap<>();
 		
-		for (SourceChemical sc:sourceChemicals) {
+		List<SourceChemical>scAll=loadSourceChemicalsAll();
+		
+		for (SourceChemical sc:scAll) {
 			if(sc.getLiteratureSource()==null) continue;
 			String sourceName=sc.getLiteratureSource().getName();
 			
@@ -269,12 +329,12 @@ public class SourceChemicalUtilities {
 		
 		if (sourceName.equals("OChem")) {
 			for (int i=1;i<=13;i++) {
-				Map<String,SourceChemical>mapList2=getMapChemRegList(listName+"_40000_"+i);
+				Map<String,SourceChemical>mapList2=getMapChemRegListByExternalID(listName+"_40000_"+i);
 				System.out.println(listName+"_"+i+"\t"+mapList2.size());
 				mapList.putAll(mapList2);
 			}
 		} else {
-			mapList=getMapChemRegList(listName);	
+			mapList=getMapChemRegListByExternalID(listName);	
 		}
 		
 
@@ -326,7 +386,7 @@ public class SourceChemicalUtilities {
 //			String listName=importFile.getName().substring(0,importFile.getName().indexOf(".txt"));
 			String listName="exp_prop_2024_04_03_from_OChem_40000_"+fileNum;
 			
-			Map<String,SourceChemical>mapList2=getMapChemRegList(listName);
+			Map<String,SourceChemical>mapList2=getMapChemRegListByExternalID(listName);
 			System.out.println(listName+"\t"+mapList2.size());
 			mapList.putAll(mapList2);
 
@@ -363,7 +423,7 @@ public class SourceChemicalUtilities {
 		
 	}
 	
-	public static Map<String,SourceChemical> getMapChemRegList(String listName) {
+	public static Map<String,SourceChemical> getMapChemRegListByExternalID(String listName) {
 //		System.out.println(listName);
 		
 		String sql="select external_id,ssi.identifier_type,ssi.identifier from source_generic_substance_mappings sgsm\n"+
@@ -387,6 +447,48 @@ public class SourceChemicalUtilities {
 					mapList.put(external_id,sc);	
 				} else {
 					sc=mapList.get(external_id);
+				}
+				
+				String identifier_type=rs.getString(2);
+				String identifier=rs.getString(3);
+				
+				if(identifier_type.equals("CASRN")) sc.setSourceCasrn(identifier);
+				if(identifier_type.equals("NAME")) sc.setSourceChemicalName(identifier);
+				if(identifier_type.equals("STRUCTURE")) sc.setSourceSmiles(identifier);
+				if(identifier_type.equals("DTXSID")) sc.setSourceDtxsid(identifier);
+//				System.out.println(sc.getKey());
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return mapList;
+	}
+	
+	public static Map<Long,SourceChemical> getMapChemRegListBySourceSubstanceID(String listName) {
+//		System.out.println(listName);
+		
+		String sql="select ss.id,ssi.identifier_type,ssi.identifier from source_generic_substance_mappings sgsm\n"+
+		"join source_substances ss on sgsm.fk_source_substance_id = ss.id\n"+
+		"join source_substance_identifiers ssi on ss.id = ssi.fk_source_substance_id\n"+
+		"join chemical_lists cl on ss.fk_chemical_list_id = cl.id\n"+
+		"where cl.name='"+listName+"' and identifier_type not like '%_INCH%';";
+		
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionDSSTOX(), sql);
+
+		Map<Long,SourceChemical> mapList=new HashMap<>();
+		
+		try {
+
+			while (rs.next()) {
+				Long ss_id=rs.getLong(1);
+				SourceChemical sc=null;
+				
+				if(mapList.get(ss_id)==null) {
+					sc=new SourceChemical();
+					mapList.put(ss_id,sc);	
+				} else {
+					sc=mapList.get(ss_id);
 				}
 				
 				String identifier_type=rs.getString(2);
@@ -480,8 +582,13 @@ public class SourceChemicalUtilities {
 	void findMissingSourceChemicalsForPublicSource() {
 		
 //		String sourceName="OChem_2024_04_03";
-		String sourceName="PubChem_2024_03_20";
+//		String sourceName="PubChem_2024_03_20";
 //		String sourceName="OPERA2.8";
+		
+//		String sourceName="Arnot 2006";
+//		String sourceName="ECOTOX_2024_12_12";
+		String sourceName="Burkhard";
+		
 		
 		PublicSource ps=publicSourceService.findByName(sourceName);
 		
@@ -494,10 +601,10 @@ public class SourceChemicalUtilities {
 		List<SourceChemical>sourceChemicalsMissing=new ArrayList<>();
 		Map<String,SourceChemical>mapList=new TreeMap<>();
 		
-		List<String>listNames=DatasetCreatorScript.getChemRegListNames2(Arrays.asList(sourceName));
+		List<String>listNames=DatasetCreatorScript.getChemRegListNames(Arrays.asList(sourceName));
 		
 		for (String listName:listNames) {
-			Map<String,SourceChemical>mapList2=getMapChemRegList(listName);
+			Map<String,SourceChemical>mapList2=getMapChemRegListByExternalID(listName);
 			System.out.println(listName+"\t"+mapList2.size());
 			mapList.putAll(mapList2);
 		}
@@ -505,7 +612,7 @@ public class SourceChemicalUtilities {
 		for (SourceChemical sourceChemical:sourceChemicals) {
 			
 			if(!mapList.containsKey(sourceChemical.generateSrcChemId())) {
-				System.out.println(sourceChemical.generateSrcChemId()+"\tmissing in dsstox chemreg list");
+//				System.out.println(sourceChemical.generateSrcChemId()+"\tmissing in dsstox chemreg list");
 				sourceChemicalsMissing.add(sourceChemical);
 			} else {
 //				System.out.println(sourceChemical.getSourceCasrn()+"\t"+mapList.get(sourceChemical.generateSrcChemId()).getSourceCasrn());
@@ -530,10 +637,17 @@ public class SourceChemicalUtilities {
 	
 	
 	
+	
+	
+	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 
-		SourceChemicalUtilities scu=new SourceChemicalUtilities(false);
+		SourceChemicalUtilities scu=new SourceChemicalUtilities();//i
+		
+//		scu.loadSourceChemicalsAll();
+		
+		
 //		scu.writeChemRegFileChemProp();
 //		scu.writeChemRegFilePublicSources();
 //		scu.writeChemRegFileLiteratureSources();//dont have any without dtxrids- all from chemprop
@@ -544,7 +658,7 @@ public class SourceChemicalUtilities {
 		
 		
 //		SourceChemicalUtilities scu=new SourceChemicalUtilities(false);
-		String folder=strFolderNewLists+"check\\";		
+//		String folder=strFolderNewLists+"check\\";		
 //		String folder=folderNewLists+"OChem 40K\\done\\";
 //		File FOLDER=new File(folder);
 //		for (File file:FOLDER.listFiles()) {

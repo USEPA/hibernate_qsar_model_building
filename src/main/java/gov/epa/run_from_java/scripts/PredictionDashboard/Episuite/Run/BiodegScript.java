@@ -1,4 +1,4 @@
-package gov.epa.run_from_java.scripts.EpiSuite;
+package gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run;
 
 import java.util.HashMap;
 import java.util.List;

@@ -19,6 +19,7 @@ public class GenericSubstanceDaoImpl implements GenericSubstanceDao {
 	private static final String HQL_BY_DTXSID_LIST = "from GenericSubstance gs where gs.dsstoxSubstanceId in (:dtxsids)";
 	private static final String HQL_BY_CASRN = "from GenericSubstance gs where gs.casrn = :casrn";
 	private static final String HQL_BY_CASRN_LIST = "from GenericSubstance gs where gs.casrn in (:casrns)";
+	
 	private static final String HQL_SELECT_AS_DSSTOX_RECORDS = "select distinct gs.dsstoxSubstanceId as dsstoxSubstanceId, "
 			+ "c.dsstoxCompoundId as dsstoxCompoundId, "
 			+ "gs.casrn as casrn, "
@@ -26,6 +27,8 @@ public class GenericSubstanceDaoImpl implements GenericSubstanceDao {
 			+ "gs.substanceType as substanceType, "
 			+ "c.smiles as smiles, "
 			+ "c.molWeight as molWeight, "
+			+ "c.jchemInchikey as jchemInchikey, "
+			+ "c.indigoInchikey as indigoInchikey, "
 			+ "c2.smiles as qsarReadySmiles "
 			+ "from GenericSubstance gs "
 			+ "left join gs.genericSubstanceCompound gsc "

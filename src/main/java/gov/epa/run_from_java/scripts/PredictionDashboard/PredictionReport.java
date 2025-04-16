@@ -1,5 +1,6 @@
 package gov.epa.run_from_java.scripts.PredictionDashboard;
 
+import java.awt.Color;
 import java.awt.Desktop;
 import java.io.File;
 import java.io.FileReader;
@@ -7,6 +8,7 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 
+import ToxPredictor.Application.Calculations.PredictToxicityWebPageCreator;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
@@ -14,9 +16,9 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedADEstimate;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedNeighbor;
-import gov.epa.run_from_java.scripts.EpiSuite.EpisuiteResults.Model;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
-import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.OPERA_Report;
+import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.ExperimentalValue;
+import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.Model;
 
 /**
 * @author TMARTI02
@@ -27,8 +29,37 @@ public class PredictionReport {
 	
 	public ModelDetails modelDetails=new ModelDetails();
 	public ModelResults modelResults=new ModelResults();
-	public List<Neighbor>neighborsTraining=null;
-	public List<Neighbor>neighborsPrediction=null;
+	
+	public NeighborResults neighborResultsTraining=null;
+	public NeighborResults neighborResultsPrediction=null;
+	
+	
+	public class NeighborResults {
+		public NeighborResults(String unitNeighbor,String set) {
+			this.unitNeighbor=unitNeighbor;
+			this.set=set;			
+		}
+
+		public String title;
+		public String set;
+		public String predictedValueToolTip;
+		public String missingExperimentalValueNote;
+
+
+		//For TEST reports:
+		public String chartImgSrc;
+		public Double MAE;
+		public Double MAEEntireTestSet;
+		public String unitNeighbor;
+		public String Concordance;
+		public String Sensitivity;
+		public String Specificity;
+		public Double Coverage;
+		
+		public List<Neighbor>neighbors=new ArrayList<>();
+
+	}
+	
 	
 	public Boolean updated=false;
 		
@@ -38,10 +69,28 @@ public class PredictionReport {
 		public String dtxcid;
 		public String casrn;
 		public String smiles;
+		public Double molWeight;//TODO add from dsstox record
 	}
 	
 	public class ModelDetails {
-		public long modelId;
+
+		public Long modelId;
+		public Long modelIdLegacy;
+		public boolean useModelIdLegacy;
+		public boolean hasScatterPlot;//TODO change to binary?
+		public boolean hasHistogram;
+		public boolean hasQmrfPdf;//TODO change to binary?
+
+		public boolean loadPlotsFromDB=false;
+		
+//		public String urlHistogramAPI;
+//		public String urlHistogramAPI_Legacy;
+//		public String urlScatterPlotAPI;
+//		public String urlScatterPlotAPI_Legacy;
+//		public String urlQMRF_API;
+		
+		public String urlModelAPI;
+
 		public String modelName;
 		public String modelSourceName;
 		public String modelSourceURL;
@@ -51,28 +100,50 @@ public class PredictionReport {
 		
 		public String propertyName;
 		public String propertyDescription;
+		public boolean propertyIsBinary;
+
 		public String dataAccessability;
 		public String category;
 //		public String source;
-		public int hasQmrfPdf;//TODO change to binary?
-		public String qmrfReportUrl;
-		
-		public int hasPlots;//TODO change to binary?
-		public String urlHistogram;
-		public String urlScatterPlot;
+//		public String qmrfReportUrl;
 
-		public ArrayList<Model> individualModels;//TODO add simplified Model class to this class
 		
+//		public String urlHistogram;
+//		public String urlScatterPlot;
+
+		//TODO these are episuite models- needs to have local class instead 
+//		public ArrayList<Object> individualModels;//TODO add simplified Model class to this class
+		
+		public List<Model>individualModels;//EPISUITE- TODO store as predictionsIndividualMethod instead
+		
+		public ConsensusPredictions consensusPredictions;
 		public Performance performance;
 		
 	}
 	
+	public class ConsensusPredictions {
+		public String unitsPrediction;
+		public List<PredictionIndividualMethod>predictionsIndividualMethod;//TEST
+		
+	}
+	
+	public class PredictionIndividualMethod {
+		public String method;
+		public String predictedValue;
+	}
+
+	
+	public String prediction;
+
 	
 	
 	public class ModelResults {
 
 		public Double experimentalValue;
+		public String experimentalSet;//if experimental value appears in training or test set
 		public String experimentalString;
+		public String experimentalSource;
+//		public ArrayList<ExperimentalValue> experimentalValues;//episuite
 
 		public Double predictedValue;
 		public Double predictedUncertainty;//+/- value for software like Percepta
@@ -94,8 +165,12 @@ public class PredictionReport {
 		
 		public String standardUnit;
 		public String originalUnit;
+		public String neighborUnit;
 
 		public List<ADEstimate>adEstimates;
+		
+		public Boolean useCombinedApplicabilityDomain;
+		
 		
 //		double adValue;
 //		String adReliability;
@@ -144,6 +219,8 @@ public class PredictionReport {
 		
 		public int neighborNumber;//done
 		
+		public Double similarityCoefficient;
+		
 		public Double experimentalValue;//done
 		public Double predictedValue;//done
 		
@@ -156,6 +233,8 @@ public class PredictionReport {
 		public boolean molImagePNGAvailable;//default is false
 		public String preferredName; //SCDCD had this as preferred_name which is inconsistent with naming scheme of other classes
 		public String matchBy;
+
+		public String backgroundColor;
 
 //		long cid;
 //		String gsid;//needed?
@@ -173,13 +252,24 @@ public class PredictionReport {
 			
 			this.matchBy=qpn.getMatchBy();
 			
+			if(qpn.getSimilarityCoefficient()!=null) {
+				this.similarityCoefficient=qpn.getSimilarityCoefficient();
+				this.backgroundColor=PredictToxicityWebPageCreator.getColorString(similarityCoefficient);
+			}
+			
 			
 			if(qpn.getDsstoxRecord()!=null) {
 				DsstoxRecord dr=qpn.getDsstoxRecord();
 				this.dtxsid=dr.getDtxsid();
 				this.casrn=dr.getCasrn();
 				this.dtxcid=dr.getDtxcid();
-				this.molImagePNGAvailable=dr.isMolImagePNGAvailable();
+//				this.molImagePNGAvailable=dr.isMolImagePNGAvailable();
+				
+				if(dr.getDtxcid()!=null) {
+					this.molImagePNGAvailable=true;	
+				} else {
+					this.molImagePNGAvailable=false;
+				}
 				this.preferredName=dr.getPreferredName();
 
 			} else {
@@ -191,6 +281,46 @@ public class PredictionReport {
 
 	}
 	
+	
+	protected void setModelDetails(PredictionDashboard pd,Property property,boolean useLegacyModelIds,boolean propertyIsBinary) {
+
+		this.modelDetails.urlModelAPI="https://ctx-api-dev.ccte.epa.gov/chemical/property/model/file/search/";
+		
+//		this.modelDetails.urlHistogramAPI="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/histo-graph/by-modelid/";
+//		this.modelDetails.urlScatterPlotAPI="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/scatter-graph/by-modelid/";
+//		this.modelDetails.urlHistogramAPI_Legacy="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/histo-graph/by-dtxsid/DTXSID3039242/";
+//		this.modelDetails.urlScatterPlotAPI_Legacy="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/scatter-graph/by-dtxsid/DTXSID3039242/";
+//		this.modelDetails.urlQMRF_API="https://comptox.epa.gov/dashboard-api/ccdapp1/qmrfdata/file/by-modelid/";
+
+		this.modelDetails.modelId=pd.getModel().getId();
+		this.modelDetails.useModelIdLegacy=useLegacyModelIds;
+		if(modelDetails.modelIdLegacy==null) modelDetails.useModelIdLegacy=false;
+
+		//		String datasetName=pd.getModel().getDatasetName();
+		//		this.modelDetails.propertyName=datasetName.substring(0,datasetName.indexOf(" OPERA"));
+
+		this.modelDetails.propertyName=property.getName_ccd();
+		this.modelDetails.propertyDescription=property.getDescription();
+		
+		this.modelDetails.propertyIsBinary=propertyIsBinary;
+
+		this.modelDetails.modelName=pd.getModel().getName_ccd();
+		
+		//Make model name shorter for display:
+//		this.modelDetails.modelName=modelDetails.modelName.substring(0,modelDetails.modelName.indexOf(" OPERA"));//simplify for display
+
+		this.modelDetails.category="QSAR";
+		//		this.modelDetails.source=pd.getModel().getSource().getName();
+
+		this.modelDetails.modelSourceName=pd.getModel().getSource().getName();
+		this.modelDetails.modelSourceURL=pd.getModel().getSource().getUrl();
+		this.modelDetails.modelSourceDescription=pd.getModel().getSource().getDescription();
+
+		modelDetails.performance=setStatistics(pd);
+
+	}
+
+	
 	protected Performance setStatistics(PredictionDashboard pd) {
 		
 		
@@ -198,37 +328,36 @@ public class PredictionReport {
 		
 		for (ModelStatistic ms:pd.getModel().getModelStatistics()) {
 			
-			if (ms.getStatistic().getName().equals(DevQsarConstants.PEARSON_RSQ_TRAINING)) {
-				performance.train.R2=ms.getStatisticValue();
-			} else if (ms.getStatistic().getName().equals(DevQsarConstants.RMSE_TRAINING)) {
-				performance.train.RMSE=ms.getStatisticValue();
-			} else if (ms.getStatistic().getName().equals(DevQsarConstants.PEARSON_RSQ_CV_TRAINING)) {
-				performance.fiveFoldICV.Q2=ms.getStatisticValue();
-			} else if (ms.getStatistic().getName().equals(DevQsarConstants.RMSE_CV_TRAINING)) {
-				performance.fiveFoldICV.RMSE=ms.getStatisticValue();
-			} else if (ms.getStatistic().getName().equals(DevQsarConstants.PEARSON_RSQ_TEST)) {
-				performance.external.R2=ms.getStatisticValue();
-			} else if (ms.getStatistic().getName().equals(DevQsarConstants.RMSE_TEST)) {
-				performance.external.RMSE=ms.getStatisticValue();
-			} else if (ms.getStatistic().getName().equals(DevQsarConstants.BA_TRAINING)) {
-				performance.train.BA=ms.getStatisticValue();
-			} else if (ms.getStatistic().getName().equals(DevQsarConstants.SN_TRAINING)) {
-				performance.train.SN=ms.getStatisticValue();
-			} else if (ms.getStatistic().getName().equals(DevQsarConstants.SP_TRAINING)) {
-				performance.train.SP=ms.getStatisticValue();
-			} else if (ms.getStatistic().getName().equals(DevQsarConstants.BA_CV_TRAINING)) {
-				performance.fiveFoldICV.BA=ms.getStatisticValue();
-			} else if (ms.getStatistic().getName().equals(DevQsarConstants.SN_CV_TRAINING)) {
-				performance.fiveFoldICV.SN=ms.getStatisticValue();
-			} else if (ms.getStatistic().getName().equals(DevQsarConstants.SP_CV_TRAINING)) {
-				performance.fiveFoldICV.SP=ms.getStatisticValue();
-			} else if (ms.getStatistic().getName().equals(DevQsarConstants.BA_TEST)) {
-				performance.external.BA=ms.getStatisticValue();
-			} else if (ms.getStatistic().getName().equals(DevQsarConstants.SN_TEST)) {
-				performance.external.SN=ms.getStatisticValue();
-			} else if (ms.getStatistic().getName().equals(DevQsarConstants.SP_TEST)) {
-				performance.external.SP=ms.getStatisticValue();
+			Statistics statistics=null;
+			
+			if (ms.getStatistic().getName().contains(DevQsarConstants.TAG_TEST)) {
+				statistics=performance.external;
+			} else if (ms.getStatistic().getName().contains(DevQsarConstants.TAG_CV)) {
+				statistics=performance.fiveFoldICV;
+			} else if (ms.getStatistic().getName().contains(DevQsarConstants.TAG_TRAINING)) {
+				statistics=performance.train;
 			}
+						
+			
+			if (ms.getStatistic().getName().contains(DevQsarConstants.PEARSON_RSQ)) {
+				if (ms.getStatistic().getName().contains(DevQsarConstants.TAG_CV)) {
+					statistics.Q2=ms.getStatisticValue();					
+				} else {
+					statistics.R2=ms.getStatisticValue();					
+				}
+			} else if (ms.getStatistic().getName().contains(DevQsarConstants.COVERAGE)) {
+				statistics.COVERAGE=ms.getStatisticValue();
+			} else if (ms.getStatistic().getName().contains(DevQsarConstants.MAE)) {
+				statistics.MAE=ms.getStatisticValue();
+			} else if (ms.getStatistic().getName().contains(DevQsarConstants.RMSE)) {
+				statistics.RMSE=ms.getStatisticValue();
+			} else if (ms.getStatistic().getName().contains(DevQsarConstants.BALANCED_ACCURACY)) {
+				statistics.BA=ms.getStatisticValue();
+			} else if (ms.getStatistic().getName().contains(DevQsarConstants.SENSITIVITY)) {
+				statistics.SN=ms.getStatisticValue();
+			} else if (ms.getStatistic().getName().contains(DevQsarConstants.SPECIFICITY)) {
+				statistics.SP=ms.getStatisticValue();
+			} 
 		}
 		
 		return performance;
@@ -249,43 +378,29 @@ public class PredictionReport {
 		this.chemicalIdentifiers.casrn=dr.getCasrn();
 		this.chemicalIdentifiers.preferredName=dr.getPreferredName();
 		this.chemicalIdentifiers.smiles=dr.getSmiles();
+		this.chemicalIdentifiers.molWeight=dr.getMolWeight();
 	}
 	
 	
 	public class Performance {
 		
-		public Train train=new Train();
-		public FiveFoldICV fiveFoldICV=new FiveFoldICV();
-		public External external=new External();
+		public Statistics train=new Statistics();
+		public Statistics fiveFoldICV=new Statistics();
+		public Statistics external=new Statistics();
 		
-		public class Train {
-			public Double R2;
-			public Double RMSE;
-			
-			public Double BA;
-			public Double SN;
-			public Double SP;
-			
-		}
-		
-		public class FiveFoldICV {
-			public Double Q2;
-			public Double RMSE;
-			
-			public Double BA;
-			public Double SN;
-			public Double SP;
-		}
-		
-		public class External {
-			public Double R2;
-			public Double RMSE;
-
-			public Double BA;
-			public Double SN;
-			public Double SP;
-		}
 	}
+	
+	public class Statistics {
+		public Double R2;
+		public Double Q2;
+		public Double RMSE;
+		public Double MAE;
+		public Double BA;
+		public Double SN;
+		public Double SP;
+		public Double COVERAGE;
+	}
+
 	
 	public void setModelResults(PredictionDashboard pd,String unitAbbreviation) {
 
@@ -302,6 +417,8 @@ public class PredictionReport {
 //		System.out.println(pd.getModel().getName()+"\t"+pd.getModel().getModelStatistics().size());
 		
 	}
+	
+	
 	
 	private void setADEstimates(PredictionDashboard pd) {
 
@@ -368,50 +485,56 @@ public class PredictionReport {
 //		}
 	}
 	
-private void setPrediction(PredictionDashboard pd) {
-		
+	private void setPrediction(PredictionDashboard pd) {
+
 		modelResults.predictedValue=pd.getPredictionValue();
 		modelResults.predictedString=pd.getPredictionString();
 
-//		if (pd.getPredictionString()!=null) {
-//			modelResults.predicted=pd.getPredictionString();
-//			
-//		} else if (pd.getPredictionValue()!=null) {
-//			modelResults.predicted=pd.getPredictionValue()+"";
-//			
-//			String id="";
-//
-//			if(pd.getDsstoxRecord()!=null) {
-//				if(pd.getDsstoxRecord().getDtxcid()!=null) {
-//					id=pd.getDsstoxRecord().getDtxcid();
-//				}
-//			}
-//			
-//			modelResults.predictedConclusion=pd.getPredictionString();
-//			
-////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_VERY_TOXIC)) {
-////				if(pd.getPredictionValue()==0) modelResults.predictedConclusion="Not very toxic: oral rat LD50 > 50 mg/kg";
-////				else modelResults.predictedConclusion="Very toxic: oral rat LD50 ≤ 50 mg/kg";
-////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_NON_TOXIC)) {
-////				if(pd.getPredictionValue()==1) modelResults.predictedConclusion="Nontoxic: oral rat LD50 > 2000 mg/kg";
-////				else modelResults.predictedConclusion="Not nontoxic: oral rat LD50 ≤ 2000 mg/kg";
-////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_EPA_CATEGORY)) {
-////				modelResults.predictedConclusion=getConclusionEPA(pd.getPredictionValue());
-////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_GHS_CATEGORY)) {
-////				modelResults.predictedConclusion=getConclusionGHS(pd.getPredictionValue());		
-////			}
-//			
-//		}
+		//		if (pd.getPredictionString()!=null) {
+		//			modelResults.predicted=pd.getPredictionString();
+		//			
+		//		} else if (pd.getPredictionValue()!=null) {
+		//			modelResults.predicted=pd.getPredictionValue()+"";
+		//			
+		//			String id="";
+		//
+		//			if(pd.getDsstoxRecord()!=null) {
+		//				if(pd.getDsstoxRecord().getDtxcid()!=null) {
+		//					id=pd.getDsstoxRecord().getDtxcid();
+		//				}
+		//			}
+		//			
+		//			modelResults.predictedConclusion=pd.getPredictionString();
+		//			
+		////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_VERY_TOXIC)) {
+		////				if(pd.getPredictionValue()==0) modelResults.predictedConclusion="Not very toxic: oral rat LD50 > 50 mg/kg";
+		////				else modelResults.predictedConclusion="Very toxic: oral rat LD50 ≤ 50 mg/kg";
+		////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_NON_TOXIC)) {
+		////				if(pd.getPredictionValue()==1) modelResults.predictedConclusion="Nontoxic: oral rat LD50 > 2000 mg/kg";
+		////				else modelResults.predictedConclusion="Not nontoxic: oral rat LD50 ≤ 2000 mg/kg";
+		////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_EPA_CATEGORY)) {
+		////				modelResults.predictedConclusion=getConclusionEPA(pd.getPredictionValue());
+		////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_GHS_CATEGORY)) {
+		////				modelResults.predictedConclusion=getConclusionGHS(pd.getPredictionValue());		
+		////			}
+		//			
+		//		}
 	}
 
 	
-	public void setNeighbors(PredictionDashboard pd) {
+	public void setNeighbors(PredictionDashboard pd,String unitNeighbor) {
 		
 		if(pd.getQsarPredictedNeighbors()==null) return;
 		
-		neighborsTraining=new ArrayList<>();
+		neighborResultsTraining=new NeighborResults(unitNeighbor,"Training");
+		neighborResultsPrediction=new NeighborResults(unitNeighbor,"Test");
+		
 		for (QsarPredictedNeighbor n:pd.getQsarPredictedNeighbors()) {
-			this.neighborsTraining.add(new Neighbor(n));
+			
+			if(n.getSplitNum()==0)
+				this.neighborResultsTraining.neighbors.add(new Neighbor(n));
+			else if(n.getSplitNum()==1)
+				this.neighborResultsPrediction.neighbors.add(new Neighbor(n));
 		}
 	}
 	
@@ -475,8 +598,8 @@ private void setPrediction(PredictionDashboard pd) {
 	}
 
 	
-	public void toJsonFile(String folder) {
-		toJsonFile(folder,this.chemicalIdentifiers.dtxcid+"_"+this.modelDetails.modelName+".json");
+	public void toJsonFile(String folder) {		
+		toJsonFile(folder,this.chemicalIdentifiers.dtxsid+"_"+this.modelDetails.modelName+".json");
 	}
 	
 	
@@ -495,3 +618,6 @@ private void setPrediction(PredictionDashboard pd) {
 
 	
 }
+
+
+

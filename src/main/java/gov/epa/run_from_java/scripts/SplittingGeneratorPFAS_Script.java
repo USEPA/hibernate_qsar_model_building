@@ -628,28 +628,32 @@ public class SplittingGeneratorPFAS_Script {
 //		datasetNames.add("MP v1");
 		
 		datasetNames.add("HLC v1 modeling");
-		datasetNames.add("WS v1 modeling");
 		datasetNames.add("VP v1 modeling");
 		datasetNames.add("BP v1 modeling");
+		datasetNames.add("WS v1 modeling");
 		datasetNames.add("LogP v1 modeling");
 		datasetNames.add("MP v1 modeling");
-
 
 		
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		
-		
+		List<String>splittings=new ArrayList<>();
+		splittings.add(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE);
+		splittings.add(splittingPFASOnly);
+		splittings.add(splittingAllButPFAS);
 		
 		
 //		String splittingName=splittingPFASOnly;
 //		String splittingName=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
-		String splittingName=splittingAllButPFAS;
+//		String splittingName=splittingAllButPFAS;
 
-		
-		for (String datasetName:datasetNames) {			
-			int countTR=getCount(conn, datasetName, splittingName, 0);
-			int countTest=getCount(conn, datasetName, splittingName, 1);
-			System.out.println(datasetName+"\t"+countTR+"\t"+countTest);
+		for (String splitting:splittings) {
+			for (String datasetName:datasetNames) {			
+				int countTR=getCount(conn, datasetName, splitting, 0);
+				int countTest=getCount(conn, datasetName, splitting, 1);
+				System.out.println(datasetName+"\t"+countTR+"\t"+countTest);
+			}
+			System.out.println("");
 		}
 		
 	}

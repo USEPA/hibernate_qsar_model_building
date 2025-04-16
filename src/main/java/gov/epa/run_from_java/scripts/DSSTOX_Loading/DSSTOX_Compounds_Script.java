@@ -5,13 +5,11 @@ import java.lang.reflect.Type;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -21,37 +19,29 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.json.CDL;
 import org.openscience.cdk.Atom;
 import org.openscience.cdk.AtomContainer;
-import org.openscience.cdk.AtomContainerSet;
 import org.openscience.cdk.DefaultChemObjectBuilder;
-import org.openscience.cdk.exception.CDKException;
 import org.openscience.cdk.interfaces.IAtomContainer;
 import org.openscience.cdk.interfaces.IMolecularFormula;
 import org.openscience.cdk.io.MDLV3000Reader;
 import org.openscience.cdk.tools.manipulator.MolecularFormulaManipulator;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect.Value;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonIOException;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
-import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
 import gov.epa.databases.dsstox.DsstoxRecord;
 import gov.epa.databases.dsstox.DsstoxSession;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.entity.GenericSubstance;
 import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
 import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
+import gov.epa.run_from_java.scripts.DsstoxSnapshotCreatorScriptDSSTOX;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.util.StructureUtil;
@@ -74,11 +64,105 @@ public class DSSTOX_Compounds_Script {
 	 * @param limit
 	 * @return
 	 */
+	List<DsstoxCompound> getCompoundsBySQL(String sqlUpdatedAt,String sqlRelationship, boolean use3d, int offset,int limit) {
+
+		List<DsstoxCompound>compounds=new ArrayList<>();
+		
+		String sql="SELECT dsstox_compound_id,";
+		
+		if (use3d) sql+="mol_file_3d,";	
+		else sql+="mol_file,";
+		
+//		DATE_FORMAT(gs.updated_at,'%Y-%m-%d %h:i%:%s')
+		
+		sql+="smiles, jchem_inchi_key,indigo_inchi_key,mol_weight,"
+				+ "gs.dsstox_substance_id, gs.casrn, gs.preferred_name,  gs.updated_at\n";  
+		sql+="FROM compounds c\n";
+		sql+="left join generic_substance_compounds gsc on gsc.fk_compound_id =c.id\n";
+		sql+="left join generic_substances gs on gs.id=gsc.fk_generic_substance_id\n"; 
+		//		sql+="where (mol_weight is not null and mol_weight !=0) and (indigo_inchi_key is not null or jchem_inchi_key is not null) and gs.dsstox_substance_id is not null\n";
+//		sql+="where (mol_weight is not null and mol_weight !=0) and (indigo_inchi_key is not null or jchem_inchi_key is not null)\n";
+		
+		sql+="where\n";
+		
+		sql+=sqlUpdatedAt+" and "+sqlRelationship+"\n";
+		
+		sql+="ORDER BY dsstox_compound_id\n";
+		sql+="LIMIT "+limit+" OFFSET "+offset;
+
+		System.out.println(sql);
+
+		ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+
+		
+//		Calendar cal = Calendar.getInstance(); 
+		
+		try {
+			while (rs.next()) {
+				DsstoxCompound compound=new DsstoxCompound();				
+
+				compound.setDsstoxCompoundId(rs.getString(1));
+
+				if (use3d) {
+					if (rs.getString(2)!=null) compound.setMolFile3d(rs.getString(2));
+				} else {
+					if (rs.getString(2)!=null) compound.setMolFile(rs.getString(2));
+				}
+				
+
+				if (rs.getString(3)!=null)
+					compound.setSmiles(rs.getString(3));
+
+				if (rs.getString(4)!=null)
+					compound.setJchemInchikey(rs.getString(4));
+
+				if (rs.getString(5)!=null)
+					compound.setIndigoInchikey(rs.getString(5));				
+
+				if (rs.getString(6)!=null)
+					compound.setMolWeight(Double.parseDouble(rs.getString(6)));
+
+				if (rs.getString(7)!=null) {
+					GenericSubstanceCompound gsc=new GenericSubstanceCompound();
+					GenericSubstance gs=new GenericSubstance(); 
+					compound.setGenericSubstanceCompound(gsc);
+					gsc.setGenericSubstance(gs);
+					gs.setDsstoxSubstanceId(rs.getString(7));
+
+					if (rs.getString(8)!=null) {
+						gs.setCasrn(rs.getString(8));
+					}
+					
+					if (rs.getString(9)!=null) {
+						gs.setPreferredName(rs.getString(9));
+					}
+
+					
+					if (rs.getTimestamp(10)!=null) {
+						java.util.Date utilDate =new java.util.Date(rs.getTimestamp(10).getTime());
+						gs.setUpdatedAt(utilDate);
+					}
+
+				}
+
+				compounds.add(compound);
+
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		//		System.out.println(compounds.size());
+		return compounds;
+	}
+	
 	List<DsstoxCompound> getCompoundsBySQL(int offset,int limit) {
 
 		List<DsstoxCompound>compounds=new ArrayList<>();
 
-		String sql="SELECT dsstox_compound_id,mol_file,smiles, jchem_inchi_key,indigo_inchi_key,mol_weight,gs.dsstox_substance_id, gs.casrn\n";  
+		String sql="SELECT dsstox_compound_id,mol_file,smiles, jchem_inchi_key,indigo_inchi_key,mol_weight,"
+				+ "gs.dsstox_substance_id, gs.casrn, gs.preferred_name\n";  
 		sql+="FROM compounds c\n";
 		sql+="left join generic_substance_compounds gsc on gsc.fk_compound_id =c.id\n";
 		sql+="left join generic_substances gs on gs.id=gsc.fk_generic_substance_id\n"; 
@@ -122,6 +206,11 @@ public class DSSTOX_Compounds_Script {
 					if (rs.getString(8)!=null) {
 						gs.setCasrn(rs.getString(8));
 					}
+					
+					if (rs.getString(9)!=null) {
+						gs.setPreferredName(rs.getString(9));
+					}
+
 
 				}
 
@@ -136,6 +225,9 @@ public class DSSTOX_Compounds_Script {
 		//		System.out.println(compounds.size());
 		return compounds;
 	}
+	
+	
+	
 
 	
 	static public DsstoxCompound getCompoundByDTXCID(String dtxcid) {
@@ -237,6 +329,236 @@ public class DSSTOX_Compounds_Script {
 
 				i++;
 			}
+		}
+
+	}
+	
+	void compoundsToJsonFiles2() {
+
+		//		DsstoxCompoundServiceImpl compoundService=new DsstoxCompoundServiceImpl();
+		//		List<DsstoxCompound>compounds=compoundService.findAll();
+
+		int batchSize=50000;
+		int i=0;
+
+		String date="2024-11-12";
+		String sqlUpdatedAt="gs.updated_at < '"+date+"'";
+		
+		String sqlRelationship="gsc.relationship = \"Tested Chemical\"";
+		boolean use3d=false;
+		
+		String folder="data/dsstox/snapshot-"+date+"/json/";
+		if(use3d) folder="data/dsstox/snapshot-"+date+"/json3d/";
+		
+		new File(folder).mkdirs();
+
+		
+		int totalChemicals=0;
+		
+		while(true) {
+
+			File file=new File(folder+"prod_compounds_updated_lt_"+date+"_"+(i+1)+".json");
+
+			if (file.exists()) {
+				i++;
+				continue;
+			}
+
+			List<DsstoxCompound>compounds=getCompoundsBySQL(sqlUpdatedAt,sqlRelationship,use3d,i*batchSize, batchSize);
+
+			if(compounds.size()==0) {
+				break;
+			} else {
+
+				try {
+					FileWriter fw=new FileWriter(file);
+					fw.write(Utilities.gson.toJson(compounds));
+					
+					totalChemicals+=compounds.size();
+
+					System.out.println((i+1)+"\t"+compounds.size()+"\t"+totalChemicals);
+
+					fw.flush();
+					fw.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				i++;
+			}
+		}
+
+	}
+	
+	void compoundsToJsonFilesMarkush() {
+
+		//		DsstoxCompoundServiceImpl compoundService=new DsstoxCompoundServiceImpl();
+		//		List<DsstoxCompound>compounds=compoundService.findAll();
+
+		int batchSize=50000;
+		int i=0;
+
+		String date="2024-11-12";
+		String sqlUpdatedAt="gs.updated_at < '"+date+"'";
+		
+		String sqlRelationship="gsc.relationship != \"Tested Chemical\"";
+		boolean use3d=false;
+		
+		String folder="data/dsstox/snapshot-"+date+"/json/";
+		if(use3d) folder="data/dsstox/snapshot-"+date+"/json3d/";
+		
+		new File(folder).mkdirs();
+
+		
+		int totalChemicals=0;
+		
+		while(true) {
+
+			File file=new File(folder+"prod_compounds_updated_lt_"+date+"_"+(i+1)+"_markush.json");
+
+			if (file.exists()) {
+				i++;
+				continue;
+			}
+
+			List<DsstoxCompound>compounds=getCompoundsBySQL(sqlUpdatedAt,sqlRelationship,use3d,i*batchSize, batchSize);
+
+			if(compounds.size()==0) {
+				break;
+			} else {
+
+				try {
+					FileWriter fw=new FileWriter(file);
+					fw.write(Utilities.gson.toJson(compounds));
+					
+					totalChemicals+=compounds.size();
+
+					System.out.println((i+1)+"\t"+compounds.size()+"\t"+totalChemicals);
+
+					fw.flush();
+					fw.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				i++;
+			}
+		}
+
+	}
+	
+	
+	void recentUpdateToJsonFiles() {
+
+		//		DsstoxCompoundServiceImpl compoundService=new DsstoxCompoundServiceImpl();
+		//		List<DsstoxCompound>compounds=compoundService.findAll();
+
+		int batchSize=50000;
+		
+		String date="2024-11-12";
+		String sqlUpdatedAt="gs.updated_at >= '"+date+"'";
+		
+		String sqlRelationship="gsc.relationship = \"Tested Chemical\"";
+		boolean use3d=false;
+		
+		
+		String folder="data/dsstox/snapshot-"+date+"/json/";
+		if(use3d) folder="data/dsstox/snapshot-"+date+"/json3d/";
+		
+		new File(folder).mkdirs();
+		
+		
+		File file=new File(folder+"prod_compounds_updated_gte_2024-11-12.json");
+
+		List<DsstoxCompound>compounds=getCompoundsBySQL(sqlUpdatedAt,sqlRelationship,use3d,0, batchSize);
+		System.out.println(compounds.size());
+		
+		try {
+			FileWriter fw=new FileWriter(file);
+			fw.write(Utilities.gson.toJson(compounds));
+			fw.flush();
+			fw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+	
+	void recentUpdateToJsonFilesMarkush() {
+
+		//		DsstoxCompoundServiceImpl compoundService=new DsstoxCompoundServiceImpl();
+		//		List<DsstoxCompound>compounds=compoundService.findAll();
+
+		int batchSize=50000;
+		
+		String date="2024-11-12";
+		String sqlUpdatedAt="gs.updated_at >= '"+date+"'";
+		
+		String sqlRelationship="gsc.relationship != \"Tested Chemical\"";
+		boolean use3d=false;
+		
+		
+		String folder="data/dsstox/snapshot-"+date+"/json/";
+		if(use3d) folder="data/dsstox/snapshot-"+date+"/json3d/";
+		
+		new File(folder).mkdirs();
+		
+		
+		File file=new File(folder+"prod_compounds_updated_gte_2024-11-12_markush.json");
+
+		List<DsstoxCompound>compounds=getCompoundsBySQL(sqlUpdatedAt,sqlRelationship,use3d,0, batchSize);
+		System.out.println(compounds.size());
+		
+		try {
+			FileWriter fw=new FileWriter(file);
+			fw.write(Utilities.gson.toJson(compounds));
+			fw.flush();
+			fw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+	
+	void updatedSincePreviousSnapshot() {
+
+		//		DsstoxCompoundServiceImpl compoundService=new DsstoxCompoundServiceImpl();
+		//		List<DsstoxCompound>compounds=compoundService.findAll();
+
+		int batchSize=50000;
+		
+		String dateSnapshotLatest="2024-11-12";
+		String dateSnapshotPrevious="2023-04-04";
+		
+		String sqlUpdatedAt="gs.updated_at >= '"+dateSnapshotPrevious+"' and gs.updated_at < '"+dateSnapshotLatest+"'";
+		
+		String sqlRelationship="gsc.relationship = \"Tested Chemical\"";
+		boolean use3d=false;
+		
+		
+		String folder="data/dsstox/snapshot-"+dateSnapshotLatest+"/json/";
+		if(use3d) folder="data/dsstox/snapshot-"+dateSnapshotLatest+"/json3d/";
+		
+		new File(folder).mkdirs();
+		
+		
+		File file=new File(folder+"prod_compounds_updated_gte_"+dateSnapshotPrevious+"_and_lt_"+dateSnapshotLatest+".json");
+
+		List<DsstoxCompound>compounds=getCompoundsBySQL(sqlUpdatedAt,sqlRelationship,use3d,0, batchSize);
+		System.out.println(compounds.size());
+		
+		try {
+			FileWriter fw=new FileWriter(file);
+			fw.write(Utilities.gson.toJson(compounds));
+			fw.flush();
+			fw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 
 	}
@@ -405,82 +727,7 @@ public class DSSTOX_Compounds_Script {
 	}
 
 
-	public static void createRecord(ResultSet rs, Object r) {
-		ResultSetMetaData rsmd;
-		try {
-			rsmd = rs.getMetaData();
-
-			int columnCount = rsmd.getColumnCount();
-
-			// The column count starts from 1
-			for (int i = 1; i <= columnCount; i++ ) {
-				String name = rsmd.getColumnLabel(i);
-
-				String val=rs.getString(i);
-
-				//				System.out.println(name+"\t"+val);
-
-				if (val!=null) {
-					Field myField = r.getClass().getDeclaredField(name);	
-
-					String type=myField.getType().getName();
-
-					if (type.contentEquals("boolean")) {
-						myField.setBoolean(r, Boolean.parseBoolean(val));
-					} else if (type.contentEquals("double")) {
-						myField.setDouble(r, Double.parseDouble(val));
-					} else if (type.contentEquals("int")) {
-						myField.setInt(r, Integer.parseInt(val));
-
-					} else if (type.contentEquals("java.lang.Double")) {
-						//						System.out.println(name+"\tDouble");
-						try {
-							Double dval=Double.parseDouble(val);						
-							myField.set(r, dval);
-						} catch (Exception ex) {
-							System.out.println("Error parsing "+val+" for field "+name+" to Double for "+rs.getString(1));
-						}
-					} else if (type.contentEquals("java.lang.Integer")) {
-						Integer ival=Integer.parseInt(val);
-						myField.setInt(r,ival);
-					} else if (type.contentEquals("java.lang.String")) {
-						myField.set(r, val);
-					} else if (type.contentEquals("java.util.Set")) {
-						//						System.out.println(name+"\t"+val);
-						val=val.replace("[", "").replace("]", "");
-
-						String  [] values = val.split(", ");
-						Set<String>list=new HashSet<>();
-						for (String value:values) {
-							list.add(value.trim());
-						}
-						myField.set(r,list);
-
-					} else if (type.contentEquals("java.util.List")) {
-						//						System.out.println(name+"\t"+val);
-						val=val.replace("[", "").replace("]", "");
-
-						String  [] values = val.split(",");
-						ArrayList<String>list=new ArrayList<>();
-						for (String value:values) {
-							list.add(value.trim());
-						}
-						myField.set(r,list);
-
-					} else {
-						System.out.println("Need to implement: "+myField.getType().getName());
-					}					
-
-				}
-
-			}
-
-
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+	
 
 	private List<DsstoxCompound> getCompounds(int offset, int limit) {
 		List<DsstoxCompound>compounds=new ArrayList<>();
@@ -620,6 +867,7 @@ public class DSSTOX_Compounds_Script {
 			for (int i=0;i<fieldNames.size();i++) {
 				
 				try {
+					
 					Field field= this.getClass().getDeclaredField(fieldNames.get(i));
 					result+=field.get(this);
 					
@@ -733,30 +981,159 @@ public class DSSTOX_Compounds_Script {
 	 */
 	void convertJsonsToSDFs() {
 
+		
+		boolean split_out_salts=false;
+		boolean skipMissingSID=true;
+
+		
+		String destFolder="data/dsstox/sdf/";
+		if(split_out_salts)	destFolder="data/dsstox/sdf_split_out_salts/";
+
+		
+//		boolean split_out_salts=false;
+		
+		
+		File folderDest=new File(destFolder);
+		folderDest.mkdirs();
+		
+		
 		try {
 
 			File folder=new File("data/dsstox/json");
 
 			Type listOfMyClassObject = new TypeToken<List<DsstoxCompound>>() {}.getType();
 
+			List<DsstoxCompound>saltCompoundsAll=new ArrayList<>();
+			
 			for (File file:folder.listFiles()) {
 
 				if(!file.getName().contains("json")) {
 					continue;
 				}
+				
+				if(!file.getName().contains("snapshot_compounds")) {
+					continue;
+				}
+
+				if(file.getName().contains("snapshot_compounds_for_toxprints")) {
+					continue;
+				}
+				
 
 				try {
 					List<DsstoxCompound>compounds=Utilities.gson.fromJson(new FileReader(file), listOfMyClassObject);
 
 					String filename=file.getName().replace(".json", ".sdf");
-					String filepath="data/dsstox/sdf/"+filename;
-					System.out.println(filename);
-					createSDF(compounds, filepath);
+					String filepath=destFolder+filename;
+					
+					System.out.print(filename+"\t"+compounds.size());
+					
+					if (split_out_salts) {
+						List<DsstoxCompound>saltCompounds=removeSalts(compounds);
+						saltCompoundsAll.addAll(saltCompounds);
+						System.out.print(saltCompounds.size()+"\n");
+//						String filepathSalts=filepath.replace("snapshot_compounds", "salt_snapshot_compounds");
+//						writeCompoundsToSDF(saltCompounds, filepathSalts, skipMissingSID);
+					} else {
+						System.out.print("\n");
+					}
+					
 
+					writeCompoundsToSDF(compounds, filepath, skipMissingSID);
+
+//					if(true) break;
+						
 				} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
 					e.printStackTrace();
 				}
-			}
+			}//end loop over files
+			
+			writeCompoundsToSDF(saltCompoundsAll, destFolder+"salt_snapshot_compounds.sdf", skipMissingSID);
+
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+
+	}
+	
+
+	void convertJsonsToSDFs2() {
+
+		
+		boolean split_out_salts=false;
+		boolean skipMissingSID=true;
+
+		String date="2024-11-12";
+		String snapshotFolder="data/dsstox/snapshot-"+date+"/";
+		
+		
+		String jsonFolder=snapshotFolder+"json/";
+
+		String destFolder=snapshotFolder+"sdf/";
+		if(split_out_salts)	destFolder=snapshotFolder+"sdf_split_out_salts/";
+		
+//		boolean split_out_salts=false;
+		
+		
+		File folderDest=new File(destFolder);
+		folderDest.mkdirs();
+		
+		
+		try {
+
+			File folder=new File(jsonFolder);
+
+			Type listOfMyClassObject = new TypeToken<List<DsstoxCompound>>() {}.getType();
+
+			List<DsstoxCompound>saltCompoundsAll=new ArrayList<>();
+			
+			for (File file:folder.listFiles()) {
+
+				if(!file.getName().contains("json")) {
+					continue;
+				}
+				
+//				if(!file.getName().contains("snapshot_compounds")) {
+//					continue;
+//				}
+//
+//				if(file.getName().contains("snapshot_compounds_for_toxprints")) {
+//					continue;
+//				}
+				
+
+				try {
+					List<DsstoxCompound>compounds=Utilities.gson.fromJson(new FileReader(file), listOfMyClassObject);
+
+					String filename=file.getName().replace(".json", ".sdf");
+					String filepath=destFolder+filename;
+					
+					System.out.print(filename+"\t"+compounds.size());
+					
+					if (split_out_salts) {
+						List<DsstoxCompound>saltCompounds=removeSalts(compounds);
+						saltCompoundsAll.addAll(saltCompounds);
+						System.out.print(saltCompounds.size()+"\n");
+//						String filepathSalts=filepath.replace("snapshot_compounds", "salt_snapshot_compounds");
+//						writeCompoundsToSDF(saltCompounds, filepathSalts, skipMissingSID);
+					} else {
+						System.out.print("\n");
+					}
+					
+
+					writeCompoundsToSDF(compounds, filepath, skipMissingSID);
+
+//					if(true) break;
+						
+				} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
+					e.printStackTrace();
+				}
+			}//end loop over files
+			
+			
+			if(split_out_salts)
+				writeCompoundsToSDF(saltCompoundsAll, destFolder+"salt_snapshot_compounds.sdf", skipMissingSID);
 
 
 		} catch (Exception ex) {
@@ -766,11 +1143,79 @@ public class DSSTOX_Compounds_Script {
 	}
 
 
-	public static void createSDF(List<DsstoxCompound> compounds, String filepath) throws IOException {
+	public static void createSDF(List<DsstoxCompound> compounds, String filepath,boolean split_out_salts,boolean skipMissingSID) throws IOException {
+		
+		
+		System.out.println("Compounds in file:"+compounds.size()); 
+		
+		if (split_out_salts) {
+			List<DsstoxCompound>saltCompounds=removeSalts(compounds);
+			String filepathSalts=filepath.replace("snapshot_compounds", "salt_snapshot_compounds");
+			writeCompoundsToSDF(saltCompounds, filepathSalts, skipMissingSID);
+		}
+		writeCompoundsToSDF(compounds, filepath, skipMissingSID);
+		
+	}
+
+
+	private static List<DsstoxCompound> removeSalts(List<DsstoxCompound> compounds) {
+		
+		MDLV3000Reader mr=new MDLV3000Reader();
+		List<DsstoxCompound> saltCompounds=new ArrayList<>();
+		
+		
+		for(int i=0;i<compounds.size();i++)  {
+
+			DsstoxCompound compound=compounds.get(i);
+
+			if(compound.getSmiles()!=null && compound.getSmiles().contains(".")) {
+				//				System.out.println(compound.getSmiles());
+				compounds.remove(i--);
+				saltCompounds.add(compound);
+				continue;
+			}
+
+			
+			IAtomContainer molecule=null;
+			if(compound.getMolFile()!=null) {
+				molecule=getMoleculeFromMolFileString(mr, compound);					
+			} 
+			
+			if(molecule!=null && StructureUtil.isSalt(molecule)) {
+				compounds.remove(i--);
+				saltCompounds.add(compound);
+				continue;
+			}
+			
+
+		}
+//		System.out.println("Salts="+saltCompounds.size());
+		
+		return saltCompounds;
+		
+		
+	}
+
+
+	private static void writeCompoundsToSDF(List<DsstoxCompound> compounds, String filepath, boolean skipMissingSID)
+			throws IOException {
 		FileWriter fw=new FileWriter(filepath);
 
 		for (DsstoxCompound compound:compounds) {
+
+			if (compound.getGenericSubstanceCompound()==null && skipMissingSID) {
+				continue;
+			}
+			
+			
+			if(compound.getMolFile()==null) {//only seems to happen when dont have dtxsid
+				System.out.println(compound.getGenericSubstanceCompound().getGenericSubstance().getDsstoxSubstanceId()+" missing mol file,smiles="+compound.getSmiles());
+				continue;
+			}
+			
 			fw.write(compound.getMolFile());
+
+			
 			fw.write(">  <DTXCID>\n");
 			fw.write(compound.getDsstoxCompoundId()+"\r\n\r\n");
 
@@ -779,6 +1224,7 @@ public class DSSTOX_Compounds_Script {
 				fw.write(compound.getSmiles()+"\r\n\r\n");
 			}								
 
+			
 			if (compound.getGenericSubstanceCompound()!=null && compound.getGenericSubstanceCompound().getGenericSubstance()!=null) {
 				if(compound.getGenericSubstanceCompound().getGenericSubstance().getDsstoxSubstanceId()!=null) {
 					fw.write(">  <DTXSID>\n");
@@ -789,6 +1235,12 @@ public class DSSTOX_Compounds_Script {
 					fw.write(">  <CASRN>\n");
 					fw.write(compound.getGenericSubstanceCompound().getGenericSubstance().getCasrn()+"\r\n\r\n");
 				}
+				
+				if(compound.getGenericSubstanceCompound().getGenericSubstance().getPreferredName()!=null) {
+					fw.write(">  <PREFERRED_NAME>\n");
+					fw.write(compound.getGenericSubstanceCompound().getGenericSubstance().getPreferredName()+"\r\n\r\n");
+				}
+
 
 			} else {
 				//							System.out.println(compound.getDsstoxCompoundId()+"\tDTXSID=null");
@@ -799,6 +1251,21 @@ public class DSSTOX_Compounds_Script {
 
 		fw.flush();
 		fw.close();
+	}
+
+
+	private static IAtomContainer getMoleculeFromMolFileString(MDLV3000Reader mr, DsstoxCompound compound) {
+		IAtomContainer molecule=null;
+		try {
+			InputStream stream = new ByteArrayInputStream(compound.getMolFile().getBytes());
+			mr.setReader(stream);
+			molecule = (IAtomContainer) mr.readMolecule(DefaultChemObjectBuilder.getInstance());
+
+		} catch (Exception ex) {
+//			ex.printStackTrace();
+		}
+		
+		return molecule;
 	}
 
 
@@ -1281,15 +1748,73 @@ public class DSSTOX_Compounds_Script {
 	}
 	
 	
+	void createDsstoxRecordsUsingCompoundsRecordsNoDTXCID() {
+		//make sure environment is use to use prod_dsstox
+		
+		DsstoxSnapshotCreatorScriptDSSTOX d=new DsstoxSnapshotCreatorScriptDSSTOX();
+		
+		String name="DSSTOX Snapshot 11/12/2024";
+		String date="2024-11-12";
+		DsstoxSnapshot snapshot=d.getSnapshot(name);
+		
+		System.out.println(snapshot.getId());
+		
+//		String sqlUpdatedAt="gs.updated_at < '"+date+"'";
+		String sqlUpdatedAt="gs.updated_at < '"+"2025-02-13"+"'";
+		
+		List<gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord>records=d.getDsstoxRecordsNoCompound(snapshot,lanId,sqlUpdatedAt);
+		System.out.println(records.size());
+
+//		System.out.println(Utilities.gson.toJson(records));
+		
+		
+		try {
+			d.dsstoxRecordService.createBatchSQLNoCompound(records);
+		} catch (Exception ex) {
+			System.out.println(ex.getMessage());
+		}
+		
+//		sqlUpdatedAt="gs.updated_at >= '"+date+"'";
+//		records=d.getDsstoxRecordsNoCompound(snapshot,lanId,sqlUpdatedAt);
+//		System.out.println(records.size());
+//		
+//		for (gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord record:records) {
+//			System.out.println(record.getDtxsid());	
+//		}
+//		System.out.println(records.size());
+		
+//		System.out.println(Utilities.gson.toJson(records));
+
+		
+	}
+
+	
+	
 	
 	public static void main(String[] args) {
 		DSSTOX_Compounds_Script d=new DSSTOX_Compounds_Script();
+
 //		d.compoundsToJsonFiles();
 //		d.convertJsonsToSDFs();
 		
+//		d.recentUpdateToJsonFiles();
+//		d.recentUpdateToJsonFilesMarkush();
+//		d.updatedSincePreviousSnapshot();
+//		d.compoundsToJsonFiles2();
+//		d.compoundsToJsonFilesMarkush();
+//		d.convertJsonsToSDFs2();
+		d.createDsstoxRecordsUsingCompoundsRecordsNoDTXCID();
+		
+		
+		/**
+		 * Alternatively I could have taken the records from April 23 snapshot in the postgresl and updated it with the records from prod_dsstox after the date of the first snapshot
+		 */
+
+		
+		
 //		d.writeNotOrganicTextFile();
 //		d.writeIsOrganicTextFile();
-		d.writeIsOrganicTextFileFromJsonFiles();
+//		d.writeIsOrganicTextFileFromJsonFiles();
 		
 
 		//			d.compoundsToTSV_File();

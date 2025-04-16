@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.exp_prop.service;
 
+import java.sql.Connection;
 import java.util.List;
 
 import javax.validation.ConstraintViolationException;
@@ -39,6 +40,8 @@ public interface PropertyValueService {
 	public void delete(List<PropertyValue> propertyValues) throws ConstraintViolationException;
 
 	public void delete(List<PropertyValue> propertyValues, Session session);
+
+	public boolean createSql(List<PropertyValue> propertyValues, Connection connectionPostgres);
 
 	
 }

@@ -36,40 +36,40 @@ public class Property {
 
 	@Column(name="name_ccd")
 	private String name_ccd;
-	
+
 	@NotNull(message="Description required")
 	@Column(name="description")
 	private String description;
-	
+
 	@Column(name="updated_at")
 	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date updatedAt;
-	
+
 	@Column(name="updated_by")
 	private String updatedBy;
-	
+
 	@Column(name="created_at")
 	@CreationTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createdAt;
-	
+
 	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
-	
+
 	@ManyToMany(mappedBy="property", fetch=FetchType.EAGER)
 	@Fetch(value=FetchMode.SUBSELECT)
 	private List<PropertyInCategory> propertyInCategories;
-	
+
 	public Property() {}
-	
+
 	public Property(String name, String description, String createdBy) {
 		this.setName(name);
 		this.setDescription(description);
 		this.setCreatedBy(createdBy);
 	}
-	
+
 	public static Property fromExpPropProperty(ExpPropProperty expPropProperty, String lanId) {
 		return new Property(expPropProperty.getName(), expPropProperty.getDescription(), lanId);
 	}

@@ -1,5 +1,6 @@
 package gov.epa.run_from_java.scripts;
 
+import java.awt.Desktop;
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -98,7 +99,10 @@ public class OutlierReportScript {
 				String server="http://localhost";
 				//			String server="http://v2626umcth819.rtord.epa.gov";//TODO 819 not working...
 
-				json=QueryOutlierDetectionAPI.callPythonOutlierDetection(tsv, false, server);		
+				
+				QueryOutlierDetectionAPI q=new QueryOutlierDetectionAPI(true);
+				
+				json=q.callPythonOutlierDetection(tsv, false, server);		
 				FileWriter fw=new FileWriter(jsonFilePath);
 				
 				fw.write(json);
@@ -134,93 +138,86 @@ public class OutlierReportScript {
 
 		boolean genOutliersJSON=true;//if false saves time by not having to find the outliers using web service
 
-		
-//		String dataset = "Standard Water solubility from exp_prop";
-//		String dataset = "HLC from exp_prop and chemprop";
-//		String dataset = "LogP from exp_prop and chemprop";
-		
-//		String dataset="HLC v1 modeling";
-//		String dataset="BP v1 modeling";
-//		String dataset="WS v1 modeling";
-//		String dataset="VP v1 modeling";
-//		String dataset="LogP v1 modeling";
-//		String dataset="MP v1 modeling";
-		
-//		String dataset="BP v2 modeling";
-		
-//		String dataset="BP OChem_2024_04_03";
-//		String dataset="VP OChem_2024_04_03";
-		String dataset="MP OChem_2024_04_03";
-		
-		
-		
-//		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\";
+		List<String>abbrevs= Arrays.asList("BP","VP","MP","HLC","LogP","WS");
+		List<String>datasets=new ArrayList<>();
+		for (String abbrev:abbrevs) datasets.add(abbrev+" PubChem_2024_03_20");
+//		for (String abbrev:abbrevs) datasets.add(abbrev+"  v1 modeling");
+
 		String folderMain="data\\reports\\Outlier testing\\";
-		String folderOutput=folderMain+"\\"+dataset;
+
+		QueryOutlierDetectionAPI q=new QueryOutlierDetectionAPI(true);
+		String server="http://localhost";
+
 		
-		String jsonFilePath=folderOutput+"/"+dataset+".json";
-		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		for (String dataset:datasets) {
 
-		String tsv = ModelData.generateInstancesWithoutSplitting(dataset,descriptorSetName,true);
-		System.out.println("tsv retrieved from the database for "+dataset);
+			//		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\";
+			String folderOutput=folderMain+"\\"+dataset;
 
-		File f=new File(folderOutput);
-		f.mkdirs();
+			String jsonFilePath=folderOutput+"/"+dataset+".json";
+			String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 
-		try {
-			String json=null;
+			String tsv = ModelData.generateInstancesWithoutSplitting(dataset,descriptorSetName,true);
+			System.out.println("tsv retrieved from the database for "+dataset);
 
-			System.out.print("Finding outliers...");
-			
-			if (genOutliersJSON) {
-				String server="http://localhost";
-				//			String server="http://v2626umcth819.rtord.epa.gov";//TODO 819 not working...
+			File f=new File(folderOutput);
+			f.mkdirs();
 
-				QueryOutlierDetectionAPI.port=5006;
+			try {
+				String json=null;
+
+				System.out.print("Finding outliers...");
+
+				if (genOutliersJSON) {
+					//			String server="http://v2626umcth819.rtord.epa.gov";//TODO 819 not working...
+
+					json=q.callPythonOutlierDetection(tsv, false, server);
+
+					Object obj=Utilities.gson.fromJson(json, Object.class);
+
+					json=Utilities.gson.toJson(obj);
+					FileWriter fw=new FileWriter(jsonFilePath);
+					fw.write(json);
+					fw.flush();
+					fw.close();
+
+				} else {
+					json = Files.readString(Path.of(jsonFilePath));
+					//				System.out.println(json);
+				}
+				System.out.println("Done");
+
+
+				Outlier[] recordsOutliers= new Gson().fromJson(json, Outlier[].class);		
+
+				System.out.print("Finding analogs...");
+				findAnalogs(tsv, recordsOutliers);			
+				System.out.println("Done");
+
+				String outputFileName="outlier report "+dataset+".html";
+				Connection conn=SqlUtilities.getConnectionPostgres();
+
+				createReport(conn, dataset, recordsOutliers, folderOutput,outputFileName,outputFileName,null);
+
+				String listName="PFASSTRUCTV4";
+				List<DsstoxRecord>dsstoxRecords=GetExpPropInfo.getChemicalsFromDSSTOXList(listName);		
+				HashSet<String>arrayPFAS_CIDs=new HashSet<>();
+				for (DsstoxRecord dr:dsstoxRecords) arrayPFAS_CIDs.add(dr.dsstoxCompoundId);
+
+				outputFileName="outlier report "+dataset+"_PFAS.html";
+				createReport(conn, dataset, recordsOutliers, folderOutput,outputFileName,outputFileName,arrayPFAS_CIDs);
+
+				System.out.println(folderOutput);
 				
-				json=QueryOutlierDetectionAPI.callPythonOutlierDetection(tsv, false, server);
-				
-				Object obj=Utilities.gson.fromJson(json, Object.class);
-				
-				json=Utilities.gson.toJson(obj);
-				FileWriter fw=new FileWriter(jsonFilePath);
-				fw.write(json);
-				fw.flush();
-				fw.close();
+				//			outputFileName="outlier report "+dataset+"_PFAS.xlsx";
+				//			createSpreadsheet(conn, dataset, recordsOutliers, folderOutput,outputFileName,outputFileName,arrayPFAS_CIDs);
 
-			} else {
-				json = Files.readString(Path.of(jsonFilePath));
-//				System.out.println(json);
+
+
+			} catch (Exception ex) {
+				ex.printStackTrace();
 			}
-			System.out.println("Done");
-			
 
-			Outlier[] recordsOutliers= new Gson().fromJson(json, Outlier[].class);		
-
-			System.out.print("Finding analogs...");
-			findAnalogs(tsv, recordsOutliers);			
-			System.out.println("Done");
-			
-			String outputFileName="outlier report "+dataset+".html";
-			Connection conn=SqlUtilities.getConnectionPostgres();
-			
-			createReport(conn, dataset, recordsOutliers, folderOutput,outputFileName,outputFileName,null);
-			
-			String listName="PFASSTRUCTV4";
-			List<DsstoxRecord>dsstoxRecords=GetExpPropInfo.getChemicalsFromDSSTOXList(listName);		
-			HashSet<String>arrayPFAS_CIDs=new HashSet<>();
-			for (DsstoxRecord dr:dsstoxRecords) arrayPFAS_CIDs.add(dr.dsstoxCompoundId);
-
-			outputFileName="outlier report "+dataset+"_PFAS.html";
-			createReport(conn, dataset, recordsOutliers, folderOutput,outputFileName,outputFileName,arrayPFAS_CIDs);
-			
-//			outputFileName="outlier report "+dataset+"_PFAS.xlsx";
-//			createSpreadsheet(conn, dataset, recordsOutliers, folderOutput,outputFileName,outputFileName,arrayPFAS_CIDs);
-			
-			
-			
-		} catch (Exception ex) {
-			ex.printStackTrace();
 		}
 	}
 	
@@ -493,11 +490,25 @@ public class OutlierReportScript {
 			fwTsv.flush();
 			fwTsv.close();
 			
+			viewInWebBrowser(outputFolder+File.separator+outputFileName);
+			
+			
 			
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
 		
+	}
+	
+	public static void viewInWebBrowser(String filepath) {
+		
+        Desktop desktop = Desktop.getDesktop();
+        try {
+            desktop.browse(new File(filepath).toURI());
+            return;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
 	}
 	
 	static void writeHeader(FileWriter fw, int count,String searchDescription) throws Exception {
@@ -883,16 +894,20 @@ public class OutlierReportScript {
     }
 
 	
-	public static class QueryOutlierDetectionAPI {
+	public class QueryOutlierDetectionAPI {
 
-		public static int port=5006; 
+		public int port=5006; 
 		
-		public static String callPythonOutlierDetection(String tsv, boolean removeLogP,String server) {
+		QueryOutlierDetectionAPI(boolean config) {
 			Unirest.config()
 	        .followRedirects(true)   
 			.socketTimeout(000)
 	           .connectTimeout(000);
 
+		}
+		
+		public String callPythonOutlierDetection(String tsv, boolean removeLogP,String server) {
+			
 			
 			String url = server+":"+port+"/calculation/";
 			HttpResponse<String> response = Unirest.get(url)

@@ -1,6 +1,7 @@
 package gov.epa.web_services.standardizers;
 
 import java.io.BufferedReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -23,6 +24,7 @@ import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.ExcelSourceReader;
 //import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponseWithStatus;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -225,14 +227,15 @@ public class SciDataExpertsStandardizer {
 				
 				JsonObject joChange=joTransform.get("change").getAsJsonObject();
 				
-				if(joChange.get("value").isJsonNull()) continue;
+				if(joChange.get("text")==null) continue;
+				if(joChange.get("text").isJsonNull()) continue;
 				
-				String text=joChange.get("value").getAsString();
+				String text=joChange.get("text").getAsString();
 				
 				if (changes.isEmpty()) {
 					changes+=text;	
 				} else {
-					changes+="\n"+text;
+					changes+=" ==> "+text;
 				}
 				
 //				System.out.println(gson.toJson(joTransform));
@@ -243,6 +246,42 @@ public class SciDataExpertsStandardizer {
 		}
 		
 		return changes;
+		
+	}
+	
+	static String getIssues(String json) {
+		
+		String messages="";
+		
+		JsonObject jo=Utilities.gson.fromJson(json, JsonObject.class);
+		JsonArray records=jo.get("records").getAsJsonArray();
+		
+		for (int i=0;i<records.size();i++) {
+			JsonObject joi=records.get(i).getAsJsonObject();
+			
+			JsonArray issues=joi.get("issues").getAsJsonArray();
+			
+			if (issues.size()==0) continue;
+			
+			for (int j=0;j<issues.size();j++) {
+				JsonObject joIssue=issues.get(j).getAsJsonObject();
+				
+				String message=joIssue.get("message").getAsString();
+				
+				if (messages.isEmpty()) {
+					messages+=message;	
+				} else {
+					messages+=" ==> "+message;
+				}
+				
+//				System.out.println(gson.toJson(joTransform));
+				
+			}
+			
+//			System.out.println(changes);
+		}
+		
+		return messages;
 		
 	}
 
@@ -277,6 +316,7 @@ public class SciDataExpertsStandardizer {
 			if(smiles_i==null)	smiles_i="error";
 
 		} else {
+			
 			//					System.out.println(Utilities.gson.toJson(record));
 			JsonObject original=record.get("original").getAsJsonObject();
 			JsonObject chemical=original.get("chemical").getAsJsonObject();
@@ -745,28 +785,99 @@ public class SciDataExpertsStandardizer {
 //		String smiles="CC1=C2N=C3C(NC(=N)N=C3O)=NCC2C2CNC3NC(=N)N=C(O)C=3N12";//fails standardization
 //		String smiles="CCCC.bobert";
 //				String smiles="CCCC.Cl";
-		String smiles="CCCC.CCCCO";
+//		String smiles="CCCC.CCCCO";
 //		String smiles="[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC[C@]4([H])C[C@H](O)CC[C@]4(C)[C@@]3([H])C[C@H](O)[C@]12C)[C@H](C)CCC(O)=O";
 //		String smiles="CI";
 //		String smiles="[Ag+].[C-]#[N+][O-]";
+		String smiles="C\\C(\\C=C\\[C@@]1(O)C(C)=CC(=O)CC1(C)C)=C\\C(O)=O";
+		
 		return smiles;
 	}
 
+	
+	static void runExcelList() {
+		String serverHost="https://hcd.rtpnc.epa.gov";
+		String type=DevQsarConstants.QSAR_READY;
+
+//		String workflow="QSAR-ready_CNL_edits_TMM_2";
+		String workflow=QSAR_READY_WORKFLOW;
+		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(type,workflow,serverHost);
+
+		boolean full=false;
+
+
+		String colNameSmiles="SMILES";
+		String colNameID="DTXSID";
+		String filepath="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 scientists\\kelly craig\\missing_smile09262023.xlsx";
+
+		String outputPath=filepath.replace(".xlsx", "_"+workflow+".tsv");
+
+		ExcelSourceReader esr=new ExcelSourceReader(filepath);
+
+		FileWriter fw;
+		try {
+			fw = new FileWriter(outputPath);
+			fw.write("ID\tSmiles\tQsarSmiles\r\n");
+
+			JsonArray ja=esr.parseRecordsFromExcel(1);
+
+//			System.out.println(gson.toJson(ja));
+
+			for (int i=0;i<ja.size();i++) {
+
+				JsonObject jo=ja.get(i).getAsJsonObject();
+
+				String ID=jo.get(colNameID).getAsString();
+				String smiles=jo.get(colNameSmiles).getAsString();
+
+
+				HttpResponse<String>response=standardizer.callQsarReadyStandardizePost2(smiles,full);
+
+				String jsonResponse=standardizer.getResponseBody(response, full);
+				String qsarSmiles=standardizer.getQsarReadySmilesFromPostJson(jsonResponse, full);
+
+				System.out.println(ID+"\t"+smiles+"\t"+qsarSmiles);
+				fw.write(ID+"\t"+smiles+"\t"+qsarSmiles+"\r\n");
+
+
+				fw.flush();
+			}
+
+			fw.flush();
+			fw.close();
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+
+	}
+	
 
 	public static void main(String[] args) {
+		runSingleChemicalTest();
+//		runExcelList();
+	}
+
+
+
+	private static void runSingleChemicalTest() {
 		//		String url="https://ccte-cced.epa.gov/api/stdizer/";
 //		String url="https://hcd.rtpnc.epa.gov/api/stdizer/";
-		String serverHost="https://hcd.rtpnc.epa.gov";
+//		String serverHost="https://hcd.rtpnc.epa.gov";
+		String serverHost="https://hazard-dev.sciencedataexperts.com";
 		String type=DevQsarConstants.QSAR_READY;
 		
 //		String workflow="QSAR-ready_CNL_edits_TMM_2";
-		String workflow=QSAR_READY_WORKFLOW;
+//		String workflow=QSAR_READY_WORKFLOW;
 //		String workflow="QSAR-ready_CNL_edits";
-		
-		boolean full=true;
+		String workflow = "qsar-ready_08232023";
+		boolean full=false;
 
 
-		String smiles = getSampleSmiles();
+//		String smiles = getSampleSmiles();
+		String smiles="CC[O+]=NC.[O-]Cl(=O)(=O)=O";
 
 		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(type,workflow,serverHost);
 		HttpResponse<String>response=standardizer.callQsarReadyStandardizePost2(smiles,full);

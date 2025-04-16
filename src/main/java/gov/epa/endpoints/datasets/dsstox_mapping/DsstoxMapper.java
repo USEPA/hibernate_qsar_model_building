@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -444,6 +445,9 @@ public class DsstoxMapper {
 					records = sourceSubstanceService
 							.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(checkChemicalList);
 					recordsAR = new ArrayList<DsstoxRecord>(records);
+				} else {
+					System.out.println(checkChemicalList+" doesnt exist");
+					return null;
 				}
 				
 				
@@ -1174,9 +1178,17 @@ public class DsstoxMapper {
 		} else if (standardizer != null && conflict.bestDsstoxRecord.isWellDefined()) {
 			needStandardizer = true;
 //			conflict.bestStandardizedSmiles = standardizeSmiles(srcChemId, conflict.bestDsstoxRecord);
-			conflict.bestStandardizedSmiles = DatasetCreator
-					.getCompound(hmCanonSmilesLookup, false, conflict.bestDsstoxRecord, standardizer)
-					.getCanonQsarSmiles();
+			
+			Compound compound=DatasetCreator
+			.getCompound(hmCanonSmilesLookup, false, conflict.bestDsstoxRecord, standardizer);
+			
+			if(compound!=null) {
+				conflict.bestStandardizedSmiles = DatasetCreator
+						.getCompound(hmCanonSmilesLookup, false, conflict.bestDsstoxRecord, standardizer)
+						.getCanonQsarSmiles();
+				
+			}
+			
 		}
 
 		if (drQsarReadySmiles == null && conflict.bestStandardizedSmiles == null) {
@@ -1866,11 +1878,12 @@ public class DsstoxMapper {
 
 	}
 	
-	public List<ExplainedResponse> map(String listName) {
+	public List<ExplainedResponse> mapByExternalID(String listName) {
 
 		List<ExplainedResponse> responses = new ArrayList<>();
 
-		Map<String, SourceChemical> mapList = SourceChemicalUtilities.getMapChemRegList(listName);
+		
+		Map<String, SourceChemical> mapList = SourceChemicalUtilities.getMapChemRegListByExternalID(listName);
 
 		List<DsstoxRecord> dsstoxRecords = sourceSubstanceService
 				.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(listName);
@@ -1879,12 +1892,16 @@ public class DsstoxMapper {
 		
 		try {
 
-			FileWriter fw = new FileWriter(
-					"data\\dev_qsar\\output\\new chemreg lists\\" + listName + "_mapping_results.txt");
+			String folder="data\\dev_qsar\\output\\000 new chemreg lists\\";
+			String filepathOut=folder+listName + "_mapping_results.txt";
+
+			FileWriter fw = new FileWriter(filepathOut);
+			
+			System.out.println(filepathOut);
 
 			String header = "externalId\tSourceCas\tSourceName\tSourceSmiles\tSourceDTXSID\tAcceptMapping?\tMappedDTXSID\treason";
 
-			System.out.println(header);
+//			System.out.println(header);
 
 			fw.write(header + "\r\n");
 
@@ -1909,7 +1926,7 @@ public class DsstoxMapper {
 						+ sc.getSourceChemicalName() + "\t" + sc.getSourceSmiles() + "\t"+sc.getSourceDtxsid() + "\t" + response.response + "\t"
 						+ response.record.dsstoxSubstanceId + "\t" + response.reason;
 
-				System.out.println(line);
+//				System.out.println(line);
 
 				fw.write(line + "\r\n");
 
@@ -1924,5 +1941,75 @@ public class DsstoxMapper {
 
 		return responses;
 	}
+	
+	public List<ExplainedResponse> mapBySourceSubstanceID(String listName) {
+
+		List<ExplainedResponse> responses = new ArrayList<>();
+
+		Map<Long, SourceChemical> mapList = SourceChemicalUtilities.getMapChemRegListBySourceSubstanceID(listName);
+
+		System.out.println("Source chemical map size="+mapList.size());
+		
+		
+		List<DsstoxRecord> dsstoxRecords = sourceSubstanceService
+				.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(listName);
+		
+		System.out.println("dsstoxRecords size="+dsstoxRecords.size());
+		
+		try {
+
+			String folder="data\\dev_qsar\\output\\000 new chemreg lists\\";
+			String filepathOut=folder+listName + "_mapping_results.txt";
+
+			FileWriter fw = new FileWriter(filepathOut);
+			
+			System.out.println(filepathOut);
+
+			String header = "SourceSubstanceId\tSourceCas\tSourceName\tSourceSmiles\tSourceDTXSID\tAcceptMapping?\tMappedDTXSID\treason";
+
+//			System.out.println(header);
+
+			fw.write(header + "\r\n");
+
+//			boolean start=false;
+			
+			for (DsstoxRecord dr : dsstoxRecords) {
+				
+				SourceChemical sc=mapList.get(dr.sourceSubstanceId);
+				
+				ExplainedResponse response = this.acceptMapping(dr, sc);
+				response.record = dr;
+				responses.add(response);
+				
+				if(sc==null) {
+//					System.out.println("\nNo source chemical:"+gson.toJson(dr));
+					String sql="select identifier,identifier_type from source_substance_identifiers where fk_source_substance_id="+dr.sourceSubstanceId+";";
+					ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionDSSTOX(), sql);
+					while (rs.next()) {
+						System.out.println(dr.sourceSubstanceId+"\t"+rs.getString(1)+"\t"+rs.getString(2));
+					}
+					continue;//had issue with multiline name (32817-15-5)
+				}
+
+				String line = dr.sourceSubstanceId + "\t" + sc.getSourceCasrn() + "\t"
+						+ sc.getSourceChemicalName() + "\t" + sc.getSourceSmiles() + "\t"+sc.getSourceDtxsid() + "\t" + response.response + "\t"
+						+ response.record.dsstoxSubstanceId + "\t" + response.reason;
+
+//				System.out.println(line);
+
+				fw.write(line + "\r\n");
+
+				fw.flush();
+
+				// System.out.println(gson.toJson(response));
+			}
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+
+		return responses;
+	}
+
 
 }

@@ -20,6 +20,8 @@ import javax.persistence.Transient;
 import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.GenerationTime;
 
+import com.google.gson.annotations.SerializedName;
+
 @Entity
 @Table(name="compounds")
 public class DsstoxCompound {
@@ -61,9 +63,11 @@ public class DsstoxCompound {
 	@Column(name="inchi")
 	private String inchi;
 
+	
 	@Column(name="jchem_inchi_key")
 	private String jchemInchikey;
 
+	
 	@Column(name="indigo_inchi_key")
 	private String indigoInchikey;
 
@@ -140,7 +144,7 @@ public class DsstoxCompound {
 
 	@Column(name="updated_by")
 	private String updatedBy;
-	
+		
 	// Table joins
 	@OneToOne(mappedBy="compound")
 	private GenericSubstanceCompound genericSubstanceCompound;

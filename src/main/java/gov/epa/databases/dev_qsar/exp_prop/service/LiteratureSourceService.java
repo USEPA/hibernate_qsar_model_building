@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.exp_prop.service;
 
+import java.sql.Connection;
 import java.util.List;
 
 import javax.validation.ConstraintViolationException;
@@ -21,5 +22,7 @@ public interface LiteratureSourceService {
 	public LiteratureSource create(LiteratureSource ls) throws ConstraintViolationException;
 	
 	public LiteratureSource create(LiteratureSource ls, Session session) throws ConstraintViolationException;
+
+	public void createBatchSQL(List<LiteratureSource> litSources, Connection conn);
 	
 }

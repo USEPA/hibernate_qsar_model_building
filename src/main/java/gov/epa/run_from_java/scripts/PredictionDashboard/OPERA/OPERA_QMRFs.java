@@ -21,6 +21,9 @@ public class OPERA_QMRFs {
 		TreeMap<String, Model>mapModels=CreatorScript.getModelsMap();
 		System.out.println(mapModels.size());
 		
+//		String version="2.8";
+		PredictionDashboardScriptOPERA.version="2.8";
+		
 		for (File file:folder.listFiles()) {
 			
 			String endpoint=null;
@@ -58,8 +61,8 @@ public class OPERA_QMRFs {
 				continue;
 			}
 			
-			
-			String modelName=OPERA_csv_to_PostGres_DB.getModelName(endpoint);;
+			PredictionDashboardScriptOPERA p=new PredictionDashboardScriptOPERA();
+			String modelName=p.initializeDB.getModelName(endpoint);
 			
 //			System.out.println("\n"+file.getName()+"\t"+endpoint+"\t"+modelName);
 			

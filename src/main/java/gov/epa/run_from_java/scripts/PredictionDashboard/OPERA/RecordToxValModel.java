@@ -15,6 +15,10 @@ public class RecordToxValModel {
 		public Integer model_id;//not needed
 		public Integer chemical_id;//not needed
 		public String dtxsid;
+		public String dtxcid;
+		public String casrn;
+		public String name; 
+		
 		public String model="OPERA";
 		public String metric;
 		public Double value;

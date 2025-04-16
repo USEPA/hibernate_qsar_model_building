@@ -250,6 +250,10 @@ public class ModelStatisticCalculator {
 			// Update MAE
 			mae += Math.abs(mp.exp - mp.pred);
 			
+//			if (tag.equals(DevQsarConstants.TAG_TEST)) {
+//				System.out.println(mp.id+"\t"+mp.exp+ "\t"+ mp.pred+"\t"+Math.abs(mp.exp - mp.pred));
+//			}
+			
 			// Update terms for Pearson RSQ
 			termXY += (mp.exp - meanExp) * (mp.pred - meanPred);
 			termXX += (mp.exp - meanExp) * (mp.exp - meanExp);
@@ -262,6 +266,9 @@ public class ModelStatisticCalculator {
 		
 		Double coverage = (double) countPredicted / (double) countTotal;
 		mae /= (double) countPredicted;
+		
+//		System.out.println(countPredicted);
+		
 		Double pearsonRsq = termXY * termXY / (termXX * termYY);
 		Double coeffDet = 1 - ss / ssTotal;
 		Double rmse = Math.sqrt(ss / (double) countPredicted);

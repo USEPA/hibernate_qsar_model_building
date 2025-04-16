@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -149,6 +150,7 @@ public class QsarDescriptorsScriptTodd {
 //		
 //		String server="https://ccte-cced.epa.gov/";
 		String server="https://hcd.rtpnc.epa.gov/";
+//		String server = "https://hazard-dev.sciencedataexperts.com";
 		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
 		
 		List<String>datasetNames=new ArrayList<>();
@@ -190,12 +192,28 @@ public class QsarDescriptorsScriptTodd {
 //		datasetNames.add("BP v2 modeling");
 //		datasetNames.add("BP OChem_2024_04_03");
 //		datasetNames.add("VP OChem_2024_04_03");
-		datasetNames.add("MP OChem_2024_04_03");
+//		datasetNames.add("MP OChem_2024_04_03");
+		
+//		datasetNames.add("exp_prop_96HR_FHM_LC50_v5 modeling");
+//		datasetNames.add("exp_prop_96HR_RT_LC50_v5 modeling");
+//		datasetNames.add("exp_prop_96HR_BG_LC50_v5 modeling");
+//		datasetNames.add("exp_prop_48HR_DM_LC50_v5 modeling");
+
+
+//		List<String>speciesAbbrevs=Arrays.asList("FHM","BG","RT");
+//		for (String speciesAbbrev:speciesAbbrevs) {
+//			for (int version=1;version<=5;version++) {
+//				datasetNames.add("exp_prop_96HR_"+speciesAbbrev+"_LC50_v"+version+" modeling");
+//			}
+//		}
 		
 //		datasetNames.add("VP v2 modeling");
 //		datasetNames.add("LogP v2 modeling");
 //		datasetNames.add("MP v2 modeling");
-
+		
+		datasetNames.add("exp_prop_BCF_fish_whole_body_v1_modeling_map_by_CAS");
+		datasetNames.add("exp_prop_BCF_fish_whole_body_overall_score_1_v2_modeling_map_by_CAS");
+		
 		
 		int batchSize=1;//right now if one chemical in batch fails, the batch run fails, so run 1 at a time
 		for (String datasetName:datasetNames) {
@@ -206,8 +224,8 @@ public class QsarDescriptorsScriptTodd {
 
 	void generateDescriptorsForDataset() {
 		
-//		String server="https://hcd.rtpnc.epa.gov";
-		String server="https://hazard-dev.sciencedataexperts.com";
+		String server="https://hcd.rtpnc.epa.gov";
+//		String server="https://hazard-dev.sciencedataexperts.com";
 		
 		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
 		
@@ -219,9 +237,13 @@ public class QsarDescriptorsScriptTodd {
 //				"RDKit-default", "WebTEST-default", "ToxPrints-default", "Mordred-default"
 //		};
 		
+//		String[] sciDataExpertsDescriptorSetNames = {
+//		"PaDEL-default", "WebTEST-default", "Mordred-default"};
+
+		
 //		String[] sciDataExpertsDescriptorSetNames = {"WebTEST-default"};
 //		String[] sciDataExpertsDescriptorSetNames = {"ToxPrints-default"};
-//		String[] sciDataExpertsDescriptorSetNames = {"Mordred-default"};
+//		String[] sciDataExpertsDescriptorSetNames = {"RDKit-default"};//specifying the options make it fail...
 //		String[] sciDataExpertsDescriptorSetNames = {"PaDEL-default"};
 		String[] sciDataExpertsDescriptorSetNames = {"Mordred-default"};
 
@@ -229,9 +251,14 @@ public class QsarDescriptorsScriptTodd {
 //		String datasetName="WS v1 res_qsar";
 //		String datasetName="WS v1 modeling";
 //		String datasetName="HLC v1 modeling";
-		String datasetName="exp_prop_96HR_FHM_LC50_v1 modeling";
-//		String datasetName="exp_prop_96HR_FHM_LC50_v2 modeling";
-//		String datasetName="exp_prop_96HR_FHM_LC50_v3 modeling";
+		
+		String datasetName="exp_prop_96HR_FHM_LC50_v5 modeling";
+//		String datasetName="exp_prop_96HR_RT_LC50_v5 modeling";
+//		String datasetName="exp_prop_96HR_BG_LC50_v5 modeling";
+//		String datasetName="exp_prop_48HR_DM_LC50_v5 modeling";
+//		
+		
+		
 //		String datasetName="TTR_Binding_training_remove_bad_max_conc";
 
 //		String datasetName="exp_prop_96HR_scud_v1 modeling";
@@ -323,8 +350,8 @@ public class QsarDescriptorsScriptTodd {
 		
 		QsarDescriptorsScriptTodd q=new QsarDescriptorsScriptTodd();
 		
-		q.generateDescriptorsForDataset();
-//		q.generateDescriptorsForDatasets();
+//		q.generateDescriptorsForDataset();
+		q.generateDescriptorsForDatasets();
 //		q.generateDescriptorsForDsstoxSDF();
 //		q.runChemicalsFromBatchSearchCSV();
 //		q.runSingleChemical();

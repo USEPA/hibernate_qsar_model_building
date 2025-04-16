@@ -116,7 +116,7 @@ public class SciDataExpertsDescriptorWebService extends WebService {
 		HttpResponse<SciDataExpertsDescriptorResponse> response = Unirest.get(address + "/api/descriptors")
 				.queryString("type", descriptorName)
 				.queryString("smiles", smiles)
-				.queryString(options)
+				.queryString("options", options)
 				.asObject(SciDataExpertsDescriptorResponse.class);
 		
 		return response;

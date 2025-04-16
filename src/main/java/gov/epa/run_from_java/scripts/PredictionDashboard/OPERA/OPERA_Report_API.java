@@ -18,9 +18,13 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.MethodAD;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.PredictionReportServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.QsarPredictedADEstimateServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.QsarPredictedNeighborServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.DatabaseUtilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.HTMLReportCreator;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
 
 /**
@@ -35,40 +39,8 @@ public class OPERA_Report_API {
 	QsarPredictedADEstimateServiceImpl qpas=new QsarPredictedADEstimateServiceImpl();
 	Connection conn=SqlUtilities.getConnectionPostgres();
 	
-	/**
-	 * Gets report from cached json report in prediction_reports table
-	 * 
-	 * @param id
-	 * @param modelName
-	 * @param lookups 
-	 * @return
-	 */
-	PredictionReport getOperaReportFromPredictionReport(String id,String modelName) {
-		
-		String idCol="dtxcid";
-		if (id.contains("SID")) idCol="dtxsid";
-		
-				
-		String sql="select file from qsar_models.prediction_reports pr\r\n"
-				+ "join qsar_models.predictions_dashboard pd on pr.fk_predictions_dashboard_id = pd.id\r\n"
-				+ "join qsar_models.models m on pd.fk_model_id = m.id\r\n"
-				+ "join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\r\n"
-				+ "where dr."+idCol+"='"+id+"' and dr.fk_dsstox_snapshot_id=1 and m.name='"+modelName+"';";
-				
-		try {
-			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
-
-			if (rs.next()) {
-				String json=new String(rs.getBytes(1));
-				return PredictionReport.fromJson(json);
-			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
-		
-	}
+	PredictionReportServiceImpl prs=new PredictionReportServiceImpl();
+	String user="tmarti02";
 
 	/**
 	 * Assembles OPERA report from several tables in database on the fly
@@ -78,38 +50,29 @@ public class OPERA_Report_API {
 	 * @param modelName: name of model
 	 * @return
 	 */
-	OPERA_Report getOperaReportFromPredictionDashboard(String id,String modelName,boolean useModelImageAPI) {
+	OPERA_Report getOperaReportFromPredictionDashboard(String id,String modelName,boolean useLegacyModelIds,Long dsstoxRecordId) {
 		
-		String idCol="dtxcid";
-		if (id.contains("SID")) idCol="dtxsid";
-		
-				
 		String sql="Select m.id from qsar_models.models m\n"+ 
 		"join qsar_models.sources s on m.fk_source_id = s.id "+
 		"where m.name='"+modelName+"';";
-
 		String strModelID=SqlUtilities.runSQL(conn, sql);
-		
 		if(strModelID==null) {
 			System.out.println("prediction for "+modelName+" and "+id+" not in db");
 			return null;
 		}
-		
 		Long modelId=Long.parseLong(strModelID);
-		sql="Select id from qsar_models.dsstox_records dr where dr."+idCol+"='"+id+"' and dr.fk_dsstox_snapshot_id=1";
-		Long dsstoxRecordId=Long.parseLong(SqlUtilities.runSQL(conn, sql));
-		
-		System.out.println("modelID="+modelId+",dsstoxRecordId="+dsstoxRecordId);
+		System.out.println("modelName="+modelName+", modelID="+modelId+",dsstoxRecordId="+dsstoxRecordId);
 		
 		
 		PredictionDashboard pd=pds.findByIds(modelId, dsstoxRecordId);
 //		System.out.println(pd.getQsarPredictedNeighbors().size());
 //		System.out.println(pd.getDsstoxRecord().getDtxcid()+"\t"+pd.getId());
 		
+		
 		pd.setQsarPredictedNeighbors(qpns.findById(pd.getId()));//TODO hibernate doesnt seem to automatically populate it
 		pd.setQsarPredictedADEstimates(qpas.findById(pd.getId()));//TODO hibernate doesnt seem to automatically populate it
 
-
+//		System.out.println(pd.getQsarPredictedNeighbors().size());
 //		System.out.println(modelId+"\t"+dsstoxRecordId+"\t"+pd.getId());
 
 		
@@ -125,13 +88,26 @@ public class OPERA_Report_API {
 		Dataset dataset=ds.findByName(datasetName);
 		Property property=dataset.getProperty();
 		String unitAbbreviation=dataset.getUnitContributor().getAbbreviation_ccd();
-		OPERA_Report or=new OPERA_Report(pd,property,unitAbbreviation,useModelImageAPI);
+		OPERA_Report or=new OPERA_Report(pd,property,unitAbbreviation,useLegacyModelIds);
+		
+		String json=Utilities.gson.toJson(or);
+		
+		System.out.println(json);
+		
+		gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport pr=new gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport(pd,json,null,user);
+		pr.setUpdatedBy(user);
+		prs.updateSQL_by_predictionDashboardId(pr);
+
 		
 		return or;
 		
 	}
 	
-	public void viewReportsFromDatabase(String id) {
+	public void viewReportsFromDatabase(String id,boolean regenerateReport,boolean useLegacyModelIds,int fk_dsstox_snapshot_id) {
+		
+		
+		PredictionDashboardScriptOPERA.version="2.8";
+		
 //		String id="DTXCID1015";
 //		String id="DTXSID7020001";
 //		String id="DTXCID505";
@@ -148,34 +124,68 @@ public class OPERA_Report_API {
 		List<String> propertyNames=DevQsarConstants.getOPERA_PropertyNames();
 		
 		
-		String folder="data\\opera\\reports";
+		String folder="data\\opera2.8\\reports";
+		String destFolder=folder+File.separator+id;
 		
-		boolean regenerateReport=true;
-		
-		boolean useModelImageAPI=false;//set to false for testing purposes to get a viewable image
+		File DF=new File(destFolder);
+		if(!DF.exists())DF.mkdirs();
 		
 		HTMLReportCreatorOpera h=new HTMLReportCreatorOpera();
-				
+		
+		
+		Long dsstoxRecordId = getDsstoxRecordId(id, fk_dsstox_snapshot_id);
+
+		
+		PredictionDashboardScriptOPERA p=new PredictionDashboardScriptOPERA();
+		
 		for (String propertyName:propertyNames) {
 			
-			String modelName=OPERA_csv_to_PostGres_DB.getModelName(propertyName);
-//			System.out.println(modelName);
+			String modelName=p.initializeDB.getModelName(propertyName);
+			if(!modelName.equals("BP OPERA2.8")) continue;
+			System.out.println(modelName);
+			
+//			System.out.println(or.modelDetails.modelName);
 			
 			PredictionReport or=null;
+
+			String json=null;
 			
-			if(regenerateReport) or=getOperaReportFromPredictionDashboard(id,modelName,useModelImageAPI);
-			else or=getOperaReportFromPredictionReport(id,modelName);
-			
-			if(or==null) {
-				System.out.println("No report for "+propertyName);
-				continue;
+			if(regenerateReport) {
+				or=getOperaReportFromPredictionDashboard(id,modelName,useLegacyModelIds,dsstoxRecordId);
+				json=Utilities.gson.toJson(or);
+			}
+			else {
+				json=DatabaseUtilities.getPredictionReport(id,modelName,dsstoxRecordId);
+				or=PredictionReport.fromJson(json);
 			}
 			
-			String filename=or.chemicalIdentifiers.dtxcid+"_"+or.modelDetails.modelName+".html";
-			h.toHTMLFile(or, folder,filename);
-			or.viewInWebBrowser(folder+File.separator+filename);
+			
+
+//			String filenameJson=id+"_"+or.modelDetails.modelName+".json";
+//			Utilities.jsonToPrettyJson(json, destFolder+File.separator+filenameJson.replace(".html", ".json"));
+//
+//			
+//			if(or==null) {
+//				System.out.println("No report for "+propertyName);
+//				continue;
+//			}
+//
+			String filename=id+"_"+or.modelDetails.modelName+".html";
+			h.toHTMLFile(or, destFolder,filename);
+			PredictionReport.viewInWebBrowser(destFolder+File.separator+filename);
+			
 		}
 		
+	}
+	
+	
+
+	private Long getDsstoxRecordId(String id, int fk_dsstox_snapshot_id) {
+		String idCol="dtxcid";
+		if (id.contains("SID")) idCol="dtxsid";
+		String sql="Select id from qsar_models.dsstox_records dr where dr."+idCol+"='"+id+"' and dr.fk_dsstox_snapshot_id="+fk_dsstox_snapshot_id;
+		Long dsstoxRecordId=Long.parseLong(SqlUtilities.runSQL(conn, sql));
+		return dsstoxRecordId;
 	}
 	
 	void transposeCSV_Row(String dtxcid) {
@@ -212,9 +222,19 @@ public class OPERA_Report_API {
 	public static void main(String[] args) {
 		OPERA_Report_API o=new OPERA_Report_API();
 		
-		String id="DTXCID505";
-		o.viewReportsFromDatabase(id);
+//		String id="DTXSID80943885";
+//		String id="DTXSID50943897";
+//		String id="DTXSID301346793";
+		
+		String id="DTXSID7020182";//bisphenol-A
+		boolean regenerate=false;
+		boolean useLegacyModelIds=false;
+		int fk_dsstox_snapshot_id=2;
+		
+		
+		o.viewReportsFromDatabase(id,regenerate,useLegacyModelIds, fk_dsstox_snapshot_id);
 //		o.transposeCSV_Row(id);
+		
 	}	
 
 }

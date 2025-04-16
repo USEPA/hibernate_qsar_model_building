@@ -17,7 +17,7 @@ import gov.epa.run_from_java.scripts.SqlUtilities;
 /**
 * @author TMARTI02
 */
-public class compare {
+public class CompareResQsarToDatahub {
 
 	void getRandomSample() {
 		
@@ -40,11 +40,13 @@ public class compare {
 		
 		List<String>dtxsidsSample=new ArrayList<>();
 		
-		for (int i=0;i<1000;i++) {
+		int count=5000;
+		
+		for (int i=0;i<count;i++) {
 			dtxsidsSample.add(dtxsidsBoth.get(i));
 		}
 		
-		dtxsidsToFile(folder+"sampleDtxsids.txt", dtxsidsSample);
+		dtxsidsToFile(folder+"sampleDtxsids"+count+".txt", dtxsidsSample);
 		
 		
 	}
@@ -97,13 +99,25 @@ public class compare {
 	
 	void compare() {
 		
+//		DatahubPrediction cp=new DatahubPrediction();
+//		cp.exportPerceptaPredictionsSample();
+//		ResQsarPrediction r=new ResQsarPrediction();
+//		r.exportSamplePerceptaPredictions();
+
 		boolean omitConsensus=false;
 
-		Hashtable<String,List<ResQsarPrediction>>htDH=DatahubPrediction.getResQsarPredictionsFromJsonFile("data//percepta//chemical_properties_2024_11_06_sample.json",omitConsensus);
-		Hashtable<String,List<ResQsarPrediction>>htRQ=ResQsarPrediction.getPredictionsFromJsonFile("data//percepta//materialized_view_2024_11_06_sample.json");
-
-		//iterate over RQ records:
+//		int count=1000;
+		int count=5000;
+		Hashtable<String,List<ResQsarPrediction>>htRQ=ResQsarPrediction.getPredictionsFromJsonFile("data//percepta//materialized_view_2024_11_06_sample_"+count+".json");
 		
+		Hashtable<String,List<ResQsarPrediction>>htDH=DatahubPrediction.getResQsarPredictionsFromJsonFile("data//percepta//chemical_properties_2024_11_06_sample_"+count+".json",omitConsensus);
+//		Hashtable<String,List<ResQsarPrediction>>htDH=MongoReport.getResQsarPredictionsFromJsonFile("data//percepta//chemicalProperty_2024_11_06_sample_"+count+".json");
+
+		
+//		System.out.println(htDH.size());
+		
+		
+		//iterate over RQ records:
 		compare(htRQ,htDH);
 //		compare(htDH,htRQ);
 		
@@ -111,6 +125,9 @@ public class compare {
 
 	private void compare(Hashtable<String, List<ResQsarPrediction>> ht1,Hashtable<String, List<ResQsarPrediction>> ht2) {
 		System.out.println("Enter compare");
+		
+		System.out.println("h1.size()="+ht1.size());
+		System.out.println("h2.size()="+ht2.size());
 		
 		List<String>properties1=getPropertyList(ht1);
 		List<String>properties2=getPropertyList(ht2);
@@ -134,6 +151,7 @@ public class compare {
 			List<ResQsarPrediction> preds1=ht1.get(dtxsid);
 			List<ResQsarPrediction> preds2=ht2.get(dtxsid);
 			
+			
 			boolean havePred=false;
 			for(ResQsarPrediction pred:preds1) {
 				if(pred.prediction_value!=null)  {
@@ -143,7 +161,14 @@ public class compare {
 			}
 			
 			if(!havePred) {
-				System.out.println(dtxsid+"\tall preds null");
+//				System.out.println(dtxsid+"\tall preds null in one");
+				continue;
+			}
+			
+			if(preds2==null) {
+				if(havePred) { 
+					System.out.println("preds2==null for "+dtxsid+"\tpreds1 havePred="+havePred);	
+				}
 				continue;
 			}
 			
@@ -161,8 +186,12 @@ public class compare {
 
 				ResQsarPrediction pred1=getPrediction(preds1, property);
 				
-				
 				ResQsarPrediction pred2=getPrediction(preds2, property);
+				
+				if(pred1!=null&& pred2==null && pred1.prediction_value!=null) {
+					System.out.println(dtxsid+"\t"+property+"\t"+pred1.prediction_value+"\tOne has a prediction but two doesnt");	
+				}
+				
 				
 				String strPred1;
 				String strPred2;
@@ -179,15 +208,12 @@ public class compare {
 				
 //				System.out.println(pred1.dtxsid+"\t"+pred1.prediction_value+"\t"+pred2.prediction_value);
 				
-				
-				
-				
 				if(!strPred1.equals(strPred2)) {
 					mismatch=true;
 					System.out.println(dtxsid+"\t"+property+"\t"+strPred1+"\t"+strPred2);					
+				} else {
+//					System.out.println(dtxsid+"\t"+property+"\t"+strPred1+"\t"+strPred2+"\tOK");
 				}
-
-				
 //				System.out.println(dtxsid+"\t"+property+"\t"+strPred1+"\t"+strPred2);					
 
 			}
@@ -229,7 +255,7 @@ public class compare {
 	
 	
 	public static void main(String[] args) {
-		compare c=new compare();
+		CompareResQsarToDatahub c=new CompareResQsarToDatahub();
 //		c.getRandomSample();
 		c.compare();
 

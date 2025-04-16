@@ -19,6 +19,9 @@
 			<version>1.3</version>
 		</dependency>
 		-->
+		
+		
+		
 	
 		<!-- https://mvnrepository.com/artifact/com.opencsv/opencsv -->
 		<dependency>
@@ -32,12 +35,39 @@
 			<artifactId>jtidy</artifactId>
 			<version>r938</version>
 		</dependency>
-
+		
+		<!-- https://mvnrepository.com/artifact/org.mongodb/mongodb-driver-sync -->
+		<dependency>
+    		<groupId>org.mongodb</groupId>
+    		<artifactId>mongodb-driver-sync</artifactId>
+    		<version>5.2.1</version>
+		</dependency>
+		
+		<dependency>
+    		<groupId>org.mongodb</groupId>
+    		<artifactId>mongodb-driver-core</artifactId>
+    		<version>5.2.1</version>
+		</dependency>
+		
+		<!-- https://mvnrepository.com/artifact/org.mongodb/bson -->
+		<dependency>
+    		<groupId>org.mongodb</groupId>
+    		<artifactId>bson</artifactId>
+    		<version>5.2.1</version>
+		</dependency>
+		
 
 		<dependency>
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
-			<version>1.11.3</version>
+			<version>1.17.2</version>
+		</dependency>
+			
+		<!-- https://mvnrepository.com/artifact/org.xhtmlrenderer/flying-saucer-pdf -->
+		<dependency>
+    		<groupId>org.xhtmlrenderer</groupId>
+    		<artifactId>flying-saucer-pdf</artifactId>
+    		<version>9.11.0</version>
 		</dependency>
 
 
@@ -176,7 +206,7 @@
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi</artifactId>
-			<version>5.2.3</version>
+			<version>5.2.3</version>				
 		</dependency>
 		<dependency>
 			<groupId>org.apache.poi</groupId>
