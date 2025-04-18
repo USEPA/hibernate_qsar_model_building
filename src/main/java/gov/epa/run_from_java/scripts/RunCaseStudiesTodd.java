@@ -402,12 +402,14 @@ public class RunCaseStudiesTodd {
 //		datasetNames.add("exp_prop_96HR_BG_LC50_v1 modeling");
 //		datasetNames.add("exp_prop_96HR_BG_LC50_v2 modeling");
 		
-		datasetNames.add("TTR_Binding_training_remove_bad_max_conc");		
+//		datasetNames.add("TTR_Binding_training_remove_bad_max_conc");
+		
+		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v3 modeling");
 		
 		List<String>methods=new ArrayList<>();			
 //		methods.add(DevQsarConstants.RF);
-//		methods.add(DevQsarConstants.XGB);
-		methods.add(DevQsarConstants.KNN);//takes forever to run GA
+		methods.add(DevQsarConstants.XGB);
+//		methods.add(DevQsarConstants.KNN);//takes forever to run GA
 //		methods.add(DevQsarConstants.SVM);//*** We dont have way yet to make embedding based on this method unless use GA
 //		methods.add(DevQsarConstants.REG);
 		
@@ -415,7 +417,8 @@ public class RunCaseStudiesTodd {
 		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 //		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
 
-		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+//		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_MORDRED;
 		
 //		System.out.println("\n*** portNumber="+portModelBuilding+" ***");
 		
@@ -802,7 +805,25 @@ public class RunCaseStudiesTodd {
 //		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
 //		datasetNames.add("exp_prop_96HR_FHM_LC50_v2 modeling");
 //		datasetNames.add("exp_prop_96HR_FHM_LC50_v3 modeling");
-		datasetNames.add("exp_prop_96HR_FHM_LC50_v4 modeling");
+//		datasetNames.add("exp_prop_96HR_FHM_LC50_v4 modeling");
+		
+//		for(int i=1;i<=4;i++) {
+//			datasetNames.add("ECOTOX_2024_12_12_96HR_FHM_LC50_v"+i+" modeling");
+//		}
+		
+//		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v1 modeling");
+//		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v2 modeling");
+		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v3 modeling");
+//		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v4 modeling");
+		
+//		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_Top_11_LC50_v1 modeling");
+//		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_Top_3_LC50_v2 modeling");
+//		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_Top_3_LC50_v3 modeling");
+
+//		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_Top_3_LC50_v1 modeling");
+//		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_Top_11_LC50_v2 modeling");
+//		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_Top_11_LC50_v3 modeling");
+
 
 //		datasetNames.add("exp_prop_96HR_BG_LC50_v1 modeling");
 //		datasetNames.add("exp_prop_96HR_BG_LC50_v2 modeling");
@@ -810,10 +831,9 @@ public class RunCaseStudiesTodd {
 //		datasetNames.add("TTR_Binding_training_remove_bad_max_conc");
 //		datasetNames.add("exp_prop_96HR_scud_v1 modeling");
 		
-			
 		List<String>methods=new ArrayList<>();			
-		methods.add(DevQsarConstants.RF);
-//		methods.add(DevQsarConstants.XGB);
+//		methods.add(DevQsarConstants.RF);
+		methods.add(DevQsarConstants.XGB);
 //		methods.add(DevQsarConstants.KNN);
 //		methods.add(DevQsarConstants.SVM);
 
@@ -824,6 +844,7 @@ public class RunCaseStudiesTodd {
 		System.out.println("\n*** portNumber="+portModelBuilding+" ***");
 		
 		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+//		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_MORDRED;
 		
 		for (String datasetName:datasetNames) {
 			List<Long>modelIds=new ArrayList<>();
@@ -1532,8 +1553,8 @@ public class RunCaseStudiesTodd {
 		
 //		runCaseStudyExpProp_All_Endpoints();
 		
-//		runCaseStudyExpProp_All_Endpoints_method_specific_embedding();
-		runCaseStudyExpProp_All_Endpoints_No_Embedding_RF_XGB();
+		runCaseStudyExpProp_All_Endpoints_method_specific_embedding();
+//		runCaseStudyExpProp_All_Endpoints_No_Embedding_RF_XGB();
 		
 //		runCaseStudyExpProp_All_Endpoints_No_Embedding_kNN();
 //		runCaseStudyExpProp_All_Endpoints_knn_method_with_GA_embedding();

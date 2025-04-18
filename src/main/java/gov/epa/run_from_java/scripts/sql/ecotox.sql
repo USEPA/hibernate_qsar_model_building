@@ -45,6 +45,9 @@ where media_type like '%FW%' and test_location like '%LAB%' and endpoint like '%
 and conc1_mean is not null and conc1_mean_op !='>' and conc1_mean_op !='<'
 and (measurement like '%MORT%')
 and ((r.obs_duration_mean=96 and r.obs_duration_unit='h')  or (r.obs_duration_mean=4 and r.obs_duration_unit='d'))
+and s.ecotox_group like '%Fish%'
+-- and s.class='Actinopterygii' and exposure_type in ('F','S','R')
+-- group by s.species_number, s.common_name,t.exposure_type
 group by s.species_number, s.common_name
 order by count(distinct c.dtxsid) desc
 ;
@@ -58,10 +61,30 @@ where media_type like '%FW%' and test_location like '%LAB%' and endpoint like '%
 and conc1_mean is not null and conc1_mean_op !='>' and conc1_mean_op !='<'
 and (measurement like '%MORT%')
 and ((r.obs_duration_mean=96 and r.obs_duration_unit='h')  or (r.obs_duration_mean=4 and r.obs_duration_unit='d'))
-and (s.common_name='Fathead Minnow' or s.common_name='Rainbow Trout' or s.common_name='Bluegill')
+-- and ((r.obs_duration_mean<168 and r.obs_duration_unit='h')  or (r.obs_duration_mean<7 and r.obs_duration_unit='d'))
+-- and (s.common_name='Fathead Minnow' or s.common_name='Rainbow Trout' or s.common_name='Bluegill')
+and (s.common_name='Fathead Minnow' or s.common_name='Rainbow Trout' or s.common_name='Bluegill'
+         or s.common_name='Channel Catfish' or s.common_name='Common Carp' or s.common_name='Goldfish'
+    or s.common_name='Guppy' or s.common_name='Zebra Danio'
+    or s.common_name='Western Mosquitofish'
+    or s.common_name='Goldfish' or s.common_name='Silver Salmon'
+         or s.common_name='Japanese Medaka'
+    or s.common_name='Largemouth Bass'
+	)
+-- and s.ecotox_group like '%Fish%'
 ;
 
+-- Species	unique dtxsid
+-- All fish	2476
+-- Top3	2014
+-- Top 8	2239
+-- Top 11 (>100 dtxsids)	2336
 
+
+select * from species s
+where common_name in ('Bluegill','Channel Catfish','Common Carp','Fathead Minnow' ,'Rainbow Trout','Goldfish','Guppy',
+                      'Japanese Medaka','Silver Salmon','Western Mosquitofish','Zebra Danio')
+order by common_name;
 
 
 -- Get chemical count by species  for 48 hour duration

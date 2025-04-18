@@ -209,7 +209,7 @@ public class ExcelPredictionReportGenerator {
 		File folder=new File("data/reports");
 		folder.mkdirs();		
 		//		e.generate( predictionReport,folder.getAbsolutePath()+File.separator+"report.xlsx");
-		generate(predictionReport, folder.getAbsolutePath()+File.separator+fileName,null,null);
+		generate(predictionReport, folder.getAbsolutePath()+File.separator+fileName,null);
 		
 	}
 	
@@ -331,14 +331,14 @@ public class ExcelPredictionReportGenerator {
 	 * @param report
 	 * @param filepathOut
 	 */
-	public void generate(PredictionReport report, String filepathOut,HashSet<String>smiles,String applicabilityDomain) {
+	public void generate(PredictionReport report, String filepathOut,HashSet<String>smiles) {
 		
 		Workbook wb = new XSSFWorkbook();
 		
 		boolean isBinary = report.predictionReportMetadata.datasetUnit.equalsIgnoreCase("binary") ? true : false;
 		
 		System.out.println("Generating cover sheet");
-		generateCoverSheet2(report,wb, isBinary,applicabilityDomain);
+		generateCoverSheet2(report,wb, isBinary);
 
 		System.out.println("Generating Statistics sheet");
 		generateStatisticsSheet(report, wb, isBinary);
@@ -770,10 +770,10 @@ public class ExcelPredictionReportGenerator {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		generate(report,outputFilePath, null,null);
+		generate(report,outputFilePath, null);
 	}
 
-	public void generateCoverSheet2(PredictionReport predictionReport, Workbook wb, boolean isBinary,String applicabilityDomain) {
+	public void generateCoverSheet2(PredictionReport predictionReport, Workbook wb, boolean isBinary) {
 		List <List<Object> > spreadsheetMap = new ArrayList <List<Object> >();
 
 		spreadsheetMap.add(prepareCoverSheetRow("Property Name", predictionReport.predictionReportMetadata.datasetProperty));
@@ -804,15 +804,22 @@ public class ExcelPredictionReportGenerator {
 		if(predictionReport.predictionReportModelMetadata.size()==1) {			
 			PredictionReportModelMetadata prmm=predictionReport.predictionReportModelMetadata.get(0);
 			spreadsheetMap.add(prepareCoverSheetRow("Method name", prmm.qsarMethodName));
-			spreadsheetMap.add(prepareCoverSheetRow("Method description", prmm.qsarMethodDescription));			
+			spreadsheetMap.add(prepareCoverSheetRow("Method description", prmm.qsarMethodDescription));
+			spreadsheetMap.add(prepareCoverSheetRow("Descriptor set name", prmm.descriptorSetName));
 		}
 		
 		
-		if(applicabilityDomain!=null) {			
-			if (applicabilityDomain.equals(DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean)) {
+		if(predictionReport.predictionReportMetadata.AD!=null) {			
+			
+			if (predictionReport.predictionReportMetadata.AD.equals(DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean)) {
 				spreadsheetMap.add(prepareCoverSheetRow("Applicability domain", "Average distance of three most similar chemicals in the training set to the test chemical"));
 				spreadsheetMap.add(prepareCoverSheetRow("Applicability domain cutoff", "Average distance at which 95% of training set is inside the applicability domain"));
 				spreadsheetMap.add(prepareCoverSheetRow("Applicability domain descriptors", "Model descriptors"));
+				spreadsheetMap.add(prepareCoverSheetRow("Applicability domain distance measure", "Euclidean distance"));
+			} else if (predictionReport.predictionReportMetadata.AD.equals(DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean)) {
+				spreadsheetMap.add(prepareCoverSheetRow("Applicability domain", "Average distance of three most similar chemicals in the training set to the test chemical"));
+				spreadsheetMap.add(prepareCoverSheetRow("Applicability domain cutoff", "Average distance at which 95% of training set is inside the applicability domain"));
+				spreadsheetMap.add(prepareCoverSheetRow("Applicability domain descriptors", "All descriptor set descriptors"));
 				spreadsheetMap.add(prepareCoverSheetRow("Applicability domain distance measure", "Euclidean distance"));
 			}
 		}
@@ -935,7 +942,7 @@ public class ExcelPredictionReportGenerator {
 		ArrayList<Object> headerStats = new ArrayList<Object>(Arrays.asList("Dataset Name", "Descriptor Set", 
 				"Method Name"));
 
-		Stats stats = new Stats(report.AD);
+		Stats stats = new Stats(report.predictionReportMetadata.AD);
 		
 		
 		if (isBinary) headerStats.addAll(stats.binaryStats);
@@ -1156,7 +1163,7 @@ public class ExcelPredictionReportGenerator {
 		listColumnNames.add("Predicted " + "(" + units + ")");
 		listColumnNames.add("Error");
 		
-		if(r.AD!=null) {
+		if(r.predictionReportMetadata.AD!=null) {
 			listColumnNames.add("Inside AD");
 		}
 		
@@ -1184,7 +1191,7 @@ public class ExcelPredictionReportGenerator {
 			listCellValues.add(qpv.qsarPredictedValue);
 			listCellValues.add(Math.abs(dp.experimentalPropertyValue-qpv.qsarPredictedValue));
 			
-			if(r.AD!=null) {
+			if(r.predictionReportMetadata!=null) {
 				listCellValues.add(qpv.AD+"");
 			}
 

@@ -312,3 +312,11 @@ select distinct toxval_type from toxval_complete;
 select * from main.toxval_complete t
 join chemical c on t.dtxsid = c.dtxsid
 and toxval_type='LC50'
+
+
+
+select t.source,count(distinct (t.dtxsid)) from main.toxval t
+join species s on s.species_id=t.species_id
+where toxval_type='LC50' and ecotox_group='Fish'
+group by t.source
+

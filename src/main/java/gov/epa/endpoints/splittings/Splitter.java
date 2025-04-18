@@ -2,6 +2,8 @@ package gov.epa.endpoints.splittings;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +26,7 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorValues;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServiceImpl;
 import gov.epa.endpoints.models.ModelData;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.web_services.SplittingWebService;
 import gov.epa.web_services.SplittingWebService.SplittingCalculationResponse;
 import kong.unirest.HttpResponse;
@@ -39,7 +42,7 @@ public class Splitter {
 	private DatasetService datasetService = new DatasetServiceImpl();
 	private DescriptorValuesService descriptorValuesService = new DescriptorValuesServiceImpl();
 	private DataPointService dataPointService = new DataPointServiceImpl();
-	private DataPointInSplittingService dataPointInSplittingService = new DataPointInSplittingServiceImpl();
+	private static DataPointInSplittingService dataPointInSplittingService = new DataPointInSplittingServiceImpl();
 	
 	public Splitter(SplittingWebService splittingWebService, String lanId) {
 		// Set logging providers for Hibernate and MChange
@@ -145,6 +148,64 @@ public class Splitter {
 	    }
 	    dataPointInSplittingService.createSQL(dpisList);
 	    System.out.println("Training size: " + countTrain + ", test size:  " + countTest);
+	}
+	
+	
+	public static void cloneSplit(String datasetNameSrc,String datasetNameDest,String lanId) {
+
+		System.out.println("Splitting " + datasetNameDest);
+	    
+	    
+	    String sqlDatasetSource="select id from qsar_datasets.datasets where name='"+datasetNameSrc+"';";
+	    String sqlDatasetDest="select id from qsar_datasets.datasets where name='"+datasetNameDest+"';";
+	    
+	    String datasetIdSrc=SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sqlDatasetSource);
+	    String datasetIdDest=SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sqlDatasetDest);
+	    System.out.println(datasetIdSrc);
+	    System.out.println(datasetIdDest);
+	    
+	    
+	    String sqlDPIS="select dp.id, split_num,dpis.fk_splitting_id from  qsar_datasets.data_points dp\r\n"
+	    		+ "	    join qsar_datasets.data_points dp2 on dp.canon_qsar_smiles=dp2.canon_qsar_smiles and dp2.fk_dataset_id="+datasetIdSrc+"\r\n"
+	    		+ "	    join qsar_datasets.data_points_in_splittings dpis on dp2.id = dpis.fk_data_point_id \r\n"
+	    		+ "	    where dp.fk_dataset_id="+datasetIdDest+" and dpis.fk_splitting_id=1;";
+
+	    
+//	    System.out.println(sqlDPIS);
+
+	    ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sqlDPIS);
+	    	    
+	    try {
+	    	
+		    int countTrain = 0;
+		    int countTest = 0;
+
+		    List<DataPointInSplitting>dpisList=new ArrayList<>();
+
+			while (rs.next()) {
+				DataPoint dp=new DataPoint();
+				dp.setId(rs.getLong(1));
+				
+				int splitNum=rs.getInt(2);
+				
+				if(splitNum==0) countTrain++;
+				if(splitNum==1) countTest++;
+				
+				Splitting splitting=new Splitting();
+				splitting.setId(rs.getLong(3));
+				
+				DataPointInSplitting dpis = new DataPointInSplitting(dp, splitting, splitNum, lanId);
+        	
+				dpisList.add(dpis);
+			}
+			
+		    System.out.println("Training size: " + countTrain + ", test size:  " + countTest);
+		
+		    dataPointInSplittingService.createSQL(dpisList);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	    
 	}
 	
 	public void unsplit(String datasetName) {

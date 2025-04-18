@@ -81,11 +81,28 @@ public class ChangeKeptPropertyValues {
 			}
 
 			double mol_weight=htDsstox.get(dtxsid).getMolWeight();
+			
+			Double pointEstimate=null;
 
+			if(pv.getValuePointEstimate()==null) {
+				if(pv.getValueMin()!=null && pv.getValueMax()!=null) {
+					double diff=Math.abs(pv.getValueMax()-pv.getValueMin());
+					
+					if(diff<=1) {
+						pointEstimate=(pv.getValueMin()+pv.getValueMax())/2.0;
+					}
+				} 
+//				System.out.println(pv.getValueMin()+"\t"+pv.getValueMax()+"\t"+pv.getUnit().getAbbreviation());
+			} else {
+				pointEstimate=pv.getValuePointEstimate();
+			}
+			
+			if(pointEstimate==null)continue;//dont check against WS			
+			
 			if(pv.getUnit().getName().equals("MOLAR")) {
-				toxValue_g_L=pv.getValuePointEstimate()*mol_weight;
+				toxValue_g_L=pointEstimate*mol_weight;
 			} else if(pv.getUnit().getName().equals("G_L")) {
-				toxValue_g_L=pv.getValuePointEstimate();
+				toxValue_g_L=pointEstimate;
 			} else {
 				System.out.println(pv.getUnit().getAbbreviation()+"\tnot handled");
 				continue;
@@ -434,12 +451,30 @@ public class ChangeKeptPropertyValues {
 			
 			if(htPred.containsKey(dtxsid)) {
 		
+				
+				Double pointEstimate=null;
+
+				if(pv.getValuePointEstimate()==null) {
+					if(pv.getValueMin()!=null && pv.getValueMax()!=null) {
+						double diff=Math.abs(pv.getValueMax()-pv.getValueMin());
+						
+						if(diff<=1) {
+							pointEstimate=(pv.getValueMin()+pv.getValueMax())/2.0;
+						}
+					} 
+//					System.out.println(pv.getValueMin()+"\t"+pv.getValueMax()+"\t"+pv.getUnit().getAbbreviation());
+				} else {
+					pointEstimate=pv.getValuePointEstimate();
+				}
+				
+				if(pointEstimate==null)continue;//dont check against baseline tox		
+								
 				double mol_weight=htDsstox.get(dtxsid).getMolWeight();
 				
 				if(pv.getUnit().getName().equals("MOLAR")) {
-					toxValue_g_L=pv.getValuePointEstimate()*mol_weight;
+					toxValue_g_L=pointEstimate*mol_weight;
 				} else if(pv.getUnit().getName().equals("G_L")) {
-					toxValue_g_L=pv.getValuePointEstimate();
+					toxValue_g_L=pointEstimate;
 				} else {
 					System.out.println(pv.getUnit().getAbbreviation()+"\tnot handled");
 					continue;
@@ -450,17 +485,17 @@ public class ChangeKeptPropertyValues {
 								
 				Double BaseLineTox_Log_mmol_L=null;
 				
-				if (typeAnimal.equals(typeAnimalFish)) {
+				if (typeAnimal.equalsIgnoreCase(typeAnimalFish)) {
 					//ECOSAR manual, Baseline Toxicity Equation for Fish:
 					BaseLineTox_Log_mmol_L=-0.8981*logKowPred + 1.7108;	
-				} else if (typeAnimal.equals(typeAnimalFatheadMinnow)) {					
+				} else if (typeAnimal.equalsIgnoreCase(typeAnimalFatheadMinnow)) {					
 
 					//FHM model for nonpolar compounds, Nendza and Russom, 1991:
 					BaseLineTox_Log_mmol_L=-0.79*logKowPred + 1.35;
 					//Note this ends up excluding some records for methanol!
 					//Is there a better model for FHM
 
-				} else if (typeAnimal.equals(typeAnimalDaphnid)) {
+				} else if (typeAnimal.equalsIgnoreCase(typeAnimalDaphnid)) {
 
 //					ECOSAR manual, Baseline Toxicity Equation for Daphnid:
 					BaseLineTox_Log_mmol_L=-0.8580*logKowPred + 1.3848;
@@ -595,7 +630,7 @@ public class ChangeKeptPropertyValues {
 		
 	}
 	
-	public static int removeBasedOnConcentrationType(String datasetName, List<PropertyValue> propertyValues) {
+	public static int removeBasedOnConcentrationType(List<PropertyValue> propertyValues) {
 		
 		List<String>okTypes=Arrays.asList("active ingredient");
 		
@@ -627,20 +662,48 @@ public class ChangeKeptPropertyValues {
 
 
 
-	public static int removeBasedOnParameterString(List<PropertyValue> propertyValues, String parameterName, String parameterValueText) {
-		
+	public static int removeBasedOnResponseSite(List<PropertyValue> propertyValues, String typeAnimal) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+
+	public static int removeBasedOnObservationDays(List<PropertyValue> propertyValues,Double durationDays) {
+
 		int countBefore=propertyValues.size();
 		
 		for (int i=0;i<propertyValues.size();i++) {
 			
 			PropertyValue pv=propertyValues.get(i);
+
 			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
 			
 			for (ParameterValue parameterValue:pv.getParameterValues()) {
 				
-				if(!parameterValue.getParameter().getName().equals(parameterName)) continue;
+				if(!parameterValue.getParameter().getName().equals("Observation duration"))continue;
 				
-				if(!parameterValue.getValueText().equalsIgnoreCase(parameterValueText)) {
+				if(!parameterValue.getUnit().getAbbreviation().equals("days")) {
+					System.out.println("observation duration unit = "+parameterValue.getUnit().getAbbreviation());
+					propertyValues.remove(i--);
+					break;
+				}
+				
+				if(parameterValue.getValuePointEstimate()==null) {
+					if(parameterValue.getValueMin()!=null && parameterValue.getValueMax()!=null) {
+						parameterValue.setValuePointEstimate((parameterValue.getValueMin()+parameterValue.getValueMax())/2.0);
+//						System.out.println("Obs duration from min and max="+parameterValue.getValuePointEstimate());
+					} else {
+//						System.out.println("Missing observation duration");
+						propertyValues.remove(i--);
+						break;
+					}
+				}
+				
+				
+				double diff=Math.abs(durationDays-parameterValue.getValuePointEstimate());
+				
+				if(diff>0.1) {
+//					System.out.println("observation duration = "+parameterValue.getValuePointEstimate()+" "+parameterValue.getUnit().getAbbreviation());
 					propertyValues.remove(i--);
 					break;
 				}
@@ -652,11 +715,72 @@ public class ChangeKeptPropertyValues {
 	}
 
 
+	public static int removeBasedOnParameterText(List<PropertyValue> propertyValues,
+			String parameterName,String parameterText) {
 
-	public static int removeBasedOnResponseSite(List<PropertyValue> propertyValues, String typeAnimal) {
-		// TODO Auto-generated method stub
-		return 0;
+		int countBefore=propertyValues.size();
+		for (int i=0;i<propertyValues.size();i++) {
+			
+			PropertyValue pv=propertyValues.get(i);
+			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
+			
+			for (ParameterValue parameterValue:pv.getParameterValues()) {
+				
+				if(!parameterValue.getParameter().getName().equals(parameterName)) continue;
+				
+				String parameterValueText=parameterValue.getValueText().toLowerCase();
+				
+				if(!parameterValueText.equalsIgnoreCase(parameterText)) {
+//					System.out.println(dtxsid+"\t"+parameterName+"="+parameterValueText);
+					propertyValues.remove(i--);
+					break;
+				}
+				
+			}
+		}
+		int countAfter=propertyValues.size();
+		
+		return countBefore-countAfter;
 	}
+	
+	public static int removeBasedOnParameterText(List<PropertyValue> propertyValues,
+			String parameterName,List<String> parameterValues) {
+
+		int countBefore=propertyValues.size();
+		for (int i=0;i<propertyValues.size();i++) {
+			
+			PropertyValue pv=propertyValues.get(i);
+			String dtxsid=pv.getSourceChemical().getSourceDtxsid();
+			
+			for (ParameterValue parameterValue:pv.getParameterValues()) {
+				
+				if(!parameterValue.getParameter().getName().equals(parameterName)) continue;
+				
+				String parameterValueText=parameterValue.getValueText();
+
+				boolean haveMatch=false;
+				for (String text:parameterValues) {
+					if(text.equalsIgnoreCase(parameterValueText)) {
+//						System.out.println(dtxsid+"\t"+parameterName+"="+parameterValueText);
+						haveMatch=true;
+						break;
+					}
+				}
+				
+				if(!haveMatch) {
+					propertyValues.remove(i--);
+					break;
+				}
+				
+			}
+		}
+		int countAfter=propertyValues.size();
+		
+		return countBefore-countAfter;
+	}
+
+
+	
 
 
 }

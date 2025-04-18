@@ -8,9 +8,11 @@ import java.nio.file.StandardCopyOption;
 import java.util.HashSet;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelFile;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelFileServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.reports.WebTEST.GenerateWebTestReport;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable;
@@ -156,6 +158,79 @@ public class SampleReportWriter {
 	}
 	
 	
+	public PredictionReport createPredictionReportMethod(long modelId, boolean overWriteJsonReport, 
+			boolean includeDescriptors,boolean includeOriginalCompounds,String outputFolder) {
+		
+		
+		ModelServiceImpl ms=new ModelServiceImpl();
+
+		Model model=ms.findById(modelId);
+		String datasetName=model.getDatasetName();
+		String methodName=model.getMethod().getName();
+		String splittingName=model.getSplittingName();
+		String descriptorSetName=model.getDescriptorSetName();
+
+		PredictionReport predictionReport = null;
+		String filepathReport = outputFolder+File.separator+modelId+".json";
+		File reportFile = new File(filepathReport);
+
+		if(!reportFile.exists() || overWriteJsonReport) {
+			predictionReport = ReportGenerationScript.reportPredictionsMethod(model,
+					true,includeDescriptors,includeOriginalCompounds,filepathReport,false);
+			System.out.println("Created:" + filepathReport);
+		} else {
+			predictionReport = GenerateWebTestReport.loadDataSetFromJson(filepathReport);
+			System.out.println("Loaded:" + filepathReport);
+		}
+
+		String applicability_domain=null;
+//		if(modelSetName.equals("WebTEST2.0")) {
+//			applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
+//		} else if(modelSetName.equals("WebTEST2.1")) {
+//			applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
+//		}
+		//Just use all descriptors- works more reliably:
+		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
+		
+		ads.runAD(methodName, splittingName, descriptorSetName, applicability_domain,datasetName,predictionReport);
+
+//		filepathReport = outputFolder+File.separator+modelId+"_with_AD.json";
+		
+		predictionReport.toFile(filepathReport);
+		System.out.println(filepathReport);
+		
+//		String fileNameExcel=String.join("_", datasetName, splittingName, methodName,"with_AD") + ".xlsx";
+		String fileNameExcel=modelId+".xlsx";//to keep file path reasonable for windows
+		
+		String filepathExcel = outputFolder + File.separator + fileNameExcel;
+		createExcelReport(methodName, predictionReport, filepathExcel, overWriteJsonReport);
+//		System.out.println(filepathExcel);
+		
+
+		// Copy to folder:		
+//		try {
+//			
+//			String folderDest="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\000 Papers\\2023 8.4.11 papers\\00000 2025 paper\\";
+//			folderDest+=modelSetName+"\\";
+//			new File(folderDest).mkdirs();
+//
+//			Files.copy(Paths.get(filepathExcel),
+//			        Paths.get(folderDest+fileNameExcel), StandardCopyOption.REPLACE_EXISTING);
+//			
+//			Files.copy(Paths.get(filepathReport),
+//			        Paths.get(folderDest+fileNameReport), StandardCopyOption.REPLACE_EXISTING);
+//			
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+
+		
+		
+		return predictionReport;
+		
+	}
+	
+	
 	public static PredictionReport getReport(String modelSetName, String datasetName, String splittingName) {
 		
 		String filepathReport = "data/reports/" + modelSetName + "/" + datasetName + "_PredictionReport.json";
@@ -244,7 +319,7 @@ public class SampleReportWriter {
 		
 		if (overwrite || !excelFile.exists()) {
 			ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
-			eprg.generate(predictionReport, filepath,null,null);
+			eprg.generate(predictionReport, filepath,null);
 		} else {
 			System.out.println("Excel report already exists at "+filepath);
 		}
@@ -256,7 +331,7 @@ public class SampleReportWriter {
 		File excelFile=new File(outputFilePath);
 		if (overwrite || !excelFile.exists()) {
 			ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
-			eprg.generate(predictionReport, outputFilePath,null,null);
+			eprg.generate(predictionReport, outputFilePath,null);
 		} else {
 			System.out.println("Excel report already exists at "+outputFilePath);
 		}

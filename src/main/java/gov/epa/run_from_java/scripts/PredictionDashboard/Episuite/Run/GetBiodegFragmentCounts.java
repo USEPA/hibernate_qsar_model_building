@@ -16,6 +16,7 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 
@@ -117,7 +118,7 @@ public class GetBiodegFragmentCounts {
 	 * @param smiles
 	 * @return
 	 */
-	Hashtable<String,Double> runBiowin3(String smiles) {
+	public LinkedHashMap<String,Double> runBiowin5(String smiles) {
 
 		double MW_converter=-634.1080267;//constant that converts the total coefficient for MW to a MW value
 		
@@ -131,7 +132,7 @@ public class GetBiodegFragmentCounts {
 		if(xml.indexOf("<ModelNumber>5")==-1) return null;
 		
 		Document doc = Jsoup.parse(xml, "utf-8");
-		Hashtable<String,Double>ht=new Hashtable<>();
+		LinkedHashMap<String,Double>ht=new LinkedHashMap<>();
 		
 		for (Element model : doc.select("Models")) {
 			
@@ -152,10 +153,10 @@ public class GetBiodegFragmentCounts {
 				    ht.put("MW", MW);			    	
 			    } else {
 				    double NumberOfFragments=Double.parseDouble(factor.select("NumberOfFragments").text());
-				    System.out.println(fragmentDescription+"\t"+NumberOfFragments);
+//				    System.out.println(fragmentDescription+"\t"+NumberOfFragments);
 				    ht.put(fragmentDescription, NumberOfFragments);
 			    }
-			    System.out.println(ht);
+//			    System.out.println(ht);
 			}
 			return ht;
 		}
@@ -320,24 +321,29 @@ public class GetBiodegFragmentCounts {
 	
 	/**
 	 * This version figures out MW based on the total coefficient for molecular weight in model number 5
+	 * 
+	 * assumes file has smiles\tID\tTox format
+	 * 
 	 */
-	void goThroughCSV_getMW_from_model5_factor() {
-		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\0000 biodegradation OPPT\\biodegradation\\biowin update\\";
-//		String filepath=folder+"smiles mw.txt";
-		String filepath=folder+"smiles+index.txt";
+	public void goThroughCSV_getMW_from_model5_factor(String filepathInput,String filepathOutput) {
+		
+//		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\0000 biodegradation OPPT\\biodegradation\\biowin update\\";
+////		String filepath=folder+"smiles mw.txt";
+//		String filepath=folder+"smiles+index.txt";
+		
 //		String folder="data/biodeg/";
 //		String filepath=folder+"unique rifm smiles.txt";
 		
-		String filePathOut=filepath.replace(".txt", " episuite fragment output.txt");
+//		String filePathOut=filepath.replace(".txt", " episuite fragment output.txt");
 		
-		FileInputStream fis;
-
 		try {
 
-			BufferedReader br=new BufferedReader(new FileReader(filepath));
+			BufferedReader br=new BufferedReader(new FileReader(filepathInput));
 			
-			List<Hashtable<String,Double>>values=new ArrayList<>();
+			List<LinkedHashMap<String,Double>>fragValues=new ArrayList<>();
 			List<String>smilesList=new ArrayList<>();
+			List<String>idList=new ArrayList<>();
+			List<String>toxList=new ArrayList<>();
 			
 
 			br.readLine();//header, discard
@@ -351,19 +357,25 @@ public class GetBiodegFragmentCounts {
 
 				System.out.println(++counter);
 				
-				String smiles=line.substring(0,line.indexOf("\t"));
-				String index=line.substring(line.indexOf("\t")+1,line.length());
+				String [] values=line.split("\t");
 				
-				smilesList.add(smiles);			
-				Hashtable<String,Double>ht=runBiowin3(smiles);
-				values.add(ht);
+				String smiles=values[0];
+				String id=values[1];
+				String tox=values[2];
+				
+				smilesList.add(smiles);
+				idList.add(id);
+				toxList.add(tox);
+				
+				LinkedHashMap<String,Double>ht=runBiowin5(smiles);
+				fragValues.add(ht);
 			}
 			
 			List<String>fragmentNames=new ArrayList<>();
 
 			//***********************************************************************
 			//Get the list of possible fragment names for the chemicals:
-			for(Hashtable<String,Double>ht:values) {
+			for(LinkedHashMap<String,Double>ht:fragValues) {
 				if(ht!=null) {
 					for (String name:ht.keySet()) {
 						if(!fragmentNames.contains(name)) fragmentNames.add(name);
@@ -376,24 +388,25 @@ public class GetBiodegFragmentCounts {
 			fragmentNames.add("MW");//put at the end
 			//***********************************************************************
 			//Write out the fragment counts for the list of chemicals:
-			FileWriter fw=new FileWriter(filePathOut);
-			fw.write("SMILES\t");
-			for(int i=0;i<fragmentNames.size();i++) {
-				fw.write(fragmentNames.get(i));
-				fw.write("\t");
+			FileWriter fw=new FileWriter(filepathOutput);
+			fw.write("SMILES\tTox\t");
+			for(int j=0;j<fragmentNames.size();j++) {
+				fw.write(fragmentNames.get(j));
+				if(j<fragmentNames.size()-1) fw.write("\t");
 			}
 			fw.write("\n");
 			
-			for (int i=0;i<values.size();i++) {
+			for (int i=0;i<fragValues.size();i++) {
 
-				fw.write(smilesList.get(i)+"\t");
+				fw.write(smilesList.get(i)+"\t"+toxList.get(i)+"\t");
 
-				Hashtable<String,Double>ht=values.get(i);
+				LinkedHashMap<String,Double>ht=fragValues.get(i);
 
 				if(ht==null) {
 
 					for(int j=0;j<fragmentNames.size();j++) {
-						fw.write("N/A\t");
+						fw.write("N/A");
+						if(j<fragmentNames.size()-1) fw.write("\t");
 					}
 					
 				} else {
@@ -406,7 +419,7 @@ public class GetBiodegFragmentCounts {
 							fw.write("0");
 						}
 						
-						fw.write("\t");
+						if(j<fragmentNames.size()-1) fw.write("\t");
 					}
 					
 				}
@@ -430,15 +443,15 @@ public class GetBiodegFragmentCounts {
 //		g.runBiowin3("CCO");
 		
 //		g.goThroughCSV();
-//		g.goThroughCSV_getMW_from_model5_factor();
 		
-		for (int i=1;i<=5;i++) {
-			long t1=System.currentTimeMillis();
-			Double pred=g.getBiowin3PredictionSoap("CCO");
-			long t2=System.currentTimeMillis();
-			System.out.println(pred+"\t"+(t2-t1)+"\tmilliseconds");
-			
-		}
+		
+//		for (int i=1;i<=5;i++) {
+//			long t1=System.currentTimeMillis();
+//			Double pred=g.getBiowin3PredictionSoap("CCO");
+//			long t2=System.currentTimeMillis();
+//			System.out.println(pred+"\t"+(t2-t1)+"\tmilliseconds");
+//			
+//		}
 		
 		
 	}

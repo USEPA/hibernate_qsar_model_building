@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.poi.xssf.usermodel.XSSFPivotCacheRecords;
+import org.openscience.cdk.AtomContainer;
+import org.openscience.cdk.exception.InvalidSmilesException;
+import org.openscience.cdk.interfaces.IAtomContainer;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -25,6 +28,7 @@ import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
+import gov.epa.databases.dsstox.DsstoxSession;
 import gov.epa.endpoints.datasets.BoundParameterValue;
 import gov.epa.endpoints.datasets.BoundPropertyValue;
 import gov.epa.endpoints.datasets.DatasetCreator;
@@ -456,7 +460,7 @@ public class DatasetCreatorScript {
 	void deleteDatasets() {
 		DatasetServiceImpl ds=new DatasetServiceImpl();
 		
-		ds.deleteSQL(502L);
+		ds.deleteSQL(507L);
 		
 //		for (Long i=388L;i<=391L;i++) ds.deleteSQL(i);
 //		ds.deleteSQL(261L);
@@ -524,7 +528,9 @@ public class DatasetCreatorScript {
 		
 //		dcs.createSingleSourceDatasets();
 		
+		
 //		dcs.create_LC50_Ecotox_modeling();
+		dcs.create_LC50_Ecotox_modeling2();
 //		dcs.createBCF_modeling();
 		
 //		dcs.createToxCast_TTR_Binding();
@@ -533,13 +539,13 @@ public class DatasetCreatorScript {
 
 //		dcs.createModelingDatasets();
 
-//		dcs.createFishToxModels();
+		
 //		dcs.createBiodegDatasets();
 //		
 //		dcs.getAutoMappingsFromChemRegList();
 		
 //		dcs.getDatasetStats();//Get record counts for the papers
-		dcs.getDatasetStatsUsingSql();//Get record counts for the papers
+//		dcs.getDatasetStatsUsingSql();//Get record counts for the papers
 //		getDatasetStatsForOneDataset();
 //		dcs.getMappedRecordCountsBySourceAndProperty();
 
@@ -3018,10 +3024,10 @@ public class DatasetCreatorScript {
 		String sourceName="ECOTOX_2023_12_14";
 		String chemicalListName="exp_prop_"+sourceName;				
 		
-//		String duration="96HR";
-//		String animalAbbrev="FHM";
-//		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFatheadMinnow;		
-//		String propertyName = DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
+		String duration="96HR";
+		String animalAbbrev="FHM";
+		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFatheadMinnow;		
+		String propertyName = DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
 
 //		String duration="96HR";
 //		String animalAbbrev="BG";
@@ -3033,10 +3039,10 @@ public class DatasetCreatorScript {
 //		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFish;		
 //		String propertyName = DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50;
 		
-		String duration="48HR";
-		String animalAbbrev="DM";
-		String typeAnimal=ChangeKeptPropertyValues.typeAnimalDaphnid;		
-		String propertyName = DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50;
+//		String duration="48HR";
+//		String animalAbbrev="DM";
+//		String typeAnimal=ChangeKeptPropertyValues.typeAnimalDaphnid;		
+//		String propertyName = DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50;
 		
 		
 		String propAbbrev=DevQsarConstants.getConstantNameByReflection(propertyName) ;
@@ -3096,6 +3102,126 @@ public class DatasetCreatorScript {
 		
 		creator.createPropertyDatasetWithSpecifiedSources(datasetNameOriginal, listMappedParams, false, includedSources,
 				excludeBasedOnPredictedWS, excludeBasedOnBaselineToxicity, excludeBasedOnMissingExposureType,
+				excludeBasedOnConcentrationType, typeAnimal);
+		
+	}
+	
+	/**
+	 * 
+	 * Species		unique dtxsid in ecotox		Number of datapoints		
+		All fish	2476						1520
+		Top 11		2336						1474
+		Top3		2014						1311
+	 * 
+	 * 
+	 * In this version  it assumes we have already limited exposure_type to Static, Flow-through, or Renewal
+	 */
+	public void create_LC50_Ecotox_modeling2() {
+
+		
+		String dsstoxMappingId = DevQsarConstants.MAPPING_BY_DTXSID;
+		isNaive=true;
+
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+		DatasetCreator.postToDB = true;//otherwise wont create the dataset
+//		DatasetCreator.postToDB = false;//otherwise wont create the dataset
+		
+		String sourceName="ECOTOX_2024_12_12";
+		String chemicalListName="exp_prop_"+sourceName;				
+		
+		double observationDurationDays=4;
+		
+		String propertyName = DevQsarConstants.ACUTE_AQUATIC_TOXICITY;
+		
+//		String duration="96HR";
+//		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFish;
+//		String animalAbbrev=typeAnimal;
+//		List<String> listSpeciesCommon=null;
+//		String speciesSupercategory="Fish";
+		
+		String duration="96HR";
+		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFish;
+		String animalAbbrev="Fish_Top_11";
+		List<String> listSpeciesCommon = Arrays.asList("Bluegill", "Channel Catfish", "Common Carp", "Fathead Minnow",
+				"Rainbow Trout", "Goldfish", "Guppy", "Japanese Medaka", "Silver Salmon", "Western Mosquitofish",
+				"Zebra Danio");
+		String speciesSupercategory="Fish";
+		
+		
+//		String duration="96HR";
+//		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFish;
+//		String animalAbbrev="Fish_Top_3";
+//		List<String> listSpeciesCommon = Arrays.asList("Bluegill", "Fathead Minnow","Rainbow Trout");
+//		String speciesSupercategory="Fish";
+
+		
+//		String duration="96HR";
+//		String animalAbbrev="FHM";
+//		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFatheadMinnow;		
+//		String speciesCommon="Fathead minnow";
+//		String speciesSupercategory="Fish";
+
+//		String duration="96HR";
+//		String animalAbbrev="BG";
+//		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFish;		
+//		String speciesSupercategory="Fish";
+//		String speciesCommon="Bluegill";
+		
+//		String duration="96HR";
+//		String animalAbbrev="RT";
+//		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFish;		
+//		String speciesSupercategory="Fish";
+//		String speciesCommon="Rainbow trout";
+		
+//		String duration="48HR";
+//		String animalAbbrev="DM";
+//		String typeAnimal=ChangeKeptPropertyValues.typeAnimalDaphnid;		
+//		String propertyName = DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50;
+		
+		
+		String endpoint=duration+"_"+animalAbbrev+"_LC50";
+		String datasetNameOriginal = sourceName+"_"+endpoint+"_v1 modeling";
+
+//		excludeBasedOnPredictedWS=false;
+//		excludeBasedOnBaselineToxicity=false;
+//		String datasetName = sourceName+"_"+endpoint+"_v1 modeling";
+		
+//		excludeBasedOnPredictedWS=true;
+//		excludeBasedOnBaselineToxicity=false;
+//		String datasetName = sourceName+"_"+endpoint+"_v2 modeling";
+
+		excludeBasedOnPredictedWS=true;
+		excludeBasedOnBaselineToxicity=true;
+		String datasetName = sourceName+"_"+endpoint+"_v3 modeling";
+
+//		excludeBasedOnPredictedWS=true;
+//		excludeBasedOnBaselineToxicity=true;
+//		excludeBasedOnConcentrationType=true;
+//		String datasetName = sourceName+"_"+endpoint+"_v4 modeling";
+
+
+		List<BoundParameterValue> boundsParameterValues = null;
+		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
+
+		MappingParams listMappingParams = new MappingParams(dsstoxMappingId, chemicalListName, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, null, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
+
+
+		String datasetDescription = endpoint+" from "+sourceName+
+				", excludeBasedOnPredictedWS="+excludeBasedOnPredictedWS+
+				", excludeBasedOnBaselineToxicity="+excludeBasedOnBaselineToxicity+
+				", excludeBasedOnConcentrationType="+excludeBasedOnConcentrationType;
+		
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+
+		List<String> includedSources = new ArrayList<>();
+		includedSources.add(sourceName);
+		
+		creator.createPropertyDatasetWithSpecifiedSources(datasetNameOriginal, listMappedParams, false, includedSources,
+				excludeBasedOnPredictedWS, excludeBasedOnBaselineToxicity,
+				observationDurationDays,speciesSupercategory,listSpeciesCommon,
 				excludeBasedOnConcentrationType, typeAnimal);
 		
 	}

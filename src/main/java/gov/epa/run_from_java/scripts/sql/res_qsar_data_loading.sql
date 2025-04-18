@@ -495,4 +495,35 @@ group by d.name,d.id
 order by d.id;
 
 
+--BCF data
+select distinct  p.name,count(pv.id) from exp_prop.property_values pv
+join exp_prop.properties p on pv.fk_property_id = p.id
+join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
+--     join exp_prop.public_sources ps2 on pv.fk_public_source_original_id = ps2.id
+    where p.name like '%LC50%'
+group by p.name;
 
+
+
+select count(distinct sc.source_dtxsid)  from exp_prop.property_values pv
+join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
+join exp_prop.properties p on pv.fk_property_id = p.id
+join exp_prop.parameter_values pv2 on pv2.fk_property_value_id = pv.id and pv2.fk_parameter_id=16
+join exp_prop.parameter_values pv3 on pv3.fk_property_value_id = pv.id and pv3.fk_parameter_id=11
+    join exp_prop.parameter_values pv4 on pv4.fk_property_value_id = pv.id and pv4.fk_parameter_id=48
+    join exp_prop.parameter_values pv5 on pv5.fk_property_value_id = pv.id and pv5.fk_parameter_id=38
+
+    join exp_prop.source_chemicals sc on pv.fk_source_chemical_id = sc.id
+-- where ps.name='ECOTOX_2024_12_12' and p.name='Acute aquatic toxicity' and pv3.value_text='Fathead Minnow'
+where ps.name='ECOTOX_2024_12_12' and p.name='Acute aquatic toxicity'
+  and pv4.value_point_estimate=4 and pv5.value_text='Fish'
+;
+
+
+
+VACUUM (ANALYZE, VERBOSE, FULL) exp_prop.property_values;
+
+VACUUM (ANALYZE, VERBOSE, FULL) exp_prop.parameter_values;
+
+VACUUM (ANALYZE, VERBOSE, FULL) qsar_datasets.data_points;
+VACUUM (ANALYZE, VERBOSE, FULL) qsar_datasets.data_point_contributors;

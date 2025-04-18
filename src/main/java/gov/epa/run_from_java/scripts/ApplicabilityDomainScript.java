@@ -199,10 +199,10 @@ public class ApplicabilityDomainScript {
 			
 //			System.out.println(Utilities.gson.toJson(predictionReport.predictionReportModelMetadata.get(0)));
 			
-			PredictionStatisticsScript.getStatsInsideAD(predictionReport, adPredictions,null);			
+			PredictionStatisticsScript.StatsAD.getStatsInsideAD(predictionReport, adPredictions,null);			
 			String stats=getStatsInsideWithFrac(predictionReport);
 
-			PredictionStatisticsScript.getStatsOutsideAD(predictionReport, adPredictions,null);
+			PredictionStatisticsScript.StatsAD.getStatsOutsideAD(predictionReport, adPredictions,null);
 			String statsOutside=getStatsOutside(predictionReport);
 			
 
@@ -286,7 +286,7 @@ public class ApplicabilityDomainScript {
 			
 //			calculateAD_statsConsensus(predictionReport, htAD_Consensus, statName, datasetName);
 			
-			predictionReport.AD=applicability_domain;
+			predictionReport.predictionReportMetadata.AD=applicability_domain;
 			
 			if(true) continue;
 			
@@ -396,7 +396,7 @@ public void runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN() {
 			calculateAD_stats(predictionReport, splittingName, methodName, statName, applicability_domain,
 					storeNeighbors, descriptorSetName, datasetName);
 			
-			predictionReport.AD=applicability_domain;
+			predictionReport.predictionReportMetadata.AD=applicability_domain;
 			
 			if(true) continue;
 			
@@ -478,7 +478,7 @@ public void runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN() {
 			
 //			calculateAD_statsConsensus(predictionReport, htAD_Consensus, statName, datasetName);
 			
-			predictionReport.AD=applicability_domain;
+			predictionReport.predictionReportMetadata.AD=applicability_domain;
 			
 			//Write out new reports with AD info: (TODO later need to store this info in the database...
 			SampleReportWriter.writeReportWithAD(modelSetName, datasetName, splittingName, limitToPFAS, predictionReport);
@@ -541,7 +541,7 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 			calculateAD_stats(predictionReport, splittingName, methodName, statName, applicability_domain,
 					storeNeighbors, descriptorSetName, datasetName);
 
-			predictionReport.AD=applicability_domain;
+			predictionReport.predictionReportMetadata.AD=applicability_domain;
 
 			String filepathReport2 = "data/reports/" + modelSetName +"/"+ datasetName+"_"+methodName + "_PredictionReport_withAD.json";
 			Utilities.saveJson(predictionReport, filepathReport2);
@@ -648,11 +648,11 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 ////			System.out.println("Results="+Utilities.gson.toJson(adPredictions)+"\n");
 ////			System.out.println(Utilities.gson.toJson(predictionReport.predictionReportModelMetadata.get(0)));
 //			
-		PredictionStatisticsScript.getStatsInsideAD(predictionReport, htAD,null,prmm);			
+		PredictionStatisticsScript.StatsAD.getStatsInsideAD(predictionReport, htAD,null,prmm);			
 //			String stats=getStatsInsideWithFrac(predictionReport);
 //
 		String statsInside=getStat(prmm, statName+"_inside_AD");
-		PredictionStatisticsScript.getStatsOutsideAD(predictionReport, htAD,null,prmm);
+		PredictionStatisticsScript.StatsAD.getStatsOutsideAD(predictionReport, htAD,null,prmm);
 //			String statsOutside=getStatsOutside(predictionReport);
 				
 		String statsOriginal=getStat(prmm, statName);
@@ -663,7 +663,7 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 		
 		System.out.println(datasetName.replace(" v1 modeling", "")+"\t"+methodName+"\t"+statsCoverage+"\t"+statsInside+"\t"+statsOutside);
 		
-		predictionReport.AD=applicability_domain;
+		predictionReport.predictionReportMetadata.AD=applicability_domain;
 		
 		return predictionReport;
 	}
@@ -673,11 +673,11 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 			String statName, String datasetName) {
 		
 		PredictionReportModelMetadata prmm=getModelMetadata(predictionReport, "consensus");			
-		PredictionStatisticsScript.getStatsInsideAD(predictionReport, htAD,null,prmm);			
+		PredictionStatisticsScript.StatsAD.getStatsInsideAD(predictionReport, htAD,null,prmm);			
 //			String stats=getStatsInsideWithFrac(predictionReport);
 //
 		String statsInside=getStat(prmm, statName+"_inside_AD");
-		PredictionStatisticsScript.getStatsOutsideAD(predictionReport, htAD,null,prmm);
+		PredictionStatisticsScript.StatsAD.getStatsOutsideAD(predictionReport, htAD,null,prmm);
 //			String statsOutside=getStatsOutside(predictionReport);
 				
 		String statsOriginal=getStat(prmm, statName);
@@ -855,17 +855,17 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 //			System.out.println(Utilities.gson.toJson(predictionReport.predictionReportModelMetadata.get(0)));
 			
 			if (splitting.equals(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE)) {
-				PredictionStatisticsScript.getStatsInsideAD(predictionReport, adPredictions,smilesArray);
+				PredictionStatisticsScript.StatsAD.getStatsInsideAD(predictionReport, adPredictions,smilesArray);
 			} else {
-				PredictionStatisticsScript.getStatsInsideAD(predictionReport, adPredictions,null);	
+				PredictionStatisticsScript.StatsAD.getStatsInsideAD(predictionReport, adPredictions,null);	
 			}
 			
 			String stats=getStatsInsideWithFrac(predictionReport);
 
 			if (splitting.equals(DevQsarConstants.SPLITTING_RND_REPRESENTATIVE)) {
-				PredictionStatisticsScript.getStatsOutsideAD(predictionReport, adPredictions,smilesArray);
+				PredictionStatisticsScript.StatsAD.getStatsOutsideAD(predictionReport, adPredictions,smilesArray);
 			} else {
-				PredictionStatisticsScript.getStatsOutsideAD(predictionReport, adPredictions,null);					
+				PredictionStatisticsScript.StatsAD.getStatsOutsideAD(predictionReport, adPredictions,null);					
 			}
 			
 			String statsOutside=getStatsOutside(predictionReport);

@@ -47,6 +47,7 @@ public class UnitConverter {
 		}
 		
 		if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY) || 
+				propertyName.equals(DevQsarConstants.ACUTE_AQUATIC_TOXICITY) ||
 				propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50) ||
 				propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_SCUD_LC50) ||
 				propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50) ||

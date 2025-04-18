@@ -94,7 +94,8 @@ public class ExperimentalRecordLoader {
 
 //			String sourceName="Burkhard";
 			String sourceName="ECOTOX_2024_12_12";
-			String propertyName=DevQsarConstants.BCF;
+//			String propertyName=DevQsarConstants.BCF;
+			String propertyName=DevQsarConstants.ACUTE_AQUATIC_TOXICITY;
 			
 			
 			String sqlProperty="select id from exp_prop.properties where name='"+propertyName+"';";
@@ -783,7 +784,11 @@ public class ExperimentalRecordLoader {
 		
 			boolean createDBEntries=true;
 		
-			String sourceName="ECOTOX_2023_12_14";
+//			String sourceName="ECOTOX_2023_12_14";
+			String sourceName="ECOTOX_2024_12_12";
+			
+			String type=typeOther;
+			
 			pvc.mapTables(sourceName);
 		
 			//		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
@@ -791,17 +796,19 @@ public class ExperimentalRecordLoader {
 			//		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50;
 			//		String propertyName=DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50;
 			//		String propertyName=DevQsarConstants.NINETY_SIX_HOUR_BLUEGILL_LC50;
-			String propertyName=DevQsarConstants.HENRYS_LAW_CONSTANT;
+//			String propertyName=DevQsarConstants.HENRYS_LAW_CONSTANT;
+			String propertyName=DevQsarConstants.ACUTE_AQUATIC_TOXICITY;
+			
+			String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+
+//			String mainFolder="C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\data_gathering\\";
 		
-			//		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
-			String mainFolder="C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\data_gathering\\";
+//			String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+"_"+propertyName+" Experimental Records.json";
+//			String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+propertyName+"\\"+sourceName+" Experimental Records.json";
+//			File jsonFile=new File(filePath);
 		
-			String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+"_"+propertyName+" Experimental Records.json";
-		
-			File jsonFile=new File(filePath);
-		
-			System.out.println(filePath+"\t"+jsonFile.exists());
-		
+//			System.out.println(filePath+"\t"+jsonFile.exists());
+
 		
 			//**********************************************************************************************
 			//First create the property
@@ -818,21 +825,33 @@ public class ExperimentalRecordLoader {
 			pvc.addPropertyAcceptableParameter(pvc.getParameter("exposure_type","Type of exposure (S=static, F=flowthrough, R=renewal, etc)"),property);
 			pvc.addPropertyAcceptableParameter(pvc.getParameter("chem_analysis_method","Analysis method for water concentration (M=measured, U=unmeasured etc)"),property);		
 			pvc.addPropertyAcceptableParameter(pvc.getParameter("concentration_type","How concentration is reported"),property);
-		
+			pvc.addPropertyAcceptableParameter(pvc.getParameter("Species type","Type of species (e.g. standard, invasive, etc.)"),property);
+			pvc.addPropertyAcceptableParameter(pvc.getParameter("test_type","Type of test (e.g. LC50, EC50)"),property);
+			pvc.addPropertyAcceptableParameter(pvc.getParameter("Effect","Toxicity effect (e.g. mortality)"),property);
+			pvc.addPropertyAcceptableParameter(pvc.getParameter("result_id","result_id field in results table in Ecotox database"),property);
+			pvc.addPropertyAcceptableParameter(pvc.getParameter("Observation duration","Duration for the given toxicity value"),property);
+			
+
 			pvc.addParameterAcceptableUnit(pvc.getUnit("TEXT",""), pvc.getParameter("test_id","test_id field in tests table in Ecotox database"));
 			pvc.addParameterAcceptableUnit(pvc.getUnit("TEXT",""), pvc.getParameter("exposure_type","Type of exposure (S=static, F=flow-through, R=renewal, etc)"));		
 			pvc.addParameterAcceptableUnit(pvc.getUnit("TEXT",""), pvc.getParameter("chem_analysis_method","Analysis method for water concentration (M=measured, U=unmeasured etc)"));
 			pvc.addParameterAcceptableUnit(pvc.getUnit("TEXT",""), pvc.getParameter("concentration_type","How concentration is reported"));
+			
+			pvc.addParameterAcceptableUnit(pvc.getUnit("DAYS",""), pvc.getParameter("Observation duration","Duration for the given toxicity value"));
+			
 		
 			//		addPropertyInCategory(getPropertyCategory("Acute aquatic toxicity", "Acute aquatic toxicity"), property);
 		
 			//*******************************************************************************************************
 		
-			ExperimentalRecords records=ExperimentalRecords.loadFromJson(filePath, gson);
+			ExperimentalRecords records=ExperimentalRecords.getExperimentalRecords(sourceName,propertyName);
 			//		printUniqueUnitsListInExperimentalRecords(records);
 			System.out.println("experimentalRecords.size()="+records.size());
 		
-			load(records, typeOther, createDBEntries,sourceName,propertyName);
+//			if(true)return;
+			
+//			load(records, typeOther, createDBEntries,sourceName,propertyName);
+			loadBatchWise(records, type, createDBEntries, sourceName, propertyName);
 		
 		}
 
@@ -1594,14 +1613,14 @@ public class ExperimentalRecordLoader {
 		
 //		loader.loaders.loadBCFArnot();//loaded
 //		loader.loaders.loadBCFDataEcotox();//loaded
-		loader.loaders.loadBCFDataBurkhard();//loaded
+//		loader.loaders.loadBCFDataBurkhard();//loaded
 //		loader.loaders.loadBCFDataNITE();//need to run
 		
 		//		loader.loadOChem();
 //		loader.loaders.loadPubchemMultiple();
 //		loader.loaders.loadPubChem();
 
-//		loader.loaders.loadAcuteAquaticToxicityDataEcotox();
+		loader.loaders.loadAcuteAquaticToxicityDataEcotox();
 //		
 		
 		

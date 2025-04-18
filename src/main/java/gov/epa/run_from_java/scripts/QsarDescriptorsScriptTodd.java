@@ -211,9 +211,9 @@ public class QsarDescriptorsScriptTodd {
 //		datasetNames.add("LogP v2 modeling");
 //		datasetNames.add("MP v2 modeling");
 		
-		datasetNames.add("exp_prop_BCF_fish_whole_body_v1_modeling_map_by_CAS");
-		datasetNames.add("exp_prop_BCF_fish_whole_body_overall_score_1_v2_modeling_map_by_CAS");
-		
+//		datasetNames.add("exp_prop_BCF_fish_whole_body_v1_modeling_map_by_CAS");
+//		datasetNames.add("exp_prop_BCF_fish_whole_body_overall_score_1_v2_modeling_map_by_CAS");
+		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v1 modeling");
 		
 		int batchSize=1;//right now if one chemical in batch fails, the batch run fails, so run 1 at a time
 		for (String datasetName:datasetNames) {

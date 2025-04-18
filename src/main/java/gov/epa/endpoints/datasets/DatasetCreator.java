@@ -980,7 +980,83 @@ public class DatasetCreator {
 		
 		
 		if(excludeBasedOnConcentrationType) {
-			int removed=ChangeKeptPropertyValues.removeBasedOnConcentrationType(datasetNameOriginal, propertyValues);
+			int removed=ChangeKeptPropertyValues.removeBasedOnConcentrationType(propertyValues);
+			System.out.println("Removed based on concentration type="+removed);
+			System.out.println("Remaining="+propertyValues.size());
+		}
+
+
+		return convertPropertyValuesToDatapoints(propertyValues, params, useStdevFilter);
+
+	}
+	
+	
+	public Dataset createPropertyDatasetWithSpecifiedSources(String datasetNameOriginal, DatasetParams params, boolean useStdevFilter,
+			List<String> includedSources, boolean excludeBasedOnPredictedWS, 
+			boolean excludeBasedOnBaselineToxicity,Double observationDurationDays,
+			String speciesSupercategory, 
+			List<String> listSpeciesCommon, boolean excludeBasedOnConcentrationType,String typeAnimal) {
+		
+//		HashMap<String, Compound> hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
+
+		System.out.println("Enter createPropertyDatasetWithSpecifiedSources");
+		Dataset datasetDB = datasetService.findByName(params.datasetName);
+
+		if (datasetDB != null && postToDB) {
+			System.out.println("already have " + params.datasetName + " in db");
+			return null;
+		}
+
+		System.out.println("Selecting experimental property data for " + params.propertyName + "...");
+		long t5 = System.currentTimeMillis();
+		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(params.propertyName,
+				true, true);
+		long t6 = System.currentTimeMillis();
+		System.out.println("Selection time = " + (t6 - t5) / 1000.0 + " s");
+
+		System.out.println("Raw records:" + propertyValues.size());
+		excludePropertyValues2(includedSources, propertyValues);
+		if (includedSources.size() > 0)
+			System.out.println("Raw records after source exclusion:" + propertyValues.size());
+
+		
+		System.out.println("Before removal, propertyValues.size()="+propertyValues.size());
+		
+		if(observationDurationDays!=null) {
+			int removed=ChangeKeptPropertyValues.removeBasedOnObservationDays(propertyValues,observationDurationDays);
+			System.out.println("Removed based on observation duration="+removed);
+			System.out.println("Remaining="+propertyValues.size());
+		}
+		
+		if(speciesSupercategory!=null) {
+			int removed=ChangeKeptPropertyValues.removeBasedOnParameterText( propertyValues,"Species supercategory",speciesSupercategory);
+			System.out.println("Removed based on species supercategory="+removed);
+			System.out.println("Remaining="+propertyValues.size());
+		}
+		
+		if(listSpeciesCommon!=null) {
+			int removed=ChangeKeptPropertyValues.removeBasedOnParameterText(propertyValues,"Species common",listSpeciesCommon);
+			System.out.println("Removed based on species common="+removed);
+			System.out.println("Remaining="+propertyValues.size());
+		}
+
+
+		
+		if(excludeBasedOnPredictedWS) {
+			int removed=ChangeKeptPropertyValues.removeBasedOnPredictedWS(datasetNameOriginal, propertyValues);
+			System.out.println("Removed based on predicted WS="+removed);
+			System.out.println("Remaining="+propertyValues.size());
+		}
+		
+		if(excludeBasedOnBaselineToxicity) {
+			int removed=ChangeKeptPropertyValues.removeBasedOnBaselineToxicity(datasetNameOriginal, propertyValues, typeAnimal);
+			System.out.println("Removed based on baseline toxicity="+removed);
+			System.out.println("Remaining="+propertyValues.size());
+		}
+		
+		
+		if(excludeBasedOnConcentrationType) {
+			int removed=ChangeKeptPropertyValues.removeBasedOnConcentrationType(propertyValues);
 			System.out.println("Removed based on concentration type="+removed);
 			System.out.println("Remaining="+propertyValues.size());
 		}
@@ -1029,20 +1105,20 @@ public class DatasetCreator {
 		System.out.println("Before removal, propertyValues.size()="+propertyValues.size());
 		
 		if(typeAnimal!=null) {
-			int removed=ChangeKeptPropertyValues.removeBasedOnParameterString(propertyValues,"Species supercategory", typeAnimal);
+			int removed=ChangeKeptPropertyValues.removeBasedOnParameterText(propertyValues,"Species supercategory", typeAnimal);
 			System.out.println("Removed based on animal type="+removed);
 			System.out.println("Remaining="+propertyValues.size());
 		}
 		
 		if(responseSite!=null) {
-			int removed=ChangeKeptPropertyValues.removeBasedOnParameterString(propertyValues,"Response site", responseSite);
+			int removed=ChangeKeptPropertyValues.removeBasedOnParameterText(propertyValues,"Response site", responseSite);
 			System.out.println("Removed based on Response site="+removed);
 			System.out.println("Remaining="+propertyValues.size());
 		}
 		
 		
 		if(overallScore!=null) {
-			int removed=ChangeKeptPropertyValues.removeBasedOnParameterString(propertyValues,"Overall Score", overallScore);
+			int removed=ChangeKeptPropertyValues.removeBasedOnParameterText(propertyValues,"Overall Score", overallScore);
 			System.out.println("Removed based on Overall Score="+removed);
 			System.out.println("Remaining="+propertyValues.size());
 		}

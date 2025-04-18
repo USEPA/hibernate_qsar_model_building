@@ -51,6 +51,7 @@ import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDa
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportMetadata;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelStatistic;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class PredictionReportGenerator extends ReportGenerator {
 	private DatasetService datasetService;
@@ -175,9 +176,11 @@ public class PredictionReportGenerator extends ReportGenerator {
 				
 		Collections.sort(models, (o1, o2) -> (int)(o1.getId() - o2.getId()));//sort in order so consensus last and also so can get the descriptor set name from the first model
 		
-		System.out.println(models.size());
+		System.out.println("In addMethodPredicitions(), Model.size()="+models.size());
 		
 		if (models.size()>1) {
+			
+			System.out.println("Multiple models!!");
 			
 			for (Model model:models) {
 				System.out.println(model.getId());
@@ -195,7 +198,10 @@ public class PredictionReportGenerator extends ReportGenerator {
 	}
 
 	
+
+	
 	private void addModelPredictionsAndMetadata(Model model) {
+		
 		if (model==null) {
 			return;
 		}
@@ -289,9 +295,27 @@ public class PredictionReportGenerator extends ReportGenerator {
 		
 		return predictionReport;
 	}
+	
+	
+	
+	public PredictionReport generateMethodPredictions(Model model,boolean includeDescriptors,
+			boolean includeOriginalCompounds) {
+		
+		initPredictionReport(model.getDatasetName(), model.getSplittingName());
+		if(includeOriginalCompounds)  addOriginalCompounds(predictionReport.predictionReportDataPoints);
+		addModelPredictionsAndMetadata(model);
+		if(includeDescriptors) addDescriptors(model.getDatasetName());
+		
+		return predictionReport;
+	}
+
 
 	
 	private void addDescriptors(String datasetName) {
+		
+//		System.out.println(Utilities.gson.toJson(predictionReport));
+		
+		if(predictionReport.predictionReportModelMetadata.size()==0) return;
 		
 		String descriptorSetName=predictionReport.predictionReportModelMetadata.get(0).descriptorSetName;
 		
@@ -417,4 +441,5 @@ public class PredictionReportGenerator extends ReportGenerator {
 		}
 
 	}
+
 }

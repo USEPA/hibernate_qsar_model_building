@@ -14,6 +14,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
@@ -71,12 +72,12 @@ public class PredictionStatisticsScript {
 		// datasetNames.add("BP v1 res_qsar");
 		// datasetNames.add("MP v1 res_qsar");
 
-		datasetNames.add("HLC v1 modeling");
-		datasetNames.add("VP v1 modeling");
-		datasetNames.add("BP v1 modeling");
-		datasetNames.add("WS v1 modeling");
-		datasetNames.add("LogP v1 modeling");
-		datasetNames.add("MP v1 modeling");
+//		datasetNames.add("HLC v1 modeling");
+//		datasetNames.add("VP v1 modeling");
+//		datasetNames.add("BP v1 modeling");
+//		datasetNames.add("WS v1 modeling");
+//		datasetNames.add("LogP v1 modeling");
+//		datasetNames.add("MP v1 modeling");
 		
 //		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
 		
@@ -1091,7 +1092,7 @@ public class PredictionStatisticsScript {
 
 			if (!new File(filepathExcel).exists() || overWriteExcelFiles) {
 				ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
-				eprg.generate(predictionReport, filepathExcel, smilesArray,null);
+				eprg.generate(predictionReport, filepathExcel, smilesArray);
 				
 				System.out.println("Created:" + filepathExcel);
 				
@@ -1184,7 +1185,7 @@ public class PredictionStatisticsScript {
 
 			if (!new File(filepathExcel).exists() || overWriteExcelFiles) {
 				ExcelPredictionReportGenerator eprg = new ExcelPredictionReportGenerator();
-				eprg.generate(predictionReport, filepathExcel, smilesArray,null);
+				eprg.generate(predictionReport, filepathExcel, smilesArray);
 				System.out.println("Created:" + filepathExcel);
 			} else {
 				System.out.println("Exists:" + filepathExcel);
@@ -1232,137 +1233,6 @@ public class PredictionStatisticsScript {
 
 	}
 
-	public static void getStatsInsideAD(PredictionReport predictionReport,
-			Hashtable<String, ApplicabilityDomainPrediction> htAD, HashSet<String> smilesArray) {
-
-
-		// System.out.println(htAD.size());
-
-		// //Delete old statistics:
-		// for (PredictionReportModelMetadata
-		// prmmd:predictionReport.predictionReportModelMetadata) {
-		// prmmd.predictionReportModelStatistics.clear();
-		// }
-
-		Hashtable<String, List<ModelPrediction>> htModelPredictionsTestSet = new Hashtable<>();
-		Hashtable<String, List<ModelPrediction>> htModelPredictionsTrainingSet = new Hashtable<>();
-
-		for (int i = 0; i < predictionReport.predictionReportDataPoints.size(); i++) {
-			PredictionReportDataPoint dp = predictionReport.predictionReportDataPoints.get(i);
-
-			for (QsarPredictedValue qpv : dp.qsarPredictedValues) {
-
-				if (qpv.splitNum == DevQsarConstants.TEST_SPLIT_NUM) {
-					storePredictionInHashtable(htModelPredictionsTestSet, dp, qpv);
-				}
-				if (qpv.splitNum == DevQsarConstants.TRAIN_SPLIT_NUM) {
-					storePredictionInHashtable(htModelPredictionsTrainingSet, dp, qpv);
-				}
-			}
-		}
-
-		boolean print = false;
-
-		for (PredictionReportModelMetadata prmm : predictionReport.predictionReportModelMetadata) {
-
-			// if (prmm.qsarMethodName.contains("consensus")) print=true;
-			// else print=false;
-
-			// System.out.println(prmm.qsarMethodName);
-
-			List<ModelPrediction> trainingSetPredictions = htModelPredictionsTrainingSet.get(prmm.qsarMethodName);
-			List<ModelPrediction> testSetPredictions = htModelPredictionsTestSet.get(prmm.qsarMethodName);
-
-			for (int i = 0; i < testSetPredictions.size(); i++) {
-				ModelPrediction mp = testSetPredictions.get(i);
-
-				if (smilesArray != null) {
-					if (!smilesArray.contains(mp.id)) {
-						testSetPredictions.remove(i--);
-					}
-				}
-
-				if (htAD.get(mp.id) != null) {
-					ApplicabilityDomainPrediction ad = htAD.get(mp.id);
-					if (!ad.AD)
-						mp.pred = null;// stat calculations use null preds to calc coverage
-
-					// System.out.println(mp.ID+"\t"+mp.AD);
-				}
-
-				// System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
-			}
-
-			for (int i = 0; i < trainingSetPredictions.size(); i++) {
-				ModelPrediction mp = trainingSetPredictions.get(i);
-
-				if (smilesArray != null) {
-					if (!smilesArray.contains(mp.id)) {
-						trainingSetPredictions.remove(i--);
-					}
-				}
-				// System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
-			}
-
-			// System.out.println(testSetPredictions.size());
-			// System.out.println(trainingSetPredictions.size());
-
-			double meanExpTraining = calculateMeanExpTraining(trainingSetPredictions);
-
-			Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator
-					.calculateContinuousStatistics(testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
-
-			// Map<String, Double> modelTrainingStatisticValues =
-			// ModelStatisticCalculator.calculateContinuousStatistics(
-			// trainingSetPredictions, meanExpTraining, DevQsarConstants.TAG_TRAINING);
-
-			if (print)
-				System.out.println("test set");
-
-			removeStat(prmm, "Coverage_Test");
-
-			for (String statisticName : modelTestStatisticValues.keySet()) {
-
-				double statisticValue = modelTestStatisticValues.get(statisticName);
-
-				if (statisticName.equals("Coverage_Test")) {
-
-					prmm.predictionReportModelStatistics
-							.add(new PredictionReportModelStatistic(statisticName, statisticValue));
-
-					if (print)
-						System.out.println("\t" + statisticName + "\t" + statisticValue);
-
-				} else {
-					String statisticNameNew = statisticName + "_inside_AD";
-					if (print)
-						System.out.println("\t" + statisticNameNew + "\t" + statisticValue);
-					prmm.predictionReportModelStatistics
-							.add(new PredictionReportModelStatistic(statisticNameNew, statisticValue));
-				}
-
-			}
-
-			if (print)
-				System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
-
-			//
-			// if(print) System.out.println("\ntraining set");
-			// for (String statisticName:modelTrainingStatisticValues.keySet()) {
-			// if(print)
-			// System.out.println("\t"+statisticName+"\t"+modelTestStatisticValues.get(statisticName));
-			//
-			// prmm.predictionReportModelStatistics.add(new
-			// PredictionReportModelStatistic(statisticName,
-			// modelTrainingStatisticValues.get(statisticName)));
-			// }
-
-			// System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
-
-		} // end loop over model metadata
-	}
-	
-	
 	public static void addADsToReport(PredictionReport predictionReport,String methodName,Hashtable<String, ApplicabilityDomainPrediction> htAD) {
 		
 		for (int i=0;i<predictionReport.predictionReportDataPoints.size();i++) {				
@@ -1381,63 +1251,6 @@ public class PredictionStatisticsScript {
 		}
 	}
 
-	public static void getStatsInsideAD(PredictionReport predictionReport,
-			Hashtable<String, ApplicabilityDomainPrediction> htAD, HashSet<String> smilesArray, PredictionReportModelMetadata prmm) {
-		boolean print = false;
-		
-		
-		SplitPredictions sp = SplitPredictions.getSplitPredictions(predictionReport, prmm.qsarMethodName, smilesArray);
-		
-//		System.out.println(sp.trainingSetPredictions.size());
-//		System.out.println(prmm.qsarMethodName+"\t"+sp.testSetPredictions.size());
-		
-		for (ModelPrediction mp : sp.testSetPredictions) {
-			if (htAD.get(mp.id) != null) {
-				
-				ApplicabilityDomainPrediction ad = htAD.get(mp.id);
-				
-				if (!ad.AD)
-					mp.pred = null;// stat calculations use null preds to calc coverage
-				// System.out.println(mp.ID+"\t"+mp.AD);
-			}
-			// System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
-		}
-
-		double meanExpTraining = calculateMeanExpTraining(sp.trainingSetPredictions);
-
-		Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator
-				.calculateContinuousStatistics(sp.testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
-
-		// Map<String, Double> modelTrainingStatisticValues =
-		// ModelStatisticCalculator.calculateContinuousStatistics(
-		// trainingSetPredictions, meanExpTraining, DevQsarConstants.TAG_TRAINING);
-
-		if (print)
-			System.out.println("test set");
-
-		removeStat(prmm, "Coverage_Test");
-
-		for (String statisticName : modelTestStatisticValues.keySet()) {
-			double statisticValue = modelTestStatisticValues.get(statisticName);
-
-			if (statisticName.equals("Coverage_Test")) {
-				prmm.predictionReportModelStatistics
-						.add(new PredictionReportModelStatistic(statisticName, statisticValue));
-				if (print)
-					System.out.println("\t" + statisticName + "\t" + statisticValue);
-			} else {
-				String statisticNameNew = statisticName + "_inside_AD";
-				if (print)
-					System.out.println("\t" + statisticNameNew + "\t" + statisticValue);
-				prmm.predictionReportModelStatistics
-						.add(new PredictionReportModelStatistic(statisticNameNew, statisticValue));
-			}
-		}
-		if (print)
-			System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
-
-	}
-
 	private static void removeStat(PredictionReportModelMetadata prmm, String statName) {
 		for (int i = 0; i < prmm.predictionReportModelStatistics.size(); i++) {
 			PredictionReportModelStatistic prms = prmm.predictionReportModelStatistics.get(i);
@@ -1447,191 +1260,6 @@ public class PredictionStatisticsScript {
 			}
 
 		}
-	}
-
-	public static void getStatsOutsideAD(PredictionReport predictionReport,
-			Hashtable<String, ApplicabilityDomainPrediction> htAD, HashSet<String> smilesArray) {
-
-
-		// System.out.println(htAD.size());
-
-		// //Delete old statistics:
-		// for (PredictionReportModelMetadata
-		// prmmd:predictionReport.predictionReportModelMetadata) {
-		// prmmd.predictionReportModelStatistics.clear();
-		// }
-
-		Hashtable<String, List<ModelPrediction>> htModelPredictionsTestSet = new Hashtable<>();
-		Hashtable<String, List<ModelPrediction>> htModelPredictionsTrainingSet = new Hashtable<>();
-
-		for (int i = 0; i < predictionReport.predictionReportDataPoints.size(); i++) {
-			PredictionReportDataPoint dp = predictionReport.predictionReportDataPoints.get(i);
-
-			for (QsarPredictedValue qpv : dp.qsarPredictedValues) {
-
-				if (qpv.splitNum == DevQsarConstants.TEST_SPLIT_NUM) {
-					storePredictionInHashtable(htModelPredictionsTestSet, dp, qpv);
-				}
-				if (qpv.splitNum == DevQsarConstants.TRAIN_SPLIT_NUM) {
-					storePredictionInHashtable(htModelPredictionsTrainingSet, dp, qpv);
-				}
-			}
-		}
-
-		boolean print = false;
-
-		for (PredictionReportModelMetadata prmm : predictionReport.predictionReportModelMetadata) {
-
-			// if (prmm.qsarMethodName.contains("consensus")) print=true;
-			// else print=false;
-
-			// System.out.println(prmm.qsarMethodName);
-
-			List<ModelPrediction> trainingSetPredictions = htModelPredictionsTrainingSet.get(prmm.qsarMethodName);
-			List<ModelPrediction> testSetPredictions = htModelPredictionsTestSet.get(prmm.qsarMethodName);
-
-			int countPred = 0;
-
-			for (int i = 0; i < testSetPredictions.size(); i++) {
-				ModelPrediction mp = testSetPredictions.get(i);
-
-				if (smilesArray != null) {
-					if (!smilesArray.contains(mp.id)) {
-						testSetPredictions.remove(i--);
-					}
-				}
-
-				if (htAD.get(mp.id) != null) {
-					ApplicabilityDomainPrediction ad = htAD.get(mp.id);
-					if (ad.AD) {
-						mp.pred = null;// stat calculations use null preds to calc coverage
-					} else {
-						countPred++;
-					}
-
-					// System.out.println(mp.ID+"\t"+mp.AD);
-				}
-
-				// System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
-			}
-
-			// System.out.println("countPred="+countPred);
-
-			for (int i = 0; i < trainingSetPredictions.size(); i++) {
-				ModelPrediction mp = trainingSetPredictions.get(i);
-
-				if (smilesArray != null) {
-					if (!smilesArray.contains(mp.id)) {
-						trainingSetPredictions.remove(i--);
-					}
-				}
-				// System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
-			}
-
-			// System.out.println(testSetPredictions.size());
-			// System.out.println(trainingSetPredictions.size());
-
-			double meanExpTraining = calculateMeanExpTraining(trainingSetPredictions);
-
-			Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator
-					.calculateContinuousStatistics(testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
-
-			// for (ModelPrediction mp:testSetPredictions) {
-			// if (prmm.qsarMethodName.contains("consensus") && mp.pred!=null)
-			// System.out.println(mp.exp+"\t"+mp.pred);
-			// }
-
-			// Map<String, Double> modelTrainingStatisticValues =
-			// ModelStatisticCalculator.calculateContinuousStatistics(
-			// trainingSetPredictions, meanExpTraining, DevQsarConstants.TAG_TRAINING);
-
-			if (print)
-				System.out.println("test set");
-			for (String statisticName : modelTestStatisticValues.keySet()) {
-
-				double statisticValue = modelTestStatisticValues.get(statisticName);
-
-				if (statisticName.equals("Coverage_Test"))
-					continue;
-				else {
-					String statisticNameNew = statisticName + "_outside_AD";
-					if (print)
-						System.out.println("\t" + statisticNameNew + "\t" + statisticValue);
-					prmm.predictionReportModelStatistics
-							.add(new PredictionReportModelStatistic(statisticNameNew, statisticValue));
-				}
-
-			}
-
-			if (print)
-				System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
-
-			//
-			// if(print) System.out.println("\ntraining set");
-			// for (String statisticName:modelTrainingStatisticValues.keySet()) {
-			// if(print)
-			// System.out.println("\t"+statisticName+"\t"+modelTestStatisticValues.get(statisticName));
-			//
-			// prmm.predictionReportModelStatistics.add(new
-			// PredictionReportModelStatistic(statisticName,
-			// modelTrainingStatisticValues.get(statisticName)));
-			// }
-
-			// System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
-
-		} // end loop over model metadata
-	}
-
-	public static void getStatsOutsideAD(PredictionReport predictionReport,
-			Hashtable<String, ApplicabilityDomainPrediction> htAD, HashSet<String> smilesArray, PredictionReportModelMetadata prmm) {
-
-
-		SplitPredictions sp = SplitPredictions.getSplitPredictions(predictionReport, prmm.qsarMethodName, smilesArray);
-		boolean print = false;
-
-		int countPred = 0;
-
-		for (ModelPrediction mp : sp.testSetPredictions) {
-			
-//			System.out.println(mp.id+"\t"+mp.exp+"\t"+mp.pred+"\t"+htAD.get(mp.id));
-			
-			if (htAD.get(mp.id) != null) {
-				ApplicabilityDomainPrediction ad = htAD.get(mp.id);
-				if (ad.AD) {
-					mp.pred = null;// stat calculations use null preds to calc coverage
-				} else {
-					countPred++;
-				}
-			}
-		}
-
-//		 System.out.println("countPred="+countPred);
-
-		double meanExpTraining = calculateMeanExpTraining(sp.trainingSetPredictions);
-
-		Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator
-				.calculateContinuousStatistics(sp.testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
-
-		if (print)
-			System.out.println("test set");
-		for (String statisticName : modelTestStatisticValues.keySet()) {
-			double statisticValue = modelTestStatisticValues.get(statisticName);
-
-			if (statisticName.equals("Coverage_Test"))
-				continue;
-			else {
-				String statisticNameNew = statisticName + "_outside_AD";
-				// if(print) System.out.println("\t"+statisticNameNew+"\t"+statisticValue);
-				// System.out.println("\t"+statisticNameNew+"\t"+statisticValue);
-				prmm.predictionReportModelStatistics
-						.add(new PredictionReportModelStatistic(statisticNameNew, statisticValue));
-			}
-
-		}
-
-		if (print)
-			System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
-
 	}
 
 	public static void limitPredictionReportToPFAS(HashSet<String> smilesArray, PredictionReport predictionReport) {
@@ -1811,7 +1439,7 @@ public class PredictionStatisticsScript {
 		ExcelPredictionReportGenerator e = new ExcelPredictionReportGenerator();
 
 		e.generate(predictionReport,
-				folder.getAbsolutePath() + File.separator + "sample_excel_less_decimal_places.xlsx", null,null);
+				folder.getAbsolutePath() + File.separator + "sample_excel_less_decimal_places.xlsx", null);
 
 	}
 
@@ -1883,8 +1511,8 @@ public class PredictionStatisticsScript {
 		boolean upload=false;
 		boolean overwrite=true;
 		
-		createExcelSummarysWithAD("WebTEST2.0",upload,overwrite,DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean);
-		createExcelSummarysWithAD("WebTEST2.1",upload,overwrite,DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean);
+		createExcelSummarysWithAD("WebTEST2.0",upload,overwrite);
+		createExcelSummarysWithAD("WebTEST2.1",upload,overwrite);
 	}
 
 
@@ -1915,7 +1543,7 @@ public class PredictionStatisticsScript {
 			
 			if (!excelFile.exists() || overwrite) {
 				System.out.println("generating excel file");
-				eprg.generate(predictionReport, filepathExcel, null,applicabilityDomain);
+				eprg.generate(predictionReport, filepathExcel, null);
 			}
 			
 
@@ -1949,14 +1577,14 @@ public class PredictionStatisticsScript {
 
 			if (!excelFile.exists() || overwrite) {
 				System.out.println("generating excel file");
-				eprg.generate(predictionReport, filepathExcel, null,applicabilityDomain);
+				eprg.generate(predictionReport, filepathExcel, null);
 			}
 
 		}
 		
 	}
 	
-	private void createExcelSummarysWithAD(String modelSetName, boolean upload, boolean overwrite,String applicabilityDomain) {
+	private void createExcelSummarysWithAD(String modelSetName, boolean upload, boolean overwrite) {
 		
 		QsarModelsScript qms = new QsarModelsScript("tmarti02");
 	
@@ -1982,7 +1610,7 @@ public class PredictionStatisticsScript {
 		
 		if (!excelFile.exists() || overwrite) {
 			System.out.println("generating excel file");
-			eprg.generate(predictionReport, filepathExcel, null,applicabilityDomain);
+			eprg.generate(predictionReport, filepathExcel, null);
 		}
 		
 		Long modelId = getModelIdForReport(modelSetName, splittingName, datasetName, predictionReport);			
@@ -2014,7 +1642,7 @@ public class PredictionStatisticsScript {
 
 		if (!excelFile.exists() || overwrite) {
 			System.out.println("generating excel file");
-			eprg.generate(predictionReport, filepathExcel, null,applicabilityDomain);
+			eprg.generate(predictionReport, filepathExcel, null);
 		}
 
 	}
@@ -2043,17 +1671,17 @@ public class PredictionStatisticsScript {
 		String filePathPFAS = folder + listName + "_qsar_ready_smiles.txt";
 		HashSet<String> smilesArray = SplittingGeneratorPFAS_Script.getPFASSmiles(filePathPFAS);
 
-		String applicabilityDomain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
+//		String applicabilityDomain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
 
 //		createExcelSummarysWithAD_OnlyPFAS("WebTEST2.0 PFAS");
 //		createExcelSummarysWithAD_OnlyPFAS("WebTEST2.0 All but PFAS");
 
-		createExcelSummarysWithAD_OnlyPFAS("T=PFAS only, P=PFAS","WebTEST2.1 PFAS",smilesArray,applicabilityDomain);
-		createExcelSummarysWithAD_OnlyPFAS("T=all but PFAS, P=PFAS", "WebTEST2.1 All but PFAS",smilesArray,applicabilityDomain);
+		createExcelSummarysWithAD_OnlyPFAS("T=PFAS only, P=PFAS","WebTEST2.1 PFAS",smilesArray);
+		createExcelSummarysWithAD_OnlyPFAS("T=all but PFAS, P=PFAS", "WebTEST2.1 All but PFAS",smilesArray);
 
 	}
 	
-	private void createExcelSummarysWithAD_OnlyPFAS(String splittingName, String modelSetName,HashSet<String> smilesArray,String applicabilityDomain) {
+	private void createExcelSummarysWithAD_OnlyPFAS(String splittingName, String modelSetName,HashSet<String> smilesArray) {
 		
 		// String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;//TODO get
 		// from prediction report instead
@@ -2067,8 +1695,7 @@ public class PredictionStatisticsScript {
 			PredictionReport predictionReport = SampleReportWriter.getReport(filePathReport);
 			String filepathExcel = outputFolder + File.separator + modelSetName + File.separator
 					+ String.join("_", datasetName, splittingName) + "_with_AD.xlsx";
-			eprg.generate(predictionReport, filepathExcel, smilesArray,applicabilityDomain);
-
+			eprg.generate(predictionReport, filepathExcel, smilesArray);
 
 		}
 		
@@ -2439,7 +2066,7 @@ public class PredictionStatisticsScript {
 		
 		List<String>modelSets=new ArrayList<>();		
 		modelSets.add("WebTEST2.0");
-		modelSets.add("WebTEST2.1");
+//		modelSets.add("WebTEST2.1");
 		
 //		List<String>dataSets=new ArrayList<>();
 //		dataSets.add("exp_prop_96HR_FHM_LC50_v1 modeling");
@@ -2448,6 +2075,8 @@ public class PredictionStatisticsScript {
 
 //		datasetNames.add("exp_prop_96HR_BG_LC50_v1 modeling");
 //		datasetNames.add("exp_prop_96HR_BG_LC50_v2 modeling");
+		
+		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v3 modeling");
 		
 //		String methodName="knn";
 		String methodName="xgb";
@@ -2464,6 +2093,32 @@ public class PredictionStatisticsScript {
 			for (String dataSet:datasetNames) {
 				srw.createPredictionReportMethod(modelSet,descriptorSetName, methodName, dataSet, splittingName, overwriteJsonReport, includeDescriptors,includeOriginalCompounds);
 			}
+		}
+		
+	}
+	
+
+	void createPredictionReportForModelIds() {
+		
+		boolean includeDescriptors=true;
+		boolean includeOriginalCompounds=true;
+		boolean overwriteJsonReport=true;
+
+		List<Long>modelIds=new ArrayList<>();
+		modelIds.add(1507L);
+		modelIds.add(1517L);
+		modelIds.add(1518L);
+		
+		String outputFolder = "data/reports/prediction reports upload/FishTox";
+		
+		File f = new File(outputFolder);
+		if (!f.exists())
+			f.mkdirs();
+
+		
+		SampleReportWriter srw = new SampleReportWriter();
+		for (Long modelId:modelIds) {
+			srw.createPredictionReportMethod(modelId, overwriteJsonReport, includeDescriptors, includeOriginalCompounds,outputFolder);
 		}
 		
 	}
@@ -2593,6 +2248,384 @@ public class PredictionStatisticsScript {
 			}
 			
 		}
+	}
+	
+	static class StatsAD {
+
+		public static void getStatsInsideAD(PredictionReport predictionReport,
+				Hashtable<String, ApplicabilityDomainPrediction> htAD, HashSet<String> smilesArray) {
+		
+		
+			// System.out.println(htAD.size());
+		
+			// //Delete old statistics:
+			// for (PredictionReportModelMetadata
+			// prmmd:predictionReport.predictionReportModelMetadata) {
+			// prmmd.predictionReportModelStatistics.clear();
+			// }
+		
+			Hashtable<String, List<ModelPrediction>> htModelPredictionsTestSet = new Hashtable<>();
+			Hashtable<String, List<ModelPrediction>> htModelPredictionsTrainingSet = new Hashtable<>();
+		
+			for (int i = 0; i < predictionReport.predictionReportDataPoints.size(); i++) {
+				PredictionReportDataPoint dp = predictionReport.predictionReportDataPoints.get(i);
+		
+				for (QsarPredictedValue qpv : dp.qsarPredictedValues) {
+		
+					if (qpv.splitNum == DevQsarConstants.TEST_SPLIT_NUM) {
+						storePredictionInHashtable(htModelPredictionsTestSet, dp, qpv);
+					}
+					if (qpv.splitNum == DevQsarConstants.TRAIN_SPLIT_NUM) {
+						storePredictionInHashtable(htModelPredictionsTrainingSet, dp, qpv);
+					}
+				}
+			}
+		
+			boolean print = false;
+		
+			for (PredictionReportModelMetadata prmm : predictionReport.predictionReportModelMetadata) {
+		
+				// if (prmm.qsarMethodName.contains("consensus")) print=true;
+				// else print=false;
+		
+				// System.out.println(prmm.qsarMethodName);
+		
+				List<ModelPrediction> trainingSetPredictions = htModelPredictionsTrainingSet.get(prmm.qsarMethodName);
+				List<ModelPrediction> testSetPredictions = htModelPredictionsTestSet.get(prmm.qsarMethodName);
+		
+				for (int i = 0; i < testSetPredictions.size(); i++) {
+					ModelPrediction mp = testSetPredictions.get(i);
+		
+					if (smilesArray != null) {
+						if (!smilesArray.contains(mp.id)) {
+							testSetPredictions.remove(i--);
+						}
+					}
+		
+					if (htAD.get(mp.id) != null) {
+						ApplicabilityDomainPrediction ad = htAD.get(mp.id);
+						if (!ad.AD)
+							mp.pred = null;// stat calculations use null preds to calc coverage
+		
+						// System.out.println(mp.ID+"\t"+mp.AD);
+					}
+		
+					// System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
+				}
+		
+				for (int i = 0; i < trainingSetPredictions.size(); i++) {
+					ModelPrediction mp = trainingSetPredictions.get(i);
+		
+					if (smilesArray != null) {
+						if (!smilesArray.contains(mp.id)) {
+							trainingSetPredictions.remove(i--);
+						}
+					}
+					// System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
+				}
+		
+				// System.out.println(testSetPredictions.size());
+				// System.out.println(trainingSetPredictions.size());
+		
+				double meanExpTraining = calculateMeanExpTraining(trainingSetPredictions);
+		
+				Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator
+						.calculateContinuousStatistics(testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
+		
+				// Map<String, Double> modelTrainingStatisticValues =
+				// ModelStatisticCalculator.calculateContinuousStatistics(
+				// trainingSetPredictions, meanExpTraining, DevQsarConstants.TAG_TRAINING);
+		
+				if (print)
+					System.out.println("test set");
+		
+				removeStat(prmm, "Coverage_Test");
+		
+				for (String statisticName : modelTestStatisticValues.keySet()) {
+		
+					double statisticValue = modelTestStatisticValues.get(statisticName);
+		
+					if (statisticName.equals("Coverage_Test")) {
+		
+						prmm.predictionReportModelStatistics
+								.add(new PredictionReportModelStatistic(statisticName, statisticValue));
+		
+						if (print)
+							System.out.println("\t" + statisticName + "\t" + statisticValue);
+		
+					} else {
+						String statisticNameNew = statisticName + "_inside_AD";
+						if (print)
+							System.out.println("\t" + statisticNameNew + "\t" + statisticValue);
+						prmm.predictionReportModelStatistics
+								.add(new PredictionReportModelStatistic(statisticNameNew, statisticValue));
+					}
+		
+				}
+		
+				if (print)
+					System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
+		
+				//
+				// if(print) System.out.println("\ntraining set");
+				// for (String statisticName:modelTrainingStatisticValues.keySet()) {
+				// if(print)
+				// System.out.println("\t"+statisticName+"\t"+modelTestStatisticValues.get(statisticName));
+				//
+				// prmm.predictionReportModelStatistics.add(new
+				// PredictionReportModelStatistic(statisticName,
+				// modelTrainingStatisticValues.get(statisticName)));
+				// }
+		
+				// System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
+		
+			} // end loop over model metadata
+		}
+
+		public static void getStatsInsideAD(PredictionReport predictionReport,
+					Hashtable<String, ApplicabilityDomainPrediction> htAD, HashSet<String> smilesArray, PredictionReportModelMetadata prmm) {
+				boolean print = false;
+				
+				
+				SplitPredictions sp = SplitPredictions.getSplitPredictions(predictionReport, prmm.qsarMethodName, smilesArray);
+				
+		//		System.out.println(sp.trainingSetPredictions.size());
+		//		System.out.println(prmm.qsarMethodName+"\t"+sp.testSetPredictions.size());
+				
+				for (ModelPrediction mp : sp.testSetPredictions) {
+					if (htAD.get(mp.id) != null) {
+						
+						ApplicabilityDomainPrediction ad = htAD.get(mp.id);
+						
+						if (!ad.AD)
+							mp.pred = null;// stat calculations use null preds to calc coverage
+						// System.out.println(mp.ID+"\t"+mp.AD);
+					}
+					// System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
+				}
+		
+				double meanExpTraining = calculateMeanExpTraining(sp.trainingSetPredictions);
+		
+				Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator
+						.calculateContinuousStatistics(sp.testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
+		
+				// Map<String, Double> modelTrainingStatisticValues =
+				// ModelStatisticCalculator.calculateContinuousStatistics(
+				// trainingSetPredictions, meanExpTraining, DevQsarConstants.TAG_TRAINING);
+		
+				if (print)
+					System.out.println("test set");
+		
+				removeStat(prmm, "Coverage_Test");
+		
+				for (String statisticName : modelTestStatisticValues.keySet()) {
+					double statisticValue = modelTestStatisticValues.get(statisticName);
+		
+					if (statisticName.equals("Coverage_Test")) {
+						prmm.predictionReportModelStatistics
+								.add(new PredictionReportModelStatistic(statisticName, statisticValue));
+						if (print)
+							System.out.println("\t" + statisticName + "\t" + statisticValue);
+					} else {
+						String statisticNameNew = statisticName + "_inside_AD";
+						if (print)
+							System.out.println("\t" + statisticNameNew + "\t" + statisticValue);
+						prmm.predictionReportModelStatistics
+								.add(new PredictionReportModelStatistic(statisticNameNew, statisticValue));
+					}
+				}
+				if (print)
+					System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
+		
+			}
+
+		public static void getStatsOutsideAD(PredictionReport predictionReport,
+				Hashtable<String, ApplicabilityDomainPrediction> htAD, HashSet<String> smilesArray) {
+		
+		
+			// System.out.println(htAD.size());
+		
+			// //Delete old statistics:
+			// for (PredictionReportModelMetadata
+			// prmmd:predictionReport.predictionReportModelMetadata) {
+			// prmmd.predictionReportModelStatistics.clear();
+			// }
+		
+			Hashtable<String, List<ModelPrediction>> htModelPredictionsTestSet = new Hashtable<>();
+			Hashtable<String, List<ModelPrediction>> htModelPredictionsTrainingSet = new Hashtable<>();
+		
+			for (int i = 0; i < predictionReport.predictionReportDataPoints.size(); i++) {
+				PredictionReportDataPoint dp = predictionReport.predictionReportDataPoints.get(i);
+		
+				for (QsarPredictedValue qpv : dp.qsarPredictedValues) {
+		
+					if (qpv.splitNum == DevQsarConstants.TEST_SPLIT_NUM) {
+						storePredictionInHashtable(htModelPredictionsTestSet, dp, qpv);
+					}
+					if (qpv.splitNum == DevQsarConstants.TRAIN_SPLIT_NUM) {
+						storePredictionInHashtable(htModelPredictionsTrainingSet, dp, qpv);
+					}
+				}
+			}
+		
+			boolean print = false;
+		
+			for (PredictionReportModelMetadata prmm : predictionReport.predictionReportModelMetadata) {
+		
+				// if (prmm.qsarMethodName.contains("consensus")) print=true;
+				// else print=false;
+		
+				// System.out.println(prmm.qsarMethodName);
+		
+				List<ModelPrediction> trainingSetPredictions = htModelPredictionsTrainingSet.get(prmm.qsarMethodName);
+				List<ModelPrediction> testSetPredictions = htModelPredictionsTestSet.get(prmm.qsarMethodName);
+		
+				int countPred = 0;
+		
+				for (int i = 0; i < testSetPredictions.size(); i++) {
+					ModelPrediction mp = testSetPredictions.get(i);
+		
+					if (smilesArray != null) {
+						if (!smilesArray.contains(mp.id)) {
+							testSetPredictions.remove(i--);
+						}
+					}
+		
+					if (htAD.get(mp.id) != null) {
+						ApplicabilityDomainPrediction ad = htAD.get(mp.id);
+						if (ad.AD) {
+							mp.pred = null;// stat calculations use null preds to calc coverage
+						} else {
+							countPred++;
+						}
+		
+						// System.out.println(mp.ID+"\t"+mp.AD);
+					}
+		
+					// System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
+				}
+		
+				// System.out.println("countPred="+countPred);
+		
+				for (int i = 0; i < trainingSetPredictions.size(); i++) {
+					ModelPrediction mp = trainingSetPredictions.get(i);
+		
+					if (smilesArray != null) {
+						if (!smilesArray.contains(mp.id)) {
+							trainingSetPredictions.remove(i--);
+						}
+					}
+					// System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
+				}
+		
+				// System.out.println(testSetPredictions.size());
+				// System.out.println(trainingSetPredictions.size());
+		
+				double meanExpTraining = calculateMeanExpTraining(trainingSetPredictions);
+		
+				Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator
+						.calculateContinuousStatistics(testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
+		
+				// for (ModelPrediction mp:testSetPredictions) {
+				// if (prmm.qsarMethodName.contains("consensus") && mp.pred!=null)
+				// System.out.println(mp.exp+"\t"+mp.pred);
+				// }
+		
+				// Map<String, Double> modelTrainingStatisticValues =
+				// ModelStatisticCalculator.calculateContinuousStatistics(
+				// trainingSetPredictions, meanExpTraining, DevQsarConstants.TAG_TRAINING);
+		
+				if (print)
+					System.out.println("test set");
+				for (String statisticName : modelTestStatisticValues.keySet()) {
+		
+					double statisticValue = modelTestStatisticValues.get(statisticName);
+		
+					if (statisticName.equals("Coverage_Test"))
+						continue;
+					else {
+						String statisticNameNew = statisticName + "_outside_AD";
+						if (print)
+							System.out.println("\t" + statisticNameNew + "\t" + statisticValue);
+						prmm.predictionReportModelStatistics
+								.add(new PredictionReportModelStatistic(statisticNameNew, statisticValue));
+					}
+		
+				}
+		
+				if (print)
+					System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
+		
+				//
+				// if(print) System.out.println("\ntraining set");
+				// for (String statisticName:modelTrainingStatisticValues.keySet()) {
+				// if(print)
+				// System.out.println("\t"+statisticName+"\t"+modelTestStatisticValues.get(statisticName));
+				//
+				// prmm.predictionReportModelStatistics.add(new
+				// PredictionReportModelStatistic(statisticName,
+				// modelTrainingStatisticValues.get(statisticName)));
+				// }
+		
+				// System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
+		
+			} // end loop over model metadata
+		}
+
+		public static void getStatsOutsideAD(PredictionReport predictionReport,
+					Hashtable<String, ApplicabilityDomainPrediction> htAD, HashSet<String> smilesArray, PredictionReportModelMetadata prmm) {
+		
+		
+				SplitPredictions sp = SplitPredictions.getSplitPredictions(predictionReport, prmm.qsarMethodName, smilesArray);
+				boolean print = false;
+		
+				int countPred = 0;
+		
+				for (ModelPrediction mp : sp.testSetPredictions) {
+					
+		//			System.out.println(mp.id+"\t"+mp.exp+"\t"+mp.pred+"\t"+htAD.get(mp.id));
+					
+					if (htAD.get(mp.id) != null) {
+						ApplicabilityDomainPrediction ad = htAD.get(mp.id);
+						if (ad.AD) {
+							mp.pred = null;// stat calculations use null preds to calc coverage
+						} else {
+							countPred++;
+						}
+					}
+				}
+		
+		//		 System.out.println("countPred="+countPred);
+		
+				double meanExpTraining = calculateMeanExpTraining(sp.trainingSetPredictions);
+		
+				Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator
+						.calculateContinuousStatistics(sp.testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
+		
+				if (print)
+					System.out.println("test set");
+				for (String statisticName : modelTestStatisticValues.keySet()) {
+					double statisticValue = modelTestStatisticValues.get(statisticName);
+		
+					if (statisticName.equals("Coverage_Test"))
+						continue;
+					else {
+						String statisticNameNew = statisticName + "_outside_AD";
+						// if(print) System.out.println("\t"+statisticNameNew+"\t"+statisticValue);
+						// System.out.println("\t"+statisticNameNew+"\t"+statisticValue);
+						prmm.predictionReportModelStatistics
+								.add(new PredictionReportModelStatistic(statisticNameNew, statisticValue));
+					}
+		
+				}
+		
+				if (print)
+					System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
+		
+			}
+		
+		
+		
 	}
 	
 	
@@ -2760,6 +2793,7 @@ public class PredictionStatisticsScript {
 		//Create summary json report and excel file		
 //		ms.createPredictionReportForMethod();
 //		ms.createPredictionReportForMethodArrays();
+		ms.createPredictionReportForModelIds();
 //		ms.createMainTable();
 
 		
@@ -2790,7 +2824,7 @@ public class PredictionStatisticsScript {
 		
 //		ms.createPredictionReportsExcelPFASOnlyModels();
 		
-		ms.createExcelSummarysWithAD_JustPFAS();
+//		ms.createExcelSummarysWithAD_JustPFAS();
 
 		
 //		ms.copyReportsToFolder();

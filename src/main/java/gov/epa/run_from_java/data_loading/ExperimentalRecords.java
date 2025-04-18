@@ -50,8 +50,6 @@ public class ExperimentalRecords extends ArrayList<ExperimentalRecord> {
 
 		File folder=new File(folderPath);
 
-		System.out.println(folderPath+"\t"+folder.exists()+"\t"+subString);
-
 		Gson gson=new Gson();
 		
 		for(File file: folder.listFiles()) {
@@ -103,6 +101,53 @@ public class ExperimentalRecords extends ArrayList<ExperimentalRecord> {
 		}
 	}
 	
+	public static ExperimentalRecords loadFromJson(String jsonFilePath) {
+		try {
+			File file = new File(jsonFilePath);
+
+			if (!file.exists()) {
+				return null;
+			}
+
+			Gson gson=new Gson();
+			ExperimentalRecords chemicals = gson.fromJson(new FileReader(jsonFilePath), ExperimentalRecords.class);			
+			return chemicals;
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
+
+	
+	
+	public static ExperimentalRecords getExperimentalRecords(String sourceName, String subfolder) {
+		
+		String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\";
+		
+		String folder=mainFolder+sourceName+"\\";
+		if(subfolder!=null) folder+=subfolder+"\\";
+		
+		File Folder=new File(folder);
+
+		System.out.println(folder+"\t"+Folder.exists());
+		
+		ExperimentalRecords records=new ExperimentalRecords();
+		
+		//TODO need to flag case where we accidentally have both numbered and non numbered jsons due to multiple parse runs with diff code
+		
+		for(File file:Folder.listFiles()) {
+			if(!file.getName().contains(".json")) continue;
+			if(file.getName().contains("Bad")) continue;
+			if(file.getName().contains("Original Records")) continue;
+			ExperimentalRecords experimentalRecords=ExperimentalRecords.loadFromJson(file.getAbsolutePath());
+			System.out.println(file.getName()+"\t"+subfolder+"\t"+experimentalRecords.size());
+			records.addAll(experimentalRecords);
+		}
+		
+		
+		return records;
+	}
+
 
 	public void getRecordsByProperty() {
 		TreeMap <String,ExperimentalRecords>map=new TreeMap<String,ExperimentalRecords>();

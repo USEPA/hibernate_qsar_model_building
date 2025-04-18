@@ -11,6 +11,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.models.WebServiceModelBuilder;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
@@ -61,7 +62,10 @@ public class ReportGenerationScript {
 	
 
 	
-	public static PredictionReport reportPredictionsMethod(String modelSetName, String datasetName,String splittingName,String methodName,boolean deleteMissingSplitting,boolean includeDescriptors,boolean includeOriginalCompounds,String filePath,boolean writeFile) {
+	public static PredictionReport reportPredictionsMethod(String modelSetName, String datasetName,
+			String splittingName,String methodName,
+			boolean deleteMissingSplitting,boolean includeDescriptors,
+			boolean includeOriginalCompounds,String filePath,boolean writeFile) {
 
 		long t1=System.currentTimeMillis();
 		PredictionReport report=gen.generateMethodPredictions(modelSetName, datasetName, splittingName, methodName,includeDescriptors,includeOriginalCompounds);
@@ -75,6 +79,24 @@ public class ReportGenerationScript {
 		if(writeFile) report.toFile(filePath);
 		return report;
 	}
+	
+	public static PredictionReport reportPredictionsMethod(Model model,
+			boolean deleteMissingSplitting,boolean includeDescriptors,
+			boolean includeOriginalCompounds,String filePath,boolean writeFile) {
+
+		long t1=System.currentTimeMillis();
+		PredictionReport report=gen.generateMethodPredictions(model,includeDescriptors,includeOriginalCompounds);
+		long t2=System.currentTimeMillis();
+
+		if (deleteMissingSplitting) deleteMissingSplitting(report);			
+		
+		double time=(t2-t1)/1000.0;
+		System.out.println("Time to generate report for "+model.getId()+" = "+time+" seconds");
+
+		if(writeFile) report.toFile(filePath);
+		return report;
+	}
+
 
 
 	private static void deleteMissingSplitting(PredictionReport report) {
@@ -155,5 +177,9 @@ public class ReportGenerationScript {
 
 
 	}
+
+
+
+	
 
 }

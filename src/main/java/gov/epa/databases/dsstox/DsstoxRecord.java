@@ -3,10 +3,11 @@ package gov.epa.databases.dsstox;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.openscience.cdk.AtomContainer;
-import org.openscience.cdk.AtomContainerSet;
+
 import org.openscience.cdk.graph.ConnectivityChecker;
 import org.openscience.cdk.interfaces.IAtom;
+import org.openscience.cdk.interfaces.IAtomContainer;
+import org.openscience.cdk.interfaces.IAtomContainerSet;
 
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
@@ -212,7 +213,7 @@ public class DsstoxRecord {
 		
 		
 		try {
-			AtomContainer molecule = (AtomContainer) DsstoxSession.smilesParser.parseSmiles(smiles.trim());
+			IAtomContainer molecule = DsstoxSession.smilesParser.parseSmiles(smiles.trim());
 			
 			if (molecule==null || molecule.getAtomCount() <= 1) {
 				return new ExplainedResponse(false, "Single atom");
@@ -228,7 +229,7 @@ public class DsstoxRecord {
 			boolean containsUnacceptableAtom = false;
 
 			
-			AtomContainer largestFragment=getLargestFragment(molecule);//use largest fragment for the case where keeping salts 
+			IAtomContainer largestFragment=getLargestFragment(molecule);//use largest fragment for the case where keeping salts 
 			Iterator<IAtom> atoms = largestFragment.atoms().iterator();
 			while (atoms.hasNext() && !(containsCarbon && containsUnacceptableAtom)) {
 				IAtom atom = atoms.next();
@@ -257,15 +258,18 @@ public class DsstoxRecord {
 			}
 		} catch (Exception e) {
 //			e.printStackTrace();
+			
+			System.out.println("Structure validation failed: CDK SMILES parsing failed:\t"+smiles);
+			
 			return new ExplainedResponse(false, "Structure validation failed: CDK SMILES parsing failed");
 		}
 	}
 	
-	public int countOrganicFragments(AtomContainer molecule) {
+	public int countOrganicFragments(IAtomContainer molecule) {
 		int count = 0;
-		AtomContainerSet moleculeSet = (AtomContainerSet) ConnectivityChecker.partitionIntoMolecules(molecule);
+		IAtomContainerSet moleculeSet = ConnectivityChecker.partitionIntoMolecules(molecule);
 		for (int i=0; i < moleculeSet.getAtomContainerCount(); i++) {
-			AtomContainer fragment = (AtomContainer) moleculeSet.getAtomContainer(i);
+			IAtomContainer fragment = moleculeSet.getAtomContainer(i);
 			boolean isOrganic = false;
 			for (int j=0; j < fragment.getAtomCount(); j++) {
 				if (fragment.getAtom(j).getSymbol().equals("C")) {
@@ -285,15 +289,15 @@ public class DsstoxRecord {
 	 * @param molecule
 	 * @return
 	 */
-	public AtomContainer getLargestFragment(AtomContainer molecule) {
+	public IAtomContainer getLargestFragment(IAtomContainer molecule) {
 		
-		AtomContainerSet moleculeSet = (AtomContainerSet) ConnectivityChecker.partitionIntoMolecules(molecule);
+		IAtomContainerSet moleculeSet = ConnectivityChecker.partitionIntoMolecules(molecule);
 		
 		int maxSize=0;
-		AtomContainer acLargest=null;
+		IAtomContainer acLargest=null;
 		
 		for (int i=0; i < moleculeSet.getAtomContainerCount(); i++) {
-			AtomContainer fragment = (AtomContainer) moleculeSet.getAtomContainer(i);
+			IAtomContainer fragment = moleculeSet.getAtomContainer(i);
 			
 			if(fragment.getAtomCount()>maxSize) {
 				maxSize=fragment.getAtomCount();
@@ -310,7 +314,7 @@ public class DsstoxRecord {
 			return false;
 		} else {
 			try {
-				AtomContainer ac = (AtomContainer) DsstoxSession.smilesParser.parseSmiles(smiles);
+				IAtomContainer ac = DsstoxSession.smilesParser.parseSmiles(smiles);
 				DsstoxSession.depictionGenerator.depict(ac);
 				return true;
 			} catch (Exception e) {
