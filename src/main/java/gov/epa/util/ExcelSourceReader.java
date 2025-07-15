@@ -3,6 +3,7 @@ package gov.epa.util;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,9 +15,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.Vector;
 
 import org.apache.commons.text.StringEscapeUtils;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.CellValue;
@@ -27,9 +30,11 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 
@@ -51,6 +56,51 @@ public class ExcelSourceReader {
 		
 	}
 	
+	
+	public static void convertJsonArrayToExcel(JsonArray jsonArray, String filePath) {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Data");
+
+            // Assuming all JSON objects have the same keys
+            if (jsonArray.size() > 0) {
+                JsonObject firstObject = jsonArray.get(0).getAsJsonObject();
+                Set<String> keys = firstObject.keySet();
+
+                // Create header row
+                Row headerRow = sheet.createRow(0);
+                int cellIndex = 0;
+                for (String key : keys) {
+                    Cell cell = headerRow.createCell(cellIndex++);
+                    cell.setCellValue(key);
+                }
+
+                // Populate data rows
+                int rowIndex = 1;
+                for (JsonElement element : jsonArray) {
+                    JsonObject jsonObject = element.getAsJsonObject();
+                    Row row = sheet.createRow(rowIndex++);
+                    cellIndex = 0;
+                    for (String key : keys) {
+                        Cell cell = row.createCell(cellIndex++);
+                        
+                        if(jsonObject.get(key)!=null && !jsonObject.get(key).isJsonNull())                        
+                        	cell.setCellValue(jsonObject.get(key).getAsString());
+                    }
+                }
+            }
+
+            // Write the workbook to a file
+            FileOutputStream fileOut = new FileOutputStream(filePath);
+            
+            workbook.write(fileOut);
+            
+
+            System.out.println("Excel file created successfully!");
+
+        } catch (IOException e) {
+            System.err.println("Error while creating Excel file: " + e.getMessage());
+        }
+    }
 	
 	public ExcelSourceReader(String filePath) {
 		
@@ -396,6 +446,11 @@ public class ExcelSourceReader {
 		return content;
 	}
 	
+	
+	
+    
+
+	
 	/**
 	 * Writes records from a spreadsheet to JSON original records format consistent
 	 * with field names of an existing Record[SourceName] class
@@ -409,6 +464,9 @@ public class ExcelSourceReader {
 		
 		try {
 			FileInputStream fis = new FileInputStream(new File(filepathExcel));
+			
+			ZipSecureFile.setMinInflateRatio(0);//https://stackoverflow.com/questions/44897500/using-apache-poi-zip-bomb-detected
+			
 			Workbook wb = WorkbookFactory.create(fis);
 			sheet = wb.getSheetAt(tabNum);
 		} catch (Exception e) {

@@ -75,6 +75,8 @@ public class StructureUtil {
 		
 			IndigoObject molecule = indigo.loadMolecule(smiles);
 			String inchi = indigoInchi.getInchi(molecule);
+			
+			
 			String inchikey = indigoInchi.getInchiKey(inchi);
 			if(inchikey!=null) return inchikey.substring(0,14);
 			
@@ -84,6 +86,53 @@ public class StructureUtil {
 		return null;
 
 	}
+	
+	public static Double molecularWeight(String smiles) throws IndigoException {
+		Indigo indigo = new Indigo();
+		indigo.setOption("ignore-stereochemistry-errors", true);
+
+		try {
+			IndigoObject molecule = indigo.loadMolecule(smiles);
+			return molecule.molecularWeight();
+		} catch (Exception ex) {
+		}
+		return null;
+
+	}
+	
+	/**
+	 * TODO this doesnt work yet
+	 * 
+	 * @param smiles
+	 * @return
+	 * @throws IndigoException
+	 */
+	public static String indigoInchikey1FromSmilesFixedH(String smiles) throws IndigoException {
+		Indigo indigo = new Indigo();
+		
+		indigo.setOption("ignore-stereochemistry-errors", true);
+		
+//		indigo.setOption("/FixedH",true);
+		
+		indigo.setOption("inchi-options", "/FixedH");//TODO doesnt work
+		
+		IndigoInchi indigoInchi = new IndigoInchi(indigo);
+
+		try {
+		
+			IndigoObject molecule = indigo.loadMolecule(smiles);
+			String inchi = indigoInchi.getInchi(molecule);
+			
+			String inchikey = indigoInchi.getInchiKey(inchi);
+			if(inchikey!=null) return inchikey.substring(0,14);
+			
+		} catch (Exception ex) {
+		}
+
+		return null;
+
+	}
+
 	
 	public static Double molWeightFromSmiles(String smiles) throws IndigoException {
 
