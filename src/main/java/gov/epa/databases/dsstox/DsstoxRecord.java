@@ -43,6 +43,9 @@ public class DsstoxRecord {
 	public String qsarReadySmiles;
 	public String msReadySmiles;
 	public String synonymQuality;
+
+	public String qcLevel;
+	public String updatedAt;
 	
 	static SourceSubstanceServiceImpl sss=new SourceSubstanceServiceImpl();
 

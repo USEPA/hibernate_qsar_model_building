@@ -21,6 +21,12 @@ public class DevQsarConstants {
 	public static final String sourceNamePubChem_2024_03_20="PubChem_2024_03_20";
 	public static final String sourceNamePubChem_2024_11_27="PubChem_2024_11_27";
 	
+	public static final String sourceNameEPISuiteAPI="EPI Suite API_1.0";
+	public static final String sourceNamePercepta2023="Percepta2023.1.2";
+	public static final String sourceNameCheminformaticsModules="Cheminformatics Modules";
+	
+	public static final String SOURCE_CHEMINFORMATICS_MODULES = "Cheminformatics Modules";
+
 	
 	public Gson gson;
 	
@@ -227,6 +233,7 @@ public class DevQsarConstants {
 	public static final String LD50 ="LD50";
 	public static final String LLNA ="LLNA";
 	public static final String DEV_TOX ="DevTox";
+	
 
 	public static final String SKIN_IRRITATION = "Skin irritation";//TODO This needs to be more specific
 	public static final String EYE_IRRITATION = "Eye irritation";//TODO This needs to be more specific
@@ -467,7 +474,6 @@ public class DevQsarConstants {
 	public static final String TAG_TRAINING = "_Training";
 	public static final String TAG_CV = "_CV";
 	
-	public static final String SOURCE_CHEMINFORMATICS_MODULES = "Cheminformatics Modules";
 
 	public static final String R2_TEST = R2+TAG_TEST;
 	public static final String Q2_TEST = Q2+TAG_TEST;
@@ -706,6 +712,32 @@ public class DevQsarConstants {
 		propertyNames.add(DevQsarConstants.CACO2);
 		propertyNames.add(DevQsarConstants.CLINT);
 		propertyNames.add(DevQsarConstants.FUB);
+		
+		return propertyNames;
+	}
+	
+	public static List<String> getTEST_PropertyNames() {
+		List<String>propertyNames = new ArrayList<>();
+
+		propertyNames.add(DevQsarConstants.BCF);
+		propertyNames.add(DevQsarConstants.ORAL_RAT_LD50);
+		propertyNames.add(DevQsarConstants.AMES_MUTAGENICITY);
+		propertyNames.add(DevQsarConstants.DEVELOPMENTAL_TOXICITY);
+		propertyNames.add(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50);
+		propertyNames.add(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50);
+		propertyNames.add(DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50);
+		
+		propertyNames.add(DevQsarConstants.MELTING_POINT);
+		propertyNames.add(DevQsarConstants.BOILING_POINT);
+		propertyNames.add(DevQsarConstants.VAPOR_PRESSURE);
+		propertyNames.add(DevQsarConstants.WATER_SOLUBILITY);
+		propertyNames.add(DevQsarConstants.VISCOSITY);
+		propertyNames.add(DevQsarConstants.THERMAL_CONDUCTIVITY);
+		propertyNames.add(DevQsarConstants.SURFACE_TENSION);
+		propertyNames.add(DevQsarConstants.DENSITY);
+		propertyNames.add(DevQsarConstants.FLASH_POINT);
+		
+
 		
 		return propertyNames;
 	}

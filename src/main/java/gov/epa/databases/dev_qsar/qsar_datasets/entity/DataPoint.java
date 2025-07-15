@@ -16,6 +16,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import javax.persistence.UniqueConstraint;
 //import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -24,6 +25,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.NotFound;
 import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.annotations.UpdateTimestamp;
+
+import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteValidation.CheckStructure;
+
 
 @Entity
 @Table(name="data_points", uniqueConstraints={@UniqueConstraint(columnNames = {"canon_qsar_smiles", "fk_dataset_id"})})
@@ -43,7 +47,7 @@ public class DataPoint {
 
 	@Column(name="qsar_dtxcid")
 	private String qsar_dtxcid;
-
+	
 	@Column(name="qsar_exp_prop_property_values_id")
 	private String qsar_exp_prop_property_values_id;
 
@@ -79,6 +83,12 @@ public class DataPoint {
 	@NotNull(message="Creator required")
 	@Column(name="created_by")
 	private String createdBy;
+	
+	@Transient
+	public CheckStructure checkStructure;//for validation exercise (not for db)
+	
+	@Transient
+	public String inchiKey1_qsarSmiles;
 	
 	public DataPoint() {}
 	
