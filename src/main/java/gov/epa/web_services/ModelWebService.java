@@ -49,7 +49,7 @@ public class ModelWebService extends WebService {
 	}
 	
 
-	public void configUnirest(boolean turnOffLogging) {
+	public static void configUnirest(boolean turnOffLogging) {
 		
 		try {//Need to suppress logging because it slows things down when have big data sets...
 
@@ -215,7 +215,7 @@ public class ModelWebService extends WebService {
 				.field("model", model, "model.bin")
 				.asString();
 		
-		System.out.println("Status of init call = "+response.getStatus());
+//		System.out.println("Status of init call = "+response.getStatus());
 		
 		return response;
 	}
@@ -290,6 +290,19 @@ public class ModelWebService extends WebService {
 		HttpResponse<String> response = Unirest.post(address+"/models/predict")
 				.field("prediction_tsv", predictionSet)
 				.field("model_id", modelId)
+				.asString();
+		
+		return response;
+	}
+	
+	
+	public HttpResponse<String> callGeneratePlot(String trainingSet, String predictionSet, String modelId,String modelName,String plotType) {
+		HttpResponse<String> response = Unirest.post(address+"/models/plot")
+				.field("training_tsv", trainingSet)
+				.field("prediction_tsv", predictionSet)
+				.field("model_id", modelId)
+				.field("model_name", modelName)
+				.field("plot_type", plotType)
 				.asString();
 		
 		return response;

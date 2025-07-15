@@ -22,6 +22,7 @@ import org.openscience.cdk.DefaultChemObjectBuilder;
 import org.openscience.cdk.depict.Depiction;
 import org.openscience.cdk.depict.DepictionGenerator;
 import org.openscience.cdk.exception.CDKException;
+import org.openscience.cdk.interfaces.IAtomContainer;
 import org.openscience.cdk.smiles.SmilesParser;
 
 import com.epam.indigo.IndigoException;
@@ -170,10 +171,10 @@ public class StructureImageUtil {
 		}	
 	}
 	
-	public static AtomContainer generateAtomContainerFromSmiles(String smiles)  {
+	public static IAtomContainer generateAtomContainerFromSmiles(String smiles)  {
 //		String inchikey = StructureUtil.indigoInchikeyFromSmiles(smiles);
 		try {		
-			AtomContainer ac = (AtomContainer) parser.parseSmiles(smiles);
+			IAtomContainer ac = parser.parseSmiles(smiles);
 			return ac;
 		} catch (Exception ex) {
 			return null;

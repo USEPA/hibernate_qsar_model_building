@@ -63,17 +63,23 @@ public class SciDataExpertsStandardizer {
 	String serverHost;
 	public String standardizerName;
 	private boolean useBatchStandardize;
-	private String standardizerType;
+//	private String standardizerType;
 	
 	
-	public SciDataExpertsStandardizer(String standardizerType,String workflow,String serverHost) {
-		this.standardizerName = DevQsarConstants.STANDARDIZER_SCI_DATA_EXPERTS + "_" + standardizerType;
-		this.standardizerType = standardizerType;
+	public SciDataExpertsStandardizer(String workflow,String serverHost) {
+		this.standardizerName = DevQsarConstants.STANDARDIZER_SCI_DATA_EXPERTS + "_" + workflow.toUpperCase().replace("-","_");
+		
+		System.out.println(standardizerName);
+		
 		this.useBatchStandardize = false;
 		this.workflow=workflow;
 		this.serverHost=serverHost;
 	}
 	
+	public SciDataExpertsStandardizer(String serverHost) {
+		this.useBatchStandardize = false;
+		this.serverHost=serverHost;
+	}
 	
 
 //	@Override
@@ -382,6 +388,35 @@ public class SciDataExpertsStandardizer {
 	 * Version that uses json objects directly 
 	 */
 	public HttpResponse<String> callQsarReadyStandardizePost(String smiles,boolean full) {
+		//		Unirest.setTimeouts(0, 0);
+		JsonObject joBody=new JsonObject();
+
+		joBody.addProperty("full", full);
+
+		JsonObject joOptions=new JsonObject();
+		joOptions.addProperty("workflow", workflow);
+		joBody.add("options", joOptions);
+
+		JsonArray chemicals=new JsonArray();
+		JsonObject chemical=new JsonObject();
+		chemical.addProperty("smiles", smiles);
+		chemicals.add(chemical);
+		joBody.add("chemicals", chemicals);
+
+		//		System.out.println(Utilities.gson.toJson(joBody));
+
+		HttpResponse<String> response = Unirest.post(serverHost+"/api/stdizer/chemicals")
+				.header("Content-Type", "application/json")
+				.body(Utilities.gson.toJson(joBody))
+				.asString();
+
+		return response;
+		
+
+	}
+	
+	
+	public HttpResponse<String> callQsarReadyStandardizePost(String smiles,boolean full,String workflow) {
 		//		Unirest.setTimeouts(0, 0);
 		JsonObject joBody=new JsonObject();
 
@@ -801,7 +836,7 @@ public class SciDataExpertsStandardizer {
 
 //		String workflow="QSAR-ready_CNL_edits_TMM_2";
 		String workflow=QSAR_READY_WORKFLOW;
-		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(type,workflow,serverHost);
+		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(workflow,serverHost);
 
 		boolean full=false;
 
@@ -879,7 +914,7 @@ public class SciDataExpertsStandardizer {
 //		String smiles = getSampleSmiles();
 		String smiles="CC[O+]=NC.[O-]Cl(=O)(=O)=O";
 
-		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(type,workflow,serverHost);
+		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(workflow,serverHost);
 		HttpResponse<String>response=standardizer.callQsarReadyStandardizePost2(smiles,full);
 		System.out.println(response.getStatus());
 

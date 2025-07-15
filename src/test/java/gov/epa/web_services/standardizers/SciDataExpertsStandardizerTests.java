@@ -1,6 +1,5 @@
 package gov.epa.web_services.standardizers;
 
-import static org.junit.Assert.assertEquals;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,6 +30,8 @@ import org.json.CDL;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 import org.openscience.cdk.exception.CDKException;
 
 import com.epam.indigo.Indigo;
@@ -61,8 +62,8 @@ public class SciDataExpertsStandardizerTests {
 
 	//	String serverEPA = "https://ccte-cced.epa.gov/api/stdizer/";
 	String serverEPA="https://hcd.rtpnc.epa.gov/api/stdizer";
-//	static String serverHost="https://hcd.rtpnc.epa.gov";
-	static String serverHost="https://hazard-dev.sciencedataexperts.com";
+	static String serverHost="https://hcd.rtpnc.epa.gov";
+//	static String serverHost="https://hazard-dev.sciencedataexperts.com";
 	
 
 //		static String workflow = "QSAR-ready_CNL_edits";
@@ -553,7 +554,7 @@ public class SciDataExpertsStandardizerTests {
 			
 			jaResults.add(jo);
 
-			//			System.out.println(gson.toJson(jo));
+			System.out.println(gson.toJson(jo));
 		}
 
 //		System.out.println(type+"\t"+countMatch + " of " + ht.size() + " match");
