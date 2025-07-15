@@ -65,6 +65,7 @@ import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.ExcelSourceReader;
 import gov.epa.util.StructureUtil;
 import gov.epa.util.StructureUtil.SimpleOpsinResult;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
@@ -1879,6 +1880,13 @@ public class DsstoxMapper {
 	}
 	
 	public List<ExplainedResponse> mapByExternalID(String listName) {
+		String folder="data\\dev_qsar\\output\\000 new chemreg lists\\";
+		String filepathOut=folder+listName + "_mapping_results.txt";
+		return mapByExternalID(listName, filepathOut);
+	}
+	
+	
+	public List<ExplainedResponse> mapByExternalID(String listName,String filepathOut) {
 
 		List<ExplainedResponse> responses = new ArrayList<>();
 
@@ -1892,8 +1900,6 @@ public class DsstoxMapper {
 		
 		try {
 
-			String folder="data\\dev_qsar\\output\\000 new chemreg lists\\";
-			String filepathOut=folder+listName + "_mapping_results.txt";
 
 			FileWriter fw = new FileWriter(filepathOut);
 			
@@ -1940,6 +1946,86 @@ public class DsstoxMapper {
 		}
 
 		return responses;
+	}
+	
+	
+	public List<ExplainedResponse> mapByExternalID_to_Excel(String listName,String filepathOut) {
+
+		List<ExplainedResponse> responses = new ArrayList<>();
+
+		
+		Map<String, SourceChemical> mapList = SourceChemicalUtilities.getMapChemRegListByExternalID(listName);
+
+		List<DsstoxRecord> dsstoxRecords = sourceSubstanceService
+				.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(listName);
+
+		System.out.println("Records in list="+dsstoxRecords.size());
+		
+		try {
+
+
+			FileWriter fw = new FileWriter(filepathOut);
+			
+			System.out.println(filepathOut);
+
+//			String header = "externalId\tSourceCas\tSourceName\tSourceSmiles\tSourceDTXSID\tAcceptMapping?\tMappedDTXSID\treason";
+
+//			System.out.println(header);
+
+//			fw.write(header + "\r\n");
+
+//			boolean start=false;
+			
+			JsonArray ja=new JsonArray();
+			
+			
+			for (DsstoxRecord dr : dsstoxRecords) {
+				
+//				if(dr.externalId.equals("17538_2")) start=true;
+				
+//				if(!start) continue;
+				
+				// System.out.println(gson.toJson(dr));
+				ExplainedResponse response = this.acceptMapping(dr, mapList.get(dr.externalId));
+				response.record = dr;
+				responses.add(response);
+
+				SourceChemical sc = mapList.get(dr.externalId);
+				
+				if(sc==null) continue;//had issue with multiline name (32817-15-5)
+
+				
+				JsonObject jo=new JsonObject();
+				
+				jo.addProperty("externalId", response.record.externalId);
+				jo.addProperty("SourceCasrn", sc.getSourceCasrn());
+				jo.addProperty("SourceChemicalName", sc.getSourceChemicalName());
+				jo.addProperty("SourceSmiles", sc.getSourceSmiles());
+				jo.addProperty("SourceDtxsid", sc.getSourceDtxsid());
+				jo.addProperty("AcceptMapping", response.response);
+				jo.addProperty("MappedDtxsid", response.record.dsstoxSubstanceId);
+				jo.addProperty("MappedSmiles", response.record.smiles);
+				jo.addProperty("Reason", response.reason);
+				jo.addProperty("externalId", response.record.externalId);
+				
+				ja.add(jo);
+				
+//				System.out.println(line);
+
+				fw.flush();
+
+				// System.out.println(gson.toJson(response));
+			}
+			
+			ExcelSourceReader esr=new ExcelSourceReader();
+			esr.convertJsonArrayToExcel(ja, filepathOut);
+
+			return responses;
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+		
 	}
 	
 	public List<ExplainedResponse> mapBySourceSubstanceID(String listName) {

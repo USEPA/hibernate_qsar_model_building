@@ -46,15 +46,16 @@ import kong.unirest.Unirest;
 
 public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCalculator {
 	
+	public static boolean configUnirest=true;
+	
 	private SciDataExpertsDescriptorWebService descriptorWebService;
 	private Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 	
 	public SciDataExpertsDescriptorValuesCalculator(String sciDataExpertsUrl, String lanId) {
 		super(lanId);
 		this.descriptorWebService = new SciDataExpertsDescriptorWebService(sciDataExpertsUrl);
-		configUnirest(true);
+		if(configUnirest) configUnirest(true);
 	}
-	
 	
 
 	public void configUnirest(boolean turnOffLogging) {
@@ -321,9 +322,9 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 		
 
 //		//Run in batches(TMM):
-//		runSmilesList(canonQsarSmilesToCalculate, batchSize, descriptorSet);
+		runSmilesList(canonQsarSmilesToCalculate, batchSize, descriptorSet);
 
-		runSmilesListGet(canonQsarSmilesToCalculate, descriptorSet);
+//		runSmilesListGet(canonQsarSmilesToCalculate, descriptorSet);
 	}
 
 	/**
@@ -461,6 +462,9 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 			String strResponse=descriptorWebService.calculateDescriptorsAsString(canonQsarSmiles, descriptorService).getBody();
 			JsonObject jo=Utilities.gson.fromJson(strResponse,JsonObject.class);
 
+			
+//			System.out.println(strResponse);
+			
 			if(jo.get("chemicals")==null) return null;
 			
 			JsonArray jaChemicals=jo.get("chemicals").getAsJsonArray();
@@ -665,10 +669,17 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 
 		List<DescriptorValues>valuesArray=new ArrayList<>();
 		
+		int counter=0;
 		for (String smiles:canonQsarSmilesToCalculate) {
 			String descriptors=calculateDescriptors(smiles,descriptorSet);			
 			DescriptorValues dv=new DescriptorValues(smiles,descriptorSet,descriptors,lanId);
 			valuesArray.add(dv);
+			
+			counter++;
+			
+			if(counter%100==0)
+				System.out.println(counter+" of "+canonQsarSmilesToCalculate.size());
+			
 //			writeDescriptorValuesToDatabase(mapDescriptors, descriptorSet,lanId);
 //			System.out.println(smiles+"\t"+descriptors);			
 //			if(true) break;

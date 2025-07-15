@@ -772,10 +772,6 @@ public class DatasetCreator {
 //		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit);redundant- we have excel and json
 		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit, createExcelFiles);
 
-		if (!postToDB) {
-			System.out.println("postToDB=false, exiting before creating "+params.datasetName);
-			return null;// stops creation of dataset in database
-		}
 
 		Gson gson = new Gson();
 
@@ -784,6 +780,124 @@ public class DatasetCreator {
 
 		Dataset dataset2 = dataset;// used to look at datapoints later
 
+		if(!postToDB) {
+			System.out.println("postToDB=false for "+params.datasetName);
+			return null;
+		}
+		
+		
+		dataset = initializeDataset(dataset);
+
+		System.out.println("Posting final merged values...");
+		long t7 = System.currentTimeMillis();
+
+		if (dataset != null) {// We can post:
+//			postDataPoints(unifiedPropertyValues, dataset);//old method doesnt have CIDs or exp_prop_ids 
+			postDataPointsWithCIDs(unifiedPropertyValues, dataset, unitDatapointContributor,params.mappingParams.validateMedian);
+
+		} else {// Data set already exists lets look at datapoints:
+			lookatDataPoints(unifiedPropertyValues, dataset2,params.mappingParams.validateMedian);
+		}
+
+		long t8 = System.currentTimeMillis();
+		System.out.println("Time to post: " + (t8 - t7) / 1000.0 + " s\n");
+
+		if (dataset == null) {
+			System.out.println("*** Warning dataset already exists! New dataset not created ***");
+		}
+		
+		return dataset;
+		
+	}
+	
+	/**
+	 * Checks if tox value exceeds water solubility or the baseline toxicity (from logKow)
+	 * @param propertyValues
+	 * @param params
+	 * @param useStdevFilter
+	 * @param excludeBasedOnPredictedWS 
+	 * @param excludeBasedOnBaselineToxicity 
+	 * @param datasetNameOriginal 
+	 * @return
+	 */
+	public Dataset convertPropertyValuesToDatapoints2(List<PropertyValue> propertyValues, DatasetParams params,
+			boolean useStdevFilter, boolean excludeBasedOnPredictedWS, boolean excludeBasedOnBaselineToxicity,String typeAnimal, String datasetNameOriginal) {
+
+		System.out.println("\npostToDb=" + postToDB + "\n");
+
+		if (propertyValues == null || propertyValues.isEmpty()) {
+//			logger.error(params.datasetName + ": Experimental property data unavailable");
+			System.out.println(params.datasetName + ": Experimental property data unavailable");
+			return null;
+		}
+
+		HashMap<String, Compound> hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
+
+		System.out.println("Retrieving DSSTox structure data...");
+		List<MappedPropertyValue> mappedPropertyValues = null;
+		try {
+			mappedPropertyValues = mapPropertyValuesToDsstoxRecords(propertyValues, params, hmQsarSmilesLookup);
+		} catch (Exception e) {
+//			logger.error("Failed DSSTox query: " + e.getMessage());
+			e.printStackTrace();
+			return null;
+		}
+
+		if (mappedPropertyValues == null || mappedPropertyValues.isEmpty()) {
+			System.out.println(params.datasetName + ": DSSTox structure data unavailable");
+			return null;
+		}
+
+		// TODO store mapping of source chemicals to dtxsid/dtxcid in
+		// source_chemical_mappings table or use datasets with contributer table
+
+		Property property = initializeProperty(propertyValues);
+		if (property.getId() == null) {
+			return null;
+		}
+
+		String finalUnitName = finalUnitsNameMap.get(params.propertyName);
+		Unit unit = initializeUnit(finalUnitName);
+
+		String contributorUnitName = contributorUnitsNameMap.get(params.propertyName);
+		Unit unitDatapointContributor = initializeUnit(contributorUnitName);
+
+		if (unit.getId() == null) {
+			return null;
+		}
+
+		System.out.println("Standardizing structures using " + standardizerName + "...");
+		long t1 = System.currentTimeMillis();
+		standardizeMappedPropertyValues(mappedPropertyValues, hmQsarSmilesLookup, useFullStandardize);
+		long t2 = System.currentTimeMillis();
+		System.out.println("Standardization time: " + (t2 - t1) / 1000.0 + " s");
+
+		System.out.println("Unifying structures...");
+		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(
+				mappedPropertyValues, useStdevFilter, params.mappingParams.validateStructure);
+
+		checkMappedPropertyValues(datasetNameOriginal, unifiedPropertyValues,excludeBasedOnPredictedWS, excludeBasedOnBaselineToxicity,typeAnimal);
+		
+		System.out.println("#Unified structures:\t"+unifiedPropertyValues.keySet().size());
+		
+		System.out.println("Saving unification data to examine...");
+//		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit);redundant- we have excel and json
+		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit, createExcelFiles);
+
+
+		Gson gson = new Gson();
+
+		Dataset dataset = new Dataset(params.datasetName, params.datasetDescription, property, unit,
+				unitDatapointContributor, gson.toJson(params.mappingParams), lanId);
+
+		Dataset dataset2 = dataset;// used to look at datapoints later
+
+		if(!postToDB) {
+			System.out.println("postToDB=false for "+params.datasetName);
+			return null;
+		}
+		
+		
 		dataset = initializeDataset(dataset);
 
 		System.out.println("Posting final merged values...");
@@ -809,6 +923,21 @@ public class DatasetCreator {
 	}
 	
 	
+
+	private void checkMappedPropertyValues(String datasetNameOriginal, Map<String, List<MappedPropertyValue>> unifiedPropertyValues, boolean excludeBasedOnPredictedWS, boolean excludeBasedOnBaselineToxicity,String typeAnimal) {
+
+		if(excludeBasedOnPredictedWS) {
+			int removed=ChangeKeptPropertyValues.removeBasedOnPredictedWS(datasetNameOriginal, unifiedPropertyValues);
+			System.out.println("Removed based on predicted WS="+removed);
+		}
+		
+		if(excludeBasedOnBaselineToxicity) {
+			int removed=ChangeKeptPropertyValues.removeBasedOnBaselineToxicity(datasetNameOriginal, unifiedPropertyValues, typeAnimal);
+			System.out.println("Removed based on baseline toxicity="+removed);
+		}
+	}
+
+
 
 	HashMap<String, Compound> htQsarSmiles = new HashMap<>();
 
@@ -995,7 +1124,8 @@ public class DatasetCreator {
 			List<String> includedSources, boolean excludeBasedOnPredictedWS, 
 			boolean excludeBasedOnBaselineToxicity,Double observationDurationDays,
 			String speciesSupercategory, 
-			List<String> listSpeciesCommon, boolean excludeBasedOnConcentrationType,String typeAnimal) {
+			List<String> listSpeciesCommon, boolean excludeBasedOnConcentrationType,
+			String typeAnimal,boolean excludeModelBasedBeforeMapping) {
 		
 //		HashMap<String, Compound> hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
 
@@ -1015,6 +1145,8 @@ public class DatasetCreator {
 		System.out.println("Selection time = " + (t6 - t5) / 1000.0 + " s");
 
 		System.out.println("Raw records:" + propertyValues.size());
+		
+		
 		excludePropertyValues2(includedSources, propertyValues);
 		if (includedSources.size() > 0)
 			System.out.println("Raw records after source exclusion:" + propertyValues.size());
@@ -1040,21 +1172,6 @@ public class DatasetCreator {
 			System.out.println("Remaining="+propertyValues.size());
 		}
 
-
-		
-		if(excludeBasedOnPredictedWS) {
-			int removed=ChangeKeptPropertyValues.removeBasedOnPredictedWS(datasetNameOriginal, propertyValues);
-			System.out.println("Removed based on predicted WS="+removed);
-			System.out.println("Remaining="+propertyValues.size());
-		}
-		
-		if(excludeBasedOnBaselineToxicity) {
-			int removed=ChangeKeptPropertyValues.removeBasedOnBaselineToxicity(datasetNameOriginal, propertyValues, typeAnimal);
-			System.out.println("Removed based on baseline toxicity="+removed);
-			System.out.println("Remaining="+propertyValues.size());
-		}
-		
-		
 		if(excludeBasedOnConcentrationType) {
 			int removed=ChangeKeptPropertyValues.removeBasedOnConcentrationType(propertyValues);
 			System.out.println("Removed based on concentration type="+removed);
@@ -1062,7 +1179,28 @@ public class DatasetCreator {
 		}
 
 
-		return convertPropertyValuesToDatapoints(propertyValues, params, useStdevFilter);
+		if(excludeModelBasedBeforeMapping) {
+
+			if(excludeBasedOnPredictedWS) {
+				int removed=ChangeKeptPropertyValues.removeBasedOnPredictedWS(datasetNameOriginal, propertyValues);
+				System.out.println("Removed based on predicted WS="+removed);
+				System.out.println("Remaining="+propertyValues.size());
+			}
+			
+			if(excludeBasedOnBaselineToxicity) {
+				int removed=ChangeKeptPropertyValues.removeBasedOnBaselineToxicity(datasetNameOriginal, propertyValues, typeAnimal);
+				System.out.println("Removed based on baseline toxicity="+removed);
+				System.out.println("Remaining="+propertyValues.size());
+			}
+
+			return convertPropertyValuesToDatapoints(propertyValues, params, useStdevFilter);
+			
+		} else {
+			return convertPropertyValuesToDatapoints2(propertyValues, params, useStdevFilter,
+					excludeBasedOnPredictedWS,excludeBasedOnBaselineToxicity,typeAnimal,datasetNameOriginal);
+
+		}
+		
 
 	}
 	

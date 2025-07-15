@@ -50,12 +50,21 @@ public class PropertyValueMerger {
 			Vector<Long> vecFinalExpPropIds=new Vector<>();
 			
 			for (MappedPropertyValue mpv:mappedPropertyValues) {
-				if (mpv.qsarPropertyValue==finalValue || !validateMedian) {
 //					if (!vecFinalCIDs.contains(mpv.compound.getDtxcid()))
+				
+//				System.out.println(mpv.qsarPropertyValue+"\t"+finalValue);
+				
+				double diff=Math.abs(mpv.qsarPropertyValue-finalValue);
+				
+				
+				if (diff<0.1 || !validateMedian) {
 //						vecFinalCIDs.add(mpv.compound.getDtxcid());					
 
 					vecFinalCIDs.add(mpv.compound.getDtxcid());					
 					vecFinalExpPropIds.add(mpv.propertyValue.getId());
+				} else {
+//					System.out.println(mpv.compound.getDtxcid()+"\t"+mpv.propertyValue.getId());
+					
 				}
 			}			
 
@@ -77,6 +86,9 @@ public class PropertyValueMerger {
 			result[0]=finalValue+"";
 			result[1]=finalCIDs;
 			result[2]=finalExpPropIDs;		
+			
+//			System.out.println("CID="+result[1]+"\texp_prop_id="+result[2]);
+			
 			return result;			
 		}
 	}
