@@ -12,7 +12,7 @@ import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dev_qsar.exp_prop.service.*;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.endpoints.datasets.DatasetCreator;
-
+import gov.epa.endpoints.datasets.MappedPropertyValue;
 import gov.epa.run_from_java.scripts.PredictScript;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
@@ -72,7 +72,6 @@ public class ChangeKeptPropertyValues {
 				continue;
 			}
 
-
 			Double toxValue_g_L=null;
 
 			if(dtxsid==null || !htPred.containsKey(dtxsid)) {
@@ -123,6 +122,82 @@ public class ChangeKeptPropertyValues {
 		
 		return countBefore-countAfter;
 
+	}
+	
+	public static int removeBasedOnPredictedWS(String datasetNameOriginal,
+			Map<String, List<MappedPropertyValue>> unifiedPropertyValues) {
+		DecimalFormat df=new DecimalFormat("0.00E00");
+		DecimalFormat df2=new DecimalFormat("0.0");
+		
+		boolean generateNewPredictions=true;
+		
+		long modelId=1066L;
+		PredictScript ps=new PredictScript();
+		String propertyNameModel=ps.getPropertyNameModel(modelId);
+
+
+		//Folder for storing prediction hashtable:
+//		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\ECOTOX_2023_12_14\\";
+//		String filePathPreds=folder+datasetNameOriginal+"_WS.json";
+
+		Hashtable<String, Double> htPred = getPredictionHashtable(datasetNameOriginal,modelId, ps,
+				propertyNameModel);
+		
+		
+//		System.out.println(Utilities.gson.toJson(htPred));
+
+		List<DsstoxRecord>records=PredictScript.getDsstoxRecords();
+		Hashtable<String, DsstoxRecord> htDsstox=PredictScript.getDsstoxHashtableByDTXSID(records);
+
+		int countBefore=0;
+		for (String key:unifiedPropertyValues.keySet()) {
+			List<MappedPropertyValue>listMPV=unifiedPropertyValues.get(key);
+			countBefore+=listMPV.size();
+		}
+
+		Iterator<Map.Entry<String, List<MappedPropertyValue>>> iterator = unifiedPropertyValues.entrySet().iterator();
+		
+		while (iterator.hasNext()) {
+						
+			Map.Entry<String, List<MappedPropertyValue>> entry = iterator.next();
+			
+			List<MappedPropertyValue>listMPV=entry.getValue();
+			
+			for(int j=0;j<listMPV.size();j++) {
+				
+				MappedPropertyValue mpv=listMPV.get(j);
+				String dtxsid=mpv.dsstoxRecord.dsstoxSubstanceId;
+				
+//				System.out.println(dtxsid+"\t"+mpv.qsarPropertyValue);
+
+//				double mol_weight=htDsstox.get(dtxsid).getMolWeight();
+				
+				if(!htPred.containsKey(dtxsid)) {
+					System.out.println("Dont have prediction for "+dtxsid);
+					continue;
+				}				
+				
+				double predWS=htPred.get(dtxsid);//should be in -logM
+				double toxValue=mpv.qsarPropertyValue;//should be in -logM
+				
+				if(toxValue<predWS-1.0) {				
+//					System.out.println(dtxsid+"\t"+df.format(toxValue)+"\t"+df.format(predWS)+"\tExceed WS");					
+					listMPV.remove(j--);
+				}
+				
+			}
+			
+			if(listMPV.size()==0) iterator.remove();
+
+		}
+		
+		int countAfter=0;
+		for (String key:unifiedPropertyValues.keySet()) {
+			List<MappedPropertyValue>listMPV=unifiedPropertyValues.get(key);
+			countAfter+=listMPV.size();
+		}
+		
+		return countBefore-countAfter;
 	}
 	
 	
@@ -537,6 +612,120 @@ public class ChangeKeptPropertyValues {
 		return countBefore-countAfter;
 		
 	}
+	
+	
+	public static int removeBasedOnBaselineToxicity(String datasetNameOriginal,
+			Map<String, List<MappedPropertyValue>> unifiedPropertyValues, String typeAnimal) {
+
+		boolean generateNewPredictions=true;
+
+		long modelId=1069L;//logKow XGB model
+		PredictScript ps=new PredictScript();
+		String propertyNameModel=ps.getPropertyNameModel(modelId);
+
+		//Folder for storing prediction hashtable:
+		//		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\ECOTOX_2023_12_14\\";
+		//		String filePathPreds=folder+propertyNameDataset+"_LogKow.json";
+		//		String filePathPreds=folder+datasetName+"_LogKow.json";
+
+		//		Hashtable<String, Double> htPred = getPredictionHashtable(datasetName, generateNewPredictions, modelId, ps,
+		//				propertyNameModel,filePathPreds);
+
+		
+		//TODO Map of logKow preds by dtxsid- probably would work better if used canonSmiles instead
+		
+		Hashtable<String, Double> htPred_logKow = getPredictionHashtable(datasetNameOriginal, modelId, ps,
+				propertyNameModel);
+
+		List<DsstoxRecord>records=PredictScript.getDsstoxRecords();
+		Hashtable<String, DsstoxRecord> htDsstox=PredictScript.getDsstoxHashtableByDTXSID(records);
+
+		List<String>omittedDtxsids=new ArrayList<>();
+		List<String>omittedNames=new ArrayList<>();
+
+		System.out.println("dtxsid\ttoxValue_g_L\t10*BaseLineTox_g_L");
+
+		int countBefore=0;
+		for (String key:unifiedPropertyValues.keySet()) {
+			List<MappedPropertyValue>listMPV=unifiedPropertyValues.get(key);
+			countBefore+=listMPV.size();
+		}
+
+
+		DecimalFormat df=new DecimalFormat("0.00");
+
+		Iterator<Map.Entry<String, List<MappedPropertyValue>>> iterator = unifiedPropertyValues.entrySet().iterator();
+		
+		while (iterator.hasNext()) {
+						
+			Map.Entry<String, List<MappedPropertyValue>> entry = iterator.next();
+			
+			List<MappedPropertyValue>listMPV=entry.getValue();
+
+			for(int j=0;j<listMPV.size();j++) {
+
+				MappedPropertyValue mpv=listMPV.get(j);
+				String dtxsid=mpv.dsstoxRecord.dsstoxSubstanceId;
+
+				if(htPred_logKow.containsKey(dtxsid)) {
+
+//					double mol_weight=htDsstox.get(dtxsid).getMolWeight();
+
+					double toxValueNegLogM=mpv.qsarPropertyValue;//should be in -logM
+
+					Double logKowPred=htPred_logKow.get(dtxsid);
+					//					System.out.println(dtxsid+"\t"+logKowPred);
+
+					Double BaseLineTox_Log_mmol_L=null;
+
+					if (typeAnimal.equalsIgnoreCase(typeAnimalFish)) {
+						//ECOSAR manual, Baseline Toxicity Equation for Fish:
+						BaseLineTox_Log_mmol_L=-0.8981*logKowPred + 1.7108;	
+					} else if (typeAnimal.equalsIgnoreCase(typeAnimalFatheadMinnow)) {					
+
+						//FHM model for nonpolar compounds, Nendza and Russom, 1991:
+						BaseLineTox_Log_mmol_L=-0.79*logKowPred + 1.35;
+						//Note this ends up excluding some records for methanol!
+						//Is there a better model for FHM
+
+					} else if (typeAnimal.equalsIgnoreCase(typeAnimalDaphnid)) {
+
+						//						ECOSAR manual, Baseline Toxicity Equation for Daphnid:
+						BaseLineTox_Log_mmol_L=-0.8580*logKowPred + 1.3848;
+					} else {
+						System.out.println("Unknown animal type");
+						return -9999;
+					}
+
+					double BaseLineTox_mmol_L=Math.pow(10.0, BaseLineTox_Log_mmol_L);
+					double BaseLineTox_mol_L=BaseLineTox_mmol_L/1000.0;				
+					double BaseLineToxNegLogM=-Math.log10(BaseLineTox_mol_L);
+
+					if(toxValueNegLogM<BaseLineToxNegLogM-1) {
+//						System.out.println(dtxsid+"\t"+df.format(toxValueNegLogM)+"\t"+df.format(BaseLineToxNegLogM)+"\texp tox > 10*baseline tox");
+						listMPV.remove(j--);
+					}
+				
+				} else {
+					//					if(!omittedDtxsids.contains(dtxsid)) omittedDtxsids.add(dtxsid);
+					//					if(!omittedNames.contains(chemicalName)) omittedNames.add(chemicalName);
+					System.out.println(dtxsid+"\tNo logKow prediction in hashtable");
+				}
+			}//end loop over MappedPropertyValues
+
+			if(listMPV.size()==0) iterator.remove();
+		}
+
+		//			System.out.println(pv.getUnit().getName());
+
+		int countAfter=0;
+		for (String key:unifiedPropertyValues.keySet()) {
+			List<MappedPropertyValue>listMPV=unifiedPropertyValues.get(key);
+			countAfter+=listMPV.size();
+		}
+
+		return countBefore-countAfter;
+	}
 
 	private  static Hashtable<String, Double> getPredictionHashtable(String datasetName, boolean generateNewPredictions,
 			long modelId, PredictScript ps, String propertyNameModel,String filePathPreds) {
@@ -778,7 +967,6 @@ public class ChangeKeptPropertyValues {
 		
 		return countBefore-countAfter;
 	}
-
 
 	
 

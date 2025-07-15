@@ -854,6 +854,59 @@ public class ExperimentalRecordLoader {
 			loadBatchWise(records, type, createDBEntries, sourceName, propertyName);
 		
 		}
+		
+		private void loadAcuteAquaticToxicityDataQsarToolbox() {
+			
+			debug=true;//prints values loaded from database like property
+		
+			boolean createDBEntries=true;
+		
+			String sourceName="QSAR_Toolbox";
+			
+			String type=typeOther;
+			
+			pvc.mapTables(sourceName);
+		
+			String propertyName=DevQsarConstants.ACUTE_AQUATIC_TOXICITY;
+			
+			String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+
+			//**********************************************************************************************
+			//First create the property
+			ExpPropProperty property=pvc.getProperty(propertyName, "Water concentration that kills half of fish");
+		
+			//**********************************************************************************************
+			//Add entries for properties_acceptable_units:
+		
+			//Note: first time you run this property, uncomment out the following lines:
+			pvc.addPropertyAcceptableUnit(pvc.getUnit("G_L","g/L"), property);
+			pvc.addPropertyAcceptableUnit(pvc.getUnit("MOLAR","M"), property);
+		
+
+			pvc.addPropertyAcceptableParameter(pvc.getParameter("exposure_type","Type of exposure (S=static, F=flowthrough, R=renewal, etc)"),property);
+			pvc.addPropertyAcceptableParameter(pvc.getParameter("Observation duration","Duration for the given toxicity value"),property);
+
+			pvc.addParameterAcceptableUnit(pvc.getUnit("TEXT",""), pvc.getParameter("test_id","test_id field in tests table in Ecotox database"));
+			pvc.addParameterAcceptableUnit(pvc.getUnit("TEXT",""), pvc.getParameter("exposure_type","Type of exposure (S=static, F=flow-through, R=renewal, etc)"));		
+			pvc.addParameterAcceptableUnit(pvc.getUnit("DAYS",""), pvc.getParameter("Observation duration","Duration for the given toxicity value"));
+			
+		
+			//		addPropertyInCategory(getPropertyCategory("Acute aquatic toxicity", "Acute aquatic toxicity"), property);
+		
+			//*******************************************************************************************************
+		
+			String subfolder="Fish tox ECHA\\"+propertyName;
+			
+			ExperimentalRecords records=ExperimentalRecords.getExperimentalRecords(sourceName,subfolder);
+			//		printUniqueUnitsListInExperimentalRecords(records);
+			System.out.println("experimentalRecords.size()="+records.size());
+		
+//			if(true)return;
+			
+//			load(records, typeOther, createDBEntries,sourceName,propertyName);
+			loadBatchWise(records, type, createDBEntries, sourceName, propertyName);
+		
+		}
 
 		private void loadAcuteAquaticToxicityDataToxVal() {
 		
@@ -1147,7 +1200,50 @@ public class ExperimentalRecordLoader {
 			//		printUniqueUnitsListInExperimentalRecords(records);
 			System.out.println("experimentalRecords.size()="+records.size());
 		
-			load(records, typeOther, createDBEntries,sourceName,propertyName);
+			loadBatchWise(records, typeOther, createDBEntries,sourceName,propertyName);
+		
+		}
+		
+		private void loadRBIODEG_RIFM() {
+			
+			debug=true;//prints values loaded from database like property
+		
+			boolean createDBEntries=true;
+		
+			String sourceName="RIFM";
+		
+			pvc.mapTables(sourceName);
+		
+			String propertyName=DevQsarConstants.RBIODEG;
+		
+			String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+			String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+" Experimental Records.json";
+		
+			File jsonFile=new File(filePath);
+		
+			System.out.println(filePath+"\t"+jsonFile.exists());
+		
+		
+			//**********************************************************************************************
+			//First create the property
+			ExpPropProperty property=pvc.getProperty(propertyName, DevQsarConstants.RBIODEG);
+		
+			//**********************************************************************************************
+			//Add entries for properties_acceptable_units:
+		
+			//Note: first time you run this property, uncomment out the following lines:
+			pvc.addPropertyAcceptableUnit(pvc.getUnit("BINARY","Binary"), property);
+		
+			pvc.addPropertyAcceptableParameter(pvc.getParameter("Test guideline","Test guideline used"),property);
+			pvc.addPropertyAcceptableParameter(pvc.getParameter("Observation duration","TODO"),property);
+						
+			
+			//*******************************************************************************************************
+			ExperimentalRecords records=ExperimentalRecords.loadFromJson(filePath, gson);
+			//		printUniqueUnitsListInExperimentalRecords(records);
+			System.out.println("experimentalRecords.size()="+records.size());
+		
+			loadBatchWise(records, typeOther, createDBEntries,sourceName,propertyName);
 		
 		}
 
@@ -1472,7 +1568,7 @@ public class ExperimentalRecordLoader {
 				
 				if (pv.getPublicSourceOriginal()!=null && pv.getPublicSourceOriginal().getId()==null) {
 					rec.keep=false;
-					rec.reason="PublicSourceOriginal missing id:"+pv.getLiteratureSource().getCitation();
+					rec.reason="PublicSourceOriginal missing id:"+pv.getPublicSourceOriginal().getName();
 					System.out.println(rec.reason);
 					//					logger.warn(rec.id_physchem + ": Loading failed");
 					countFailure++;
@@ -1620,10 +1716,13 @@ public class ExperimentalRecordLoader {
 //		loader.loaders.loadPubchemMultiple();
 //		loader.loaders.loadPubChem();
 
-		loader.loaders.loadAcuteAquaticToxicityDataEcotox();
+//		loader.loaders.loadAcuteAquaticToxicityDataEcotox();
+		loader.loaders.loadAcuteAquaticToxicityDataQsarToolbox();
+		
+		
+//		loader.loaders.loadRBIODEG_NITE_OPPT();
+//		loader.loaders.loadRBIODEG_RIFM();
 //		
-		
-		
 		//		deleteEcotoxData();
 
 	}

@@ -652,9 +652,9 @@ public class SourceChemicalUtilities {
 //		scu.writeChemRegFilePublicSources();
 //		scu.writeChemRegFileLiteratureSources();//dont have any without dtxrids- all from chemprop
 
-//		scu.writeChemRegFileForPublicSource2();
+		scu.writeChemRegFileForPublicSource2();
 		
-		scu.findMissingSourceChemicalsForPublicSource();
+//		scu.findMissingSourceChemicalsForPublicSource();
 		
 		
 //		SourceChemicalUtilities scu=new SourceChemicalUtilities(false);
