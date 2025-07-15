@@ -1,7 +1,7 @@
 -- Export reports
-CREATE MATERIALIZED VIEW mv_predicted_reports as
+-- CREATE MATERIALIZED VIEW mv_predicted_reports as
 select
-       row_number() over (order by dr.dtxsid, p.name,s.name) as id,
+--        row_number() over (order by dr.dtxsid, p.name,s.name) as id,
        dr.dtxsid,
        dr.dtxcid,
        m.id as model_id,
@@ -24,8 +24,8 @@ left join qsar_datasets.properties_in_categories pic on p.id = pic.fk_property_i
 left join qsar_datasets.property_categories pc on pic.fk_property_category_id = pc.id
 
 where dr.fk_dsstox_snapshot_id=2
-and s.name='OPERA2.8'
--- and s.name='TEST5.1.3'
+-- and s.name='OPERA2.8'
+and s.name='TEST5.1.3'
 -- and dr.dtxsid='DTXSID7020182';
 ;
 

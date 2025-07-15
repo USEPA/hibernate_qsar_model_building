@@ -1,7 +1,7 @@
 -- Export all predictions for asif:
 -- CREATE MATERIALIZED VIEW mv_predicted_data as
 select
-       row_number() over (order by dr.dtxsid, p."name",s.name) as id,
+--        row_number() over (order by dr.dtxsid, p."name",s.name) as id,
        dr.dtxsid,dr.dtxcid,dr.smiles,
        pd.canon_qsar_smiles,
        dr.generic_substance_updated_at,
@@ -48,14 +48,15 @@ left join qsar_datasets.properties_in_categories pic on p.id = pic.fk_property_i
 left join qsar_datasets.property_categories pc on pic.fk_property_category_id = pc.id
 
 where dr.fk_dsstox_snapshot_id=2 -- 2024-11-12 snapshot
---   and s.name='Percepta2023.1.2'
-  and (s.name='OPERA2.8' or s.name='Percepta2023.1.2')
+  and s.name='Percepta2023.1.2'
+--   and (s.name='OPERA2.8' or s.name='Percepta2023.1.2')
+--   and (s.name='TEST5.1.3')
 --   and (s.name='OPERA2.8' or s.name='Percepta2023.1.2') --omit sample records from other software
 --   and dr.dtxsid='DTXSID7021360'
 -- and dr.dtxsid='DTXSID7020182' -- bisphenol-a
 -- and dr.dtxcid='DTXCID505'
--- and dr.dtxsid='DTXSID00943887'
--- and dr.dtxsid='DTXSID3039242' -- benzene
+-- and dr.dtxsid='DTXSID40166952'
+and dr.dtxsid='DTXSID3039242' -- benzene
 -- and dr.dtxsid='DTXSID50281842' -- percepta not in mongo
 -- and dr.dtxsid='DTXSID001000007' -- null values in summary table
 -- and dr.dtxsid='DTXSID7020005'-- has TEST prediction outside AD for ST
@@ -205,7 +206,7 @@ where m.fk_source_id=6;
 
 
 --get OPERA 2.8 dtxcids loaded:
-select count(distinct (dr.dtxcid))
+select distinct (dr.dtxcid)
 from qsar_models.predictions_dashboard pd
 join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
 join qsar_models.models m on m.id=pd.fk_model_id
@@ -224,11 +225,24 @@ having count(pd.id)<28;
 
 
 --get OPERA 2.8 unique dtxcids:
-select distinct (dr.id)
+select count(distinct (dr.id))
 from qsar_models.predictions_dashboard pd
 join qsar_models.models m on m.id=pd.fk_model_id
 join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
-where m.fk_source_id=6;
+-- where m.fk_source_id=6;
+where m.fk_source_id=2;
+
+-- find dtxcids that we dont have test predictions
+select count(distinct dr.dtxcid) from qsar_models.dsstox_records dr
+where dr.fk_dsstox_snapshot_id=2
+  AND dr.smiles not like '%*%' AND dr.smiles not like '%.%'
+  AND dr.smiles like '%C%' AND dr.smiles not like '%[%' AND dr.smiles not like '%|%'
+  and dr.dtxcid not in
+(select distinct (dr2.dtxcid)
+from qsar_models.predictions_dashboard pd
+join qsar_models.models m on m.id=pd.fk_model_id and m.fk_source_id=2
+join qsar_models.dsstox_records dr2 on pd.fk_dsstox_records_id = dr2.id)
+;
 
 
 
@@ -294,3 +308,31 @@ select count(*) from mv_predicted_data mv;
 
 
 
+select prop_name,source_name, prop_value,prop_unit,ad_reasoning_global from mv_predicted_data mv
+where dtxsid='DTXSID7020182';
+
+
+
+select p.name from qsar_models.predictions_dashboard pd
+join qsar_models.models m on pd.fk_model_id = m.id
+join qsar_models.sources s on m.fk_source_id = s.id
+join qsar_datasets.datasets d on d.name=m.dataset_name
+join qsar_datasets.properties p on d.fk_property_id = p.id
+where s.name='TEST5.1.3';
+
+
+
+
+
+
+
+
+
+
+select dr.dtxcid
+from qsar_models.predictions_dashboard pd
+join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
+join qsar_models.models m on m.id=pd.fk_model_id
+where m.fk_source_id=6 and dr.fk_dsstox_snapshot_id=2
+group by dr.dtxcid
+having count(dr.dtxcid)=28

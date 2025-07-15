@@ -1250,3 +1250,39 @@ join qsar_models.descriptor_embeddings de on m.fk_descriptor_embedding_id = de.i
 join qsar_models.methods m2 on m.fk_method_id = m2.id
 where d.name='WS v1 modeling' and m.splitting_name='RND_REPRESENTATIVE' and fk_descriptor_embedding_id is not null;
 
+
+
+
+select replace(dataset_name,'v1 modeling',''),ms.statistic_value from qsar_models.models
+join qsar_models.model_statistics ms on models.id = ms.fk_model_id
+join qsar_models.statistics s on ms.fk_statistic_id = s.id
+where dataset_name like '%v1 modeling%' and dataset_name not like 'exp_prop%' and s.name='RMSE_Test'
+and splitting_name='RND_REPRESENTATIVE' and descriptor_set_name='WebTEST-default' and fk_descriptor_embedding_id is null
+order by dataset_name;
+
+
+select dataset_name,m2.name, m.fk_method_id,s.name, ms.statistic_value from qsar_models.models m
+join qsar_models.model_statistics ms on m.id = ms.fk_model_id
+    join qsar_models.methods m2 on m.fk_method_id = m2.id
+join qsar_models.statistics s on ms.fk_statistic_id = s.id
+where (s.name='RMSE_Test' or s.name='RMSE_Training')  and dataset_name='ECOTOX_2024_12_12_96HR_Fish_LC50_v3 modeling'
+and splitting_name='RND_REPRESENTATIVE' and descriptor_set_name='WebTEST-default'
+  and fk_descriptor_embedding_id is null
+order by dataset_name;
+
+
+
+
+
+select m.dataset_name,m.id,m.splitting_name, de.embedding_tsv from qsar_models.models m
+join qsar_models.descriptor_embeddings  de on m.fk_descriptor_embedding_id = de.id
+where m.dataset_name like '% v1 modeling'
+and   m.descriptor_set_name='WebTEST-default' and m.fk_descriptor_embedding_id is not null
+order by m.dataset_name;
+
+
+select c.standardizer,count(c.id) from qsar_descriptors.compounds c
+where c.smiles is not null
+group by c.standardizer
+
+select count (qsar_models.predictions_dashboard.id) from qsar_models.predictions_dashboard

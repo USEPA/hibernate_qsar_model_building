@@ -32,3 +32,26 @@ where dataset_name like '%BCF%' and splitting_name='RND_REPRESENTATIVE' and fk_d
 --  and (s.name='PearsonRSQ_Test' or s.name='RMSE_Test')
 and (s.name like '%CV%')
 order by s.name,dataset_name;
+
+
+select m.id as model_id, m2.name,m.descriptor_set_name,m.fk_descriptor_embedding_id,  s.name, round(ms.statistic_value::numeric,2) as stat_value from qsar_models.models m
+left join qsar_models.model_statistics ms on m.id = ms.fk_model_id
+         left join qsar_models.statistics s on ms.fk_statistic_id = s.id
+        left join qsar_models.methods m2 on m.fk_method_id = m2.id
+where dataset_name='exp_prop_RBIODEG_RIFM_BY_CAS' and splitting_name='RND_REPRESENTATIVE'
+--  and (s.name='PearsonRSQ_Test' or s.name='RMSE_Test')
+-- and (s.name ='SN_Test' or s.name='SP_Test' or s.name='BA_Test')
+and (s.name='BA_Test')
+order by m.name, s.name;
+
+
+select s.name, round(ms.statistic_value::numeric,2) as stat_value from qsar_models.models m
+left join qsar_models.model_statistics ms on m.id = ms.fk_model_id
+         left join qsar_models.statistics s on ms.fk_statistic_id = s.id
+        left join qsar_models.methods m2 on m.fk_method_id = m2.id
+where m.id=1569
+order by m.name, s.name;
+
+
+
+

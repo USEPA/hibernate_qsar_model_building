@@ -49,7 +49,7 @@ where ps.name='PubChem_2024_11_27';
 select distinct  p.name,ps.name from exp_prop.property_values pv
 join exp_prop.properties p on pv.fk_property_id = p.id
 join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
-order by ps.name;
+order by p.name;
 
 
 -- Get count of property values by property from a given public source
@@ -527,3 +527,78 @@ VACUUM (ANALYZE, VERBOSE, FULL) exp_prop.parameter_values;
 
 VACUUM (ANALYZE, VERBOSE, FULL) qsar_datasets.data_points;
 VACUUM (ANALYZE, VERBOSE, FULL) qsar_datasets.data_point_contributors;
+
+
+select count(id) from exp_prop.property_values pv where fk_public_source_id=312 and fk_property_id=54;
+
+
+delete from exp_prop.property_values pv where fk_public_source_id=312 and fk_property_id=54;
+
+
+select * from exp_prop.property_values where fk_public_source_id=255;
+
+
+select ps.name, count(pv.id) from exp_prop.property_values pv
+join exp_prop.properties p on pv.fk_property_id = p.id
+join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
+where pv.fk_property_id=6 and keep=true --PubChem_2024_11_27
+-- where pv.fk_public_source_id=10 and keep=true --OChem
+group by ps.name;
+
+
+
+select ps.name,count(pv.id) from qsar_datasets.datasets d
+join qsar_datasets.data_points dp on d.id = dp.fk_dataset_id
+join qsar_datasets.data_point_contributors dpc on dp.id = dpc.fk_data_point_id
+join exp_prop.property_values pv on pv.id=dpc.exp_prop_property_values_id
+join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
+where d.name='exp_prop_LOG_KOW_v2.0'
+group by ps.name;
+
+
+select dp.canon_qsar_smiles, dpc.property_value, smiles,p.name, pv2.value_text,pv.keep from qsar_datasets.datasets d
+join qsar_datasets.data_points dp on d.id = dp.fk_dataset_id
+join qsar_datasets.data_point_contributors dpc on dp.id = dpc.fk_data_point_id
+join exp_prop.property_values pv on pv.id=dpc.exp_prop_property_values_id
+    left join exp_prop.parameter_values pv2 on pv.id = pv2.fk_property_value_id
+    left join exp_prop.parameters p on pv2.fk_parameter_id = p.id
+join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
+where d.name='exp_prop_LOG_KOW_v2.0'
+--   and ps.name='OPERA2.8'
+-- and ps.name='PubChem_2024_11_27'
+and ps.name='eChemPortalAPI'
+order by dp.canon_qsar_smiles,dpc.property_value;
+
+
+select dp.canon_qsar_smiles, dp.qsar_property_value, dpc.property_value,ps.name from qsar_datasets.datasets d
+join qsar_datasets.data_points dp on d.id = dp.fk_dataset_id
+join qsar_datasets.data_point_contributors dpc on dp.id = dpc.fk_data_point_id
+join exp_prop.property_values pv on pv.id=dpc.exp_prop_property_values_id
+join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
+where d.name='exp_prop_LOG_KOW_v2.0' and dp.canon_qsar_smiles='COC(=O)C1=CC(CCl)=NN1C1=NC=CC=C1Cl'
+--   and ps.name='OPERA2.8'
+;
+
+
+select * from exp_prop.property_values pv
+join exp_prop.parameter_values pv2 on pv.id = pv2.fk_property_value_id
+where pv.fk_property_id=6 and pv.fk_public_source_id=6 and keep=true;
+
+
+
+select ps.name,count(distinct (pv.id)) from qsar_datasets.datasets d
+join qsar_datasets.data_points dp on d.id = dp.fk_dataset_id
+         join qsar_datasets.data_point_contributors dpc on dp.id = dpc.fk_data_point_id
+         join exp_prop.property_values pv on pv.id=dpc.exp_prop_property_values_id
+                              join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
+where  d.name='WS v1 modeling'
+group by ps.name;
+
+select ps.name,count(distinct (pv.id)) from qsar_datasets.datasets d
+join qsar_datasets.data_points dp on d.id = dp.fk_dataset_id
+         join qsar_datasets.data_point_contributors dpc on dp.id = dpc.fk_data_point_id
+         join exp_prop.property_values pv on pv.id=dpc.exp_prop_property_values_id
+                              join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
+where  d.name='exp_prop_WATER_SOLUBILITY_v2.0'
+group by ps.name;
+

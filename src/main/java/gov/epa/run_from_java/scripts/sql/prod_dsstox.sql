@@ -427,9 +427,56 @@ join generic_substances gs on oc.fk_generic_substance_id = gs.id
 where oc.casrn='1001914-35-7';
 
 
-SELECT dsstox_substance_id,casrn, preferred_name, c.mol_weight,c.smiles FROM generic_substances gs
+SELECT dsstox_substance_id,c.dsstox_compound_id,casrn, preferred_name, c.mol_weight,c.smiles FROM generic_substances gs
 join generic_substance_compounds gsc on gs.id = gsc.fk_generic_substance_id
 join compounds c on gsc.fk_compound_id = c.id
-where dsstox_substance_id='DTXSID00943887'
+# where dsstox_substance_id='DTXSID10862636'
+where dsstox_compound_id='DTXCID9089572';
 
+
+
+SELECT gs.casrn  FROM generic_substances gs
+join generic_substance_compounds gsc on gs.id = gsc.fk_generic_substance_id
+join compounds c on gsc.fk_compound_id = c.id
+where dsstox_compound_id='DTXCID9089572';
+
+
+SELECT gs.dsstox_substance_id,  gs.casrn,c.dsstox_compound_id,c.smiles FROM generic_substances gs
+         join generic_substance_compounds gsc on gs.id = gsc.fk_generic_substance_id
+join compounds c on gsc.fk_compound_id = c.id
+where gs.dsstox_substance_id='DTXSID5021120';
+
+
+SELECT * FROM generic_substances gs
+         join generic_substance_compounds gsc on gs.id = gsc.fk_generic_substance_id
+join compounds c on gsc.fk_compound_id = c.id
+                      join qc_levels ql on gs.fk_qc_level_id = ql.id
+where gs.dsstox_substance_id='DTXSID10874719';
+
+
+SELECT gs.casrn  FROM generic_substances gs
+join generic_substance_compounds gsc on gs.id = gsc.fk_generic_substance_id
+join compounds c on gsc.fk_compound_id = c.id
+where dsstox_compound_id='DTXCID8027533';
+
+SELECT gs.casrn  FROM generic_substances gs
+join generic_substance_compounds gsc on gs.id = gsc.fk_generic_substance_id
+join compounds c on gsc.fk_compound_id = c.id
+where dsstox_compound_id='DTXCID8027533';
+
+
+SELECT *  FROM generic_substances gs
+# join generic_substance_compounds gsc on gs.id = gsc.fk_generic_substance_id
+# join compounds c on gsc.fk_compound_id = c.id
+where dsstox_substance_id='DTXSID50878034';
+
+# Get synonyms as single field
+SELECT
+    gs.dsstox_substance_id, GROUP_CONCAT(s.identifier, '; ') AS Synonyms
+FROM
+    generic_substances gs
+join synonyms s on gs.id = s.fk_generic_substance_id
+GROUP BY
+    gs.dsstox_substance_id
+order by dsstox_substance_id;
 

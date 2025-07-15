@@ -1,5 +1,5 @@
 -- Export of exp_prop data using asif format
-CREATE MATERIALIZED VIEW mv_experimental_data as
+-- CREATE MATERIALIZED VIEW mv_experimental_data as
 select
     row_number() over (order by dpc.dtxsid, p."name",ps.name,ls.citation) as id,
        dpc.dtxsid,
@@ -27,6 +27,7 @@ select
        pvSS.value_text           as exp_details_species_supercategory,
        case when ps.name is not null then ps.name else ls.name end as source_name,
        case when ps.name is not null then ps.description else ls.citation end as source_description,
+       case when ps.name is not null then ps.url else ls.doi end as source_url,
        ps."name"                 as public_source_name,
        ps.description            as public_source_description,
        ps.url                    as public_source_url,
@@ -41,7 +42,7 @@ select
        ps2.url                   as public_source_original_url,
 --        pv.file_name,
        current_date              as export_date,
-        '2.0.0' as data_version
+        '2.1.0' as data_version
 
 from qsar_datasets.data_points dp
          join qsar_datasets.data_point_contributors dpc on dpc.fk_data_point_id = dp.id
@@ -312,3 +313,30 @@ from qsar_datasets.data_points dp
          join qsar_datasets.properties p on d.fk_property_id = p.id
          join qsar_datasets.datasets_in_dashboard did on did.fk_property_id = d.fk_property_id
 where d.id = did.fk_datasets_id and keep=true;
+
+
+select distinct source_name,source_description from mv_experimental_data order by source_name;
+
+select d.id, p.id, d.name,p.name_ccd from qsar_datasets.datasets d
+join qsar_datasets.properties p on d.fk_property_id = p.id
+order by p.name_ccd;
+
+
+-- determine which properties might be missing
+select distinct p.name from qsar_datasets.properties p
+left join qsar_datasets.datasets_in_dashboard did on p.id = did.fk_property_id
+where did.id is null;
+
+
+-- determine which properties we have datasets for
+select p.name,p.id from qsar_datasets.datasets_in_dashboard did
+join qsar_datasets.properties p on did.fk_property_id = p.id
+order by p.name;
+
+
+
+
+
+
+
+select * from mv_experimental_data where dtxsid in ('DTXSID00192353','DTXSID6067331','DTXSID30891564','DTXSID6062599','DTXSID90868151','DTXSID8031863','DTXSID8031865','DTXSID1037303','DTXSID8047553','DTXSID60663110','DTXSID70191136','DTXSID3037709','DTXSID3059921','DTXSID3031860','DTXSID8037706','DTXSID8059920','DTXSID3031862','DTXSID30382063','DTXSID00379268','DTXSID20874028','DTXSID3037707') and prop_name='LogKow: Octanol-Water';
