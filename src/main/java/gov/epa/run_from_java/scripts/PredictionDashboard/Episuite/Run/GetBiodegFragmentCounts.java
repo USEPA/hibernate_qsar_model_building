@@ -9,6 +9,10 @@ import org.jsoup.nodes.Element;
 import com.google.gson.Gson;
 import com.srcinc.episuite.biodegradationrate.BiodegradationRateResults;
 
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.Factor;
+import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.Model;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileReader;
@@ -161,6 +165,36 @@ public class GetBiodegFragmentCounts {
 			return ht;
 		}
 		return null;
+		
+	}
+	
+	
+	public LinkedHashMap<String,Double> runBiowin5_2(String smiles) {
+
+		String json=EpisuiteWebserviceScript.runEpiwin(smiles);
+		if(json==null || json.contains("error")) return null;
+		
+//		System.out.println(json);
+		
+		EpisuiteResults results=EpisuiteResults.getResults(json);		
+//		System.out.println(smiles+"\t"+Utilities.gson.toJson(results.biodegradationRate.models.get(4)));
+		
+		Model model=results.biodegradationRate.models.get(4);
+		
+		LinkedHashMap<String,Double>ht=new LinkedHashMap<>();
+		
+		for (Factor factor:model.factors) {
+			String fragmentDescription=factor.description;
+			if (fragmentDescription.equals("Equation Constant")) continue;
+			if (fragmentDescription.contains("Molecular Weight")) continue;
+			ht.put(fragmentDescription, (double)factor.fragmentCount);
+		}
+		
+		ht.put("MW", (Double)results.chemicalProperties.molecularWeight);
+		
+//		System.out.println(Utilities.gson.toJson(ht));
+		
+		return ht;
 		
 	}
 	
@@ -325,8 +359,8 @@ public class GetBiodegFragmentCounts {
 	 * assumes file has smiles\tID\tTox format
 	 * 
 	 */
-	public void goThroughCSV_getMW_from_model5_factor(String filepathInput,String filepathOutput) {
 		
+	public void goThroughCSV_getMW_from_model5_factor(String filepathInput,String filepathOutput,int colSmiles,int colTox) {
 //		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\0000 biodegradation OPPT\\biodegradation\\biowin update\\";
 ////		String filepath=folder+"smiles mw.txt";
 //		String filepath=folder+"smiles+index.txt";
@@ -342,7 +376,7 @@ public class GetBiodegFragmentCounts {
 			
 			List<LinkedHashMap<String,Double>>fragValues=new ArrayList<>();
 			List<String>smilesList=new ArrayList<>();
-			List<String>idList=new ArrayList<>();
+//			List<String>idList=new ArrayList<>();
 			List<String>toxList=new ArrayList<>();
 			
 
@@ -359,16 +393,25 @@ public class GetBiodegFragmentCounts {
 				
 				String [] values=line.split("\t");
 				
-				String smiles=values[0];
-				String id=values[1];
-				String tox=values[2];
+				String smiles=values[colSmiles];
+//				String id=values[1];
+				String tox=values[colTox];
 				
 				smilesList.add(smiles);
-				idList.add(id);
+//				idList.add(id);
 				toxList.add(tox);
 				
-				LinkedHashMap<String,Double>ht=runBiowin5(smiles);
+//				LinkedHashMap<String,Double>ht=runBiowin5(smiles);//soap
+				LinkedHashMap<String,Double>ht=runBiowin5_2(smiles);//json		
+				
+//				if(true)return;
+				if(ht==null) {
+					System.out.println(smiles+"\tNo desc");
+					continue;
+				}
 				fragValues.add(ht);
+
+//				if(counter==2) break;
 			}
 			
 			List<String>fragmentNames=new ArrayList<>();

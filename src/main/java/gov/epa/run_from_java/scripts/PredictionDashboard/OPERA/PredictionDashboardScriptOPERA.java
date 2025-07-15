@@ -2076,14 +2076,14 @@ public class PredictionDashboardScriptOPERA {
 		//		o.initializeDB.initializeOPERARecords();//create db entries in properties, datasets, models, statistics tables
 		
 		// Run all in db:		
-		o.loader.runMissingDtxcids(writeToDB);
+//		o.loader.runMissingDtxcids(writeToDB);
 //		o.loader.deleteAllPDsForDtxcidsThatHaveAmissingReport();
 		
 		//TODO delete all pds for a given dtxcid where any one of the pds is missing a report
 		//then rerun runMissingDtxcids
 		
 		
-		//		o.loader.createRecordsFromOPERA2_8_SqliteDB(true,0);//already loaded these);
+		o.loader.createRecordsFromOPERA2_8_SqliteDB(true,0);//already loaded these);
 //		o.loader.createRecordsFromOPERA2_8_SqliteDB(true,"DTXSID301346793");
 
 //		o.loader.findMissingPredictionDashboardKeysOpera();

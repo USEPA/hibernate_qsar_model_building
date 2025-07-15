@@ -1,19 +1,15 @@
 package gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run;
 
 import java.io.*;
-
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import com.srcinc.episuite.EpiSuite;
-import com.srcinc.episuite.EpiSuiteResults;
-
-import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
-import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
-import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
+import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
-import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.PropertyResult;
+import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.ChemicalProperties;
+import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteValidation.DataPointCAS;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -29,7 +25,11 @@ public class EpisuiteWebserviceScript {
 
 
 	public EpisuiteWebserviceScript() {
-		Unirest.config().followRedirects(true).socketTimeout(000).connectTimeout(000);
+		try {
+			Unirest.config().followRedirects(true).socketTimeout(000).connectTimeout(000);
+		} catch (Exception ex) {
+//			ex.printStackTrace();
+		}
 	}
 
 
@@ -2069,6 +2069,65 @@ public class EpisuiteWebserviceScript {
 			return response.getBody().toString();
 		} else {
 			//			System.out.println(response.getStatus());
+			return "error:"+response.getStatusText();
+		}
+
+	}
+	
+	public static String getUrlContent(String urlString)  {
+        StringBuilder result = new StringBuilder();
+        HttpURLConnection connection = null;
+        BufferedReader reader = null;
+
+        try {
+            // Create a URL object
+            URL url = new URL(urlString);
+
+            // Open a connection to the URL
+            connection = (HttpURLConnection) url.openConnection();
+
+            // Set the request method to GET
+            connection.setRequestMethod("GET");
+
+            // Read the response
+            reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                result.append(line).append("\n");
+            }
+        } catch (IOException e) {
+            System.err.println("Error connecting to URL: " + e.getMessage());
+            return null;
+        } finally {
+            // Close resources
+            try {
+                if (reader != null) {
+                    reader.close();
+                }
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            } catch (IOException e) {
+                System.err.println("Error closing resources: " + e.getMessage());
+            }
+        }
+        return result.toString();
+    }
+	
+	public static String runEpiwinByCAS(String CAS) {
+
+		String baseUrl="https://episuite.app/EpiWebSuite/api/submit";
+		String CAS2=CAS;
+		while (CAS2.length()<11)CAS2="0"+CAS2;
+
+		HttpResponse<String> response =Unirest.get(baseUrl)
+				.queryString("cas", CAS2).asString();
+
+		if(response.isSuccess()) {
+			//			System.out.println(response.getBody().toString());
+			return response.getBody().toString();
+		} else {
+			//			System.out.println(response.getStatus());
 			return "error:"+response.getStatus();
 		}
 
@@ -2581,17 +2640,14 @@ public class EpisuiteWebserviceScript {
 			String lastID=null;
 
 			if(new File(fout).exists()) {
-				fw=new FileWriter(fout,true);
 				lastID=getLastID(fout,idName);
+				fw=new FileWriter(fout,true);
 				System.out.println("lastID="+lastID);
-
 			} else {
 				fw=new FileWriter(fout,false);	
 			}
 
-
 			//			if(true) return;
-
 			List<String>lines=new ArrayList<String>();
 
 			while (true) {
@@ -2600,9 +2656,7 @@ public class EpisuiteWebserviceScript {
 				lines.add(Line);
 			}
 
-
 			//			System.out.println(chemicalsPerPort);
-
 
 			boolean start=false;
 			if(lastID==null) start=true;
@@ -2637,9 +2691,10 @@ public class EpisuiteWebserviceScript {
 
 				try {
 					jo=gson.fromJson(json, JsonObject.class);
-					JsonObject joBioconcentration=jo.get("bioconcentration").getAsJsonObject();
-					double BCF=joBioconcentration.get("bioconcentrationFactor").getAsDouble();
-					System.out.println(id+"\t"+smiles+"\t"+BCF+"\t"+((t2-t1)/1000.0)+" secs");
+					
+//					JsonObject joBioconcentration=jo.get("bioconcentration").getAsJsonObject();
+//					double BCF=joBioconcentration.get("bioconcentrationFactor").getAsDouble();
+//					System.out.println(id+"\t"+smiles+"\t"+BCF+"\t"+((t2-t1)/1000.0)+" secs");
 
 				} catch (Exception ex) {
 					jo=new JsonObject();
@@ -2666,8 +2721,362 @@ public class EpisuiteWebserviceScript {
 
 
 	}
+	public void runSmilesFilePublicApi(String idName, String filepath, String outputFolder) {
+
+
+		Gson gson=new Gson();
+		try {
+			BufferedReader br=new BufferedReader(new FileReader(filepath));
+
+			String fout=filepath.replace(".txt", ".json");
+
+			FileWriter fw=null;
+
+			String lastID=null;
+
+			if(new File(fout).exists()) {
+				lastID=getLastID(fout,idName);
+				fw=new FileWriter(fout,true);
+				System.out.println("lastID="+lastID);
+			} else {
+				fw=new FileWriter(fout,false);	
+			}
+
+			//			if(true) return;
+			List<String>lines=new ArrayList<String>();
+
+			while (true) {
+				String Line=br.readLine();
+				if(Line==null) break;
+				lines.add(Line);
+			}
+
+			//			System.out.println(chemicalsPerPort);
+
+			boolean start=false;
+			if(lastID==null) start=true;
+
+			int counter=0;
+
+			for (String line:lines) {
+				
+				counter++;
+
+				//				System.out.println(currentPort+"\t"+line);
+
+				String []values=line.split("\t");
+
+				String smiles=values[0];
+				String id=values[1];
+
+				if(lastID!=null && id.contentEquals(lastID)) {
+					start=true;
+					continue;
+				}
+
+				if(!start) {
+					continue;
+				}
+				long t1=System.currentTimeMillis();
+
+				String json=runEpiwin(smiles);
+
+				long t2=System.currentTimeMillis();
+
+				//					System.out.println(smiles+"\t"+json.length());
+//				EpisuiteResults er=null;
+				JsonObject jo=null;
+				
+				try {
+				
+//					JsonObject joBioconcentration=jo.get("bioconcentration").getAsJsonObject();
+//					double BCF=joBioconcentration.get("bioconcentrationFactor").getAsDouble();
+//					System.out.println(id+"\t"+smiles+"\t"+BCF+"\t"+((t2-t1)/1000.0)+" secs");
+					
+//					er=Utilities.gson.fromJson(json, EpisuiteResults.class);
+					jo=Utilities.gson.fromJson(json, JsonObject.class);
+							
+					
+//					JsonObject joLogKow=jo.get("bioconcentration").getAsJsonObject();
+//					double BCF=joBioconcentration.get("bioconcentrationFactor").getAsDouble();
+//					System.out.println(id+"\t"+smiles+"\t"+BCF+"\t"+((t2-t1)/1000.0)+" secs");
+
+					
+				} catch (Exception ex) {
+					jo=new JsonObject();
+					jo.addProperty(idName, id);
+					jo.addProperty("error", json);
+					jo.addProperty("smiles", smiles);
+					System.out.println(counter+"\t"+id+"\t"+json+"\t"+smiles);
+					fw.write(gson.toJson(jo)+"\r\n");
+					continue;
+				}
+				
+				jo.addProperty("smiles", smiles);
+				jo.addProperty(idName, id);
+				fw.write(gson.toJson(jo)+"\r\n");
+				
+				System.out.println(counter+"\t"+id+"\t"+smiles+"\tOK");
+
+//				er.smiles=smiles;
+//				if(idName.equals("dtxcid")) {
+//					er.dtxcid=id;
+//				} else if(idName.equals("dtxsid")) {
+//					er.dtxsid=id;
+//				}
+//				fw.write(gson.toJson(er)+"\r\n");
+				
+//				if(er.logKow!=null) {
+//					System.out.println(counter+"\t"+id+"\t"+er.logKow.selectedValue.value+"\t"+er.logKow.selectedValue.valueType+"\t"+er.logKow.estimatedValue.value+"\t"+er.smiles);
+//				} else {
+//					System.out.println(counter+"\t"+id+"\terror\t"+er.smiles);
+//				}
+
+				fw.flush();
+
+				//					System.out.println(dtxsid+"\t"+smiles+"\t"+joBioconcentration==null);
+				//					System.out.println(currentPort+"\t"+counter+"\t"+line+"\t"+json);
+			}
+			br.close();
+			fw.close();
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+
+
+
+
+	}
 	
 	
+	public void runSmilesFilePublicApiByCAS(String propertyName, String modelNameEpi, Hashtable<String, DataPoint> htDP_CAS,
+			String filepathOut) {
+
+		EpisuiteValidation ev=new EpisuiteValidation();
+		
+		System.out.println("Running episuite predictions for "+propertyName);
+		
+		int counter=0;
+
+		Gson gson=new Gson();
+		try {
+			
+			File fout=new File(filepathOut);
+			
+			LinkedHashMap<String,Double>htPredEpi=null;
+			
+			if(fout.exists()) {
+				htPredEpi=ev.episuite.getEpisuitePredictions(false, propertyName, modelNameEpi, filepathOut,"cas");
+//				System.out.println(htPredEpi.size()+"\t"+Utilities.gson.toJson(htPredEpi));
+			}
+			
+//			if(true)return;
+			
+			FileWriter fw=new FileWriter(filepathOut,fout.exists());
+
+			int countToRun=0;
+			
+			for (String CAS:htDP_CAS.keySet()) {
+				if(!htPredEpi.containsKey(CAS))countToRun++;
+			}
+				
+			System.out.println("countToRun="+countToRun);
+
+			if(countToRun==0) return;
+			
+			
+			for (String CAS:htDP_CAS.keySet()) {
+				counter++;
+				
+				if(htPredEpi!=null && htPredEpi.containsKey(CAS)) continue;
+				
+				String json=runEpiwinByCAS(CAS);
+				
+				if(json.contains("Service Temporarily Unavailable")) {
+					System.out.println("Service unavailable");
+					fw.flush();
+					fw.close();
+					return;
+				}
+
+				JsonObject jo=null;
+				
+				try {
+					jo=Utilities.gson.fromJson(json, JsonObject.class);
+				} catch (Exception ex) {
+					EpisuiteResults er=new EpisuiteResults();
+					er.error=json;
+					er.chemicalProperties=er.new ChemicalProperties();
+					
+					String CAS2=CAS;
+					while (CAS2.length()<11)CAS2="0"+CAS2;
+					er.chemicalProperties.cas=CAS2;
+					
+					System.out.println(counter+"\t"+CAS+"\terror");
+					fw.write(gson.toJson(er)+"\r\n");
+					continue;
+				}
+				
+				fw.write(gson.toJson(jo)+"\r\n");
+				System.out.println(counter+"\t"+CAS+"\tOK");
+				fw.flush();
+			}
+			fw.close();
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+	}
+	
+	public void runSmilesFilePublicApi(String propertyName,String modelName,  Hashtable<String,DataPoint>htDP, String filepathOut) {
+
+		EpisuiteValidation ev=new EpisuiteValidation();
+		
+		System.out.println("Running episuite predictions for "+propertyName);
+		
+		int counter=0;
+
+		Gson gson=new Gson();
+		try {
+			
+			File fout=new File(filepathOut);
+			
+			LinkedHashMap<String,Double>htPredEpi=null;
+			
+			if(fout.exists()) {
+				htPredEpi=ev.episuite.getEpisuitePredictions(false, propertyName, modelName, filepathOut,"canonQsarSmiles");
+				System.out.println("Loaded "+htPredEpi.size()+" predictions by qsar smiles");
+			}
+			
+			
+//			if(true)return;
+			
+			FileWriter fw=new FileWriter(filepathOut,fout.exists());
+			
+			for (String smiles:htDP.keySet()) {
+				counter++;
+				
+				if(htPredEpi!=null && htPredEpi.containsKey(smiles)) continue;
+				
+				DataPoint dp=htDP.get(smiles);
+				
+				String json=runEpiwin(smiles);
+				
+				if(json.contains("Service Temporarily Unavailable")) {
+					System.out.println("Service unavailable");
+					fw.flush();
+					fw.close();
+					return;
+				}
+
+				JsonObject jo=null;
+				
+				try {
+					jo=Utilities.gson.fromJson(json, JsonObject.class);
+				} catch (Exception ex) {
+					jo=new JsonObject();
+					jo.addProperty("error", json);
+					jo.addProperty("dtxcid", dp.getQsar_dtxcid());
+					jo.addProperty("canonQsarSmiles", smiles);
+					System.out.println(counter+"\t"+dp.getQsar_dtxcid()+"\t"+json+"\t"+smiles);
+					fw.write(gson.toJson(jo)+"\r\n");
+					continue;
+				}
+				
+				jo.addProperty("canonQsarSmiles", smiles);
+				jo.addProperty("dtxcid", dp.getQsar_dtxcid());
+				fw.write(gson.toJson(jo)+"\r\n");
+				System.out.println(counter+"\t"+dp.getQsar_dtxcid()+"\t"+smiles+"\tOK");
+				fw.flush();
+			}
+			fw.close();
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Uses qsarSmiles as a key, but original smiles is ran in episuite
+	 * 
+	 * @param propertyName
+	 * @param modelName
+	 * @param htDP
+	 * @param filepathOut
+	 */
+	public void runSmilesFilePublicApiUsingOriginalSmiles(String propertyName,String modelName,  Hashtable<String,DataPoint>htDP, String filepathOut) {
+
+		EpisuiteValidation ev=new EpisuiteValidation();
+		
+		System.out.println("Running episuite predictions for "+propertyName);
+		
+		int counter=0;
+
+		Gson gson=new Gson();
+		try {
+			
+			File fout=new File(filepathOut);
+			
+			LinkedHashMap<String,Double>htPredEpi=null;
+			
+			if(fout.exists()) {
+				htPredEpi=ev.episuite.getEpisuitePredictions(false, propertyName, modelName, filepathOut,"canonQsarSmiles");
+				System.out.println("Loaded "+htPredEpi.size()+" predictions by qsar smiles");
+			}
+			
+			
+//			if(true)return;
+			
+			FileWriter fw=new FileWriter(filepathOut,fout.exists());
+			
+			for (String qsarSmiles:htDP.keySet()) {
+				counter++;
+				
+				if(htPredEpi!=null && htPredEpi.containsKey(qsarSmiles)) continue;
+				
+				DataPoint dp=htDP.get(qsarSmiles);
+				
+				String smiles=dp.checkStructure.dsstox_smiles;
+				
+				String json=runEpiwin(smiles);
+				
+				if(json.contains("Service Temporarily Unavailable")) {
+					System.out.println("Service unavailable");
+					fw.flush();
+					fw.close();
+					return;
+				}
+
+				JsonObject jo=null;
+				
+				try {
+					jo=Utilities.gson.fromJson(json, JsonObject.class);
+				} catch (Exception ex) {
+					jo=new JsonObject();
+					jo.addProperty("error", json);
+					jo.addProperty("dtxcid", dp.getQsar_dtxcid());
+					jo.addProperty("canonQsarSmiles", qsarSmiles);
+					jo.addProperty("smiles", smiles);
+					System.out.println(counter+"\t"+dp.getQsar_dtxcid()+"\t"+json+"\t"+qsarSmiles);
+					fw.write(gson.toJson(jo)+"\r\n");
+					continue;
+				}
+				
+				jo.addProperty("canonQsarSmiles", qsarSmiles);
+				jo.addProperty("smiles", smiles);
+				jo.addProperty("dtxcid", dp.getQsar_dtxcid());
+				fw.write(gson.toJson(jo)+"\r\n");
+				System.out.println(counter+"\t"+dp.getQsar_dtxcid()+"\t"+qsarSmiles+"\tOK");
+				fw.flush();
+			}
+			fw.close();
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
 
 
 	void getJsonCounts(String folderPath) {
@@ -2761,9 +3170,6 @@ public class EpisuiteWebserviceScript {
 
 	
 	
-	
-	
-
 	public static void main(String[] args) {
 		EpisuiteWebserviceScript b=new EpisuiteWebserviceScript();
 				
@@ -2793,7 +3199,9 @@ public class EpisuiteWebserviceScript {
 		
 //		b.runSmilesComparisonFile();
 		
-		b.runSingleChemicalFromAPI();
+//		b.runSingleChemicalFromAPI();
+		
+		
 		
 	}
 
@@ -2820,5 +3228,7 @@ public class EpisuiteWebserviceScript {
 			e.printStackTrace();
 		}
 	}
+
+	
 
 }

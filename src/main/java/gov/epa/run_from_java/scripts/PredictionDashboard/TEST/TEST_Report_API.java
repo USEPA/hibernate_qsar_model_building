@@ -24,6 +24,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.QsarPredictedNeighborServi
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.DatabaseUtilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.HTMLReportCreator;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
 
 /**
@@ -105,14 +106,8 @@ public class TEST_Report_API {
 		
 	}
 	
-	public void viewReportsFromDatabase(String id,boolean regenerateReport,boolean useLegacyModelIds,int fk_dsstox_snapshot_id) {
-		
-		
-		int fk_snapshot_id=2;
-		
-		List<String> propertyNames=DevQsarConstants.getOPERA_PropertyNames();
-		
-		
+	public void viewReportsFromDatabase(String id,boolean useJson, boolean regenerateReport,boolean useLegacyModelIds,int fk_dsstox_snapshot_id) {
+				
 		String folder="data\\opera\\reports";
 		String destFolder=folder+File.separator+id;
 		
@@ -127,7 +122,7 @@ public class TEST_Report_API {
 		Long dsstoxRecordId = getDsstoxRecordId(id, fk_dsstox_snapshot_id);
 
 		
-		for (String propertyName:propertyNames) {
+		for (String propertyName:DevQsarConstants.getTEST_PropertyNames()) {
 			
 			String modelName=p.initializeDB.getModelName(propertyName);
 //			System.out.println(modelName);
@@ -135,28 +130,59 @@ public class TEST_Report_API {
 			PredictionReport or=null;
 
 
-			String json=null;
+//			String json=null;
 			
-			if(regenerateReport) {
-				or=getReportFromPredictionDashboard(id,modelName,useLegacyModelIds,dsstoxRecordId);
-				json=Utilities.gson.toJson(or);
-			}
-			else {
-				json=DatabaseUtilities.getPredictionReport(id,modelName,dsstoxRecordId);
-				or=PredictionReport.fromJson(json);
-			}
-
-			String filenameJson=id+"_"+or.modelDetails.modelName+".json";
-			Utilities.jsonToPrettyJson(json, destFolder+File.separator+filenameJson.replace(".html", ".json"));
-
+//			if(regenerateReport) {
+//				or=getReportFromPredictionDashboard(id,modelName,useLegacyModelIds,dsstoxRecordId);
+//				json=Utilities.gson.toJson(or);
+//			}
+//			else {
+//				json=DatabaseUtilities.getJsonPredictionReport(id,modelName,dsstoxRecordId);
+//				or=PredictionReport.fromJson(json);
+//			}
 			
-			if(or==null) {
-				System.out.println("No report for "+propertyName);
-				continue;
-			}
+			
+			String filename=id+"_"+modelName+".html";
+			
+			if(useJson) {
+				String json=null;
+				
+				if(regenerateReport) {
+					or=getReportFromPredictionDashboard(id,modelName,useLegacyModelIds,dsstoxRecordId);
+					json=Utilities.gson.toJson(or);
+				}
+				else {
+					json=DatabaseUtilities.getJsonPredictionReport(id,modelName,dsstoxRecordId);
+					or=PredictionReport.fromJson(json);
+				}
 
-			String filename=id+"_"+or.modelDetails.modelName+".html";
-			h.toHTMLFile(or, destFolder,filename);
+				String filenameJson=id+"_"+or.modelDetails.modelName+".json";
+				Utilities.jsonToPrettyJson(json, destFolder+File.separator+filenameJson.replace(".html", ".json"));
+
+				
+				h.toHTMLFile(or, destFolder,filename);
+				PredictionReport.viewInWebBrowser(destFolder+File.separator+filename);
+				
+			} else {
+				String html=DatabaseUtilities.getHtmlPredictionReport(id,modelName,dsstoxRecordId);
+				
+				if(html==null) {
+					System.out.println(propertyName+"\tNo html report");
+					continue;
+				}
+				
+				HTMLReportCreator.writeStringToFile(html, destFolder, filename);
+				PredictionReport.viewInWebBrowser(destFolder+File.separator+filename);
+			}
+			
+			
+//			if(or==null) {
+//				System.out.println("No report for "+propertyName);
+//				continue;
+//			}
+//
+//			String filename=id+"_"+or.modelDetails.modelName+".html";
+//			h.toHTMLFile(or, destFolder,filename);
 //			or.viewInWebBrowser(destFolder+File.separator+filename);
 			
 			
@@ -211,13 +237,16 @@ public class TEST_Report_API {
 //		String id="DTXSID50943897";
 //		String id="DTXSID301346793";
 		
-		String id="DTXSID7020182";//bisphenol-A
+//		String id="DTXSID7020182";//bisphenol-A
+		String id="DTXSID40166952";
+//		String id="DTXSID50967078";
+//		String id="DTXSID90492637";
 		
-		
+		boolean useJson=false;
 		boolean regenerate=true;
 		boolean useLegacyModelIds=true;
 		int fk_dsstox_snapshot_id=2;
-		o.viewReportsFromDatabase(id,regenerate,useLegacyModelIds, fk_dsstox_snapshot_id);
+		o.viewReportsFromDatabase(id,useJson, regenerate,useLegacyModelIds, fk_dsstox_snapshot_id);
 //		o.transposeCSV_Row(id);
 	}	
 

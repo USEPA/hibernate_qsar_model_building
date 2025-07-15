@@ -24,6 +24,9 @@ public class TEST_Report extends PredictionReport {
 	
 	public TEST_Report(PredictionDashboard pd, PredictionResults pr, Property property, String unitAbbreviation,String unitAbbreviationNeighbor,boolean useLegacyModelIds) {
 
+		
+//		unitAbbreviationNeighbor=unitAbbreviationNeighbor.replace("^3","<sup>3</sup>");
+		
 		if(pd!=null) {
 			setChemicalIdentifiers(pd);
 			
@@ -31,7 +34,7 @@ public class TEST_Report extends PredictionReport {
 			
 			setModelDetails(pd,property,useLegacyModelIds,pr.isBinaryEndpoint());
 			
-			setIndividualModels(pr);
+			setIndividualModels(pr,unitAbbreviationNeighbor);
 			
 			setModelResults(pd, unitAbbreviation);
 			
@@ -43,6 +46,7 @@ public class TEST_Report extends PredictionReport {
 			if(pr.getPredictionResultsPrimaryTable().getSource()!=null && !pr.getPredictionResultsPrimaryTable().getSource().isBlank()) {
 				modelResults.experimentalSource=pr.getPredictionResultsPrimaryTable().getSource();
 				modelResults.experimentalSource=modelResults.experimentalSource.replace("<br>Source: ","").replace("<br>Sources: ", "");
+				modelResults.experimentalSource=modelResults.experimentalSource.trim();
 			}
 			setNeighbors(pd,unitAbbreviationNeighbor);
 			
@@ -77,23 +81,36 @@ public class TEST_Report extends PredictionReport {
 
 	}
 	
-	private void setIndividualModels(PredictionResults pr) {
+	private void setIndividualModels(PredictionResults pr,String units) {
 		
 		if(pr.getIndividualPredictionsForConsensus()==null) return;
 		
 		IndividualPredictionsForConsensus ipfc=pr.getIndividualPredictionsForConsensus();
 		
-		modelDetails.consensusPredictions=new ConsensusPredictions();
-		modelDetails.consensusPredictions.unitsPrediction=pr.getIndividualPredictionsForConsensus().getUnits();
+		modelResults.consensusPredictions=new ConsensusPredictions();
 		
-		modelDetails.consensusPredictions.predictionsIndividualMethod=new ArrayList<>();
+		//Following doesnt work since might have encoding issues:
+//		modelResults.consensusPredictions.unitsPrediction=pr.getIndividualPredictionsForConsensus().getUnits();		
+		modelResults.consensusPredictions.unitsPrediction=units;
+		
+		modelResults.consensusPredictions.predictionsIndividualMethod=new ArrayList<>();
 		
 		for(ToxPredictor.Application.model.IndividualPredictionsForConsensus.PredictionIndividualMethod pim:ipfc.getConsensusPredictions()) {
 			PredictionIndividualMethod pimNew=new PredictionIndividualMethod();
 			pimNew.method=pim.getMethod();
 			pimNew.predictedValue=pim.getPrediction();
-			modelDetails.consensusPredictions.predictionsIndividualMethod.add(pimNew);
+			modelResults.consensusPredictions.predictionsIndividualMethod.add(pimNew);
 		}
+
+		PredictionIndividualMethod pimNew=new PredictionIndividualMethod();
+		pimNew.method="Consensus";
+		if(pr.isLogMolarEndpoint()) {
+			pimNew.predictedValue=pr.getPredictionResultsPrimaryTable().getPredToxValue();	
+		} else {
+			pimNew.predictedValue=pr.getPredictionResultsPrimaryTable().getPredToxValMass();
+		}
+		modelResults.consensusPredictions.predictionsIndividualMethod.add(pimNew);
+		
 //		System.out.println(Utilities.gson.toJson(modelDetails.predictionsIndividualMethod));
 	}
 	

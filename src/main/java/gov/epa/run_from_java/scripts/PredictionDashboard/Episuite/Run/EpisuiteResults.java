@@ -29,7 +29,10 @@ public class EpisuiteResults {
 	public Parameters parameters;
 	public ChemicalProperties chemicalProperties;
 	
+	public PropertyResult ecosar;
+	
 	public PropertyResult logKow;
+	
 	public PropertyResult meltingPoint;
 	public PropertyResult boilingPoint;
 	public PropertyResult waterSolubilityFromLogKow;
@@ -56,7 +59,8 @@ public class EpisuiteResults {
 	public DermalPermeability dermalPermeability;
 	public ArrayList<Object> logKowAnalogs;
 	public ArrayList<Object> analogs;
-	public String smiles;
+	
+	public String canonQsarSmiles;
 	public String dtxsid;
 	public String dtxcid;
 	
@@ -87,7 +91,7 @@ public class EpisuiteResults {
 	}
 	
 	
-	public void setExpPred(PredictionDashboard pd,Dataset dataset,boolean storeReports) {
+	public void setExpPred(PredictionDashboard pd,Dataset dataset,Boolean storeReports) {
 
 		gov.epa.databases.dev_qsar.qsar_models.entity.Model modelPD=pd.getModel();
 		
@@ -567,16 +571,17 @@ public class EpisuiteResults {
 
 
 	public class ChemicalProperties{
-	    public String name;
+		public String cas;
+		public String name;
 	    public String systematicName;
 	    public String smiles;
 	    public Double molecularWeight;
 	    public String molecularFormula;
 	    public String molecularFormulaHtml;
-	    public boolean organic;
-	    public boolean organicAcid;
-	    public boolean aminoAcid;
-	    public boolean nonStandardMetal;
+	    public Boolean organic;
+	    public Boolean organicAcid;
+	    public Boolean aminoAcid;
+	    public Boolean nonStandardMetal;
 	    public String flags;
 	}
 
@@ -607,6 +612,10 @@ public class EpisuiteResults {
 	    public String valueString;
 	    public String valueType;
 	    public String units;
+	    
+//	    public String smiles;//added by TMM for validation exercise
+	    public Double expValue;
+	    public ChemicalProperties chemicalProperties;
 	    
 	}
 	
@@ -669,8 +678,8 @@ public class EpisuiteResults {
 	}
 
 	public class Flags{
-	    public boolean isOrganicAcid;
-	    public boolean isAminoAcid;
+	    public Boolean isOrganicAcid;
+	    public Boolean isAminoAcid;
 	}
 
 	public class FugacityModel{
@@ -681,9 +690,9 @@ public class EpisuiteResults {
 	public class HalfLife{
 	    public Double ph;
 	    public Double value;
-	    public boolean baseCatalyzed;
-	    public boolean acidCatalyzed;
-	    public boolean phosphorusEster;
+	    public Boolean baseCatalyzed;
+	    public Boolean acidCatalyzed;
+	    public Boolean phosphorusEster;
 	}
 
 
@@ -705,12 +714,26 @@ public class EpisuiteResults {
 	    public ArrayList<ExperimentalValue> experimentalValues;
 	    public Parameter selectedValue;
 	    
+	    public ArrayList<ModelResult> modelResults;
+	    
+	    public String output;
 	    
 //	    public String propertyName;	    
 	    public Double value;	    
 	    public String units;
 	    public String valueType;
 	}
+	
+	public class ModelResult {
+		 String qsarClass;
+         String organism;
+         String duration;
+         String endpoint;
+         Double concentration;
+         Double maxLogKow;
+         ArrayList <String> flags;
+	}
+	
 	
     public static class ChemicalIdentifiers{
 		String preferredName;
@@ -954,7 +977,7 @@ public class EpisuiteResults {
 	    
 	    public Double hydroxylRadicalConcentration;
 	    public Double ozoneConcentration;
-	    public boolean twelveHourDay;
+	    public Boolean twelveHourDay;
 	    
 	    public Parameter logKow;
 
@@ -1003,7 +1026,7 @@ public class EpisuiteResults {
 	    public Double exposureDaysPerYear;
 	    public Double bodyWeightKg;
 	    public Double averagingTimeDays;
-	    public boolean removeMetals;
+	    public Boolean removeMetals;
 	    public PropertyResult logKoa;
 	    public SubcooledVaporPressure subcooledVaporPressure;
 	}
@@ -1037,5 +1060,10 @@ public class EpisuiteResults {
 	    public Parameters parameters;
 	    public Double riverHalfLifeHours;
 	    public Double lakeHalfLifeHours;
+	}
+
+
+	public static void main(String[] args) {
+		
 	}
 }

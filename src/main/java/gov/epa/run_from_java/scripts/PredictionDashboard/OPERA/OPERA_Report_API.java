@@ -103,7 +103,7 @@ public class OPERA_Report_API {
 		
 	}
 	
-	public void viewReportsFromDatabase(String id,boolean regenerateReport,boolean useLegacyModelIds,int fk_dsstox_snapshot_id) {
+	public void viewReportsFromDatabase(String id,boolean useJson,boolean regenerateReportFromPredictionDashboard, boolean useLegacyModelIds,int fk_dsstox_snapshot_id) {
 		
 		
 		PredictionDashboardScriptOPERA.version="2.8";
@@ -141,39 +141,40 @@ public class OPERA_Report_API {
 		for (String propertyName:propertyNames) {
 			
 			String modelName=p.initializeDB.getModelName(propertyName);
-			if(!modelName.equals("BP OPERA2.8")) continue;
+			
+//			if(!modelName.equals("BP OPERA2.8")) continue;
+			
 			System.out.println(modelName);
 			
 //			System.out.println(or.modelDetails.modelName);
 			
 			PredictionReport or=null;
 
-			String json=null;
-			
-			if(regenerateReport) {
-				or=getOperaReportFromPredictionDashboard(id,modelName,useLegacyModelIds,dsstoxRecordId);
-				json=Utilities.gson.toJson(or);
-			}
-			else {
-				json=DatabaseUtilities.getPredictionReport(id,modelName,dsstoxRecordId);
-				or=PredictionReport.fromJson(json);
-			}
-			
-			
 
-//			String filenameJson=id+"_"+or.modelDetails.modelName+".json";
-//			Utilities.jsonToPrettyJson(json, destFolder+File.separator+filenameJson.replace(".html", ".json"));
-//
-//			
-//			if(or==null) {
-//				System.out.println("No report for "+propertyName);
-//				continue;
-//			}
-//
-			String filename=id+"_"+or.modelDetails.modelName+".html";
-			h.toHTMLFile(or, destFolder,filename);
-			PredictionReport.viewInWebBrowser(destFolder+File.separator+filename);
+			String filename=id+"_"+modelName+".html";
+
 			
+			if(useJson) {
+				String json=null;
+				
+				if(regenerateReportFromPredictionDashboard) {
+					or=getOperaReportFromPredictionDashboard(id,modelName,useLegacyModelIds,dsstoxRecordId);
+					json=Utilities.gson.toJson(or);
+				}
+				else {
+					json=DatabaseUtilities.getJsonPredictionReport(id,modelName,dsstoxRecordId);
+					or=PredictionReport.fromJson(json);
+				}
+				
+				h.toHTMLFile(or, destFolder,filename);
+				PredictionReport.viewInWebBrowser(destFolder+File.separator+filename);
+				
+			} else {
+				String html=DatabaseUtilities.getHtmlPredictionReport(id,modelName,dsstoxRecordId);
+				HTMLReportCreator.writeStringToFile(html, destFolder, filename);
+				PredictionReport.viewInWebBrowser(destFolder+File.separator+filename);
+			}
+
 		}
 		
 	}
@@ -226,13 +227,14 @@ public class OPERA_Report_API {
 //		String id="DTXSID50943897";
 //		String id="DTXSID301346793";
 		
-		String id="DTXSID7020182";//bisphenol-A
-		boolean regenerate=false;
+//		String id="DTXSID7020182";//bisphenol-A
+		String id="DTXSID3039242";//bz
+		boolean regenerateFromPD=false;
 		boolean useLegacyModelIds=false;
 		int fk_dsstox_snapshot_id=2;
+		boolean useJson=false;
 		
-		
-		o.viewReportsFromDatabase(id,regenerate,useLegacyModelIds, fk_dsstox_snapshot_id);
+		o.viewReportsFromDatabase(id,useJson, regenerateFromPD,useLegacyModelIds, fk_dsstox_snapshot_id);
 //		o.transposeCSV_Row(id);
 		
 	}	

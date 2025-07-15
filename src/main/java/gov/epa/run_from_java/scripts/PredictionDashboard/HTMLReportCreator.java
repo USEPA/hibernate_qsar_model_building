@@ -180,17 +180,21 @@ public class HTMLReportCreator {
 			strExp+="&nbsp;N/A";
 		}
 
-		fw.write(strExp+"<br>");
+//		fw.write(strExp+"<br>");
+//		if (or.modelResults.experimentalSource!=null) {
+//			fw.write("<b>Experimental source: </b>"+or.modelResults.experimentalSource+"<br>\n");
+//		}
+//		if (or.modelResults.experimentalSet!=null) {
+//			fw.write("<b>Experimental set: </b>"+or.modelResults.experimentalSet+"<br>\n");
+//		}
 		
+		fw.write(strExp);
 		
 		if (or.modelResults.experimentalSource!=null) {
-			fw.write("<b>Experimental source: </b>"+or.modelResults.experimentalSource+"<br>\n");
-		}
-		
-		if (or.modelResults.experimentalSet!=null) {
-			fw.write("<b>Experimental set: </b>"+or.modelResults.experimentalSet+"<br>\n");
+			fw.write(" ("+or.modelResults.experimentalSource+", set="+or.modelResults.experimentalSet+")");
 		}
 
+		fw.write("<br>");
 
 	}
 
@@ -605,7 +609,7 @@ public class HTMLReportCreator {
 		fw.write("</td>\r\n");
 		
 		
-		if(or.modelDetails.consensusPredictions!=null) {
+		if(or.modelResults.consensusPredictions!=null) {
 			fw.write("<td valign=\"top\">");
 			writeIndividualModelsSummary(or, fw);
 			fw.write("</td>\r\n");
@@ -754,7 +758,7 @@ public class HTMLReportCreator {
 
 	}
 	
-	public void writeStringToFile(String strFileHtml, String folder,String filename) {
+	public static void writeStringToFile(String strFileHtml, String folder,String filename) {
 //		System.out.println("Enter toHTMLFile with filename");
 		
 		try {
@@ -785,13 +789,25 @@ public class HTMLReportCreator {
 
 		fw.write("\t<tr bgcolor=\"lightgray\">\n");
 		fw.write("\t<th>Method</th>\n");
-		fw.write("\t<th>Predicted value "+er.modelDetails.consensusPredictions.unitsPrediction+"</th>\n");
+		fw.write("\t<th>Predicted value "+er.modelResults.consensusPredictions.unitsPrediction+"</th>\n");
+				
+		
 		fw.write("\t</tr>\n");
 		
-		for(PredictionIndividualMethod pim:er.modelDetails.consensusPredictions.predictionsIndividualMethod) {
-			fw.write("\t<tr>\n");
+		for(PredictionIndividualMethod pim:er.modelResults.consensusPredictions.predictionsIndividualMethod) {
+			
+			if(pim.method.equals("Consensus")) {
+				fw.write("\t<tr bgcolor=\"lightgray\">\n");	
+			} else {
+				fw.write("\t<tr>\n");
+			}
+			
 			writeCenteredTD(fw, pim.method);
 			writeCenteredTD(fw, pim.predictedValue);
+			
+//			String formattedValue=getFormattedValue(false,Double.parseDouble(pim.predictedValue),null);
+//			writeCenteredTD(fw, formattedValue);
+			
 			fw.write("\t</tr>\n");
 		}
 		

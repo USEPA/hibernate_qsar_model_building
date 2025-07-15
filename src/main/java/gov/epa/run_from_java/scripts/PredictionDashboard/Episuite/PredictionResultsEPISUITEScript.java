@@ -2251,7 +2251,7 @@ public class PredictionResultsEPISUITEScript {
 					}
 
 
-					String line=results.dtxsid+"\t"+results.smiles+"\t"+file.getName();
+					String line=results.dtxsid+"\t"+results.canonQsarSmiles+"\t"+file.getName();
 
 					allChemicals.add(line);
 				}

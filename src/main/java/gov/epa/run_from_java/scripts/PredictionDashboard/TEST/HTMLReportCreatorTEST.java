@@ -155,7 +155,9 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 			return;
 		}
 
-
+		fw.write("<table><tr>\n");
+		
+		fw.write("<td>\n");
 		fw.write("\t<p><table border=1 cellpadding=10 cellspacing=0>\n");
 		fw.write("\t<caption>Prediction statistics for similar chemicals</caption>\n");
 
@@ -172,6 +174,12 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 		fw.write("\t</tr>\n");
 
 		fw.write("\t</table><p>\n");
+		fw.write("</td>\n");
+		
+		writeSimilarityLegend(fw);
+		
+		fw.write("</tr></table>\n");
+				
 
 	}
 

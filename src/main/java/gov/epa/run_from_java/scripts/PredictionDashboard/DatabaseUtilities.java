@@ -273,15 +273,19 @@ public class DatabaseUtilities {
 	 * @param lookups 
 	 * @return
 	 */
-	public static String getPredictionReport(String id,String modelName,Long dsstox_records_id) {
+	public static String getJsonPredictionReport(String id,String modelName,Long dsstox_records_id) {
+		String reportColumn="file_json";
+		return getReportAsString(modelName, dsstox_records_id, reportColumn);
+	}
+
+
+
+	private static String getReportAsString(String modelName, Long dsstox_records_id, String reportColumn) {
+		
 		
 		Connection conn=SqlUtilities.getConnectionPostgres();
-		
-		String idCol="dtxcid";
-		if (id.contains("SID")) idCol="dtxsid";
-		
-				
-		String sql="select file_json from qsar_models.prediction_reports pr\r\n"
+
+		String sql="select "+reportColumn+" from qsar_models.prediction_reports pr\r\n"
 				+ "join qsar_models.predictions_dashboard pd on pr.fk_predictions_dashboard_id = pd.id\r\n"
 				+ "join qsar_models.models m on pd.fk_model_id = m.id\r\n"
 				+ "where pd.fk_dsstox_records_id='"+dsstox_records_id+"' and m.name='"+modelName+"';";
@@ -299,9 +303,22 @@ public class DatabaseUtilities {
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			
 		}
 		return null;
-		
+	}
+	
+	/**
+	 * Gets report from cached json report in prediction_reports table
+	 * 
+	 * @param id
+	 * @param modelName
+	 * @param lookups 
+	 * @return
+	 */
+	public static String getHtmlPredictionReport(String id,String modelName,Long dsstox_records_id) {
+		String reportColumn="file_html";
+		return getReportAsString(modelName, dsstox_records_id, reportColumn);
 	}
 
 	public void deleteRecords(String table, String sourceName) {
@@ -414,6 +431,31 @@ public class DatabaseUtilities {
 				+ "join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\r\n"
 				+ "join qsar_models.models m on m.id=pd.fk_model_id\r\n"
 				+ "where m.fk_source_id="+source.getId()+" and dr.fk_dsstox_snapshot_id="+snapshot.getId()+";";
+				
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres() , sql);
+		
+		try {
+			while (rs.next()) {
+				values.add(rs.getString(1));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return values;
+	}
+	
+	
+	public static HashSet<String> getLoadedCIDsWithCount(Source source, DsstoxSnapshot snapshot,int count) {
+		HashSet<String>values=new HashSet<>();
+		
+		String sql="select dr.dtxcid\r\n"
+				+ "from qsar_models.predictions_dashboard pd\r\n"
+				+ "join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id\r\n"
+				+ "join qsar_models.models m on m.id=pd.fk_model_id\r\n"
+				+ "where m.fk_source_id="+source.getId()+" and dr.fk_dsstox_snapshot_id="+snapshot.getId()+"\n"+
+				"group by dr.dtxcid\n"+
+				"having count(dr.dtxcid)="+count+";";
 				
 		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres() , sql);
 		

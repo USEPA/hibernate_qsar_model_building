@@ -116,7 +116,6 @@ public class PredictionReport {
 		
 		public List<Model>individualModels;//EPISUITE- TODO store as predictionsIndividualMethod instead
 		
-		public ConsensusPredictions consensusPredictions;
 		public Performance performance;
 		
 	}
@@ -170,6 +169,7 @@ public class PredictionReport {
 		public List<ADEstimate>adEstimates;
 		
 		public Boolean useCombinedApplicabilityDomain;
+		public ConsensusPredictions consensusPredictions;
 		
 		
 //		double adValue;
@@ -414,13 +414,14 @@ public class PredictionReport {
 		setExperimental(pd); 
 		setPrediction(pd);
 		setADEstimates(pd);
+		
 //		System.out.println(pd.getModel().getName()+"\t"+pd.getModel().getModelStatistics().size());
 		
 	}
 	
 	
 	
-	private void setADEstimates(PredictionDashboard pd) {
+	public void setADEstimates(PredictionDashboard pd) {
 
 		if(pd.getQsarPredictedADEstimates()==null) return;
 		

@@ -17,8 +17,7 @@ public class BiodegScript {
 	
 	String workflow = "qsar-ready";
 	String serverHost = "https://hcd.rtpnc.epa.gov";
-	SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,
-			workflow, serverHost);
+	SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(workflow, serverHost);
 
 	
 	void getQSARReadySmilesList() {
