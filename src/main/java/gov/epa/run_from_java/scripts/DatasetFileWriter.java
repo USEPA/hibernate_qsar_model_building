@@ -1,10 +1,13 @@
 package gov.epa.run_from_java.scripts;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.file.Files;
@@ -19,8 +22,11 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
+import org.json.CDL;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
@@ -42,6 +48,7 @@ import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.splittings.Splitter;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.web_services.SplittingWebService;
 
 public class DatasetFileWriter {
@@ -71,7 +78,7 @@ public class DatasetFileWriter {
 //			ex.printStackTrace();
 //		}
 		
-		String instances = ModelData.generateInstancesWithoutSplitting(datasetName,descriptorSetName,true);
+		String instances = ModelData.generateInstancesWithoutSplitting(datasetName,descriptorSetName,fetchDtxcids);
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(outputFilePath))) {
 			bw.write(instances);
 		} catch (IOException e) {
@@ -372,17 +379,18 @@ public class DatasetFileWriter {
 
 		List<String>datasetNames=new ArrayList<>();
 		
-		datasetNames.add("exp_prop_96HR_FHM_LC50_v5 modeling");
-		datasetNames.add("exp_prop_96HR_RT_LC50_v5 modeling");
-		datasetNames.add("exp_prop_96HR_BG_LC50_v5 modeling");
-		datasetNames.add("exp_prop_48HR_DM_LC50_v5 modeling");
+//		datasetNames.add("exp_prop_96HR_FHM_LC50_v5 modeling");
+//		datasetNames.add("exp_prop_96HR_RT_LC50_v5 modeling");
+//		datasetNames.add("exp_prop_96HR_BG_LC50_v5 modeling");
+//		datasetNames.add("exp_prop_48HR_DM_LC50_v5 modeling");
 
+		datasetNames.add("exp_prop_RBIODEG_RIFM_BY_CAS");
 		
 		List<String>descriptorSetNames=new ArrayList<>();
 
 		descriptorSetNames.add(DevQsarConstants.DESCRIPTOR_SET_WEBTEST);
 //		descriptorSetNames.add("PaDEL-default");
-		descriptorSetNames.add("Mordred-default");
+//		descriptorSetNames.add("Mordred-default");
 //		descriptorSetNames.add("ToxPrints-default");
 //		descriptorSetNames.add("RDKit-default");
 
@@ -390,9 +398,34 @@ public class DatasetFileWriter {
 		for (String datasetName:datasetNames) {
 			for (String descriptorSetName:descriptorSetNames) {
 				String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_exp_prop\\"+datasetName;
+//				String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\0000 biodegradation OPPT\\biodegradation\\RIFM\\datasets\\unvetted with splitting";
 				writeWithSplitting(descriptorSetName, splittingName, datasetName, folder,true,false);
+				
 			}
 		}
+	}
+	
+	
+	void writeExternalSet() {
+
+		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+		String splittingName="RND_REPRESENTATIVE";
+		String predSet=ModelData.getExternalPredictionSet(533L, 532L, descriptorSetName, splittingName,true);
+		
+		String datasetName="exp_prop_RBIODEG_RIFM_BY_CAS";
+		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_exp_prop\\"+datasetName;
+		
+		
+		try {
+			
+			FileWriter fw=new FileWriter(folder+File.separator+"external set.tsv");
+			fw.write(predSet);
+			fw.flush();
+			fw.close();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
 	}
 	
 	
@@ -403,22 +436,28 @@ public class DatasetFileWriter {
 		String descriptorSetName = DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
 		List<String>datasetNames=new ArrayList<>();
-//		datasetNames.add("HLC from exp_prop and chemprop");
-//		datasetNames.add("HLC v1 modeling");
-//		datasetNames.add("VP v1 modeling");
+//		
+		datasetNames.add("HLC v1 modeling");
+		datasetNames.add("VP v1 modeling");
 		datasetNames.add("BP v1 modeling");
-//		datasetNames.add("ExpProp BCF Fish_TMM");
-		datasetNames.add("WS from exp_prop and chemprop");
-		datasetNames.add("VP from exp_prop and chemprop");
-		datasetNames.add("LogP from exp_prop and chemprop");
-		datasetNames.add("MP from exp_prop and chemprop");
-		datasetNames.add("BP from exp_prop and chemprop");
+		datasetNames.add("MP v1 modeling");
+
+		datasetNames.add("LogP v1 modeling");
+		datasetNames.add("WS v1 modeling");
 		
-		String server="https://ccte-cced.epa.gov/";
-		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
+//		datasetNames.add("ExpProp BCF Fish_TMM");
+//		datasetNames.add("HLC from exp_prop and chemprop");
+		//		datasetNames.add("WS from exp_prop and chemprop");
+//		datasetNames.add("VP from exp_prop and chemprop");
+//		datasetNames.add("LogP from exp_prop and chemprop");
+//		datasetNames.add("MP from exp_prop and chemprop");
+//		datasetNames.add("BP from exp_prop and chemprop");
+		
+//		String server="https://ccte-cced.epa.gov/";
+//		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
 
 		String splittingName="RND_REPRESENTATIVE";
-		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\datasets\\";
+//		String folderMain="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\pf_python_modelbuilding\\datasets\\";
 //		String folderMain="C:\\Users\\lbatts\\OneDrive - Environmental Protection Agency (EPA)\\0 Python\\pf_python_modelbuilding\\datasets_exp_prop\\";
 
 		
@@ -428,7 +467,8 @@ public class DatasetFileWriter {
 
 //			String folder=folderMain+datasetName+"\\";
 			
-			String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_exp_prop\\"+datasetName;
+//			String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_exp_prop\\"+datasetName;
+			String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 python\\modeling services\\pf_python_modelbuilding\\datasets_v1_modeling\\"+datasetName;
 
 			
 			//Just in case run descriptor generation to make sure have descriptor for each datapoint:
@@ -526,18 +566,113 @@ public class DatasetFileWriter {
 //		
 //		
 //	}
+	
+	private static JsonArray readTSVFile(String filePath) throws IOException {
+        JsonArray jsonArray = new JsonArray();
+        
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String headerLine = br.readLine(); // Read the header line
+            if (headerLine == null) {
+                throw new IOException("The TSV file is empty.");
+            }
+            
+            String[] headers = headerLine.split("\t"); // Split header line by tab
+            
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] fields = line.split("\t"); // Split each line by tab
+                JsonObject jsonObject = new JsonObject();
+                
+                for (int i = 0; i < headers.length; i++) {
+                    String key = headers[i];
+                    String value = i < fields.length ? fields[i] : ""; // Handle missing values
+                    jsonObject.addProperty(key, value);
+                }
+                
+                jsonArray.add(jsonObject);
+            }
+        }
+        
+        return jsonArray;
+    }
+	
+	void getDescriptorSubset(String datasetName,String descriptorSetName) {
+		
+		String folder="data\\dev_qsar\\dataset_files\\";
+		String fileName = datasetName + "_" + descriptorSetName + "_full.tsv";
+
+		try {
+
+			JsonArray ja=readTSVFile(folder+fileName);
+			
+			
+//			List<String>fields=Arrays.asList("ID","ALogP","XLogP");
+			List<String>fields=Arrays.asList("ID","ALOGP","XLOGP");
+			
+			FileWriter fw=new FileWriter(folder+fileName.replace(".tsv", "_subset.tsv"));
+			
+			for (int i=0;i<fields.size();i++) {
+				fw.write(fields.get(i));
+				if(i<fields.size()-1) fw.write("\t");
+				else fw.write("\n");
+			}
+			
+//			System.out.println(ja.size());
+			
+			for(int i=0;i<ja.size();i++) {
+				JsonObject jo=ja.get(i).getAsJsonObject();
+				
+				System.out.println(jo.get("ID").getAsString());
+				
+				for (int j=0;j<fields.size();j++) {
+				
+					String field=fields.get(j);
+					
+					if(jo.get(field)==null || jo.get(field).isJsonNull()) break;
+					
+					if(field.equals("ID")) {
+						fw.write(jo.get(field).getAsString());	
+					} else {
+						fw.write(jo.get(field).getAsDouble()+"");
+					}
+					
+					if(j<fields.size()-1) fw.write("\t");
+					else fw.write("\n");
+				}
+			}
+			 fw.flush();
+			fw.close();
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		
+		CDL.toJSONArray(fileName);
+		
+	}
+	
 
 	public static void main(String[] args) {
 		DatasetFileWriter writer = new DatasetFileWriter();
 //		writer.writeOPERAFiles();
 //		writer.writeTEST_Toxicity_Files();
 //		writer.write_exp_prop_datasets();
-		writer.writeBatch();
+//		writer.writeBatch();
 		
-//		String outputFolderPath="data/dev_qsar/dataset_files/";
+//		writer.writeExternalSet();
+		
+		String outputFolderPath="data/dev_qsar/dataset_files/";
 //		String datasetName="exp_prop_96HR_FHM_LC50_v1 modeling";
-//		String descriptorSetName="WebTEST-default";
+		String datasetName="LogP v1 modeling";
+		String descriptorSetName="WebTEST-default";
+//		String descriptorSetName="PaDEL-default";
+		
+		writer.write_exp_prop_datasets();
 //		writer.writeWithoutSplitting(datasetName, descriptorSetName, outputFolderPath, true);
+//		writer.writeWithoutSplitting(datasetName, descriptorSetName, outputFolderPath, false);
+		
+//		writer.getDescriptorSubset(datasetName, descriptorSetName);
 		
 //		writer.writeWithoutSplitting(108L, descriptorSetName, outputFolderPath, true);
 				
@@ -634,4 +769,5 @@ public class DatasetFileWriter {
 	}
 
 }
+
 

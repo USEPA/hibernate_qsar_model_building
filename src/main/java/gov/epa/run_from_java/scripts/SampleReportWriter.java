@@ -176,7 +176,7 @@ public class SampleReportWriter {
 
 		if(!reportFile.exists() || overWriteJsonReport) {
 			predictionReport = ReportGenerationScript.reportPredictionsMethod(model,
-					true,includeDescriptors,includeOriginalCompounds,filepathReport,false);
+					true,includeDescriptors,includeOriginalCompounds,filepathReport,true);
 			System.out.println("Created:" + filepathReport);
 		} else {
 			predictionReport = GenerateWebTestReport.loadDataSetFromJson(filepathReport);
@@ -190,7 +190,10 @@ public class SampleReportWriter {
 //			applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
 //		}
 		//Just use all descriptors- works more reliably:
-		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
+//		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
+		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
+		
+		//TODO should get AD from models table
 		
 		ads.runAD(methodName, splittingName, descriptorSetName, applicability_domain,datasetName,predictionReport);
 

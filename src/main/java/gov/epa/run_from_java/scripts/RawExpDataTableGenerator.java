@@ -211,7 +211,7 @@ public class RawExpDataTableGenerator {
 		try  {
 
 			String sql="select * from public.mv_experimental_data\n"
-					+"where name=? and dtxsid=?\r\norder by prop_value;";
+					+"where prop_name=? and dtxsid=?\r\norder by prop_value;";
 			//		System.out.println(sql);
 
 			PreparedStatement prep = conn.prepareStatement(sql);
@@ -222,7 +222,7 @@ public class RawExpDataTableGenerator {
 			JsonArray ja = getJsonArray(rs);
 			convertViewFieldNames(ja);
 
-			System.out.println(Utilities.gson.toJson(ja));
+//			System.out.println(Utilities.gson.toJson(ja));
 			
 			
 			return ja;
@@ -242,8 +242,8 @@ public class RawExpDataTableGenerator {
 		Hashtable<String,String>ht=new Hashtable<>();
 
 		ht.put("prop_value", "property_value");
-		ht.put("unit", "property_units");
-		ht.put("name", "property");
+		ht.put("prop_unit", "property_units");
+		ht.put("prop_name", "property");
 
 		ht.put("prop_value_text", "property_value_text");
 		ht.put("prop_value_original", "property_value_original");
@@ -254,14 +254,20 @@ public class RawExpDataTableGenerator {
 		ht.put("ls_citation", "literature_source_description");
 		ht.put("ls_doi", "literature_source_doi");
 		
-		ht.put("temperature_c", "temperature_C");
-		ht.put("pressure_mmhg", "pressure_mmHg");
-		ht.put("ph", "pH");
+		ht.put("exp_details_temperature_c", "temperature_c");
+		ht.put("exp_details_pressure_mmhg", "pressure_mmHg");
+		ht.put("exp_details_ph", "pH");
+		ht.put("exp_details_response_site", "response_site");
+		ht.put("exp_details_species_common", "species_common");
 		
 		for (int i=0;i<ja.size();i++) {
 			JsonObject jo=ja.get(i).getAsJsonObject();
 			for (String key:ht.keySet()) {
+				
+				System.out.println(key+"\t"+jo.get(key));
+				
 				if(jo.get(key)!=null && !jo.get(key).isJsonNull()) {
+//					System.out.println(key+"\t"+jo.get(key));
 					jo.addProperty(ht.get(key), jo.get(key).getAsString());	
 					
 //					System.out.println(key+"\t"+ht.get(key)+"\t"+jo.get(key));
@@ -660,10 +666,16 @@ public class RawExpDataTableGenerator {
 			if( !jo.get("public_source_name").isJsonNull()) {				
 				String source_name=jo.get("public_source_name").getAsString();
 				String source_description=jo.get("public_source_description").getAsString();
-				String source_url=jo.get("public_source_url").getAsString();
+				
+				if(jo.get("public_source_url")!=null && !jo.get("public_source_url").isJsonNull()) {
 
-				sourceHtml+="<a href=\""+source_url+"\" target=\"_blank\"><div class=\"tooltip\">"+source_name+
-						"<span class=\"tooltiptext\">"+source_description+"</span></div></a><br>";
+					String source_url=jo.get("public_source_url").getAsString();
+
+					sourceHtml+="<a href=\""+source_url+"\" target=\"_blank\"><div class=\"tooltip\">"+source_name+
+							"<span class=\"tooltiptext\">"+source_description+"</span></div></a><br>";
+					
+				}
+				
 			}
 
 			if( !jo.get("public_source_original_name").isJsonNull()) {				
@@ -681,7 +693,7 @@ public class RawExpDataTableGenerator {
 				String source_description=jo.get("literature_source_description").getAsString();
 
 				String source_url=null;
-				if( !jo.get("literature_source_url").isJsonNull()) {	
+				if( jo.get("literature_source_url")!=null && !jo.get("literature_source_url").isJsonNull()) {	
 					source_url=jo.get("literature_source_url").getAsString();
 
 					sourceHtml+="<a href=\""+source_url+"\" target=\"_blank\"><div class=\"tooltip\">"+source_name+
@@ -818,26 +830,22 @@ public class RawExpDataTableGenerator {
 
 		List<String>params=new ArrayList<>();
 
-		if(!jo.get("temperature_c").isJsonNull()) 
+		if(jo.get("temperature_c")!=null && !jo.get("temperature_c").isJsonNull()) 
 			params.add("Temperature: "+getFormattedValue(jo.get("temperature_c").getAsString(),"temperature")+" C");
 
-		if (!jo.get("pressure_mmhg").isJsonNull()) {
-			params.add("Pressure: "+getFormattedValue(jo.get("pressure_mmhg").getAsString(),"pressure")+" mmHg");
+		if (jo.get("pressure_mmHg")!=null && !jo.get("pressure_mmHg").isJsonNull()) {
+			params.add("Pressure: "+getFormattedValue(jo.get("pressure_mmHg").getAsString(),"pressure")+" mmHg");
 		}
 
-		if (!jo.get("ph").isJsonNull()) {
-			params.add("pH: "+getFormattedValue(jo.get("ph").getAsString(),"pH"));
+		if (jo.get("pH")!=null && !jo.get("pH").isJsonNull()) {
+			params.add("pH: "+getFormattedValue(jo.get("pH").getAsString(),"pH"));
 		}
 
-		if (!jo.get("response_site").isJsonNull()) {
+		if (jo.get("response_site")!=null && !jo.get("response_site").isJsonNull()) {
 			params.add("Response site: "+jo.get("response_site").getAsString());
 		}
 
-		if (!jo.get("response_site").isJsonNull()) {
-			params.add("Species latin: "+jo.get("species_latin").getAsString());
-		}
-
-		if (!jo.get("species_common").isJsonNull()) {
+		if (jo.get("species_common")!=null && !jo.get("species_common").isJsonNull()) {
 			params.add("Species common: "+jo.get("species_common").getAsString());
 		}
 
@@ -1350,16 +1358,19 @@ public class RawExpDataTableGenerator {
 //		String dtxsid="DTXSID3039242";//benzene
 		
 //		String dtxsid="DTXSID1024207";
-		//		String dtxsid="DTXSID7020182";//BPA
+//				String dtxsid="DTXSID7020182";//BPA
 		//		String dtxsid="DTXSID7021360";//toluene
 		//		String dtxsid="DTXSID8031865";//PFOA
-		//		String dtxsid="DTXSID3031864";//PFOS
+//				String dtxsid="DTXSID3031864";//PFOS
+				String dtxsid="DTXSID00882626";
+
 		//				String dtxsid="DTXSID0020573";//beta-estradiol - endocrine active
 
 
 //		String dtxsid="DTXSID5030030";//10311-84-9
 //		String dtxsid="DTXSID001027667";
-		String dtxsid="DTXSID5044572";
+//		String dtxsid="DTXSID5044572";
+//		String dtxsid="DTXSID3039242";//bz
 		
 
 		
@@ -1368,11 +1379,20 @@ public class RawExpDataTableGenerator {
 
 //		List<String> dtxsids =Arrays.asList( "DTXSID0024135", "DTXSID2020684",
 //				"DTXSID2020686", "DTXSID5024134", "DTXSID7020685", "DTXSID7020687", "DTXSID901310407");
+
 //		String property="Vapor Pressure";
-//		r.createReportForDashboard(dtxsids, property);
+		String property="LogKow: Octanol-Water";
+		
+		List<String> dtxsids = Arrays.asList("DTXSID00192353", "DTXSID6067331", "DTXSID30891564", "DTXSID6062599",
+				"DTXSID90868151", "DTXSID8031863", "DTXSID8031865", "DTXSID1037303", "DTXSID8047553", "DTXSID60663110",
+				"DTXSID70191136", "DTXSID3037709", "DTXSID3059921", "DTXSID3031860", "DTXSID8037706", "DTXSID8059920",
+				"DTXSID3031862", "DTXSID30382063", "DTXSID00379268", "DTXSID20874028", "DTXSID3037707");
+
+		
+		r.createReportForDashboard(dtxsids, property);
 		
 		
-		boolean useView=false;
+		boolean useView=true;
 		r.createReportsForDashboardAllPropertiesTabbed(dtxsid,useView);
 //		r.createReportsForDashboardAllProperties(dtxsid);
 

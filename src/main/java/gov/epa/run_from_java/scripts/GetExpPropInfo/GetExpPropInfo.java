@@ -1019,7 +1019,7 @@ public class GetExpPropInfo {
 	static void createPFAS_text_File() {
 		boolean standardize=true;
 
-		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,"qsar-ready","https://hcd.rtpnc.epa.gov");
+		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer("qsar-ready","https://hcd.rtpnc.epa.gov");
 
 		CompoundServiceImpl compoundService=new CompoundServiceImpl();
 

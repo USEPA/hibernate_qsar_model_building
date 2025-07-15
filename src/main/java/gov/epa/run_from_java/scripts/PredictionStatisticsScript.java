@@ -57,6 +57,7 @@ import gov.epa.run_from_java.scripts.PredictionStatisticsScript.MainTable.MainTa
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteValidation;
 import gov.epa.util.FileUtils;
 import gov.epa.run_from_java.scripts.RecalcStatsScript.SplitPredictions;
 
@@ -2105,17 +2106,61 @@ public class PredictionStatisticsScript {
 		boolean overwriteJsonReport=true;
 
 		List<Long>modelIds=new ArrayList<>();
-		modelIds.add(1507L);
-		modelIds.add(1517L);
-		modelIds.add(1518L);
+//		modelIds.add(1507L);
+//		modelIds.add(1517L);
+//		modelIds.add(1518L);
+//		modelIds.add(1522L);
 		
-		String outputFolder = "data/reports/prediction reports upload/FishTox";
+//		for (long id=1553;id<=1558;id++) {
+//			modelIds.add(id);	
+//		}
+		modelIds.add(1569L);
+		
+//		String outputFolder = "data/reports/prediction reports upload/FishTox";
+		String outputFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\0000 biodegradation OPPT\\biodegradation\\RIFM\\datasets\\unvetted with splitting";
 		
 		File f = new File(outputFolder);
 		if (!f.exists())
 			f.mkdirs();
 
+		SampleReportWriter srw = new SampleReportWriter();
+		for (Long modelId:modelIds) {
+			srw.createPredictionReportMethod(modelId, overwriteJsonReport, includeDescriptors, includeOriginalCompounds,outputFolder);
+		}
 		
+	}
+	
+
+	void createPredictionReportForDatasets() {
+		
+		boolean includeDescriptors=true;
+		boolean includeOriginalCompounds=true;
+		boolean overwriteJsonReport=true;
+
+//		datasetNames.add("HLC v1 modeling");
+//		datasetNames.add("WS v1 modeling");
+//		datasetNames.add("VP v1 modeling");
+//		datasetNames.add("LogP v1 modeling");
+//		datasetNames.add("BP v1 modeling");
+//		datasetNames.add("MP v1 modeling");
+		
+		String splittingName="RND_REPRESENTATIVE";
+		boolean haveEmbedding=true;
+		
+		List<Long>modelIds=new ArrayList<>();
+		for(String datasetName:datasetNames) {
+			long modelId = EpisuiteValidation.getModelIdResQsarFromDatasetName(datasetName, splittingName, haveEmbedding);
+			modelIds.add(modelId);
+		}
+		
+		
+//		String outputFolder = "data/reports/prediction reports upload/FishTox";
+		String outputFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\000 Papers\\2023 8.4.11 papers\\00000 2025 paper\\resubmit\\AD";
+		
+		File f = new File(outputFolder);
+		if (!f.exists())
+			f.mkdirs();
+
 		SampleReportWriter srw = new SampleReportWriter();
 		for (Long modelId:modelIds) {
 			srw.createPredictionReportMethod(modelId, overwriteJsonReport, includeDescriptors, includeOriginalCompounds,outputFolder);
@@ -2406,8 +2451,17 @@ public class PredictionStatisticsScript {
 		
 				double meanExpTraining = calculateMeanExpTraining(sp.trainingSetPredictions);
 		
-				Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator
-						.calculateContinuousStatistics(sp.testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
+				Map<String, Double> modelTestStatisticValues=null;
+				if(predictionReport.predictionReportMetadata.datasetUnit.equals(DevQsarConstants.BINARY)) {
+					modelTestStatisticValues = ModelStatisticCalculator
+							.calculateBinaryStatistics(sp.testSetPredictions, 0.5, DevQsarConstants.TAG_TEST);
+				} else {
+					modelTestStatisticValues = ModelStatisticCalculator
+							.calculateContinuousStatistics(sp.testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
+					
+				}
+				
+				
 		
 				// Map<String, Double> modelTrainingStatisticValues =
 				// ModelStatisticCalculator.calculateContinuousStatistics(
@@ -2438,6 +2492,47 @@ public class PredictionStatisticsScript {
 					System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
 		
 			}
+		
+		
+		
+		
+		public static Map<String, Double> getStats(Hashtable<String, ApplicabilityDomainPrediction> htAD,List<ModelPrediction>modelPredictions,boolean isBinary,boolean isInside) {
+			boolean print = false;
+			
+			List<ModelPrediction>mps=new ArrayList<>();
+			
+			for (ModelPrediction mp : modelPredictions) {
+				if (htAD.get(mp.id) != null) {
+					
+					ApplicabilityDomainPrediction ad = htAD.get(mp.id);
+					
+					ModelPrediction mp2=new ModelPrediction(mp.id,mp.exp,mp.pred,1);
+					
+					if(isInside && !ad.AD) mp2.pred=null;
+					else if(!isInside && ad.AD) mp2.pred=null;
+					
+					mps.add(mp2);
+					
+					// System.out.println(mp.ID+"\t"+mp.AD);
+				}
+				// System.out.println(mp.ID+"\t"+mp.exp+"\t"+mp.pred);
+			}
+	
+			double meanExpTraining = calculateMeanExpTraining(mps);
+	
+			Map<String, Double> modelTestStatisticValues=null;
+			
+			if(isBinary) {
+				modelTestStatisticValues = ModelStatisticCalculator
+						.calculateBinaryStatistics(mps, 0.5, DevQsarConstants.TAG_TEST);
+			} else {
+				modelTestStatisticValues = ModelStatisticCalculator
+						.calculateContinuousStatistics(mps, meanExpTraining, DevQsarConstants.TAG_TEST);
+				
+			}
+			
+			return modelTestStatisticValues;
+		}
 
 		public static void getStatsOutsideAD(PredictionReport predictionReport,
 				Hashtable<String, ApplicabilityDomainPrediction> htAD, HashSet<String> smilesArray) {
@@ -2599,9 +2694,16 @@ public class PredictionStatisticsScript {
 		
 				double meanExpTraining = calculateMeanExpTraining(sp.trainingSetPredictions);
 		
-				Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator
-						.calculateContinuousStatistics(sp.testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
-		
+
+				Map<String, Double> modelTestStatisticValues=null;
+				if(predictionReport.predictionReportMetadata.datasetUnit.equals(DevQsarConstants.BINARY)) {
+					modelTestStatisticValues = ModelStatisticCalculator
+							.calculateBinaryStatistics(sp.testSetPredictions, 0.5, DevQsarConstants.TAG_TEST);
+				} else {
+					modelTestStatisticValues = ModelStatisticCalculator
+							.calculateContinuousStatistics(sp.testSetPredictions, meanExpTraining, DevQsarConstants.TAG_TEST);
+				}
+				
 				if (print)
 					System.out.println("test set");
 				for (String statisticName : modelTestStatisticValues.keySet()) {
@@ -2793,7 +2895,8 @@ public class PredictionStatisticsScript {
 		//Create summary json report and excel file		
 //		ms.createPredictionReportForMethod();
 //		ms.createPredictionReportForMethodArrays();
-		ms.createPredictionReportForModelIds();
+//		ms.createPredictionReportForModelIds();
+		ms.createPredictionReportForDatasets();
 //		ms.createMainTable();
 
 		

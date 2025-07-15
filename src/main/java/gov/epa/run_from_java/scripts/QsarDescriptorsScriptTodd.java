@@ -145,8 +145,8 @@ public class QsarDescriptorsScriptTodd {
 //		String descriptorSetName="WebTEST-default";
 //		String descriptorSetName="ToxPrints-default";
 //		String descriptorSetName="RDKit-default";
-//		String descriptorSetName="PaDEL-default";
-		String descriptorSetName="Mordred-default";
+		String descriptorSetName="PaDEL-default";
+//		String descriptorSetName="Mordred-default";
 //		
 //		String server="https://ccte-cced.epa.gov/";
 		String server="https://hcd.rtpnc.epa.gov/";
@@ -213,7 +213,14 @@ public class QsarDescriptorsScriptTodd {
 		
 //		datasetNames.add("exp_prop_BCF_fish_whole_body_v1_modeling_map_by_CAS");
 //		datasetNames.add("exp_prop_BCF_fish_whole_body_overall_score_1_v2_modeling_map_by_CAS");
-		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v1 modeling");
+//		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v1 modeling");
+//		datasetNames.add("exp_prop_RBIODEG_RIFM_BY_CAS");
+//		datasetNames.add("exp_prop_RBIODEG_NITE_OPPT_BY_CAS");
+		
+//		datasetNames.add("QSAR_Toolbox_96HR_Fish_LC50_v3 modeling");
+//		datasetNames.add("exp_prop_LOG_KOW_external_validation");
+		datasetNames.add("LogP v1 modeling");
+		
 		
 		int batchSize=1;//right now if one chemical in batch fails, the batch run fails, so run 1 at a time
 		for (String datasetName:datasetNames) {

@@ -388,12 +388,12 @@ public class RunCaseStudiesTodd {
 
 		List<String>datasetNames=new ArrayList<>();
 
-//		datasetNames.add("HLC v1 modeling");
-//		datasetNames.add("WS v1 modeling");
-//		datasetNames.add("VP v1 modeling");
-//		datasetNames.add("BP v1 modeling");
-//		datasetNames.add("LogP v1 modeling");
-//		datasetNames.add("MP v1 modeling");
+		datasetNames.add("HLC v1 modeling");
+		datasetNames.add("WS v1 modeling");
+		datasetNames.add("VP v1 modeling");
+		datasetNames.add("BP v1 modeling");
+		datasetNames.add("LogP v1 modeling");
+		datasetNames.add("MP v1 modeling");
 		
 //		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
 //		datasetNames.add("exp_prop_96HR_FHM_LC50_v2 modeling");
@@ -404,7 +404,8 @@ public class RunCaseStudiesTodd {
 		
 //		datasetNames.add("TTR_Binding_training_remove_bad_max_conc");
 		
-		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v3 modeling");
+//		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v3 modeling");
+		datasetNames.add("exp_prop_RBIODEG_RIFM_BY_CAS");
 		
 		List<String>methods=new ArrayList<>();			
 //		methods.add(DevQsarConstants.RF);
@@ -417,8 +418,8 @@ public class RunCaseStudiesTodd {
 		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 //		String splitting = SplittingGeneratorPFAS_Script.splittingAllButPFAS;
 
-//		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
-		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_MORDRED;
+		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
+//		String descriptorSetName=DevQsarConstants.DESCRIPTOR_SET_MORDRED;
 		
 //		System.out.println("\n*** portNumber="+portModelBuilding+" ***");
 		
@@ -444,12 +445,10 @@ public class RunCaseStudiesTodd {
 //					ci.qsarMethodEmbedding="rf";//use random forest descriptor set, although should use GA or SA for REG directly	
 //				}
 				
-				
 				ci.datasetName=datasetName;
 				ci.descriptorSetName=descriptorSetName;
 				ci.splittingName=splitting;
 				
-
 				System.out.println("\n***********************\n"+ci.toString2());
 				
 				DescriptorEmbedding descriptorEmbedding=null;
@@ -811,9 +810,11 @@ public class RunCaseStudiesTodd {
 //			datasetNames.add("ECOTOX_2024_12_12_96HR_FHM_LC50_v"+i+" modeling");
 //		}
 		
+		datasetNames.add("exp_prop_RBIODEG_RIFM_BY_CAS");
+		
 //		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v1 modeling");
 //		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v2 modeling");
-		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v3 modeling");
+//		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v3 modeling");
 //		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v4 modeling");
 		
 //		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_Top_11_LC50_v1 modeling");
@@ -833,9 +834,10 @@ public class RunCaseStudiesTodd {
 		
 		List<String>methods=new ArrayList<>();			
 //		methods.add(DevQsarConstants.RF);
-		methods.add(DevQsarConstants.XGB);
+//		methods.add(DevQsarConstants.XGB);
 //		methods.add(DevQsarConstants.KNN);
-//		methods.add(DevQsarConstants.SVM);
+		methods.add(DevQsarConstants.SVM);
+//		methods.add(DevQsarConstants.LAS);
 
 //		String splitting =SplittingGeneratorPFAS_Script.splittingPFASOnly;
 		String splitting =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;		
@@ -1552,7 +1554,7 @@ public class RunCaseStudiesTodd {
 //		printEmbeddings();
 		
 //		runCaseStudyExpProp_All_Endpoints();
-		
+//		
 		runCaseStudyExpProp_All_Endpoints_method_specific_embedding();
 //		runCaseStudyExpProp_All_Endpoints_No_Embedding_RF_XGB();
 		

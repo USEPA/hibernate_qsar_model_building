@@ -706,7 +706,12 @@ public class QsarModelsScript {
 		//****************************************************************************************
 //		script.deleteModel(861L);
 //		script.deleteModel(858L);
-		script.deleteModel(1506L);
+//		script.deleteModel(1506L);
+		
+		script.deleteModel(1572L);
+		script.deleteModel(1573L);
+		script.deleteModel(1574L);
+
 		
 //		script.deleteModel(859L);
 //		for (int i=1102;i>=1099;i--) script.deleteModel(i);

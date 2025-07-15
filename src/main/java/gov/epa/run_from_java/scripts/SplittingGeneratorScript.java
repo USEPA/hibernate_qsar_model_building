@@ -16,18 +16,20 @@ public class SplittingGeneratorScript {
 		String lanId = "tmarti02";
 		List<String>datasetNamesDest=new ArrayList<>();
 		
-//		for(int i=1;i<=4;i++) {
+		for(int i=1;i<=3;i++) {
 //			datasetNamesDest.add("ECOTOX_2024_12_12_96HR_FHM_LC50_v"+i+" modeling");
-//		}
+			datasetNamesDest.add("ECOTOX_2024_12_12_96HR_BG_LC50_v"+i+" modeling");
+			datasetNamesDest.add("ECOTOX_2024_12_12_96HR_RT_LC50_v"+i+" modeling");
+		}
 		
 //		for(int i=4;i<=4;i++) {
 //			datasetNamesDest.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v"+i+" modeling");
 //		}
 
-		datasetNamesDest.add("ECOTOX_2024_12_12_96HR_Fish_Top_3_LC50_v2 modeling");
-		datasetNamesDest.add("ECOTOX_2024_12_12_96HR_Fish_Top_3_LC50_v3 modeling");
-		datasetNamesDest.add("ECOTOX_2024_12_12_96HR_Fish_Top_11_LC50_v2 modeling");
-		datasetNamesDest.add("ECOTOX_2024_12_12_96HR_Fish_Top_11_LC50_v3 modeling");
+//		datasetNamesDest.add("ECOTOX_2024_12_12_96HR_Fish_Top_3_LC50_v2 modeling");
+//		datasetNamesDest.add("ECOTOX_2024_12_12_96HR_Fish_Top_3_LC50_v3 modeling");
+//		datasetNamesDest.add("ECOTOX_2024_12_12_96HR_Fish_Top_11_LC50_v2 modeling");
+//		datasetNamesDest.add("ECOTOX_2024_12_12_96HR_Fish_Top_11_LC50_v3 modeling");
 		
 		String datasetNameSrc="ECOTOX_2024_12_12_96HR_Fish_LC50_v1 modeling";
 		
@@ -86,7 +88,8 @@ public class SplittingGeneratorScript {
 //		datasetNames.add("exp_prop_96HR_BG_LC50_v5 modeling");
 //		datasetNames.add("exp_prop_48HR_DM_LC50_v5 modeling");
 		
-		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v1 modeling");
+//		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v1 modeling");
+		datasetNames.add("exp_prop_RBIODEG_RIFM_BY_CAS");
 
 //		datasetNames.add("exp_prop_96HR_scud_v1 modeling");
 		
@@ -102,8 +105,8 @@ public class SplittingGeneratorScript {
 	}
 
 	public static void main(String[] args) {
-//		splitDatasets();
-		cloneSplits();
+		splitDatasets();
+//		cloneSplits();
 	}
 
 }

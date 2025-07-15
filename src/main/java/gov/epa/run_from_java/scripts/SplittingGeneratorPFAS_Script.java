@@ -56,7 +56,7 @@ public class SplittingGeneratorPFAS_Script {
 
 	ChemicalListService chemicalListService = new ChemicalListServiceImpl();
 	SourceSubstanceService sourceSubstanceService = new SourceSubstanceServiceImpl();
-	SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,"qsar-ready","https://hcd.rtpnc.epa.gov");
+	SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer("qsar-ready","https://hcd.rtpnc.epa.gov");
 	DataPointInSplittingService dataPointInSplittingService = new DataPointInSplittingServiceImpl();
 	CompoundService compoundService = new CompoundServiceImpl();
 //	Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();

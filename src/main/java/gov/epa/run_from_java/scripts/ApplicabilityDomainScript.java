@@ -61,10 +61,10 @@ public class ApplicabilityDomainScript {
 	+ "{\"idTest\":\"FC1(F)C(F)(F)C(F)(F)C1(F)F\",\"idNeighbor1\":\"FC(F)OC(F)(F)C(F)Cl\",\"idNeighbor2\":\"OC(C(F)(F)F)C(F)(F)F\",\"idNeighbor3\":\"FC(F)(Cl)C(F)(F)C(F)Cl\",\"AD\":true}";
 
 	
-	static class ApplicabilityDomainPrediction {
-		String id;
-		List<String>idNeighbors;
-		Boolean AD;
+	public static class ApplicabilityDomainPrediction {
+		public String id;
+		public List<String>idNeighbors;
+		public Boolean AD;
 	}
 	
 	DescriptorEmbeddingServiceImpl descriptorEmbeddingService = new DescriptorEmbeddingServiceImpl();
@@ -215,18 +215,18 @@ public class ApplicabilityDomainScript {
 	public void runCaseStudyExpProp_All_Endpoints_modelSpecificAD() {
 
 		
-//		String modelSetName="WebTEST2.1";
-//		String splittingName =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
-////		boolean limitToPFAS=false; 
+		String modelSetName="WebTEST2.1";
+		String splittingName =DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+		boolean limitToPFAS=false; 
 //		boolean limitToPFAS=true;
 
 //		String modelSetName="WebTEST2.1 PFAS";
 //		String splittingName =SplittingGeneratorPFAS_Script.splittingPFASOnly;
 //		boolean limitToPFAS=false;
 		
-		String modelSetName="WebTEST2.1 All but PFAS";
-		String splittingName =SplittingGeneratorPFAS_Script.splittingAllButPFAS;
-		boolean limitToPFAS=false;
+//		String modelSetName="WebTEST2.1 All but PFAS";
+//		String splittingName =SplittingGeneratorPFAS_Script.splittingAllButPFAS;
+//		boolean limitToPFAS=false;
 		
 		
 		String statName="MAE_Test";
@@ -251,18 +251,18 @@ public class ApplicabilityDomainScript {
 		
 		System.out.println(applicability_domain+"\t"+splittingName+"\t"+"limitToPFAS="+limitToPFAS);
 		
-		boolean storeNeighbors=false;
+		boolean storeNeighbors=true;
 		
 
 		System.out.println("Dataset\tMethod\tFrac_Inside\t"+statName+"_Inside\t"+statName+"_Outside");	
 
 		List<String>datasetNames=new ArrayList<>();
-		datasetNames.add("HLC v1 modeling");
+//		datasetNames.add("HLC v1 modeling");
 		datasetNames.add("VP v1 modeling");
-		datasetNames.add("BP v1 modeling");
-		datasetNames.add("WS v1 modeling");
-		datasetNames.add("LogP v1 modeling");
-		datasetNames.add("MP v1 modeling");
+//		datasetNames.add("BP v1 modeling");
+//		datasetNames.add("WS v1 modeling");
+//		datasetNames.add("LogP v1 modeling");
+//		datasetNames.add("MP v1 modeling");
 		
 //		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
 		
@@ -636,8 +636,12 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 //			System.out.println(strResponse);
 //			String strResponse=strSampleResponse;
 
-		Hashtable<String, ApplicabilityDomainPrediction>htAD=convertResponse(strResponse,storeNeighbors);
 
+		Hashtable<String, ApplicabilityDomainPrediction>htAD=convertResponse(strResponse,storeNeighbors);
+		
+//		System.out.println(Utilities.gson.toJson(htAD));
+		
+		
 		PredictionStatisticsScript.addADsToReport(predictionReport, prmm.qsarMethodName, htAD);
 		
 //			for (ApplicabilityDomainPrediction pred:adPredictions) {

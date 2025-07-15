@@ -64,7 +64,8 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 	
 
 	
-	SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,workflow,serverHost);
+//	SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,workflow,serverHost);
+	SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(workflow,serverHost);
 	String standardizerName=DevQsarConstants.STANDARDIZER_SCI_DATA_EXPERTS+"_"+DevQsarConstants.QSAR_READY;
 
 	String lanId="tmarti02";

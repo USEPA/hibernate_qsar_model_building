@@ -48,8 +48,40 @@ public class RawExpDataExcelTableGenerator {
 				if(it.hasNext()) strDtxsids+=",";
 			}
 
-			String sql="select * from public.v_experimental_data\n"
+			String sql="select * from public.mv_experimental_data\n"
 					+"where dtxsid in ("+strDtxsids+")\n"
+					+ "order by prop_value;";
+
+			System.out.println(sql);
+
+
+			ResultSet rs = SqlUtilities.runSQL2(conn, sql);
+			JsonArray ja = RawExpDataTableGenerator.getJsonArray(rs);
+			RawExpDataTableGenerator.convertViewFieldNames(ja);
+
+			System.out.println(Utilities.gson.toJson(ja));
+
+			return ja;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+
+	}
+	
+	
+	JsonArray getRawRecordsChemicalsDashboardByPropertyNameAndDTXSID_FromView(HashSet<String> dtxsids,String propertyName) {
+
+		try  {
+			Iterator<String> it=dtxsids.iterator();
+			String strDtxsids="";
+			while (it.hasNext()) {
+				strDtxsids+="'"+it.next()+"'";
+				if(it.hasNext()) strDtxsids+=",";
+			}
+
+			String sql="select * from public.mv_experimental_data\n"
+					+"where prop_name='"+propertyName+"'and dtxsid in ("+strDtxsids+")\n"
 					+ "order by prop_value;";
 
 			System.out.println(sql);
@@ -118,22 +150,34 @@ public class RawExpDataExcelTableGenerator {
 		RawExpDataExcelTableGenerator r=new RawExpDataExcelTableGenerator();
 
 		
-//		String columnName="DTXSID";
-		String columnName="RC_DTXSID_Comptox";
+		String columnName="DTXSID";
+//		String columnName="RC_DTXSID_Comptox";
 		
 		
-		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 scientists\\Tony\\export pchem data\\";
+//		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 scientists\\Tony\\export pchem data\\";
 //		String filenameInput="HESI_UVCB_substances.xlsx";
-		String filenameInput="HESI_Representative_Substances_1115_2024.xlsx";
+//		String filenameInput="HESI_Representative_Substances_1115_2024.xlsx";
 						
 //		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 scientists\\elaine hubbal\\";
 //		String filenameInput="11_14_2024 10_39_31 AM.xlsx";
 //		String filenameInput="AHHS_joined_DTXSIDs.xlsx";
 
-		HashSet<String>dtxsids=r.getDTXSIDsFromExcel(folder+filenameInput,columnName);
+//		HashSet<String>dtxsids=r.getDTXSIDsFromExcel(folder+filenameInput,columnName);
 		//		List<String>dtxsids=Arrays.asList("DTXSID3039242");
+		
+		
+		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 scientists\\catherine sumner\\";
+		String filenameInput="sumner logkow.xlsx";
+		HashSet<String>dtxsids=r.getDTXSIDsFromExcel(folder+filenameInput,columnName);
 
-		JsonArray ja=r.getRawRecordsChemicalsDashboardByPropertyNameAndDTXSID_FromView(dtxsids);
+		
+		System.out.println(dtxsids);
+		
+//		HashSet<String>dtxsids=new HashSet(Arrays.asList("DTXSID00192353","DTXSID6067331","DTXSID30891564","DTXSID6062599","DTXSID90868151","DTXSID8031863","DTXSID8031865","DTXSID1037303","DTXSID8047553","DTXSID60663110","DTXSID70191136","DTXSID3037709","DTXSID3059921","DTXSID3031860","DTXSID8037706","DTXSID8059920","DTXSID3031862","DTXSID30382063","DTXSID00379268","DTXSID20874028","DTXSID3037707"));
+		
+		String propertyName="LogKow: Octanol-Water";
+//		JsonArray ja=r.getRawRecordsChemicalsDashboardByPropertyNameAndDTXSID_FromView(dtxsids);
+		JsonArray ja=r.getRawRecordsChemicalsDashboardByPropertyNameAndDTXSID_FromView(dtxsids,propertyName);
 		
 		String filenameOutput=filenameInput.replace(".xlsx","_exp_data.xlsx");
 		String excelFilePath=folder+filenameOutput;
