@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -220,7 +221,10 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	Method getMethodFromDetails(String methodName,Model model,JsonObject joDetails) {
 		
 		String version = joDetails.get("version").getAsString();
-		Boolean isBinary = joDetails.get("is_binary").getAsBoolean();				
+		Boolean isBinary = joDetails.get("is_binary").getAsBoolean();		
+		
+		System.out.println("getMethodFromDetails(), isBinary="+isBinary);
+		
 		String classOrRegr = isBinary ? "classifier" : "regressor";				
 		String fullMethodName = methodName + "_" + classOrRegr + "_" + version;		
 				
@@ -449,7 +453,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 
 		String details = modelWebService.callDetails(model.getId()+"").getBody();			
 		
-		System.out.println(details);
+		System.out.println("details="+details);
 		
 		JsonObject joDetails = gson.fromJson(details, JsonObject.class);
 		
@@ -649,6 +653,8 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			
 			List<ModelPrediction> mpsTestSetPooled=new ArrayList<>();
 			
+			HashSet<Double>expVals=new HashSet<>();
+			
 			for (int fold=1;fold<=5;fold++) {
 								
 				String splittingNameCV=model.getSplittingName()+"_CV"+fold;
@@ -678,16 +684,37 @@ public class WebServiceModelBuilder extends ModelBuilder {
 				countChemicals+=mpsTestSet.size();
 			}
 			
+//			System.out.println(Utilities.gson.toJson(mpsTestSetPooled));
+			
+			for(ModelPrediction mp:mpsTestSetPooled) {
+				expVals.add(mp.exp);
+			}
+			
+			if(expVals.size()>2) {
+				System.out.println("\nPosting continuous CV statistics");
+				postCV_Statistics_Continuous(model, postPredictions, mpsTestSetPooled);	
+			} else if(expVals.size()==2) {
+				System.out.println("\nPosting binary CV statistics");
+				postCV_Statistics_Binary(model, postPredictions, mpsTestSetPooled);	
+			} 
+			
+			
 //			System.out.println(countChemicals);
 			
 //			R2_CV_AVG/=5.0;
 //			Q2_CV_AVG/=5.0;
 			
-			Map<String, Double>mapStats=ModelStatisticCalculator.calculateContinuousStatistics(mpsTestSetPooled, 0.0, DevQsarConstants.TAG_TEST);
-			double R2_CV_pooled=mapStats.get(DevQsarConstants.PEARSON_RSQ + DevQsarConstants.TAG_TEST);
-			double MAE_CV_pooled=mapStats.get(DevQsarConstants.MAE + DevQsarConstants.TAG_TEST);
-			double RMSE_CV_pooled=mapStats.get(DevQsarConstants.RMSE + DevQsarConstants.TAG_TEST);
+			
 
+		}
+
+
+		private void postCV_Statistics_Continuous(Model model, boolean postPredictions,
+				List<ModelPrediction> mpsTestSetPooled) {
+			Map<String, Double>mapStats=ModelStatisticCalculator.calculateContinuousStatistics(mpsTestSetPooled, 0.0, DevQsarConstants.TAG_TEST);
+			double R2_CV_pooled=mapStats.get(DevQsarConstants.PEARSON_RSQ_TEST);
+			double MAE_CV_pooled=mapStats.get(DevQsarConstants.MAE_TEST);
+			double RMSE_CV_pooled=mapStats.get(DevQsarConstants.RMSE_TEST);
 						
 			if (postPredictions) {			
 
@@ -733,7 +760,40 @@ public class WebServiceModelBuilder extends ModelBuilder {
 //				System.out.println("Q2_CV_Training="+Q2_CV_AVG);
 				System.out.println("");
 			}
+		}
+		
+		private void postCV_Statistics_Binary(Model model, boolean postPredictions,
+				List<ModelPrediction> mpsTestSetPooled) {
+			
+			Map<String, Double>mapStats=ModelStatisticCalculator.calculateBinaryStatistics(mpsTestSetPooled, 0.5, DevQsarConstants.TAG_TEST);
+			
+			double BA_CV_pooled=mapStats.get(DevQsarConstants.BA_TEST);
+			double SN_CV_pooled=mapStats.get(DevQsarConstants.SN_TEST);
+			double SP_CV_pooled=mapStats.get(DevQsarConstants.SP_TEST);
+						
+			if (postPredictions) {			
 
+//				System.out.println("storing "+DevQsarConstants.PEARSON_RSQ_CV_TRAINING+"="+R2_CV_pooled);
+				Statistic statistic=statisticService.findByName(DevQsarConstants.BA_CV_TRAINING);		
+				ModelStatistic modelStatistic=new ModelStatistic(statistic, model, BA_CV_pooled, lanId);
+				modelStatistic=modelStatisticService.create(modelStatistic);
+
+//				System.out.println("storing "+DevQsarConstants.MAE_CV_TRAINING+"="+MAE_CV_pooled);
+				statistic=statisticService.findByName(DevQsarConstants.SN_CV_TRAINING);		
+				modelStatistic=new ModelStatistic(statistic, model, SN_CV_pooled, lanId);
+				modelStatistic=modelStatisticService.create(modelStatistic);
+
+//				System.out.println("storing "+DevQsarConstants.RMSE_CV_TRAINING+"="+RMSE_CV_pooled);
+				statistic=statisticService.findByName(DevQsarConstants.SP_CV_TRAINING);		
+				modelStatistic=new ModelStatistic(statistic, model, SP_CV_pooled, lanId);
+				modelStatistic=modelStatisticService.create(modelStatistic);
+
+			} else {
+				System.out.println("Model = "+model.getId());
+				System.out.println(DevQsarConstants.BA_CV_TRAINING+"="+BA_CV_pooled);
+//				System.out.println("Q2_CV_Training="+Q2_CV_AVG);
+				System.out.println("");
+			}
 		}
 		
 		public List<ModelPrediction> crossValidateWithPreselectedDescriptors(Model model, boolean removeLogP,String splittingNameCV, int num_jobs,boolean use_pmml)  {
@@ -1162,11 +1222,31 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		return modelId;
 	}
 	
+	void getModelEquation(long modelId) {
+		byte[] bytes = modelBytesService.getBytesSql(modelId, false);
+		String strModelId = String.valueOf(modelId);
+		
+		HttpResponse<String>response=modelWebService.callInitPickle(bytes,strModelId);
+
+		
+	}
+	
+	
 	public static void main(String[] args) {
 
-//		WebServiceModelBuilder mb=new WebServiceModelBuilder (null,"tmarti02");
+
+
+		ModelWebService modelWs = new ModelWebService(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
+		WebServiceModelBuilder mb = new WebServiceModelBuilder(modelWs, "tmarti02");
+		
 //		Model model=mb.modelService.findById(1284L);
 //		mb.crossValidate.addCV_DPIS(model);
+		
+		mb.getModelEquation(1567L);
+
+		
+
+		
 		
 	}
 

@@ -202,6 +202,96 @@ public class ModelData {
 		
 	}
 	
+	
+	/**
+	 * Create prediction set using chemicals in fk_dataset_id but omit training chemicals in fk_dataset_id_omit_training_data
+	 * @param fk_dataset_external_id
+	 * @param fk_dataset_id_omit
+	 * @param descriptorSetName
+	 * @param splittingName
+	 * @return
+	 */
+	public static String getExternalPredictionSet(long fk_dataset_external_id,long fk_dataset_id_omit,String descriptorSetName,String splittingName,boolean omitOnlyTraining) {
+		
+		boolean useDTXCIDs=false;
+		
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		String idField="canon_qsar_smiles";
+		if(useDTXCIDs) idField="qsar_dtxcid";
+		
+		Splitting splitting=splittingService.findByName(splittingName);
+		DescriptorSet descriptorSet=descriptorSetService.findByName(descriptorSetName);
+		
+//		System.out.println("descriptorSetName"+descriptorSetName);
+		
+		String sql="select headers_tsv from qsar_descriptors.descriptor_sets d\n"+					
+					"where d.\"name\"='"+descriptorSetName+"';";
+		String instanceHeader="ID\tProperty\t"+SqlUtilities.runSQL(conn, sql)+"\r\n";
+//		System.out.println(instanceHeader+"\n");
+		
+		
+		if (omitOnlyTraining) {
+			sql="select dp.canon_qsar_smiles,dp.qsar_property_value , dv.values_tsv  from qsar_datasets.data_points dp\r\n"
+					+ "join qsar_datasets.datasets d on dp.fk_dataset_id = d.id\r\n"
+					+ "join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\r\n"
+					+ "where dp.fk_dataset_id="+fk_dataset_external_id+" and dv.fk_descriptor_set_id="+descriptorSet.getId()+"\r\n"
+					+ "  and dp.canon_qsar_smiles not in\r\n"
+					+ "(select dp.canon_qsar_smiles from qsar_datasets.data_points dp\r\n"
+					+ "join qsar_datasets.data_points_in_splittings dpis on dp.id = dpis.fk_data_point_id\r\n"
+					+ "where  dp.fk_dataset_id="+fk_dataset_id_omit+" and fk_splitting_id="+splitting.getId()
+					+" and split_num=0)";
+			
+		} else {
+			sql="select dp.canon_qsar_smiles,dp.qsar_property_value , dv.values_tsv  from qsar_datasets.data_points dp\r\n"
+					+ "join qsar_datasets.datasets d on dp.fk_dataset_id = d.id\r\n"
+					+ "join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\r\n"
+					+ "where dp.fk_dataset_id="+fk_dataset_external_id+" and dv.fk_descriptor_set_id="+descriptorSet.getId()+"\r\n"
+					+ "  and dp.canon_qsar_smiles not in\r\n"
+					+ "(select dp.canon_qsar_smiles from qsar_datasets.data_points dp\r\n"
+					+ "where  dp.fk_dataset_id="+fk_dataset_id_omit+");";
+		}
+		
+		
+		System.out.println("\n"+sql);
+
+		StringBuilder sbPrediction = new StringBuilder(instanceHeader);
+
+		int counterTest=0;
+		
+		try {
+			
+			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+			
+			while (rs.next()) {
+				
+				String id=rs.getString(1);
+				String qsar_property_value=rs.getString(2);
+				String descriptors=rs.getString(3);
+				
+				String instance=generateInstance(id, qsar_property_value, descriptors);
+				
+				if (instance==null) {
+					System.out.println(id+"\tnull instance\tid="+id+"\tdescriptorSetName="+descriptorSetName);
+					continue;
+				}
+				sbPrediction.append(instance);
+				counterTest++;
+			}
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+				
+		if (debug) {
+			System.out.println("Test instances created:"+counterTest);
+		}
+
+		System.out.println("CountPrediction="+counterTest);
+
+		return sbPrediction.toString();
+//		System.out.println("CountTraining="+countTraining);
+		
+	}
 
 	/**
 	 * Creates an overall set tsv for all the distinct DTXSIDs in the datapoint contributors for a dataset

@@ -106,10 +106,10 @@ public class ModelBuilder {
 		
 		double meanExpTraining= ModelStatisticCalculator.calcMeanExpTraining(trainingSetPredictions);
 		
-		
-		
 		Map<String, Double> modelTestStatisticValues = null;
 		Map<String, Double> modelTrainingStatisticValues = null;
+		
+		System.out.println("calculateAndPostModelStatistics(), model.getMethod().getIsBinary()="+model.getMethod().getIsBinary());
 		
 		if (model.getMethod().getIsBinary()) {
 			modelTestStatisticValues = 

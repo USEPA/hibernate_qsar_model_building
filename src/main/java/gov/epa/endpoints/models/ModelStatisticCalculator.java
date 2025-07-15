@@ -223,7 +223,7 @@ public class ModelStatisticCalculator {
 				continue;
 			}
 			
-			if (mp.pred!=null) {
+			if (mp.pred!=null && !mp.pred.equals(Double.NaN)) {
 				countPredicted++;
 				meanExp += mp.exp;
 				meanPred += mp.pred;
@@ -243,7 +243,7 @@ public class ModelStatisticCalculator {
 		Double ss = 0.0;
 		Double ssTotal = 0.0;
 		for (ModelPrediction mp:modelPredictions) {
-			if (mp.exp==null || mp.pred==null) { 
+			if (mp.exp==null || mp.pred==null || mp.pred.equals(Double.NaN)) { 
 				continue;
 			}
 			
@@ -278,6 +278,7 @@ public class ModelStatisticCalculator {
 		modelStatisticValues.put(DevQsarConstants.MAE + tag, mae);
 		modelStatisticValues.put(DevQsarConstants.PEARSON_RSQ + tag, pearsonRsq);
 		modelStatisticValues.put(DevQsarConstants.RMSE + tag, rmse);
+		modelStatisticValues.put("Count predicted", (double)countPredicted);
 		
 		if (tag.equals(DevQsarConstants.TAG_TEST)) {
 			modelStatisticValues.put(DevQsarConstants.Q2_TEST, coeffDet);
@@ -287,6 +288,149 @@ public class ModelStatisticCalculator {
 			
 		
 		return modelStatisticValues;
+	}
+
+	public static Map<String, Double> calculateContinuousStatistics(Hashtable<String, ModelPrediction> htMPs,
+			Boolean insideTraining, Boolean insideAD) {
+
+		int countTotal = 0;
+		int countPredicted = 0;
+		Double meanExp = 0.0;
+		Double meanPred = 0.0;
+		
+		
+		for (String qsarSmiles:htMPs.keySet()) {
+			
+			ModelPrediction mp=htMPs.get(qsarSmiles);
+			
+//			if(mp.split==0)
+//				System.out.println(mp.id+"\t"+mp.exp+"\t"+mp.pred+"\t"+mp.split+"\t"+(mp.split==0));
+
+//			System.out.println(insideTraining+"\t"+mp.split);
+			
+			if(insideTraining!=null) {
+				
+				if(mp.split==null) continue;
+				
+				if(insideTraining) {
+					if(mp.split==1) continue;
+				} else {
+					if(mp.split==0) continue;
+				}
+			}
+			
+//			System.out.println("\tOK:"+mp.split);
+
+			if(insideAD!=null) {
+				if(mp.insideAD==null) continue;
+				if(insideAD) {
+					if(!mp.insideAD)continue;
+				} else {
+					if(mp.insideAD) continue;
+				}
+			}
+			
+			if (mp.exp!=null) {
+				countTotal++;
+			} else {
+				continue;
+			}
+			
+			if (mp.pred==null ||  mp.pred.equals(Double.NaN)) {
+				continue;
+			}
+			
+//			System.out.println("\tOK1:"+mp.insideAD);
+			
+			
+//			System.out.println("\tOK2:"+mp.insideAD);
+
+			countPredicted++;
+			meanExp += mp.exp;
+			meanPred += mp.pred;
+			
+		}
+		
+//		System.out.println("");
+				
+		meanExp /= (double) countPredicted;
+		meanPred /= (double) countPredicted;
+		
+		// Loop again to calculate stats
+		Double mae = 0.0;
+		Double termXY = 0.0;
+		Double termXX = 0.0;
+		Double termYY = 0.0;
+		Double ss = 0.0;
+//		Double ssTotal = 0.0;
+		
+		
+		for (String qsarSmiles:htMPs.keySet()) {
+			
+			ModelPrediction mp=htMPs.get(qsarSmiles);
+			
+			if(insideTraining!=null) {
+				
+				if(mp.split==null) continue;
+
+				if(insideTraining) {
+					if(mp.split==1) continue;
+				} else {
+					if(mp.split==0) continue;
+				}
+			}
+
+			if (mp.exp==null || mp.pred==null || mp.pred.equals(Double.NaN)) { 
+				continue;
+			}
+			
+			if(insideAD!=null) {
+				if(mp.insideAD==null) continue;
+				if(insideAD) {
+					if(!mp.insideAD)continue;
+				} else {
+					if(mp.insideAD) continue;
+				}
+			}
+			
+//			System.out.println(mp.exp+"\t"+mp.pred);
+			
+			// Update MAE
+			mae += Math.abs(mp.exp - mp.pred);
+			
+//			if (tag.equals(DevQsarConstants.TAG_TEST)) {
+//				System.out.println(mp.id+"\t"+mp.exp+ "\t"+ mp.pred+"\t"+Math.abs(mp.exp - mp.pred));
+//			}
+			
+			// Update terms for Pearson RSQ
+			termXY += (mp.exp - meanExp) * (mp.pred - meanPred);
+			termXX += (mp.exp - meanExp) * (mp.exp - meanExp);
+			termYY += (mp.pred - meanPred) * (mp.pred - meanPred);
+			
+			// Update sums for coefficient of determination
+			ss += Math.pow(mp.exp - mp.pred, 2.0);
+//			ssTotal += Math.pow(mp.exp - meanExpTraining, 2.0);
+		}
+		
+		Double coverage = (double) countPredicted / (double) countTotal;
+		mae /= (double) countPredicted;
+		
+//		System.out.println(countPredicted);
+		
+		Double pearsonRsq = termXY * termXY / (termXX * termYY);
+//		Double coeffDet = 1 - ss / ssTotal;
+		Double rmse = Math.sqrt(ss / (double) countPredicted);
+		
+		HashMap<String, Double> modelStatisticValues = new HashMap<String, Double>();
+		modelStatisticValues.put(DevQsarConstants.COVERAGE, coverage);
+		modelStatisticValues.put(DevQsarConstants.MAE, mae);
+		modelStatisticValues.put(DevQsarConstants.PEARSON_RSQ, pearsonRsq);
+		modelStatisticValues.put(DevQsarConstants.RMSE, rmse);
+		modelStatisticValues.put("countTotal", (double)countTotal);
+		modelStatisticValues.put("countPredicted", (double)countPredicted);
+		
+		
+		return modelStatisticValues;	
 	}
 
 }
