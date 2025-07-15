@@ -126,7 +126,7 @@ public class ExcelPredictionReportGenerator {
 		
 		Stats(String AD) {
 
-			binaryStats = (Arrays.asList("Split", "BA", "SN", "SP"));
+			binaryStats = new ArrayList<String>(Arrays.asList(DevQsarConstants.BA_CV_TRAINING,DevQsarConstants.BA_TEST,DevQsarConstants.SN_TEST,DevQsarConstants.SP_TEST));
 			
 			continuousStats= new ArrayList<String>(Arrays.asList(
 					DevQsarConstants.PEARSON_RSQ_TRAINING,DevQsarConstants.PEARSON_RSQ_CV_TRAINING,				
@@ -140,6 +140,10 @@ public class ExcelPredictionReportGenerator {
 				continuousStats.add("MAE_Test_inside_AD");
 				continuousStats.add("MAE_Test_outside_AD");
 				continuousStats.add("Coverage_Test");
+				
+				binaryStats.add(DevQsarConstants.BA_TEST+"_inside_AD");
+				binaryStats.add(DevQsarConstants.BA_TEST+"_outside_AD");
+				binaryStats.add("Coverage_Test");
 			}
 		}
 				
@@ -847,8 +851,8 @@ public class ExcelPredictionReportGenerator {
 		testMap.add(columnNames);
 
 		for (PredictionReportDataPoint dp:predictionReport.predictionReportDataPoints) {
-
 			OriginalCompound oc = null;
+			
 			// need to sort for consistency
 			try {
 				oc = dp.originalCompounds.get(0);
