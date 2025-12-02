@@ -1098,13 +1098,10 @@ public class PredictScript {
 		boolean use_pmml=false;
 		boolean use_sklearn2pmml=false;
 		boolean useFullStandardize=false;
-		
-//		String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
 
 		HttpResponse<String> standardizeResponse = standardizer.callQsarReadyStandardizePost(smiles,serverHost, useFullStandardize,workflow);
 //		System.out.println("status=" + standardizeResponse.getStatus());
 
-		
 		if (standardizeResponse.getStatus() != 200) {
 			System.out.println(standardizeResponse.getStatusText());
 			return;
@@ -1114,9 +1111,8 @@ public class PredictScript {
 		String qsarSmiles = SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse,
 					useFullStandardize);
 		
-		double MW=StructureUtil.molecularWeight(qsarSmiles);
+//		double MW=StructureUtil.molecularWeight(qsarSmiles);
 		
-
 		try {
 
 			//			System.out.println(propertyAbbrev+"\t"+strModelId);
@@ -1131,14 +1127,13 @@ public class PredictScript {
 				}
 			}
 			
-			
+
+			//String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
 			String sql="select name from qsar_models.ad_methods where id="+model.getFk_ad_method();
 			String applicability_domain=SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sql);
 			
-			
 			DescriptorSet descriptorSet = descriptorSetService.findByName(model.getDescriptorSetName());
 			String descriptors=calc.calculateDescriptors(qsarSmiles, descriptorSet);
-
 
 			String predictionTSV="ID\tProperty\t"+descriptorSet.getHeadersTsv()+"\r\n";
 			predictionTSV+=qsarSmiles+"\t-9999.0\t"+  descriptors+"\r\n";
@@ -1149,8 +1144,9 @@ public class PredictScript {
 
 			System.out.println(predictResponse);
 			
-			ModelPrediction[] modelPredictionsArray = Utilities.gson.fromJson(predictResponse, ModelPrediction[].class);
 
+			ModelPrediction[] modelPredictionsArray = Utilities.gson.fromJson(predictResponse, ModelPrediction[].class);
+			double pred=modelPredictionsArray[0].pred;
 
 			String sqlUnits="select u.abbreviation_ccd from qsar_datasets.datasets d ";
 			sqlUnits+="join qsar_datasets.units u on d.fk_unit_id=u.id\r\n"
@@ -1164,10 +1160,12 @@ public class PredictScript {
 			ci.datasetName=model.getDatasetName();
 			ci.descriptorSetName=model.getDescriptorSetName();
 			ci.splittingName=model.getSplittingName();
-			ModelData data = ModelData.initModelData(ci,true);//TODO the webservice should cache the training set for each model
-			//			System.out.println("done");
 
 			
+			ModelData data = ModelData.initModelData(ci,true);
+			//			System.out.println("done");
+
+			//TODO the webservice should cache the training set for each model so that AD calculation is fast
 			
 			String strResponse=null;
 			if (model.getDescriptorEmbedding()!=null) {
@@ -1182,10 +1180,10 @@ public class PredictScript {
 			Hashtable<String, ApplicabilityDomainPrediction>htAD =  ApplicabilityDomainScript.convertResponse(strResponse,storeNeighbors);
 
 			ApplicabilityDomainPrediction adp=htAD.get(qsarSmiles);
-			double pred=modelPredictionsArray[0].pred;
 
-			System.out.println(model.getName()+"\t"+modelId+"\t"+modelPredictionsArray[0].pred+"\t"+units+"\tAD="+adp.AD+"\n");
-			System.out.println(Utilities.gson.toJson(htAD)+"\n");
+			System.out.println(model.getName()+"\t"+modelId+"\t"+pred+"\t"+units+"\tAD="+adp.AD+"\n");
+			System.out.println("Applicability domain="+applicability_domain);
+			System.out.println("Neighbors used in AD calcs:"+Utilities.gson.toJson(htAD)+"\n");
 
 
 			
@@ -1276,7 +1274,10 @@ public class PredictScript {
 		
 //		ps.runPrediction("CCC(C)C(C(=O)N)NC(=O)C(CC(C)C)NC(=O)C", 1069L);
 		
-		ps.runPredictionWithAD("CCC(C)C(C(=O)N)NC(=O)C(CC(C)C)NC(=O)C", 1069L);
+		
+		ps.runPredictionWithAD("c1ccccc1", 1068L);
+		
+//		ps.runPredictionWithAD("CCC(C)C(C(=O)N)NC(=O)C(CC(C)C)NC(=O)C", 1069L);
 //		ps.runPredictionWithAD("CCO", 1069L);
 		
 //		ps.runPrediction("CC(O)=NC(CC(C)C)C(O)=NC(C(C)CC)C(=N)O", 1069L);
