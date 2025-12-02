@@ -1,11 +1,20 @@
 package gov.epa.run_from_java.data_loading;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.util.*;
 
+
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
@@ -14,6 +23,8 @@ import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropUnit;
 import gov.epa.databases.dev_qsar.exp_prop.entity.Parameter;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
+import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
+import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.util.JSONUtilities;
 
@@ -80,7 +91,56 @@ public class ExperimentalRecordLoader {
 			//TODO delete public source original sources associated with public source if no longer need
 		}
 		
-		void deleteByPublicSourceNameAndProperty() {
+		void deleteByPropertyAndDate() {
+			
+			
+			Connection conn=SqlUtilities.getConnectionPostgres();
+		
+			//		String sourceName=DevQsarConstants.sourceNameOChem_2024_04_03;
+//			String sourceName=DevQsarConstants.sourceNamePubChem_2024_03_20;
+//			String sourceName=DevQsarConstants.sourceNamePubChem_2024_11_27;
+
+//			String sourceName=DevQsarConstants.sourceNameOPERA28;
+//			String propertyName=DevQsarConstants.ESTROGEN_RECEPTOR_BINDING;
+
+//			String sourceName="Burkhard";
+//			String sourceName="ECOTOX_2024_12_12";
+//			String propertyName=DevQsarConstants.BCF;
+			String propertyName=DevQsarConstants.KOC;
+			
+			
+			String sqlProperty="select id from exp_prop.properties where name='"+propertyName+"';";
+			int propertyId=Integer.parseInt(SqlUtilities.runSQL(conn, sqlProperty));
+			System.out.println(propertyId+"\t"+propertyName);
+
+			
+			String dateRange="created_at > '2025-12-01' and created_at<'2025-12-03'";
+			
+			String sql="select * from exp_prop.property_values where fk_property_id="+propertyId+" and "+dateRange+";";
+			
+			
+			
+			//Parameter values cascade on deleting the property values- so shouldnt need to delete separately:
+			//		String sqlParameters="delete from exp_prop.parameter_values pv2 using exp_prop.property_values pv\n"+
+			//				"where pv2.fk_property_value_id=pv.id and pv.fk_public_source_id="+publicSourceId;
+			//		SqlUtilities.runSQLUpdate(conn, sqlParameters);//NOTE: not needed if foreign key to property value is set to cascade on delete
+		
+			
+//			String sqlPropertyValues="delete from exp_prop.property_values pv where fk_public_source_id="+publicSourceId+" and fk_property_id="+propertyId+";";
+//			System.out.println(sqlPropertyValues);
+//			SqlUtilities.runSQLUpdate(conn, sqlPropertyValues);
+		
+			//		String sqlSourceCHemicals="delete from exp_prop.source_chemicals sc where sc.fk_public_source_id="+publicSourceId+" and created_by='tmarti02'";
+			//		String sqlLiteratureSources="delete from exp_prop.literature_sources where created_by='tmarti02' and id>3378";
+			//		String sqlPublicSources="delete from exp_prop.public_sources where created_by='tmarti02' and id>104";
+			//		SqlUtilities.runSQLUpdate(conn, sqlSourceCHemicals);
+			//		SqlUtilities.runSQLUpdate(conn, sqlLiteratureSources);
+			//		SqlUtilities.runSQLUpdate(conn, sqlPublicSources);
+		
+		}
+		
+		
+void deleteByPublicSourceNameAndProperty() {
 			
 			
 			Connection conn=SqlUtilities.getConnectionPostgres();
@@ -755,6 +815,70 @@ public class ExperimentalRecordLoader {
 		}
 		
 		
+
+		private void loadKocDataNew() {
+			
+			debug=true;//prints values loaded from database like property
+		
+			boolean createDBEntries=true;
+			
+			String type=typePhyschem;
+			String sourceName="Koc List of Publications";
+			pvc.mapTables(sourceName);
+			pvc.loadSourceChemicalMap("2025-12-01", "2025-12-03");
+			
+
+			String propertyName=DevQsarConstants.KOC;
+			
+			String mainFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+			String filePath=mainFolder+"data\\experimental\\"+sourceName+"\\"+sourceName+" Experimental Records.json";
+			File jsonFile=new File(filePath);
+		
+			System.out.println(filePath+"\t"+jsonFile.exists());
+			
+			if(!jsonFile.exists())return;
+		
+			//**********************************************************************************************
+			//First create the property
+			ExpPropProperty property=pvc.getProperty(propertyName, DevQsarConstants.KOC);
+		
+			//**********************************************************************************************
+			//Add entries for properties_acceptable_units:
+			//Note: first time you run this property, uncomment out the following lines:
+			pvc.addPropertyAcceptableUnit(pvc.getUnit("L_KG",DevQsarConstants.L_KG), property);
+			//*******************************************************************************************************
+		
+			ExperimentalRecords records=ExperimentalRecords.loadFromJson(filePath, gson);
+			records.printUniqueUnitsListInExperimentalRecords();
+			System.out.println("experimentalRecords.size()="+records.size());
+			
+			
+//			List<String>publicSources=records.getPublicSources();
+//			System.out.println(publicSources);
+			
+			
+			records.printPropertiesInExperimentalRecords();
+			records.printParameters();
+
+			
+//			Percentage_Organic_Carbon	parameter not in parameters
+//			Percentage_Organic_Matter	parameter not in parameters
+			
+			pvc.createTextParameter("Soil_Type","Type of soil");
+			pvc.createTextParameter("Testing_Conditions","Testing conditions");
+			pvc.createTextParameter("Media","Type of media used");
+			
+			ExpPropUnit unitDimensionless=pvc.getUnit("DIMENSIONLESS","");
+			pvc.createParameter("Percentage_Organic_Carbon", "% organic carbon in the media",unitDimensionless);
+			pvc.createParameter("Percentage_Organic_Matter", "% organic matter in the media",unitDimensionless);
+			
+//			if(true)return;
+
+			loadBatchWise(records, type, createDBEntries,sourceName,propertyName);
+		
+		}
+		
+		
 		HashSet<String>getUnitAbbreviations(ExperimentalRecords records,String parameterName) {
 			
 			HashSet<String>abbrevs=new HashSet<>();
@@ -1344,11 +1468,27 @@ public class ExperimentalRecordLoader {
 		private void loadAuxTables(List<ExperimentalRecord> records, String type, String sourceName, String propertyName) {
 		
 			System.out.println("\nStart loading aux records, #records="+records.size());
+			
+			
+			for (ExperimentalRecord rec:records) {
+				if(rec.publicSource==null && rec.literatureSource==null) {
+					System.out.println(gson.toJson(rec));
+				}
+			}
 		
 			//Create public source, property, and units
 			for (ExperimentalRecord rec:records) {
-				pvc.getPublicSource(rec, true);
+				
+				rec.publicSource=pvc.getPublicSource(rec, true);
+				
 				pvc.getProperty(rec.property_name,null);//dont need batch insert since only a handful
+				
+				if(rec.publicSource!=null) {
+					if(rec.publicSource.getId()==null) {
+						System.out.println(rec.dsstox_substance_id+"\t"+rec.publicSource.getName()+"\tmissing ID");
+					}
+				}
+				
 				
 				if(rec.property_value_units_final!=null) {
 					String unitName=DevQsarConstants.getExpPropUnitName(rec.property_name, rec.property_value_units_final);
@@ -1356,10 +1496,18 @@ public class ExperimentalRecordLoader {
 				}
 			}
 			
+
+			for (ExperimentalRecord rec:records) {
+				if(rec.publicSource==null && rec.literatureSource==null) {
+					System.out.println("\nMissing any source:"+gson.toJson(rec));
+				}
+				
+			}
+
+//			if(true) return;
 			
 			pvc.createSourcesBatch(records);
 			
-//			if(true) return;
 			
 			pvc.createSourceChemicals(records);
 		
@@ -1500,22 +1648,29 @@ public class ExperimentalRecordLoader {
 				loadAuxTables(records, type, sourceName, propertyName);
 
 			
-//			if(true)return;
+			if(true)return;
 			
 			System.out.println("\nStart loading "+propertyName+"\t"+records.size());
 		
 			ExperimentalRecords failedRecords = new ExperimentalRecords();
 			ExperimentalRecords loadedRecords = new ExperimentalRecords();
-			ExperimentalRecords recs = new ExperimentalRecords();
-			List<PropertyValue> loadedPropertyValues = new ArrayList<>();
 			
+			ExperimentalRecords recs = new ExperimentalRecords();
+			
+			List<PropertyValue> loadedPropertyValues = new ArrayList<>();
+			List<PropertyValue> propertyValues = new ArrayList<>();
+			
+
 			int countSuccess = 0;
 			int countFailure = 0;
 			int countTotal = 0;
 			int counter=0;
 		
-			List<PropertyValue> propertyValues = new ArrayList<>();
 		
+			Hashtable<String,Integer>htError=new Hashtable<>();
+			
+			
+			
 		
 			for (ExperimentalRecord rec:records) {
 				counter++;
@@ -1533,33 +1688,47 @@ public class ExperimentalRecordLoader {
 
 				//				System.out.println("Time to create property value subobjects:"+(t2-t1)+" milliseconds");
 
+				boolean paramsOk=paramValCreator.addParameters(type, rec, pv);
+
+				propertyValues.add(pv);
+				
+
+				if(!paramsOk) {
+					failedRecords.add(rec);
+					continue;
+				}
 
 				if (pv.getUnit()==null) {
 					failedRecords.add(rec);
 					rec.keep=false;
 					rec.reason="Units not in database";
-					System.out.println(rec.reason);
+//					System.out.println(rec.reason);
 					//					logger.warn(rec.id_physchem + ": Loading failed");
+					updateErrorCounts(htError, rec);
 					countFailure++;
 					continue;
 				}
 				
-				
+
 				if (pv.getSourceChemical()!=null && pv.getSourceChemical().getId()==null) {
 					failedRecords.add(rec);
 					rec.keep=false;
 					rec.reason="SourceChemical not set";
-					System.out.println(rec.reason);
+//					System.out.println(rec.reason);
 					//					logger.warn(rec.id_physchem + ": Loading failed");
+					updateErrorCounts(htError, rec);
 					countFailure++;
 					continue;
 				}
 
 				
 				if (pv.getLiteratureSource()!=null && pv.getLiteratureSource().getId()==null) {
+					failedRecords.add(rec);
 					rec.keep=false;
 					rec.reason="LiteratureSource missing id:"+pv.getLiteratureSource().getCitation();
-					System.out.println(rec.reason);
+					updateErrorCounts(htError, rec);
+
+//					System.out.println(rec.reason);
 					//					logger.warn(rec.id_physchem + ": Loading failed");
 					countFailure++;
 					continue;
@@ -1567,24 +1736,19 @@ public class ExperimentalRecordLoader {
 				}
 				
 				if (pv.getPublicSourceOriginal()!=null && pv.getPublicSourceOriginal().getId()==null) {
+					failedRecords.add(rec);
 					rec.keep=false;
 					rec.reason="PublicSourceOriginal missing id:"+pv.getPublicSourceOriginal().getName();
-					System.out.println(rec.reason);
+					updateErrorCounts(htError, rec);
+//					System.out.println(rec.reason);
 					//					logger.warn(rec.id_physchem + ": Loading failed");
 					countFailure++;
 					continue;
 					
 				}
 
-				boolean paramsOk=paramValCreator.addParameters(type, rec, pv);
 
-				if(!paramsOk) {
-					failedRecords.add(rec);
-					continue;
-				}
-
-				propertyValues.add(pv);
-
+				
 				if(createDBEntries && propertyValues.size()==10000) {
 					boolean loaded=pvc.propertyValueService.createSql(propertyValues,SqlUtilities.getConnectionPostgres());
 
@@ -1605,6 +1769,11 @@ public class ExperimentalRecordLoader {
 
 			}//end loop over records
 			
+			System.out.println("\n*** Error counts");
+			for(String error:htError.keySet()) {
+				System.out.println(error+"\t"+htError.get(error));
+			}
+			
 			//Do what's left
 			
 			if(createDBEntries) {
@@ -1618,11 +1787,7 @@ public class ExperimentalRecordLoader {
 				} else {
 					failedRecords.addAll(recs);
 				}
-			} else {
-				loadedPropertyValues.addAll(propertyValues);
-				countSuccess+=propertyValues.size();
-				loadedRecords.addAll(recs);
-			}
+			} 
 			
 			System.out.println("Finished attempt to load " + countTotal + " property values: " 
 					+ countSuccess + " successful; " 
@@ -1630,7 +1795,49 @@ public class ExperimentalRecordLoader {
 		
 			writeFailedRecords(type, sourceName, propertyName, failedRecords);
 			writeLoadedRecords(type, createDBEntries, sourceName, propertyName, loadedRecords, loadedPropertyValues);
-		
+			writePropertyValues(type, createDBEntries, sourceName, propertyName, propertyValues);
+			
+			
+		}
+
+		private void updateErrorCounts(Hashtable<String, Integer> htError, ExperimentalRecord rec) {
+			if(htError.containsKey(rec.reason)) {
+				htError.put(rec.reason,htError.get(rec.reason)+1);
+			} else {
+				htError.put(rec.reason, 1);
+			}
+		}
+
+		private void writePropertyValues(String type, boolean createDBEntries, String sourceName, String propertyName,
+				List<PropertyValue> propertyValues) {
+			
+			JsonArray ja=new JsonArray();//use list so can use same batch write method for json
+			List<JsonObject>ja2=new ArrayList<>();
+			
+			for (PropertyValue pv:propertyValues) {
+				JsonObject jo = pv.createJsonObjectFromPropertyValue();
+				ja.add(jo);
+				ja2.add(jo);
+				//				System.out.println(gson.toJson(jo));
+			}
+	
+			String propertyValuesFilePath=null;
+			
+			
+			if(propertyName==null) {
+				propertyValuesFilePath = "data/dev_qsar/exp_prop/" + type + "/"
+						+ sourceName + "/PropertyValues.json";
+			} else {
+				propertyValuesFilePath = "data/dev_qsar/exp_prop/" + type + "/"
+						+ sourceName + "/" + propertyName.replace(":", "") + " PropertyValues.json";
+			}
+			
+			String propertyValuesFilePathExcel=propertyValuesFilePath.replace(".json", ".xlsx");
+			JsonArrayToExcel.convertJsonArrayToExcel(ja, propertyValuesFilePathExcel);
+			
+			System.out.println("Excel file:\t"+propertyValuesFilePathExcel);
+			
+			JSONUtilities.batchAndWriteJSON(ja2, propertyValuesFilePath);		
 		}
 
 		private void writeLoadedRecords(String type, boolean createDBEntries, String sourceName, String propertyName,
@@ -1715,15 +1922,21 @@ public class ExperimentalRecordLoader {
 		//		loader.loadOChem();
 //		loader.loaders.loadPubchemMultiple();
 //		loader.loaders.loadPubChem();
+		
+		
+
+		loader.loaders.loadKocDataNew();
 
 //		loader.loaders.loadAcuteAquaticToxicityDataEcotox();
-		loader.loaders.loadAcuteAquaticToxicityDataQsarToolbox();
+//		loader.loaders.loadAcuteAquaticToxicityDataQsarToolbox();
+		
+//		loader.delete.deleteByPropertyAndDate();
 		
 		
 //		loader.loaders.loadRBIODEG_NITE_OPPT();
 //		loader.loaders.loadRBIODEG_RIFM();
 //		
-		//		deleteEcotoxData();
+//				deleteEcotoxData();
 
 	}
 

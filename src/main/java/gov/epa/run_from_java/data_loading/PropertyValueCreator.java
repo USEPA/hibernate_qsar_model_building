@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolationException;
 
-import org.apache.xmpbox.type.AbstractComplexProperty;
+//import org.apache.xmpbox.type.AbstractComplexProperty;
 
 import com.google.gson.Gson;
 
@@ -55,6 +55,7 @@ import gov.epa.databases.dev_qsar.exp_prop.service.PublicSourceServiceImpl;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalService;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 /**
 * @author TMARTI02
@@ -170,18 +171,36 @@ public class PropertyValueCreator {
 
 	PublicSource getPublicSource(ExperimentalRecord er, boolean createDB_Entries) {
 
-		if(er.source_name==null) return null;
-		String name=er.source_name;
-
+			
+		if(er.source_name==null && er.publicSource==null) return null;
+		
+		String name=null;
+		
+		if(er.publicSource!=null) {
+			name=er.publicSource.getName();
+		} else {
+			name=er.source_name;
+		}
+		
 		if(publicSourcesMap.containsKey(name)) {
+//			System.out.println("Found "+name+" in map");
 			return publicSourcesMap.get(name);
 		} else {
-
-			PublicSource ps = new PublicSource();
-			ps.setName(name);
-			ps.setDescription("TODO");
-			ps.setCreatedBy(lanId);
 			
+			PublicSource ps=null;
+		
+			if(er.publicSource!=null) {
+				ps=er.publicSource;
+			} else {
+				ps = new PublicSource();
+				ps.setName(name);
+			}
+
+			if(ps.getDescription()==null)
+				ps.setDescription("TODO");
+			
+			ps.setCreatedBy(lanId);
+
 
 			if(createDB_Entries) {
 				ps = publicSourceService.create(ps);
@@ -404,10 +423,25 @@ public class PropertyValueCreator {
 					System.out.println("Adding acceptable unit "+unitAbbrev+" for parameter "+name );
 					addParameterAcceptableUnit(unit, parameter);
 				}
+				
+				System.out.println("unit for parameter="+parameter.getName()+"="+unit.getAbbreviation());
+				
 			}
 			
 		}
 	}
+	
+	public void createParameter(String name,String description, ExpPropUnit unit) {
+		
+		Parameter parameter=getParameter(name, description);
+		
+		if(!isAcceptableUnitForParameter(unit, parameter)) {
+			System.out.println("Adding acceptable unit "+unit.getName()+" for parameter "+name );
+			addParameterAcceptableUnit(unit, parameter);
+		}
+		
+	}
+
 	
 	
 	public void updateParameter(String parameterName,List<String>unitAbbrevs) {
@@ -729,8 +763,8 @@ public class PropertyValueCreator {
 		//			System.out.println("Done");
 		//		}
 	
-		loadSourceChemicalMap(sourceName);
 		
+		loadSourceChemicalMap(sourceName);
 		System.out.println("done");
 	
 	}
@@ -761,6 +795,30 @@ public class PropertyValueCreator {
 				
 		}
 		System.out.println("Done:"+sourceChemicalMap.size()+" source chemicals");
+	
+		//TODO this will only have literature source with an id. If want full ls, need to pass a source chemical map by id to look it up
+	
+	}
+	
+	
+	void loadSourceChemicalMap(String dateMin,String dateMax) {
+		
+	
+//		System.out.print("Loading sourceChemical map...");
+		//		List<SourceChemical> sourceChemicals = sourceChemicalService.findAllFromSource(ps);//slowwwww
+	
+		List<SourceChemical> sourceChemicals = sourceChemicalService.findAllFromDateCreated(dateMin,dateMax);
+		
+//		System.out.println("Source chemicals in db for "+publicSourceName+":\t"+sourceChemicals.size());
+	
+		for (SourceChemical sourceChemical:sourceChemicals) {
+			//			System.out.println(Utilities.gson.toJson(sourceChemical));
+			sourceChemicalMap.put(sourceChemical.getKey(),sourceChemical);
+//			if(sourceChemical.getSourceCasrn().equals("50-04-4")) {
+//				System.out.println(sourceChemical.getKey());
+//			}
+		}
+		System.out.println("Loaded "+sourceChemicalMap.size()+" source chemicals");
 	
 		//TODO this will only have literature source with an id. If want full ls, need to pass a source chemical map by id to look it up
 	
@@ -820,18 +878,33 @@ public class PropertyValueCreator {
 
 		for (ExperimentalRecord rec:records) {
 
-			PublicSource ps=publicSourcesMap.get(rec.source_name);
-
+			PublicSource ps=null;
+			
+			if(rec.publicSource!=null) {
+				ps=publicSourcesMap.get(rec.publicSource.getName());	
+			} else if (rec.source_name!=null) {
+				ps=publicSourcesMap.get(rec.source_name);
+			}
+			
 			LiteratureSource ls=null;
 
 			if(rec.literatureSource!=null) {
 				ls=literatureSourcesMap.get(rec.literatureSource.getCitation());
 			}
+			
 			SourceChemical sourceChemical =rec.getSourceChemical(lanId, ps, ls); 
+			
+			if(ps==null && ls==null) {
+				System.out.println("\nMissing both public and literature sources:"+Utilities.gson.toJson(rec));
+				continue;
+			}
+			
 			if(!sourceChemicalMap.containsKey(sourceChemical.getKey())) {
 				sourceChemicals.add(sourceChemical);
 				sourceChemicalMap.put(sourceChemical.getKey(),sourceChemical);
-			} 		
+			}
+			
+			
 		}
 
 		System.out.println("Source chemicals to create:"+sourceChemicals.size());
@@ -839,7 +912,10 @@ public class PropertyValueCreator {
 		List<SourceChemical> sourceChemicals2=new ArrayList<>();
 		int batchSize=1000;
 		
-//		if(true)return;
+		if(true)return;
+		
+		if(sourceChemicals.size()==0) return;
+		
 
 		int created=0;
 		
@@ -918,7 +994,7 @@ public class PropertyValueCreator {
 			
 			if(pau.getParameter().getName().equals(parameter.getName())) {
 
-				if(pau.getUnit().getAbbreviation().equals(unit.getAbbreviation())) {
+				if(pau.getUnit().getName().equals(unit.getName())) {
 					isAcceptable=true;
 					break;
 				}

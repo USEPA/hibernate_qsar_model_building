@@ -5,6 +5,7 @@ import java.util.regex.Matcher;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropUnit;
 import gov.epa.databases.dev_qsar.exp_prop.entity.Parameter;
+import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterAcceptableUnit;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 
@@ -332,10 +333,27 @@ public class ParameterValueCreator {
 			ParameterValue parameterValue = new ParameterValue();
 			parameterValue.setCreatedBy(pvc.lanId);
 
+			
+			ExpPropUnit unit=null;
+			
 			if (value instanceof Double) {
 				parameterValue.setValuePointEstimate((Double)value);
+				
+				int count=0;
+				for(ParameterAcceptableUnit pac:pvc.parameterAcceptableUnits) {
+					if(!pac.getParameter().getName().equals(parameterName)) continue;
+					unit=pac.getUnit();
+					count++;
+				}
+				
+				if(count>1) {
+					System.out.println("More than one acceptable unit for parameter="+parameterName+", use class based parameter_values in ExperimentalRecord class");
+					continue;
+				}
+				
 			} else if (value instanceof String) {
-				parameterValue.setValueText((String)value);	
+				parameterValue.setValueText((String)value);
+				unit=pvc.unitsMap.get("TEXT");//assume it's text otherwise we need store detailed parameter value objects in the experimental record json
 			}
 
 //			System.out.println(parameterName);
@@ -350,7 +368,6 @@ public class ParameterValueCreator {
 			
 //			System.out.println(parameterName);
 			
-			ExpPropUnit unit=pvc.unitsMap.get("TEXT");//assume it's text otherwise we need store detailed parameter value objects in the experimental record json
 
 			parameterValue.setPropertyValue(propertyValue);
 			parameterValue.setParameter(parameter);//need to add parameter to Parameters table first

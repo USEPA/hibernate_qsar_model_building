@@ -635,7 +635,23 @@ public class SourceChemicalUtilities {
 		
 	}
 	
-	
+	void deleteSourceChemicalsByDate () {
+		
+		String dateMin="2025-12-01";
+		String dateMax="2025-12-03";
+		
+		SourceChemicalServiceImpl scs=new SourceChemicalServiceImpl();
+		List<SourceChemical>sourceChemicals=scs.findAllFromDateCreated(dateMin, dateMax);
+//		System.out.println(sourceChemicals.size());
+
+		int counter=0;
+		for (SourceChemical sc:sourceChemicals) {
+			String sql="delete from exp_prop.source_chemicals sc where sc.id="+sc.getId()+";";
+			System.out.println(++counter+" of "+sourceChemicals.size());
+			SqlUtilities.runSQLUpdate(SqlUtilities.getConnectionPostgres(), sql);
+		}
+		
+	}
 	
 	
 	
@@ -645,6 +661,8 @@ public class SourceChemicalUtilities {
 
 		SourceChemicalUtilities scu=new SourceChemicalUtilities();//i
 		
+		scu.deleteSourceChemicalsByDate();
+		
 //		scu.loadSourceChemicalsAll();
 		
 		
@@ -652,7 +670,7 @@ public class SourceChemicalUtilities {
 //		scu.writeChemRegFilePublicSources();
 //		scu.writeChemRegFileLiteratureSources();//dont have any without dtxrids- all from chemprop
 
-		scu.writeChemRegFileForPublicSource2();
+//		scu.writeChemRegFileForPublicSource2();
 		
 //		scu.findMissingSourceChemicalsForPublicSource();
 		

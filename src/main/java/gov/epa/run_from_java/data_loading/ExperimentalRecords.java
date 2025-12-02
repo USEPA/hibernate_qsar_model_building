@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.TreeMap;
 import com.google.gson.Gson;
 
+import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 
@@ -26,11 +27,63 @@ public class ExperimentalRecords extends ArrayList<ExperimentalRecord> {
 			//			System.out.println(er.property_value_units_final);
 			if (!properties.contains(er.property_name)) properties.add(er.property_name);
 		}
+		
+		System.out.println("\nProperties in ExperimentalRecords:");
 		for (String property:properties) {
 			System.out.println(property);
 		}
 	
 	}
+	
+	
+	List<String>getPublicSources() {
+		
+		List<String>sources=new ArrayList<>();
+		for (ExperimentalRecord er:this) {
+			if(er.publicSource!=null) {
+				if(!sources.contains(er.publicSource.getName())) {
+					sources.add(er.publicSource.getName());
+				}
+			}
+		}
+		Collections.sort(sources);
+		return sources;
+		
+	}
+	
+	public void printParameters() {
+		
+		List<String>params=new ArrayList<String>();
+		for (ExperimentalRecord er:this) {
+			
+			if(er.experimental_parameters!=null) {
+				for(String param:er.experimental_parameters.keySet()) {
+					Object value=er.experimental_parameters.get(param);
+					String type=value.getClass().getTypeName().replace("java.lang.", "");
+					String param2=param+"\t"+type;
+					if(!params.contains(param2))params.add(param2);
+				}
+			}
+			
+			if(er.parameter_values!=null) {
+				for(ParameterValue pv:er.parameter_values) {
+					String param=pv.getParameter().getName();
+					if(!params.contains(param))params.add(param);
+				}
+			}
+		}
+		
+		Collections.sort(params);
+		
+		System.out.println("\nParameters in ExperimentalRecords:");
+		
+		for (String property:params) {
+			System.out.println(property);
+		}
+		
+		
+	}
+	
 	
 	public void writeRecordsToFile(String filePath) {
 		
