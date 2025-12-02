@@ -1,7 +1,11 @@
 package gov.epa.run_from_java.scripts;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +32,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionService;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
+import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.ModelStatisticCalculator;
 import gov.epa.run_from_java.scripts.RecalcStatsScript.SplitPredictions;
@@ -49,7 +54,46 @@ public class RecalculateStatistics {
 	
 	String lanId="tmarti02";
 	
-	void recalcStats() {
+	
+	/**
+	 * Retrieve dataset names by sql query 
+	 * 
+	 */
+	void recalcStatsDataSets2() {
+		
+//		boolean postToDB=false;
+		boolean postToDB=true;
+		
+		String splittingName=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+		
+		String sql="select distinct dataset_name from qsar_models.models m\n"+
+//		"where dataset_name like 'exp_prop_96HR%v5_modeling'\n"
+		"where dataset_name like 'ECOTOX_2024_12_12_96HR%'\n"
+		+ "order by dataset_name;";
+//		System.out.println(sql);
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+		
+		
+		try {
+			while (rs.next()) {
+				String datasetName=rs.getString(1);
+				System.out.println(datasetName);
+				updateModelsInDataset(splittingName, datasetName,postToDB);
+//				if(true)break;
+			}
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
+	}
+	
+	void recalcStatsDataSets() {
+		
+		boolean postToDB=true;
 		
 //		String splittingName=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
 //		String splittingName=SplittingGeneratorPFAS_Script.splittingPFASOnly;
@@ -78,14 +122,13 @@ public class RecalculateStatistics {
 
 		for (String splittingName:splittingNames) {
 			for (String datasetName:datasetNames) {
-				updateModelsInDataset(splittingName, datasetName);
+				updateModelsInDataset(splittingName, datasetName,postToDB);
 			}
 		}
 		
-		
 	}
 
-	private void updateModelsInDataset(String splittingName, String datasetName) {
+	private void updateModelsInDataset(String splittingName, String datasetName,boolean postToDB) {
 		
 		List<Model>models=modelService.findByDatasetName(datasetName);
 
@@ -100,10 +143,13 @@ public class RecalculateStatistics {
 			
 //			if(model.getDescriptorEmbedding()==null) continue;
 //			if(!model.getMethod().getName().contains("consensus")) continue;
-			System.out.println("\n"+datasetName+"\t"+model.getId()+"\t"+model.getMethod().getName()+"\t"+model.getSplittingName());
+			
+			boolean haveEmbedding=model.getDescriptorEmbedding()!=null;
+			
+			System.out.println("\n"+datasetName+"\t"+model.getId()+"\t"+model.getMethod().getName()+"\t"+model.getSplittingName()+"\t"+haveEmbedding);
 //			System.out.println("dataPoints.size()="+dataPoints.size());
-//			recalcStatsForModelSplitting(model, expMap, false);
-			recalcStatsForCrossValidation(model, expMap, false);
+			recalcStatsForModelSplitting(model, expMap, postToDB);
+			recalcStatsForCrossValidation(model, expMap, postToDB);
 //			if(true)break;
 		}
 	}
@@ -114,9 +160,9 @@ public class RecalculateStatistics {
 	 * 
 	 * @param model
 	 * @param expMap
-	 * @param postPredictions
+	 * @param postToDB
 	 */
-	public void recalcStatsForCrossValidation(Model model,Map<String, Double> expMap,boolean postPredictions) {
+	public void recalcStatsForCrossValidation(Model model,Map<String, Double> expMap,boolean postToDB) {
 		
 //		System.out.println(model.getSplittingName());
 					
@@ -148,7 +194,6 @@ public class RecalculateStatistics {
 //			R2_CV_AVG+=R2_CV_i;
 			
 //			System.out.println(i+"\t"+R2_CV_i);
-			
 		}
 
 //		R2_CV_AVG/=5.0;
@@ -159,27 +204,21 @@ public class RecalculateStatistics {
 		Map<String, Double>mapStatsPooled=ModelStatisticCalculator.calculateContinuousStatistics(mpsTestSetPooled, 0.0, DevQsarConstants.TAG_TEST);
 		double R2_CV_pooled=mapStatsPooled.get(DevQsarConstants.PEARSON_RSQ + DevQsarConstants.TAG_TEST);
 		double R2_CV=R2_CV_pooled;//Note R2_CV_AVG is virtually identical to R2_CV_Pooled for large sets
-
 		double MAE_CV=mapStatsPooled.get(DevQsarConstants.MAE + DevQsarConstants.TAG_TEST);
 		
-		
-		System.out.println("MAE_CV\t"+MAE_CV);
-//		
-//		System.out.println(DevQsarConstants.PEARSON_RSQ_CV_TRAINING+"\t"+R2_CV_pooled);
-//		System.out.println("Q2_CV_AVG\t"+Q2_CV_AVG);
-		
-//		Statistic statistic=statisticService.findByName(DevQsarConstants.PEARSON_RSQ_CV_TRAINING);
-//		ModelStatistic modelStatistic=modelStatisticService.findByModelId(model.getId(), statistic.getId());
-//		modelStatistic.setStatisticValue(R2_CV);
-//		modelStatistic.setUpdatedBy(lanId);		
-//		modelStatistic=modelStatisticService.update(modelStatistic);
-//		System.out.println(modelStatistic.getUpdatedAt());
-		
-		Statistic statistic=statisticService.findByName(DevQsarConstants.MAE_CV_TRAINING);
-		ModelStatistic modelStatistic=new ModelStatistic(statistic,model, MAE_CV, lanId);
-		modelStatistic=modelStatisticService.create(modelStatistic);
-		System.out.println(modelStatistic.getCreatedAt());
-
+		HashMap<String, Double> modelTrainingStatisticValues = new HashMap<String, Double>();
+		modelTrainingStatisticValues.put(DevQsarConstants.MAE_CV_TRAINING, MAE_CV);
+		modelTrainingStatisticValues.put(DevQsarConstants.PEARSON_RSQ_CV_TRAINING, R2_CV);
+				
+		if(postToDB) {
+			ModelBuilder mb=new ModelBuilder(lanId);
+			mb.postModelStatistics(modelTrainingStatisticValues, model);
+		} else {
+			DecimalFormat df=new DecimalFormat("0.00");
+			for (String stat:modelTrainingStatisticValues.keySet()) {
+				System.out.println(stat+"\t"+df.format(modelTrainingStatisticValues.get(stat)));
+			}
+		}
 		
 	}
 	
@@ -196,9 +235,9 @@ public class RecalculateStatistics {
 	 * 
 	 * @param model
 	 * @param expMap
-	 * @param postPredictions
+	 * @param postToDB
 	 */
-	private void recalcStatsForModelSplitting(Model model,Map<String, Double> expMap,boolean postPredictions) {
+	private void recalcStatsForModelSplitting(Model model,Map<String, Double> expMap,boolean postToDB) {
 		
 		Splitting splitting=splittingService.findByName(model.getSplittingName());
 		
@@ -218,28 +257,28 @@ public class RecalculateStatistics {
 				ModelStatisticCalculator.calculateContinuousStatistics(modelPredictions.trainingSetPredictions,meanExpTraining,
 						DevQsarConstants.TAG_TRAINING);
 
-		
-//		for (String stat:modelTestStatisticValues.keySet()) {
-//			System.out.println(stat+"\t"+modelTestStatisticValues.get(stat));
-//		}
-//		
-//		for (String stat:modelTrainingStatisticValues.keySet()) {
-//			System.out.println(stat+"\t"+modelTrainingStatisticValues.get(stat));
-//		}
-		
-		System.out.println("Q2_Test\t"+modelTestStatisticValues.get("Q2_Test"));
-		
-		
 		double Q2_F3=ModelStatisticCalculator.calculateQ2_F3(modelPredictions.trainingSetPredictions, modelPredictions.testSetPredictions);
-		System.out.println("Q2_F3_Test\t"+Q2_F3);
-				
-		Statistic statistic=statisticService.findByName(DevQsarConstants.Q2_F3_TEST);
-		ModelStatistic modelStatistic=new ModelStatistic(statistic, model, Q2_F3, lanId);
+		modelTestStatisticValues.put(DevQsarConstants.Q2_F3_TEST,Q2_F3);
+
 		
 		//TODO add code to change it to sql update if it already exists
 		
-		modelStatistic=modelStatisticService.create(modelStatistic);
-		System.out.println(modelStatistic.getCreatedAt());
+		if(postToDB) {
+			ModelBuilder mb=new ModelBuilder(lanId);
+			mb.postModelStatistics(modelTestStatisticValues, model);
+			mb.postModelStatistics(modelTrainingStatisticValues, model);
+		} else {
+			DecimalFormat df=new DecimalFormat("0.00");
+			
+			for (String stat:modelTestStatisticValues.keySet()) {
+				System.out.println(stat+"\t"+df.format(modelTestStatisticValues.get(stat)));
+			}
+
+			for (String stat:modelTrainingStatisticValues.keySet()) {
+				System.out.println(stat+"\t"+df.format(modelTrainingStatisticValues.get(stat)));
+			}
+			
+		}
 
 	}
 
@@ -288,7 +327,8 @@ public class RecalculateStatistics {
 	public static void main(String[] args) {
 		
 		RecalculateStatistics r=new RecalculateStatistics();
-		r.recalcStats();
+//		r.recalcStatsDataSets();
+		r.recalcStatsDataSets2();
 	}
 
 }

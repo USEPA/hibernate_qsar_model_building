@@ -8,7 +8,10 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import ToxPredictor.Application.Calculations.PredictToxicityWebPageCreator;
+import ToxPredictor.Application.model.PredictionResults;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
@@ -17,8 +20,8 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedADEstimate;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedNeighbor;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
-import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.ExperimentalValue;
-import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.Model;
+import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.Factor;
+
 
 /**
 * @author TMARTI02
@@ -114,7 +117,7 @@ public class PredictionReport {
 		//TODO these are episuite models- needs to have local class instead 
 //		public ArrayList<Object> individualModels;//TODO add simplified Model class to this class
 		
-		public List<Model>individualModels;//EPISUITE- TODO store as predictionsIndividualMethod instead
+//		public List<Model>individualModels;//EPISUITE- TODO store as predictionsIndividualMethod instead
 		
 		public Performance performance;
 		
@@ -128,9 +131,44 @@ public class PredictionReport {
 	
 	public class PredictionIndividualMethod {
 		public String method;
-		public String predictedValue;
+		public Double predictedValue;
+		public Double uncorrectedValue;
+		public Double correctedValue;
+		
+		public ArrayList<Factor> factors;
+		public String unitsFactor;
 	}
 
+	
+	public class Factor{
+	    public String type;
+	    public String description;
+	    public int fragmentCount;
+	    public Double coefficient;
+	    public Double totalCoefficient;
+	    
+	    public Integer trainingCount;
+	    public Integer validationCount;
+	    public Integer maxFragmentCount;//do we need?
+//	    public Double value;
+//	    public String unit;
+	    
+	    public Factor(gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.Factor factor) {
+			
+			this.type=factor.type;//Do we need?
+			this.description=factor.description;
+			this.fragmentCount=factor.fragmentCount;
+			this.coefficient=factor.coefficient;
+			this.totalCoefficient=factor.totalCoefficient;
+			
+			if(factor.trainingCount!=null) this.trainingCount=factor.trainingCount;
+			if(factor.validationCount!=null) this.validationCount=factor.validationCount;
+			
+
+	    }
+	}
+
+	
 	
 	public String prediction;
 
@@ -142,6 +180,10 @@ public class PredictionReport {
 		public String experimentalSet;//if experimental value appears in training or test set
 		public String experimentalString;
 		public String experimentalSource;
+		public String experimentalCASRN;//replace with DTXSID? or just use CAS for TEST exp values
+		public String experimentalDTXSID;//not used yet
+		
+		
 //		public ArrayList<ExperimentalValue> experimentalValues;//episuite
 
 		public Double predictedValue;
@@ -263,13 +305,14 @@ public class PredictionReport {
 				this.dtxsid=dr.getDtxsid();
 				this.casrn=dr.getCasrn();
 				this.dtxcid=dr.getDtxcid();
-//				this.molImagePNGAvailable=dr.isMolImagePNGAvailable();
+				this.molImagePNGAvailable=dr.isMolImagePNGAvailable();
 				
 				if(dr.getDtxcid()!=null) {
 					this.molImagePNGAvailable=true;	
 				} else {
 					this.molImagePNGAvailable=false;
 				}
+				
 				this.preferredName=dr.getPreferredName();
 
 			} else {
@@ -326,6 +369,10 @@ public class PredictionReport {
 		
 		Performance performance=new Performance();
 		
+		if(pd.getModel().getModelStatistics()==null) {
+			return null;
+		}
+		
 		for (ModelStatistic ms:pd.getModel().getModelStatistics()) {
 			
 			Statistics statistics=null;
@@ -362,11 +409,90 @@ public class PredictionReport {
 		
 		return performance;
 	}
+	
+	
+
+	protected Performance setStatistics(PredictionResults pr) {
+		
+		Performance performance=new Performance();
+		
+		if(pr.getHmStats()==null) {
+			return null;
+		}
+		
+		for (String statName:pr.getHmStats().keySet()) {
+			
+			Statistics statistics=null;
+			
+			if (statName.contains(DevQsarConstants.TAG_TEST)) {
+				statistics=performance.external;
+			} else if (statName.contains(DevQsarConstants.TAG_CV)) {
+				statistics=performance.fiveFoldICV;
+			} else if (statName.contains(DevQsarConstants.TAG_TRAINING)) {
+				statistics=performance.train;
+			}
+						
+			Double statValue=pr.getHmStats().get(statName);
+			
+			if (statName.contains(DevQsarConstants.PEARSON_RSQ)) {
+				if (statName.contains(DevQsarConstants.TAG_CV)) {
+					statistics.Q2=statValue;					
+				} else {
+					statistics.R2=statValue;					
+				}
+			} else if (statName.contains(DevQsarConstants.COVERAGE)) {
+				statistics.COVERAGE=statValue;
+			} else if (statName.contains(DevQsarConstants.MAE)) {
+				statistics.MAE=statValue;
+			} else if (statName.contains(DevQsarConstants.RMSE)) {
+				statistics.RMSE=statValue;
+			} else if (statName.contains(DevQsarConstants.BALANCED_ACCURACY)) {
+				statistics.BA=statValue;
+			} else if (statName.contains(DevQsarConstants.SENSITIVITY)) {
+				statistics.SN=statValue;
+			} else if (statName.contains(DevQsarConstants.SPECIFICITY)) {
+				statistics.SP=statValue;
+			} 
+		}
+		
+		return performance;
+	}
+
 
 	
 
-	public void setChemicalIdentifiers(PredictionDashboard pd) {
+	public void setChemicalIdentifiers(PredictionDashboard pd,PredictionResults pr) {
+
+		this.chemicalIdentifiers.dtxcid=pd.getDtxcid();
+
+//		if(pd.getDsstoxRecord()==null) {
+//			return;
+//		}
+//		
+//		DsstoxRecord dr=pd.getDsstoxRecord();
+//		
+//		this.chemicalIdentifiers.dtxsid=dr.getDtxsid();
+//		this.chemicalIdentifiers.casrn=dr.getCasrn();
+//		this.chemicalIdentifiers.preferredName=dr.getPreferredName();
+//		this.chemicalIdentifiers.smiles=dr.getSmiles();
+//		this.chemicalIdentifiers.molWeight=dr.getMolWeight();
+				
+		//TODO store this info in predictionResults (from sdf that was ran)
 		
+		this.chemicalIdentifiers.dtxsid=pr.getDTXSID();
+		this.chemicalIdentifiers.casrn=pr.getCAS();
+		this.chemicalIdentifiers.preferredName=pr.getName();
+		this.chemicalIdentifiers.smiles=pr.getSmiles();
+		this.chemicalIdentifiers.molWeight=pr.getMolWeight(); 
+		
+
+	}
+	
+	
+	public void setChemicalIdentifiers(PredictionDashboard pd) {
+
+		this.chemicalIdentifiers.dtxcid=pd.getDtxcid();
+
 		if(pd.getDsstoxRecord()==null) {
 			return;
 		}
@@ -374,13 +500,12 @@ public class PredictionReport {
 		DsstoxRecord dr=pd.getDsstoxRecord();
 		
 		this.chemicalIdentifiers.dtxsid=dr.getDtxsid();
-		this.chemicalIdentifiers.dtxcid=dr.getDtxcid();
 		this.chemicalIdentifiers.casrn=dr.getCasrn();
 		this.chemicalIdentifiers.preferredName=dr.getPreferredName();
 		this.chemicalIdentifiers.smiles=dr.getSmiles();
 		this.chemicalIdentifiers.molWeight=dr.getMolWeight();
+				
 	}
-	
 	
 	public class Performance {
 		
@@ -487,39 +612,8 @@ public class PredictionReport {
 	}
 	
 	private void setPrediction(PredictionDashboard pd) {
-
 		modelResults.predictedValue=pd.getPredictionValue();
 		modelResults.predictedString=pd.getPredictionString();
-
-		//		if (pd.getPredictionString()!=null) {
-		//			modelResults.predicted=pd.getPredictionString();
-		//			
-		//		} else if (pd.getPredictionValue()!=null) {
-		//			modelResults.predicted=pd.getPredictionValue()+"";
-		//			
-		//			String id="";
-		//
-		//			if(pd.getDsstoxRecord()!=null) {
-		//				if(pd.getDsstoxRecord().getDtxcid()!=null) {
-		//					id=pd.getDsstoxRecord().getDtxcid();
-		//				}
-		//			}
-		//			
-		//			modelResults.predictedConclusion=pd.getPredictionString();
-		//			
-		////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_VERY_TOXIC)) {
-		////				if(pd.getPredictionValue()==0) modelResults.predictedConclusion="Not very toxic: oral rat LD50 > 50 mg/kg";
-		////				else modelResults.predictedConclusion="Very toxic: oral rat LD50 ≤ 50 mg/kg";
-		////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_NON_TOXIC)) {
-		////				if(pd.getPredictionValue()==1) modelResults.predictedConclusion="Nontoxic: oral rat LD50 > 2000 mg/kg";
-		////				else modelResults.predictedConclusion="Not nontoxic: oral rat LD50 ≤ 2000 mg/kg";
-		////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_EPA_CATEGORY)) {
-		////				modelResults.predictedConclusion=getConclusionEPA(pd.getPredictionValue());
-		////			} else if(property.getName().equals(DevQsarConstants.ORAL_RAT_GHS_CATEGORY)) {
-		////				modelResults.predictedConclusion=getConclusionGHS(pd.getPredictionValue());		
-		////			}
-		//			
-		//		}
 	}
 
 	

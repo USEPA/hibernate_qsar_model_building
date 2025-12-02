@@ -54,6 +54,8 @@ public class ResQsarPrediction {
 //				System.out.println(Utilities.gson.toJson(rawdatum));
 				r.prediction_value=rawdatum.value;
 				r.source_name=rawdatum.source;
+				r.model_name=rawdatum.modelName;
+				
 				return r;
 			}
 		}
@@ -100,18 +102,15 @@ public class ResQsarPrediction {
 
 	}
 	
-	void exportSamplePerceptaPredictions(int count) {
+	void exportSamplePerceptaPredictions(String folder,String date, int count) {
 
 		
 		Gson gson=new Gson();
 
 		try {
 			
-			String folder="data//percepta//";
 			
-//			int count=5000;
-			
-			File file=new File(folder+"materialized_view_2024_11_06_sample_"+count+".json");
+			File file=new File(folder+"materialized_view_"+date+"_sample_"+count+".json");
 			FileWriter fw=new FileWriter(file);
 
 			Connection conn=SqlUtilities.getConnectionPostgres();
@@ -175,9 +174,9 @@ public class ResQsarPrediction {
 	private List<ResQsarPrediction> getMaterializedViewPredictions(HashSet<String> dtxsidsSample, Connection conn) {
 		List<ResQsarPrediction>dps=new ArrayList<>();
 
-		String sql="select dtxsid,property_name, model_name, prediction_value,"
-				+ "unit,prediction_error,source_name"
-				+ " from public.v_predicted_data vpd\n";
+		String sql="select dtxsid,prop_name, model_name, prop_value,"
+				+ "prop_unit,prop_value_error,source_name"
+				+ " from public.mv_predicted_data\n";
 
 		sql+="where source_name='Percepta2023.1.2' and\n";
 		
@@ -189,7 +188,7 @@ public class ResQsarPrediction {
 		}
 		
 		sql+="dtxsid in ("+strDtxsids+")\n";
-		sql+="ORDER BY dtxsid,property_name;";
+		sql+="ORDER BY dtxsid,prop_name;";
 		System.out.println(sql);
 
 		ResultSet rs=SqlUtilities.runSQL2(conn, sql);
@@ -262,7 +261,7 @@ public class ResQsarPrediction {
 	List<String> getDTXSIDs(Connection conn) {
 		
 		List<String>dtxsids=new ArrayList<>();
-		String sql="select distinct(dtxsid) from public.v_predicted_data vpd where source_name='Percepta2023.1.2';";
+		String sql="select distinct(dtxsid) from public.mv_predicted_data vpd where source_name='Percepta2023.1.2';";
 
 		try {
 			
@@ -280,11 +279,11 @@ public class ResQsarPrediction {
 		return dtxsids;
 		
 	}
-	void exportDtxsids() {
+	void exportDtxsids(String folder) {
 		try {
 			Connection conn=SqlUtilities.getConnectionPostgres();
 			List<String>dtxsids=getDTXSIDs(conn);
-			CompareResQsarToDatahub.dtxsidsToFile("data/percepta/v_predicted_data_percepta_dtxsids.txt", dtxsids);
+			CompareResQsarToDatahub.dtxsidsToFile(folder+"mv_predicted_data_percepta_dtxsids.txt", dtxsids);
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -297,9 +296,15 @@ public class ResQsarPrediction {
 	public static void main(String[] args) {
 		ResQsarPrediction r=new ResQsarPrediction();
 //		r.exportPerceptaPredictions();
+
+//		String folder="data\\Percepta2023.1.2\\test load\\";
+		String folder="data\\percepta\\";
 		
-//		r.exportDtxsids();
-		r.exportSamplePerceptaPredictions(1000);
+//		r.exportDtxsids(folder);
+//		String date="2025_07_22";
+		String date="2025_08_14_stg";
+		
+		r.exportSamplePerceptaPredictions(folder,date, 5000);
 
 //		r.getPredictionsFromJsonFile("data//percepta//materialized_view_2024_11_06_sample.json");
 		

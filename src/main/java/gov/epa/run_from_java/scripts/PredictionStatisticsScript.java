@@ -20,7 +20,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolationException;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -32,7 +32,9 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.google.gson.JsonArray;
 
+//import ToxPredictor.Database.DSSToxRecord;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+//import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInConsensusModel;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
@@ -42,10 +44,12 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelInConsensusModelServi
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelInModelSetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
+import gov.epa.databases.dsstox.DsstoxRecord;
+import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
 import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.ModelStatisticCalculator;
-import gov.epa.endpoints.reports.WebTEST.GenerateWebTestReport;
+//
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelPredictionReportGenerator;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
@@ -73,12 +77,12 @@ public class PredictionStatisticsScript {
 		// datasetNames.add("BP v1 res_qsar");
 		// datasetNames.add("MP v1 res_qsar");
 
-//		datasetNames.add("HLC v1 modeling");
-//		datasetNames.add("VP v1 modeling");
-//		datasetNames.add("BP v1 modeling");
-//		datasetNames.add("WS v1 modeling");
-//		datasetNames.add("LogP v1 modeling");
-//		datasetNames.add("MP v1 modeling");
+		datasetNames.add("HLC v1 modeling");
+		datasetNames.add("VP v1 modeling");
+		datasetNames.add("BP v1 modeling");
+		datasetNames.add("WS v1 modeling");
+		datasetNames.add("LogP v1 modeling");
+		datasetNames.add("MP v1 modeling");
 		
 //		datasetNames.add("exp_prop_96HR_FHM_LC50_v1 modeling");
 		
@@ -2104,6 +2108,7 @@ public class PredictionStatisticsScript {
 		boolean includeDescriptors=true;
 		boolean includeOriginalCompounds=true;
 		boolean overwriteJsonReport=true;
+		boolean useModelIdForFileName=true;
 
 		List<Long>modelIds=new ArrayList<>();
 //		modelIds.add(1507L);
@@ -2114,18 +2119,19 @@ public class PredictionStatisticsScript {
 //		for (long id=1553;id<=1558;id++) {
 //			modelIds.add(id);	
 //		}
-		modelIds.add(1569L);
+//		modelIds.add(1569L);
+		modelIds.add(1522L);
 		
 //		String outputFolder = "data/reports/prediction reports upload/FishTox";
-		String outputFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\0000 biodegradation OPPT\\biodegradation\\RIFM\\datasets\\unvetted with splitting";
-		
+//		String outputFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\0000 biodegradation OPPT\\biodegradation\\RIFM\\datasets\\unvetted with splitting";
+		String outputFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\000 Papers\\2025 aquatic tox";
 		File f = new File(outputFolder);
 		if (!f.exists())
 			f.mkdirs();
 
 		SampleReportWriter srw = new SampleReportWriter();
 		for (Long modelId:modelIds) {
-			srw.createPredictionReportMethod(modelId, overwriteJsonReport, includeDescriptors, includeOriginalCompounds,outputFolder);
+			srw.createPredictionReportMethod(modelId, overwriteJsonReport, includeDescriptors, includeOriginalCompounds,outputFolder,useModelIdForFileName);
 		}
 		
 	}
@@ -2133,9 +2139,11 @@ public class PredictionStatisticsScript {
 
 	void createPredictionReportForDatasets() {
 		
+		
 		boolean includeDescriptors=true;
 		boolean includeOriginalCompounds=true;
 		boolean overwriteJsonReport=true;
+		boolean useModelIdForFileName=true;
 
 //		datasetNames.add("HLC v1 modeling");
 //		datasetNames.add("WS v1 modeling");
@@ -2144,7 +2152,11 @@ public class PredictionStatisticsScript {
 //		datasetNames.add("BP v1 modeling");
 //		datasetNames.add("MP v1 modeling");
 		
-		String splittingName="RND_REPRESENTATIVE";
+//		String splittingName="RND_REPRESENTATIVE";
+//		String splittingName=SplittingGeneratorPFAS_Script.splitting_1F;
+		String splittingName=SplittingGeneratorPFAS_Script.splitting_2F;
+//		String splittingName=SplittingGeneratorPFAS_Script.splitting_3F;
+//		String splittingName=SplittingGeneratorPFAS_Script.splitting_30_percent_F;
 		boolean haveEmbedding=true;
 		
 		List<Long>modelIds=new ArrayList<>();
@@ -2163,7 +2175,7 @@ public class PredictionStatisticsScript {
 
 		SampleReportWriter srw = new SampleReportWriter();
 		for (Long modelId:modelIds) {
-			srw.createPredictionReportMethod(modelId, overwriteJsonReport, includeDescriptors, includeOriginalCompounds,outputFolder);
+			srw.createPredictionReportMethod(modelId, overwriteJsonReport, includeDescriptors, includeOriginalCompounds,outputFolder,useModelIdForFileName);
 		}
 		
 	}
@@ -2735,6 +2747,22 @@ public class PredictionStatisticsScript {
 		
 		List<MainTableRow>rows=new ArrayList<>();
 		
+		
+		 public String toString () {
+			
+			StringBuffer sb=new StringBuffer();
+			sb.append(MainTableRow.getHeader()+"\r\n");
+			
+			for(MainTableRow row:rows) {
+				sb.append(row.toString()+"\r\n");
+			}
+			
+			
+			return sb.toString();
+			
+		}
+		
+		
 		static class MainTableRow {
 			
 			public String propertyName;
@@ -2756,9 +2784,9 @@ public class PredictionStatisticsScript {
 			public Double Coverage_Test;
 			
 			
-			static String [] fieldNames= {"propertyName","numDescriptors",
+			static String [] fieldNames= {"propertyName","numDescriptors","nTraining",
 					"PearsonRSQ_CV_Training","MAE_CV_Training",
-					"nTraining","PearsonRSQ_Training",
+					"PearsonRSQ_Training",
 					"nTest","PearsonRSQ_Test","RMSE_Test","MAE_Test","MAE_Test_inside_AD",
 					"MAE_Test_outside_AD","Coverage_Test"};
 			
@@ -2768,6 +2796,7 @@ public class PredictionStatisticsScript {
 				String str="";
 				int count=0;
 				DecimalFormat df=new DecimalFormat("0.00");
+				
 				for(String fieldName:fieldNames) {
 					count++;
 					try {
@@ -2799,6 +2828,10 @@ public class PredictionStatisticsScript {
 				}						
 				return str;
 			}
+			
+			
+			
+			
 		}
 		
 	}
@@ -2829,7 +2862,7 @@ public class PredictionStatisticsScript {
 				
 				String filepathReport = "data/reports/" + modelSetName +"/"+fileNameReport ;
 				
-				PredictionReport predictionReport = GenerateWebTestReport.loadDataSetFromJson(filepathReport);
+				PredictionReport predictionReport = PredictionReport.loadFromJson(filepathReport);
 
 				MainTableRow mtr=new MainTableRow();
 				
@@ -2889,18 +2922,120 @@ public class PredictionStatisticsScript {
 	}
 	
 	
+
+	void createMainTableByModelIds() {
+		
+//		String splittingName=SplittingGeneratorPFAS_Script.splitting_1F;
+		String splittingName=SplittingGeneratorPFAS_Script.splitting_2F;
+//		String splittingName=SplittingGeneratorPFAS_Script.splitting_3F;
+//		String splittingName=SplittingGeneratorPFAS_Script.splitting_30_percent_F;
+		
+		
+		boolean haveEmbedding=true;
+		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\000 Papers\\2023 8.4.11 papers\\00000 2025 paper\\resubmit\\AD\\";
+	
+		boolean limitToPFAS=true;
+
+		SampleReportWriter srw = new SampleReportWriter();
+		
+		MainTable mt=new MainTable();
+		
+		
+		List<Long>modelIds=new ArrayList<>();
+		for(String datasetName:datasetNames) {
+			long modelId = EpisuiteValidation.getModelIdResQsarFromDatasetName(datasetName, splittingName, haveEmbedding);
+			System.out.println(datasetName+"\t"+modelId);
+			modelIds.add(modelId);
+		}
+		
+		System.out.println("\n"+splittingName);
+		
+		for (Long modelId:modelIds) {
+			
+//			System.out.println(modelId);
+			String filepathReport = folder+modelId+".json";
+			
+			File reportFile=new File(filepathReport);
+			
+			if(!reportFile.exists()) {
+				System.out.println(reportFile.getName()+"\tmissing");
+				continue;
+			}
+			
+			PredictionReport predictionReport =  PredictionReport.loadFromJson(filepathReport);
+
+			MainTableRow mtr=new MainTableRow();
+			
+			mt.rows.add(mtr);
+			
+			for (PredictionReportModelMetadata prmm:predictionReport.predictionReportModelMetadata) {
+				for (PredictionReportModelStatistic prms:prmm.predictionReportModelStatistics) {
+//					System.out.println(prms.statisticName+"\t"+prms.statisticValue);
+
+					if(prms.statisticName.equals("PearsonRSQ_CV_Training")) {
+						mtr.PearsonRSQ_CV_Training=prms.statisticValue;
+					} else if(prms.statisticName.equals("MAE_CV_Training")) {
+						mtr.MAE_CV_Training=prms.statisticValue;
+					} else if(prms.statisticName.equals("PearsonRSQ_Training")) {
+						mtr.PearsonRSQ_Training=prms.statisticValue;
+					} else if(prms.statisticName.equals("PearsonRSQ_Test")) {
+						mtr.PearsonRSQ_Test=prms.statisticValue;
+					} else if(prms.statisticName.equals("RMSE_Test")) {
+						mtr.RMSE_Test=prms.statisticValue;
+					} else if(prms.statisticName.equals("MAE_Test")) {
+						mtr.MAE_Test=prms.statisticValue;
+					} else if(prms.statisticName.equals("MAE_Test_inside_AD")) {
+						mtr.MAE_Test_inside_AD=prms.statisticValue;
+					} else if(prms.statisticName.equals("MAE_Test_outside_AD")) {
+						mtr.MAE_Test_outside_AD=prms.statisticValue;
+					} else if(prms.statisticName.equals("Coverage_Test")) {
+						mtr.Coverage_Test=prms.statisticValue;
+					}
+				}
+				
+			}
+			
+			mtr.nTraining=0;
+			mtr.nTest=0;
+			
+			for (PredictionReportDataPoint prdp:predictionReport.predictionReportDataPoints) {
+				if(prdp.qsarPredictedValues.get(0).splitNum==0) mtr.nTraining++;
+				if(prdp.qsarPredictedValues.get(0).splitNum==1) mtr.nTest++;
+			}
+
+			if(predictionReport.predictionReportModelMetadata.get(0).descriptorEmbeddingTsv!=null)
+				mtr.numDescriptors=predictionReport.predictionReportModelMetadata.get(0).descriptorEmbeddingTsv.split("\t").length;
+
+			mtr.propertyName=predictionReport.predictionReportMetadata.datasetName;
+			mtr.propertyName=mtr.propertyName.replace(" v1 modeling", "");
+			
+			
+//			System.out.println(Utilities.gson.toJson(mtr));
+			
+		}
+		
+		System.out.println(mt);
+
+		
+	}
+	
+	
 	public static void main(String[] args) {
 		PredictionStatisticsScript ms = new PredictionStatisticsScript();
+		
 		
 		//Create summary json report and excel file		
 //		ms.createPredictionReportForMethod();
 //		ms.createPredictionReportForMethodArrays();
-//		ms.createPredictionReportForModelIds();
-		ms.createPredictionReportForDatasets();
-//		ms.createMainTable();
-
+		ms.createPredictionReportForModelIds();		
+//		ms.createPredictionReportForDatasets();
+		
+//		ms.createMainTable();//fix to use jsons by model name
+//		ms.createMainTableByModelIds();
 		
 		// ms.createSpreadsheetExample();
+		
+		
 
 		// ms.createSummaryTableForMethod_Rnd_Representative();
 

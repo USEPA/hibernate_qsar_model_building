@@ -372,8 +372,7 @@ public class TTR_Binding_Challenge {
 			String serverHost = "https://hcd.rtpnc.epa.gov";
 //			String serverHost = "https://hazard-dev.sciencedataexperts.com";
 			
-			SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,
-					workflow, serverHost);
+			SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(workflow, serverHost);
 
 			boolean useFullStandardize=false;
 			
@@ -1417,8 +1416,7 @@ public class TTR_Binding_Challenge {
 		
 		String workflow = "qsar-ready_08232023";
 		
-		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,
-				workflow, server);
+		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(workflow, server);
 		boolean useFullStandardize=false;
 		
 //		String descriptorSetName="WebTEST-default";
@@ -1510,8 +1508,7 @@ public class TTR_Binding_Challenge {
 		
 		String workflow = "qsar-ready_08232023";
 		
-		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,
-				workflow, server);
+		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(workflow, server);
 		boolean useFullStandardize=false;
 		
 //		String descriptorSetName="WebTEST-default";

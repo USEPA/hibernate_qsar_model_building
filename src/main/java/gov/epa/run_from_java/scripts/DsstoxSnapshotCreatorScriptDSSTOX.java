@@ -214,6 +214,8 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 	void addSmiles(DsstoxCompound compound) {
 		
 		if (compound.getSmiles()!=null) return;
+		if(compound.getDsstoxCompoundId()==null)return;
+		
 		
 		String dtxsid=null;
 		if (compound.getGenericSubstanceCompound()!=null) {
@@ -227,8 +229,6 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 			} else if(this.smilesGeneratorMethod.contentEquals(strCDK)) {
 				assignSmilesUsingCDK(compound,dtxsid);
 			}
-			
-						
 		} catch (Exception e) {
 			try {
 				assignSmilesUsingCDK(compound, dtxsid);
@@ -237,6 +237,7 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 				System.out.println("Couldnt assign smiles for "+compound.getDsstoxCompoundId()+"\t"+dtxsid);
 			}
 		}
+
 	}
 
 	private void assignSmilesUsingCDK(DsstoxCompound compound, String dtxsid) throws CDKException, IOException {
@@ -303,6 +304,24 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 		return cids;
 	}
 	
+	HashSet<String> getSidsAlreadyInSnapshot(DsstoxSnapshot snapshot) {
+		
+		String sql2="select dtxsid from qsar_models.dsstox_records where fk_dsstox_snapshot_id="+snapshot.getId();
+
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql2);
+		
+		HashSet<String>sids=new HashSet<>();
+		
+		try {
+			while (rs.next()) {
+				sids.add(rs.getString(1));
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return sids;
+	}
 
 	
 	
@@ -412,10 +431,56 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 
 		}
 	}
+	
+
+	void createDsstoxRecordsUsingCompoundsRecordsFromJsons(String date) {
+		
+		boolean requireSID=true;
+		
+		int totalCount=0;
+		
+//		HashMap<String,String>hmStandardized=getQsarSmilesLookupFromDB("SCI_DATA_EXPERTS_QSAR_READY");
+		
+		String name="DSSTOX Snapshot "+date;
+		String description ="DSSTOX snapshot taken on "+date;
+
+		DsstoxSnapshot snapshot=getSnapshot(name,description);
+		
+//		HashSet<String>cids=getCidsAlreadyInSnapshot(snapshot);
+		HashSet<String>sids=getSidsAlreadyInSnapshot(snapshot);
+
+		//TODO need to make sure we dont have 2 dtxsids with different dtxcids
+					
+		String folder="data\\dsstox\\snapshot-"+date+"\\json\\";
+		
+		File Folder=new File(folder);
+
+		Type listDsstoxCompoundType = new TypeToken<List<DsstoxCompound>>() {}.getType();
+		
+		for(File file:Folder.listFiles()) {
+
+			if(!file.getName().contains("json")) {
+				continue;
+			}
+			
+			if(file.getName().contains("snapshot")) {
+				continue;
+			}
+			
+			System.out.println(file.getName());
+			
+			
+			totalCount += createDsstoxRecordsUsingCompoundsRecordsFromJson(snapshot, sids,
+					listDsstoxCompoundType, file);
+			
+//			if(true)break;
+
+		}
+	}
 
 
 	private int createDsstoxRecordsUsingCompoundsRecordsFromJson(DsstoxSnapshot snapshot,
-			HashSet<String> cids, Type listDsstoxCompoundType, File file) {
+			HashSet<String> sids, Type listDsstoxCompoundType, File file) {
 		try {
 			List<DsstoxCompound>dsstoxCompounds=Utilities.gson.fromJson(new FileReader(file), listDsstoxCompoundType);
 
@@ -425,8 +490,9 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 				DsstoxCompound dsstoxCompound=dsstoxCompounds.get(i);
 				
 //					System.out.println(Utilities.gson.toJson(dsstoxCompound));
-
-				if(cids.contains(dsstoxCompound.getDsstoxCompoundId())) {//already have in db so remove it
+				
+				if(sids.contains(dsstoxCompound.getGenericSubstanceCompound().getGenericSubstance().getDsstoxSubstanceId())) {//already have in db so remove it
+//				if(cids.contains(dsstoxCompound.getDsstoxCompoundId())) {//already have in db so remove it
 					dsstoxCompounds.remove(i--);
 				} else {
 					addSmiles(dsstoxCompound);
@@ -436,16 +502,15 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 			if(dsstoxCompounds.size()>0) {//post them
 				List<DsstoxRecord> records = DsstoxRecord.getRecords(dsstoxCompounds, snapshot,lanId);
 				try {
+					System.out.println("Posting "+dsstoxCompounds.size()+" from "+file.getName());
 					dsstoxRecordService.createBatchSQL(records);
 				} catch (Exception ex) {
 					System.out.println(ex.getMessage());
 				}
 			} else {
-				//System.out.println("Already have all compounds in records table from query");
+				System.out.println("Already have all compounds in records table from query");
 			}
 
-			System.out.println(file.getName()+"\t"+dsstoxCompounds.size());
-		
 			return dsstoxCompounds.size();
 		
 		} catch (Exception ex) {
@@ -980,10 +1045,17 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 	}
 	
 	
+	
+	
 	public static void main(String[] args) {
 		DsstoxSnapshotCreatorScriptDSSTOX d=new DsstoxSnapshotCreatorScriptDSSTOX();
 
-		d.create_Snapshot_11_2024();
+//		d.create_Snapshot_11_2024();
+		
+		String date="2025-10-30";
+		d.createDsstoxRecordsUsingCompoundsRecordsFromJsons(date);
+		
+		
 
 //		d.getSnapshot();
 		

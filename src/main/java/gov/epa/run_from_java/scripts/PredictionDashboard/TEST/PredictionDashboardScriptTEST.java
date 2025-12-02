@@ -1,6 +1,7 @@
 package gov.epa.run_from_java.scripts.PredictionDashboard.TEST;
 
 import java.io.*;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -10,26 +11,38 @@ import java.util.*;
 
 import java.util.zip.GZIPInputStream;
 
-import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.AtomContainerSet;
 import org.openscience.cdk.interfaces.IAtomContainer;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTHdrFtrRef;
 
+import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import ToxPredictor.Application.TESTConstants;
 import ToxPredictor.Application.WebTEST4;
+import ToxPredictor.Application.Calculations.CreateLookups.GetTrainingTestSetPredictions;
 import ToxPredictor.Application.Calculations.RunFromCommandLine.CompareStandaloneToSDE;
+import ToxPredictor.Application.Calculations.RunFromCommandLine.RunFromSDF;
 import ToxPredictor.Application.Calculations.RunFromCommandLine.RunFromSmiles;
+import ToxPredictor.Application.Calculations.RunFromCommandLine.RunFromSmiles.MoleculeCreator;
+
 import ToxPredictor.Application.GUI.Miscellaneous.fraChart;
-import ToxPredictor.Application.model.IndividualPredictionsForConsensus.PredictionIndividualMethod;
 import ToxPredictor.Application.model.PredictionResults;
 import ToxPredictor.Application.model.PredictionResultsPrimaryTable;
 import ToxPredictor.Application.model.SimilarChemical;
 import ToxPredictor.Application.model.SimilarChemicals;
+
+//import ToxPredictor.Application.model.IndividualPredictionsForConsensus.PredictionIndividualMethod;
+//import ToxPredictor.Application.model.PredictionResults;
+//import ToxPredictor.Application.model.PredictionResultsPrimaryTable;
+//import ToxPredictor.Application.model.SimilarChemical;
+//import ToxPredictor.Application.model.SimilarChemicals;
+
+
 import ToxPredictor.Database.DSSToxRecord;
 import ToxPredictor.Database.ResolverDb2;
+import ToxPredictor.misc.StatisticsCalculator;
+import ToxPredictor.misc.StatisticsCalculator.ModelPrediction;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
@@ -52,14 +65,14 @@ import gov.epa.databases.dev_qsar.qsar_models.service.PredictionReportServiceImp
 import gov.epa.databases.dev_qsar.qsar_models.service.SourceService;
 import gov.epa.databases.dev_qsar.qsar_models.service.SourceServiceImpl;
 import gov.epa.endpoints.models.ModelBuilder;
-import gov.epa.endpoints.models.ModelPrediction;
+//import gov.epa.endpoints.models.ModelPrediction;
+//import gov.epa.endpoints.reports.WebTEST.ReportClasses.IndividualPredictionsForConsensus.PredictionIndividualMethod;
 import gov.epa.run_from_java.scripts.QsarModelsScript;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.CreatorScript;
 import gov.epa.run_from_java.scripts.PredictionDashboard.DatabaseUtilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionDashboardTableMaps;
-import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.HTMLReportCreatorOpera;
 import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.PredictionDashboardScriptOPERA;
 import gov.epa.run_from_java.scripts.PredictionDashboard.TEST.PredictionDashboardScriptTEST.TESTAPIResults.PredictionAPI;
 import kong.unirest.HttpResponse;
@@ -103,15 +116,23 @@ public class PredictionDashboardScriptTEST  {
 	//			"Thermal conductivity at 25?C", "Viscosity at 25?C", "Water solubility at 25?C" };
 
 
-	static String[] propertyNamesTestReports = { "Fathead minnow LC50 (96 hr)", "Daphnia magna LC50 (48 hr)",
-			"T. pyriformis IGC50 (48 hr)", "Oral rat LD50", "Bioconcentration factor", "Developmental Toxicity",
-			"Mutagenicity", "Normal boiling point",
-			"Melting point", "Flash point", "Vapor pressure at 25?C", "Density", "Surface tension at 25?C",
-			"Thermal conductivity at 25?C", "Viscosity at 25?C", "Water solubility at 25?C" };
+	
+	//TODO these property names have been updated:
+//	static String[] propertyNamesTestReports = { "Fathead minnow LC50 (96 hr)", "Daphnia magna LC50 (48 hr)",
+//			"T. pyriformis IGC50 (48 hr)", "Oral rat LD50", "Bioconcentration factor", "Developmental Toxicity",
+//			"Mutagenicity", "Normal boiling point",
+//			"Melting point", "Flash point", "Vapor pressure at 25?C", "Density", "Surface tension at 25?C",
+//			"Thermal conductivity at 25?C", "Viscosity at 25?C", "Water solubility at 25?C" };
 
+	static String[] propertyNamesTestReports = { "96 Hour Fathead Minnow LC50", "48 Hour Daphnia Magna LC50",
+			"48 Hour Tetrahymena Pyriformis IGC50", "Oral Rat LD50", "Bioconcentration Factor", "Developmental Toxicity",
+			"Ames Mutagenicity", "Normal Boiling Point",
+			"Melting Point", "Flash Point", "Vapor Pressure at 25°C", "Density at 25°C", 
+			"Surface Tension at 25°C",
+			"Thermal Conductivity at 25°C", "Viscosity at 25°C", "Water Solubility at 25°C" };
+	
 
-
-	class InitializeDB {
+	public static class InitializeDB {
 
 		ModelBuilder mb=new ModelBuilder(lanId);
 
@@ -121,14 +142,19 @@ public class PredictionDashboardScriptTEST  {
 		 */
 		void initializeDB() {
 
+			boolean postToDB=true;
+			
 			createDatasets();
 
+			MethodServiceImpl methodService=new MethodServiceImpl();
+			
+			
 			HashMap<String,Method> hmMethods=new HashMap<>();
 			hmMethods.put("consensus_regressor",methodService.findByName("consensus_regressor"));
 			hmMethods.put("consensus_classifier",methodService.findByName("consensus_classifier"));
 			TreeMap<String, Model> hmModels = createModels(hmMethods);
 
-			createStatistics(hmModels);
+			createStatistics(hmModels,postToDB);
 
 
 		}
@@ -143,7 +169,12 @@ public class PredictionDashboardScriptTEST  {
 
 			for (String propertyName:propertyNamesTestReports) {
 
-				String propertyNameDB=getPropertyNameDB(propertyName);
+				String propertyNameDB=TESTConstants.getPropertyNameDB(propertyName);
+				
+				if(propertyNameDB==null) {
+					System.out.println("Null property name for "+propertyName);
+					continue;
+				}
 
 
 				String datasetName = getDatasetName(propertyNameDB);
@@ -151,6 +182,8 @@ public class PredictionDashboardScriptTEST  {
 				String unitAbbrev=hmUnitsDataset.get(propertyNameDB);
 				String unitContributorAbbrev=hmUnitsDatasetContributor.get(propertyNameDB);
 
+//				System.out.println(propertyName+"\t"+propertyNameDB+"\t"+unitAbbrev+"\t"+unitContributorAbbrev);
+				
 				Unit unit=CreatorScript.createUnit(unitAbbrev,lanId);
 				Unit unitContributor=CreatorScript.createUnit(unitContributorAbbrev,lanId);
 
@@ -172,7 +205,7 @@ public class PredictionDashboardScriptTEST  {
 
 				CreatorScript.createDataset(dataset);
 
-				System.out.println(Utilities.gson.toJson(dataset));
+//				System.out.println(Utilities.gson.toJson(dataset));
 
 
 			}
@@ -192,7 +225,7 @@ public class PredictionDashboardScriptTEST  {
 				String descriptorSetName=getSoftwareName();
 
 				String splittingName="TEST";
-				String propertyNameDB=getPropertyNameDB(propertyName);
+				String propertyNameDB=TESTConstants.getPropertyNameDB(propertyName);
 				String datasetName=getDatasetName(propertyNameDB);
 
 				String methodName=null;
@@ -223,6 +256,70 @@ public class PredictionDashboardScriptTEST  {
 
 		String getModelName(String propertyNameDB) {
 			return propertyNameDB+" "+getSoftwareName();
+		}
+		
+		
+		
+		
+		public Hashtable<String, Long> getModelNameToModelID_Hashtable() {
+			
+//			String jsonString = "[{\"name\": \"Ames Mutagenicity TEST5.1.3\", \"id\": 229},"
+//	                + "{\"name\": \"Estrogen receptor relative binding affinity TEST5.1.3\", \"id\": 231},"
+//	                + "{\"name\": \"Vapor pressure TEST5.1.3\", \"id\": 235},"
+//	                + "{\"name\": \"Melting point TEST5.1.3\", \"id\": 233},"
+//	                + "{\"name\": \"Boiling point TEST5.1.3\", \"id\": 232},"
+//	                + "{\"name\": \"Flash point TEST5.1.3\", \"id\": 234},"
+//	                + "{\"name\": \"Density TEST5.1.3\", \"id\": 236},"
+//	                + "{\"name\": \"48 hour Tetrahymena pyriformis IGC50 TEST5.1.3\", \"id\": 225},"
+//	                + "{\"name\": \"Bioconcentration factor TEST5.1.3\", \"id\": 227},"
+//	                + "{\"name\": \"Water solubility TEST5.1.3\", \"id\": 240},"
+//	                + "{\"name\": \"Oral rat LD50 TEST5.1.3\", \"id\": 226},"
+//	                + "{\"name\": \"Viscosity TEST5.1.3\", \"id\": 239},"
+//	                + "{\"name\": \"Estrogen receptor binding TEST5.1.3\", \"id\": 230},"
+//	                + "{\"name\": \"96 hour fathead minnow LC50 TEST5.1.3\", \"id\": 223},"
+//	                + "{\"name\": \"Thermal conductivity TEST5.1.3\", \"id\": 238},"
+//	                + "{\"name\": \"Developmental toxicity TEST5.1.3\", \"id\": 228},"
+//	                + "{\"name\": \"48 hour Daphnia magna LC50 TEST5.1.3\", \"id\": 224},"
+//	                + "{\"name\": \"Surface tension TEST5.1.3\", \"id\": 237}]";
+			
+//	        Gson gson = new Gson();
+//	        Type listType = new TypeToken<List<Model>>(){}.getType();
+//	        List<Model> testList = gson.fromJson(jsonString, listType);
+//
+//	        Hashtable<String, Long> hashtable = new Hashtable<>();
+//	        for (Model model : testList) {
+//	            hashtable.put(model.getName(), model.getId());
+//	        }
+			
+			String sql="select m.name,m.id from qsar_models.models m\r\n"
+					+ "			join qsar_models.sources s on m.fk_source_id = s.id\r\n"
+					+ "			where s.name='TEST5.1.3';";
+			
+			ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+	        Hashtable<String, Long> htModelNameToID = new Hashtable<>();
+			
+			try {
+				while (rs.next()) {
+					String name=rs.getString(1);
+					long id=rs.getLong(2);
+					htModelNameToID.put(name, id);
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+	        return htModelNameToID;
+		}
+		
+		
+		
+		String getModelNameCCD(String propertyNameDB) {
+			
+			
+//			TESTConstants.getprop
+			
+			return "";
+			
+			
 		}
 
 		Model getModel(String propertyName,TreeMap <String,Model>mapModels) {
@@ -297,53 +394,20 @@ public class PredictionDashboardScriptTEST  {
 			return "TEST"+version;
 		}
 
-		String getPropertyNameDB(String propertyName) {
+		
 
-			if (propertyName.equals("Fathead minnow LC50 (96 hr)")) {
-				return DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50;
-			} else if (propertyName.equals("Daphnia magna LC50 (48 hr)")) {
-				return DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50;
-			} else if (propertyName.equals("T. pyriformis IGC50 (48 hr)")) {
-				return DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50;
-			} else if (propertyName.equals("Oral rat LD50")) {
-				return DevQsarConstants.ORAL_RAT_LD50;
-			} else if (propertyName.equals("Developmental Toxicity")) {
-				return DevQsarConstants.DEVELOPMENTAL_TOXICITY;
-			} else if (propertyName.equals("Normal boiling point")) { 
-				return DevQsarConstants.BOILING_POINT;
-			} else if (propertyName.equals("Melting point")) { 
-				return DevQsarConstants.MELTING_POINT;
-			} else if (propertyName.equals("Flash point")) { 
-				return DevQsarConstants.FLASH_POINT;
-			} else if (propertyName.equals("Density")) { 
-				return DevQsarConstants.DENSITY;
-			} else if (propertyName.contains("Bioconcentration factor")) {
-				return DevQsarConstants.BCF;			
-			} else if (propertyName.contains(" at 25")) { 
-				propertyName=propertyName.substring(0,propertyName.indexOf(" at 25"));
-				return propertyName; 
-			} else if (propertyName.equals("Estrogen Receptor Binding")) {
-				return DevQsarConstants.ESTROGEN_RECEPTOR_BINDING;
-			} else if (propertyName.equals("Estrogen Receptor RBA")) {
-				return DevQsarConstants.ESTROGEN_RECEPTOR_RBA;
-			} else if (propertyName.equals("Mutagenicity")) {
-				return DevQsarConstants.AMES_MUTAGENICITY;
-			} else if (propertyName.equals("Developmental Toxicity")) {
-				return DevQsarConstants.DEVELOPMENTAL_TOXICITY;
-			} else  {
-				return "*"+propertyName;
-			} 
+		void createStatistics(String endpoint,Model model,boolean postToDB) {
 
+			String abbrev=TESTConstants.getAbbrevEndpoint(endpoint);
 
-		}
+			Hashtable<String, List<ModelPrediction>>htDatasetPredictions=GetTrainingTestSetPredictions.getPredictionHashtable();
+			
+			StatisticsCalculator sc=new StatisticsCalculator();
+			HashMap<String, Double> allStats=sc.getStatistics(endpoint,TESTConstants.ChoiceConsensus, htDatasetPredictions.get(abbrev));
 
-		void createStatistics(String abbrev,Model model) {
-
-			int minPredCount=2;//min number of predictions needed for consensus
-
-			List<ModelPrediction>mpsTest=getModelPredictionsConsensus(abbrev, "test",minPredCount);
-			List<ModelPrediction>mpsTraining=getModelPredictionsConsensus(abbrev, "training",minPredCount);
-
+//			System.out.println(Utilities.gson.toJson(allStats)+"\n");
+			
+			
 			//			if(abbrev.equals("LC50")) {
 			//				System.out.println("");
 			//				for (ModelPrediction mp:mpsTest) {
@@ -352,7 +416,7 @@ public class PredictionDashboardScriptTEST  {
 			//				System.out.println("");
 			//			}
 
-			mb.calculateAndPostModelStatistics(mpsTraining, mpsTest, model, true);
+			mb.PostModelStatistics(allStats, model, postToDB);
 
 
 		}
@@ -413,15 +477,15 @@ public class PredictionDashboardScriptTEST  {
 		 * 
 		 * @param mapModels
 		 */
-		private void createStatistics(TreeMap <String,Model>mapModels) {
+		private void createStatistics(TreeMap <String,Model>mapModels,boolean postToDB) {
 			int i=0;
 			for (String propertyName:propertyNamesTestReports) {
 				String name=propertyName.replace("25?C","25°C");
 				String abbrev=TESTConstants.getAbbrevEndpoint(name);
-				String propertyNameDB=getPropertyNameDB(propertyName);
+				String propertyNameDB=TESTConstants.getPropertyNameDB(propertyName);
 				Model model=getModel(propertyNameDB, mapModels);
 				System.out.println(++i+"\t"+name+"\t"+abbrev+"\t"+model.getId());
-				createStatistics(abbrev, model);
+				createStatistics(propertyName, model,postToDB);
 				//				if(true)break;
 			}
 		}
@@ -437,42 +501,78 @@ public class PredictionDashboardScriptTEST  {
 
 		public void createPlotJsons() {
 
-			QsarModelsScript qms=new QsarModelsScript("tmarti02");
-
-			int i=0;
-			int minPredCount=2;
-
-			System.out.print("Getting maps...");
+//			QsarModelsScript qms=new QsarModelsScript("tmarti02");
+//
+//			int i=0;
+//			int minPredCount=2;
+//
+//			System.out.print("Getting maps...");
+//			TreeMap<String, Model>mapModels=CreatorScript.getModelsMap();
+//			TreeMap<String, Dataset>mapDatasets=CreatorScript.getDatasetsMap();
+//			System.out.println("done\n");
+//
+//			for (String propertyNameTestReport:propertyNamesTestReports) {
+//
+//				String name=propertyNameTestReport.replace("25?C","25°C");
+//				String abbrev=TESTConstants.getAbbrevEndpoint(name);
+//				String propertyNameDB=TESTConstants.getPropertyNameDB(propertyNameTestReport);
+//
+//				Model model=getModel(propertyNameDB, mapModels);
+//
+//				String unitName=mapDatasets.get(model.getDatasetName()).getUnit().getAbbreviation_ccd();
+//				if(unitName.contains("Binary"))continue;
+//
+//				Dataset dataset=mapDatasets.get(model.getDatasetName());
+//				String propertyNameCCD=dataset.getProperty().getName_ccd();
+//
+//				System.out.println(++i+"\t"+name+"\t"+abbrev+"\t"+model.getId());
+//
+////				List<ModelPrediction>mpsTest=getModelPredictionsConsensus(abbrev, "test",minPredCount);
+////				List<ModelPrediction>mpsTraining=getModelPredictionsConsensus(abbrev, "training",minPredCount);
+//				//Create charts using Java:
+//				//				uploadPredictionChart(model.getId(), propertyNameDB, unitName, mpsTest);
+//
+//				//Following is used by "models/make_test_plots.py" python model building project to make plots:
+////				saveConsensusPredictionsToJson(propertyNameCCD,model.getName(),mpsTest, mpsTraining, unitName);
+//				//				if(true)break;
+//			}
+			
 			TreeMap<String, Model>mapModels=CreatorScript.getModelsMap();
 			TreeMap<String, Dataset>mapDatasets=CreatorScript.getDatasetsMap();
-			System.out.println("done\n");
-
-			for (String propertyNameTestReport:propertyNamesTestReports) {
-
-				String name=propertyNameTestReport.replace("25?C","25°C");
-				String abbrev=TESTConstants.getAbbrevEndpoint(name);
-				String propertyNameDB=getPropertyNameDB(propertyNameTestReport);
-
+			
+			for(String endpoint:RunFromSmiles.allEndpoints) {
+				
+				String abbrev=TESTConstants.getAbbrevEndpoint(endpoint);
+				String propertyNameDB=TESTConstants.getPropertyNameDB(endpoint);
+				
 				Model model=getModel(propertyNameDB, mapModels);
-
+				
 				String unitName=mapDatasets.get(model.getDatasetName()).getUnit().getAbbreviation_ccd();
 				if(unitName.contains("Binary"))continue;
-
+				
 				Dataset dataset=mapDatasets.get(model.getDatasetName());
 				String propertyNameCCD=dataset.getProperty().getName_ccd();
 
-				System.out.println(++i+"\t"+name+"\t"+abbrev+"\t"+model.getId());
+				
+//				String jsonFilePath="gov"+File.separator+"epa"+File.separator+"webtest"+File.separator+abbrev+File.separator+abbrev+"_predictions.json";
+				String jsonFilePath="gov/epa/webtest/"+abbrev+"/"+abbrev+"_predictions.json";
 
-				List<ModelPrediction>mpsTest=getModelPredictionsConsensus(abbrev, "test",minPredCount);
-				List<ModelPrediction>mpsTraining=getModelPredictionsConsensus(abbrev, "training",minPredCount);
+				List<ModelPrediction>mps=GetTrainingTestSetPredictions.getModelPredictions(jsonFilePath, true);
 
-				//Create charts using Java:
-				//				uploadPredictionChart(model.getId(), propertyNameDB, unitName, mpsTest);
-
-				//Following is used by "models/make_test_plots.py" python model building project to make plots:
-				saveConsensusPredictionsToJson(propertyNameCCD,model.getName(),mpsTest, mpsTraining, unitName);
-				//				if(true)break;
+				List<ModelPrediction>mpsTrain=new ArrayList<>();
+				List<ModelPrediction>mpsTest=new ArrayList<>();
+				
+				for(ModelPrediction mp:mps) {
+					if(!mp.methodAbbrev.equals("consensus")) continue;
+					if(mp.split==0)mpsTrain.add(mp);
+					else if(mp.split==1) mpsTest.add(mp);
+				}
+				
+				saveConsensusPredictionsToJson(propertyNameCCD,model.getName(),mpsTest, mpsTrain, unitName);
+				
 			}
+			
+
 		}
 
 		//		public void uploadPlotsOld() {
@@ -517,6 +617,10 @@ public class PredictionDashboardScriptTEST  {
 		private void saveConsensusPredictionsToJson(String propertyName, String modelName, List<ModelPrediction> mpsTest,
 				List<ModelPrediction> mpsTraining, String unitName) {
 			String folder="data\\TEST5.1.3\\reports\\plots\\";
+			
+			File Folder=new File(folder);
+			if(!Folder.exists()) Folder.mkdirs();
+			
 			ConsensusModelPredictions cmp=new ConsensusModelPredictions();
 			cmp.mpsTest=mpsTest;
 			cmp.mpsTraining=mpsTraining;
@@ -538,68 +642,68 @@ public class PredictionDashboardScriptTEST  {
 		}
 
 
-		private List<ModelPrediction>getModelPredictionsConsensus(String endpointAbbrev, String set, int minPredCount) {
-
-			List<ModelPrediction>mps=new ArrayList<>();
-			try {
-
-				InputStream ins = this.getClass().getClassLoader()
-						.getResourceAsStream(endpointAbbrev+"/"+endpointAbbrev+" "+set+" set predictions.txt");
-
-				BufferedReader br=new BufferedReader(new InputStreamReader(ins));
-				String header=br.readLine();
-				List<String>headers=Arrays.asList(header.split("\t"));
-
-				String endpoint=TESTConstants.getFullEndpoint(endpointAbbrev);
-				List<String>consensusMethods=new ArrayList<>();
-				consensusMethods.add("Hierarchical clustering");
-				if(TESTConstants.haveSingleModelMethod(endpoint)) consensusMethods.add("Single model");
-				if(TESTConstants.haveGroupContributionMethod(endpoint)) consensusMethods.add("Group contribution");
-				consensusMethods.add("Nearest neighbor");
-
-				//				System.out.println(header);
-
-				while (true) {
-
-					String Line=br.readLine();
-					if(Line==null || Line.isBlank()) break;
-					String [] strVals=Line.split("\t");
-					List<Double>consensusVals=new ArrayList<>();
-
-					int splitNum=-1;
-					if(set.equals("test")) splitNum=1;
-					if(set.equals("training")) splitNum=0;
-
-					String cas=strVals[headers.indexOf("CAS")];
-					double dexpval=Double.parseDouble(strVals[headers.indexOf("expToxicValue")]);
-
-					for (String method:consensusMethods) {
-						double dval=Double.parseDouble(strVals[headers.indexOf(method)]);
-						if(dval==-9999) continue;
-						consensusVals.add(dval);
-					}
-
-					Double dpredval=null;
-
-					if(consensusVals.size()>=minPredCount) {//need 2 or more or unreliable (AD)
-						dpredval=0.0;
-						for(Double val:consensusVals) dpredval+=val;
-						dpredval/=consensusVals.size();
-					}
-					ModelPrediction mp=new ModelPrediction(cas,dexpval,dpredval,splitNum);
-					mps.add(mp);
-					//					System.out.println(strVals[0]+"\t"+consensusVals);
-				}
-
-				//				System.out.println(Utilities.gson.toJson(mps));
-
-			} catch (Exception ex) {
-				ex.printStackTrace();
-			}
-
-			return mps;
-
-		}
+//		private List<ModelPrediction>getModelPredictionsConsensus(String endpointAbbrev, String set, int minPredCount) {
+//
+//			List<ModelPrediction>mps=new ArrayList<>();
+//			try {
+//
+//				InputStream ins = this.getClass().getClassLoader()
+//						.getResourceAsStream(endpointAbbrev+"/"+endpointAbbrev+" "+set+" set predictions.txt");
+//
+//				BufferedReader br=new BufferedReader(new InputStreamReader(ins));
+//				String header=br.readLine();
+//				List<String>headers=Arrays.asList(header.split("\t"));
+//
+//				String endpoint=TESTConstants.getFullEndpoint(endpointAbbrev);
+//				List<String>consensusMethods=new ArrayList<>();
+//				consensusMethods.add("Hierarchical clustering");
+//				if(TESTConstants.haveSingleModelMethod(endpoint)) consensusMethods.add("Single model");
+//				if(TESTConstants.haveGroupContributionMethod(endpoint)) consensusMethods.add("Group contribution");
+//				consensusMethods.add("Nearest neighbor");
+//
+//				//				System.out.println(header);
+//
+//				while (true) {
+//
+//					String Line=br.readLine();
+//					if(Line==null || Line.isBlank()) break;
+//					String [] strVals=Line.split("\t");
+//					List<Double>consensusVals=new ArrayList<>();
+//
+//					int splitNum=-1;
+//					if(set.equals("test")) splitNum=1;
+//					if(set.equals("training")) splitNum=0;
+//
+//					String cas=strVals[headers.indexOf("CAS")];
+//					double dexpval=Double.parseDouble(strVals[headers.indexOf("expToxicValue")]);
+//
+//					for (String method:consensusMethods) {
+//						double dval=Double.parseDouble(strVals[headers.indexOf(method)]);
+//						if(dval==-9999) continue;
+//						consensusVals.add(dval);
+//					}
+//
+//					Double dpredval=null;
+//
+//					if(consensusVals.size()>=minPredCount) {//need 2 or more or unreliable (AD)
+//						dpredval=0.0;
+//						for(Double val:consensusVals) dpredval+=val;
+//						dpredval/=consensusVals.size();
+//					}
+//					ModelPrediction mp=new ModelPrediction(cas,dexpval,dpredval,splitNum);
+//					mps.add(mp);
+//					//					System.out.println(strVals[0]+"\t"+consensusVals);
+//				}
+//
+//				//				System.out.println(Utilities.gson.toJson(mps));
+//
+//			} catch (Exception ex) {
+//				ex.printStackTrace();
+//			}
+//
+//			return mps;
+//
+//		}
 
 	}
 
@@ -927,7 +1031,7 @@ public class PredictionDashboardScriptTEST  {
 
 					PredictionResults predictionResults=Utilities.gson.fromJson(strPredictionResults,PredictionResults.class);
 
-					long t3=System.currentTimeMillis();
+//					long t3=System.currentTimeMillis();
 
 					//				if(!predictionResults.getDTXSID().equals("DTXSID10976888")) continue;
 
@@ -958,6 +1062,8 @@ public class PredictionDashboardScriptTEST  {
 				System.out.println("missingReports.size()="+missingReports.size());
 
 				predictionReportService.createSQL(missingReports);
+				
+				br.close();
 
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -996,7 +1102,6 @@ public class PredictionDashboardScriptTEST  {
 					fw.flush();
 					fw.close();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
@@ -1142,15 +1247,15 @@ public class PredictionDashboardScriptTEST  {
 			}
 		}
 
-		private void fixPredictionResultsSDE(PredictionResults pr) {
-
-			for(PredictionIndividualMethod pred:pr.getIndividualPredictionsForConsensus().getConsensusPredictions()) {
-				pred.setMethod(TESTConstants.getFullMethod(pred.getMethod()));
-			}
-
-			pr.setEndpoint(TESTConstants.getFullEndpoint(pr.getEndpoint()));
-
-		}
+//		private void fixPredictionResultsSDE(PredictionResults pr) {
+//
+//			for(PredictionIndividualMethod pred:pr.getIndividualPredictionsForConsensus().getConsensusPredictions()) {
+//				pred.setMethod(TESTConstants.getFullMethod(pred.getMethod()));
+//			}
+//
+//			pr.setEndpoint(TESTConstants.getFullEndpoint(pr.getEndpoint()));
+//
+//		}
 
 		public void viewReportsFromDatabase(String id) {
 
@@ -1161,7 +1266,7 @@ public class PredictionDashboardScriptTEST  {
 			List<String> propertyNamesDB=new ArrayList<>();
 
 			for(String propertyName:propertyNames) {
-				propertyNamesDB.add(initializeDB.getPropertyNameDB(propertyName));
+				propertyNamesDB.add(TESTConstants.getPropertyNameDB(propertyName));
 			}
 
 			for (String propertyName:propertyNamesDB) {
@@ -1275,7 +1380,7 @@ public class PredictionDashboardScriptTEST  {
 //			HashSet<String> pd_keys=DatabaseUtilities.getLoadedKeys(source, snapshot);
 			//			HashSet<String> pd_keys=new HashSet<>();//dont need because CONFLICT DO NOTHING in sql insert statement
 
-			HashSet<String>cidsLoaded=DatabaseUtilities.getLoadedCIDsWithCount(source, snapshot, 16);
+			HashSet<String>cidsLoaded=DatabaseUtilities.getLoadedCIDsWithCount(source.getName(), 16);
 
 			System.out.println("cidsLoaded.size()="+cidsLoaded.size());
 			
@@ -1307,9 +1412,6 @@ public class PredictionDashboardScriptTEST  {
 					String propNameLC=predictionResults.getEndpoint().toLowerCase();
 					if (propNameLC.contains("estrogen"))continue;
 				}
-				
-				
-
 				
 				if(predictionResults.getPredictionResultsPrimaryTable().getExpCAS()!=null) {
 					if(predictionResults.getEndpoint().equals(TESTConstants.ChoiceWaterSolubility)) {
@@ -1362,9 +1464,6 @@ public class PredictionDashboardScriptTEST  {
 				long t3=System.currentTimeMillis();
 				PredictionDashboard pd=converter.convertPredictionResultsToPredictionDashboard(predictionResults,tableMaps,writeReportToHarddrive);
 				long t4=System.currentTimeMillis();
-				
-				
-
 				
 
 //				System.out.println("Time to do misc:"+(t3-t2)+"ms");
@@ -1439,30 +1538,21 @@ public class PredictionDashboardScriptTEST  {
 	}
 
 
-	private void compareToAPI(PredictionDashboard pd,PredictionResults pr) {
+	public static void compareToAPI(PredictionDashboard pd,PredictionResults pr) {
 
 		
 		if(!pr.getError().isBlank()) return;
  		
-		String datasetName=pd.getModel().getDatasetName();
-		Dataset dataset=tableMaps.mapDatasets.get(datasetName);
-		Property property=dataset.getProperty();
+//		String datasetName=pd.getModel().getDatasetName();
+//		Dataset dataset=tableMaps.mapDatasets.get(datasetName);
+//		Property property=dataset.getProperty();
 
-		String endpoint="";
-		
-		if(property.getName().equals(DevQsarConstants.WATER_SOLUBILITY)) {
-			endpoint="WS";//log molar
-		} else if (property.getName().equals(DevQsarConstants.BOILING_POINT)) {
-			endpoint="BP";//not log molar
-		} else if (property.getName().equals(DevQsarConstants.AMES_MUTAGENICITY)) {
-			endpoint="Mutagenicity";//binary
-		} else {
-			return;
-		}
+
+		String abbrev=TESTConstants.getAbbrevEndpoint(pr.getEndpoint());
 		
 		String smiles = pd.getDsstoxRecord().getSmiles();
 		
-		HttpResponse<String> response = Unirest.get("https://comptox.epa.gov/dashboard/web-test/"+endpoint)
+		HttpResponse<String> response = Unirest.get("https://comptox.epa.gov/dashboard/web-test/"+abbrev)
 				.queryString("smiles", smiles)
 				.queryString("method", "Consensus")
 				.asString();
@@ -1471,7 +1561,7 @@ public class PredictionDashboardScriptTEST  {
 				
 		TESTAPIResults tr=gson.fromJson(response.getBody(), TESTAPIResults.class);
 
-		Hashtable<String,String>htAPI=new Hashtable<>();
+		Hashtable<String,Double>htAPI=new Hashtable<>();
 		
 //		System.out.println(gson.toJson(tr.predictions));
 		
@@ -1482,22 +1572,22 @@ public class PredictionDashboardScriptTEST  {
 				if(pred.message==null) continue;
 
 				if(pred.message.contains("Positive")) {
-					htAPI.put(pred.method, "1.0");						
+					htAPI.put(pred.method, 1.0);						
 				} else if(pred.message.contains("Negative")) {
-					htAPI.put(pred.method, "0.0");		
+					htAPI.put(pred.method, 0.0);		
 				}
 			} else if(pr.isLogMolarEndpoint()) {
 				if(pred.predValMolarLog==null) continue;
-				htAPI.put(pred.method, pred.predValMolarLog);				
+				htAPI.put(pred.method, Double.parseDouble(pred.predValMolarLog));				
 			} else {
 				if(pred.predValMass==null) continue;
-				htAPI.put(pred.method, pred.predValMass);
+				htAPI.put(pred.method, Double.parseDouble(pred.predValMass));
 			}
 		}
 		
 		TEST_Report test_report=gson.fromJson(new String(pd.getPredictionReport().getFileJson()), TEST_Report.class);
 		
-		Hashtable<String,String>htJson=new Hashtable<>();
+		Hashtable<String,Double>htJson=new Hashtable<>();
 		
 		
 //		{"consensus":"501.8","gc":"723.4","nn":"280.2"}
@@ -1509,7 +1599,7 @@ public class PredictionDashboardScriptTEST  {
 		}
 		
 		for (gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.PredictionIndividualMethod pim: test_report.modelResults.consensusPredictions.predictionsIndividualMethod) {
-			if(pim.predictedValue.equals("N/A")) continue;
+			if(pim.predictedValue==null) continue;
 			
 			if(pim.method.equals("Consensus")) {
 				htJson.put("consensus",pim.predictedValue);				
@@ -1549,38 +1639,45 @@ public class PredictionDashboardScriptTEST  {
 
 
 			
-			String predAPI=htAPI.get(method);
-			String predJson=htJson.get(method);
+			Double dpredAPI=htAPI.get(method);
+			Double dpredJson=htJson.get(method);
 			
-			double dpredAPI=Double.parseDouble(predAPI);
-			double dpredJson=Double.parseDouble(predJson);
+//			double dpredAPI=Double.parseDouble(predAPI);
+//			double dpredJson=Double.parseDouble(predJson);
 			
 			Double diff=null;
 			
-			if(property.getName().equals(DevQsarConstants.WATER_SOLUBILITY)) {
-				diff=Math.abs(dpredAPI-dpredJson);
-
-				if(diff>0.1) {
-					System.out.println("mismatch\t"+method);
-					allMatch=false;
-				}
-			} else if (property.getName().equals(DevQsarConstants.BOILING_POINT)) {
-				diff=Math.abs(dpredAPI-dpredJson)/dpredAPI*100;
-				if(diff>0.1) {
-					allMatch=false;
-				}
-			} else if (property.getName().equals(DevQsarConstants.AMES_MUTAGENICITY)) {
-				
-				if(dpredJson>=0.5) dpredJson=1;
-				else dpredJson=0;
-				
-				diff=Math.abs(dpredAPI-dpredJson);
-				
-				if(diff>0.1) {
-					allMatch=false;
-				}
-				
+//			if(property.getName().equals(DevQsarConstants.WATER_SOLUBILITY)) {
+//				diff=Math.abs(dpredAPI-dpredJson);
+//
+//				if(diff>0.1) {
+//					System.out.println("mismatch\t"+method);
+//					allMatch=false;
+//				}
+//			} else if (property.getName().equals(DevQsarConstants.BOILING_POINT)) {
+//				diff=Math.abs(dpredAPI-dpredJson)/dpredAPI*100;
+//				if(diff>0.1) {
+//					allMatch=false;
+//				}
+//			} else if (property.getName().equals(DevQsarConstants.AMES_MUTAGENICITY)) {
+//				
+//				if(dpredJson>=0.5) dpredJson=1.0;
+//				else dpredJson=0.0;
+//				
+//				diff=Math.abs(dpredAPI-dpredJson);
+//				
+//				if(diff>0.1) {
+//					allMatch=false;
+//				}
+//				
+//			}
+			
+			diff=Math.abs(dpredAPI-dpredJson);
+			
+			if(diff>0.1) {
+				allMatch=false;
 			}
+			
 			
 			
 		}
@@ -1588,9 +1685,9 @@ public class PredictionDashboardScriptTEST  {
 		if(htAPI.size()==0 && htJson.size()==0) return;
 		if(allMatch)return;
 		
-		System.out.println(pr.getDTXSID()+"\t"+endpoint+"\t"+pd.getDsstoxRecord().getSmiles());
-		System.out.println(gson.toJson(htAPI));
-		System.out.println(gson.toJson(htJson));
+		System.out.println(pr.getDTXSID()+"\t"+abbrev+"\t"+pd.getDsstoxRecord().getSmiles());
+		System.out.println("API:"+gson.toJson(htAPI));
+		System.out.println("JSON:"+gson.toJson(htJson));
 		
 //		System.out.println(response.getBody().toString());
 		
@@ -1604,91 +1701,91 @@ public class PredictionDashboardScriptTEST  {
 	 * 
 	 * @param pr
 	 */
-	private void fixNearestNeighborAndConsensus(PredictionResults pr) {
-
-		if(!pr.getError().isBlank()) return;
-		
-		if(pr.getPredictionResultsPrimaryTable()==null)return;
-		
-		if(pr.getSimilarChemicals()==null)return;
-		
-		SimilarChemicals sc=null;
-
-		if(pr.getSimilarChemicals().size()==0) {
-			System.out.println("Dont have test set chemicals for either set\t"+pr.getDTXSID());
-			return;
-		} else if(pr.getSimilarChemicals().size()==1) {
-			sc=pr.getSimilarChemicals().get(0);			
-			if(!sc.getSimilarChemicalsSet().equals("training")) {
-				System.out.println("Dont have training set analogs\t"+pr.getDTXSID());
-				return;
-			}
-		} else {
-			sc=pr.getSimilarChemicals().get(1);			
-			if(!sc.getSimilarChemicalsSet().equals("training")) {
-				System.out.println("Not training for set\t"+pr.getDTXSID());//shouldnt happen
-				return;
-			}
-		}
-		
-		Vector<SimilarChemical>simChems=sc.getSimilarChemicalsList();
-		
-		if(simChems.size()<4) {
-//			System.out.println("Dont have 4 training neighbors for "+pr.getDTXSID()+"\t"+pr.getEndpoint());
-			return;//cant generate new NN pred
-		}
-		
-		double predNN=0;
-		
-		if(!simChems.get(0).getDSSTOXCID().equals(pr.getDTXCID())) {
-			System.out.println("First neighbor is not test chemical:\t"+pr.getDTXSID());
-			return;
-		}
-		
-		
-		for (int i=1;i<=3;i++) {
-			predNN+=Double.parseDouble(simChems.get(i).getExpVal());
-		}
-		
-		predNN/=3;
-		
-		Double predConsensus=0.0;
-		int countConsensus=0;
-		
-		DecimalFormat df=new DecimalFormat("0.00");
-		
-		for (PredictionIndividualMethod pim:pr.getIndividualPredictionsForConsensus().getConsensusPredictions()) {
-			if(pim.getMethod().equals("Consensus")) break;
-
-			if(pim.getMethod().equals("Nearest neighbor")) {
-				pim.setPrediction(df.format(predNN));
-			}
-			
-			if(pim.getPrediction().equals("N/A")) continue;
-			countConsensus++;
-			predConsensus+=Double.parseDouble(pim.getPrediction());
-		}
-		
-		String strPredConsensus="N/A";
-		if(countConsensus>=2) {
-			strPredConsensus=df.format(predConsensus/=countConsensus);
-		} 
-		
-		PredictionResultsPrimaryTable pt=pr.getPredictionResultsPrimaryTable();
-		
-		if(pr.isLogMolarEndpoint()) {
-			pt.setPredToxValue(strPredConsensus);
-			pt.setPredToxValMass(null);//calculate from logmolar later
-		} else if(pr.isBinaryEndpoint()) {
-			pt.setPredToxValue(strPredConsensus);
-		} else {
-			pt.setPredToxValMass(strPredConsensus);
-		}
-			
-		
-//		System.out.println(pr.getEndpoint()+"\t"+predNN+"\t"+predConsensus);
-		
-	}
+//	private void fixNearestNeighborAndConsensus(PredictionResults pr) {
+//
+//		if(!pr.getError().isBlank()) return;
+//		
+//		if(pr.getPredictionResultsPrimaryTable()==null)return;
+//		
+//		if(pr.getSimilarChemicals()==null)return;
+//		
+//		SimilarChemicals sc=null;
+//
+//		if(pr.getSimilarChemicals().size()==0) {
+//			System.out.println("Dont have test set chemicals for either set\t"+pr.getDTXSID());
+//			return;
+//		} else if(pr.getSimilarChemicals().size()==1) {
+//			sc=pr.getSimilarChemicals().get(0);			
+//			if(!sc.getSimilarChemicalsSet().equals("training")) {
+//				System.out.println("Dont have training set analogs\t"+pr.getDTXSID());
+//				return;
+//			}
+//		} else {
+//			sc=pr.getSimilarChemicals().get(1);			
+//			if(!sc.getSimilarChemicalsSet().equals("training")) {
+//				System.out.println("Not training for set\t"+pr.getDTXSID());//shouldnt happen
+//				return;
+//			}
+//		}
+//		
+//		Vector<SimilarChemical>simChems=sc.getSimilarChemicalsList();
+//		
+//		if(simChems.size()<4) {
+////			System.out.println("Dont have 4 training neighbors for "+pr.getDTXSID()+"\t"+pr.getEndpoint());
+//			return;//cant generate new NN pred
+//		}
+//		
+//		double predNN=0;
+//		
+//		if(!simChems.get(0).getDSSTOXCID().equals(pr.getDTXCID())) {
+//			System.out.println("First neighbor is not test chemical:\t"+pr.getDTXSID());
+//			return;
+//		}
+//		
+//		
+//		for (int i=1;i<=3;i++) {
+//			predNN+=Double.parseDouble(simChems.get(i).getExpVal());
+//		}
+//		
+//		predNN/=3;
+//		
+//		Double predConsensus=0.0;
+//		int countConsensus=0;
+//		
+//		DecimalFormat df=new DecimalFormat("0.00");
+//		
+//		for (PredictionIndividualMethod pim:pr.getIndividualPredictionsForConsensus().getConsensusPredictions()) {
+//			if(pim.getMethod().equals("Consensus")) break;
+//
+//			if(pim.getMethod().equals("Nearest neighbor")) {
+//				pim.setPrediction(df.format(predNN));
+//			}
+//			
+//			if(pim.getPrediction().equals("N/A")) continue;
+//			countConsensus++;
+//			predConsensus+=Double.parseDouble(pim.getPrediction());
+//		}
+//		
+//		String strPredConsensus="N/A";
+//		if(countConsensus>=2) {
+//			strPredConsensus=df.format(predConsensus/=countConsensus);
+//		} 
+//		
+//		PredictionResultsPrimaryTable pt=pr.getPredictionResultsPrimaryTable();
+//		
+//		if(pr.isLogMolarEndpoint()) {
+//			pt.setPredToxValue(strPredConsensus);
+//			pt.setPredToxValMass(null);//calculate from logmolar later
+//		} else if(pr.isBinaryEndpoint()) {
+//			pt.setPredToxValue(strPredConsensus);
+//		} else {
+//			pt.setPredToxValMass(strPredConsensus);
+//		}
+//			
+//		
+////		System.out.println(pr.getEndpoint()+"\t"+predNN+"\t"+predConsensus);
+//		
+//	}
 
 
 	class ConvertPredictionResultsToPredictionDashboard {
@@ -1759,7 +1856,7 @@ public class PredictionDashboardScriptTEST  {
 				try {
 
 					String propertyName=pr.getEndpoint();
-					String propertyNameDB=initializeDB.getPropertyNameDB(propertyName);
+					String propertyNameDB=TESTConstants.getPropertyNameDB(propertyName);
 					String modelName=initializeDB.getModelName(propertyNameDB);
 
 					//					pr.setEndpoint(propertyNameDB);
@@ -1792,6 +1889,16 @@ public class PredictionDashboardScriptTEST  {
 
 
 					if (pr.getError()!=null && !pr.getError().isBlank()) {
+						
+						if(pr.getError().toLowerCase().contains("paths")) {
+							System.out.println("Paths:"+pr.getError());
+						} else if(pr.getError().toLowerCase().contains("rings")) {
+							System.out.println("Rings:"+pr.getError());
+						} else {
+							System.out.println("Other:"+pr.getError());	
+						}
+						
+						
 						pd.setPredictionError(pr.getError());
 					} else {
 						setExperimentalPredictedValues(pr, pd);
@@ -1865,6 +1972,7 @@ public class PredictionDashboardScriptTEST  {
 				QsarPredictedNeighbor qpn=new QsarPredictedNeighbor();
 
 				qpn.setNeighborNumber(++counter);
+				qpn.setDtxsid(sc.getDSSTOXSID());//already set in the old report using dtxsid lookup
 				qpn.setCasrn(sc.getCAS());
 				//				qpn.setDtxsid(sc.getDSSTOXSID());//let the lookup figure it out fresh
 				qpn.setPredictionDashboard(pd);
@@ -1879,7 +1987,6 @@ public class PredictionDashboardScriptTEST  {
 				//				} catch (Exception ex) {
 				//					qpn.setPredictedString(sc.getPredVal());
 				//				}
-
 
 				qpns.add(qpn);
 			}
@@ -1896,7 +2003,7 @@ public class PredictionDashboardScriptTEST  {
 			//			}
 
 			//Dont convert needs to match plot
-			qpn.setExperimentalValue(Double.parseDouble(sc.getExpVal()));	
+			qpn.setExperimentalValue(sc.getExpVal());	
 
 
 		}
@@ -1912,80 +2019,111 @@ public class PredictionDashboardScriptTEST  {
 			//			}
 
 			//Dont convert needs to match plot
-			qpn.setPredictedValue(Double.parseDouble(sc.getPredVal()));
+			qpn.setPredictedValue(sc.getPredVal());
 		}
 
 
+//		@Deprecated
+//		private void setExperimentalPredictedValuesOld(PredictionResults pr, PredictionDashboard pd) {
+//
+//			PredictionResultsPrimaryTable pt=pr.getPredictionResultsPrimaryTable();
+//			
+//			if(pt==null)return;
+//
+//			if (pr.isBinaryEndpoint()) {
+//
+//				if (pt.getPredToxValue().equals("N/A")) {
+//					pd.setPredictionError(pt.getMessage());
+//				} else {
+//					pd.setPredictionValue(pt.getPredToxValue());
+//					pd.setPredictionString(pt.getPredValueConclusion());
+//				}
+//
+//				if (!pt.getExpToxValue().equals("N/A")) {
+//					pd.setExperimentalValue(pt.getExpToxValue());
+//					pd.setExperimentalString(pt.getExpToxValueConclusion());
+//					//				System.out.println(pr.getDTXCID()+"\t"+pr.getEndpoint()+"\tExperimental value="+pd.getExperimentalValue()+",Experimental string="+pd.getExperimentalString());
+//				}
+//
+//
+//			} else if (pr.isLogMolarEndpoint()) {
+//
+//				Double MW=pd.getDsstoxRecord().getMolWeight();
+//
+//				if(MW==null) {
+//					System.out.println("Molecular weight is null for "+pd.getDsstoxRecord().getDtxsid());
+//				}
+//
+//				String datasetName=pd.getModel().getDatasetName();
+//				Dataset dataset=tableMaps.mapDatasets.get(datasetName);
+//				Property property=dataset.getProperty();
+//
+//				if (pt.getPredToxValue().equals("N/A")) {
+//					pd.setPredictionError(pt.getMessage());
+//				} else if (pt.getPredToxValMass()!=null) {
+//					pd.setPredictionValue(convertToMolar(property, pr,MW, pt.getPredToxValMass(),pt.getPredToxValue()));
+//				} else {
+//					pd.setPredictionValue(convertLogMolarUnits(pr,pt.getPredToxValue()));					
+//				}
+//				
+//				if (pt.getPredToxValue().equals("N/A")) {
+//					pd.setPredictionError(pt.getMessage());
+//				} else if (pt.getPredToxValMass()!=null) {
+//					pd.setPredictionValue(convertToMolar(property, pr,MW, pt.getPredToxValMass(),pt.getPredToxValue()));
+//				} else {
+//					pd.setPredictionValue(convertLogMolarUnits(pr,pt.getPredToxValue()));					
+//				}
+//				
+//				
+//
+//				if (!pt.getExpToxValue().equals("N/A")) {
+//					pd.setExperimentalValue(convertToMolar(property, pr,MW, pt.getExpToxValMass(),pt.getExpToxValue()));
+//				}
+//
+//				//			System.out.println(pr.getDTXCID()+"\t"+pr.getEndpoint()+"\tExperimental value="+pd.getExperimentalValue());
+//
+//			} else {
+//				
+////				if (pt.getPredToxValMass()==null) {
+////					System.out.println(Utilities.gson.toJson(pr));
+////					return;
+////				}
+//
+//				if (pt.getPredToxValMass().equals("N/A")) {
+//					pd.setPredictionError(pt.getMessage());
+//				} else {
+//					pd.setPredictionValue(pt.getPredToxValMass());
+//				}
+//
+//				if (!pt.getExpToxValMass().equals("N/A")) {
+//					pd.setExperimentalValue(pt.getExpToxValMass());
+//					//				System.out.println(pr.getDTXCID()+"\t"+pr.getEndpoint()+"\tExperimental value="+pd.getExperimentalValue());
+//				}
+//			}
+//		}
 
-		private void setExperimentalPredictedValues(PredictionResults pr, 
-				PredictionDashboard pd) {
+		
+		private void setExperimentalPredictedValues(PredictionResults pr,PredictionDashboard pd) {
 
 			PredictionResultsPrimaryTable pt=pr.getPredictionResultsPrimaryTable();
 			
 			if(pt==null)return;
-
-			if (pr.isBinaryEndpoint()) {
-
-				if (pt.getPredToxValue().equals("N/A")) {
-					pd.setPredictionError(pt.getMessage());
-				} else {
-					pd.setPredictionValue(Double.parseDouble(pt.getPredToxValue()));
-					pd.setPredictionString(pt.getPredValueEndpoint());
-				}
-
-				if (!pt.getExpToxValue().equals("N/A")) {
-					pd.setExperimentalValue(Double.parseDouble(pt.getExpToxValue()));
-					pd.setExperimentalString(pt.getExpToxValueEndpoint());
-					//				System.out.println(pr.getDTXCID()+"\t"+pr.getEndpoint()+"\tExperimental value="+pd.getExperimentalValue()+",Experimental string="+pd.getExperimentalString());
-				}
-
-
-			} else if (pr.isLogMolarEndpoint()) {
-
-				Double MW=pd.getDsstoxRecord().getMolWeight();
-
-				if(MW==null) {
-					System.out.println("Molecular weight is null for "+pd.getDsstoxRecord().getDtxsid());
-				}
-
-				String datasetName=pd.getModel().getDatasetName();
-				Dataset dataset=tableMaps.mapDatasets.get(datasetName);
-				Property property=dataset.getProperty();
-
-				if (pt.getPredToxValue().equals("N/A")) {
-					pd.setPredictionError(pt.getMessage());
-				} else if (pt.getPredToxValMass()!=null) {
-					pd.setPredictionValue(convertToMolar(property, pr,MW, pt.getPredToxValMass(),pt.getPredToxValue()));
-				} else {
-					pd.setPredictionValue(convertLogMolarUnits(pr,pt.getPredToxValue()));					
-				}
-
-				if (!pt.getExpToxValue().equals("N/A")) {
-					pd.setExperimentalValue(convertToMolar(property, pr,MW, pt.getExpToxValMass(),pt.getExpToxValue()));
-				}
-
-				//			System.out.println(pr.getDTXCID()+"\t"+pr.getEndpoint()+"\tExperimental value="+pd.getExperimentalValue());
-
+			
+			if (pt.getPredToxValue().equals("N/A")) {
+				pd.setPredictionError(pt.getMessage());
 			} else {
-				
-//				if (pt.getPredToxValMass()==null) {
-//					System.out.println(Utilities.gson.toJson(pr));
-//					return;
-//				}
-
-				if (pt.getPredToxValMass().equals("N/A")) {
-					pd.setPredictionError(pt.getMessage());
-				} else {
-					pd.setPredictionValue(Double.parseDouble(pt.getPredToxValMass()));
-				}
-
-				if (!pt.getExpToxValMass().equals("N/A")) {
-					pd.setExperimentalValue(Double.parseDouble(pt.getExpToxValMass()));
-					//				System.out.println(pr.getDTXCID()+"\t"+pr.getEndpoint()+"\tExperimental value="+pd.getExperimentalValue());
-				}
+				pd.setPredictionValue(pr.getPredValueInModelUnits());
+//				pd.setPredictionString(pt.getPredValueEndpoint());
 			}
-		}
+			
+			if (!pt.getExpToxValue().equals("N/A")) {
+				pd.setExperimentalValue(pr.getExpValueInModelUnits());
+//				pd.setExperimentalString(pt.getExpToxValueEndpoint());
+				//				System.out.println(pr.getDTXCID()+"\t"+pr.getEndpoint()+"\tExperimental value="+pd.getExperimentalValue()+",Experimental string="+pd.getExperimentalString());
+			}
 
+		}
+		
 		private void addApplicabilityDomain(PredictionResults pr,PredictionDashboard pd, TreeMap<String, MethodAD> hmMethodAD) {
 
 			QsarPredictedADEstimate adEstimate=new QsarPredictedADEstimate();
@@ -2014,15 +2152,17 @@ public class PredictionDashboardScriptTEST  {
 				//				"Molecule contains unsupported element"
 				//				"Multiple molecules"
 
-				String e=pd.getPredictionError();
+				
+				adEstimate.setReasoning(pd.getPredictionError());
 
-				if(e.contains("unreliable") || e.contains("applicability")) {
-					adEstimate.setReasoning(pd.getPredictionError());	
-				} else if(e.contains("FindPaths") || e.contains("FindRings")) {
-					adEstimate.setReasoning("Descriptor calculation failed during "+e);	
-				} else {
-					adEstimate.setReasoning("Invalid structure: "+e);
-				}
+//				String e=pd.getPredictionError();
+//				if(e.contains("unreliable") || e.contains("applicability")) {
+//					adEstimate.setReasoning(e);	
+//				} else if(e.contains("FindPaths") || e.contains("FindRings")) {
+//					adEstimate.setReasoning("Descriptor calculation failed during "+e);	
+//				} else {
+//					adEstimate.setReasoning("Invalid structure: "+e);
+//				}
 
 			}
 
@@ -2085,7 +2225,7 @@ public class PredictionDashboardScriptTEST  {
 
 	void loadFromJsonFile() {
 
-		boolean fixReports=true;
+		boolean fixReports=false;
 		boolean skipER=true;
 
 		boolean writeToDB=false;
@@ -2149,10 +2289,10 @@ public class PredictionDashboardScriptTEST  {
 		String sdfPath=folder+filenameSDF;
 		System.out.println(sdfPath);
 
-		AtomContainerSet acs=RunFromSmiles.readSDFV3000(sdfPath);
+		AtomContainerSet acs=RunFromSDF.readSDFV3000(sdfPath);
 
 		if(debug) System.out.println("atom container count in sdf="+acs.getAtomContainerCount());
-		AtomContainerSet acs2 = RunFromSmiles.filterAtomContainerSet(acs, skipMissingSID,maxCount);
+		AtomContainerSet acs2 = RunFromSDF.filterAtomContainerSet(acs, skipMissingSID,maxCount);
 		if(debug) System.out.println("atom container count filtered="+acs2.getAtomContainerCount());
 
 
@@ -2164,7 +2304,7 @@ public class PredictionDashboardScriptTEST  {
 		String sourceName="TEST" + version;
 		Source source=sourceService.findByName(sourceName);
 		
-		HashSet<String>cidsLoaded=DatabaseUtilities.getLoadedCIDsWithCount(source, snapshot, 16);
+		HashSet<String>cidsLoaded=DatabaseUtilities.getLoadedCIDsWithCount(source.getName(),16);
 		
 		for(int i=0;i<acs2.getAtomContainerCount();i++) {
 			IAtomContainer ac=acs2.getAtomContainer(i);
@@ -2196,7 +2336,7 @@ public class PredictionDashboardScriptTEST  {
 
 		List<PredictionDashboard>predictionsDashboard=new ArrayList<>();
 
-		HashSet<String> dtxcidsLoaded=DatabaseUtilities.getLoadedCIDsWithCount(source, snapshot,16);
+		HashSet<String> dtxcidsLoaded=DatabaseUtilities.getLoadedCIDsWithCount(source.getName(),16);
 		System.out.println("Loaded dtxcids: "+dtxcidsLoaded.size());
 		
 		if(tableMaps==null)
@@ -2331,9 +2471,15 @@ public class PredictionDashboardScriptTEST  {
 		DatabaseUtilities d=new DatabaseUtilities();
 //		d.deleteAllRecords("TEST5.1.3");
 
-		//		pds.initializeDB.initializeDB();
+//		pds.initializeDB.initializeDB();
+		
+//		pds.initializeDB.createPlotJsons();
+//		PredictionDashboardScriptOPERA pdso= new PredictionDashboardScriptOPERA();
+//		pdso.extraMethods.uploadPlots("TEST5.1.3");
 
+		
 //		pds.runSDF_all_endpoints_to_DB();
+		
 		pds.loadFromJsonFile();
 				
 		//		pds.runNewChemical();
@@ -2341,15 +2487,8 @@ public class PredictionDashboardScriptTEST  {
 		//		pds.runNewChemical("DTXSID7020182");
 		//		pds.runNewChemical("DTXSID3039242");
 
-
 //		RunFromSmiles.runDTXSIDAllEndpoints();
 		
-
-
-		//		pds.initializeDB.createPlotJsons();
-		//		PredictionDashboardScriptOPERA pdso= new PredictionDashboardScriptOPERA();
-		//		pdso.extraMethods.uploadPlots("TEST5.1.3");
-
 
 		//		boolean fixReports=false;
 		//		boolean skipER=true;
@@ -2406,13 +2545,13 @@ public class PredictionDashboardScriptTEST  {
 				String casrn=vals[2];
 				String smiles=vals[3];
 
-				IAtomContainer molecule=RunFromSmiles.createMolecule(smiles, dtxsid, dtxcid, casrn);
+				IAtomContainer molecule=MoleculeCreator.createMolecule(smiles, dtxsid, dtxcid, casrn);
 				AtomContainerSet acs=new AtomContainerSet();
 				acs.addAtomContainer(molecule);
 				//				acs.addAtomContainer(RunFromSmiles.createMolecule("NC1=C(C=CC(=C1)NC(=O)C)OCC", "DTXSID7020053","17026-81-2"));
 
 
-				List<PredictionResults>listPR=RunFromSmiles.runEndpointsAsList(acs, endpoints, method,createReports,createDetailedReports);		
+				List<PredictionResults>listPR=RunFromSDF.runEndpointsAsList(acs, endpoints, method,createReports,createDetailedReports);		
 				System.out.println(count+"\t"+smiles+"\t"+listPR.size());
 
 				//				if (smiles.contains(".")) {
@@ -2475,12 +2614,12 @@ public class PredictionDashboardScriptTEST  {
 
 			FileWriter fw=new FileWriter(filepathOut);
 
-			IAtomContainer molecule=RunFromSmiles.createMolecule(dr);
+			IAtomContainer molecule=MoleculeCreator.createMolecule(dr);
 			AtomContainerSet acs=new AtomContainerSet();
 			acs.addAtomContainer(molecule);
 			//				acs.addAtomContainer(RunFromSmiles.createMolecule("NC1=C(C=CC(=C1)NC(=O)C)OCC", "DTXSID7020053","17026-81-2"));
 
-			List<PredictionResults>listPR=RunFromSmiles.runEndpointsAsList(acs, endpoints, method,createReports,createDetailedReports);		
+			List<PredictionResults>listPR=RunFromSDF.runEndpointsAsList(acs, endpoints, method,createReports,createDetailedReports);		
 
 			for (PredictionResults pr:listPR) {
 				String json=gson.toJson(pr);

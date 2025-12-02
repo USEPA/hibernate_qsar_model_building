@@ -38,7 +38,7 @@ public class CompareToChemprop {
 		
 //		System.out.println(dtxsids.size());
 		
-		ArrayList<String> listDtxsids=new ArrayList(dtxsids);
+		ArrayList<String> listDtxsids=new ArrayList<>(dtxsids);
 		
 		Collections.shuffle(listDtxsids);
 		
@@ -62,7 +62,7 @@ public class CompareToChemprop {
 
 
 	public class Prediction {
-		String dtxsid;
+		String dtxcid;
 		String modelName;
 		String smiles;
 		Double predictionValue;
@@ -72,16 +72,16 @@ public class CompareToChemprop {
 			
 		
 		Prediction (PredictionDashboard pd) {
-			dtxsid=pd.getDsstoxRecord().getDtxsid();
+			dtxcid=pd.getDtxcid();
 			modelName=pd.getModel().getName();
-			smiles=pd.getDsstoxRecord().getSmiles();
+//			smiles=pd.getDsstoxRecord().getSmiles();
 			predictionValue=pd.getPredictionValue();
 			predictionError=pd.getPredictionError();
 		}
 		
 		@Override
 		public String toString() {
-			return dtxsid+"\t"+modelName+"\t"+smiles+"\t"+predictionValue+"\t"+predictionError;
+			return dtxcid+"\t"+modelName+"\t"+smiles+"\t"+predictionValue+"\t"+predictionError;
 		}
 	}
 	
@@ -95,12 +95,12 @@ public class CompareToChemprop {
 			
 //			System.out.println(p);
 			
-			if(map.get(p.dtxsid)==null) {
+			if(map.get(p.dtxcid)==null) {
 				SortedMap<String,Prediction>mapProperties=new TreeMap<>();
 				mapProperties.put(p.modelName, p);
-				map.put(p.dtxsid, mapProperties);
+				map.put(p.dtxcid, mapProperties);
 			} else {
-				SortedMap<String,Prediction>mapProperties=map.get(p.dtxsid);
+				SortedMap<String,Prediction>mapProperties=map.get(p.dtxcid);
 				mapProperties.put(p.modelName, p);
 			}			
 		}
@@ -128,23 +128,23 @@ public class CompareToChemprop {
 				
 				Prediction p=new Prediction();
 				
-				p.dtxsid=nextRecord[0];
+				p.dtxcid=nextRecord[0];
 				p.modelName=nextRecord[1];
 				p.smiles=nextRecord[2];
 				p.predictionValue=Double.parseDouble(nextRecord[3]);
 												
-				if(!dtxsids.contains(p.dtxsid)) continue;
+				if(!dtxsids.contains(p.dtxcid)) continue;
 				
-//				if(p.dtxsid.contentEquals("DTXSID80838161")) {
+//				if(p.dtxcid.contentEquals("DTXSID80838161")) {
 //					System.out.println("\t"+p.modelName);
 //				}
 				
-				if(map.get(p.dtxsid)==null) {
+				if(map.get(p.dtxcid)==null) {
 					SortedMap<String,Prediction>mapProperties=new TreeMap<>();
 					mapProperties.put(p.modelName, p);
-					map.put(p.dtxsid, mapProperties);
+					map.put(p.dtxcid, mapProperties);
 				} else {
-					SortedMap<String,Prediction>mapProperties=map.get(p.dtxsid);
+					SortedMap<String,Prediction>mapProperties=map.get(p.dtxcid);
 					mapProperties.put(p.modelName, p);
 				}
 			}
@@ -177,23 +177,23 @@ public class CompareToChemprop {
 				
 				Prediction p=new Prediction();
 				
-				p.dtxsid=nextRecord[0];
+				p.dtxcid=nextRecord[0];
 				p.modelName=nextRecord[1];
 				p.smiles=nextRecord[2];
 				p.predictionValue=Double.parseDouble(nextRecord[3]);
 												
-				if(!dtxsids.contains(p.dtxsid)) continue;
+				if(!dtxsids.contains(p.dtxcid)) continue;
 				
-//				if(p.dtxsid.contentEquals("DTXSID80838161")) {
+//				if(p.dtxcid.contentEquals("DTXSID80838161")) {
 //					System.out.println("\t"+p.modelName);
 //				}
 				
-				if(map.get(p.dtxsid)==null) {
+				if(map.get(p.dtxcid)==null) {
 					List<Prediction>mapProperties=new ArrayList<>();
 					mapProperties.add(p);
-					map.put(p.dtxsid, mapProperties);
+					map.put(p.dtxcid, mapProperties);
 				} else {
-					List<Prediction>mapProperties=map.get(p.dtxsid);
+					List<Prediction>mapProperties=map.get(p.dtxcid);
 					mapProperties.add(p);
 				}
 			}
@@ -330,8 +330,8 @@ private HashSet<String> printLines(String folder, String filename,String dtxsid)
 //					if(Math.abs(diff)>0.01) {
 					if(Math.abs(diff)>0.01 && predChemProp.smiles.equals(predResQSAR.smiles)) {
 
-						System.out.println(modelNameChemProp+"\t"+ predChemProp.dtxsid+"\t"+ predChemProp.predictionValue+"\t"+predResQSAR.predictionValue);
-//						System.out.println(predChemProp.dtxsid+"\t"+ predChemProp.predictionValue+"\t"+predResQSAR.predictionValue+"\t"+predChemProp.smiles+"\t"+predResQSAR.smiles);
+						System.out.println(modelNameChemProp+"\t"+ predChemProp.dtxcid+"\t"+ predChemProp.predictionValue+"\t"+predResQSAR.predictionValue);
+//						System.out.println(predChemProp.dtxcid+"\t"+ predChemProp.predictionValue+"\t"+predResQSAR.predictionValue+"\t"+predChemProp.smiles+"\t"+predResQSAR.smiles);
 						diffCount++;						
 						
 						if(!modelNameChemProp.equals("ACD_Sol"))

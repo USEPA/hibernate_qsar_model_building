@@ -11,16 +11,20 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.openscience.cdk.Atom;
 import org.openscience.cdk.AtomContainer;
@@ -30,6 +34,8 @@ import org.openscience.cdk.interfaces.IMolecularFormula;
 import org.openscience.cdk.io.MDLV3000Reader;
 import org.openscience.cdk.tools.manipulator.MolecularFormulaManipulator;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
@@ -157,24 +163,36 @@ public class DSSTOX_Compounds_Script {
 		return compounds;
 	}
 	
-	List<DsstoxCompound> getCompoundsBySQL(int offset,int limit) {
+	
+	private List<DsstoxCompound> getCompoundsBySubstanceSQL(int offset, int limit) {
 
 		List<DsstoxCompound>compounds=new ArrayList<>();
-
+		
 		String sql="SELECT dsstox_compound_id,mol_file,smiles, jchem_inchi_key,indigo_inchi_key,mol_weight,"
-				+ "gs.dsstox_substance_id, gs.casrn, gs.preferred_name\n";  
-		sql+="FROM compounds c\n";
-		sql+="left join generic_substance_compounds gsc on gsc.fk_compound_id =c.id\n";
-		sql+="left join generic_substances gs on gs.id=gsc.fk_generic_substance_id\n"; 
+				+ "gs.dsstox_substance_id, gs.casrn, gs.preferred_name, gs.updated_at,"
+				+ "CASE WHEN mol_image_png IS NULL THEN FALSE ELSE TRUE END\n";  
+		
+//		String sql="SELECT dsstox_compound_id,mol_file,smiles, jchem_inchi_key,indigo_inchi_key,mol_weight,"
+//				+ "gs.dsstox_substance_id, gs.casrn, gs.preferred_name\n";  
+		
+		sql+="FROM generic_substances gs\n";
+		sql+="left join generic_substance_compounds gsc on gs.id=gsc.fk_generic_substance_id\n";
+		sql+="left join compounds c on gsc.fk_compound_id=c.id\n";
+		
 		//		sql+="where (mol_weight is not null and mol_weight !=0) and (indigo_inchi_key is not null or jchem_inchi_key is not null) and gs.dsstox_substance_id is not null\n";
 //		sql+="where (mol_weight is not null and mol_weight !=0) and (indigo_inchi_key is not null or jchem_inchi_key is not null)\n";
-		sql+="ORDER BY dsstox_compound_id\n";
+//		sql+="where dsstox_compound_id is not null\n";
+		
+		
+		sql+="ORDER BY dsstox_substance_id\n";
 		sql+="LIMIT "+limit+" OFFSET "+offset;
 
-		System.out.println(sql);
+//		System.out.println(sql);
 
 		ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+	    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd"); // Define the format of your date string
 
+	     
 		try {
 			while (rs.next()) {
 				DsstoxCompound compound=new DsstoxCompound();				
@@ -184,8 +202,10 @@ public class DSSTOX_Compounds_Script {
 				if (rs.getString(2)!=null)
 					compound.setMolFile(rs.getString(2));
 
-				if (rs.getString(3)!=null)
+				if (rs.getString(3)!=null) {
 					compound.setSmiles(rs.getString(3));
+				}
+					
 
 				if (rs.getString(4)!=null)
 					compound.setJchemInchikey(rs.getString(4));
@@ -210,9 +230,246 @@ public class DSSTOX_Compounds_Script {
 					if (rs.getString(9)!=null) {
 						gs.setPreferredName(rs.getString(9));
 					}
+					
+					if (rs.getString(10) != null) {
+						try {
+							java.util.Date utilDate = dateFormat.parse(rs.getString(10)); // Parse the string into a
+							Date sqlDate = new Date(utilDate.getTime());
+							gs.setUpdatedAt(sqlDate);
+						} catch (Exception ex) {
+
+						}
+					}
 
 
+				} else {
+//					continue;
 				}
+				
+				compound.setMolImagePNGAvailable(rs.getBoolean(11));//do we want to store image in db?
+
+//				System.out.println(compound.getDsstoxCompoundId()+"\t"+compound.isMolImagePNGAvailable());
+
+				compounds.add(compound);
+
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		//		System.out.println(compounds.size());
+		return compounds;	
+	}
+	
+	
+	private static String generateIdListString(List<String> idList) {
+        StringBuilder idStringBuilder = new StringBuilder();
+        for (int i = 0; i < idList.size(); i++) {
+            idStringBuilder.append("'"+idList.get(i)+"'");
+            if (i < idList.size() - 1) {
+                idStringBuilder.append(",");
+            }
+        }
+        return idStringBuilder.toString();
+    }
+	
+	public List<DsstoxCompound> getCompoundsBySubstanceSQL(List<String>dtxcidsAll) {
+		
+		List<DsstoxCompound> compoundsAll=new ArrayList<>();
+		
+		int batchSize=1000;
+		List<String>dtxcids2=new ArrayList<>();
+		
+		for (int i=0;i<dtxcidsAll.size();i++) {
+			dtxcids2.add(dtxcidsAll.get(i));
+			if(dtxcids2.size()==batchSize) {
+				List<DsstoxCompound> compounds = getCompounds(dtxcids2);
+				compoundsAll.addAll(compounds);
+				dtxcids2.clear();
+				System.out.println(compoundsAll.size());
+			}
+		}
+
+		List<DsstoxCompound> compounds = getCompounds(dtxcids2);
+		compoundsAll.addAll(compounds);
+		System.out.println(compoundsAll.size());
+		//		System.out.println(compounds.size());
+		return compoundsAll;	
+	}
+
+
+	private List<DsstoxCompound> getCompounds(List<String> dtxcids) {
+		List<DsstoxCompound>compounds=new ArrayList<>();
+		
+		String sql="SELECT dsstox_compound_id,mol_file,smiles, jchem_inchi_key,indigo_inchi_key,mol_weight,"
+				+ "gs.dsstox_substance_id, gs.casrn, gs.preferred_name, gs.updated_at,"
+				+ "mol_image_png IS NOT NULL\n";  
+		sql+="FROM generic_substances gs\n";
+		sql+="join generic_substance_compounds gsc on gs.id=gsc.fk_generic_substance_id\n";
+		sql+="join compounds c on gsc.fk_compound_id=c.id\n";
+		sql+="WHERE dsstox_compound_id IN (" + generateIdListString(dtxcids) + ");";
+		
+		
+//		System.out.println(sql);
+		
+		ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+	    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd"); // Define the format of your date string
+	     
+		try {
+			while (rs.next()) {
+
+				DsstoxCompound compound=new DsstoxCompound();				
+				compound.setDsstoxCompoundId(rs.getString(1));
+
+				if (rs.getString(2)!=null)
+					compound.setMolFile(rs.getString(2));
+
+				if (rs.getString(3)!=null) {
+					compound.setSmiles(rs.getString(3));
+				}
+					
+
+				if (rs.getString(4)!=null)
+					compound.setJchemInchikey(rs.getString(4));
+
+				if (rs.getString(5)!=null)
+					compound.setIndigoInchikey(rs.getString(5));				
+
+				if (rs.getString(6)!=null)
+					compound.setMolWeight(Double.parseDouble(rs.getString(6)));
+
+				if (rs.getString(7)!=null) {
+					GenericSubstanceCompound gsc=new GenericSubstanceCompound();
+					GenericSubstance gs=new GenericSubstance(); 
+					compound.setGenericSubstanceCompound(gsc);
+					gsc.setGenericSubstance(gs);
+					gs.setDsstoxSubstanceId(rs.getString(7));
+
+					if (rs.getString(8)!=null) {
+						gs.setCasrn(rs.getString(8));
+					}
+					
+					if (rs.getString(9)!=null) {
+						gs.setPreferredName(rs.getString(9));
+					}
+					
+					if (rs.getString(10) != null) {
+						try {
+							java.util.Date utilDate = dateFormat.parse(rs.getString(10)); // Parse the string into a
+							Date sqlDate = new Date(utilDate.getTime());
+							gs.setUpdatedAt(sqlDate);
+						} catch (Exception ex) {
+
+						}
+					}
+
+
+				} else {
+//					continue;
+				}
+				
+				compound.setMolImagePNGAvailable(rs.getBoolean(11));//do we want to store image in db?
+
+//				System.out.println(compound.getDsstoxCompoundId()+"\t"+compound.isMolImagePNGAvailable());
+
+				compounds.add(compound);
+
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return compounds;
+	}
+	
+	
+	List<DsstoxCompound> getCompoundsBySQL(int offset,int limit) {
+
+		List<DsstoxCompound>compounds=new ArrayList<>();
+		
+		String sql="SELECT dsstox_compound_id,mol_file,smiles, jchem_inchi_key,indigo_inchi_key,mol_weight,"
+				+ "gs.dsstox_substance_id, gs.casrn, gs.preferred_name, gs.updated_at,"
+				+ "CASE WHEN mol_image_png IS NULL THEN FALSE ELSE TRUE END\n";  
+		
+//		String sql="SELECT dsstox_compound_id,mol_file,smiles, jchem_inchi_key,indigo_inchi_key,mol_weight,"
+//				+ "gs.dsstox_substance_id, gs.casrn, gs.preferred_name\n";  
+		
+		
+		sql+="FROM compounds c\n";
+		sql+="left join generic_substance_compounds gsc on gsc.fk_compound_id =c.id\n";
+		sql+="left join generic_substances gs on gs.id=gsc.fk_generic_substance_id\n"; 
+		//		sql+="where (mol_weight is not null and mol_weight !=0) and (indigo_inchi_key is not null or jchem_inchi_key is not null) and gs.dsstox_substance_id is not null\n";
+//		sql+="where (mol_weight is not null and mol_weight !=0) and (indigo_inchi_key is not null or jchem_inchi_key is not null)\n";
+		
+		sql+="where dsstox_compound_id is not null\n";
+		
+		
+		sql+="ORDER BY dsstox_compound_id\n";
+		sql+="LIMIT "+limit+" OFFSET "+offset;
+
+//		System.out.println(sql);
+
+		ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+	    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd"); // Define the format of your date string
+
+	     
+		try {
+			while (rs.next()) {
+				DsstoxCompound compound=new DsstoxCompound();				
+
+				compound.setDsstoxCompoundId(rs.getString(1));
+
+				if (rs.getString(2)!=null)
+					compound.setMolFile(rs.getString(2));
+
+				if (rs.getString(3)!=null) {
+					compound.setSmiles(rs.getString(3));
+				}
+					
+
+				if (rs.getString(4)!=null)
+					compound.setJchemInchikey(rs.getString(4));
+
+				if (rs.getString(5)!=null)
+					compound.setIndigoInchikey(rs.getString(5));				
+
+				if (rs.getString(6)!=null)
+					compound.setMolWeight(Double.parseDouble(rs.getString(6)));
+
+				if (rs.getString(7)!=null) {
+					GenericSubstanceCompound gsc=new GenericSubstanceCompound();
+					GenericSubstance gs=new GenericSubstance(); 
+					compound.setGenericSubstanceCompound(gsc);
+					gsc.setGenericSubstance(gs);
+					gs.setDsstoxSubstanceId(rs.getString(7));
+
+					if (rs.getString(8)!=null) {
+						gs.setCasrn(rs.getString(8));
+					}
+					
+					if (rs.getString(9)!=null) {
+						gs.setPreferredName(rs.getString(9));
+					}
+					
+					if (rs.getString(10) != null) {
+						try {
+							java.util.Date utilDate = dateFormat.parse(rs.getString(10)); // Parse the string into a
+							Date sqlDate = new Date(utilDate.getTime());
+							gs.setUpdatedAt(sqlDate);
+						} catch (Exception ex) {
+
+						}
+					}
+
+
+				} else {
+//					continue;
+				}
+				
+				compound.setMolImagePNGAvailable(rs.getBoolean(11));//do we want to store image in db?
+
+//				System.out.println(compound.getDsstoxCompoundId()+"\t"+compound.isMolImagePNGAvailable());
 
 				compounds.add(compound);
 
@@ -295,29 +552,44 @@ public class DSSTOX_Compounds_Script {
 		//		DsstoxCompoundServiceImpl compoundService=new DsstoxCompoundServiceImpl();
 		//		List<DsstoxCompound>compounds=compoundService.findAll();
 
-		int batchSize=50000;
+		boolean skipMarkush=false;
+		int batchSize=25000;
 		int i=0;
+		
+		
+//		String date="2025-07-30";
+		String date="2025-10-30";
+		
+		String folder="data\\dsstox\\snapshot-"+date+"\\json\\";
+		
+		new File(folder).mkdirs();
+		
+		Gson gson = new GsonBuilder().setPrettyPrinting().setDateFormat("yyyy-MM-dd").disableHtmlEscaping().serializeSpecialFloatingPointValues().create();
 
+		
 		while(true) {
 
 //			File file=new File("data/dsstox/json/snapshot_compounds"+(i+1)+".json");
-			File file=new File("data/dsstox/json/prod_compounds"+(i+1)+".json");
+			File file=new File(folder+"prod_compounds"+(i+1)+".json");
 
+			
 			if (file.exists()) {
+				System.out.println(file.getName()+"\texists");
 				i++;
 				continue;
 			}
 
-			List<DsstoxCompound>compounds=getCompoundsBySQL(i*batchSize, batchSize);
-
+//			List<DsstoxCompound>compounds=getCompoundsBySQL(i*batchSize, batchSize);
+			List<DsstoxCompound>compounds=getCompoundsBySubstanceSQL(i*batchSize, batchSize);
+			
 			if(compounds.size()==0) {
 				break;
 			} else {
 
 				try {
 					FileWriter fw=new FileWriter(file);
-					fw.write(Utilities.gson.toJson(compounds));
-
+					fw.write(gson.toJson(compounds));
+					
 					System.out.println((i+1)+"\t"+compounds.size());
 
 					fw.flush();
@@ -329,10 +601,75 @@ public class DSSTOX_Compounds_Script {
 
 				i++;
 			}
+			
+			System.gc();
+			
 		}
 
 	}
 	
+	void substancesToJsonFiles() {
+
+		//		DsstoxCompoundServiceImpl compoundService=new DsstoxCompoundServiceImpl();
+		//		List<DsstoxCompound>compounds=compoundService.findAll();
+
+		boolean skipMarkush=false;
+		int batchSize=50000;
+		int i=0;
+		
+		
+//		String date="2025-07-30";
+		String date="2025-10-30";
+		
+		String folder="data\\dsstox\\snapshot-"+date+"\\json\\";
+		
+		new File(folder).mkdirs();
+		
+		Gson gson = new GsonBuilder().setPrettyPrinting().setDateFormat("yyyy-MM-dd").disableHtmlEscaping().serializeSpecialFloatingPointValues().create();
+
+		
+		while(true) {
+
+//			File file=new File("data/dsstox/json/snapshot_compounds"+(i+1)+".json");
+			File file=new File(folder+"prod_compounds"+(i+1)+".json");
+
+			
+			if (file.exists()) {
+				System.out.println(file.getName()+"\texists");
+				i++;
+				continue;
+			}
+
+			List<DsstoxCompound>compounds=getCompoundsBySubstanceSQL(i*batchSize, batchSize);
+			
+			if(compounds.size()==0) {
+				break;
+			} else {
+
+				try {
+					FileWriter fw=new FileWriter(file);
+					fw.write(gson.toJson(compounds));
+					
+					System.out.println((i+1)+"\t"+compounds.size());
+
+					fw.flush();
+					fw.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				i++;
+			}
+			
+			System.gc();
+			
+		}
+
+	}
+	
+	
+
 	void compoundsToJsonFiles2() {
 
 		//		DsstoxCompoundServiceImpl compoundService=new DsstoxCompoundServiceImpl();
@@ -1168,16 +1505,20 @@ public class DSSTOX_Compounds_Script {
 
 			DsstoxCompound compound=compounds.get(i);
 
-			if(compound.getSmiles()!=null && compound.getSmiles().contains(".")) {
+			if(compound.getSmiles()!=null) {
+				if(compound.getSmiles().contains(".")) {
+					compounds.remove(i--);
+					saltCompounds.add(compound);
+					continue;
+				} else {
+					continue;
+				}
 				//				System.out.println(compound.getSmiles());
-				compounds.remove(i--);
-				saltCompounds.add(compound);
-				continue;
 			}
 
-			
 			IAtomContainer molecule=null;
 			if(compound.getMolFile()!=null) {
+//				System.out.println(compound.getDsstoxCompoundId()+"\tno smiles");
 				molecule=getMoleculeFromMolFileString(mr, compound);					
 			} 
 			
@@ -1789,12 +2130,95 @@ public class DSSTOX_Compounds_Script {
 	}
 
 	
+	void filterJsonFiles() {
+		
+		 Logger.getLogger("org.openscience.cdk").setLevel(Level.OFF);
+	     Logger.getLogger("org.openscience.cdk.io").setLevel(Level.OFF);
+
+		
+		String folderSrc="data\\dsstox\\snapshot-2025-07-30\\json\\";
+		String folderDest="data\\dsstox\\snapshot-2025-07-30\\json filter\\";
+		
+		Type listOfMyClassObject = new TypeToken<List<DsstoxCompound>>() {}.getType();
+
+		
+		List<DsstoxCompound>compoundsAll=new ArrayList<>();
+		
+		
+		for (File file:new File(folderSrc).listFiles()) {
+
+			
+			if(!file.getName().contains("json")) {
+				continue;
+			}
+			
+			try {
+				List<DsstoxCompound>compounds=Utilities.gson.fromJson(new FileReader(file), listOfMyClassObject);
+				
+				int countRemoved=0;
+				for(int i=0;i<compounds.size();i++)  {
+					DsstoxCompound compound=compounds.get(i);
+					if(compound.getGenericSubstanceCompound()==null) {
+						compounds.remove(i--);
+						countRemoved++;
+					}
+				}
+
+				List<DsstoxCompound>salts=removeSalts(compounds);
+				
+				countRemoved+=salts.size();
+
+				for(int i=0;i<compounds.size();i++)  {
+					DsstoxCompound compound=compounds.get(i);
+					if(compound.getSmiles()!=null) {
+						if(compound.getSmiles().contains("|") && compound.getSmiles().contains("*") ) {
+							compounds.remove(i--);
+							countRemoved++;
+						}
+					}
+				}
+				
+				System.out.println(file.getName()+"\t"+compounds.size()+"\t"+countRemoved);
+				
+				compoundsAll.addAll(compounds);
+
+//				if(true) break;
+					
+			} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		System.out.println("All\t"+compoundsAll.size()+"\n");
+		
+		
+		List<DsstoxCompound>compoundsChunk=new ArrayList<>();
+		
+		int num=1;
+		
+		for (DsstoxCompound dc:compoundsAll) {
+			
+			compoundsChunk.add(dc);
+			
+			if(compoundsChunk.size()==50000) {
+				String filename="prod_compounds"+num+".json";
+				System.out.println(filename+"\t"+compoundsChunk.size());
+				ToxPredictor.Utilities.Utilities.toJsonFile(compoundsChunk, folderDest+filename);
+				compoundsChunk.clear();
+				num++;
+			}
+		}
+	}
+	
 	
 	
 	public static void main(String[] args) {
 		DSSTOX_Compounds_Script d=new DSSTOX_Compounds_Script();
 
-//		d.compoundsToJsonFiles();
+		d.compoundsToJsonFiles();
+//		d.filterJsonFiles();
+		
+		
 //		d.convertJsonsToSDFs();
 		
 //		d.recentUpdateToJsonFiles();
@@ -1803,7 +2227,7 @@ public class DSSTOX_Compounds_Script {
 //		d.compoundsToJsonFiles2();
 //		d.compoundsToJsonFilesMarkush();
 //		d.convertJsonsToSDFs2();
-		d.createDsstoxRecordsUsingCompoundsRecordsNoDTXCID();
+//		d.createDsstoxRecordsUsingCompoundsRecordsNoDTXCID();
 		
 		
 		/**

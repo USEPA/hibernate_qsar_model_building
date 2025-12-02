@@ -12,6 +12,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -22,17 +23,12 @@ import org.json.CDL;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-
-import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.entity.GenericSubstance;
 import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
-//import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-//import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
-import gov.epa.run_from_java.scripts.DSSTOX_Loading.DSSTOX_Name_Script.DSSTOX_Name;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
-import net.bytebuddy.jar.asm.Type;
+
 
 /**
  * @author TMARTI02
@@ -474,7 +470,7 @@ public class DSSTOX_Chemspider_IDs {
 				
 				String dtxcid=dtxcids.get(counter);
 				
-				prep.setNull(1,Type.LONG);
+				prep.setNull(1,Types.BIGINT);
 				prep.setString(2,lanId);
 				prep.setString(3,dtxcid);
 				prep.addBatch();

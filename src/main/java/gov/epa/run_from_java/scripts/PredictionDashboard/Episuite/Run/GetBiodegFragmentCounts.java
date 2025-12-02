@@ -7,7 +7,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 import com.google.gson.Gson;
-import com.srcinc.episuite.biodegradationrate.BiodegradationRateResults;
+//import com.srcinc.episuite.biodegradationrate.BiodegradationRateResults;
 
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.Factor;
@@ -232,21 +232,21 @@ public class GetBiodegFragmentCounts {
 	}
 	
 	
-	public Double getBiowin3Local(String smiles) {
-		HttpResponse<String> response = Unirest.get("http://localhost:9000/biowin")
-				 .header("Content-Type", "application/json")
-				  .queryString("smiles", smiles)
-				  .asString();
-		String json = response.getBody().toString();
-		Gson gson=new Gson();
-		
-//		System.out.println(json);
-		
-		if(json.equals("Internal Server Error")) return null;
-		
-		BiodegradationRateResults b=gson.fromJson(json,BiodegradationRateResults.class);
-		return RunBiowinFromJava.getBiowinResult(b, 3);
-	}
+//	public Double getBiowin3Local(String smiles) {
+//		HttpResponse<String> response = Unirest.get("http://localhost:9000/biowin")
+//				 .header("Content-Type", "application/json")
+//				  .queryString("smiles", smiles)
+//				  .asString();
+//		String json = response.getBody().toString();
+//		Gson gson=new Gson();
+//		
+////		System.out.println(json);
+//		
+//		if(json.equals("Internal Server Error")) return null;
+//		
+//		BiodegradationRateResults b=gson.fromJson(json,BiodegradationRateResults.class);
+//		return RunBiowinFromJava.getBiowinResult(b, 3);
+//	}
 	
 
 	/**

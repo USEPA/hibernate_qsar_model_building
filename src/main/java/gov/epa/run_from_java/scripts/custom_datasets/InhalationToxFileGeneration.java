@@ -422,8 +422,7 @@ public static Hashtable<String,String> getDescriptorsHashtableOPERA(String filep
 		String workflow = "qsar-ready_08232023";
 //		String serverHost = "https://hazard-dev.sciencedataexperts.com";
 		
-		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,
-				workflow, serverHost);
+		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(workflow, serverHost);
 		boolean useFullStandardize=false;
 		
 		

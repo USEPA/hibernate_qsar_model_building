@@ -11,7 +11,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.poi.xssf.usermodel.XSSFPivotCacheRecords;
 import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.exception.InvalidSmilesException;
 import org.openscience.cdk.interfaces.IAtomContainer;
@@ -532,7 +531,7 @@ public class DatasetCreatorScript {
 		
 		
 //		dcs.create_LC50_Ecotox_modeling();
-//		dcs.create_LC50_Ecotox_modeling2();
+		dcs.create_LC50_Ecotox_modeling2();
 		
 //		dcs.create_LC50_Qsar_toolbox();
 //		
@@ -544,7 +543,7 @@ public class DatasetCreatorScript {
 
 //		dcs.createModelingDatasets();
 		
-		dcs.createLogP_external();
+//		dcs.createLogP_external();
 //		dcs.createWS_external();
 		
 //		dcs.createBiodegDatasets();

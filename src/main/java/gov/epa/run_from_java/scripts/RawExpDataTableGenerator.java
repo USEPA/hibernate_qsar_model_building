@@ -244,6 +244,9 @@ public class RawExpDataTableGenerator {
 		ht.put("prop_value", "property_value");
 		ht.put("prop_unit", "property_units");
 		ht.put("prop_name", "property");
+		ht.put("prop_type", "property_type");
+		ht.put("prop_category", "property_category");
+
 
 		ht.put("prop_value_text", "property_value_text");
 		ht.put("prop_value_original", "property_value_original");
@@ -259,12 +262,14 @@ public class RawExpDataTableGenerator {
 		ht.put("exp_details_ph", "pH");
 		ht.put("exp_details_response_site", "response_site");
 		ht.put("exp_details_species_common", "species_common");
+		ht.put("exp_details_species_latin", "species_latin");
+		
 		
 		for (int i=0;i<ja.size();i++) {
 			JsonObject jo=ja.get(i).getAsJsonObject();
 			for (String key:ht.keySet()) {
 				
-				System.out.println(key+"\t"+jo.get(key));
+//				System.out.println(key+"\t"+jo.get(key));
 				
 				if(jo.get(key)!=null && !jo.get(key).isJsonNull()) {
 //					System.out.println(key+"\t"+jo.get(key));

@@ -6,8 +6,8 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
-
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -358,13 +358,19 @@ public class RunRequest {
 		
 	
 	public static void configLogger() {
-		Set<String> artifactoryLoggers = new HashSet<String>(Arrays.asList("org.apache.http", "groovyx.net.http"));
-		for (String log : artifactoryLoggers) {
-			ch.qos.logback.classic.Logger artLogger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory
-					.getLogger(log);
-			artLogger.setLevel(ch.qos.logback.classic.Level.INFO);
-			artLogger.setAdditive(false);
-		}
+
+
+		 Logger httpLogger = Logger.getLogger("org.apache.http");
+	        httpLogger.setLevel(Level.WARNING); // Or Level.INFO, Level.WARNING, etc.
+
+		
+//		Set<String> artifactoryLoggers = new HashSet<String>(Arrays.asList("org.apache.http", "groovyx.net.http"));
+//		for (String log : artifactoryLoggers) {
+//			ch.qos.logback.classic.Logger artLogger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory
+//					.getLogger(log);
+//			artLogger.setLevel(ch.qos.logback.classic.Level.INFO);
+//			artLogger.setAdditive(false);
+//		}
 	}
 	
 	

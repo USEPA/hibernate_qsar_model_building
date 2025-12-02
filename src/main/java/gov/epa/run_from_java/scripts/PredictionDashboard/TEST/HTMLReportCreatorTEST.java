@@ -2,30 +2,22 @@ package gov.epa.run_from_java.scripts.PredictionDashboard.TEST;
 
 import java.awt.Desktop;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.text.DecimalFormat;
-import java.util.Base64;
-import java.util.List;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
 
-import ToxPredictor.Application.Calculations.RunFromCommandLine.RunFromSmiles;
-import ToxPredictor.Application.model.ExternalPredChart;
+import ToxPredictor.Application.Calculations.RunFromCommandLine.RunFromSmiles.ReportCreator;
 import ToxPredictor.Application.model.PredictionResults;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.run_from_java.scripts.QsarModelsScript;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.HTMLReportCreator;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
+import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.ADEstimate;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.Neighbor;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.NeighborResults;
 
@@ -39,6 +31,8 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 
 		try {
 
+			long t1=System.currentTimeMillis();
+			
 			if (or.modelResults.standardUnit != null && or.modelResults.standardUnit.equals("Binary"))
 				or.modelResults.standardUnit = "";
 			if (or.modelResults.standardUnit == null)
@@ -48,10 +42,10 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 
 			writeHtmlHead(or, fw);
 			
-			fw.write("<title>TEST results for " + or.chemicalIdentifiers.dtxcid + " for " + or.modelDetails.modelName
-					+ " model");
-			fw.write("</title>\n");
-			fw.write("</head>\n");
+//			fw.write("<title>TEST results for " + or.chemicalIdentifiers.dtxcid + " for " + or.modelDetails.modelName
+//					+ " model");
+//			fw.write("</title>\n");
+//			fw.write("</head>\n");
 
 			fw.write("<h3>TEST Model Calculation Details: " + or.modelDetails.propertyName + "</h3>\r\n");
 
@@ -60,10 +54,24 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 			fw.write("\t<tr><td>\n");
 			writeFirstRow(or, fw);
 			fw.write("\t</td></tr>\n");
+			
+			
+			boolean writeModelPerformance=true;
+			if (or.modelResults.adEstimates!=null) {
+				ADEstimate ae=or.modelResults.adEstimates.get(0);
+				if(ae.reasoning.contains(PredictionDashboardScriptTEST2.strDescriptorGeneration) ||
+						ae.reasoning.contains(PredictionDashboardScriptTEST2.strInvalidStructure)) {
+//					System.out.println("Dont write performance.");
+					writeModelPerformance=false;
+				}
+			}
 
-			fw.write("\t<tr><td>\n");
-			writeModelPerformance(or, fw);
-			fw.write("\t</td></tr>\n");
+			if(writeModelPerformance) {
+				fw.write("\t<tr><td>\n");
+				writeModelPerformance(or, fw);
+				fw.write("\t</td></tr>\n");
+			}
+			
 
 			fw.write("<p>\n");
 
@@ -87,7 +95,15 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 			fw.flush();
 
 			
-			return toPrettyHtml(fw);
+			long t2=System.currentTimeMillis();
+			
+			String prettyHtml=toPrettyHtml(fw);
+			
+			long t3=System.currentTimeMillis();
+			
+//			System.out.println((t2-t1)+"\t"+(t3-t2));
+			
+			return prettyHtml;
 //			return fw.toString();
 
 		} catch (Exception ex) {
@@ -150,11 +166,15 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 
 //		System.out.println(propertyName+"\t"+nr.neighbors.size()+"\thaveNeighborPrediction="+haveNeighborPrediction);
 		
-		if (nr.neighbors.size() == 0 || !haveNeighborPrediction) {
-			fw.write("<font color=red>* Note: no sufficiently similar chemicals were predicted</font><br><br>\n");
+		if (nr.neighbors.size() <= 1) {
+			fw.write("<font color=red>* Note: no sufficiently similar chemicals are available</font><br><br>\n");
+			return;
+		} else if (!haveNeighborPrediction) {
+			fw.write("<font color=red>* Note: the similar chemicals do not have predicted values</font><br><br>\n");
 			return;
 		}
 
+		
 		fw.write("<table><tr>\n");
 		
 		fw.write("<td>\n");
@@ -198,15 +218,18 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 			}
 		}
 		
-		if (nr.neighbors.size() == 0 || !haveNeighborPrediction) {
-			fw.write("<font color=red>* Note: no sufficiently similar chemicals were predicted</font><br><br>\n");
+		if (nr.neighbors.size() <= 1) {
+			fw.write("<font color=red>* Note: no sufficiently similar chemicals are available</font><br><br>\n");
+			return;
+		} else if (!haveNeighborPrediction) {
+			fw.write("<font color=red>* Note: the similar chemicals do not have predicted values</font><br><br>\n");
 			return;
 		}
 
 		DecimalFormat df = new DecimalFormat("0.00");
 
 		fw.write("<table width=67%><tr>\n");
-		fw.write("<td width=33%><img src=\"" + nr.chartImgSrc + "\"></td>\n");
+		fw.write("<td width=33%><img src=\"" + nr.chartImgSrc + "\" alt=\"Prediction results for nearest neighbors from the "+nr.set.toLowerCase()+" set\"></td>\n");
 
 		if(nr.MAEEntireTestSet!=null) {
 			writeTableMAE(nr, fw, df);
@@ -222,7 +245,7 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 	private void writeTableMAE(NeighborResults nr, Writer fw, DecimalFormat df) throws IOException {
 		fw.write("<td width=33%>\n");
 
-		fw.write("\t<table border=1 cellpadding=10 cellspacing=0>\n");
+		fw.write("\t<table border=1 cellpadding=3 cellspacing=0>\n");
 
 		fw.write("\t<caption>Results for entire set vs<br>results for similar chemicals</caption>\n");
 
@@ -373,7 +396,10 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 	
 	private void writeNeighborsTableTEST_Horizontal(PredictionReport or, Writer fw, NeighborResults nr) throws IOException {
 
-		if(nr.unitNeighbor==null) System.out.println(or.modelDetails.propertyName);
+		
+		if(nr.neighbors.size()<=1)return;
+		
+		if(nr.unitNeighbor==null) System.out.println(or.modelDetails.propertyName+"\tneighbor units missing");
 		
 		if (nr == null)
 			return;
@@ -388,6 +414,10 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 		int percentage1=(int)((double)nr.neighbors.size()/8*100);
 		if(percentage1>100) percentage1=100;
 		fw.write("<table cellspacing=10 width="+percentage1+"%>\n");
+		
+		fw.write("<caption>Neighbor values in <b>"+nr.unitNeighbor+"</b></caption>");
+		
+		
 //		System.out.println(nr.neighbors.size()+"\t"+percentage1);
 		
 		fw.write("\t<tr>\n");
@@ -428,7 +458,7 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 		fw.write("<td width=33%>\n");
 		
 		
-		fw.write("\t<table border=1 cellpadding=5 cellspacing=0>\n");
+		fw.write("\t<table border=1 cellpadding=3 cellspacing=0>\n");
 		fw.write("\t<caption>Color legend</caption>\n");
 		
 		fw.write("\t<tr bgcolor=\"#D3D3D3\">\n");		
@@ -484,7 +514,7 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 		
 		String q="\"";
 		
-		if(n.similarityCoefficient==1.0) {
+		if(n.neighborNumber==1) {
 			fw.write("<b>Test chemical</b><br>");
 //			fw.write("<b>Similarity</b>: "+n.similarityCoefficient+"<br>");
 		} else {
@@ -497,12 +527,18 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 			fw.write("<b>Measured</b>: N/A");
 			
 		} else {
+//			if(nr.unitNeighbor!=null && or.modelDetails.propertyIsBinary) {
+//				fw.write("<b>Measured</b>: "+df.format(n.experimentalValue)+" "+nr.unitNeighbor);
+//			} else {
+//				fw.write("<b>Measured</b>: "+getFormattedValue(or.modelDetails.propertyIsBinary, n.experimentalValue, or.modelDetails.propertyName,3)+" "+nr.unitNeighbor);
+//			}
+			
 			if(nr.unitNeighbor!=null && or.modelDetails.propertyIsBinary) {
-				fw.write("<b>Measured</b>: "+df.format(n.experimentalValue)+" "+nr.unitNeighbor);
-				
+				fw.write("<b>Measured</b>: "+df.format(n.experimentalValue));
 			} else {
-				fw.write("<b>Measured</b>: "+getFormattedValue(or.modelDetails.propertyIsBinary, n.experimentalValue, or.modelDetails.propertyName,3)+" "+nr.unitNeighbor);
+				fw.write("<b>Measured</b>: "+getFormattedValue(or.modelDetails.propertyIsBinary, n.experimentalValue, or.modelDetails.propertyName,3));
 			}
+
 		}
 		fw.write("<br>\n");
 		
@@ -510,17 +546,29 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 			fw.write("<b>Predicted</b>: N/A");
 			
 		} else {
+//			if(nr.unitNeighbor!=null && or.modelDetails.propertyIsBinary) {
+//				fw.write("<b>Predicted</b>: "+df.format(n.predictedValue)+" "+nr.unitNeighbor);
+//			} else {
+//				fw.write("<b>Predicted</b>: "+getFormattedValue(or.modelDetails.propertyIsBinary, n.predictedValue, or.modelDetails.propertyName,3)+" "+nr.unitNeighbor);
+//			}
+			
 			if(nr.unitNeighbor!=null && or.modelDetails.propertyIsBinary) {
-				fw.write("<b>Predicted</b>: "+df.format(n.predictedValue)+" "+nr.unitNeighbor);
-				
+				fw.write("<b>Predicted</b>: "+df.format(n.predictedValue));
 			} else {
-				fw.write("<b>Predicted</b>: "+getFormattedValue(or.modelDetails.propertyIsBinary, n.predictedValue, or.modelDetails.propertyName,3)+" "+nr.unitNeighbor);
+				fw.write("<b>Predicted</b>: "+getFormattedValue(or.modelDetails.propertyIsBinary, n.predictedValue, or.modelDetails.propertyName,3));
 			}
+
 		}
 		fw.write("<br>\n");
 
+		String name=null;
+				
+		if(n.neighborNumber==1) {
+			name=or.chemicalIdentifiers.preferredName;
+		} else {
+			name=n.preferredName;	
+		}
 		
-		String name=n.preferredName;
 		
 		if(name!=null) {
 			if(name.length()>40) name=name.substring(0, 40)+"...";
@@ -528,12 +576,15 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 			name=n.casrn;
 		}
 		
+//		System.out.println("Here12233:"+n.dtxsid+"\t"+n.molImagePNGAvailable);
+		
+		
 		if (n.molImagePNGAvailable) {
 			fw.write("<img src=\"" + this.imgURLCid + n.dtxcid + "\" height=150 width=150 "
 //					+ "border=1 "
 					+"style='border:3px solid "+n.backgroundColor+"'"
 					
-					+ "alt=\"Structural image of " + n.preferredName + "\"><br>");
+					+ "alt=\"Structural image of " + name + "\"><br>");
 			
 		} else if (n.dtxsid != null) {
 			if (!n.molImagePNGAvailable) {
@@ -551,22 +602,12 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 			fw.write(name+"\n");
 		}
 		
-//			fw.write("<br>");
-
-		
-		
-		if(true)return;
-		
-//			if(nr.unitNeighbor!=null && nr.unitNeighbor.contains("Binary")) {
-//				this.writeCenteredTD(fw, n.experimentalString);
-//				this.writeCenteredTD(fw, n.predictedValue);
-//			}
-		
-		
 	}
 
 
 	private void writeModelPerformance(PredictionReport or, Writer fw) throws IOException {
+		
+		
 		fw.write("<table border=0 width=100%>\n");
 		
 		fw.write("\t<tr bgcolor=\"black\">\n");//Header bar row
@@ -581,12 +622,14 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 		writeStatsTable(or,fw);//local
 		fw.write("\t</td></tr>\n");
 		
-		fw.write("\t<tr><td><br>\n");//blank row
-		fw.write("\t</td></tr>\n");
+//		fw.write("\t<tr><td><br>\n");//blank row
+//		fw.write("\t</td></tr>\n");
 		
-		fw.write("\t<tr><td>\n");
-		writeQmrfLink(or, fw);//parent
-		fw.write("\t</td></tr>\n");
+		if (or.modelDetails.hasQmrfPdf) {
+			fw.write("\t<tr><td>\n");
+			writeQmrfLink(or, fw);//parent
+			fw.write("\t</td></tr>\n");
+		}
 		
 //		fw.write("\t</td>\n");
 
@@ -597,9 +640,13 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 	@Override
 	protected void writeStatsTable(PredictionReport or, Writer fw) throws IOException {
 
+		if(or.modelDetails.performance==null)return;
+		
+		DecimalFormat df=new DecimalFormat("0.00");
+		
 		if (or.modelDetails.performance.train.R2 != null) {
-			fw.write(
-					"<table width=40% border=1 cellpadding=1 cellspacing=0><caption>Consensus model statistics</caption>\n");
+//			fw.write("<table width=40% border=1 cellpadding=1 cellspacing=0><caption>Consensus model statistics</caption>\n");
+			fw.write("<table width=800px border=1 cellpadding=1 cellspacing=0><caption>Consensus model statistics</caption>\n");
 
 			fw.write("<tr>\n");
 //			fw.write("<td colspan=2 align=center>5-fold CV (75%)</td>\n");
@@ -625,16 +672,29 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 
 //			writeCenteredTD(fw, or.modelDetails.performance.fiveFoldICV.Q2);
 //			writeCenteredTD(fw, or.modelDetails.performance.fiveFoldICV.RMSE);
+			
+			
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.R2,"",2));
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.RMSE,"",2));
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.MAE,"",2));
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.COVERAGE,"",2));
+//
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.R2,"",2));
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.RMSE,"",2));
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.MAE,"",2));
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.COVERAGE,"",2));
+			
+			
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.train.R2));
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.train.RMSE));
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.train.MAE));
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.train.COVERAGE));
 
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.R2,"",2));
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.RMSE,"",2));
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.MAE,"",2));
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.COVERAGE,"",2));
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.external.R2));
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.external.RMSE));
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.external.MAE));
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.external.COVERAGE));
 
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.R2,"",2));
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.RMSE,"",2));
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.MAE,"",2));
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.COVERAGE,"",2));
 
 			fw.write("</tr>\n");
 
@@ -666,15 +726,28 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 //			writeCenteredTD(fw, or.modelDetails.performance.fiveFoldICV.SN);
 //			writeCenteredTD(fw, or.modelDetails.performance.fiveFoldICV.SP);
 
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.BA,"",2));
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.SN,"",2));
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.SP,"",2));
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.COVERAGE,"",2));
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.BA,"",2));
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.SN,"",2));
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.SP,"",2));
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.train.COVERAGE,"",2));
+//
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.BA,"",2));
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.SN,"",2));
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.SP,"",2));
+//			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.COVERAGE,"",2));
 
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.BA,"",2));
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.SN,"",2));
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.SP,"",2));
-			writeCenteredTD(fw, getFormattedValue(false, or.modelDetails.performance.external.COVERAGE,"",2));
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.train.BA));
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.train.SN));
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.train.SP));
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.train.COVERAGE));
+
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.external.BA));
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.external.SN));
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.external.SP));
+			writeCenteredTD(fw, df.format(or.modelDetails.performance.external.COVERAGE));
+
+			
+			
 			fw.write("</tr>\n");
 
 			fw.write("</table>\n");
@@ -690,7 +763,7 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 
 	@Deprecated
 	public static void displayHTMLReport(PredictionResults predictionResults, String fileName, String folder) {
-		String htmlReport = RunFromSmiles.getReportAsHTMLString(predictionResults);
+		String htmlReport = ReportCreator.getReportAsHTMLString(predictionResults);
 		// System.out.println(htmlReport);
 		try {
 			File file = new File(folder + fileName);

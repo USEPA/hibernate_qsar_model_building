@@ -48,7 +48,7 @@ public class GeneratePredictionTsvFromCASList {
 		
 		String workflow="qsar-ready";
 		String serverHost="https://hcd.rtpnc.epa.gov";
-		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,workflow,serverHost);
+		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(workflow,serverHost);
 		GenericSubstanceServiceImpl gss=new GenericSubstanceServiceImpl();
 		DsstoxCompoundServiceImpl dcs=new DsstoxCompoundServiceImpl();
 
@@ -139,7 +139,7 @@ public class GeneratePredictionTsvFromCASList {
 		
 		String workflow="qsar-ready";
 		String serverHost="https://hcd.rtpnc.epa.gov";
-		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,workflow,serverHost);
+		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(workflow,serverHost);
 		GenericSubstanceServiceImpl gss=new GenericSubstanceServiceImpl();
 		DsstoxCompoundServiceImpl dcs=new DsstoxCompoundServiceImpl();
 

@@ -4,8 +4,9 @@ import java.io.FileWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import gov.epa.ghs_data_gathering.Parse.ToxVal.SqlUtilities;
+
 import gov.epa.run_from_java.scripts.QsarModelsScript;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 
 /**
 * @author TMARTI02

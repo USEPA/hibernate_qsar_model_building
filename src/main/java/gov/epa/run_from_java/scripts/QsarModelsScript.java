@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolationException;
 
 import com.google.gson.JsonObject;
 
@@ -708,9 +708,17 @@ public class QsarModelsScript {
 //		script.deleteModel(858L);
 //		script.deleteModel(1506L);
 		
-		script.deleteModel(1572L);
-		script.deleteModel(1573L);
-		script.deleteModel(1574L);
+//		script.deleteModel(1580L);
+		
+		
+		
+//		script.deleteModel(1495L);
+//		script.deleteModel(1496L);
+//		script.deleteModel(1135L);
+//		script.deleteModel(1376L);
+		
+		
+
 
 		
 //		script.deleteModel(859L);

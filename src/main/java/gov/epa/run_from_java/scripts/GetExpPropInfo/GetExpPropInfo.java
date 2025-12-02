@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolationException;
 
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.poi.common.usermodel.HyperlinkType;
@@ -47,7 +47,7 @@ import org.hibernate.Session;
 import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.DefaultChemObjectBuilder;
 import org.openscience.cdk.io.iterator.IteratingSDFReader;
-import org.w3c.tidy.Out;
+//import org.w3c.tidy.Out;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -422,7 +422,7 @@ public class GetExpPropInfo {
 		System.out.println("mapped record bounds:"+exp_prop_Min+"\t"+exp_prop_Max+"\t"+dataset_exp_prop.getUnit().getName());
 
 		//		System.out.println(Utilities.gson.toJson(joMin));
-		//		System.out.println(Utilities.gson.toJson(joMax));
+				System.out.println(Utilities.gson.toJson(joMax));
 
 	}
 

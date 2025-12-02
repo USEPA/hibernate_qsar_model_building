@@ -1,16 +1,16 @@
 package gov.epa.run_from_java.scripts.PredictionDashboard.TEST;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 
+import ToxPredictor.Application.TESTConstants;
 import ToxPredictor.Application.model.CancerStats;
 import ToxPredictor.Application.model.ExternalPredChart;
 import ToxPredictor.Application.model.IndividualPredictionsForConsensus;
 import ToxPredictor.Application.model.PredictionResults;
 import ToxPredictor.Application.model.SimilarChemicals;
-import ToxPredictor.Application.model.IndividualPredictionsForConsensus.PredictionIndividualMethod;
-import ToxPredictor.misc.StatisticsCalculator;
+
+//import ToxPredictor.Application.model.IndividualPredictionsForConsensus.PredictionIndividualMethod;
+//import ToxPredictor.misc.StatisticsCalculator;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
@@ -28,20 +28,24 @@ public class TEST_Report extends PredictionReport {
 //		unitAbbreviationNeighbor=unitAbbreviationNeighbor.replace("^3","<sup>3</sup>");
 		
 		if(pd!=null) {
-			setChemicalIdentifiers(pd);
+			setChemicalIdentifiers(pd,pr);
 			
-			setModelDetailsTEST(pd,property,useLegacyModelIds);
+			setModelDetailsTEST(pd,property);
 			
 			setModelDetails(pd,property,useLegacyModelIds,pr.isBinaryEndpoint());
 			
+			modelDetails.performance=setStatistics(pr);
+			
 			setIndividualModels(pr,unitAbbreviationNeighbor);
 			
-			setModelResults(pd, unitAbbreviation);
+			setModelResultsTest(pd, pr, unitAbbreviation);
 			
 			this.modelResults.useCombinedApplicabilityDomain=true;
 
-			if(pr.getPredictionResultsPrimaryTable().getExpSet()!=null && !pr.getPredictionResultsPrimaryTable().getExpSet().isBlank())			
+			if(pr.getPredictionResultsPrimaryTable().getExpSet()!=null && !pr.getPredictionResultsPrimaryTable().getExpSet().isBlank()) {			
 				this.modelResults.experimentalSet=pr.getPredictionResultsPrimaryTable().getExpSet();
+				this.modelResults.experimentalCASRN=pr.getPredictionResultsPrimaryTable().getExpCAS();
+			}
 			
 			if(pr.getPredictionResultsPrimaryTable().getSource()!=null && !pr.getPredictionResultsPrimaryTable().getSource().isBlank()) {
 				modelResults.experimentalSource=pr.getPredictionResultsPrimaryTable().getSource();
@@ -49,6 +53,11 @@ public class TEST_Report extends PredictionReport {
 				modelResults.experimentalSource=modelResults.experimentalSource.trim();
 			}
 			setNeighbors(pd,unitAbbreviationNeighbor);
+			
+			
+//			for (Neighbor n:this.neighborResultsTraining.neighbors) {
+//				System.out.println("Here Ack:"+n.dtxsid+"\t"+n.molImagePNGAvailable);
+//			}
 			
 			if(unitAbbreviation.contains("Binary")) {
 				this.modelDetails.propertyIsBinary=true;
@@ -81,6 +90,44 @@ public class TEST_Report extends PredictionReport {
 
 	}
 	
+	public void setModelResultsTest(PredictionDashboard pd,PredictionResults pr, String unitAbbreviation) {
+
+		modelResults.standardUnit=unitAbbreviation;
+
+//		modelResults.experimentalValue=getValueInCCD_Units(pr, pd.getExperimentalValue());
+//		modelResults.predictedValue=getValueInCCD_Units(pr, pd.getPredictionValue());
+
+		modelResults.experimentalValue=pd.getExperimentalValue();
+		modelResults.predictedValue=pd.getPredictionValue();
+
+		setADEstimates(pd);
+		
+	}
+
+	private Double getValueInCCD_Units(PredictionResults pr, Double predValue) {
+		
+		String e=pr.getEndpoint();
+		
+		Double valueInCCD_units=null;
+		
+		if(predValue!=null) {
+			
+			if(e.equals(TESTConstants.ChoiceFHM_LC50) || e.equals(TESTConstants.ChoiceDM_LC50) || 
+					e.equals(TESTConstants.ChoiceTP_IGC50) || e.equals(TESTConstants.ChoiceRat_LD50)) {
+				valueInCCD_units=Math.pow(10,-predValue);
+			} else if (e.equals(TESTConstants.ChoiceBCF) || e.equals(TESTConstants.ChoiceViscosity) || 
+					e.equals(TESTConstants.ChoiceVaporPressure)) {
+				valueInCCD_units=Math.pow(10,predValue);
+			} else {
+				valueInCCD_units=predValue;
+			}
+			
+		}
+		
+		return valueInCCD_units;
+	}
+
+	
 	private void setIndividualModels(PredictionResults pr,String units) {
 		
 		if(pr.getIndividualPredictionsForConsensus()==null) return;
@@ -98,18 +145,15 @@ public class TEST_Report extends PredictionReport {
 		for(ToxPredictor.Application.model.IndividualPredictionsForConsensus.PredictionIndividualMethod pim:ipfc.getConsensusPredictions()) {
 			PredictionIndividualMethod pimNew=new PredictionIndividualMethod();
 			pimNew.method=pim.getMethod();
-			pimNew.predictedValue=pim.getPrediction();
+			pimNew.predictedValue=pim.getPrediction();	
 			modelResults.consensusPredictions.predictionsIndividualMethod.add(pimNew);
 		}
 
 		PredictionIndividualMethod pimNew=new PredictionIndividualMethod();
 		pimNew.method="Consensus";
-		if(pr.isLogMolarEndpoint()) {
-			pimNew.predictedValue=pr.getPredictionResultsPrimaryTable().getPredToxValue();	
-		} else {
-			pimNew.predictedValue=pr.getPredictionResultsPrimaryTable().getPredToxValMass();
-		}
+		pimNew.predictedValue=pr.getPredValueInModelUnits();	
 		modelResults.consensusPredictions.predictionsIndividualMethod.add(pimNew);
+		
 		
 //		System.out.println(Utilities.gson.toJson(modelDetails.predictionsIndividualMethod));
 	}
@@ -140,12 +184,15 @@ public class TEST_Report extends PredictionReport {
 		
 		//Note using PredictionDashboardScriptTEST.InitializeDB.createStatistics, the MAE values for consensus are 
 		//recalculated to omit FDA method (doesnt use value in PredictionResults similar chemicals info)
+
 		
-		if(nr.set.equals("Training")) {
-			nr.MAEEntireTestSet=modelDetails.performance.train.MAE;//use values from new stats and not value from pr
-		} else if(nr.set.equals("Test")) {
-			nr.MAEEntireTestSet=modelDetails.performance.external.MAE;
-		}
+		//8/21/25, the MAEs have been fixed in latest reports so dont need to take from stats 
+		
+//		if(nr.set.equals("Training")) {
+//			nr.MAEEntireTestSet=modelDetails.performance.train.MAE;//use values from new stats and not value from pr
+//		} else if(nr.set.equals("Test")) {
+//			nr.MAEEntireTestSet=modelDetails.performance.external.MAE;
+//		}
 
 	}
 	
@@ -162,7 +209,7 @@ public class TEST_Report extends PredictionReport {
 //	}
 
 
-	private void setModelDetailsTEST(PredictionDashboard pd,Property property, boolean useLegacyModelIds) {
+	private void setModelDetailsTEST(PredictionDashboard pd,Property property) {
 		
 		this.modelDetails.dataAccessability=getDataAccessibility(pd);
 		

@@ -100,9 +100,12 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 		fw.write("\t<tr><td><br>\n");//blank row
 		fw.write("\t</td></tr>\n");
 		
-		fw.write("\t<tr><td>\n");
-		writeQmrfLink(or, fw);//parent
-		fw.write("\t</td></tr>\n");
+		
+		if (or.modelDetails.hasQmrfPdf) {
+			fw.write("\t<tr><td>\n");
+			writeQmrfLink(or, fw);//parent
+			fw.write("\t</td></tr>\n");
+		}
 		
 //		fw.write("\t</td>\n");
 
@@ -229,6 +232,8 @@ public class HTMLReportCreatorOpera extends HTMLReportCreator {
 		int percent=(int)(20*maxNeighbors);
 		fw.write("<table border=0 width="+percent+"%>\n");
 //		fw.write("<caption>Results for nearest neighbors in "+or.modelResults.standardUnit+"</caption>\n");
+		fw.write("<caption>Neighbor values in <b>"+or.neighborResultsTraining.unitNeighbor+"</b></caption>");
+
 		fw.write("\t<tr>\n");
 		
 		

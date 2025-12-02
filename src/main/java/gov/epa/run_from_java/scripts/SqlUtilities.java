@@ -7,22 +7,31 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.MongoCredential;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.MongoIterable;
 
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
@@ -69,6 +78,9 @@ public class SqlUtilities {
 		String db = System.getenv().get("DEV_QSAR_DATABASE");
 
 		String url = "jdbc:postgresql://" + host + ":" + port + "/" + db;
+		
+//		System.out.println(url);
+		
 		String user = System.getenv().get("DEV_QSAR_USER");
 		String password = System.getenv().get("DEV_QSAR_PASS");
 
@@ -97,6 +109,107 @@ public class SqlUtilities {
 		}
 	}
 
+
+	
+	/**
+	 * Use reflection to store sql record into Java class
+	 * 
+	 * @param rs
+	 * @param r
+	 */
+	public static void createRecord(ResultSet rs, Object r) {
+		ResultSetMetaData rsmd;
+		try {
+			rsmd = rs.getMetaData();
+
+			int columnCount = rsmd.getColumnCount();
+
+			// The column count starts from 1
+			for (int i = 1; i <= columnCount; i++ ) {
+				String name = rsmd.getColumnLabel(i);
+				
+				if(name.equals("class")) name="class_";
+												
+				String val=rs.getString(i);
+				
+				if(val==null || val.equals("-") || val.isBlank()) continue;
+
+				//				System.out.println(name+"\t"+val);
+
+				if (val!=null) {
+					Field myField = r.getClass().getDeclaredField(name);	
+					
+					String type=myField.getType().getName();
+					
+					if (type.contentEquals("boolean")) {
+						myField.setBoolean(r, rs.getBoolean(i));
+					} else if (type.contentEquals("double")) {
+						myField.setDouble(r, rs.getDouble(i));
+					} else if (type.contentEquals("int")) {
+						myField.setInt(r, rs.getInt(i));
+					} else if (type.contentEquals("long")) {
+						myField.setLong(r, rs.getLong(i));
+
+					} else if (type.contentEquals("java.lang.Long") || type.contentEquals("java.lang.Double") || type.contentEquals("java.lang.Integer")) {
+						myField.set(r, rs.getObject(i));
+
+
+				//Following parses from string- so if need to change data types, this will let you do it:
+//					} else if (type.contentEquals("java.lang.Double")) {
+//						Double dvalue=(Double)rs.getObject(i);
+//						myField.set(r, dvalue);
+////						System.out.println(name+"\tDouble");
+//						try {
+//							Double dval=Double.parseDouble(val);						
+//							myField.set(r, dval);
+//						} catch (Exception ex) {
+//							System.out.println("Error parsing "+val+" for field "+name+" to Double for "+rs.getString(1));
+//						}
+//					} else if (type.contentEquals("java.lang.Integer")) {
+//						Integer ival=Integer.parseInt(val);
+//						myField.setInt(r,ival);
+					} else if (type.contentEquals("[B")) {		
+						myField.set(r,rs.getBytes(i));
+					} else if (type.contentEquals("java.lang.String")) {
+						myField.set(r, val);
+					} else if (type.contentEquals("java.util.Set")) {
+//						System.out.println(name+"\t"+val);
+						val=val.replace("[", "").replace("]", "");
+						
+						String  [] values = val.split(", ");
+						Set<String>list=new HashSet<>();
+						for (String value:values) {
+							list.add(value.trim());
+						}
+						myField.set(r,list);
+
+					} else if (type.contentEquals("java.util.List")) {
+						
+						//TODO use getArray instead and then convert array to list?
+						
+//						System.out.println(name+"\t"+val);
+						val=val.replace("[", "").replace("]", "");
+						
+						String  [] values = val.split(",");
+						ArrayList<String>list=new ArrayList<>();
+						for (String value:values) {
+							list.add(value.trim());
+						}
+						myField.set(r,list);
+					} else {
+						System.out.println("Need to implement: "+type);
+					}					
+										
+				}
+
+			}
+
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
 
 	public static Connection getConnectionDSSTOX() {
@@ -168,6 +281,50 @@ public class SqlUtilities {
 	}
 	
 	
+	
+	public static MongoDatabase getMongoDatabaseReplicaSet() {
+
+		try {
+			if (mongoPool.containsKey(dbMongo) && mongoPool.get(dbMongo) != null) {
+				return mongoPool.get(dbMongo);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		String host = System.getenv().get("MONGO_HOST");
+		String port = System.getenv().get("MONGO_PORT");
+		String user = System.getenv().get("MONGO_USER");
+		String password = System.getenv().get("MONGO_PASS");
+		String db = System.getenv().get("MONGO_DATABASE");
+		String replica_set = System.getenv().get("MONGO_REPLICA_SET");
+
+//		List<ServerAddress> seeds = Arrays.asList(new ServerAddress(host, port));
+
+		// Connection URI with authentication and replica set
+		String uri = "mongodb://" + user + ":" + password + "@" + host + ":" + port + "/?replicaSet=" + replica_set;
+
+		System.out.println(uri);
+
+		// Create a MongoClient using the connection URI
+		MongoClientSettings settings = MongoClientSettings.builder().applyConnectionString(new ConnectionString(uri))
+				.build();
+		MongoClient mongoClient = MongoClients.create(settings);
+//		MongoClient mongoClient = MongoClients.create(uri);//this works too
+		
+		MongoDatabase database = mongoClient.getDatabase(db);
+
+//            // List all collections (tables) in the database
+//		MongoIterable<String> collections = database.listCollectionNames();
+//		for (String collectionName : collections) {
+//			System.out.println("  Collection: " + collectionName);
+//		}
+
+		mongoPool.put(dbMongo, database);
+		return database;
+
+	}
+	
 	public static MongoDatabase getMongoDatabase() {
 
 		try {
@@ -187,6 +344,7 @@ public class SqlUtilities {
 //		String uri = "mongodb+srv://"+user+":"+password+"@"+host+"/";
 		
 		String uri="mongodb://"+user+":"+password+"@"+host+":"+port+"/";
+		System.out.println(uri);
 		
 		try {
 			MongoClient mongoClient = MongoClients.create(uri);

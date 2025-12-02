@@ -13,10 +13,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
-import java.nio.channels.Pipe.SourceChannel;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -35,6 +33,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.swing.JFrame;
 
@@ -43,15 +42,11 @@ import org.jfree.chart.ChartUtils;
 import org.jfree.chart.annotations.XYTextAnnotation;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
-import org.jfree.chart.title.TextTitle;
-import org.jfree.chart.ui.HorizontalAlignment;
-import org.jfree.chart.ui.RectangleEdge;
-import org.jfree.chart.ui.VerticalAlignment;
+import org.json.CDL;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.openscience.cdk.DefaultChemObjectBuilder;
 import org.openscience.cdk.exception.CDKException;
-import org.openscience.cdk.exception.InvalidSmilesException;
 import org.openscience.cdk.interfaces.IAtom;
 import org.openscience.cdk.interfaces.IAtomContainer;
 import org.openscience.cdk.interfaces.IBond;
@@ -60,27 +55,19 @@ import org.openscience.cdk.io.iterator.IteratingSDFReader;
 import org.openscience.cdk.smiles.SmiFlavor;
 import org.openscience.cdk.smiles.SmilesGenerator;
 import org.openscience.cdk.smiles.SmilesParser;
-import org.openscience.cdk.tools.SystemOutLoggingTool;
 import org.openscience.cdk.tools.manipulator.AtomContainerManipulator;
-import org.openscience.cdk.tools.manipulator.AtomTypeManipulator;
 
-import com.epam.indigo.IndigoException;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 import ToxPredictor.Application.WebTEST4;
 import ToxPredictor.MyDescriptors.DescriptorData;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
-import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorSet;
-import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundService;
-import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
@@ -89,7 +76,6 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dsstox.DsstoxRecord;
 import gov.epa.databases.dsstox.service.GenericSubstanceServiceImpl;
 import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValuesCalculator;
-import gov.epa.endpoints.datasets.dsstox_mapping.DsstoxMapper;
 import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.ModelStatisticCalculator;
@@ -103,7 +89,6 @@ import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteRe
 import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.EstimatedValue2;
 import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.Factor;
 import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.ModelResult;
-import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteValidation.DataPointCAS;
 import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteValidation.DatasetUtilities.DescriptorsByCAS;
 import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteValidation.DatasetUtilities.EpisuiteSmilesToQsarSmiles;
 import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteValidation.DatasetUtilities.SmilesToQsarSmiles;
@@ -115,7 +100,7 @@ import gov.epa.web_services.ModelWebService;
 import gov.epa.web_services.embedding_service.CalculationInfo;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 import kong.unirest.HttpResponse;
-import net.bytebuddy.asm.Advice.Return;
+
 
 /**
  * @author TMARTI02
@@ -148,10 +133,17 @@ public class EpisuiteValidation {
 	static String workflowCharlie="qsar-ready_04242025";
 	static String workflowCharlieRevised="qsar-ready_04242025_0";
 	
-//	String serverHost = "https://hcd.rtpnc.epa.gov";
-	String serverHost="https://hazard-dev.sciencedataexperts.com";
 	
-	SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(serverHost);
+	String serverHost = "https://hcd.rtpnc.epa.gov";
+//	String serverHost="https://hazard-dev.sciencedataexperts.com";
+//	String workflow = "qsar-ready_04242025";
+	String workflow = "qsar-ready";
+	boolean useFullStandardize=false;
+	
+	static String propertyName96HR_Fish_LC50="96HR_Fish_LC50";
+	
+
+//	SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(serverHost);
 
 	Utils utils=new Utils();
 	
@@ -171,40 +163,57 @@ public class EpisuiteValidation {
 		}
 
 		private String writePredComparisonTable(String source1, String source2, DecimalFormat df,
-				  ModelPrediction mp1,ModelPrediction mp2) {
-			
+				ModelPrediction mp1,ModelPrediction mp2) {
+
 			StringWriter sw=new StringWriter();
-			
+
 			sw.write("<table border=1 cellspacing=0 cellpadding=2>");
-			
-			sw.write("<tr bgcolor=lightgray><th>Model</th><th>Exp</th><th>Pred</th><th>Error</th><th>InsideAD</th></tr>");
-			
+
+			if(mp1.qsarClass!=null) {
+				sw.write("<tr bgcolor=lightgray><th>Model</th><th>Exp</th><th>Pred</th><th>Error</th><th>InsideAD</th><th>QSAR Class</th></tr>");
+			} else {
+				sw.write("<tr bgcolor=lightgray><th>Model</th><th>Exp</th><th>Pred</th><th>Error</th><th>InsideAD</th></tr>");
+			}
+
+
 			sw.write("<tr>"
 					+ "<td>"+source1+"</td>"
 					+ "<td>"+df.format(mp1.exp)+"</td>"
 					+ "<td>"+df.format(mp1.pred)+"</td>"
 					+ "<td>"+df.format(mp1.absError())+"</td>"
-					+ "<td>"+mp1.insideAD+"</td>"
-					+ "</tr>");
-			
+					+"<td>"+mp1.insideAD+"</td>");
+
+			if(mp1.qsarClass!=null) {
+				sw.write("<td>"+mp1.qsarClass+"</td>");	
+			}
+
+			sw.write("</tr>");
+
+
 			if(mp2!=null) {
-				
+
 				sw.write("<tr>"
 						+ "<td>"+source2+"</td>"
 						+ "<td>"+df.format(mp2.exp)+"</td>"
 						+ "<td>"+df.format(mp2.pred)+"</td>");
-						
-						if(mp2.absError()<mp1.absError()) {
-							sw.write("<td bgcolor=lightgreen>"+df.format(mp2.absError())+"</td>");
-						} else {
-							sw.write("<td>"+df.format(mp2.absError())+"</td>");	
-						}
-						
-						sw.write("<td>"+mp2.insideAD+"</td></tr>");
+
+				if(mp2.absError()<mp1.absError()) {
+					sw.write("<td bgcolor=lightgreen>"+df.format(mp2.absError())+"</td>");
+				} else {
+					sw.write("<td>"+df.format(mp2.absError())+"</td>");	
+				}
+
+				sw.write("<td>"+mp2.insideAD+"</td>");
+
+				if(mp1.qsarClass!=null) {
+					sw.write("<td>N/A</td>");
+				}
+
+				sw.write("</tr>");
 			}
-			
+
 			sw.write("</table>");
-			
+
 			return sw.toString();
 		}
 		
@@ -236,12 +245,11 @@ public class EpisuiteValidation {
 	
 	class DatasetUtilities {
 
-//		String workflow = "qsar-ready_04242025";
-//		String workflow = "qsar-ready";
-//		String serverHost = "https://hcd.rtpnc.epa.gov";
 		
-		String serverHost="https://hazard-dev.sciencedataexperts.com";
+//		String serverHost="https://hazard-dev.sciencedataexperts.com";
 		//		String serverHost = "https://hazard-dev.sciencedataexperts.com";
+//		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer();
+		
 
 		Hashtable<String,CheckStructure> getCheckStructureHashtableByQsarSmiles(String filepath) {
 			Type type = new TypeToken<Hashtable<String,CheckStructure>>() {}.getType();
@@ -254,12 +262,33 @@ public class EpisuiteValidation {
 			}
 		}
 
-		String standardize(String smiles, boolean useFullStandardize,String workflow) {
+		String standardize(String smiles) {
 
-			HttpResponse<String> standardizeResponse = standardizer.callQsarReadyStandardizePost(smiles, false, workflow);
+//			System.out.println(serverHost);
+			
+			HttpResponse<String> standardizeResponse = SciDataExpertsStandardizer.callQsarReadyStandardizePost(smiles, useFullStandardize, workflow,serverHost);
+//			System.out.println(standardizeResponse.getBody().toString());
+//			System.out.println("status=" + standardizeResponse.getStatus());
+			
+			if (standardizeResponse.getStatus() == 200) {
+				String jsonResponse = SciDataExpertsStandardizer.getResponseBody(standardizeResponse, useFullStandardize);
+				String qsarSmiles = SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse,
+						useFullStandardize);
+				return qsarSmiles;
+			}
 
-			//			System.out.println("status=" + standardizeResponse.getStatus());
+			return null;
+		}
 
+		
+		String standardize(String smiles,String workflow) {
+
+//			System.out.println(serverHost);
+			
+			HttpResponse<String> standardizeResponse = SciDataExpertsStandardizer.callQsarReadyStandardizePost(smiles, useFullStandardize, workflow,serverHost);
+//			System.out.println(standardizeResponse.getBody().toString());
+//			System.out.println("status=" + standardizeResponse.getStatus());
+			
 			if (standardizeResponse.getStatus() == 200) {
 				String jsonResponse = SciDataExpertsStandardizer.getResponseBody(standardizeResponse, useFullStandardize);
 				String qsarSmiles = SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse,
@@ -702,6 +731,10 @@ public class EpisuiteValidation {
 					cs.dpc_dtxcid=rs.getString(3);
 					cs.dpc_smiles=rs.getString(4);
 					
+					
+//					System.out.println(rs.getString(1)+"\t"+rs.getString(2)+"\t"+rs.getString(3)+"\t"+rs.getString(4));
+					
+					
 //					if(cs.dpc_dtxsid.equals("DTXSID701004543")) {
 //						System.out.println("For DTXSID701004543, original qsar_smiles="+cs.dp_canon_qsar_smiles);
 //					}
@@ -727,6 +760,9 @@ public class EpisuiteValidation {
 				//do what's left
 				List<DsstoxRecord>dsstoxRecords=getDsstoxRecords(dtxsids);
 				dsstoxRecordsAll.addAll(dsstoxRecords);
+				
+				
+//				System.out.println(dsstoxRecords.size());
 
 				//				if(true)return;
 
@@ -751,10 +787,17 @@ public class EpisuiteValidation {
 					//it only stores one of them if there are duplicates by dpc with same qsar ready smiles but different CAS
 					htCS_byQsarSmiles.put(cs2.dp_canon_qsar_smiles,cs2);
 					
+					
+//					System.out.println(cs2.dp_canon_qsar_smiles);
+					
 //					if(cs2.dp_canon_qsar_smiles.equals("C1C2CC3CC1(CC(C2)C3)C1C=CC=CC=1")) {
 //						System.out.println(Utilities.gson.toJson(cs2));
 //					}
 				}
+				
+//				System.out.println(Utilities.gson.toJson(htCS_byQsarSmiles));
+//				System.out.println(htCS_byQsarSmiles.size());
+				
 
 //				FileWriter fw=new FileWriter(of+File.separator+"check structures by dp_canon_qsar_smiles.json");
 //				fw.write(Utilities.gson.toJson(htCS_byQsarSmiles));
@@ -1676,7 +1719,7 @@ public class EpisuiteValidation {
 					
 					EpisuiteSmilesToQsarSmiles e=new EpisuiteSmilesToQsarSmiles();
 					e.smilesEpisuite=smilesByCAS.get(CAS);
-					e.qsarSmiles=du.standardize(e.smilesEpisuite, false,workflow);
+					e.qsarSmiles=du.standardize(e.smilesEpisuite);
 					e.cas=CAS;
 					
 					
@@ -1773,7 +1816,7 @@ public class EpisuiteValidation {
 					SmilesToQsarSmiles e=new SmilesToQsarSmiles();
 					
 					e.smiles=cs.dsstox_smiles;
-					e.qsarSmiles=du.standardize(e.smiles, false,workflow);
+					e.qsarSmiles=du.standardize(e.smiles);
 					
 					htSmiles.put(e.smiles,e);
 
@@ -2084,6 +2127,7 @@ public class EpisuiteValidation {
 					IAtomContainer molecule = smilesParser.parseSmiles(smiles);
 					molecule.setProperty("qsarSmiles", qsarSmiles);
 					molecule.setProperty("SMILES", smiles);
+					molecule.setProperty("dtxcid", dp.checkStructure.dsstox_dtxcid);
 					// Write molecule to SDF
 					sdfWriter.write(molecule);
 					
@@ -2233,8 +2277,99 @@ public class EpisuiteValidation {
 		//		
 		//		}
 
-		Results plotPredictions(String title, String propertyName, String units, Results resultsEpi,
-				 Hashtable<String, ModelPrediction> htMP,boolean createPlot,boolean omitChemicalsNotPredictedByEpisuite,String outputFolder) {
+//		Results plotPredictions(String title, String propertyName,  String units, 
+//				 Hashtable<String, ModelPrediction> htMP,boolean createPlot,String outputFolder) {
+//
+//			List<Double> exps = new ArrayList<>();
+//			List<Double> preds = new ArrayList<>();
+//
+//			Results results=new Results();
+//			results.htModelPredictions=htMP;
+//
+//			List<ModelPrediction> mps = new ArrayList<>();
+//			results.modelPredictions=mps;
+//
+//			int countInEpiTraining = 0;
+//			int countNoPred = 0;
+//
+//			for (String key : htMP.keySet()) {
+//
+//				ModelPrediction mpEpi=htMP.get(key);
+//				
+//				if(omitChemicalsNotPredictedByEpisuite) {
+//					if(mpEpi.split==0) {
+//						countInEpiTraining++;
+//						continue;
+//					}
+//					
+//					if (mpEpi.pred.equals(Double.NaN) || mpEpi.pred==null) {
+//						continue;
+//					}
+//				}
+//
+//				if(!htMP.containsKey(key)) {
+//					continue;
+//				}
+//				
+//				ModelPrediction mp=htMP.get(key);
+//				
+//				if(mp.pred==null || mp.pred.isNaN()) {
+//					countNoPred++;
+//					continue;
+//				}
+//				
+//				mps.add(mp);
+//				preds.add(mp.pred);
+//				exps.add(mp.exp);
+//				
+//				if(mp.exp==null) {
+//					System.out.println(mp.id+"\tnull exp\t"+title);
+//				}
+//				
+//				                 
+////				if(mp.id.equals("CCCC1C=CC(=CC=1)C1CCC(CCCCC)CC1")) {
+////					System.out.println(Utilities.gson.toJson(mp));
+////				}
+//				
+//				
+////				if(mp.exp==null || mp.pred==null) {
+////					System.out.println(Utilities.gson.toJson(mp));
+////				}
+//				
+////				mp.dtxcid=dpCAS.checkStructure.dsstox_dtxcid;//this might not correspond to what episuite smiles is 
+//			}
+//
+//
+//			Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator.calculateContinuousStatistics(mps,
+//					-9999.0, DevQsarConstants.TAG_TEST);
+//
+//			modelTestStatisticValues.remove("Coverage_Test");
+//			modelTestStatisticValues.remove("Q2_Test");
+//
+//			if(debug) {
+//				System.out.println("\n***********\n"+title);
+//				System.out.println(Utilities.gson.toJson(modelTestStatisticValues));
+//				System.out.println("countInEpiTraining=" + countInEpiTraining);
+//				System.out.println("countNoPred=" + countNoPred);
+//				System.out.println("countPlotted=" + mps.size());
+//			}
+//
+//			DecimalFormat df = new DecimalFormat("0.00");
+//			String subtitle = "RMSE=" + df.format(modelTestStatisticValues.get("RMSE_Test")) + ", n=" + exps.size();
+//
+//			if(createPlot)
+//				createPlot(title,subtitle, propertyName, units, exps, preds, modelTestStatisticValues, resultsEpi.minVal,
+//						resultsEpi.maxVal,outputFolder);
+//
+//			results.modelTestStatisticValues=modelTestStatisticValues;
+//			return results;
+//
+//		}
+		
+		
+		Results plotPredictions(String title, String propertyName, String units, 
+				HashSet<String>smilesInCommon,AxesBounds axesBounds,
+				 Hashtable<String, ModelPrediction> htMP,boolean createPlot,String outputFolder,String filename) {
 
 			List<Double> exps = new ArrayList<>();
 			List<Double> preds = new ArrayList<>();
@@ -2245,35 +2380,13 @@ public class EpisuiteValidation {
 			List<ModelPrediction> mps = new ArrayList<>();
 			results.modelPredictions=mps;
 
-			int countInEpiTraining = 0;
-			int countNoPred = 0;
 
-			for (String key : resultsEpi.htModelPredictions.keySet()) {
-
-				ModelPrediction mpEpi=resultsEpi.htModelPredictions.get(key);
+			for (String qsarSmiles : htMP.keySet()) {
 				
-				if(omitChemicalsNotPredictedByEpisuite) {
-					if(mpEpi.split==0) {
-						countInEpiTraining++;
-						continue;
-					}
-					
-					if (mpEpi.pred.equals(Double.NaN) || mpEpi.pred==null) {
-						continue;
-					}
-				}
-
-				if(!htMP.containsKey(key)) {
-					continue;
-				}
+				ModelPrediction mp=htMP.get(qsarSmiles);
 				
-				ModelPrediction mp=htMP.get(key);
-				
-				if(mp.pred==null || mp.pred.isNaN()) {
-					countNoPred++;
-					continue;
-				}
-				
+				if(!smilesInCommon.contains(qsarSmiles)) continue;
+								
 				mps.add(mp);
 				preds.add(mp.pred);
 				exps.add(mp.exp);
@@ -2305,17 +2418,15 @@ public class EpisuiteValidation {
 			if(debug) {
 				System.out.println("\n***********\n"+title);
 				System.out.println(Utilities.gson.toJson(modelTestStatisticValues));
-				System.out.println("countInEpiTraining=" + countInEpiTraining);
-				System.out.println("countNoPred=" + countNoPred);
 				System.out.println("countPlotted=" + mps.size());
 			}
 
 			DecimalFormat df = new DecimalFormat("0.00");
 			String subtitle = "RMSE=" + df.format(modelTestStatisticValues.get("RMSE_Test")) + ", n=" + exps.size();
-
+			
 			if(createPlot)
-				createPlot(title,subtitle, propertyName, units, exps, preds, modelTestStatisticValues, resultsEpi.minVal,
-						resultsEpi.maxVal,outputFolder);
+				createPlot(filename, title,subtitle, propertyName, units, exps, preds, modelTestStatisticValues, axesBounds.minVal,
+						axesBounds.maxVal,outputFolder);
 
 			results.modelTestStatisticValues=modelTestStatisticValues;
 			return results;
@@ -2485,7 +2596,7 @@ public class EpisuiteValidation {
 
 			
 			if(createPlot)
-				createPlot(title, subtitle, propertyName, units, exps, preds, modelTestStatisticValues, minVal, maxVal,outputFolder);
+				createPlot(null, title, subtitle, propertyName, units, exps, preds, modelTestStatisticValues, minVal, maxVal,outputFolder);
 
 			results.minVal = minVal;
 			results.maxVal = maxVal;
@@ -2585,7 +2696,7 @@ public class EpisuiteValidation {
 			String subtitle = "RMSE="+df.format(modelTestStatisticValues.get("RMSE_Test")) + ", n=" + exps.size();
 
 			if(createPlot)
-				createPlot(title,subtitle, propertyName, units, exps, preds, modelTestStatisticValues, minVal, maxVal,outputFolder);
+				createPlot(null, title,subtitle, propertyName, units, exps, preds, modelTestStatisticValues, minVal, maxVal,outputFolder);
 
 			results.minVal = minVal;
 			results.maxVal = maxVal;
@@ -2594,7 +2705,10 @@ public class EpisuiteValidation {
 
 		}
 
-		public void createPlot(String title, String subtitle, String property, String units, List<Double> vals1, List<Double> vals2,
+		
+		
+		
+		public void createPlot(String filename, String title, String subtitle, String property, String units, List<Double> vals1, List<Double> vals2,
 				Map<String, Double> modelTestStatisticValues, Double minVal, Double maxVal,String outputFolder) {
 			double[] x = makeArray(vals1);
 			double[] y = makeArray(vals2);
@@ -2604,9 +2718,6 @@ public class EpisuiteValidation {
 
 			gov.epa.util.MatlabChart fig = new MatlabChart(); // figure('Position',[100 100 640 480]);
 
-
-	        
-			
 			//		String bob="data ("+modelTestStatisticValues.get("PearsonRSQ_Test")+")";
 
 			fig.plot(x, y, "-r", 2.0f, "data"); // plot(x,y1,'-r','LineWidth',2);
@@ -2622,8 +2733,16 @@ public class EpisuiteValidation {
 
 			// TODO for some properties it wont be logged units in labels
 
-			fig.xlabel("Experimental " + property + " " + units); // xlabel('Days');
-			fig.ylabel("Predicted " + property + " " + units); // ylabel('Price');
+			
+			String titleX="Experimental " + property + " " + units;
+			if(titleX.length()>30) titleX="Exp. " + property + " " + units;
+			
+			String titleY="Predicted " + property + " " + units;
+			if(titleY.length()>30) titleY="Pred. " + property + " " + units;
+			
+			
+			fig.xlabel(titleX); // xlabel('Days');
+			fig.ylabel(titleY); // ylabel('Price');
 			fig.grid("on", "on"); // grid on;
 			//		fig.legend("southeast");             // legend('AAPL','BAC','Location','northeast')
 
@@ -2679,8 +2798,15 @@ public class EpisuiteValidation {
 			
 			ChartPanel cp = new ChartPanel(fig.chart);
 
-
-			File imageFile = new File(outputFolder+File.separator+title+".png");
+			File imageFile=null;
+			
+			if(filename==null) {
+				imageFile = new File(outputFolder+File.separator+title+".png");
+			} else {
+				imageFile = new File(outputFolder+File.separator+filename);	
+			}
+			
+			
 			
 			int sizeSave=800;
 			int sizeDisplay=800;
@@ -2713,6 +2839,95 @@ public class EpisuiteValidation {
 				x[i++] = val;
 			}
 			return x;
+		}
+
+
+		public Results plotPredictions(String title, String propertyName, String units, Results resultsEpi,
+				Hashtable<String, ModelPrediction> htMP, boolean createPlot, boolean omitChemicalsNotPredictedByEpisuite, String outputFolder) {
+			List<Double> exps = new ArrayList<>();
+			List<Double> preds = new ArrayList<>();
+
+			Results results=new Results();
+			results.htModelPredictions=htMP;
+
+			List<ModelPrediction> mps = new ArrayList<>();
+			results.modelPredictions=mps;
+
+			int countInEpiTraining = 0;
+			int countNoPred = 0;
+
+			for (String key : resultsEpi.htModelPredictions.keySet()) {
+
+				ModelPrediction mpEpi=resultsEpi.htModelPredictions.get(key);
+				
+				if(omitChemicalsNotPredictedByEpisuite) {
+					if(mpEpi.split==0) {
+						countInEpiTraining++;
+						continue;
+					}
+					
+					if (mpEpi.pred.equals(Double.NaN) || mpEpi.pred==null) {
+						continue;
+					}
+				}
+
+				if(!htMP.containsKey(key)) {
+					continue;
+				}
+				
+				ModelPrediction mp=htMP.get(key);
+				
+				if(mp.pred==null || mp.pred.isNaN()) {
+					countNoPred++;
+					continue;
+				}
+				
+				mps.add(mp);
+				preds.add(mp.pred);
+				exps.add(mp.exp);
+				
+				if(mp.exp==null) {
+					System.out.println(mp.id+"\tnull exp\t"+title);
+				}
+				
+				                 
+//				if(mp.id.equals("CCCC1C=CC(=CC=1)C1CCC(CCCCC)CC1")) {
+//					System.out.println(Utilities.gson.toJson(mp));
+//				}
+				
+				
+//				if(mp.exp==null || mp.pred==null) {
+//					System.out.println(Utilities.gson.toJson(mp));
+//				}
+				
+//				mp.dtxcid=dpCAS.checkStructure.dsstox_dtxcid;//this might not correspond to what episuite smiles is 
+			}
+
+
+			Map<String, Double> modelTestStatisticValues = ModelStatisticCalculator.calculateContinuousStatistics(mps,
+					-9999.0, DevQsarConstants.TAG_TEST);
+
+			modelTestStatisticValues.remove("Coverage_Test");
+			modelTestStatisticValues.remove("Q2_Test");
+
+			if(debug) {
+				System.out.println("\n***********\n"+title);
+				System.out.println(Utilities.gson.toJson(modelTestStatisticValues));
+				System.out.println("countInEpiTraining=" + countInEpiTraining);
+				System.out.println("countNoPred=" + countNoPred);
+				System.out.println("countPlotted=" + mps.size());
+			}
+
+			DecimalFormat df = new DecimalFormat("0.00");
+			String subtitle = "RMSE=" + df.format(modelTestStatisticValues.get("RMSE_Test")) + ", n=" + exps.size();
+
+			if(createPlot)
+				createPlot(null, title,subtitle, propertyName, units, exps, preds, modelTestStatisticValues, resultsEpi.minVal,
+						resultsEpi.maxVal,outputFolder);
+
+			results.modelTestStatisticValues=modelTestStatisticValues;
+			return results;
+
 		}
 
 	}
@@ -2762,8 +2977,56 @@ public class EpisuiteValidation {
 			}
 
 		}
+		
+		private HashSet<String> getOperaInchiKey1s(String filename) {
 
-		private Hashtable<String,ModelPrediction> getOperaModelPredictions(String propertyName, Hashtable<String, DataPoint> htDP, long fk_dataset_id) {
+			String folder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\OPERA2.8\\OPERA_SDFS\\";
+			String filepathInput = folder + filename;//TODO pass variable
+
+			try {
+
+				IteratingSDFReader mr = new IteratingSDFReader(new FileInputStream(filepathInput),
+						DefaultChemObjectBuilder.getInstance());
+
+				int counter = 0;
+
+
+				HashSet<String>hsInchikey1s=new HashSet<>();
+
+				while (mr.hasNext()) {
+					counter++;
+					IAtomContainer m = mr.next();
+
+					String Tr_1_Tst_0=m.getProperty("Tr_1_Tst_0");
+
+					//if present in opera training or test set, it will use exp value as the predicted value
+					//So in order to get external predictions from opera, need to exclude both- so dont just use training ones
+					//				if(Tr_1_Tst_0.equals("0")) {
+					//					continue;
+					//				}
+
+					String dtxcid=m.getProperty("dsstox_compound_id");
+					String originalSmiles=m.getProperty("Original_SMILES");
+					String qsarSmiles=m.getProperty("Canonical_QSARr");
+					
+					
+					String inchiKey1=StructureUtil.indigoInchikey1FromSmiles(originalSmiles);
+//					String inchiKey1=StructureUtil.indigoInchikey1FromSmiles(qsarSmiles);
+					hsInchikey1s.add(inchiKey1);
+					//				System.out.println(CAS+"\t"+Train);
+				}
+
+				mr.close();
+				return hsInchikey1s;
+
+			} catch (Exception ex) {
+				ex.printStackTrace();
+				return null;
+			}
+
+		}
+
+		private Hashtable<String,ModelPrediction> getOperaModelPredictionsFromResQsar(String propertyName, Hashtable<String, DataPoint> htDP, long fk_dataset_id) {
 
 			String modelNameCCD=null;
 			if (propertyName.equals("LogKow")) modelNameCCD="OPERA_LogP";
@@ -2802,7 +3065,6 @@ public class EpisuiteValidation {
 				ResultSet rs = SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
 
 				Hashtable<String, Double> htPred = new Hashtable<>();
-
 
 				HashSet <String>hsDtxcidsTraining=getOperaDtxcids("LogP_QR.sdf");//seems to work better than trying to generate our own qsar smiles and mapping that way
 
@@ -2844,6 +3106,133 @@ public class EpisuiteValidation {
 				return null;
 			}		
 		}
+		
+		private Hashtable<String,ModelPrediction> getOperaModelPredictionsFromOutputFile(String of, String propertyName, String set, Hashtable<String, DataPoint> htDP_by_qsar_smiles) {
+
+
+			try {
+
+				Hashtable<String,ModelPrediction>htMPs=new Hashtable<>();
+
+				String propertyNameOpera=propertyName;
+				if(propertyName.equals("LogKow"))propertyNameOpera="LogP";
+				
+				String filename=propertyName+" "+set+" set OPERA.csv";
+				String outputFilePath=of+File.separator+filename;
+				
+//				System.out.println(new File(outputFilePath).exists());
+				
+				
+				InputStream inputStream= new FileInputStream(outputFilePath);
+				BufferedReader br=new BufferedReader(new InputStreamReader(inputStream));
+				String csvAsString = br.lines().collect(Collectors.joining("\n"));
+//				System.out.println(csvAsString);
+				
+
+				String json = CDL.toJSONArray(csvAsString).toString();
+				JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+				
+				Hashtable<String,JsonObject>htPredObjectFromMoleculeID=new Hashtable<>();
+				
+				for (JsonElement element : ja) {
+		            if (element.isJsonObject()) {
+		                JsonObject jsonObject = element.getAsJsonObject();
+		                String id = jsonObject.get("MoleculeID").getAsString();
+		                htPredObjectFromMoleculeID.put(id, jsonObject);
+		            }
+		        }
+				
+//				System.out.println(Utilities.gson.toJson(htPredObjectFromMoleculeID));
+				
+				String filepathSDF=of+File.separator+propertyName+" "+set+" set dsstox smiles.sdf";//for running percepta
+				IteratingSDFReader mr = new IteratingSDFReader(new FileInputStream(filepathSDF),
+						DefaultChemObjectBuilder.getInstance());
+				
+				int counter = 1;
+				
+				
+				HashSet <String>hsDtxcids=getOperaDtxcids(propertyNameOpera+"_QR.sdf");//seems to work better than trying to generate our own qsar smiles and mapping that way
+				HashSet <String>hsInchiKey1s=getOperaInchiKey1s(propertyNameOpera+"_QR.sdf");//seems to work better than trying to generate our own qsar smiles and mapping that way
+
+				int countByInchikey1notdtxcid=0;
+				int countByDTXCIDnotbyInchikey1=0;
+				int countByInchikey1=0;
+				int countByDTXCID=0;
+				int countByEither=0;
+				
+				while (mr.hasNext()) {
+					IAtomContainer m = mr.next();
+					String qsarSmiles=m.getProperty("qsarSmiles");
+					String originalSmiles=m.getProperty("SMILES");
+					String dtxcid=m.getProperty("dtxcid");
+					
+					String moleculeID="Molecule_"+counter;
+					
+					if(!htDP_by_qsar_smiles.containsKey(qsarSmiles)) {
+						System.out.println("No exp entry for "+qsarSmiles);
+						continue;
+					}
+					
+					Double exp=htDP_by_qsar_smiles.get(qsarSmiles).getQsarPropertyValue();
+					
+					Double pred=null;
+					
+					if(htPredObjectFromMoleculeID.containsKey(moleculeID)) {
+						JsonObject joPred=htPredObjectFromMoleculeID.get(moleculeID).getAsJsonObject();
+						
+						String fieldName=propertyNameOpera+"_pred";
+						if(propertyNameOpera.equals("WS")) fieldName="LogWS_pred";
+						
+						if(joPred.get(fieldName)!=null) {
+							pred=joPred.get(fieldName).getAsDouble();
+							if(propertyNameOpera.equals("WS"))pred=-pred;//convert to -Log10(M)
+						} else {
+							System.out.println("pred missing:"+Utilities.gson.toJson(joPred));
+						}
+					}
+					
+					String inchiKey1=StructureUtil.indigoInchikey1FromSmiles(originalSmiles);
+
+					
+					if(hsInchiKey1s.contains(inchiKey1)) countByInchikey1++;
+					if(hsDtxcids.contains(dtxcid)) countByDTXCID++;
+					if(!hsDtxcids.contains(dtxcid) && hsInchiKey1s.contains(inchiKey1)) {
+						countByInchikey1notdtxcid++;
+//						System.out.println(countByInchikey1notdtxcid+"\t"+dtxcid+"\tmatch by inchiKey1 but not dtxcid");
+					}
+					if(hsDtxcids.contains(dtxcid) && !hsInchiKey1s.contains(inchiKey1)) {
+						countByDTXCIDnotbyInchikey1++;
+//						System.out.println(countByDTXCIDnotbyInchikey1+"\t"+dtxcid+"\t"+originalSmiles+"\tmatch by dtxcid but not by inchiKey1");
+					}
+					
+					Integer splitNum=null;
+					
+					if(hsInchiKey1s.contains(inchiKey1)) {
+						splitNum=0;
+					} else {
+						splitNum=1;
+					}
+					
+					ModelPrediction mp=new ModelPrediction(qsarSmiles, exp, pred, splitNum);
+					htMPs.put(qsarSmiles, mp);
+					counter++;
+//					System.out.println(moleculeID+"\t"+Utilities.gson.toJson(mp));
+				}
+				
+//				System.out.println("countByInchikey1notdtxcid="+countByInchikey1notdtxcid);
+//				System.out.println("countByDTXCIDnotbyInchikey1="+countByDTXCIDnotbyInchikey1);
+//				System.out.println("countByInchikey1="+countByInchikey1);
+//				System.out.println("countByDTXCID="+countByDTXCID);
+//				System.out.println(Utilities.gson.toJson(htMPs));
+
+				return htMPs;
+
+			} catch (Exception ex) {
+				ex.printStackTrace();
+				return null;
+			}		
+		}
+
 
 		@Deprecated
 		private HashSet<String> getOperaTrainingSmiles() {
@@ -2934,19 +3323,8 @@ public class EpisuiteValidation {
 					}
 
 
-					HttpResponse<String> standardizeResponse = standardizer.callQsarReadyStandardizePost(Smiles, false,workflow);
-
-					//				System.out.println("status=" + standardizeResponse.getStatus());
-
-					String qsarSmiles = null;
-
-					if (standardizeResponse.getStatus() == 200) {
-						String jsonResponse = SciDataExpertsStandardizer.getResponseBody(standardizeResponse,
-								useFullStandardize);
-						qsarSmiles = SciDataExpertsStandardizer.getQsarReadySmilesFromPostJson(jsonResponse,
-								useFullStandardize);
-					}
-
+					String qsarSmiles = du.standardize(Smiles);
+					
 					if(qsarSmiles==null) {
 						System.out.println("Cant generate qsarSmiles for "+Smiles);
 						continue;
@@ -3259,7 +3637,7 @@ public class EpisuiteValidation {
 		/**
 		 * TODO is this still being used?
 		 * 
-		 * @param propertyName
+		 * @param endpoint
 		 * @param createPlot
 		 * @param omitChemicalsNotPredictedByEpisuite
 		 * @param units
@@ -4130,9 +4508,6 @@ public class EpisuiteValidation {
 				int countT = 0;
 				int countOther = 0;
 
-				String workflow = "qsar-ready";
-				String serverHost = "https://hcd.rtpnc.epa.gov";
-				SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(workflow, serverHost);
 
 				fw.write("CAS\tset\tSmiles\tqsarSmiles\r\n");
 
@@ -4183,7 +4558,7 @@ public class EpisuiteValidation {
 					if (set.isBlank())
 						continue;
 
-					HttpResponse<String> standardizeResponse = standardizer.callQsarReadyStandardizePost(Smiles, false);
+					HttpResponse<String> standardizeResponse = SciDataExpertsStandardizer.callQsarReadyStandardizePost(Smiles,false, workflow,serverHost);
 
 					//				System.out.println("status=" + standardizeResponse.getStatus());
 
@@ -4235,7 +4610,7 @@ public class EpisuiteValidation {
 			} 
 
 			if(filename==null) {
-				System.out.println("Need to handle "+propertyName+" "+modelNameEpi+" in getEpisuiteIsisTrainingSetCAS()");
+				System.out.println("getEpisuiteIsisTrainingSetCAS(), Need to handle "+propertyName+" "+modelNameEpi+" in getEpisuiteIsisTrainingSetCAS()");
 				return null;
 			}
 
@@ -4318,6 +4693,100 @@ public class EpisuiteValidation {
 		}
 		
 		
+		private HashSet<String> getEpisuiteIsisTrainingSetInchiKey1(String propertyName,String modelNameEpi) {
+
+			HashSet<String>hsInchikey1=new HashSet<>();
+
+			
+
+			String folder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\EpisuiteISIS\\EPI_SDF_Data\\";
+
+			String filename=null;
+
+			if(propertyName.equals("LogKow")) filename="EPI_Kowwin_Data_SDF.sdf";
+			else if(propertyName.equals("WS")) {
+				if(modelNameEpi.equals("WaterNT")) filename="EPI_WaterFrag_Data_SDF.sdf";
+				else if (modelNameEpi.equals("WSKOW")) 	filename="EPI_Wskowwin_Data_SDF.sdf";
+			} 
+
+			if(filename==null) {
+				System.out.println("getEpisuiteIsisTrainingSetInchiKey1(), Need to handle "+propertyName+" "+modelNameEpi+" in getEpisuiteIsisTrainingSetCAS()");
+				return null;
+			}
+
+
+			String filepathInput = folder + filename;
+
+			try {
+
+				IteratingSDFReader mr = new IteratingSDFReader(new FileInputStream(filepathInput),
+						DefaultChemObjectBuilder.getInstance());
+
+				String filepathOut = "data\\episuite\\episuite validation\\LogKow\\LogKow episuite training set.txt";
+
+
+				int counter = 0;
+
+				//			DescriptorFactory df=new DescriptorFactory(false);
+
+				int countT = 0;
+				int countOther = 0;
+
+
+
+				while (mr.hasNext()) {
+					counter++;
+					IAtomContainer m = mr.next();
+
+					
+					String Train = m.getProperty("Train");
+					String DataSet = m.getProperty("DataSet");
+
+					String set = "";
+
+					if(DataSet!=null) {
+
+//						if (DataSet.equals("T") || DataSet.equals("S")) {
+						if (DataSet.equals("T")) {
+							set=DataSet;
+							countT++;
+						} else {
+							countOther++;
+						}
+					} else if (Train!=null) {
+
+//						if (Train.equals("T") || Train.equals("S")) {
+						if (Train.equals("T")) {
+							countT++;
+							set = Train;
+						} else {
+							countOther++;
+						}
+					} else {
+						countOther++;
+					}
+
+					//				String inchi=StructureUtil.indigoInchikeyFromSmiles(Smiles);
+
+					if (set.isBlank())
+						continue;
+
+					String inchiKey1=StructureUtil.indigoInchikey1FromAtomContainer(m);
+					hsInchikey1.add(inchiKey1);
+
+					//				System.out.println(CAS+"\t"+Train);
+				}
+
+				//				System.out.println("CountT=" + countT);
+				//				System.out.println("CountOther=" + countOther);
+
+				return hsInchikey1;		
+			} catch (Exception ex) {
+				ex.printStackTrace();
+				return hsInchikey1;
+			}
+
+		}
 		
 		
 		private Double [] getEpisuiteIsisTrainingSetMW_Range(String propertyName,String modelNameEpi) {
@@ -4337,7 +4806,7 @@ public class EpisuiteValidation {
 			} 
 
 			if(filename==null) {
-				System.out.println("Need to handle "+propertyName+" "+modelNameEpi+" in getEpisuiteIsisTrainingSetCAS()");
+				System.out.println("getEpisuiteIsisTrainingSetMW_Range(), Need to handle "+propertyName+" "+modelNameEpi+" in getEpisuiteIsisTrainingSetCAS()");
 				return null;
 			}
 
@@ -4674,12 +5143,17 @@ public class EpisuiteValidation {
 		class PredResult {
 			Double pred;
 			Boolean insideAD;
+			String qsarClass;
 		}
 
 		public Hashtable<String, ModelPrediction> getEpisuiteModelPredictions(String propertyName,String modelName,
 				Hashtable<String, DataPoint> htDP,Hashtable<String,CheckStructure>htCS_by_DP_QsarSmiles,String filepathEpisuiteOutput) {
 
 
+			
+			System.out.println("Enter getEpisuiteModelPredictions()");
+			
+			
 			//			System.out.println("Here2:"+Utilities.gson.toJson(htDP.get("CC1C(CCC(=O)OC)C(N=C1C(C)=O)=C1CC(=O)C2=C1NC(C=C1N=C(CC3=NC(=O)C(C)=C3CC)C(C)=C1CC)=C2C")));
 
 			try {
@@ -4688,17 +5162,23 @@ public class EpisuiteValidation {
 
 				HashSet<String> hsSmilesEpisuiteTraining = new HashSet<>();
 				HashSet<String> hsCASEpisuiteTraining = new HashSet<>();
+				HashSet<String> hsInchikey1Training = new HashSet<>();
 
 				if (propertyName.equals("LogKow") || propertyName.equals("WS")) {
 					hsSmilesEpisuiteTraining = getEpisuiteIsisTrainingSmiles2(propertyName,modelName);
 					hsCASEpisuiteTraining = getEpisuiteIsisTrainingSetCAS(propertyName, modelName);
+					hsInchikey1Training=getEpisuiteIsisTrainingSetInchiKey1(propertyName, modelName);
+					
 				} else if (propertyName.equals("96HR_Fish_LC50")) {
 					hsSmilesEpisuiteTraining = getEcosarTrainingSmiles(filepathEpisuiteOutput);
+					System.out.println("Number of chemicals in episuite training set="+hsSmilesEpisuiteTraining.size());
+					
 				} else if (propertyName.equals("HLC")) {
 					// get from Appendix G of EPI Suite user guide for HLC
 				}
 
 				Double [] rangeMW=getEpisuiteIsisTrainingSetMW_Range(propertyName, modelName);
+				Double [] rangeMW_LogKow=getEpisuiteIsisTrainingSetMW_Range("LogKow", modelName);
 
 				
 				Hashtable<String, ModelPrediction> htPreds = new Hashtable<>();
@@ -4734,15 +5214,37 @@ public class EpisuiteValidation {
 
 					Double exp=dp.getQsarPropertyValue();
 
-
 					Integer splitNum = getSplitNum(htCS_by_DP_QsarSmiles, hsSmilesEpisuiteTraining,
 							hsCASEpisuiteTraining, er);
 
+//					Integer splitNum = getSplitNum(er.smiles, hsInchikey1Training);
 
 					PredResult pr = getPredictionResult(propertyName, modelName, er,rangeMW);
+					
+					if(propertyName.equals("96HR_Fish_LC50")) {
+						
+						if(er.ecosar!=null && er.ecosar.parameters.logKow.valueType.equals("ESTIMATED")) {
+
+							PredResult prLogKow = getPredictionResult("LogKow", modelName, er,rangeMW_LogKow);
+
+							if(pr.insideAD==true && !prLogKow.insideAD) {
+								pr.insideAD=false;
+//								System.out.println(pr.insideAD+"\t"+prLogKow.insideAD);
+							}
+							
+						}
+					}
+					
+					
+//					if(modelName.equals("WSKOW"))
+//						System.out.println(er.canonQsarSmiles+"\t"+pr.pred+"\t"+pr.insideAD);
+					
 
 					ModelPrediction mp=new ModelPrediction(er.canonQsarSmiles,exp,pr.pred,splitNum,pr.insideAD);				
 
+					mp.qsarClass=pr.qsarClass;
+					
+					
 					//					mp.dtxcid=dp.getQsar_dtxcid();
 					//					if(htCS_by_DP_QsarSmiles.containsKey(er.canonQsarSmiles)) {
 					//						mp.dtxcid=htCS_by_DP_QsarSmiles.get(er.canonQsarSmiles).dsstox_dtxcid;	
@@ -4787,6 +5289,17 @@ public class EpisuiteValidation {
 			return splitNum;
 		}
 
+		
+		private Integer getSplitNum(String smiles,HashSet<String> hsInchikey1EpisuiteTraining) {
+
+			Integer splitNum=null;
+			
+			String inchikey1=StructureUtil.indigoInchikey1FromSmiles(smiles);
+			if(hsInchikey1EpisuiteTraining.contains(inchikey1)) splitNum=0;
+			else splitNum=1;
+			
+			return splitNum;
+		}
 
 		public Hashtable<String, ModelPrediction> getEpisuiteModelPredictionsByCAS(String propertyName,String modelName,
 				Hashtable<String, DataPoint> htDP_CAS,String filepathEpisuiteOutput) {
@@ -5008,6 +5521,7 @@ public class EpisuiteValidation {
 
 
 				} else if(modelName.equals("WSKOW") && er.waterSolubilityFromLogKow != null) {
+					
 					pr.pred = er.waterSolubilityFromLogKow.estimatedValue.value;
 					pr.pred /= 1000.0;// g/L
 					pr.pred /= er.chemicalProperties.molecularWeight;// mol/L
@@ -5020,13 +5534,22 @@ public class EpisuiteValidation {
 					if(MW<rangeMW_Training[0] || MW>rangeMW_Training[1]) insideMWDomain=false;
 					
 					//Use logKow fragments:
-					boolean insideFragmentDomain=insideFragmentDomain(er.logKow.estimatedValue);					pr.insideAD=insideFragmentDomain && insideMWDomain;
+					boolean insideFragmentDomain=insideFragmentDomain(er.logKow.estimatedValue);	
+					
+					if(er.waterSolubilityFromLogKow.parameters.logKow.valueType.equals("EXPERIMENTAL")) {
+						insideFragmentDomain=true;
+					}
+					pr.insideAD=insideFragmentDomain && insideMWDomain;
+					
+					
 				}
 
 			} else if (propertyName.equals("96HR_Fish_LC50")) {
-				EcosarResult ecosarResult = getEcosar96hrFishToxicityMax(er);
+				PredResult ecosarResult = getEcosar96hrFishToxicityMax(er);
+//				PredResult ecosarResult = getEcosar96hrFishToxicityMedian(er);
 				pr.pred=ecosarResult.pred;
 				pr.insideAD=ecosarResult.insideAD;
+				pr.qsarClass=ecosarResult.qsarClass;
 			}
 
 			//				System.out.println(er.dtxcid+"\t"+er.canonQsarSmiles+"\t"+pred+"\t"+er.error);
@@ -5640,53 +6163,125 @@ public class EpisuiteValidation {
 
 
 
-		private EcosarResult getEcosar96hrFishToxicityMax(EpisuiteResults er) {
+		private PredResult getEcosar96hrFishToxicityMax(EpisuiteResults er) {
 
-			EcosarResult ecosarResult=new EcosarResult();
+			PredResult pr=new PredResult();
+			if (er.ecosar == null) return pr;
 
-			if (er.ecosar != null) {
+			int predCount=0;
 
-				//			System.out.println(er.smiles);
-				//			inEcosarTrainingSet(er.ecosar.output);
+			//			System.out.println(er.smiles);
+			//			inEcosarTrainingSet(er.ecosar.output);
 
-				for (ModelResult mr : er.ecosar.modelResults) {
-					if (!mr.organism.equals("Fish"))
-						continue;
-					if (!mr.endpoint.equals("LC50"))
-						continue;
-					if (!mr.duration.equals("96-hr"))
-						continue;
+			for (ModelResult mr : er.ecosar.modelResults) {
+				if (!mr.organism.equals("Fish"))
+					continue;
+				if (!mr.endpoint.equals("LC50"))
+					continue;
+				if (!mr.duration.equals("96-hr"))
+					continue;
 
-					//							System.out.println(Utilities.gson.toJson(mr));
+				//							System.out.println(Utilities.gson.toJson(mr));
 
-					double predNew = mr.concentration;// mg/L value
-					predNew /= 1000.0;// g/L
-					predNew /= er.chemicalProperties.molecularWeight;// mol/L
-					predNew = -Math.log10(predNew);// -logM
+				double predNew = mr.concentration;// mg/L value
+				predNew /= 1000.0;// g/L
+				predNew /= er.chemicalProperties.molecularWeight;// mol/L
+				predNew = -Math.log10(predNew);// -logM
 
-					if (ecosarResult.pred == null || predNew > ecosarResult.pred) {
-						ecosarResult.pred = predNew;
+				predCount++;
 
-						if(er.ecosar.parameters.logKow.value > mr.maxLogKow) {
-							ecosarResult.insideAD=false;	
-						} else {
-							ecosarResult.insideAD=true;
-						}
+				if (pr.pred == null || predNew > pr.pred) {
+					pr.pred = predNew;
+					pr.qsarClass=mr.qsarClass;
+
+					if(er.ecosar.parameters.logKow.value > mr.maxLogKow) {
+						pr.insideAD=false;	
+					} else {
+						pr.insideAD=true;
 					}
 				}
-				//		System.out.println(er.smiles+"\t"+pred);
 			}
 
-			return ecosarResult;
+//			System.out.println(er.canonQsarSmiles+"\t"+predCount);
+			//		System.out.println(er.smiles+"\t"+pred);
+			return pr;
+		}
+		
+		
+		private PredResult getEcosar96hrFishToxicityMedian(EpisuiteResults er) {
+
+			PredResult pr=new PredResult();
+			if (er.ecosar == null) return pr;
+
+			//			System.out.println(er.smiles);
+			//			inEcosarTrainingSet(er.ecosar.output);
+			
+			List<Double>vals=new ArrayList<>();
+			
+			for (ModelResult mr : er.ecosar.modelResults) {
+				if (!mr.organism.equals("Fish"))
+					continue;
+				if (!mr.endpoint.equals("LC50"))
+					continue;
+				if (!mr.duration.equals("96-hr"))
+					continue;
+
+				//							System.out.println(Utilities.gson.toJson(mr));
+
+				double predNew = mr.concentration;// mg/L value
+				predNew /= 1000.0;// g/L
+				predNew /= er.chemicalProperties.molecularWeight;// mol/L
+				predNew = -Math.log10(predNew);// -logM
+
+				if(er.ecosar.parameters.logKow.value < mr.maxLogKow) {
+					vals.add(predNew);
+				}
+			}
+			
+			if(vals.size()>0) pr.insideAD=true;
+			else pr.insideAD=false;
+			
+			pr.pred=calculateMedian(vals);
+
+//			System.out.println(er.canonQsarSmiles+"\t"+predCount);
+
+			//		System.out.println(er.smiles+"\t"+pred);
+
+
+			return pr;
 		}
 
+		
+		public static Double calculateMedian(List<Double> vals) {
+	        if (vals == null || vals.isEmpty()) {
+	            return null; // Return null if the list is empty
+	        }
+
+	        // Sort the list
+	        Collections.sort(vals);
+
+	        int size = vals.size();
+	        if (size % 2 == 1) {
+	            // If the list size is odd, return the middle element
+	            return vals.get(size / 2);
+	        } else {
+	            // If the list size is even, return the average of the two middle elements
+	            double middle1 = vals.get((size / 2) - 1);
+	            double middle2 = vals.get(size / 2);
+	            return (middle1 + middle2) / 2.0;
+	        }
+	    }
 
 		public LinkedHashMap<String, Double> getEpisuitePredictions(boolean writeFile, String propertyName,String modelName,
 				String filepathJson,String key) {
 
 			try {
 				
-				Double [] rangeMW=getEpisuiteIsisTrainingSetMW_Range(propertyName, modelName);
+				Double [] rangeMW=null;
+				
+				if(!propertyName.equals("96HR_Fish_LC50")) {
+					rangeMW=getEpisuiteIsisTrainingSetMW_Range(propertyName, modelName);
+				}
 
 
 				BufferedReader br = new BufferedReader(new FileReader(filepathJson));
@@ -5728,7 +6323,8 @@ public class EpisuiteValidation {
 
 					if(key.equals("canonQsarSmiles")) {						
 						if(er.canonQsarSmiles==null) continue;
-						htPreds.put(er.canonQsarSmiles, pr.pred);	
+						htPreds.put(er.canonQsarSmiles, pr.pred);
+						countPredicted++;
 					} else if (key.equalsIgnoreCase("cas")) {
 						if(er.chemicalProperties==null)	continue;
 						String CAS2=er.chemicalProperties.cas;
@@ -6146,7 +6742,7 @@ public class EpisuiteValidation {
 					String finalSmiles=mappedSmiles;
 					if(mappedSmiles==null) finalSmiles=sourceSmiles;
 		
-					String qsarSmiles=du.standardize(finalSmiles, false, workflow);
+					String qsarSmiles=du.standardize(finalSmiles);
 					//			System.out.println(acceptMapping+"\t"+sourceSmiles+"\t"+mappedSmiles+"\t"+finalSmiles+"\t"+qsarSmiles);
 					System.out.println(++counter+"\t"+finalSmiles+"\t"+qsarSmiles);
 		
@@ -6343,10 +6939,11 @@ public class EpisuiteValidation {
 
 
 
-	static class EcosarResult {
-		Double pred;
-		Boolean insideAD;
-	}
+//	static class EcosarResult {
+//		Double pred;
+//		Boolean insideAD;
+//		String qsarClass;
+//	}
 
 
 	class Results {
@@ -6635,10 +7232,28 @@ public class EpisuiteValidation {
 	}
 
 
-	private Long getModelID(String datasetName) {
-		String sqlModelId = "select * from qsar_models.models where dataset_name like '" + datasetName
-				+ "' and splitting_name='RND_REPRESENTATIVE' and fk_descriptor_embedding_id is not null;";
+	public static Long getModelID(String datasetName) {
+//		String sqlModelId = "select * from qsar_models.models where dataset_name like '" + datasetName
+//				+ "' and splitting_name='RND_REPRESENTATIVE' "
+//				+ " and descriptor_set_name='WebTEST-default'"
+//				+ "and fk_descriptor_embedding_id is not null;";
+		
+		String sqlModelId="select * from qsar_models.models\r\n"
+				+ "         join qsar_models.methods m2 on models.fk_method_id = m2.id\r\n"
+				+ "         where dataset_name ='"+datasetName+"'\r\n"
+				+ "           and splitting_name='RND_REPRESENTATIVE'\r\n"
+				+ "           and m2.name='xgb_regressor_1.4'\r\n"
+				+ "           and descriptor_set_name='WebTEST-default'\r\n"
+				+ "           and fk_descriptor_embedding_id is not null;";
+				
+		
 		String strModelId = SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sqlModelId);
+		
+		
+		System.out.println(sqlModelId);
+		
+//		System.out.println("TEST model id="+strModelId);
+		
 		Long modelId = Long.parseLong(strModelId);
 		return modelId;
 	}
@@ -6839,16 +7454,28 @@ public class EpisuiteValidation {
 		}
 		Results resultsEpi = plot.plotEpisuitePredictions(titleEpi, propertyName, modelNameEpi, units, htMP_epi,
 				 omitTrainingEpi,createPlot,of);
+//		try {
+//			FileWriter fw=new FileWriter (of+File.separator+"epi1.json");
+//			fw.write(Utilities.gson.toJson(resultsEpi.modelPredictions));
+//			fw.flush();
+//			fw.close();
+//
+//		} catch (Exception ex) {
+//			ex.printStackTrace();
+//		}
+
 
 		//******************************************************************************************************
 		//EPI Suite API
+		
+		Results resultsEpi2=null;
 		if(modelNameEpi2!=null) {
 			Hashtable<String,ModelPrediction>htMP_epi2=episuite.getEpisuiteModelPredictions(propertyName, modelNameEpi2, htDP_by_dsstox_qsar_smiles,htCS_by_DP_QsarSmiles, filepathEpisuiteResultsTestSet);
 			titleEpi="Test set "+propertyName+" EPI Suite API";
 			if(modelNameEpi2!=null) {
 				titleEpi="Test set "+propertyName+" EPI Suite API "+modelNameEpi2;
 			}
-			Results resultsEpi2 = plot.plotEpisuitePredictions(titleEpi, propertyName, modelNameEpi2, units, htMP_epi2,
+			resultsEpi2 = plot.plotEpisuitePredictions(titleEpi, propertyName, modelNameEpi2, units, htMP_epi2,
 					 omitTrainingEpi,createPlot,of);
 		}
 		
@@ -6884,7 +7511,11 @@ public class EpisuiteValidation {
 		String title="Worst Epi Suite predictions for "+ propertyName+" using revised dsstox qsar ready smiles";
 //		episuite.writeBadEpisuitePredictions(title, propertyName,datasetName, modelNameEpi, of, filepathEpisuiteResultsTestSet, resultsEpi, resultsTest);
 		
-		this.cm.writeBadPredictions("test set", of, propertyName, "EpiSuite", "TEST", resultsEpi, resultsTest);
+		this.cm.writeBadPredictions("test set", of, propertyName, modelNameEpi, "TEST", resultsEpi, resultsTest);
+		
+		if(modelNameEpi2!=null)
+			this.cm.writeBadPredictions("test set", of, propertyName, modelNameEpi2, "TEST", resultsEpi2, resultsTest);
+
 		this.cm.writeBadPredictions("test set", of, propertyName, "TEST","EpiSuite", resultsTest, resultsEpi);
 
 		if(resultsPercepta!=null)
@@ -7391,7 +8022,7 @@ public class EpisuiteValidation {
 
 				if(cm.have5BondedNitrogen(mp, ac,smiles)) {
 					
-					String smiles2=du.standardize(smiles, false, "qsar-ready_04242025");
+					String smiles2=du.standardize(smiles, "qsar-ready_04242025");
 
 					IAtomContainer ac2=sp.parseSmiles(smiles2);
 					AtomContainerManipulator.percieveAtomTypesAndConfigureAtoms(ac2);	
@@ -7488,87 +8119,16 @@ public class EpisuiteValidation {
 	 */
 	Map<String,Map<String, Double>> runPropertyDetailed(String propertyName,String modelSource, String modelName,String subfolder, String workflow) {
 
-		String propertyNameDataset = propertyName;
-		if (propertyName.equals("LogKow"))
-			propertyNameDataset = "LogP";
-
-		String of = "data\\episuite\\episuite validation\\" + propertyName+"\\"+subfolder;
-
-		new File(of).mkdirs();
-
-		String datasetName = propertyNameDataset + " v1 modeling";
-		if(propertyName.equals("96HR_Fish_LC50")) {
-			datasetName = "ECOTOX_2024_12_12_96HR_Fish_LC50_v3 modeling";
-		}
-		long fk_dataset_id = du.getDatasetId(datasetName);
-
-		String datapointsFilePath = of + File.separator + datasetName + " test set.json";
-		File fileDatapoints=new File(datapointsFilePath);
-		if(!fileDatapoints.exists()) {
-//			du.createTestSetDatapointsFile(datapointsFilePath, fk_dataset_id,true);	
-			du.createTestSetDatapointsFile2(datapointsFilePath, fk_dataset_id);
-		}
-
-		Hashtable<String, DataPoint> htDP = du.getDatapoints(datapointsFilePath);
-		Hashtable<String, ModelPrediction>htMPs=null;
-
-		String filepathEpisuiteResultsTestSet=datapointsFilePath.replace(".json", " episuite results.json");
-
-		long modelId=getModelID(datasetName);
-
-		Hashtable<String,CheckStructure>htCS_by_DP_QsarSmiles=du.createHashtableCheckStructureByDPQsarSmiles(fk_dataset_id);
-		setCheckStructure(htDP, htCS_by_DP_QsarSmiles);
-		
-		
-		if(subfolder.equals("run using our qsarSmiles")) {
-			
-			if(modelSource.equals(DevQsarConstants.sourceNameEPISuiteAPI)) {
-				htMPs=episuite.getEpisuiteModelPredictions(propertyName,modelName,htDP,htCS_by_DP_QsarSmiles,filepathEpisuiteResultsTestSet);
-			} else if(modelSource.equals(DevQsarConstants.SOURCE_CHEMINFORMATICS_MODULES)) {
-				htMPs=cm.getResQsarModelPredictions(modelId,true,htCS_by_DP_QsarSmiles,applicability_domain);	
-			} else if(modelSource.equals(DevQsarConstants.sourceNameOPERA28)) {
-				htMPs=opera.getOperaModelPredictions(propertyName, htDP,fk_dataset_id);
-			} else if(modelSource.equals(DevQsarConstants.sourceNamePercepta2023)) {
-//				htMPs=percepta.getPerceptaModelPredictionsFromDB_Original_Smiles(propertyName, htDP,fk_dataset_id);
-				htMPs=percepta.getPerceptaModelPredictionsFromSDF_ByQsarSmiles(propertyName,"test", of, htDP, "qsar smiles");
-			}
-			
-		} else if(subfolder.equals("run from episuite smiles from CAS")) {
-			
-			Hashtable<String, DataPoint> htDP_CAS = getHashtableDP_CAS(htDP,htCS_by_DP_QsarSmiles);
-			
-			if(modelSource.equals(DevQsarConstants.sourceNameEPISuiteAPI)) {
-				htMPs=episuite.getEpisuiteModelPredictionsByCAS(propertyName,modelName,htDP_CAS,filepathEpisuiteResultsTestSet);
-			} else if(modelSource.equals(DevQsarConstants.SOURCE_CHEMINFORMATICS_MODULES)) {
-				htMPs=cm.getResQsarModelPredictionsByCAS(of, filepathEpisuiteResultsTestSet, modelId, htDP_CAS, true,workflow);
-			}  else if(modelSource.equals(DevQsarConstants.sourceNamePercepta2023)) {
-				htMPs=percepta.getPerceptaModelPredictionsFromSDF_ByCAS(propertyName, "test", of, htDP_CAS, "episuite smiles");
-			}
-			
-		} else if (subfolder.equals("run from revised dsstox original smiles")) {
-
-			LinkedHashMap<String, SmilesToQsarSmiles>htSmilesToQsarSmiles=du.getQsarSmilesHashtableRevised(of+File.separator+"dsstox_smiles to qsar smiles "+workflow+".json", htCS_by_DP_QsarSmiles,workflow);
-			Hashtable<String, DataPoint> htDP_by_dsstox_qsar_smiles=du.createRevisedDataPointHashtableByQsarSmiles(htDP, htCS_by_DP_QsarSmiles, htSmilesToQsarSmiles);
-
-			if(modelSource.equals(DevQsarConstants.sourceNameEPISuiteAPI)) {
-				htMPs=episuite.getEpisuiteModelPredictions(propertyName, modelName, htDP_by_dsstox_qsar_smiles,htCS_by_DP_QsarSmiles, filepathEpisuiteResultsTestSet);
-			} else if(modelSource.equals(DevQsarConstants.SOURCE_CHEMINFORMATICS_MODULES)) {
-				htMPs=cm.getResQsarModelPredictionsRevisedDsstoxSmiles(of, propertyName, modelId, true, htDP_by_dsstox_qsar_smiles);
-//				System.out.println(Utilities.gson.toJson(htMPs));
-			} else if(modelSource.equals(DevQsarConstants.sourceNameOPERA28)) {
-				
-			} else if(modelSource.equals(DevQsarConstants.sourceNamePercepta2023)) {
-//				htMPs=percepta.getPerceptaModelPredictionsFromDB_Original_Smiles(propertyName, htDP,fk_dataset_id);
-				htMPs=percepta.getPerceptaModelPredictionsFromSDF_ByQsarSmiles(propertyName, "test", of, htDP_by_dsstox_qsar_smiles, "dsstox smiles");
-//				System.out.println(Utilities.gson.toJson(htMPs));
-			}
-			
-			
-		}
-		
-//		System.out.println("jere2");
+		Hashtable<String, ModelPrediction>htMPs=getModelPredictions(propertyName, modelSource, modelName, subfolder, workflow);
 //		System.out.println(Utilities.gson.toJson(htMPs));
+		Map<String, Map<String, Double>> mapAll = calculateStats(propertyName, modelSource, modelName, htMPs);
+		return mapAll;
 
+	}
+
+
+	private Map<String, Map<String, Double>> calculateStats(String propertyName, String modelSource, String modelName,
+			Hashtable<String, ModelPrediction> htMPs) {
 		Map<String,Map<String, Double>>mapAll=new LinkedHashMap<>();//keeps insertion order
 		
 //		for (String key:htMPs.keySet()) {
@@ -7614,8 +8174,95 @@ public class EpisuiteValidation {
 		for (String statName:statNames) {
 			printStat(mapAll, statName);			
 		}
-		
 		return mapAll;
+	}
+	
+	
+	Hashtable<String, ModelPrediction> getModelPredictions(String propertyName,String modelSource, String modelName,String subfolder, String workflow) {
+
+		String propertyNameDataset = propertyName;
+		if (propertyName.equals("LogKow"))
+			propertyNameDataset = "LogP";
+
+		String of = "data\\episuite\\episuite validation\\" + propertyName+"\\"+subfolder;
+
+		new File(of).mkdirs();
+
+		String datasetName = propertyNameDataset + " v1 modeling";
+		if(propertyName.equals("96HR_Fish_LC50")) {
+			datasetName = "ECOTOX_2024_12_12_96HR_Fish_LC50_v3 modeling";
+		}
+		long fk_dataset_id = du.getDatasetId(datasetName);
+
+		String datapointsFilePath = of + File.separator + datasetName + " test set.json";
+		File fileDatapoints=new File(datapointsFilePath);
+		if(!fileDatapoints.exists()) {
+//			du.createTestSetDatapointsFile(datapointsFilePath, fk_dataset_id,true);	
+			du.createTestSetDatapointsFile2(datapointsFilePath, fk_dataset_id);
+		}
+
+		Hashtable<String, DataPoint> htDP = du.getDatapoints(datapointsFilePath);
+		Hashtable<String, ModelPrediction>htMPs=null;
+
+		String filepathEpisuiteResultsTestSet=datapointsFilePath.replace(".json", " episuite results.json");
+
+		long modelId=getModelID(datasetName);
+
+		Hashtable<String,CheckStructure>htCS_by_DP_QsarSmiles=du.createHashtableCheckStructureByDPQsarSmiles(fk_dataset_id);
+		setCheckStructure(htDP, htCS_by_DP_QsarSmiles);
+		
+		
+		if(subfolder.equals("run using our qsarSmiles")) {
+			
+			if(modelSource.equals(DevQsarConstants.sourceNameEPISuiteAPI)) {
+				htMPs=episuite.getEpisuiteModelPredictions(propertyName,modelName,htDP,htCS_by_DP_QsarSmiles,filepathEpisuiteResultsTestSet);
+			} else if(modelSource.equals(DevQsarConstants.SOURCE_CHEMINFORMATICS_MODULES)) {
+				htMPs=cm.getResQsarModelPredictions(modelId,true,htCS_by_DP_QsarSmiles,applicability_domain);	
+			} else if(modelSource.equals(DevQsarConstants.sourceNameOPERA28)) {
+				htMPs=opera.getOperaModelPredictionsFromResQsar(propertyName, htDP,fk_dataset_id);
+			} else if(modelSource.equals(DevQsarConstants.sourceNamePercepta2023)) {
+//				htMPs=percepta.getPerceptaModelPredictionsFromDB_Original_Smiles(propertyName, htDP,fk_dataset_id);
+				htMPs=percepta.getPerceptaModelPredictionsFromSDF_ByQsarSmiles(propertyName,"test", of, htDP, "qsar smiles");
+			}
+			
+		} else if(subfolder.equals("run from episuite smiles from CAS")) {
+			
+			Hashtable<String, DataPoint> htDP_CAS = getHashtableDP_CAS(htDP,htCS_by_DP_QsarSmiles);
+			
+			if(modelSource.equals(DevQsarConstants.sourceNameEPISuiteAPI)) {
+				htMPs=episuite.getEpisuiteModelPredictionsByCAS(propertyName,modelName,htDP_CAS,filepathEpisuiteResultsTestSet);
+			} else if(modelSource.equals(DevQsarConstants.SOURCE_CHEMINFORMATICS_MODULES)) {
+				htMPs=cm.getResQsarModelPredictionsByCAS(of, filepathEpisuiteResultsTestSet, modelId, htDP_CAS, true,workflow);
+			}  else if(modelSource.equals(DevQsarConstants.sourceNamePercepta2023)) {
+				htMPs=percepta.getPerceptaModelPredictionsFromSDF_ByCAS(propertyName, "test", of, htDP_CAS, "episuite smiles");
+			}
+			
+		} else if (subfolder.equals("run from revised dsstox original smiles")) {
+
+			LinkedHashMap<String, SmilesToQsarSmiles>htSmilesToQsarSmiles=du.getQsarSmilesHashtableRevised(of+File.separator+"dsstox_smiles to qsar smiles "+workflow+".json", htCS_by_DP_QsarSmiles,workflow);
+			Hashtable<String, DataPoint> htDP_by_dsstox_qsar_smiles=du.createRevisedDataPointHashtableByQsarSmiles(htDP, htCS_by_DP_QsarSmiles, htSmilesToQsarSmiles);
+
+			if(modelSource.equals(DevQsarConstants.sourceNameEPISuiteAPI)) {
+				htMPs=episuite.getEpisuiteModelPredictions(propertyName, modelName, htDP_by_dsstox_qsar_smiles,htCS_by_DP_QsarSmiles, filepathEpisuiteResultsTestSet);
+			} else if(modelSource.equals(DevQsarConstants.SOURCE_CHEMINFORMATICS_MODULES)) {
+				htMPs=cm.getResQsarModelPredictionsRevisedDsstoxSmiles(of, propertyName, modelId, true, htDP_by_dsstox_qsar_smiles);
+//				System.out.println(Utilities.gson.toJson(htMPs));
+			} else if(modelSource.equals(DevQsarConstants.sourceNameOPERA28)) {
+				htMPs=this.opera.getOperaModelPredictionsFromOutputFile(of,propertyName, "test",htDP_by_dsstox_qsar_smiles);
+				
+			} else if(modelSource.equals(DevQsarConstants.sourceNamePercepta2023)) {
+//				htMPs=percepta.getPerceptaModelPredictionsFromDB_Original_Smiles(propertyName, htDP,fk_dataset_id);
+				htMPs=percepta.getPerceptaModelPredictionsFromSDF_ByQsarSmiles(propertyName, "test", of, htDP_by_dsstox_qsar_smiles, "dsstox smiles");
+//				System.out.println(Utilities.gson.toJson(htMPs));
+			}
+			
+			
+		}
+		
+		return htMPs;
+		
+		
+
 
 	}
 	
@@ -7628,6 +8275,10 @@ public class EpisuiteValidation {
 		new File(of).mkdirs();
 		
 		String propertyNameDataset = propertyName;
+
+		
+		String datasetName = propertyNameDataset + " v1 modeling";
+
 		String datasetNameExternal=null;
 		
 		if (propertyName.equals("LogKow")) {
@@ -7635,12 +8286,11 @@ public class EpisuiteValidation {
 			datasetNameExternal="exp_prop_LOG_KOW_external_validation";
 		} else if (propertyName.equals("WS")) {
 			datasetNameExternal="exp_prop_WATER_SOLUBILITY_external_validation";
-		}
-
-		String datasetName = propertyNameDataset + " v1 modeling";
-		if(propertyName.equals("96HR_Fish_LC50")) {
+		}else if (propertyName.equals("96HR_Fish_LC50")) {
+			datasetNameExternal="QSAR_Toolbox_96HR_Fish_LC50_v3 modeling";
 			datasetName = "ECOTOX_2024_12_12_96HR_Fish_LC50_v3 modeling";
 		}
+
 		long fk_dataset_id = du.getDatasetId(datasetName);
 		long modelId=getModelID(datasetName);
 
@@ -7675,7 +8325,7 @@ public class EpisuiteValidation {
 			} else if(modelSource.equals(DevQsarConstants.SOURCE_CHEMINFORMATICS_MODULES)) {
 				htMPs=cm.getResQsarModelPredictions(modelId,true,htCS_by_DP_QsarSmiles,applicability_domain);	
 			} else if(modelSource.equals(DevQsarConstants.sourceNameOPERA28)) {
-				htMPs=opera.getOperaModelPredictions(propertyName, htDP,fk_dataset_id);
+				htMPs=opera.getOperaModelPredictionsFromResQsar(propertyName, htDP,fk_dataset_id);
 			} else if(modelSource.equals(DevQsarConstants.sourceNamePercepta2023)) {
 //				htMPs=percepta.getPerceptaModelPredictionsFromDB_Original_Smiles(propertyName, htDP,fk_dataset_id);
 				htMPs=percepta.getPerceptaModelPredictionsFromSDF_ByQsarSmiles(propertyName,"external", of, htDP, "qsar smiles");
@@ -7700,7 +8350,9 @@ public class EpisuiteValidation {
 			} else if(modelSource.equals(DevQsarConstants.SOURCE_CHEMINFORMATICS_MODULES)) {
 				htMPs=cm.getResQsarModelPredictionsRevisedDsstoxSmiles(of, propertyName, modelId, true, htDP);
 //				System.out.println(Utilities.gson.toJson(htMPs));
-				
+			} else if(modelSource.equals(DevQsarConstants.sourceNameOPERA28)) {
+				htMPs=this.opera.getOperaModelPredictionsFromOutputFile(of,propertyName, "external",htDP);
+
 			}  else if(modelSource.equals(DevQsarConstants.sourceNamePercepta2023)) {
 				htMPs=percepta.getPerceptaModelPredictionsFromSDF_ByQsarSmiles(propertyName,"external", of,htDP,"dsstox smiles");
 			}
@@ -7892,27 +8544,89 @@ public class EpisuiteValidation {
 	void createDetailedComparisonTable (String subfolder, String propertyName,String modelNameEpi,String modelNameEpi2, String workflow) {
 
 		
-		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
-//		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
-		
-		
-		Map<String,Map<String, Double>>mapEpi=runPropertyDetailed(propertyName,DevQsarConstants.sourceNameEPISuiteAPI,modelNameEpi,subfolder,workflow);
+//		Map<String,Map<String, Double>>mapEpi=runPropertyDetailed(propertyName,DevQsarConstants.sourceNameEPISuiteAPI,modelNameEpi,subfolder,workflow);
 
+		Hashtable<String, ModelPrediction>htMPsEpi=getModelPredictions(propertyName, DevQsarConstants.sourceNameEPISuiteAPI,modelNameEpi, subfolder, workflow);
+		Map<String, Map<String, Double>> mapEpi = calculateStats(propertyName, DevQsarConstants.sourceNameEPISuiteAPI,modelNameEpi, htMPsEpi);
+		
+		
 		Map<String,Map<String, Double>>mapEpi2=null;
 		if(modelNameEpi2!=null)
 			mapEpi2=runPropertyDetailed(propertyName,DevQsarConstants.sourceNameEPISuiteAPI,modelNameEpi2,subfolder,workflow);
 
-		Map<String,Map<String, Double>>mapTest=runPropertyDetailed(propertyName,DevQsarConstants.sourceNameCheminformaticsModules,null,subfolder,workflow);
-		Map<String,Map<String, Double>>mapPercepta=runPropertyDetailed(propertyName,DevQsarConstants.sourceNamePercepta2023,null,subfolder,workflow);
+//		Map<String,Map<String, Double>>mapTest=runPropertyDetailed(propertyName,DevQsarConstants.sourceNameCheminformaticsModules,null,subfolder,workflow);
 
+		
+		Hashtable<String, ModelPrediction>htMPsTest=getModelPredictions(propertyName, DevQsarConstants.sourceNameCheminformaticsModules,null, subfolder, workflow);
+		Map<String, Map<String, Double>> mapTest = calculateStats(propertyName, DevQsarConstants.sourceNameCheminformaticsModules,null, htMPsTest);
+		
+		Hashtable<String, ModelPrediction> htMPsCon = getConsensusModelPredictions(htMPsEpi, htMPsTest);
+		Map<String, Map<String, Double>> mapCon = calculateStats(propertyName, "Consensus",null, htMPsCon);
+		
 		System.out.println("\n\nModel\tRMSE all\tRMSE T\tRMSE P\t% in T");
 		getSimpleStats("EpiSuite "+modelNameEpi, mapEpi);
 		if(modelNameEpi2!=null) getSimpleStats("EpiSuite "+modelNameEpi2, mapEpi2);
 		getSimpleStats("CM XGB", mapTest);
-		getSimpleStats("Percepta", mapPercepta);
+		getSimpleStats("Consensus", mapCon);
+		
+		
+		if(!propertyName.equals(propertyName96HR_Fish_LC50)) {
 
+			Map<String,Map<String, Double>>mapPercepta=runPropertyDetailed(propertyName,DevQsarConstants.sourceNamePercepta2023,null,subfolder,workflow);
+			getSimpleStats("Percepta", mapPercepta);
+
+			Map<String,Map<String, Double>>mapOpera=runPropertyDetailed(propertyName,DevQsarConstants.sourceNameOPERA28,null,subfolder,workflow);
+			getSimpleStats("OPERA2.8", mapOpera);
+		}
+		
+		
+		
+		
 
 	}
+
+
+	private Hashtable<String, ModelPrediction> getConsensusModelPredictions(Hashtable<String, ModelPrediction> htMPsEpi,
+			Hashtable<String, ModelPrediction> htMPsTest) {
+		Hashtable<String, ModelPrediction>htMPsCon=new Hashtable<>();
+
+		for(String smiles:htMPsTest.keySet()) {
+			
+			ModelPrediction mpTest=htMPsTest.get(smiles);
+			if(!htMPsEpi.containsKey(smiles)) continue;
+			ModelPrediction mpEpi=htMPsEpi.get(smiles);
+		
+			double pred=(mpTest.pred+mpEpi.pred)/2.0;
+			
+			Boolean insideAD=null;
+			
+			if(mpEpi.insideAD==null) {
+				insideAD=false;
+			} else {
+				insideAD=mpTest.insideAD && mpEpi.insideAD;
+			}
+			
+			int split=1;
+			if(mpEpi.split==0) split=0;			
+//			System.out.println(smiles+"\t"+mpTest.exp+"\t"+mpEpi.pred+"\t"+mpTest.pred+"\t"+pred);
+			ModelPrediction mpCon=new ModelPrediction(smiles, mpTest.exp, pred, split,insideAD);			
+			htMPsCon.put(smiles, mpCon);
+		}
+		return htMPsCon;
+	}
+	
+
+	void getConsensusResults (String subfolder, String propertyName,String modelNameEpi,String modelNameEpi2, String workflow) {
+
+		
+		Map<String,Map<String, Double>>mapEpi=runPropertyDetailed(propertyName,DevQsarConstants.sourceNameEPISuiteAPI,modelNameEpi,subfolder,workflow);
+		Map<String,Map<String, Double>>mapTest=runPropertyDetailed(propertyName,DevQsarConstants.sourceNameCheminformaticsModules,null,subfolder,workflow);
+
+		
+		
+
+	}
+	
 	
 	
 	String getSimpleStats(String modelName, Map<String,Map<String, Double>>stats) {
@@ -8180,7 +8894,6 @@ public class EpisuiteValidation {
 		EpisuiteValidation ev = new EpisuiteValidation();
 		//		EpisuiteValidation.displayPlots=false;
 
-
 		boolean createPlot=true;
 //		boolean createPlot=false;
 		boolean omitTrainingEpi=true;
@@ -8191,9 +8904,14 @@ public class EpisuiteValidation {
 //		String modelNameEpi="KOWWIN";
 //		String modelNameEpi2=null;
 
-		String propertyName="WS";
-		String modelNameEpi="WaterNT";
-		String modelNameEpi2="WSKOW";
+//		String propertyName="WS";
+//		String modelNameEpi="WaterNT";
+//		String modelNameEpi2="WSKOW";
+		
+		String propertyName=propertyName96HR_Fish_LC50;
+		String modelNameEpi="Ecosar_Fish_96hr";
+		String modelNameEpi2=null;
+
 
 //		String propertyName="HLC";
 //		String modelNameEpi="Selected";
@@ -8202,7 +8920,6 @@ public class EpisuiteValidation {
 //		String modelNameEpi2="Group";
 //		List<String>modelNamesEpi=Arrays.asList("Selected","VP/WSOL","Bond","Group");
 
-		
 //		String propertyName="BP";
 //		String modelNameEpi="Stein & Brown";
 //		String modelNameEpi2="null";
@@ -8222,16 +8939,30 @@ public class EpisuiteValidation {
 //		String workflow=workflowCharlie;
 //		String workflow=workflowCharlieRevised;
 		
-
 //		ev.runPropertyTestSet(propertyName,modelNameEpi,createPlot,omitTrainingEpi);
 //		ev.runPropertyExternalSet(propertyName,modelNameEpi,createPlot,omitTrainingEpi);
 //		ev.runPropertyByRevisedDsstoxQsarReadySmiles(propertyName, modelNameEpi, createPlot, omitTrainingEpi,workflow);		
-//		ev.runPropertyByRevisedOriginalSmiles(propertyName, modelNameEpi,modelNameEpi2, createPlot, omitTrainingEpi,workflow);		
+//		ev.runPropertyByRevisedOriginalSmiles(propertyName, modelNameEpi,modelNameEpi2, createPlot, omitTrainingEpi,workflow);
+//		ev.runPropertyByRevisedOriginalSmiles2(propertyName, modelNameEpi,modelNameEpi2, createPlot, omitTrainingEpi,workflow);
+		
+//		ev.compareEpi(propertyName);
+		
 //		ev.runPropertyByRevisedOriginalSmilesExternal(propertyName, modelNameEpi,modelNameEpi2, createPlot, omitTrainingEpi,workflow);		
+//		ev.runPropertyByRevisedOriginalSmilesExternal2(propertyName, modelNameEpi,modelNameEpi2, createPlot, omitTrainingEpi,workflow);		
 
+		
+		//************************************************************************
+		//		ev.applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
+		ev.applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
+		System.out.println("AD="+ev.applicability_domain);
 		ev.createDetailedComparisonTable("run from revised dsstox original smiles",propertyName,modelNameEpi,modelNameEpi2,workflow);
 //		ev.createDetailedComparisonTableExternal("run from revised dsstox original smiles",propertyName,modelNameEpi,modelNameEpi2,workflow);
+		
+		
+		
 
+		//************************************************************************
+		
 		//ev.runPropertyByCAS_EpiSuite(propertyName,modelNameEpi,modelNameEpi2, createPlot,omitTrainingEpi,workflow);
 //		ev.runPropertyByCAS_EpiSuite(propertyName,modelNamesEpi,createPlot,omitTrainingEpi,workflow);
 //		ev.runPropertyExternalSetByCAS(propertyName,modelNameEpi,modelNameEpi2,createPlot,omitTrainingEpi,workflow);
@@ -8254,28 +8985,248 @@ public class EpisuiteValidation {
 	}
 
 
+	private void compareEpi(String propertyName) {
+
+		String of="data\\episuite\\episuite validation\\LogKow\\run from revised dsstox original smiles\\";
+		
+		
+//		FileWriter fw=new FileWriter (of+File.separator+"epi1.json");
+		
+		Type typeListMP = new TypeToken<List<ModelPrediction>>() {}.getType();
+
+        // Parse the JSON file into a list of Person objects
+        try {
+			List<ModelPrediction> mps1 = Utilities.gson.fromJson(new FileReader(of+"epi1.json"), typeListMP);
+			List<ModelPrediction> mps2 = Utilities.gson.fromJson(new FileReader(of+"epi2.json"), typeListMP);
+			
+			Hashtable<String,ModelPrediction>htMP1=new Hashtable<>();
+			for(ModelPrediction mp:mps1) {
+				htMP1.put(mp.id,mp);
+			}
+			
+			
+			for(ModelPrediction mp2:mps2) {
+				if(!htMP1.containsKey(mp2.id)) {
+					System.out.println(Utilities.gson.toJson(mp2));
+				}
+			}
+			
+//			System.out.println(Utilities.gson.toJson(mps1));
+			System.out.println(mps1.size());
+			System.out.println(mps2.size());
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		} 
+	}
+
+
+	/**
+	 * This version only plots the smiles in common
+	 * 
+	 * @param propertyName
+	 * @param modelNameEpi
+	 * @param modelNameEpi2
+	 * @param createPlot
+	 * @param omitTrainingEpi
+	 * @param workflow
+	 */
+	private void runPropertyByRevisedOriginalSmiles2(String propertyName, String modelNameEpi, String modelNameEpi2,
+			boolean createPlot, boolean omitTrainingEpi, String workflow) {
+
+		boolean includeOPERA=true;
+		
+		String of = "data\\episuite\\episuite validation\\" + propertyName+"\\run from revised dsstox original smiles";
+		new File(of).mkdirs();
+		String units = getUnits(propertyName);
+
+		String propertyNameDataset = propertyName;
+		if (propertyName.equals("LogKow"))
+			propertyNameDataset = "LogP";
+		String datasetName = propertyNameDataset + " v1 modeling";
+		if(propertyName.equals("96HR_Fish_LC50")) {
+			datasetName = "ECOTOX_2024_12_12_96HR_Fish_LC50_v3 modeling";
+		}
+		long fk_dataset_id = du.getDatasetId(datasetName);
+
+
+		String datapointsFilePath = of + File.separator + datasetName + " test set.json";
+		
+//		File fileDatapoints=new File(datapointsFilePath);
+//		if(!fileDatapoints.exists()) {
+//			du.createTestSetDatapointsFile(datapointsFilePath, fk_dataset_id);	
+//		}
+//		Hashtable<String, DataPoint> htDP_by_dp_qsar_smiles = du.getDatapoints(datapointsFilePath);
+
+//		List<DataPoint>testSetDPs=du.getTestSetDatapoints(fk_dataset_id);//just pull straight from database
+		List<DataPoint>testSetDPs=du.getTestSetDatapoints2(fk_dataset_id);//just pull straight from database
+		
+		
+		Hashtable<String, DataPoint> htDP_by_dp_qsar_smiles = new Hashtable<>();
+		for (DataPoint dp : testSetDPs) htDP_by_dp_qsar_smiles.put(dp.getCanonQsarSmiles(), dp);
+		
+		
+		
+		Hashtable<String,CheckStructure>htCS_by_DP_QsarSmiles=du.createHashtableCheckStructureByDPQsarSmiles(fk_dataset_id);
+
+//		System.out.println(Utilities.gson.toJson(htCS_by_DP_QsarSmiles));
+//		if(true)return;
+//		System.out.println(Utilities.gson.toJson(htCS_by_DP_QsarSmiles));
+		
+		LinkedHashMap<String, SmilesToQsarSmiles>htSmilesToQsarSmiles=du.getQsarSmilesHashtableRevised(of+File.separator+"dsstox_smiles to qsar smiles "+workflow+".json", htCS_by_DP_QsarSmiles,workflow);
+		Hashtable<String, DataPoint> htDP_by_dsstox_qsar_smiles=du.createRevisedDataPointHashtableByQsarSmiles(htDP_by_dp_qsar_smiles, htCS_by_DP_QsarSmiles, htSmilesToQsarSmiles);
+			
+//		System.out.println(Utilities.gson.toJson(htDP_by_dsstox_qsar_smiles));
+		
+		
+		String filepathSDF=of+File.separator+propertyName+" test set dsstox smiles.sdf";//for running percepta
+		du.createSDF_dsstox_smiles( filepathSDF, htDP_by_dsstox_qsar_smiles);
+		
+		//****************************************************************************************
+
+		List<Hashtable<String,ModelPrediction>>listHtMP=new ArrayList<>();
+		
+		//EPI Suite API
+		String filepathEpisuiteResultsTestSet = datapointsFilePath.replace(".json", " episuite results.json");
+		
+		ewss.runSmilesFilePublicApiUsingOriginalSmiles(propertyName,modelNameEpi, htDP_by_dsstox_qsar_smiles,filepathEpisuiteResultsTestSet);
+		
+		Hashtable<String,ModelPrediction>htMP_epi=episuite.getEpisuiteModelPredictions(propertyName, modelNameEpi, htDP_by_dsstox_qsar_smiles,htCS_by_DP_QsarSmiles, filepathEpisuiteResultsTestSet);		
+		listHtMP.add(htMP_epi);	
+		
+		Hashtable<String,ModelPrediction>htMP_epi2=null;
+		if(modelNameEpi2!=null) {
+			htMP_epi2=episuite.getEpisuiteModelPredictions(propertyName, modelNameEpi2, htDP_by_dsstox_qsar_smiles,htCS_by_DP_QsarSmiles, filepathEpisuiteResultsTestSet);
+			listHtMP.add(htMP_epi2);
+		}
+		
+		boolean calculateAD=true;
+		long modelId=getModelID(datasetName);
+		Hashtable<String,ModelPrediction>htMP_test=cm.getResQsarModelPredictionsRevisedDsstoxSmiles(of, propertyName, modelId, calculateAD, htDP_by_dsstox_qsar_smiles);
+		listHtMP.add(htMP_test);
+
+		Hashtable<String,ModelPrediction>htMP_opera=null;
+		if(includeOPERA && !propertyName.equals("96HR_Fish_LC50")) { 
+			htMP_opera=opera.getOperaModelPredictionsFromOutputFile(of, propertyName,"test", htDP_by_dsstox_qsar_smiles);
+			listHtMP.add(htMP_opera);
+		}
+
+		String smilesType="dsstox smiles";
+		Hashtable<String,ModelPrediction>htMP_percepta=null;
+		if(!propertyName.equals("96HR_Fish_LC50")) {
+			htMP_percepta=percepta.getPerceptaModelPredictionsFromSDF_ByQsarSmiles(propertyName,"test", of,htDP_by_dsstox_qsar_smiles,smilesType);
+			listHtMP.add(htMP_percepta);		
+		}
+
+		
+		//***********************************************************************************
+		HashSet<String> hsSmilesInCommon = getSmilesInCommon(listHtMP);
+		
+		AxesBounds axesBounds=getAxesBounds(listHtMP,hsSmilesInCommon);
+		
+		String title="Test set "+propertyName+" EPI Suite";
+		if(modelNameEpi!=null) {
+			title="Test set "+propertyName+" EPI Suite "+modelNameEpi;
+		}
+		if(propertyName.equals("96HR_Fish_LC50")) title="Test set Ecosar";
+		
+		
+		Results resultsEpi = plot.plotPredictions(title, propertyName, units, hsSmilesInCommon,axesBounds,  htMP_epi,
+				 createPlot,of,title+" common.png");
+		
+//		try {
+//			FileWriter fw=new FileWriter (of+File.separator+"epi2.json");
+//			fw.write(Utilities.gson.toJson(resultsEpi.modelPredictions));
+//			fw.flush();
+//			fw.close();
+//		} catch (Exception ex) {
+//			ex.printStackTrace();
+//		}
+		
+		//******************************************************************************************************
+		//EPI Suite API2
+		if(modelNameEpi2!=null) {
+			title="Test set "+propertyName+" EPI Suite "+modelNameEpi2;
+			Results resultsEpi2 = plot.plotPredictions(title, propertyName, units, hsSmilesInCommon, axesBounds, htMP_epi2,
+					 createPlot,of,title+" common.png");
+		}
+
+		//******************************************************************************************************
+		//WebTEST2.0
+		title="Test set "+propertyName+" WebTest2.0";
+		if(propertyName.equals("96HR_Fish_LC50")) title="Test set WebTest2.0";
+		
+		Results resultsTest=plot.plotPredictions(title, propertyName, units, hsSmilesInCommon, axesBounds, htMP_test,
+				 createPlot,of,title+" common.png");
+		
+		//******************************************************************************************************
+		
+		
+		// Percepta
+		Results resultsPercepta=null;
+		title="Test set "+propertyName+" Percepta";
+		
+
+		if(!propertyName.equals("96HR_Fish_LC50")) {
+			resultsPercepta=plot.plotPredictions(title, propertyName, units, hsSmilesInCommon,  axesBounds,htMP_percepta,
+					 createPlot,of,title+" common.png");
+		}
+
+//		System.out.println(Utilities.gson.toJson(htMP_percepta));
+		
+		//******************************************************************************************************
+		// OPERA
+		
+		if(includeOPERA && !propertyName.equals("96HR_Fish_LC50")) {
+			Results resultsOPERA=null;
+			title="Test set "+propertyName+" OPERA2.8";
+			resultsOPERA=plot.plotPredictions(title, propertyName, units, hsSmilesInCommon, axesBounds, htMP_opera,
+				 createPlot,of,title+" common.png");
+//		System.out.println(Utilities.gson.toJson(htMP_percepta));
+		}
+		//******************************************************************************************************
+		
+//		String title="Worst Epi Suite predictions for "+ propertyName+" using revised dsstox qsar ready smiles";
+////		episuite.writeBadEpisuitePredictions(title, propertyName,datasetName, modelNameEpi, of, filepathEpisuiteResultsTestSet, resultsEpi, resultsTest);
+//		
+		this.cm.writeBadPredictions("test set", of, propertyName, "EpiSuite", "TEST", resultsEpi, resultsTest);
+		this.cm.writeBadPredictions("test set", of, propertyName, "TEST","EpiSuite", resultsTest, resultsEpi);
+//
+//		if(resultsPercepta!=null)
+//			this.cm.writeBadPredictions("test set", of, propertyName, "Percepta", "TEST", resultsTest, resultsPercepta);
+//		
+//		utils.writeToJson(resultsEpi.modelPredictions,of+"\\Episuite "+modelNameEpi+" external set modelPredictions.json" );
+//		utils.writeToJson(resultsTest.modelPredictions,of+"\\Test external set modelPredictions.json" );
+		
+	}
+
+
 	private void createDetailedComparisonTableExternal(String subfolder, String propertyName, String modelNameEpi,
 			String modelNameEpi2, String workflow) {
 		
-		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
-//		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
 		
 		Map<String,Map<String, Double>>mapEpi=runPropertyDetailedExternal(propertyName,DevQsarConstants.sourceNameEPISuiteAPI,modelNameEpi,subfolder,workflow);
-
 		Map<String,Map<String, Double>>mapEpi2=null;
-
+		
 		if(modelNameEpi2!=null)
 			mapEpi2=runPropertyDetailedExternal(propertyName,DevQsarConstants.sourceNameEPISuiteAPI,modelNameEpi2,subfolder,workflow);
-
+		
 		Map<String,Map<String, Double>>mapTest=runPropertyDetailedExternal(propertyName,DevQsarConstants.sourceNameCheminformaticsModules,null,subfolder,workflow);
-		Map<String,Map<String, Double>>mapPercepta=runPropertyDetailedExternal(propertyName,DevQsarConstants.sourceNamePercepta2023,null,subfolder,workflow);
 
 		System.out.println("\n\nModel\tRMSE all\tRMSE T\tRMSE P\t% in T");
 		getSimpleStats("EpiSuite "+modelNameEpi, mapEpi);
 		if(modelNameEpi2!=null) getSimpleStats("EpiSuite "+modelNameEpi2, mapEpi2);
 		getSimpleStats("CM XGB", mapTest);
-		getSimpleStats("Percepta", mapPercepta);
 		
+		
+		if(!propertyName.equals(propertyName96HR_Fish_LC50)) {
+
+			Map<String,Map<String, Double>>mapPercepta=runPropertyDetailedExternal(propertyName,DevQsarConstants.sourceNamePercepta2023,null,subfolder,workflow);
+			getSimpleStats("Percepta", mapPercepta);
+			
+			Map<String,Map<String, Double>>mapOpera=runPropertyDetailedExternal(propertyName,DevQsarConstants.sourceNameOPERA28,null,subfolder,workflow);
+			getSimpleStats("OPERA2.8", mapOpera);
+		}
 		
 		
 	}
@@ -8374,6 +9325,13 @@ public class EpisuiteValidation {
 //		System.out.println(Utilities.gson.toJson(htMP_percepta));
 		
 		//******************************************************************************************************
+		// OPERA
+		Results resultsOPERA=null;
+		
+		Hashtable<String,ModelPrediction>htMP_opera=opera.getOperaModelPredictionsFromOutputFile(of, propertyName,"external", htDP_external);
+		resultsOPERA=plot.plotPredictions("External set "+propertyName+" OPERA2.8", propertyName, units, resultsEpi, htMP_opera,createPlot,omitTrainingEpi, of);
+//		System.out.println(Utilities.gson.toJson(htMP_percepta));
+		//******************************************************************************************************
 		
 		String title="Worst Epi Suite predictions for "+ propertyName+" using revised dsstox qsar ready smiles";
 //		episuite.writeBadEpisuitePredictions(title, propertyName,datasetName, modelNameEpi, of, filepathEpisuiteResultsTestSet, resultsEpi, resultsTest);
@@ -8389,6 +9347,267 @@ public class EpisuiteValidation {
 		
 		
 	}
+	
+	/**
+	 * Only include the overlapping chemicals not in any training sets in plots
+	 * 
+	 * @param propertyName
+	 * @param modelNameEpi
+	 * @param modelNameEpi2
+	 * @param createPlot
+	 * @param omitTrainingEpi
+	 * @param workflow
+	 */
+	private void runPropertyByRevisedOriginalSmilesExternal2(String propertyName, String modelNameEpi,String modelNameEpi2,
+			boolean createPlot, boolean omitTrainingEpi, String workflow) {
+		
+		String of = "data\\episuite\\episuite validation\\" + propertyName+"\\run from revised dsstox original smiles";
+		new File(of).mkdirs();
+		String units = getUnits(propertyName);
+		
+		String propertyNameDataset = propertyName;
+		String datasetName = propertyNameDataset + " v1 modeling";
+		String datasetNameExternal=null;
+		
+		if (propertyName.equals("LogKow")) {
+			propertyNameDataset = "LogP";
+			datasetNameExternal="exp_prop_LOG_KOW_external_validation";
+		} else if (propertyName.equals("WS")) {
+			datasetNameExternal="exp_prop_WATER_SOLUBILITY_external_validation";
+		} else if (propertyName.equals("96HR_Fish_LC50")) {
+			datasetNameExternal="QSAR_Toolbox_96HR_Fish_LC50_v3 modeling";
+			datasetName = "ECOTOX_2024_12_12_96HR_Fish_LC50_v3 modeling";
+		}
+		
+		long fk_dataset_id = du.getDatasetId(datasetName);
+
+
+		boolean omitOnlyTrainingFromOurDataset=false;
+		
+		long fk_dataset_id_external = du.getDatasetId(datasetNameExternal);
+		String datapointsExternalFilePath = of + File.separator + datasetName + " external set.json";
+		File fileExternalDatapoints=new File(datapointsExternalFilePath);
+		
+		if(!fileExternalDatapoints.exists()) {
+//			du.createTestSetExternalDatapointsFile(datapointsExternalFilePath,fk_dataset_id_external,fk_dataset_id ,omitOnlyTrainingFromOurDataset);		
+			du.createTestSetExternalDatapointsFile2(datapointsExternalFilePath,fk_dataset_id_external,fk_dataset_id ,omitOnlyTrainingFromOurDataset);
+		}
+		
+		Hashtable<String, DataPoint> htDP_external = du.getDatapoints(datapointsExternalFilePath);
+		Hashtable<String,CheckStructure>htCS_by_DP_QsarSmiles_ext=du.createHashtableCheckStructureByDPQsarSmilesExternal(fk_dataset_id_external);
+		setCheckStructure(htDP_external, htCS_by_DP_QsarSmiles_ext);
+		
+		String filepathSDF=of+File.separator+propertyName+" external set dsstox smiles.sdf";//for running percepta
+		du.createSDF_dsstox_smiles( filepathSDF, htDP_external);
+		
+		//******************************************************************************************************
+		//EPI Suite API
+		String filepathEpisuiteResultsTestSet = datapointsExternalFilePath.replace(".json", " episuite results.json");
+		ewss.runSmilesFilePublicApiUsingOriginalSmiles(propertyName,modelNameEpi, htDP_external,filepathEpisuiteResultsTestSet);
+
+		List<Hashtable<String,ModelPrediction>>listHtMP=new ArrayList<>();
+		
+		Hashtable<String,ModelPrediction>htMP_epi=episuite.getEpisuiteModelPredictions(propertyName, modelNameEpi, htDP_external,htCS_by_DP_QsarSmiles_ext, filepathEpisuiteResultsTestSet);		
+		listHtMP.add(htMP_epi);
+		
+		Hashtable<String,ModelPrediction>htMP_epi2=null;
+		if(modelNameEpi2!=null) {
+			htMP_epi2=episuite.getEpisuiteModelPredictions(propertyName, modelNameEpi2, htDP_external,htCS_by_DP_QsarSmiles_ext, filepathEpisuiteResultsTestSet);
+			listHtMP.add(htMP_epi2);
+		}
+		
+		boolean calculateAD=true;
+		long modelId=getModelID(datasetName);
+		Hashtable<String,ModelPrediction>htMP_test=cm.getResQsarModelPredictionsRevisedDsstoxSmiles(of, propertyName, modelId, calculateAD, htDP_external);
+		listHtMP.add(htMP_test);
+
+		Hashtable<String,ModelPrediction>htMP_opera=null;
+		if (!propertyName.equals("96HR_Fish_LC50")) {
+			htMP_opera=opera.getOperaModelPredictionsFromOutputFile(of, propertyName,"external", htDP_external);
+			listHtMP.add(htMP_opera);
+		}
+
+		Hashtable<String,ModelPrediction>htMP_percepta=null;
+		if (!propertyName.equals("96HR_Fish_LC50")) {
+			String smilesType="dsstox smiles";
+			htMP_percepta=percepta.getPerceptaModelPredictionsFromSDF_ByQsarSmiles(propertyName,"external", of,htDP_external,smilesType);
+			listHtMP.add(htMP_percepta);
+		}
+
+		
+		//***********************************************************************************
+		HashSet<String> hsSmilesInCommon = getSmilesInCommon(listHtMP);
+		AxesBounds axesBounds=getAxesBounds(listHtMP, hsSmilesInCommon);
+		
+//		if(true)return;
+		
+		//***********************************************************************************
+		String title="External set "+propertyName+" EPI Suite API";
+		if(modelNameEpi!=null) {
+			title="External set "+propertyName+" EPI Suite "+modelNameEpi;
+		}
+		
+		if(propertyName.equals("96HR_Fish_LC50")) title="External set Ecosar";
+		
+		
+		Results resultsEpi = plot.plotPredictions(title, propertyName, units, hsSmilesInCommon,axesBounds,  htMP_epi,
+				 createPlot,of,"External "+modelNameEpi+".png");
+		
+		//******************************************************************************************************
+		//EPI Suite API2
+		if(modelNameEpi2!=null) {
+			title="External set "+propertyName+" EPI Suite "+modelNameEpi2;
+			Results resultsEpi2 = plot.plotPredictions(title, propertyName, units, hsSmilesInCommon, axesBounds, htMP_epi2,
+					 createPlot,of,"External "+modelNameEpi2+".png");
+		}
+
+		//******************************************************************************************************
+		//WebTEST2.0
+//		System.out.println(Utilities.gson.toJson(htMP_test));
+		//		System.out.println(Utilities.gson.toJson(htPredResQsar));
+		title="External set "+propertyName+" WebTest2.0";
+		if(propertyName.equals("96HR_Fish_LC50")) title="External set WebTEST2.0";
+		
+		Results resultsTest=plot.plotPredictions(title, propertyName, units, hsSmilesInCommon, axesBounds, htMP_test,
+				 createPlot,of,"External WebTEST2.0.png");
+		
+		
+		//******************************************************************************************************
+		// Percepta
+		
+		if (!propertyName.equals("96HR_Fish_LC50")) {
+			Results resultsPercepta=null;
+			title="External set "+propertyName+" Percepta";
+			resultsPercepta=plot.plotPredictions(title, propertyName, units, hsSmilesInCommon,axesBounds, htMP_percepta,
+					 createPlot,of,"External Percepta.png");
+		}
+		
+//		System.out.println(Utilities.gson.toJson(htMP_percepta));
+		
+		//******************************************************************************************************
+		// OPERA
+		
+		if (!propertyName.equals("96HR_Fish_LC50")) {
+			Results resultsOPERA=null;
+			title="External set "+propertyName+" OPERA2.8";		
+			resultsOPERA=plot.plotPredictions(title, propertyName, units, hsSmilesInCommon,  axesBounds, htMP_opera,
+					 createPlot,of,"External OPERA2.8.png");
+		}
+//		System.out.println(Utilities.gson.toJson(htMP_percepta));
+		//******************************************************************************************************
+		
+//		String title="Worst Epi Suite predictions for "+ propertyName+" using revised dsstox qsar ready smiles";
+////		episuite.writeBadEpisuitePredictions(title, propertyName,datasetName, modelNameEpi, of, filepathEpisuiteResultsTestSet, resultsEpi, resultsTest);
+//		
+		this.cm.writeBadPredictions("external set", of, propertyName, "EpiSuite", "TEST", resultsEpi, resultsTest);
+		this.cm.writeBadPredictions("external set", of, propertyName, "TEST","EpiSuite", resultsTest, resultsEpi);
+//
+//		if(resultsPercepta!=null)
+//			this.cm.writeBadPredictions("test set", of, propertyName, "Percepta", "TEST", resultsTest, resultsPercepta);
+//		
+//		utils.writeToJson(resultsEpi.modelPredictions,of+"\\Episuite "+modelNameEpi+" external set modelPredictions.json" );
+//		utils.writeToJson(resultsTest.modelPredictions,of+"\\Test external set modelPredictions.json" );
+		
+		
+	}
+
+
+	private HashSet<String> getSmilesInCommon(List<Hashtable<String, ModelPrediction>> listHtMP) {
+		HashSet<String>hsSmilesInCommon=new HashSet<>();
+		
+		Hashtable<String, ModelPrediction>htMP0=listHtMP.get(0);
+		
+		int countEpisuite=0;
+				
+		for(String qsarSmiles:htMP0.keySet()) {
+			ModelPrediction mp=htMP0.get(qsarSmiles);
+			if(mp.split==0) continue;
+			if(mp.pred==null || mp.pred.equals(Double.NaN))continue;
+			if(mp.exp==null)continue;
+			
+			countEpisuite++;
+			
+			boolean keep=true;
+			
+			int counter=0;
+			
+			for(int i=1;i<listHtMP.size();i++) { 
+			
+				Hashtable<String, ModelPrediction>htMPi=listHtMP.get(i);
+				
+				counter++;
+				
+				if(!htMPi.containsKey(qsarSmiles)) {
+//					System.out.println(qsarSmiles+"\tNot in "+counter);
+					keep=false;
+					break;
+				}
+				ModelPrediction mpi=htMPi.get(qsarSmiles);
+				if(mpi.split!=null && mpi.split==0) keep=false;
+				if(mpi.pred==null || mpi.pred.equals(Double.NaN)) keep=false;
+				if(!keep)break;
+			}
+			
+			
+			if(keep) {
+				hsSmilesInCommon.add(qsarSmiles);
+			}
+			
+//			System.out.println(qsarSmiles+"\t"+keep+"\t"+hsSmilesInCommon.size());
+
+		}
+		
+		System.out.println("countEpisuite="+countEpisuite);
+		return hsSmilesInCommon;
+	}
+	
+	
+	class AxesBounds {
+		double minVal;
+		double maxVal;
+	}
+	
+	private AxesBounds getAxesBounds(List<Hashtable<String, ModelPrediction>> listHtMP,HashSet<String>hsSmilesInCommon) {
+		Hashtable<String, ModelPrediction>htMP0=listHtMP.get(0);
+		
+		AxesBounds axesBounds=new AxesBounds();
+		axesBounds.minVal=9999;
+		axesBounds.maxVal=-9999;
+		
+		for(String qsarSmiles:htMP0.keySet()) {
+			ModelPrediction mp=htMP0.get(qsarSmiles);
+			if(mp.split==0) continue;
+			if(mp.pred==null)continue;
+			if(mp.exp==null)continue;
+			
+			boolean keep=true;
+			
+			int counter=0;
+			
+			if(!hsSmilesInCommon.contains(qsarSmiles)) continue;
+			
+			
+			for(int i=1;i<listHtMP.size();i++) { 
+				Hashtable<String, ModelPrediction>htMPi=listHtMP.get(i);
+				ModelPrediction mpi=htMPi.get(qsarSmiles);
+				if(mpi.pred>axesBounds.maxVal) axesBounds.maxVal=mpi.pred;
+				if(mpi.exp>axesBounds.maxVal) axesBounds.maxVal=mpi.exp;
+				if(mpi.pred<axesBounds.minVal) axesBounds.minVal=mpi.pred;
+				if(mpi.exp<axesBounds.minVal) axesBounds.minVal=mpi.exp;
+			}
+			
+			
+			
+//			System.out.println(qsarSmiles+"\t"+keep+"\t"+hsSmilesInCommon.size());
+
+		}
+		
+		axesBounds.minVal-=1;
+		axesBounds.maxVal+=1;
+		
+		return axesBounds;
+	}
+
 
 }
 

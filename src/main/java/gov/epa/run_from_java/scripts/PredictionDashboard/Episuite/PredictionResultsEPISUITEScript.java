@@ -565,7 +565,7 @@ public class PredictionResultsEPISUITEScript {
 
 			//		createModels();
 //			compileApiJsonResultsFromFolder(folder);
-			compileApiJsonResultsFromFolderToPredictionDashboardJson(folder);
+//			compileApiJsonResultsFromFolderToPredictionDashboardJson(folder);
 
 			//		compileApiJsonResultsFromFolderToChemicalCSV("data\\episuite\\");
 			//		lookAtRanChemicals();
@@ -584,7 +584,9 @@ public class PredictionResultsEPISUITEScript {
 
 			//		convertSmilesToPredictionsDashboard("DTXSID8025545");//methane has exp AOH
 //			convertSmilesToPredictionsDashboard("DTXSID3039242");//benzene
-			//		convertSmilesToPredictionsDashboard("DTXSID6026296");//water inorganic
+			
+//			convertSmilesToPredictionsDashboard("DTXSID6026296");//water inorganic
+			convertSmilesToPredictionsDashboard("DTXSID7024372");//TNT
 
 
 		}
@@ -921,30 +923,13 @@ public class PredictionResultsEPISUITEScript {
 		
 				boolean writeToDB=false;
 		
-				LinkedHashMap<String,String>hmModelNameToPropertyName=initializeDB.getModelNameToPropertyNameMap();
+//				LinkedHashMap<String,String>hmModelNameToPropertyName=initializeDB.getModelNameToPropertyNameMap();
+//				DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
+//				DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
 		
-				DsstoxSnapshotServiceImpl snapshotService=new  DsstoxSnapshotServiceImpl();
-				DsstoxSnapshot snapshot=snapshotService.findByName("DSSTOX Snapshot 04/23");
-		
-				//		Hashtable<String,Long> htDTXSIDtoDsstoxRecordId=dsstoxRecordService.getRecordIdHashtable(snapshot,"dtxsid");
-		//		Hashtable<String,DsstoxRecord> htDTXSIDtoDsstoxRecord=dsstoxRecordService.getDsstoxRecordsHashtableFromJsonExport(PredictionDashboardTableMaps.fileJsonDsstoxRecords2023_04_04,"dtxsid");
 		
 				PredictionDashboardTableMaps tableMaps=new PredictionDashboardTableMaps(PredictionDashboardTableMaps.fileJsonDsstoxRecords2024_11_12,PredictionDashboardTableMaps.fileJsonOtherCAS2024_11_12);//creates lookup maps for database objects so dont have to keep query the database
-				
-		//		long t1=System.currentTimeMillis();
-		//		HashMap<String, Model>hmMap=initializeDB.createModels();		
-		//
-		//		Hashtable<String,Dataset>htModelNameToDataset=initializeDB.createDatasets();
-		//
-		//		List<Model> models=new ArrayList<>();
-		//
-		//		for(String modelName:hmModelNameToPropertyName.keySet()) {
-		//			models.add(hmMap.get(modelName));
-		//		}
-		//		long t2=System.currentTimeMillis();
-		//		
-		//		System.out.println("Time to load other maps 2:\t"+(t2-t1)/1000+" secs");
-				
+
 				DsstoxRecord dsstoxRecord=tableMaps.mapDsstoxRecordsBySID.get(dtxsid);
 				
 				List<PredictionDashboard>results=getResultsFromAPI(dsstoxRecord,tableMaps);
@@ -998,15 +983,24 @@ public class PredictionResultsEPISUITEScript {
 			}
 
 		public List<PredictionDashboard> getResultsFromAPI(DsstoxRecord dsstoxRecord,PredictionDashboardTableMaps maps) {
-		
+			String folder = "data\\episuite\\reports\\" + dsstoxRecord.getDtxsid() + "\\";
 			String smiles=dsstoxRecord.getSmiles();
-		
+
+			String filepathJson=folder+"episuiteReport_"+dsstoxRecord.getDtxsid() +".json";
+
+			System.out.println(filepathJson);
+			
 			String json=EpisuiteWebserviceScript.runEpiwin(smiles);
 			if(json==null) return null;
 			//		Utilities.jsonToPrettyJson(json,"data\\episuite\\sample reports\\EPISUITE_RESULTS.json" );
 			
-			String folder = "data\\episuite\\reports\\" + dsstoxRecord.getDtxsid() + "\\";
-			Utilities.saveJson(json, folder+"episuiteReport_"+dsstoxRecord.getDtxsid() +".json");
+			
+			
+			
+			
+			Utilities.saveJson(json, filepathJson);
+			
+			
 			
 			EpisuiteResults results=EpisuiteResults.getResults(json);
 			

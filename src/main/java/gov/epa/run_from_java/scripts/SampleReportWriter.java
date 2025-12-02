@@ -14,7 +14,7 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.ModelSet;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelFileServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
-import gov.epa.endpoints.reports.WebTEST.GenerateWebTestReport;
+//import gov.epa.endpoints.reports.WebTEST.GenerateWebTestReport;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable.ModelSetTableRow;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
@@ -46,7 +46,7 @@ public class SampleReportWriter {
 					true,includeDescriptors);
 			System.out.println("Created:" + filepathReport);
 		} else {
-			predictionReport = GenerateWebTestReport.loadDataSetFromJson(filepathReport);
+			predictionReport = PredictionReport.loadFromJson(filepathReport);
 			System.out.println("Loaded:" + filepathReport);
 		}
 
@@ -89,7 +89,7 @@ public class SampleReportWriter {
 					true,includeDescriptors,includeOriginalCompounds,filepathReport,false);
 			System.out.println("Created:" + filepathReport);
 		} else {
-			predictionReport = GenerateWebTestReport.loadDataSetFromJson(filepathReport);
+			predictionReport = PredictionReport.loadFromJson(filepathReport);
 			System.out.println("Loaded:" + filepathReport);
 		}
 
@@ -159,7 +159,7 @@ public class SampleReportWriter {
 	
 	
 	public PredictionReport createPredictionReportMethod(long modelId, boolean overWriteJsonReport, 
-			boolean includeDescriptors,boolean includeOriginalCompounds,String outputFolder) {
+			boolean includeDescriptors,boolean includeOriginalCompounds,String outputFolder,boolean useModelIdForExcelName) {
 		
 		
 		ModelServiceImpl ms=new ModelServiceImpl();
@@ -179,7 +179,7 @@ public class SampleReportWriter {
 					true,includeDescriptors,includeOriginalCompounds,filepathReport,true);
 			System.out.println("Created:" + filepathReport);
 		} else {
-			predictionReport = GenerateWebTestReport.loadDataSetFromJson(filepathReport);
+			predictionReport = PredictionReport.loadFromJson(filepathReport);
 			System.out.println("Loaded:" + filepathReport);
 		}
 
@@ -190,8 +190,8 @@ public class SampleReportWriter {
 //			applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
 //		}
 		//Just use all descriptors- works more reliably:
-//		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
-		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
+		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
+//		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
 		
 		//TODO should get AD from models table
 		
@@ -202,8 +202,12 @@ public class SampleReportWriter {
 		predictionReport.toFile(filepathReport);
 		System.out.println(filepathReport);
 		
-//		String fileNameExcel=String.join("_", datasetName, splittingName, methodName,"with_AD") + ".xlsx";
-		String fileNameExcel=modelId+".xlsx";//to keep file path reasonable for windows
+		
+		
+		String fileNameExcel=String.join("_", datasetName, splittingName, methodName,"with_AD") + ".xlsx";
+		
+		if(useModelIdForExcelName)	
+			fileNameExcel=modelId+".xlsx";//to keep file path reasonable for windows
 		
 		String filepathExcel = outputFolder + File.separator + fileNameExcel;
 		createExcelReport(methodName, predictionReport, filepathExcel, overWriteJsonReport);
@@ -227,7 +231,7 @@ public class SampleReportWriter {
 //			e.printStackTrace();
 //		}
 
-		
+		System.out.println("");
 		
 		return predictionReport;
 		
@@ -240,7 +244,7 @@ public class SampleReportWriter {
 		File reportFile = new File(filepathReport);
 
 		if (reportFile.exists()) {
-			return GenerateWebTestReport.loadDataSetFromJson(filepathReport);
+			return PredictionReport.loadFromJson(filepathReport);
 		} else {
 			System.out.println("JSON report doesnt exist at "+filepathReport); 
 			return null;
@@ -259,7 +263,7 @@ public class SampleReportWriter {
 		File reportFile = new File(filepathReport);
 
 		if (reportFile.exists()) {
-			return GenerateWebTestReport.loadDataSetFromJson(filepathReport);
+			return PredictionReport.loadFromJson(filepathReport);
 		} else {
 			System.out.println("JSON report doesnt exist at "+filepathReport); 
 			return null;
@@ -271,7 +275,7 @@ public class SampleReportWriter {
 		File reportFile = new File(filepathReport);
 
 		if (reportFile.exists()) {
-			return GenerateWebTestReport.loadDataSetFromJson(filepathReport);
+			return PredictionReport.loadFromJson(filepathReport);
 		} else {
 			System.out.println("JSON report doesnt exist at "+filepathReport); 
 			return null;

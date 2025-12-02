@@ -3177,7 +3177,7 @@ public class EpisuiteWebserviceScript {
 //		b.fixSmilesFile(of+"snapshot_compounds.tsv", of);
 
 //		startLocalCopies(9000,9011);
-//		b.startLocalCopies(9000,9000);
+		b.startLocalCopies(9000,9000);
 
 		//******************************************************************
 //		String of="data\\episuite\\";
@@ -3199,7 +3199,7 @@ public class EpisuiteWebserviceScript {
 		
 //		b.runSmilesComparisonFile();
 		
-//		b.runSingleChemicalFromAPI();
+		b.runSingleChemicalFromAPI();
 		
 		
 		

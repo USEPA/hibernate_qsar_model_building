@@ -103,4 +103,36 @@ public class OPERA_Structure {
 	
 	
 	}
+	
+	public static OPERA_Structure readStructureTableFromSqlite(Statement sqliteStatement,String dtxcid) {
+		
+		
+	
+		try {
+	
+			String sql="select * from Structure where DSSTOX_COMPOUND_ID='"+dtxcid+"'";
+			ResultSet rs=SqliteUtilities.getRecords(sqliteStatement, sql);
+	
+			while (rs.next()) {
+				OPERA_Structure s=new OPERA_Structure();
+				s.DSSTOX_COMPOUND_ID=rs.getString(2);
+				s.Original_SMILES=rs.getString(3);
+				s.Number_of_connected_components=rs.getInt(4);
+				s.Canonical_QSARr=rs.getString(5);
+				s.Salt_Solvent=rs.getString(6);
+				s.InChI_Code_QSARr=rs.getString(7);
+				s.InChI_Key_QSARr=rs.getString(8);
+				s.Salt_Solvent_ID=rs.getString(9);
+				return s;
+			}
+	
+		}catch (Exception  ex) {
+			ex.printStackTrace();
+		}
+	
+		return null;
+	
+	
+	}
+
 }

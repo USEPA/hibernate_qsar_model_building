@@ -445,8 +445,8 @@ public class DatabaseUtilities {
 		return values;
 	}
 	
-	
-	public static HashSet<String> getLoadedCIDsWithCount(Source source, DsstoxSnapshot snapshot,int count) {
+	@Deprecated
+	public static HashSet<String> getLoadedCIDsWithCountOld(Source source, DsstoxSnapshot snapshot,int count) {
 		HashSet<String>values=new HashSet<>();
 		
 		String sql="select dr.dtxcid\r\n"
@@ -469,5 +469,33 @@ public class DatabaseUtilities {
 		
 		return values;
 	}
+	
+	
+	public static HashSet<String> getLoadedCIDsWithCount(String sourceName, int count) {
+		HashSet<String>values=new HashSet<>();
+		
+		String sql="select pd.dtxcid\r\n"
+				+ "from qsar_models.predictions_dashboard pd\r\n"
+				+ "join qsar_models.models m on m.id=pd.fk_model_id\r\n"
+				+ "join qsar_models.sources s on s.id=m.fk_source_id\r\n"
+				+ "where s.name='"+sourceName+"'\n"+
+				"group by pd.dtxcid\n"+
+				"having count(pd.dtxcid)="+count+";";
+				
+//		System.out.println(sql);
+		
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres() , sql);
+		
+		try {
+			while (rs.next()) {
+				values.add(rs.getString(1));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return values;
+	}
+
 
 }

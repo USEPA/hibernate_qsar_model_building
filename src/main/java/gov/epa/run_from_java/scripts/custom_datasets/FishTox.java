@@ -1611,7 +1611,7 @@ public class FishTox {
 //		f.createFishToxDataSetWithCommonSpeciesAndExposureType();
 //		f.createFishToxDataSetWithCommonSpeciesAndExposureType_no_factors();
 		
-//		f.createFishToxDataSetWithCommonSpecies();
+		f.createFishToxDataSetWithCommonSpecies();
 //		f.createFishToxDataSetWithCommonSpecies_no_factors();
 		
 //		f.createFHMWithExposureType();

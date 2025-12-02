@@ -69,6 +69,37 @@ public class RawExpDataExcelTableGenerator {
 
 	}
 	
+	JsonArray getRawRecordsChemicalsDashboardByPropertyNameAndDTXSID_FromView2(HashSet<String> dtxsids) {
+
+		try  {
+			Iterator<String> it=dtxsids.iterator();
+			String strDtxsids="";
+			while (it.hasNext()) {
+				strDtxsids+="'"+it.next()+"'";
+				if(it.hasNext()) strDtxsids+=",";
+			}
+
+			String sql="select * from public.mv_experimental_data\n"
+					+"where dtxsid in ("+strDtxsids+")\n"
+					+ "order by dtxsid, prop_name, prop_value;";
+
+			System.out.println(sql);
+
+
+			ResultSet rs = SqlUtilities.runSQL2(conn, sql);
+			JsonArray ja = RawExpDataTableGenerator.getJsonArray(rs);
+			RawExpDataTableGenerator.convertViewFieldNames(ja);
+
+//			System.out.println(Utilities.gson.toJson(ja));
+
+			return ja;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+
+	}
+	
 	
 	JsonArray getRawRecordsChemicalsDashboardByPropertyNameAndDTXSID_FromView(HashSet<String> dtxsids,String propertyName) {
 
@@ -144,11 +175,9 @@ public class RawExpDataExcelTableGenerator {
 
 		return dtxsids;
 	}
-
-
-	public static void main(String[] args) {
-		RawExpDataExcelTableGenerator r=new RawExpDataExcelTableGenerator();
-
+	
+	
+	void createExperimentalDataSpreadsheet() {
 		
 		String columnName="DTXSID";
 //		String columnName="RC_DTXSID_Comptox";
@@ -166,32 +195,47 @@ public class RawExpDataExcelTableGenerator {
 		//		List<String>dtxsids=Arrays.asList("DTXSID3039242");
 		
 		
-		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 scientists\\catherine sumner\\";
-		String filenameInput="sumner logkow.xlsx";
-		HashSet<String>dtxsids=r.getDTXSIDsFromExcel(folder+filenameInput,columnName);
+//		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 scientists\\catherine sumner\\";
+//		String filenameInput="sumner logkow.xlsx";
+		
+
+		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 scientists\\dan chang\\";
+		String filenameInput="dtxsid_512_from_Dale_Hoff.xlsx";
+
+		HashSet<String>dtxsids=getDTXSIDsFromExcel(folder+filenameInput,columnName);
 
 		
 		System.out.println(dtxsids);
 		
 //		HashSet<String>dtxsids=new HashSet(Arrays.asList("DTXSID00192353","DTXSID6067331","DTXSID30891564","DTXSID6062599","DTXSID90868151","DTXSID8031863","DTXSID8031865","DTXSID1037303","DTXSID8047553","DTXSID60663110","DTXSID70191136","DTXSID3037709","DTXSID3059921","DTXSID3031860","DTXSID8037706","DTXSID8059920","DTXSID3031862","DTXSID30382063","DTXSID00379268","DTXSID20874028","DTXSID3037707"));
 		
-		String propertyName="LogKow: Octanol-Water";
-//		JsonArray ja=r.getRawRecordsChemicalsDashboardByPropertyNameAndDTXSID_FromView(dtxsids);
-		JsonArray ja=r.getRawRecordsChemicalsDashboardByPropertyNameAndDTXSID_FromView(dtxsids,propertyName);
+		JsonArray ja=getRawRecordsChemicalsDashboardByPropertyNameAndDTXSID_FromView2(dtxsids);
+
+//		String propertyName="LogKow: Octanol-Water";
+		//		JsonArray ja=getRawRecordsChemicalsDashboardByPropertyNameAndDTXSID_FromView(dtxsids,propertyName);
 		
 		String filenameOutput=filenameInput.replace(".xlsx","_exp_data.xlsx");
 		String excelFilePath=folder+filenameOutput;
 
-		String []fields={"dtxsid","prop_type","dataset","property",
+		String []fields={"dtxsid","dataset","property","property_type","property_category",
 				"property_value","property_units","property_value_text","property_value_original",
-				"temperature_C","pressure_mmHg","pH",
+				"temperature_c","pressure_mmHg","pH",
 				"response_site","species_latin","species_common",
 				"public_source_name","public_source_description","public_source_url",
 				"literature_source_name","short_citation","literature_source_description","literature_source_doi",
-				"direct_link","update_date",  "data_version"};
+				"direct_link","export_date",  "data_version"};
 		//TODO add public_source_original fields
 
 		ExcelCreator.createExcel3(ja, excelFilePath, fields, null);
+		
+	}
+
+
+	public static void main(String[] args) {
+		RawExpDataExcelTableGenerator r=new RawExpDataExcelTableGenerator();
+
+		r.createExperimentalDataSpreadsheet();
+		
 
 	}
 

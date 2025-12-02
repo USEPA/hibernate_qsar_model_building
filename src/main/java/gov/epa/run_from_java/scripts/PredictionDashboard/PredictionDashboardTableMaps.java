@@ -2,13 +2,23 @@ package gov.epa.run_from_java.scripts.PredictionDashboard;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Type;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -34,6 +44,9 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
+import gov.epa.databases.dsstox.entity.DsstoxCompound;
+import gov.epa.databases.dsstox.entity.OtherCasrn;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 
@@ -67,18 +80,58 @@ public class PredictionDashboardTableMaps {
 //	Following files are used to fix the neighbors which are missing dtxsids- but might need to pull info from prod_dsstox instead???
 	public static File fileJsonDsstoxRecords2023_04_04=new File("data\\dsstox\\snapshot-2023-04-04\\json\\2023_04_snapshot_dsstox_records_2024_01_09.json");
 	public static File fileJsonDsstoxRecords2024_11_12=new File("data\\dsstox\\snapshot-2024-11-12\\json\\2024_11_12_snapshot_dsstox_records.json");
+	public static File fileJsonDsstoxRecords2025_10_30=new File("data\\dsstox\\snapshot-2025-10-30\\json\\2025_10_30_snapshot_dsstox_records.json");
 	
 	
 	public static File fileJsonOtherCAS2023_04_04=new File("data\\dsstox\\snapshot-2023-04-04\\json\\2023_04_snapshot_other_casrn lookup.json");
 	public static File fileJsonOtherCAS2024_11_12=new File("data\\dsstox\\snapshot-2024-11-12\\json\\2024_11_12_snapshot_other_casrn lookup.json");
+	public static File fileJsonOtherCAS2025_10_30=new File("data\\dsstox\\snapshot-2025-10-30\\json\\2025_10_30_snapshot_other_casrn lookup.json");
 
 	
-	public class OtherCAS {
+	public static class OtherCAS {
 		String casrn;
 		String dsstox_substance_id;
 	}
 	
-	
+	public PredictionDashboardTableMaps(String dtxsid, long fk_snapshot_id) {
+
+		getDsstoxRecordsFromDatabase(dtxsid,fk_snapshot_id);	
+		
+//		DsstoxRecord dr=mapDsstoxRecordsByCAS.get("71-43-2");
+//		System.out.println(dr.getDtxsid());
+
+//		DsstoxRecord dr=mapDsstoxRecordsByOtherCAS.get("725266-05-7");
+//		System.out.println(dr.getPreferredName());
+		
+		
+		long t1=System.currentTimeMillis();
+		System.out.println("Getting maps");
+		
+		System.out.println("Getting property map");
+		mapProperties=CreatorScript.getPropertyMap();
+		
+		System.out.println("Getting dataset map");
+		mapDatasets=CreatorScript.getDatasetsMap();
+		
+		System.out.println("Getting model map");
+		mapModels=CreatorScript.getModelsMap();
+		
+		System.out.println("Getting methodAD map");
+		mapMethodAD=CreatorScript.getMethodAD_Map();
+		
+		long t2=System.currentTimeMillis();
+		
+		System.out.println("Time to load other maps:\t"+(t2-t1)/1000+" secs");
+		
+//		System.out.println("Getting statistic map");
+//		mapStatistics=getStatisticsMap();
+		
+//		System.out.println("Getting model statistics");
+//		setModelStatistics();
+		
+		
+		System.out.println("done");
+	}
 	
 	public PredictionDashboardTableMaps(File fileJsonDsstoxRecords,File fileJsonOtherCAS) {
 		
@@ -125,6 +178,9 @@ public class PredictionDashboardTableMaps {
 		System.out.println("done");
 		
 	}
+	
+	
+	
 	
 //	/**
 //	 * Get database name of property based on abbreviation from OPERA
@@ -177,8 +233,181 @@ public class PredictionDashboardTableMaps {
 //		
 //	}
 
+	public PredictionDashboardTableMaps() {
+		// TODO Auto-generated constructor stub
+	}
+
+	public static void createOtherCasJsonLookupJson() {
+		
+		String date="2025-10-30";
+		
+		int fk_dsstox_snapshot_id=3;
+		
+		String filename=date.replace("-","_")+"_snapshot_other_casrn lookup.json";
+		String filepath="data\\dsstox\\snapshot-"+date+"\\json\\"+filename;
+		
+		
+		String sql="select dr.dtxsid,oc.casrn from qsar_models.dsstox_other_casrns oc\r\n"
+				+ "join qsar_models.dsstox_records dr on oc.fk_dsstox_record_id = dr.id\r\n"
+				+ "where dr.fk_dsstox_snapshot_id="+fk_dsstox_snapshot_id+";";
+		ArrayList<OtherCAS>otherCasrns=new ArrayList<>();
+				
+		
+		try {
+			
+			ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+			
+			while (rs.next()) {
+				
+				OtherCAS oc=new OtherCAS();
+				oc.dsstox_substance_id=rs.getString(1);
+				oc.casrn=rs.getString(2);
+				otherCasrns.add(oc);
+			}
+			
+			FileWriter fw=new FileWriter(filepath);
+			fw.write(Utilities.gson.toJson(otherCasrns));
+			fw.flush();
+			fw.close();
+			
+			
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		
+		
+	}
+	
+	public static void exportDsstoxRecordsFromDb() {
+
+		String date="2025-10-30";
+		int fk_snapshot_id=3;
+		int batchSize=25000;
+		JsonArray jaAll=new JsonArray();
+		
+		int i=0;
+		while(true) {
+
+			JsonArray ja=getDsstoxRecords(i*batchSize, batchSize,fk_snapshot_id);
+			jaAll.addAll(ja);
+			System.out.println((i+1)+"\t"+jaAll.size());
+			
+//			if(true)break;
+			
+			if(ja.size()==0) {
+				break;
+			} else {
+				i++;
+			}
+		}
+		
+		try {
+			String date2=date.replace("-", "_");
+			String filepath="data\\dsstox\\snapshot-"+date+"\\json\\"+date2+"_snapshot_dsstox_records_test.json";
+			FileWriter fw=new FileWriter(filepath);
+			
+			GsonBuilder gb=new GsonBuilder();
+			gb.setPrettyPrinting();
+			gb.setDateFormat("yyyy-MM-dd");
+			Gson gson=gb.create();
+			
+			fw.write(gson.toJson(jaAll));
+			
+			fw.flush();
+			fw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
 	
 	
+	private static JsonArray getDsstoxRecords(int offset, int limit, int fk_snapshot_id) {
+
+		String sql="select * from qsar_models.dsstox_records dr\r\n"
+				+ "where dr.fk_dsstox_snapshot_id="+fk_snapshot_id+"\r\n"
+				+ "order by dr.dtxsid\r\n";
+		
+		sql+="LIMIT "+limit+" OFFSET "+offset+";";
+		
+//		System.out.println(sql);
+		
+		try {
+			
+			ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+			JsonArray jsonArray = resultSetToJsonArray(rs);
+			return jsonArray;
+			
+		} catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		return null;
+	}
+
+	private static JsonArray resultSetToJsonArray(ResultSet rs) throws SQLException {
+		ResultSetMetaData metaData = rs.getMetaData();
+		int columnCount = metaData.getColumnCount();
+
+		// Create a JsonArray
+		JsonArray jsonArray = new JsonArray();
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        
+		// Process the ResultSet
+		while (rs.next()) {
+			JsonObject jsonObject = new JsonObject();
+			for (int i = 1; i <= columnCount; i++) {
+				String columnName = metaData.getColumnName(i);
+				int columnType = metaData.getColumnType(i);
+				
+				
+				if (rs.getObject(i) == null) {
+					continue;
+				}
+				
+
+				// Determine column type and add to JsonObject
+				switch (columnType) {
+
+				case Types.INTEGER:
+					jsonObject.addProperty(columnName, rs.getInt(i));
+					break;
+
+				case Types.BIGINT:
+					jsonObject.addProperty(columnName, rs.getLong(i));
+					break;
+
+				case Types.FLOAT:
+				case Types.REAL:
+				case Types.DOUBLE:
+					jsonObject.addProperty(columnName, rs.getDouble(i));
+					break;
+				case Types.VARCHAR:
+				case Types.CHAR:
+				case Types.LONGVARCHAR:
+					jsonObject.addProperty(columnName, rs.getString(i));
+					break;
+				case Types.BOOLEAN:
+					jsonObject.addProperty(columnName, rs.getBoolean(i));
+					break;
+				case Types.TIMESTAMP:
+					Timestamp timestamp = rs.getTimestamp(i);
+					jsonObject.addProperty(columnName, dateFormat.format(timestamp));
+					break;
+				default:
+					jsonObject.addProperty(columnName, rs.getObject(i).toString());
+					break;
+
+				}
+			}
+			jsonArray.add(jsonObject);
+		}
+		return jsonArray;
+	}
+
 	public  List<OtherCAS> getOtherCASMapFromJson(File fileJsonOtherCAS) {
 		
 		if(fileJsonOtherCAS==null)return null;
@@ -205,6 +434,9 @@ public class PredictionDashboardTableMaps {
 				dr.getOtherCasrns().add(d);
 				
 			}
+			
+			
+			
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -259,13 +491,16 @@ public class PredictionDashboardTableMaps {
 	 */
 	public void getDsstoxRecordsFromJsonExport(File fileJsonDsstoxRecords,File fileJsonOtherCAS) {
 		
-		System.out.println("Getting dsstox records from json files");
-		
-		dsstoxRecords=new ArrayList<>();
+		getDsstoxRecordsFromJsonExport(fileJsonDsstoxRecords);
+//		System.out.println(mapDsstoxRecordsBySID.size());
+
+		getOtherCASMapFromJson(fileJsonOtherCAS); //loads from fileJsonOtherCAS
+	}
+	
+
+	public void getDsstoxRecordsFromJsonExportOld(File fileJsonDsstoxRecords) {
 		
 		try {
-
-			
 			
 //			JsonArray ja = Utilities.gson.fromJson(new FileReader(fileJsonDsstoxRecords), JsonArray.class);
 
@@ -310,18 +545,50 @@ public class PredictionDashboardTableMaps {
 				mapDsstoxRecordsBySID.put(rec.getDtxsid(),rec);
 				mapDsstoxRecordsByCAS.put(rec.getCasrn(),rec);
 			}
-			
-			
-			
-			getOtherCASMapFromJson(fileJsonOtherCAS); //loads from fileJsonOtherCAS
-			
-//			System.out.println(mapDsstoxRecordsBySID.size());
-			System.out.println("Done");
-			
-
+		
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	
+		
+	}
+	
+	public void getDsstoxRecordsFromJsonExport(File fileJsonDsstoxRecords) {
+
+		System.out.println("Getting dsstox records from json files");
+
+		dsstoxRecords=new ArrayList<>();
+
+		GsonBuilder gsonBuilder = new GsonBuilder();
+		gsonBuilder.setDateFormat("yyyy-MM-dd HH:mm:ss");
+		Gson gson = gsonBuilder.create();
+
+		try (FileReader reader = new FileReader(fileJsonDsstoxRecords)) {
+			Type listType = new TypeToken<ArrayList<DsstoxRecord>>(){}.getType();
+			dsstoxRecords = gson.fromJson(reader, listType);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		//	System.out.println(ja.size());
+
+		//Populate hashtables:
+		for (DsstoxRecord rec:dsstoxRecords) {
+			if (rec.getDtxcid()!=null) mapDsstoxRecordsByCID.put(rec.getDtxcid(),rec);
+			mapDsstoxRecordsBySID.put(rec.getDtxsid(),rec);
+			
+//			if(rec.getDtxsid().equals("DTXSID8023892")) {
+//				System.out.println(gson.toJson(rec));
+//			}
+			
+//			System.out.println(rec.getDtxsid()+"\t"+rec.getDtxcid());
+			
+			mapDsstoxRecordsByCAS.put(rec.getCasrn(),rec);
+		}
+
+		//	System.out.println(mapDsstoxRecordsBySID.size());
+
+		System.out.println("Done");
 	}
 	
 	
@@ -370,6 +637,30 @@ public class PredictionDashboardTableMaps {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void getDsstoxRecordsFromDatabase(String dtxsid, long fk_snapshot_id) {
+		
+		dsstoxRecords=new ArrayList<>();
+
+		try {
+			
+//			TreeMap<Long, List<DsstoxOtherCASRN>> tmOtherCAS = CreatorScript.getOtherCAS_Map();//ideally hibernate could autopopulate the other casrns stored in dsstoxRecord but this is work around for now
+
+			DsstoxRecordServiceImpl drs=new DsstoxRecordServiceImpl();
+			DsstoxRecord rec=drs.findByDTXSID(dtxsid,fk_snapshot_id);
+			
+			dsstoxRecords.add(rec);
+
+			//Populate hashtables:
+			if (rec.getDtxcid()!=null) mapDsstoxRecordsByCID.put(rec.getDtxcid(),rec);
+			mapDsstoxRecordsBySID.put(rec.getDtxsid(),rec);
+			mapDsstoxRecordsByCAS.put(rec.getCasrn(),rec);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+			
 	}
 
 	
@@ -424,6 +715,12 @@ public class PredictionDashboardTableMaps {
 			}
 		}
 
+	}
+	
+	public static void main(String[] args) {
+		exportDsstoxRecordsFromDb();
+//		createOtherCasJsonLookupJson();
+		
 	}
 
 }

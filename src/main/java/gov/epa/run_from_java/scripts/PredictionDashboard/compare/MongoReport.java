@@ -42,8 +42,13 @@ import gov.epa.run_from_java.scripts.PredictionDashboard.compare.ChemicalPropert
 public class MongoReport {
 
 	
-	
-	void exportPerceptaPredictionsSampleResQsar(int count) {
+	/**
+	 * Just gets Percepta 
+	 * 
+	 * @param count
+	 * @param date
+	 */
+	void exportPerceptaPredictionsSampleResQsar(int count,String date) {
 
 		Gson gson=new Gson();
 
@@ -53,7 +58,7 @@ public class MongoReport {
 			
 //			int count=5000;
 			
-			File file=new File(folder+"chemicalProperty_2024_11_06_sample_"+count+".json");
+			File file=new File(folder+"chemicalProperty_"+date+"_sample_"+count+".json");
 			FileWriter fw=new FileWriter(file);
 
 			HashSet<String>dtxsidsSample=CompareResQsarToDatahub.getDtxsidsFromTextFile(folder+"sampleDtxsids"+count+".txt");
@@ -75,8 +80,13 @@ public class MongoReport {
 
 	}
 
-	
-	void exportDataJsonsSample(int count) {
+	/**
+	 * Gets predictions from all software for sample dtxsids
+	 * 
+	 * @param count
+	 * @param date
+	 */
+	void exportDataJsonsSample(int count,String date) {
 
 		Gson gson=new Gson();
 
@@ -86,7 +96,7 @@ public class MongoReport {
 			
 //			int count=5000;
 			
-			File file=new File(folder+"chemicalProperty_2024_11_06_sample_data_"+count+".json");
+			File file=new File(folder+"chemicalProperty_"+date+"_sample_data_"+count+".json");
 			FileWriter fw=new FileWriter(file);
 
 			HashSet<String>dtxsidsSample=CompareResQsarToDatahub.getDtxsidsFromTextFile(folder+"sampleDtxsids"+count+".txt");
@@ -208,12 +218,16 @@ public class MongoReport {
 
 	List<ResQsarPrediction> getChemicalPropertiesResQsar(HashSet<String>dtxsids) {
 		
+//		System.out.println(dtxsids.contains("DTXSID50281842"));
+		
 //		String sourceAbbrev="ACD/Labs";
 		String sourceAbbrev="Percepta2023.1.2";
 		
-		MongoDatabase database=SqlUtilities.getMongoDatabase();
+		MongoDatabase database=SqlUtilities.getMongoDatabaseReplicaSet();
+		
+		
 		MongoCollection<Document> collection = database.getCollection("chemicalProperty");
-//		System.out.println(collection.countDocuments());
+		System.out.println("# documents in chemicalProperty="+collection.countDocuments());
 
 		Gson gson=new Gson();
 //		System.out.println(gson.toJson(dtxsids));
@@ -236,6 +250,13 @@ public class MongoReport {
 //			System.out.println(document.toJson()); 
 			
 			ChemicalProperty cp=gson.fromJson(document.toJson(), ChemicalProperty.class);
+			
+			
+//			if(cp.dtxsid.equals("DTXSID50281842")) {
+////				System.out.println("Found DTXSID50281842");
+//				System.out.println(Utilities.gson.toJson(cp));
+//			}
+			
 
 			for(ChemicalProperty.Datum datum:cp.data) {
 				ResQsarPrediction rqp=ResQsarPrediction.getResQsarPrediction(datum,cp,sourceAbbrev);
@@ -254,7 +275,7 @@ public class MongoReport {
 		
 		String sourceAbbrev="ACD/Labs";
 		
-		MongoDatabase database=SqlUtilities.getMongoDatabase();
+		MongoDatabase database=SqlUtilities.getMongoDatabaseReplicaSet();
 		MongoCollection<Document> collection = database.getCollection("chemicalProperty");
 //		System.out.println(collection.countDocuments());
 
@@ -290,20 +311,24 @@ public class MongoReport {
 	public static void main(String[] args) {
 
 		
+		
 		MongoReport mr=new MongoReport();
 //		HashSet<String>dtxsids=new HashSet<>();
 ////		dtxsids.add("DTXSID3039242");
 //		dtxsids.add("DTXSID001108150");
 //		mr.getChemicalProperties(dtxsids);
 		
-		int count=1000;
-		mr.exportPerceptaPredictionsSampleResQsar(count);
-		mr.exportDataJsonsSample(count);
+//		String date="2024_11_06";
+		String date="2025_08_14_stg";
+		
+		int count=5000;
+		mr.exportPerceptaPredictionsSampleResQsar(count,date);
+//		mr.exportDataJsonsSample(count, date);
 		
 		String folder="data//percepta//";
 		
-		File file=new File(folder+"chemicalProperty_2024_11_06_sample_data_"+count+".json");
-		mr.lookAtSummaryStats(file.getAbsolutePath());
+//		File file=new File(folder+"chemicalProperty_"+date+"_sample_data_"+count+".json");
+//		mr.lookAtSummaryStats(file.getAbsolutePath());
 		
 	}
 }

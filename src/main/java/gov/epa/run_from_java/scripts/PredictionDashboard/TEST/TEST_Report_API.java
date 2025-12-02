@@ -3,10 +3,7 @@ package gov.epa.run_from_java.scripts.PredictionDashboard.TEST;
 import java.io.File;
 import java.io.FileReader;
 import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
-import java.util.TreeMap;
 
 import com.opencsv.CSVReader;
 
@@ -15,7 +12,6 @@ import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_models.entity.MethodAD;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionReportServiceImpl;
@@ -26,6 +22,7 @@ import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.DatabaseUtilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.HTMLReportCreator;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
+import gov.epa.run_from_java.scripts.PredictionDashboard.ReportViewerFromDB;
 
 /**
 * @author TMARTI02
@@ -190,6 +187,8 @@ public class TEST_Report_API {
 		}
 		
 	}
+	
+
 
 	private Long getDsstoxRecordId(String id, int fk_dsstox_snapshot_id) {
 		String idCol="dtxcid";
@@ -237,16 +236,21 @@ public class TEST_Report_API {
 //		String id="DTXSID50943897";
 //		String id="DTXSID301346793";
 		
-//		String id="DTXSID7020182";//bisphenol-A
-		String id="DTXSID40166952";
+		String id="DTXSID7020182";//bisphenol-A
+//		String id="DTXSID40166952";
 //		String id="DTXSID50967078";
 //		String id="DTXSID90492637";
 		
 		boolean useJson=false;
-		boolean regenerate=true;
+		boolean regenerate=false;
 		boolean useLegacyModelIds=true;
 		int fk_dsstox_snapshot_id=2;
-		o.viewReportsFromDatabase(id,useJson, regenerate,useLegacyModelIds, fk_dsstox_snapshot_id);
+//		o.viewReportsFromDatabase(id,useJson, regenerate,useLegacyModelIds, fk_dsstox_snapshot_id);
+		
+		
+		
+		ReportViewerFromDB.viewReportsFromDatabase("TEST5.1.3",id);
+		
 //		o.transposeCSV_Row(id);
 	}	
 

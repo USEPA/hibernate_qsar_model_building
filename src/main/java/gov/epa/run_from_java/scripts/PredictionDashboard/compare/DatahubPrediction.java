@@ -175,17 +175,17 @@ public class DatahubPrediction {
 
 	}
 	
-	void exportPerceptaPredictionsSample(int count) {
+	void exportPerceptaPredictionsSample(int count,String server) {
 
 		
 		Gson gson=new Gson();
 
 		try {
-			
-			String folder="data//percepta//";
+			String folder="data//Percepta2023.1.2//test load//";
+//			String folder="data//percepta//";
 			
 			String sampleFileName="sampleDtxsids"+count+".txt";
-			File file=new File(folder+"chemical_properties_2024_11_06_sample_"+count+".json");
+			File file=new File(folder+server+"_chemical_properties_2025_07_22_sample_"+count+".json");
 
 //			String sampleFileName="sampleDtxsids.txt";
 //			File file=new File(folder+"chemical_properties_2024_11_06_sample.json");
@@ -335,7 +335,7 @@ public class DatahubPrediction {
 			
 			br.close();
 			
-//			System.out.println(Utilities.gson.toJson(ht));
+			System.out.println(Utilities.gson.toJson(ht));
 			
 			
 		} catch (Exception ex) {
@@ -351,8 +351,8 @@ public class DatahubPrediction {
 
 //		cp.exportDtxsids();
 		
-		cp.exportPerceptaPredictionsSample(1000);
-		cp.exportPerceptaPredictionsSample(5000);
+//		cp.exportPerceptaPredictionsSample(1000,"stg");
+		cp.exportPerceptaPredictionsSample(5000,"stg");
 		
 //		cp.getPredictionsFromJsonFile("data//percepta//chemical_properties_2024_11_06_sample.json",true);
 		
