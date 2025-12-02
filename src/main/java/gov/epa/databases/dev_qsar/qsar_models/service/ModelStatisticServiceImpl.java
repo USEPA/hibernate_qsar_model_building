@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_models.service;
 
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
@@ -17,10 +18,13 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.ModelStatisticDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Statistic;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+//import jakarta.validation.ConstraintViolation;
+//import jakarta.validation.ConstraintViolationException;
+//import jakarta.validation.Validator;
 
 public class ModelStatisticServiceImpl implements ModelStatisticService {
 	
@@ -77,7 +81,17 @@ public class ModelStatisticServiceImpl implements ModelStatisticService {
 		}
 
 //		System.out.println("Creating statistic "+modelStatistic.getStatistic().getName()+ " for "+model.getName()+", value="+modelStatistic.getStatisticValue());
-		System.out.println("Creating statistic "+modelStatistic.getStatistic().getName()+", value="+modelStatistic.getStatisticValue()+", modelName="+model.getName());
+
+		try {
+			DecimalFormat df=new DecimalFormat("0.000");
+			String strValue=df.format(modelStatistic.getStatisticValue());
+			System.out.println("Creating statistic "+modelStatistic.getStatistic().getName()+", value="+strValue+", modelId="+model.getId());
+			
+		} catch (Exception ex) {
+			System.out.println("Creating statistic "+modelStatistic.getStatistic().getName()+", value="+modelStatistic.getStatisticValue()+", modelId="+model.getId());
+		}
+		
+		
 		return create(modelStatistic, session);
 	}
 
@@ -91,7 +105,7 @@ public class ModelStatisticServiceImpl implements ModelStatisticService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(modelStatistic);
+			session.persist(modelStatistic);
 			session.flush();
 			session.refresh(modelStatistic);
 			t.commit();
@@ -122,7 +136,7 @@ public class ModelStatisticServiceImpl implements ModelStatisticService {
 		
 		try {
 			session.clear();
-			session.update(modelStatistic);
+			session.merge(modelStatistic);
 			session.flush();
 			session.refresh(modelStatistic);
 			t.commit();

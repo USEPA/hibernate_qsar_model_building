@@ -9,19 +9,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
 import gov.epa.databases.dev_qsar.DevQsarValidator;
 import gov.epa.databases.dev_qsar.qsar_datasets.QsarDatasetsSession;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointContributor;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.run_from_java.scripts.SqlUtilities;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 public class DataPointContributorServiceImpl implements DataPointContributorService {
 
@@ -48,7 +47,7 @@ public class DataPointContributorServiceImpl implements DataPointContributorServ
 		Transaction t = session.beginTransaction();
 
 		try {
-			session.save(dataPointContributor);
+			session.persist(dataPointContributor);
 			session.flush();
 //			session.refresh(dataPointContributor);
 			t.commit();
@@ -74,7 +73,7 @@ public class DataPointContributorServiceImpl implements DataPointContributorServ
 		try {
 			for (int i = 0; i < dataPointContributors.size(); i++) {
 				DataPointContributor dataPointContributor = dataPointContributors.get(i);
-				session.save(dataPointContributor);
+				session.persist(dataPointContributor);
 				if (i % 1000 == 0) { // 50, same as the JDBC batch size
 					// flush a batch of inserts and release memory:
 					session.flush();

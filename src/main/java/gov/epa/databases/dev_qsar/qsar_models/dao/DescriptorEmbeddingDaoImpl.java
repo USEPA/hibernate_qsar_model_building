@@ -20,24 +20,31 @@ public class DescriptorEmbeddingDaoImpl implements DescriptorEmbeddingDao {
 	@Override
 	public DescriptorEmbedding findByName(String descriptorEmbeddingName, Session session) {
 		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_BY_NAME);
+		Query <DescriptorEmbedding>query = session.createQuery(HQL_BY_NAME,DescriptorEmbedding.class);
 		query.setParameter("descriptorEmbeddingName", descriptorEmbeddingName);
-		return (DescriptorEmbedding) query.uniqueResult();
+		return query.uniqueResult();
 	}
 
 	@Override
 	public DescriptorEmbedding findByGASettings(CalculationInfo ci, Session session) {
 		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_BY_FIELDS);		
+
+        Query<DescriptorEmbedding> query = session.createQuery(HQL_BY_FIELDS, DescriptorEmbedding.class);
 		query.setParameter("qsar_method", ci.qsarMethodEmbedding);
 		query.setParameter("dataset_name", ci.datasetName);
 		query.setParameter("descriptor_set_name",ci.descriptorSetName);
 		query.setParameter("description",ci.toString());
 		query.setParameter("splitting_name",ci.splittingName);	
+
 		
-//		System.out.println(ci.toString());
+		System.out.println(ci.qsarMethodEmbedding);
+		System.out.println(ci.datasetName);
+		System.out.println(ci.descriptorSetName);
+		System.out.println(ci.toString());
+		System.out.println(ci.splittingName);
 		
-		return (DescriptorEmbedding) query.uniqueResult();
+		
+		return query.uniqueResult();
 		
 	}
 

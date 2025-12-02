@@ -10,10 +10,13 @@ import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
 import gov.epa.databases.dev_qsar.qsar_models.dao.MethodDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.MethodDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+//import jakarta.validation.ConstraintViolation;
+//import jakarta.validation.ConstraintViolationException;
+//import jakarta.validation.Validator;
 
 public class MethodServiceImpl implements MethodService {
 	
@@ -44,6 +47,7 @@ public class MethodServiceImpl implements MethodService {
 
 	@Override
 	public Method create(Method method, Session session) throws ConstraintViolationException {
+		
 		Set<ConstraintViolation<Method>> violations = validator.validate(method);
 		if (!violations.isEmpty()) {
 			throw new ConstraintViolationException(violations);
@@ -52,7 +56,7 @@ public class MethodServiceImpl implements MethodService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(method);
+			session.persist(method);
 			session.flush();
 			session.refresh(method);
 			t.commit();

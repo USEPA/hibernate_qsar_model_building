@@ -2,18 +2,20 @@ package gov.epa.databases.dsstox.entity;
 
 import java.util.Date;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Generated;
-import org.hibernate.annotations.GenerationTime;
+import org.hibernate.annotations.UpdateTimestamp;
+
 
 @Entity
 @Table(name="generic_substance_compounds")
@@ -30,14 +32,14 @@ public class GenericSubstanceCompound {
 	private String source;
 
 	@Column(name="created_at")
-	@Generated(value=GenerationTime.INSERT)
+	@CreationTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
-	private Date createdDate;
+	private Date createdAt;
 
 	@Column(name="updated_at")
-	@Generated(value=GenerationTime.ALWAYS)
+	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
-	private Date modifiedDate;
+	private Date updatedAt;
 
 	@Column(name="created_by")
 	private String createdBy;
@@ -80,21 +82,6 @@ public class GenericSubstanceCompound {
 		this.source = source;
 	}
 
-	public Date getCreatedDate() {
-		return createdDate;
-	}
-
-	public void setCreatedDate(Date createdDate) {
-		this.createdDate = createdDate;
-	}
-
-	public Date getModifiedDate() {
-		return modifiedDate;
-	}
-
-	public void setModifiedDate(Date modifiedDate) {
-		this.modifiedDate = modifiedDate;
-	}
 
 	public String getCreatedBy() {
 		return createdBy;
@@ -126,5 +113,21 @@ public class GenericSubstanceCompound {
 
 	public void setCompound(DsstoxCompound compound) {
 		this.compound = compound;
+	}
+
+	public Date getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(Date createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public Date getUpdatedAt() {
+		return updatedAt;
+	}
+
+	public void setUpdatedAt(Date updatedAt) {
+		this.updatedAt = updatedAt;
 	}
 }

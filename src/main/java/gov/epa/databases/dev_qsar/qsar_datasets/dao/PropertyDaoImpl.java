@@ -20,17 +20,16 @@ public class PropertyDaoImpl implements PropertyDao {
 	@Override
 	public Property findByName(String propertyName, Session session) {
 		if (session==null) { session = QsarDatasetsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_BY_NAME);
+		Query<Property> query = session.createQuery(HQL_BY_NAME,Property.class);
 		query.setParameter("propertyName", propertyName);
-		return (Property) query.uniqueResult();
+		return query.uniqueResult();
 	}
 
 
 	@Override
 	public List<Property> findAll(Session session) {
 		if (session==null) { session = ExpPropSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_ALL);
-		return (List<Property>) query.list();
+		Query<Property> query = session.createQuery(HQL_ALL,Property.class);
+		return query.list();
 	}
-
 }

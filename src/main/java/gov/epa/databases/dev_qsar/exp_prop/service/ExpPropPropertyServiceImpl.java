@@ -2,9 +2,6 @@ package gov.epa.databases.dev_qsar.exp_prop.service;
 
 import java.util.List;
 import java.util.Set;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import gov.epa.databases.dev_qsar.DevQsarValidator;
@@ -12,6 +9,10 @@ import gov.epa.databases.dev_qsar.exp_prop.ExpPropSession;
 import gov.epa.databases.dev_qsar.exp_prop.dao.ExpPropPropertyDao;
 import gov.epa.databases.dev_qsar.exp_prop.dao.ExpPropPropertyDaoImpl;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
+
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 public class ExpPropPropertyServiceImpl implements ExpPropPropertyService {
 	
@@ -71,13 +72,13 @@ public class ExpPropPropertyServiceImpl implements ExpPropPropertyService {
 	public ExpPropProperty create(ExpPropProperty property, Session session) throws ConstraintViolationException {
 		Set<ConstraintViolation<ExpPropProperty>> violations = validator.validate(property);
 		if (!violations.isEmpty()) {
-			throw new ConstraintViolationException(violations);
+			throw new jakarta.validation.ConstraintViolationException(violations);
 		}
 		
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(property);
+			session.persist(property);
 			session.flush();
 			session.refresh(property);
 			t.commit();
@@ -105,7 +106,8 @@ public class ExpPropPropertyServiceImpl implements ExpPropPropertyService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.delete(property);
+			
+			session.remove(property);
 			session.flush();
 //			session.refresh(property);
 			t.commit();

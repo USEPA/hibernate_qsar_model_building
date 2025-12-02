@@ -4,9 +4,9 @@ import java.sql.Connection;
 import java.util.List;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -61,7 +61,7 @@ public class DatasetServiceImpl implements DatasetService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(dataset);
+			session.persist(dataset);
 			session.flush();
 			session.refresh(dataset);
 			t.commit();
@@ -90,7 +90,7 @@ public class DatasetServiceImpl implements DatasetService {
 		try {
 			Transaction t = session.beginTransaction();
 			System.out.print("Deleting dataset...");
-			session.delete(dataset);
+			session.remove(dataset);
 			System.out.print("done\n");
 			
 //			System.out.print("Flushing...");

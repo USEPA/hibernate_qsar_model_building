@@ -2,7 +2,7 @@ package gov.epa.databases.dev_qsar.qsar_models.service;
 
 import java.util.List;
 
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolationException;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -42,7 +42,7 @@ public class BobServiceImpl implements BobService {
 		try {
 		for (int i = 0; i < bobs.size(); i++) {
 			Bob bob = bobs.get(i);
-			session.save(bob);
+			session.persist(bob);
 		    if ( i % 1000 == 0 ) { //20, same as the JDBC batch size
 		        //flush a batch of inserts and release memory:
 		        session.flush();

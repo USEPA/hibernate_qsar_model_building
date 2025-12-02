@@ -3,9 +3,9 @@ package gov.epa.databases.dev_qsar.exp_prop.service;
 import java.util.List;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -66,7 +66,7 @@ public class ParameterServiceImpl implements ParameterService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(parameter);
+			session.persist(parameter);
 			session.flush();
 			session.refresh(parameter);
 			t.commit();

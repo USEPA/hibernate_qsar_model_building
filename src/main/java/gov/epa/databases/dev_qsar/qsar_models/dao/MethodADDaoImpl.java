@@ -2,15 +2,11 @@ package gov.epa.databases.dev_qsar.qsar_models.dao;
 
 import java.util.List;
 
-import javax.persistence.criteria.CriteriaUpdate;
+
 
 import org.hibernate.Session;
 import org.hibernate.query.Query;
-
-import gov.epa.databases.dev_qsar.exp_prop.ExpPropSession;
-import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
 import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
-import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.MethodAD;
 
 public class MethodADDaoImpl implements MethodADDao {

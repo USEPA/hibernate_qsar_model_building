@@ -7,9 +7,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -76,7 +76,7 @@ public class LiteratureSourceServiceImpl implements LiteratureSourceService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(ls);
+			session.persist(ls);
 			session.flush();
 			session.refresh(ls);
 			t.commit();

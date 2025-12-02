@@ -4,24 +4,24 @@ import java.lang.reflect.Field;
 import java.util.Date;
 import java.util.List;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.persistence.Transient;
-import javax.persistence.UniqueConstraint;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
+import jakarta.persistence.Transient;
+import jakarta.persistence.UniqueConstraint;
+//import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -30,8 +30,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointContributor;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 
@@ -62,6 +60,9 @@ public class PredictionDashboard {
 
 //	@Transient  
 	private String dtxcid;//needed for storing cases where there is no matching dsstoxRecord
+	
+	@Transient
+	public String endpoint;//property name from original software like TEST, not for database
 	
 	@ManyToOne
 	@NotNull(message="Model required")
@@ -101,7 +102,8 @@ public class PredictionDashboard {
 	private String createdBy;
 	
 	public String getKey() {
-		return canonQsarSmiles+"\t"+getDsstoxRecord().getId()+"\t"+model.getId();//TODO dont need smiles..
+//		return canonQsarSmiles+"\t"+getDsstoxRecord().getId()+"\t"+model.getId();
+		return canonQsarSmiles+"\t"+getDtxcid()+"\t"+model.getId();//TODO dont need smiles?
 	}
 
 	@OneToMany(mappedBy="predictionDashboard", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
@@ -114,26 +116,18 @@ public class PredictionDashboard {
 	private PredictionReport predictionReport;
 	
 
-	
 	public static String getHeader() {
-		return "id\tsmiles\tdtxsid\tdtxcid\tmodel_name\texperimentalString\texperimentalValue\tpredictionString\tpredictionValue\tpredictionError";	
+		return "id\tdtxcid\tmodel_name\texperimentalString\texperimentalValue\tpredictionString\tpredictionValue\tpredictionError";	
 	}
 				
 
 	public String toTsv() {
+
 		
-		if(dsstoxRecord!=null) {
-			return dsstoxRecord.getId()+"\t"+dsstoxRecord.getSmiles()+"\t"+ dsstoxRecord.getDtxsid()+"\t"+dsstoxRecord.getDtxcid() + "\t" + model.getName() + "\t"
-					+ experimentalString + "\t" + experimentalValue + "\t" + predictionString + "\t"
-					+ predictionValue + "\t" + predictionError;
-			
-		} else {
-			return null+"\t"+null+"\t"+ null + "\t"+dtxcid+"\t" + model.getName() + "\t"
-					+ experimentalString + "\t" + experimentalValue + "\t" + predictionString + "\t"
-					+ predictionValue + "\t" + predictionError;
-			
-		}
-		
+		return getId()+"\t"+getDtxcid()+ "\t" + model.getName() + "\t"
+				+ experimentalString + "\t" + experimentalValue + "\t" + predictionString + "\t"
+				+ predictionValue + "\t" + predictionError;
+
 	}
 
 	
@@ -199,12 +193,14 @@ public class PredictionDashboard {
 
 	private JsonObject toJsonObject() {
 		JsonObject jo=new JsonObject();
+
+		jo.addProperty("dtxcid", this.getDtxcid());
 		
-		jo.addProperty("dtxsid", this.getDsstoxRecord().getDtxsid());
-		jo.addProperty("dtxcid", this.getDsstoxRecord().getDtxcid());
-		jo.addProperty("casrn", this.getDsstoxRecord().getCasrn());
-		jo.addProperty("preferredName", this.getDsstoxRecord().getPreferredName());
-		jo.addProperty("smiles", this.getDsstoxRecord().getSmiles());
+//		jo.addProperty("dtxsid", this.getDsstoxRecord().getDtxsid());
+//		jo.addProperty("casrn", this.getDsstoxRecord().getCasrn());
+//		jo.addProperty("preferredName", this.getDsstoxRecord().getPreferredName());
+//		jo.addProperty("smiles", this.getDsstoxRecord().getSmiles());
+
 		jo.addProperty("canonQsarSmiles", canonQsarSmiles);
 		
 		jo.addProperty("experimentalString", experimentalString);
@@ -362,5 +358,17 @@ public class PredictionDashboard {
 	public void setPredictionReport(PredictionReport predictionReport) {
 		this.predictionReport = predictionReport;
 	}
+
+
+	public String getEndpoint() {
+		return endpoint;
+	}
+
+
+	public void setEndpoint(String endpoint) {
+		this.endpoint = endpoint;
+	}
+
+
 
 }

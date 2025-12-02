@@ -3,22 +3,23 @@ package gov.epa.databases.dsstox.entity;
 import java.util.Date;
 import java.util.List;
 
-import javax.persistence.Basic;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Lob;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.persistence.Transient;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
+import jakarta.persistence.Transient;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Generated;
-import org.hibernate.annotations.GenerationTime;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import com.google.gson.annotations.SerializedName;
 
@@ -96,7 +97,7 @@ public class DsstoxCompound {
 
 	
 //	@Column(name="mol_image_png_available")
-	@Transient
+//	@Transient
 	private boolean molImagePNGAvailable;
 
 	@Column(name="mol_weight")
@@ -130,14 +131,14 @@ public class DsstoxCompound {
 	private Long pubchemSources;
 
 	@Column(name="created_at")
-	@Generated(value=GenerationTime.INSERT)
+	@CreationTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
-	private Date createdDate;
+	private Date createdAt;
 
 	@Column(name="updated_at")
-	@Generated(value=GenerationTime.ALWAYS)
+	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
-	private Date modifiedDate;
+	private Date updatedAt;
 
 	@Column(name="created_by")
 	private String createdBy;
@@ -384,21 +385,6 @@ public class DsstoxCompound {
 		this.pubchemSources = pubchemSources;
 	}
 
-	public Date getCreatedDate() {
-		return createdDate;
-	}
-
-	public void setCreatedDate(Date createdDate) {
-		this.createdDate = createdDate;
-	}
-
-	public Date getModifiedDate() {
-		return modifiedDate;
-	}
-
-	public void setModifiedDate(Date modifiedDate) {
-		this.modifiedDate = modifiedDate;
-	}
 
 	public String getCreatedBy() {
 		return createdBy;
@@ -462,6 +448,22 @@ public class DsstoxCompound {
 
 	public void setMolImagePNGAvailable(boolean molImagePNGAvailable) {
 		this.molImagePNGAvailable = molImagePNGAvailable;
+	}
+
+	public Date getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(Date createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public Date getUpdatedAt() {
+		return updatedAt;
+	}
+
+	public void setUpdatedAt(Date updatedAt) {
+		this.updatedAt = updatedAt;
 	}
 
 

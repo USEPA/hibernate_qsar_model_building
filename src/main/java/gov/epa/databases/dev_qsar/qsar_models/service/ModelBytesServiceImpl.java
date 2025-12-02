@@ -27,9 +27,9 @@ import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.util.CompressionUtilities;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 public class ModelBytesServiceImpl implements ModelBytesService {
 
@@ -221,7 +221,7 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 			}
 
 			try {
-				session.save(modelBytesPartitioned);
+				session.persist(modelBytesPartitioned);
 				session.flush();
 				session.clear();
 				//				session.refresh(modelBytesPartitioned);
@@ -247,7 +247,7 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 //		}
 //		
 //		Transaction t = session.beginTransaction();
-//		session.delete(modelBytes);
+//		session.remove(modelBytes);
 //		session.flush();
 //		t.commit();
 //	}
@@ -327,7 +327,7 @@ public class ModelBytesServiceImpl implements ModelBytesService {
 //			if(true) continue;
 			
 			try {
-				session.delete(modelBytes);
+				session.remove(modelBytes);
 				session.flush();
 				session.clear();
 				//				session.refresh(modelBytesPartitioned);

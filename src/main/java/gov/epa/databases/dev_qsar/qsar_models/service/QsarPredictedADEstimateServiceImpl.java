@@ -12,9 +12,9 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.QsarPredictedADEstimateDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.QsarPredictedADEstimateDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedADEstimate;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 public class QsarPredictedADEstimateServiceImpl implements QsarPredictedADEstimateService {
 	
@@ -54,7 +54,7 @@ public class QsarPredictedADEstimateServiceImpl implements QsarPredictedADEstima
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(QsarPredictedADEstimate);
+			session.persist(QsarPredictedADEstimate);
 			session.flush();
 			session.refresh(QsarPredictedADEstimate);
 			t.commit();
@@ -81,7 +81,7 @@ public class QsarPredictedADEstimateServiceImpl implements QsarPredictedADEstima
 		try {
 			for (int i = 0; i < qsarPredictedADEstimates.size(); i++) {
 				QsarPredictedADEstimate qsarPredictedADEstimate = qsarPredictedADEstimates.get(i);
-				session.save(qsarPredictedADEstimate);
+				session.persist(qsarPredictedADEstimate);
 				if ( i % 1000 == 0 ) { //50, same as the JDBC batch size
 					//flush a batch of inserts and release memory:
 					session.flush();

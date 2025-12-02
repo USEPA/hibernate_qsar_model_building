@@ -4,10 +4,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolationException;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -100,8 +101,27 @@ public class ModelBuilder {
 //		}
 	}
 	
+	
+
+	public void PostModelStatistics(HashMap<String, Double> allStats,Model model,boolean postToDB) {
+		
+		if(postToDB) {
+			System.out.print("Posting stats:");
+
+//			System.out.println("test set stats:"+Utilities.gson.toJson(modelTestStatisticValues));
+//			System.out.println("training set stats:"+Utilities.gson.toJson(modelTrainingStatisticValues));
+			postModelStatistics(allStats, model);
+			System.out.println("done");
+		} else {
+//			System.out.println(model.getName());
+			System.out.println(Utilities.gson.toJson(allStats));
+		} 
+	}
+	
+	
+	
 	public void calculateAndPostModelStatistics(List<ModelPrediction> trainingSetPredictions, List<ModelPrediction> testSetPredictions,
-			Model model,boolean postPredictions) {
+			Model model,boolean postToDB) {
 		
 		
 		double meanExpTraining= ModelStatisticCalculator.calcMeanExpTraining(trainingSetPredictions);
@@ -141,8 +161,12 @@ public class ModelBuilder {
 							DevQsarConstants.TAG_TRAINING);
 		}
 		
-		if(postPredictions) {
+		if(postToDB) {
 			System.out.print("Posting stats:");
+
+//			System.out.println("test set stats:"+Utilities.gson.toJson(modelTestStatisticValues));
+//			System.out.println("training set stats:"+Utilities.gson.toJson(modelTrainingStatisticValues));
+			
 			postModelStatistics(modelTestStatisticValues, model);
 			postModelStatistics(modelTrainingStatisticValues, model);
 			System.out.println("done");
@@ -150,7 +174,7 @@ public class ModelBuilder {
 //			System.out.println(model.getName());
 			System.out.println(Utilities.gson.toJson(modelTestStatisticValues));
 			System.out.println(Utilities.gson.toJson(modelTrainingStatisticValues));
-		}
+		} 
 	}
 
 	/**
@@ -158,7 +182,7 @@ public class ModelBuilder {
 	 * @param modelStatisticValues	a map of statistic names to calculated values
 	 * @param model					the model the statistics were calculated before (TODO: this is inelegant--how to fix it?)
 	 */
-	private void postModelStatistics(Map<String, Double> modelStatisticValues, Model model) {
+	public void postModelStatistics(Map<String, Double> modelStatisticValues, Model model) {
 		for (String statisticName:modelStatisticValues.keySet()) {
 			Statistic statistic = statisticService.findByName(statisticName);
 			ModelStatistic modelStatistic = new ModelStatistic(statistic, model, modelStatisticValues.get(statisticName), lanId);

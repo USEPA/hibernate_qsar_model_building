@@ -24,49 +24,49 @@ public class ModelDaoImpl implements ModelDao {
 	@Override
 	public Model findById(Long modelId, Session session) {
 		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_BY_ID);
+		Query<Model> query = session.createQuery(HQL_BY_ID,Model.class);
 		query.setParameter("modelId", modelId);
-		return (Model) query.uniqueResult();
+		return query.uniqueResult();
 	}
 	
 	@Override
 	public List<Model> getAll(Session session) {
 		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_GET_ALL);
-		return (List<Model>) query.list();
+		Query<Model> query = session.createQuery(HQL_GET_ALL,Model.class);
+		return query.list();
 	}
 	
 	@Override
 	public List<Model> findByIdIn(Collection<Long> modelIds, Session session) {
 		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_BY_IDS);
+		Query<Model> query = session.createQuery(HQL_BY_IDS,Model.class);
 		query.setParameter("modelIds", modelIds);
-		return (List<Model>) query.list();
+		return query.list();
 	}
 	
 	@Override
 	public List<Model> findByIdInRangeInclusive(Long minModelId, Long maxModelId, Session session) {
 		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_BY_IDS_IN_RANGE_INCLUSIVE);
+		Query<Model> query = session.createQuery(HQL_BY_IDS_IN_RANGE_INCLUSIVE,Model.class);
 		query.setParameter("minModelId", minModelId);
 		query.setParameter("maxModelId", maxModelId);
-		return (List<Model>) query.list();
+		return query.list();
 	}
 
 	@Override
 	public List<Model> findByDatasetName(String datasetName, Session session) {
 		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_BY_DATASET_NAME);
+		Query<Model> query = session.createQuery(HQL_BY_DATASET_NAME,Model.class);
 		query.setParameter("datasetName", datasetName);
-		return (List<Model>) query.list();
+		return query.list();
 	}
 	
 	@Override
 	public List<Model> findByModelSetId(Long modelSetId, Session session) {
 		if (session==null) { session = QsarModelsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_BY_MODEL_SET_ID);
+		Query<Model> query = session.createQuery(HQL_BY_MODEL_SET_ID,Model.class);
 		query.setParameter("modelSetId", modelSetId);
-		return (List<Model>) query.list();
+		return query.list();
 	}
 
 }

@@ -6,22 +6,22 @@ import java.util.Date;
 import java.util.List;
 import java.util.TreeMap;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.validation.constraints.AssertTrue;
-//import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
+import jakarta.validation.constraints.AssertTrue;
+//import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -525,7 +525,9 @@ public class PropertyValue {
 				if (parameterValue.getValueText() != null) {
 					jo.addProperty("parameter_" + parameterValue.getParameter().getName(),
 							parameterValue.getValueText());
-				} else if (parameterValue.getValuePointEstimate() != null) {
+//				} else if (parameterValue.getValuePointEstimate() != null) {
+				
+				} else {
 					jo.addProperty("parameter_" + parameterValue.getParameter().getName(),
 							parameterValue.toString());
 
@@ -556,10 +558,12 @@ public class PropertyValue {
 		
 		jo.addProperty("valueOriginal", getValueOriginal());
 		jo.addProperty("valueOriginalParsed", getValueOriginalParsed());
-		
 		jo.addProperty("valueQualifier", getValueQualifier());
 		jo.addProperty("valuePointEstimate", getValuePointEstimate());
+		jo.addProperty("valueMin", getValueMin());
+		jo.addProperty("valueMax", getValueMax());
 		jo.addProperty("valueText", getValueText());
+
 		jo.addProperty("unitsAbbreviation", getUnit().getAbbreviation());
 		jo.addProperty("keep", getKeep());
 		jo.addProperty("keep_reason", getKeepReason());

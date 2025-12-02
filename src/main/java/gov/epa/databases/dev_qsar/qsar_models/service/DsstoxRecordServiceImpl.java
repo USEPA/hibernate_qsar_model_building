@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.validation.Validator;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -87,7 +87,7 @@ public class DsstoxRecordServiceImpl  {
 //		Transaction t = session.beginTransaction();
 //		
 //		try {
-//			session.save(dataPoint);
+//			session.persist(dataPoint);
 //			session.flush();
 ////			session.refresh(dataPoint);
 //			t.commit();
@@ -112,7 +112,7 @@ public class DsstoxRecordServiceImpl  {
 //		try {
 //		for (int i = 0; i < dataPoints.size(); i++) {
 //			DataPoint dataPoint = dataPoints.get(i);
-//			session.save(dataPoint);
+//			session.persist(dataPoint);
 //		    if ( i % 1000 == 0 ) { //50, same as the JDBC batch size
 //		        //flush a batch of inserts and release memory:
 //		        session.flush();
@@ -143,7 +143,7 @@ public class DsstoxRecordServiceImpl  {
 		
 		Long fk_snapshot_id=records.get(0).getDsstoxSnapshot().getId();
 		
-		String [] fieldNames= {"fk_dsstox_snapshot_id","dtxcid","smiles","mol_weight","jchem_inchi_key","indigo_inchi_key",
+		String [] fieldNames= {"fk_dsstox_snapshot_id","dtxcid","smiles","mol_weight","jchem_inchi_key","indigo_inchi_key","mol_image_png_available",
 				"dtxsid","casrn","preferred_name","generic_substance_updated_at", "created_by","created_at"};
 		int batchSize=1000;
 		
@@ -173,31 +173,44 @@ public class DsstoxRecordServiceImpl  {
 				
 				int i=1;
 				
-				prep.setLong(i++,record.getDsstoxSnapshot().getId());
+				
+				try {
 
-				prep.setString(i++, record.getDtxcid());
-				prep.setString(i++, record.getSmiles());				
-				
-				if(record.getMolWeight()==null) {
-					prep.setNull(i++, Types.DOUBLE);
-				} else {
-					prep.setDouble(i++, record.getMolWeight());	
-				}
-								
-				prep.setString(i++, record.getJchemInchikey());
-				prep.setString(i++, record.getIndigoInchikey());
-				
+					prep.setLong(i++, record.getDsstoxSnapshot().getId());
+
+					prep.setString(i++, record.getDtxcid());
+					prep.setString(i++, record.getSmiles());
+
+					if (record.getMolWeight() == null) {
+						prep.setNull(i++, Types.DOUBLE);
+					} else {
+						prep.setDouble(i++, record.getMolWeight());
+					}
+
+					prep.setString(i++, record.getJchemInchikey());
+					prep.setString(i++, record.getIndigoInchikey());
+					prep.setBoolean(i++, record.getMolImagePNGAvailable());
+
 //				System.out.println(record.getIndigoInchikey());
-				
-				prep.setString(i++, record.getDtxsid());
-				prep.setString(i++, record.getCasrn());
-				prep.setString(i++, record.getPreferredName());
-				
-				java.sql.Timestamp sqlTimeStamp = new java.sql.Timestamp(record.getGenericSubstanceUpdatedAt().getTime());
-				prep.setTimestamp(i++, sqlTimeStamp);
-				
-				prep.setString(i++, record.getCreatedBy());
-				prep.addBatch();
+
+					prep.setString(i++, record.getDtxsid());
+					prep.setString(i++, record.getCasrn());
+					prep.setString(i++, record.getPreferredName());
+
+					if (record.getGenericSubstanceUpdatedAt() != null) {
+						java.sql.Timestamp sqlTimeStamp = new java.sql.Timestamp(
+								record.getGenericSubstanceUpdatedAt().getTime());
+						prep.setTimestamp(i++, sqlTimeStamp);
+					} else {
+						prep.setNull(i++, Types.TIMESTAMP);
+					}
+
+					prep.setString(i++, record.getCreatedBy());
+					prep.addBatch();
+
+				} catch (SQLException e) {
+					System.err.println("Skipping record due to error: "+record.getDtxcid());
+				}
 				
 				if (counter % batchSize == 0 && counter!=0) {
 					// System.out.println(counter);
@@ -210,7 +223,7 @@ public class DsstoxRecordServiceImpl  {
 			long t2=System.currentTimeMillis();
 			System.out.println("time to post "+records.size()+" records using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
 			conn.commit();
-//			conn.setAutoCommit(true);
+			conn.setAutoCommit(true);
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -548,7 +561,20 @@ Connection conn=SqlUtilities.getConnectionPostgres();
 		}
 	}
 
+	public DsstoxRecord findByDTXSID(String dtxsid,long fk_snapshot_id) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return findByDTXSID(dtxsid,fk_snapshot_id,session);
+	}
 
+
+	private DsstoxRecord findByDTXSID(String dtxsid, long fk_snapshot_id, Session session) {
+		Transaction t = session.beginTransaction();
+		DsstoxRecordDaoImpl dao = new DsstoxRecordDaoImpl();
+		DsstoxRecord rec = dao.findByDTXSID(dtxsid, fk_snapshot_id, session);
+		t.rollback();
+		return rec;
+		
+	}
 
 	public List<DsstoxRecord> findAll() {
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();

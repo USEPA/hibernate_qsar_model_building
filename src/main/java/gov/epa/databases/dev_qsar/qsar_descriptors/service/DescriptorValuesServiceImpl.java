@@ -5,9 +5,9 @@ import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -91,7 +91,7 @@ public class DescriptorValuesServiceImpl implements DescriptorValuesService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(descriptorValues);
+			session.persist(descriptorValues);
 			session.flush();
 			session.refresh(descriptorValues);
 			t.commit();
@@ -116,7 +116,7 @@ public class DescriptorValuesServiceImpl implements DescriptorValuesService {
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.delete(descriptorValues);
+		session.remove(descriptorValues);
 		session.flush();
 		t.commit();
 	}

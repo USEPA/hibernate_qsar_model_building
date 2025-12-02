@@ -1,6 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_descriptors.service;
 
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolationException;
 
 import org.hibernate.Session;
 

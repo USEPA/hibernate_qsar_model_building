@@ -25,9 +25,9 @@ import gov.epa.databases.dsstox.entity.GenericSubstance;
 import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 public class PredictionReportServiceImpl implements PredictionReportService {
 	
@@ -66,7 +66,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(predictionReport);
+			session.persist(predictionReport);
 			session.flush();
 			session.refresh(predictionReport);
 			t.commit();
@@ -92,7 +92,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 		try {
 			for (int i = 0; i < reports.size(); i++) {
 				PredictionReport report = reports.get(i);
-				session.save(report);
+				session.persist(report);
 				if ( i % 1000 == 0 ) { //50, same as the JDBC batch size
 					//flush a batch of inserts and release memory:
 					session.flush();
@@ -126,7 +126,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.delete(predictionReport);
+		session.remove(predictionReport);
 		session.flush();
 		t.commit();
 	}
@@ -466,7 +466,7 @@ public class PredictionReportServiceImpl implements PredictionReportService {
 	 * Use cross schema query so can get precise property name from dataset
 	 * 
 	 * @param dtxcid
-	 * @param propertyName
+	 * @param endpoint
 	 * @param modelSource
 	 * @return list of Json reports
 	 */

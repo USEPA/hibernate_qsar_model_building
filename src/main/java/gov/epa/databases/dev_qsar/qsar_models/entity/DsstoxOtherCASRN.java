@@ -1,5 +1,6 @@
 package gov.epa.databases.dev_qsar.qsar_models.entity;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,17 +9,17 @@ import java.util.Date;
 import java.util.List;
 import java.util.TreeMap;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.persistence.UniqueConstraint;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
+import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -79,8 +80,19 @@ public class DsstoxOtherCASRN {
 	@Column(name="created_by")
 	private String createdBy;
 	
-	static void getRecordsFromSnapshot() {
+	static void getRecordsFromDsstox() {
+		
 		String user="tmarti02";
+		
+		File dsstoxRecordsJsonFile=PredictionDashboardTableMaps.fileJsonDsstoxRecords2025_10_30;
+		PredictionDashboardTableMaps ol=new PredictionDashboardTableMaps();
+		ol.getDsstoxRecordsFromJsonExport(dsstoxRecordsJsonFile);
+		
+//		System.out.println(ol.mapDsstoxRecordsBySID.get("DTXSID8023892").getId());
+		
+//		if(true)return;
+
+
 		TreeMap<String, DsstoxOtherCASRN>otherCasrnsMap=new TreeMap<>();
 		List<DsstoxOtherCASRN>otherCasrns=new ArrayList<>();
 		
@@ -91,7 +103,6 @@ public class DsstoxOtherCASRN {
 			
 			ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionDSSTOX(), sql);
 			
-			PredictionDashboardTableMaps ol=new PredictionDashboardTableMaps(PredictionDashboardTableMaps.fileJsonDsstoxRecords2024_11_12,null);
 			
 			while (rs.next()) {
 				DsstoxOtherCASRN oc=new DsstoxOtherCASRN();
@@ -102,6 +113,12 @@ public class DsstoxOtherCASRN {
 				oc.source=rs.getString(4);
 				oc.updatedBy=user;
 				oc.createdBy=user;
+				
+				if(!ol.mapDsstoxRecordsBySID.containsKey(dtxsid)) {
+					System.out.println(dtxsid+" not in dsstox records");
+					continue;
+				}
+				
 				oc.fk_dsstox_record_id=ol.mapDsstoxRecordsBySID.get(dtxsid).getId();
 				
 				if(otherCasrnsMap.get(oc.casrn)!=null) {
@@ -174,7 +191,7 @@ public class DsstoxOtherCASRN {
 
 			int[] count = prep.executeBatch();// do what's left
 			long t2=System.currentTimeMillis();
-			System.out.println("time to post "+valuesArray.size()+" predictions using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
+			System.out.println("time to post "+valuesArray.size()+" DsstoxOtherCASRN records using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
 			conn.commit();
 //			conn.setAutoCommit(true);
 		} catch (Exception e) {
@@ -183,7 +200,7 @@ public class DsstoxOtherCASRN {
 	}		
 	
 	public static void main(String[] args) {
-		getRecordsFromSnapshot();
+		getRecordsFromDsstox();
 	}
 
 

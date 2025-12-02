@@ -15,9 +15,9 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelFile;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 public class ModelFileServiceImpl implements ModelFileService {
 	
@@ -56,7 +56,7 @@ public class ModelFileServiceImpl implements ModelFileService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(modelFile);
+			session.persist(modelFile);
 			session.flush();
 			session.refresh(modelFile);
 			t.commit();
@@ -86,7 +86,7 @@ public class ModelFileServiceImpl implements ModelFileService {
 		
 		try {
 			session.clear();
-			session.update(modelFile);
+			session.merge(modelFile);
 			session.flush();
 			session.refresh(modelFile);
 			t.commit();
@@ -112,7 +112,7 @@ public class ModelFileServiceImpl implements ModelFileService {
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.delete(modelFile);
+		session.remove(modelFile);
 		session.flush();
 		t.commit();
 	}

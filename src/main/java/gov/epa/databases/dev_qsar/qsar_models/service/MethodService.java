@@ -1,10 +1,11 @@
 package gov.epa.databases.dev_qsar.qsar_models.service;
 
-import javax.validation.ConstraintViolationException;
+//import jakarta.validation.ConstraintViolationException;
 
 import org.hibernate.Session;
 
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
+import jakarta.validation.ConstraintViolationException;
 
 public interface MethodService {
 	

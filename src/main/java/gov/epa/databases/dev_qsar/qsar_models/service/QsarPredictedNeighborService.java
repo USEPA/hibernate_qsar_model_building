@@ -6,7 +6,7 @@ import org.hibernate.Session;
 
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedNeighbor;
 
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolationException;
 
 public interface QsarPredictedNeighborService {
 		

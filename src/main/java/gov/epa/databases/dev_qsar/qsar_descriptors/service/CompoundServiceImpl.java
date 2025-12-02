@@ -3,9 +3,9 @@ package gov.epa.databases.dev_qsar.qsar_descriptors.service;
 import java.util.List;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -72,7 +72,7 @@ public class CompoundServiceImpl implements CompoundService {
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.delete(compound);
+		session.remove(compound);
 		session.flush();
 		t.commit();
 	}
@@ -87,7 +87,7 @@ public class CompoundServiceImpl implements CompoundService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(compound);
+			session.persist(compound);
 			session.flush();
 			session.refresh(compound);
 			t.commit();

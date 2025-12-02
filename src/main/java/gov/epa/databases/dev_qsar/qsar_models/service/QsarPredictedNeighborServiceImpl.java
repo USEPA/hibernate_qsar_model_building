@@ -15,9 +15,9 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.QsarPredictedNeighborDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedNeighbor;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 public class QsarPredictedNeighborServiceImpl implements QsarPredictedNeighborService {
 	
@@ -59,7 +59,7 @@ public class QsarPredictedNeighborServiceImpl implements QsarPredictedNeighborSe
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(QsarPredictedNeighbor);
+			session.persist(QsarPredictedNeighbor);
 			session.flush();
 			session.refresh(QsarPredictedNeighbor);
 			t.commit();
@@ -86,7 +86,7 @@ public class QsarPredictedNeighborServiceImpl implements QsarPredictedNeighborSe
 		try {
 			for (int i = 0; i < qsarPredictedNeighbors.size(); i++) {
 				QsarPredictedNeighbor qsarPredictedNeighbor = qsarPredictedNeighbors.get(i);
-				session.save(qsarPredictedNeighbor);
+				session.persist(qsarPredictedNeighbor);
 				if ( i % 1000 == 0 ) { //50, same as the JDBC batch size
 					//flush a batch of inserts and release memory:
 					session.flush();

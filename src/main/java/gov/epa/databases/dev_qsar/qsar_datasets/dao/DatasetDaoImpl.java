@@ -21,23 +21,23 @@ public class DatasetDaoImpl implements DatasetDao {
 	@Override
 	public Dataset findByName(String datasetName, Session session) {
 		if (session==null) { session = QsarDatasetsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_BY_NAME);
+		Query<Dataset> query = session.createQuery(HQL_BY_NAME,Dataset.class);
 		query.setParameter("datasetName", datasetName);
-		return (Dataset) query.uniqueResult();
+		return query.uniqueResult();
 	}
 
 	@Override
 	public Dataset findById(Long datasetId, Session session) {
 		if (session==null) { session = QsarDatasetsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_BY_ID);
+		Query<Dataset> query = session.createQuery(HQL_BY_ID,Dataset.class);
 		query.setParameter("datasetId", datasetId);
-		return (Dataset) query.uniqueResult();
+		return query.uniqueResult();
 	}
 	
 	@Override
 	public List<Dataset> findAll(Session session) {
 		if (session==null) { session = QsarDatasetsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_ALL);
+		Query<Dataset> query = session.createQuery(HQL_ALL,Dataset.class);
 		return query.list();
 	}
 

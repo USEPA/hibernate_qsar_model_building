@@ -10,23 +10,23 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.persistence.Transient;
-import javax.persistence.UniqueConstraint;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
+import jakarta.persistence.Transient;
+import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -47,7 +47,7 @@ public class DsstoxRecord {
 	private Long cid;
 	
 	@NotNull(message="smiles required")
-	@Column(name="smiles")
+	@Column(name="smiles",length=2000)
 	private String smiles;
 		
 	@Column(name="dtxcid")
@@ -60,7 +60,7 @@ public class DsstoxRecord {
 	private String casrn;
 	
 	@SerializedName(value="preferred_name") //when export from database software it will use the database column name not the Java variable name
-	@Column(name="preferred_name")
+	@Column(name="preferred_name",length=1024)
 	private String preferredName;
 	
 	@SerializedName(value="jchem_inchi_key")
@@ -146,17 +146,19 @@ public class DsstoxRecord {
 			String dtxsid=null;
 			String casrn=null;
 			String preferredName=null;
+			Date genericSubstanceUpdatedAt=null;
 			
 			if(c.getGenericSubstanceCompound()!=null) {
 				dtxsid=c.getGenericSubstanceCompound().getGenericSubstance().getDsstoxSubstanceId();
 				casrn=c.getGenericSubstanceCompound().getGenericSubstance().getCasrn();
 				preferredName=c.getGenericSubstanceCompound().getGenericSubstance().getPreferredName();
+				genericSubstanceUpdatedAt=c.getGenericSubstanceCompound().getGenericSubstance().getUpdatedAt();
 //				System.out.println(dtxsid+"\t"+casrn+"\t"+preferredName);
 			}
 			
 			DsstoxRecord record=new DsstoxRecord(snapshot, c.getId(),c.getDsstoxCompoundId(), c.getSmiles(),
 					c.getMolWeight(),c.getIndigoInchikey(),c.getJchemInchikey(),
-					dtxsid, casrn,preferredName,lanId,c.getGenericSubstanceCompound().getGenericSubstance().getUpdatedAt(),c.isMolImagePNGAvailable());
+					dtxsid, casrn,preferredName,lanId,genericSubstanceUpdatedAt,c.isMolImagePNGAvailable());
 			
 //			if (!c.isMolImagePNGAvailable())
 //				System.out.println(dtxsid+"\t"+c.isMolImagePNGAvailable());

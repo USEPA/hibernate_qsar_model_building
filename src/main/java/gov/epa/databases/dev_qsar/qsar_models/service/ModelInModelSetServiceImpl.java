@@ -11,9 +11,9 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.ModelInModelSetDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelInModelSetDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInModelSet;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 public class ModelInModelSetServiceImpl implements ModelInModelSetService {
 	
@@ -39,7 +39,7 @@ public class ModelInModelSetServiceImpl implements ModelInModelSetService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(modelInModelSet);
+			session.persist(modelInModelSet);
 			session.flush();
 			session.refresh(modelInModelSet);
 			t.commit();
@@ -79,7 +79,7 @@ public class ModelInModelSetServiceImpl implements ModelInModelSetService {
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.delete(modelInModelSet);
+		session.remove(modelInModelSet);
 		session.flush();
 		t.commit();
 	}

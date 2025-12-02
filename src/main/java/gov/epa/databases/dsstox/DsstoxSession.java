@@ -44,7 +44,7 @@ public class DsstoxSession {
             
 //            System.out.println( System.getenv("DSSTOX_DATABASE"));
             
-        	config.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQL5Dialect");
+        	config.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");//need 8 for newer versions of hibernate
         	config.setProperty("hibernate.current_session_context_class", "thread");
         	config.setProperty("hibernate.show_sql", "false");
         	config.setProperty("hibernate.hbm2ddl.auto", "none");

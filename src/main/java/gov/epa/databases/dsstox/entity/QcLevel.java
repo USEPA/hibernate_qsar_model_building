@@ -3,17 +3,18 @@ package gov.epa.databases.dsstox.entity;
 import java.util.Date;
 import java.util.List;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Generated;
-import org.hibernate.annotations.GenerationTime;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name="qc_levels")
@@ -36,15 +37,16 @@ public class QcLevel {
 	List<GenericSubstance> genericSubstances;
 
 	@Column(name="created_at")
-	@Generated(value=GenerationTime.INSERT)
+	@CreationTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
-	private Date createdDate;
+	private Date createdAt;
 
 	@Column(name="updated_at")
-	@Generated(value=GenerationTime.ALWAYS)
+	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
-	private Date modifiedDate;
+	private Date updatedAt;
 
+	
 	@Column(name="created_by")
 	private String createdBy;
 
@@ -91,22 +93,6 @@ public class QcLevel {
 
 	public void setGenericSubstances(List<GenericSubstance> genericSubstances) {
 		this.genericSubstances = genericSubstances;
-	}
-
-	public Date getCreatedDate() {
-		return createdDate;
-	}
-
-	public void setCreatedDate(Date createdDate) {
-		this.createdDate = createdDate;
-	}
-
-	public Date getModifiedDate() {
-		return modifiedDate;
-	}
-
-	public void setModifiedDate(Date modifiedDate) {
-		this.modifiedDate = modifiedDate;
 	}
 
 	public String getCreatedBy() {

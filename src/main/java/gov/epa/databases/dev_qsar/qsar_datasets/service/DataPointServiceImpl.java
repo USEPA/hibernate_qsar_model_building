@@ -7,9 +7,9 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -71,7 +71,7 @@ public class DataPointServiceImpl implements DataPointService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(dataPoint);
+			session.persist(dataPoint);
 			session.flush();
 //			session.refresh(dataPoint);
 			t.commit();
@@ -96,7 +96,7 @@ public class DataPointServiceImpl implements DataPointService {
 		try {
 		for (int i = 0; i < dataPoints.size(); i++) {
 			DataPoint dataPoint = dataPoints.get(i);
-			session.save(dataPoint);
+			session.persist(dataPoint);
 		    if ( i % 1000 == 0 ) { //50, same as the JDBC batch size
 		        //flush a batch of inserts and release memory:
 		        session.flush();

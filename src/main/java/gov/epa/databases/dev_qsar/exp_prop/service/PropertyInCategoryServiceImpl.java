@@ -3,9 +3,9 @@ package gov.epa.databases.dev_qsar.exp_prop.service;
 import java.util.List;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -63,7 +63,7 @@ public class PropertyInCategoryServiceImpl implements PropertyInCategoryService 
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(propertyInCategory);
+			session.persist(propertyInCategory);
 			session.flush();
 			session.refresh(propertyInCategory);
 			t.commit();

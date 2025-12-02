@@ -1,14 +1,11 @@
 package gov.epa.databases.dev_qsar.qsar_datasets.service;
 
 import java.util.List;
-
-import javax.validation.ConstraintViolationException;
-
 import org.hibernate.Session;
-
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointContributor;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
+import jakarta.validation.ConstraintViolationException;
 
 public interface DataPointContributorService {
 	

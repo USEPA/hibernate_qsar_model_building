@@ -13,9 +13,9 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.web_services.embedding_service.CalculationInfo;
 import gov.epa.web_services.embedding_service.CalculationInfoGA;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 public class DescriptorEmbeddingServiceImpl implements DescriptorEmbeddingService {
 	
@@ -70,7 +70,7 @@ public class DescriptorEmbeddingServiceImpl implements DescriptorEmbeddingServic
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(descriptorEmbedding);
+			session.persist(descriptorEmbedding);
 			session.flush();
 			session.refresh(descriptorEmbedding);
 			t.commit();
@@ -95,7 +95,7 @@ public class DescriptorEmbeddingServiceImpl implements DescriptorEmbeddingServic
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.delete(de);
+		session.remove(de);
 		session.flush();
 		t.commit();
 	}

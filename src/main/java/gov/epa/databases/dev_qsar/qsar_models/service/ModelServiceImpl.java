@@ -13,9 +13,9 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.ModelDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 public class ModelServiceImpl implements ModelService {
 	
@@ -106,7 +106,7 @@ public class ModelServiceImpl implements ModelService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(model);
+			session.persist(model);
 			session.flush();
 			session.refresh(model);
 			t.commit();
@@ -134,10 +134,14 @@ public class ModelServiceImpl implements ModelService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.clear();
-			session.update(model);
-			session.flush();
-			session.refresh(model);
+			
+//			session.clear();
+//			session.merge(model);
+//			session.flush();
+//			session.refresh(model);
+			
+			Model mergedEntity = (Model) session.merge(model);
+			
 			t.commit();
 		} catch (org.hibernate.exception.ConstraintViolationException e) {
 			t.rollback();
@@ -160,7 +164,7 @@ public class ModelServiceImpl implements ModelService {
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.delete(model);
+		session.remove(model);
 		session.flush();
 		t.commit();
 	}

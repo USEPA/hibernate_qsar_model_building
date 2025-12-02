@@ -11,9 +11,9 @@ import java.sql.Types;
 
 import java.util.*;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -49,6 +49,20 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
 		return findByIds(modelID, dsstoxRecordId, session);
 	}
+	
+	public List<PredictionDashboard> findBySourceNameAndDTXSID(String sourceName, String DTXSID) {
+		Session session = QsarModelsSession.getSessionFactory().getCurrentSession();
+		return findBySourceNameAndDTXSID(sourceName, DTXSID, session);
+	}
+
+
+	private List<PredictionDashboard> findBySourceNameAndDTXSID(String sourceName, String DTXSID, Session session) {
+		Transaction t = session.beginTransaction();
+		PredictionDashboardDao predictionDao = new PredictionDashboardDaoImpl();
+		List<PredictionDashboard> predictionsDashboard = predictionDao.findBySourceNameAndDTXSID(sourceName, DTXSID, session);
+		t.rollback();
+		return predictionsDashboard;
+	}
 
 	@Override
 	public PredictionDashboard findByIds(Long modelId,Long dsstoxRecordId, Session session) {
@@ -78,7 +92,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(predictionDashboard);
+			session.persist(predictionDashboard);
 			session.flush();
 			session.refresh(predictionDashboard);
 			t.commit();
@@ -117,7 +131,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 			
 			for (int i = 0; i < predictionDashboards.size(); i++) {
 				PredictionDashboard predictionDashboard = predictionDashboards.get(i);
-				session.save(predictionDashboard);
+				session.persist(predictionDashboard);
 				
 				
 				if ( i % batchSize == 0 ) { //20, same as the JDBC batch size
@@ -159,7 +173,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		int batchSize=1000;
 
 		try {
-//			conn.setAutoCommit(false);
+			conn.setAutoCommit(false);
 			long t1=System.currentTimeMillis();
 
 			List<PredictionDashboard> predictionDashboards2=new ArrayList<>();
@@ -173,6 +187,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 					saveToPredictionReportsTable(predictionDashboards2, conn);
 					saveToADTable(predictionDashboards2, conn);
 					saveToNeighborsTable(predictionDashboards2, conn);
+					conn.commit();
 					predictionDashboards2.clear();
 				}
 				//TODO is it faster to use createBatch with hibernate (should cascade)
@@ -181,15 +196,16 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 			}
 
 			//Do what's left:
-			saveToPredictionsDashboardTable(predictionDashboards2, conn);//
-			saveToPredictionReportsTable(predictionDashboards2, conn);
-			saveToADTable(predictionDashboards2, conn);
-			saveToNeighborsTable(predictionDashboards2, conn);
-
+			if(predictionDashboards2.size()>0) {
+				saveToPredictionsDashboardTable(predictionDashboards2, conn);//
+				saveToPredictionReportsTable(predictionDashboards2, conn);
+				saveToADTable(predictionDashboards2, conn);
+				saveToNeighborsTable(predictionDashboards2, conn);
+				conn.commit();	
+			}
 			
 			long t2=System.currentTimeMillis();
-//			System.out.println("using createSQL2, time to post "+predictionDashboards.size()+" predictions using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
-//			conn.commit();
+			System.out.println("using createSQL2, time to post "+predictionDashboards.size()+" predictions using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
 			
 			
 //			conn.setAutoCommit(true);
@@ -309,14 +325,17 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		
 		long t1=System.currentTimeMillis();
 		
-		String [] fieldNames= {"canon_qsar_smiles", "fk_dsstox_records_id",	"fk_model_id", 
+		String [] fieldNames= {"canon_qsar_smiles", "dtxcid","fk_dsstox_records_id","fk_model_id", 
 				"prediction_value", "prediction_string", "prediction_error",
-				"experimental_string","experimental_value","dtxcid",  
+				"experimental_string","experimental_value",  
 				"created_by", "created_at",
 				 };
 
 		
-		String sql = createSqlInsert(fieldNames,"predictions_dashboard");	
+		String sql = createSqlInsert(fieldNames,"predictions_dashboard");
+		
+//		System.out.println(sql);
+		
 //		PreparedStatement prep = conn.prepareStatement(sql);
 		
 //		PreparedStatement prep = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);//slowww!
@@ -329,33 +348,41 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		for (int counter = 0; counter < predictionDashboards.size(); counter++) {
 
 			PredictionDashboard p=predictionDashboards.get(counter);
-			prep.setString(1, p.getCanonQsarSmiles());
-			prep.setLong(2, p.getDsstoxRecord().getId());
-			prep.setLong(3, p.getModel().getId());
+			
+			if(p.getPredictionError()!=null && p.getPredictionError().length()>255) {
+				System.out.println("error too long:"+p.getPredictionError());
+			}
+			
+			
+			int col=1;
+			
+			prep.setString(col++, p.getCanonQsarSmiles());
+			prep.setString(col++, p.getDtxcid());
+			prep.setLong(col++, p.getDsstoxRecord().getId());
+			prep.setLong(col++, p.getModel().getId());
 
 			if (p.getPredictionValue()==null) {
-				prep.setNull(4,Types.DOUBLE);
+				prep.setNull(col++,Types.DOUBLE);
 			} else {
-				prep.setDouble(4, p.getPredictionValue());	
+				prep.setDouble(col++, p.getPredictionValue());	
 			}
 
-			prep.setString(5, p.getPredictionString());
-			prep.setString(6, p.getPredictionError());
+			prep.setString(col++, p.getPredictionString());
+			prep.setString(col++, p.getPredictionError());
 
 			if (p.getExperimentalString()==null) {
-				prep.setNull(7, Types.VARCHAR);
+				prep.setNull(col++, Types.VARCHAR);
 			} else {
-				prep.setString(7, p.getExperimentalString());
+				prep.setString(col++, p.getExperimentalString());
 			}
 
 			if (p.getExperimentalValue()==null) {
-				prep.setNull(8,Types.DOUBLE);
+				prep.setNull(col++,Types.DOUBLE);
 			} else {
-				prep.setDouble(8, p.getExperimentalValue());	
+				prep.setDouble(col++, p.getExperimentalValue());	
 			}
 
-			prep.setString(9, p.getDtxcid());
-			prep.setString(10, p.getCreatedBy());
+			prep.setString(col++, p.getCreatedBy());
 			prep.addBatch();
 
 			//System.out.println(prep);
@@ -398,7 +425,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 		
 		long t1=System.currentTimeMillis();
 		
-		String [] fieldNames= {"canon_qsar_smiles", "fk_dsstox_records_id",	"fk_model_id", 
+		String [] fieldNames= {"canon_qsar_smiles", "dtxcid",	"fk_model_id", 
 				"prediction_value", "prediction_string", "prediction_error",
 				"experimental_string","experimental_value","dtxcid",  
 				"created_by", "created_at",
@@ -415,7 +442,7 @@ public class PredictionDashboardServiceImpl implements PredictionDashboardServic
 
 			PredictionDashboard p=predictionDashboards.get(counter);
 			prep.setString(1, p.getCanonQsarSmiles());
-			prep.setLong(2, p.getDsstoxRecord().getId());
+			prep.setString(2, p.getDtxcid());
 			prep.setLong(3, p.getModel().getId());
 
 			if (p.getPredictionValue()==null) {

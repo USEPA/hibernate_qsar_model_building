@@ -11,22 +11,15 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 
 import gov.epa.databases.dev_qsar.DevQsarValidator;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
 import gov.epa.databases.dev_qsar.qsar_models.QsarModelsSession;
 import gov.epa.databases.dev_qsar.qsar_models.dao.PredictionDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.PredictionDaoImpl;
-import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
-import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 public class PredictionServiceImpl implements PredictionService {
 	
@@ -65,7 +58,7 @@ public class PredictionServiceImpl implements PredictionService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(prediction);
+			session.persist(prediction);
 			session.flush();
 			session.refresh(prediction);
 			t.commit();
@@ -151,7 +144,7 @@ public class PredictionServiceImpl implements PredictionService {
 //				throw new ConstraintViolationException(violations);
 //			}
 //			
-//			session.save(prediction);
+//			session.persist(prediction);
 //			
 //			if (i > 0 && i % BATCH_SIZE == 0) {
 //	            entityManager.flush();

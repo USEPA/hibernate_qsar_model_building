@@ -3,22 +3,22 @@ package gov.epa.databases.dev_qsar.qsar_models.entity;
 import java.util.Date;
 import java.util.List;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.persistence.UniqueConstraint;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
+import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -110,7 +110,7 @@ public class Model {
 //	@ManyToOne
 //	@JoinColumn(name="fk_ad_method_id")
 	private Long fk_ad_method;//TODO add ad_method object instead
-
+	
 	
 	private Boolean is_public;//whether or not to expose to cheminformatics modules
 	
@@ -311,6 +311,14 @@ public class Model {
 
 	public void setName_ccd(String name_ccd) {
 		this.name_ccd = name_ccd;
+	}
+
+	public Long getFk_ad_method() {
+		return fk_ad_method;
+	}
+
+	public void setFk_ad_method(Long fk_ad_method) {
+		this.fk_ad_method = fk_ad_method;
 	}
 
 //	public String getUrlScatterPlot() {

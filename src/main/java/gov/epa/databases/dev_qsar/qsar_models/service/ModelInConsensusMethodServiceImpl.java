@@ -12,9 +12,9 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.ModelInConsensusModelDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.ModelInConsensusModelDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.ModelInConsensusModel;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 public class ModelInConsensusMethodServiceImpl implements ModelInConsensusModelService {
 	
@@ -55,7 +55,7 @@ public class ModelInConsensusMethodServiceImpl implements ModelInConsensusModelS
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(modelInConsensusMethod);
+			session.persist(modelInConsensusMethod);
 			session.flush();
 			session.refresh(modelInConsensusMethod);
 			t.commit();

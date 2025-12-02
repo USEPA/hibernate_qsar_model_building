@@ -7,7 +7,7 @@ import org.hibernate.query.Query;
 
 import gov.epa.databases.dev_qsar.qsar_datasets.QsarDatasetsSession;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxOtherCASRN;
-import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
+
 
 /**
 * @author TMARTI02
@@ -18,8 +18,8 @@ public class DsstoxOtherCASRN_DaoImpl {
 	
 	public List<DsstoxOtherCASRN> findAll(Session session) {
 		if (session==null) { session = QsarDatasetsSession.getSessionFactory().getCurrentSession(); }
-		Query query = session.createQuery(HQL_ALL);
-		return (List<DsstoxOtherCASRN>) query.list();
+		Query<DsstoxOtherCASRN> query = session.createQuery(HQL_ALL,DsstoxOtherCASRN.class);
+		return query.list();
 	}
 
 }

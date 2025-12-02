@@ -10,9 +10,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -65,7 +65,7 @@ public class SourceChemicalServiceImpl implements SourceChemicalService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(sourceChemical);
+			session.persist(sourceChemical);
 			session.flush();
 			session.refresh(sourceChemical);
 			t.commit();
@@ -256,6 +256,73 @@ public class SourceChemicalServiceImpl implements SourceChemicalService {
 		return sourceChemicals;
 	}
 	
+	
+	public List<SourceChemical> findAllFromDateCreated(String dateMin,String dateMax) {
+
+		List<SourceChemical>sourceChemicals=new ArrayList<>();
+
+		String sql="SELECT distinct sc.id,source_dtxcid,source_dtxsid,source_dtxrid,source_smiles, source_casrn,"
+				+ "source_chemical_name,sc.fk_literature_source_id,sc.fk_public_source_id,"
+				+ "sc.created_at,sc.created_by,sc.updated_at,sc.updated_by from exp_prop.source_chemicals sc\n"
+//				+"join exp_prop.property_values pv  on sc.id = pv.fk_source_chemical_id\n"		
+				+ "where created_at > '"+dateMin+"' and created_at < '"+dateMax+"';";  
+
+		
+		System.out.println(sql);
+
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		
+		ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+
+		try {
+			while (rs.next()) {
+				SourceChemical sc=new SourceChemical();				
+
+				
+				int col=1;
+				
+				sc.setId(rs.getLong(col++));
+				sc.setSourceDtxcid(rs.getString(col++));
+				sc.setSourceDtxsid(rs.getString(col++));
+				sc.setSourceDtxrid(rs.getString(col++));
+				sc.setSourceSmiles(rs.getString(col++));
+				sc.setSourceCasrn(rs.getString(col++));
+				sc.setSourceChemicalName(rs.getString(col++));
+				
+				if(rs.getLong(col)!=0) {
+					LiteratureSource ls=new LiteratureSource();
+					ls.setId(rs.getLong(col));
+					sc.setLiteratureSource(ls);
+				}
+				col++;
+				
+				if(rs.getLong(col)!=0) {
+					PublicSource ps=new PublicSource();
+					ps.setId(rs.getLong(col));
+					sc.setPublicSource(ps);
+				}
+				col++;
+				
+
+				sc.setCreatedAt(rs.getTimestamp(col++));
+				sc.setCreatedBy(rs.getString(col++));
+				
+				sc.setUpdatedAt(rs.getTimestamp(col++));
+				sc.setUpdatedBy(rs.getString(col++));
+				
+				sourceChemicals.add(sc);
+
+			}
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		//		System.out.println(compounds.size());
+		return sourceChemicals;
+	}
+	
 	@Override
 	//Much faster
 	public List<SourceChemical> findAllSql() {
@@ -317,4 +384,6 @@ public class SourceChemicalServiceImpl implements SourceChemicalService {
 		return sourceChemicals;
 	}
 
+	
+	
 }

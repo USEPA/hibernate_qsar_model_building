@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
 
-import javax.persistence.Transient;
+import jakarta.persistence.Transient;
 
 import org.apache.commons.text.StringEscapeUtils;
 

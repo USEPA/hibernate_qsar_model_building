@@ -2,9 +2,9 @@ package gov.epa.databases.dev_qsar.qsar_datasets.service;
 
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -52,7 +52,7 @@ public class UnitServiceImpl implements UnitService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(unit);
+			session.persist(unit);
 			session.flush();
 			session.refresh(unit);
 			t.commit();

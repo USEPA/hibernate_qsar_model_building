@@ -7,9 +7,9 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -117,7 +117,7 @@ public class DataPointInSplittingServiceImpl implements DataPointInSplittingServ
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(dpis);
+			session.persist(dpis);
 			session.flush();
 //			session.refresh(dpis);
 			t.commit();
@@ -142,7 +142,7 @@ public class DataPointInSplittingServiceImpl implements DataPointInSplittingServ
 		}
 		
 		Transaction t = session.beginTransaction();
-		session.delete(dpis);
+		session.remove(dpis);
 		session.flush();
 		t.commit();
 	}

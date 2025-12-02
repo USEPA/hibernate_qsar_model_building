@@ -2,11 +2,12 @@ package gov.epa.databases.dev_qsar.qsar_descriptors.service;
 
 import java.util.List;
 
-import javax.validation.ConstraintViolationException;
+
 
 import org.hibernate.Session;
 
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
+import jakarta.validation.ConstraintViolationException;
 
 public interface CompoundService {
 	

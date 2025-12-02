@@ -12,9 +12,9 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.QsarPredictedPropertyDao;
 import gov.epa.databases.dev_qsar.qsar_models.dao.QsarPredictedPropertyDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedProperty;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 public class QsarPredictedPropertyServiceImpl implements QsarPredictedPropertyService {
 	
@@ -55,7 +55,7 @@ public class QsarPredictedPropertyServiceImpl implements QsarPredictedPropertySe
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(QsarPredictedProperty);
+			session.persist(QsarPredictedProperty);
 			session.flush();
 			session.refresh(QsarPredictedProperty);
 			t.commit();

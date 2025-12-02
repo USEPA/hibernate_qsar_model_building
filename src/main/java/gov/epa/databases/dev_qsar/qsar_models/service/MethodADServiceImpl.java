@@ -19,9 +19,9 @@ import gov.epa.databases.dev_qsar.qsar_models.dao.MethodDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Method;
 import gov.epa.databases.dev_qsar.qsar_models.entity.MethodAD;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 public class MethodADServiceImpl implements MethodADService {
 	
@@ -60,7 +60,7 @@ public class MethodADServiceImpl implements MethodADService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(methodAD);
+			session.persist(methodAD);
 			session.flush();
 			session.refresh(methodAD);
 			t.commit();

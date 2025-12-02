@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.validation.ConstraintViolationException;
+//import jakarta.validation.ConstraintViolationException;
 import com.google.gson.Gson;
 
 import com.google.gson.JsonArray;
@@ -55,6 +55,7 @@ import gov.epa.run_from_java.scripts.PredictionDashboard.valery.SDE_Prediction_R
 import gov.epa.web_services.ModelWebService;
 import gov.epa.web_services.embedding_service.CalculationInfo;
 import gov.epa.web_services.embedding_service.CalculationInfoGA;
+import jakarta.validation.ConstraintViolationException;
 import kong.unirest.HttpResponse;
 
 public class WebServiceModelBuilder extends ModelBuilder {
@@ -1234,8 +1235,6 @@ public class WebServiceModelBuilder extends ModelBuilder {
 	
 	public static void main(String[] args) {
 
-
-
 		ModelWebService modelWs = new ModelWebService(DevQsarConstants.SERVER_LOCAL, DevQsarConstants.PORT_PYTHON_MODEL_BUILDING);
 		WebServiceModelBuilder mb = new WebServiceModelBuilder(modelWs, "tmarti02");
 		
@@ -1244,10 +1243,6 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		
 		mb.getModelEquation(1567L);
 
-		
-
-		
-		
 	}
 
 }

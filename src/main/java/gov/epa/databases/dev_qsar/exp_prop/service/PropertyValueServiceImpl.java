@@ -11,9 +11,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -96,7 +96,7 @@ public class PropertyValueServiceImpl implements PropertyValueService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(propertyValue);
+			session.persist(propertyValue);
 			session.flush();
 //			session.refresh(propertyValue);
 			t.commit();
@@ -133,7 +133,7 @@ public class PropertyValueServiceImpl implements PropertyValueService {
 		
 		try {
 			session.clear();
-			session.update(propertyValue);
+			session.merge(propertyValue);
 			session.flush();
 			session.refresh(propertyValue);
 			t.commit();
@@ -164,7 +164,7 @@ public class PropertyValueServiceImpl implements PropertyValueService {
 //				if (!violations.isEmpty()) {
 //					throw new ConstraintViolationException(violations);
 //				}
-				session.update(propertyValue);
+				session.merge(propertyValue);
 			} catch (Exception ex) {
 				ex.printStackTrace();
 			}
@@ -203,7 +203,7 @@ public class PropertyValueServiceImpl implements PropertyValueService {
 //				if (!violations.isEmpty()) {
 //					throw new ConstraintViolationException(violations);
 //				}
-				session.delete(propertyValue);
+				session.remove(propertyValue);
 			} catch (Exception ex) {
 				ex.printStackTrace();
 			}
@@ -247,7 +247,7 @@ public class PropertyValueServiceImpl implements PropertyValueService {
 
 			for (int i = 0; i < propertyValues.size(); i++) {
 				PropertyValue propertyValue = propertyValues.get(i);
-				session.save(propertyValue);
+				session.persist(propertyValue);
 
 				if ( i % batchSize == 0 ) { //20, same as the JDBC batch size
 					//flush a batch of inserts and release memory:

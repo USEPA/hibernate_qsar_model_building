@@ -2,9 +2,9 @@ package gov.epa.databases.dev_qsar.qsar_models.service;
 
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -65,7 +65,7 @@ public class ModelSetServiceImpl implements ModelSetService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(modelSet);
+			session.persist(modelSet);
 			session.flush();
 			session.refresh(modelSet);
 			t.commit();

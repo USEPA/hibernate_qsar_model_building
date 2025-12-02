@@ -50,7 +50,7 @@ public class QsarModelsSession {
         	config.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
         	config.setProperty("hibernate.current_session_context_class", "thread");
         	config.setProperty("hibernate.show_sql", "false");
-        	config.setProperty("hibernate.hbm2ddl.auto", "update");
+        	config.setProperty("hibernate.hbm2ddl.auto", "none");//was "update" but was causing errors because there were materialized views that used the fields
         	config.setProperty("hibernate.jdbc.batch_size", "50");
             
             config.setProperty("hibernate.c3p0.acquire_increment", "1");

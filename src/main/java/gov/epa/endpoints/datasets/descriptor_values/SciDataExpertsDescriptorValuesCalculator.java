@@ -65,9 +65,9 @@ public class SciDataExpertsDescriptorValuesCalculator extends DescriptorValuesCa
 			if (turnOffLogging) {
 				Set<String> artifactoryLoggers = new HashSet<String>(Arrays.asList("org.apache.http", "groovyx.net.http"));
 				for(String log:artifactoryLoggers) {
-					ch.qos.logback.classic.Logger artLogger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(log);
-					artLogger.setLevel(ch.qos.logback.classic.Level.INFO);
-					artLogger.setAdditive(false);
+//					ch.qos.logback.classic.Logger artLogger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(log);
+//					artLogger.setLevel(ch.qos.logback.classic.Level.INFO);
+//					artLogger.setAdditive(false);
 				}
 			}
 			

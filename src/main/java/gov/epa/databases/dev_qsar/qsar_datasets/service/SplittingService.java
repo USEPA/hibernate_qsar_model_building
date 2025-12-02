@@ -1,12 +1,9 @@
 package gov.epa.databases.dev_qsar.qsar_datasets.service;
 
 import java.util.List;
-
-import javax.validation.ConstraintViolationException;
-
 import org.hibernate.Session;
-
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
+import jakarta.validation.ConstraintViolationException;
 
 public interface SplittingService {
 	

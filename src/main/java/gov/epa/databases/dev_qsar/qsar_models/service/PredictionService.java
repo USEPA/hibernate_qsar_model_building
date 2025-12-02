@@ -9,7 +9,7 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.Model;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Prediction;
 import gov.epa.endpoints.models.ModelPrediction;
 
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolationException;
 
 public interface PredictionService {
 	

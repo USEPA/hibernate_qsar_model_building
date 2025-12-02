@@ -2,9 +2,9 @@ package gov.epa.databases.dev_qsar.qsar_descriptors.service;
 
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -53,7 +53,7 @@ public class DescriptorSetServiceImpl implements DescriptorSetService {
 		Transaction t = session.beginTransaction();
 		
 		try {
-			session.save(descriptorSet);
+			session.persist(descriptorSet);
 			session.flush();
 			session.refresh(descriptorSet);
 			t.commit();
@@ -82,7 +82,7 @@ public class DescriptorSetServiceImpl implements DescriptorSetService {
 		
 		try {
 			session.clear();
-			session.update(descriptorSet);
+			session.merge(descriptorSet);
 			session.flush();
 			session.refresh(descriptorSet);
 			t.commit();
