@@ -9,6 +9,8 @@ import org.openscience.cdk.exception.CDKException;
 import org.openscience.cdk.graph.ConnectivityChecker;
 import org.openscience.cdk.interfaces.IAtomContainer;
 import org.openscience.cdk.io.MDLV3000Reader;
+import org.openscience.cdk.smiles.SmiFlavor;
+import org.openscience.cdk.smiles.SmilesGenerator;
 
 import com.epam.indigo.Indigo;
 import com.epam.indigo.IndigoException;
@@ -72,6 +74,29 @@ public class StructureUtil {
 		IndigoInchi indigoInchi = new IndigoInchi(indigo);
 
 		try {
+		
+			IndigoObject molecule = indigo.loadMolecule(smiles);
+			String inchi = indigoInchi.getInchi(molecule);
+			
+			
+			String inchikey = indigoInchi.getInchiKey(inchi);
+			if(inchikey!=null) return inchikey.substring(0,14);
+			
+		} catch (Exception ex) {
+		}
+
+		return null;
+
+	}
+	
+	public static String indigoInchikey1FromAtomContainer(IAtomContainer ac) throws IndigoException {
+		Indigo indigo = new Indigo();
+		indigo.setOption("ignore-stereochemistry-errors", true);
+		IndigoInchi indigoInchi = new IndigoInchi(indigo);
+
+		try {
+			SmilesGenerator sg= new SmilesGenerator(SmiFlavor.Unique);
+			String smiles=sg.create(ac);
 		
 			IndigoObject molecule = indigo.loadMolecule(smiles);
 			String inchi = indigoInchi.getInchi(molecule);
@@ -185,8 +210,23 @@ public class StructureUtil {
 
 	
 	public static void main(String[] args) {
-		String inchiKey=indigoInchikeyFromSmiles("ClC1=C(Cl)[C@]2(Cl)[C@@H]3[C@@H]4CC(C=C4)[C@@H]3C1(Cl)C2(Cl)Cl");
-		System.out.println(inchiKey);
+		
+//		String inchiKey=indigoInchikeyFromSmiles("ClC1=C(Cl)[C@]2(Cl)[C@@H]3[C@@H]4CC(C=C4)[C@@H]3C1(Cl)C2(Cl)Cl");
+//		System.out.println(inchiKey);
+		
+//		String [] smilesList= {"C1Oc2ccc(NC(=O)ONC3C(=O)N=C4C=CC=CC=34)cc2O1",
+//				 "C1C=CC2=NC(C(NOC(=O)Nc3ccc4OCOc4c3)=C2C=1)=O",
+//				 "N1C(C(NOC(=O)Nc2ccc3OCOc3c2)=C2C=1C=CC=C2)=O"};
+		
+		String [] smilesList= {"O=C1N=CNC2NC(=S)NC1=2",
+				"S=C1NC2NC=NC(=O)C=2N1",
+				"C12NC=NC(=O)C=1NC(N2)=S"};
+		
+		for (String smiles:smilesList) {
+			String inchiKey=indigoInchikeyFromSmiles(smiles);
+			System.out.println(inchiKey);
+		}
+		
 	}
 	
 	public static IAtomContainer fromMolString(String mol3000) throws Exception {

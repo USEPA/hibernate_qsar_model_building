@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.DosFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -81,9 +82,21 @@ public class FileUtils {
 				
 				goThroughFolder(file,allFiles);
 			} else {
-				
+
 				if(file.length()>10e6)				
 					allFiles.add(file);
+
+				
+//				try {
+//					if(file.length()>10e6 && !isOneDriveFileOnlineOnly(file.getAbsolutePath()))	{			
+//						System.out.println(file.getAbsolutePath()+"\t"+file.length());
+//						allFiles.add(file);
+//					} else if(file.length()>10e6)	{
+//						System.out.println(file.getAbsolutePath()+"\tIn cloud");
+//					}
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
 			}
 			
 		}
@@ -92,6 +105,21 @@ public class FileUtils {
 
 		
 	}
+	
+	
+	 public static boolean isOneDriveFileOnlineOnly(String filePath) throws IOException {
+         Path path = Paths.get(filePath);
+         if (Files.exists(path) && Files.isRegularFile(path)) {
+             DosFileAttributes attrs = Files.readAttributes(path, DosFileAttributes.class);
+             // The exact attribute for "offline" might vary or be represented differently
+             // in the DosFileAttributes. This is a conceptual check.
+             // In practice, you might need to use JNA to call Windows API functions
+             // to get the specific OneDrive attributes.
+             return attrs.isArchive() && attrs.isSystem(); // Placeholder, not accurate for OneDrive offline
+         }
+         return false; // Not a regular file or doesn't exist
+     }
+	
 	
 	
 	static void findLargeFiles() {
@@ -110,7 +138,14 @@ public class FileUtils {
 	}
 	
 	public static void main(String[] args) {
+		String filepath="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\PFAS tiger team\\1-s2.0-S0043135407005337-main.pdf";
 		
-		findLargeFiles();
+		try {
+			System.out.println(isOneDriveFileOnlineOnly(filepath));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+//		findLargeFiles();
 	}
 }
