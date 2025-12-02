@@ -129,14 +129,6 @@ public class EmbeddingWebService2 extends WebService {
 		//Following sets min number of descriptors based on data set size, it has to load the data sets though which takes time
 		
 		CalculationInfoImportance ciImportance=new CalculationInfoImportance(calculationInfo);
-		
-		if (checkDBForEmbedding) {
-			DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ciImportance);		
-			if (descriptorEmbedding != null) {
-				System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
-				return descriptorEmbedding; 
-			} 
-		}
 
 		try {			
 			ModelData md=ModelData.initModelData(ciImportance, false);//TODO make it store it directly in ci?
@@ -152,6 +144,17 @@ public class EmbeddingWebService2 extends WebService {
 			System.out.println("Cant retrieve tsv for "+ciImportance.datasetName);
 			return null;
 		}
+		
+		if (checkDBForEmbedding) {
+			DescriptorEmbedding descriptorEmbedding = descriptorEmbeddingService.findByGASettings(ciImportance);		
+			if (descriptorEmbedding != null) {
+				System.out.println("Have embedding from db:"+descriptorEmbedding.getEmbeddingTsv());
+				return descriptorEmbedding; 
+			} 
+		}
+		
+		
+//		System.out.println(ciImportance.modelData.trainingSetInstances);
 		
 				
 		System.out.println("Dont have embedding, creating a new one...");

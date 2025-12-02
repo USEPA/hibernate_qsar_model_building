@@ -49,6 +49,7 @@ import com.epam.indigo.IndigoObject;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
@@ -176,7 +177,7 @@ public class SmilesStandardizationValidation {
 
 	void goRnd(String server, String workFlow, String folder, int count) {
 
-		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,workFlow,server);
+		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(workFlow,server);
 
 		
 		String structureFileName = "DSSTox_082021_Structures.csv";
@@ -464,7 +465,7 @@ public class SmilesStandardizationValidation {
 
 						boolean full=false;
 						
-						SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,workflow,server);
+						SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(workflow,server);
 
 						HttpResponse<String>response=standardizer.callQsarReadyStandardizePost(Original_SMILES,full);
 						String jsonResponse=standardizer.getResponseBody(response, full);
@@ -1721,7 +1722,36 @@ public class SmilesStandardizationValidation {
 	
 
 	
-	
+	void convertJsonToTSV() {
+
+		String folder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 qsar ready standardizer\\results_hazard-dev.sciencedataexperts.com_qsar-ready_08232023\\";
+		String jsonPath = folder + "results_rnd10000.json";
+
+		Gson gson = new Gson();
+
+//		Reader reader;
+
+		try (Reader reader = Files.newBufferedReader(Paths.get(jsonPath));
+				FileWriter fw = new FileWriter(folder + "results_rnd10000.tsv")) {
+
+			JsonArray ja = gson.fromJson(reader, JsonArray.class);
+
+			fw.write("DTXCID\tSmiles\r\n");
+
+			for (JsonElement je : ja) {
+				JsonObject jo = je.getAsJsonObject();
+				String DSSTOX_COMPOUND_ID = jo.get("DSSTOX_COMPOUND_ID").getAsString();
+				String Original_SMILES = jo.get("Original_SMILES").getAsString();
+
+				fw.write(DSSTOX_COMPOUND_ID + "\t" + Original_SMILES + "\r\n");
+			}
+			fw.flush();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
 	
 	public static void main(String[] args) {
 		SmilesStandardizationValidation s = new SmilesStandardizationValidation();
@@ -1754,7 +1784,7 @@ public class SmilesStandardizationValidation {
 //		s.goRnd(server, workFlow, folder, count);
 //		s.goRndAllWorkflows(server, folder, count);
 		
-		s.goThroughResultsRnd(server, workFlow, folder, count);
+//		s.goThroughResultsRnd(server, workFlow, folder, count);
 		
 		
 //		s.rerunChemicalsInExcelFile();
@@ -1766,6 +1796,8 @@ public class SmilesStandardizationValidation {
 //		s.compareSmilesInExcelFile();
 		
 //		s.rerunChemicalsInExcelFile2();
+		
+		s.convertJsonToTSV();
 		
 		
 	}

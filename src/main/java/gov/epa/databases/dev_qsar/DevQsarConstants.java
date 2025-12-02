@@ -1054,6 +1054,126 @@ public class DevQsarConstants {
 	
 		return "MISSING";
 	}
+
+
+	public static String getPropertyNameCCD(String propertyNameDB) {
+
+		if (propertyNameDB.equals(DevQsarConstants.NINETY_SIX_HOUR_FATHEAD_MINNOW_LC50)) {
+			return "96 Hour Fathead Minnow LC50";
+		} else if (propertyNameDB.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)) {
+			return("48 Hour Daphnia Magna LC50");
+		} else if (propertyNameDB.equals(DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50)) {
+			return("48 Hour Tetrahymena Pyriformis IGC50");
+		} else if (propertyNameDB.equals(DevQsarConstants.ORAL_RAT_LD50)) {
+			return("Oral Rat LD50");
+		} else if (propertyNameDB.equals(DevQsarConstants.ORAL_RAT_NON_TOXIC)) {
+			return("Oral Rat Nontoxic Binary");
+		} else if (propertyNameDB.equals(DevQsarConstants.ORAL_RAT_VERY_TOXIC)) {
+			return("Oral Rat Very Toxic Binary");
+		} else if (propertyNameDB.equals(DevQsarConstants.ORAL_RAT_GHS_CATEGORY)) {
+			return("Oral Rat GHS Hazard Category");
+		} else if (propertyNameDB.equals(DevQsarConstants.ORAL_RAT_EPA_CATEGORY)) {
+			return("Oral Rat EPA Hazard Category");
+		} else if (propertyNameDB.equals(DevQsarConstants.BAF)) {
+			return "Bioaccumulation Factor";
+		} else if (propertyNameDB.equals(DevQsarConstants.BCF)) {
+			return "Bioconcentration Factor";
+		} else if (propertyNameDB.equals(DevQsarConstants.DEVELOPMENTAL_TOXICITY)) {
+			return "Developmental Toxicity";
+		} else if (propertyNameDB.equals(DevQsarConstants.AMES_MUTAGENICITY)) {
+			return "Ames Mutagenicity";
+		} else if (propertyNameDB.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
+			return "Henry's Law Constant";
+		} else if (propertyNameDB.equals(DevQsarConstants.WATER_SOLUBILITY)) {
+			return "Water Solubility";
+		} else if (propertyNameDB.equals(DevQsarConstants.BOILING_POINT)) {
+			return "Boiling Point";
+		} else if (propertyNameDB.equals(DevQsarConstants.MELTING_POINT)) {
+			return "Melting Point";
+		} else if (propertyNameDB.equals(DevQsarConstants.FLASH_POINT)) {
+			return "Flash Point";
+		} else if (propertyNameDB.equals(DevQsarConstants.VAPOR_PRESSURE)) {
+			return "Vapor Pressure";
+		} else if (propertyNameDB.equals(DevQsarConstants.LOG_KOW)) {
+			return "LogKow: Octanol-Water";
+		} else if (propertyNameDB.equals(DevQsarConstants.LOG_KOA)) {
+			return "LogKoa: Octanol-Air";
+		} else if (propertyNameDB.equals(DevQsarConstants.DENSITY)) {
+			return "Density";
+		} else if (propertyNameDB.equals(DevQsarConstants.SURFACE_TENSION)) {
+			return "Surface Tension";
+		} else if (propertyNameDB.equals(DevQsarConstants.ESTROGEN_RECEPTOR_BINDING)) {
+			return "Estrogen Receptor Binding";
+		} else if (propertyNameDB.equals(DevQsarConstants.ESTROGEN_RECEPTOR_RBA)) {
+			return "Estrogen Receptor Relative Binding Affinity";
+		} else if (propertyNameDB.equals(DevQsarConstants.THERMAL_CONDUCTIVITY)) {
+			return "Thermal Conductivity";
+		} else if (propertyNameDB.equals(DevQsarConstants.VISCOSITY)) {
+			return "Viscosity";
+		} else if (propertyNameDB.equals(DevQsarConstants.INDEX_OF_REFRACTION)) {
+			return "Index of Refraction";
+		} else if (propertyNameDB.equals(DevQsarConstants.DIELECTRIC_CONSTANT)) {
+			return "Dielectric Constant";
+		} else if (propertyNameDB.equals(DevQsarConstants.MOLAR_VOLUME)) {
+			return "Molar Volume";
+		} else if (propertyNameDB.equals(DevQsarConstants.MOLAR_REFRACTIVITY)) {
+			return "Molar Refractivity";
+		} else if (propertyNameDB.equals(DevQsarConstants.POLARIZABILITY)) {
+			return "Polarizability";
+		} else if (propertyNameDB.equals(DevQsarConstants.PARACHOR)) {
+			return "Parachor";
+		} else if(propertyNameDB.equals(FUB)) {
+			return "Fraction Unbound in Human Plasma";
+		} else if(propertyNameDB.equals(RT)) {
+			return "Liquid Chromatography Retention Time";
+		} else if(propertyNameDB.equals(CLINT)) {
+			return "In Vitro Intrinsic Hepatic Clearance";
+		} else if(propertyNameDB.equals(CACO2)) {
+			return "Caco-2 Permeability (Papp)";
+		} else if(propertyNameDB.equals(LogD_pH_7_4)) {
+			return "LogD7.4";
+		} else if(propertyNameDB.equals(LogD_pH_5_5)) {
+			return "LogD5.5";
+		} else if(propertyNameDB.equals(PKA_A)) {
+			return "pKa Acidic Apparent";
+		} else if(propertyNameDB.equals(PKA_B)) {
+			return "pKa Basic Apparent";
+		} else if(propertyNameDB.equals(KmHL)) {
+			return "Fish Biotrans. Half-Life (Km)";
+		} else if(propertyNameDB.equals(KOC)) {
+			return "Soil Adsorp. Coeff. (Koc)";
+		} else if(propertyNameDB.equals(OH)) {
+			return "Atmos. Hydroxylation Rate";
+		} else if(propertyNameDB.equals(RBIODEG)) {
+			return "Ready Binary Biodegradability";
+		} else if(propertyNameDB.equals(BIODEG)) {
+			return "Fast Binary Biodegradability";
+		} else if(propertyNameDB.equals(BIODEG_ANAEROBIC)) {
+			return "Fast Anaerobic Binary Biodegradability";
+		} else if(propertyNameDB.equals(PRIMARY_BIODEG)) {
+			return "Primary Biodegradation Timeframe";
+		} else if(propertyNameDB.equals(ULTIMATE_BIODEG)) {
+			return "Ultimate Biodegradation Timeframe";
+		} else if(propertyNameDB.equals(BIODEG_HL_HC)) {
+			return "Biodeg. Half-Life";
+		} else if (propertyNameDB.equals(DevQsarConstants.ESTROGEN_RECEPTOR_BINDING)) {
+			return "Estrogen Receptor Binding";
+		} else if (propertyNameDB.equals(DevQsarConstants.ESTROGEN_RECEPTOR_AGONIST)) {
+			return "Estrogen Receptor Agonist";
+		} else if (propertyNameDB.equals(DevQsarConstants.ESTROGEN_RECEPTOR_ANTAGONIST)) {
+			return "Estrogen Receptor Antagonist";
+		} else if (propertyNameDB.equals(DevQsarConstants.ANDROGEN_RECEPTOR_BINDING)) {
+			return "Androgen Receptor Binding";
+		} else if (propertyNameDB.equals(DevQsarConstants.ANDROGEN_RECEPTOR_AGONIST)) {
+			return "Androgen Receptor Agonist";
+		} else if (propertyNameDB.equals(DevQsarConstants.ANDROGEN_RECEPTOR_ANTAGONIST)) {
+			return "Androgen Receptor Antagonist";
+		} else {
+			return null;
+		}
+		
+		
+	}
 }
 
 

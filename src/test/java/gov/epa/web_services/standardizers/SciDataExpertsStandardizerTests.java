@@ -80,7 +80,7 @@ public class SciDataExpertsStandardizerTests {
 
 	static JsonArray jaResults=new JsonArray();
 
-	SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(DevQsarConstants.QSAR_READY,workflow,serverHost);
+	SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(workflow,serverHost);
 
 
 	public static String toInchiKey(String mol) {

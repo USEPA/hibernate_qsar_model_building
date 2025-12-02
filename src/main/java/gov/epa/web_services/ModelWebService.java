@@ -18,6 +18,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.SDE_Prediction_Request;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
+import org.slf4j.Logger;
 
 /**
  * Model building class that handles web service access
@@ -56,6 +57,9 @@ public class ModelWebService extends WebService {
 			if (turnOffLogging) {
 				Set<String> artifactoryLoggers = new HashSet<String>(Arrays.asList("org.apache.http", "groovyx.net.http"));
 				for(String log:artifactoryLoggers) {
+					
+					System.out.println(log);
+					
 					ch.qos.logback.classic.Logger artLogger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(log);
 					artLogger.setLevel(ch.qos.logback.classic.Level.INFO);
 					artLogger.setAdditive(false);
@@ -253,8 +257,8 @@ public class ModelWebService extends WebService {
 		.socketTimeout(000)
         .connectTimeout(000);
 
-		Long model_id=457L;
-		boolean use_pmml=true;
+		Long model_id=1067L;
+		boolean use_pmml=false;
 		boolean useSklearn2pmml=false;
 				
 //		Long model_id=272L;
@@ -283,7 +287,13 @@ public class ModelWebService extends WebService {
 	public static void main(String[] args) {
 		
 		ModelWebService m=new ModelWebService("http://localhost",5004);
+		m.configUnirest(true);
 		m.testCallInit();
+//		
+		
+		HttpResponse<String>response=m.callInfo("rf");
+		
+		System.out.println(response.getBody().toString());
 	}
 
 	public HttpResponse<String> callPredict(String predictionSet, String modelId) {

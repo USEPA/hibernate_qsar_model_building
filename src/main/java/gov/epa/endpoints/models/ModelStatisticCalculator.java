@@ -278,7 +278,7 @@ public class ModelStatisticCalculator {
 		modelStatisticValues.put(DevQsarConstants.MAE + tag, mae);
 		modelStatisticValues.put(DevQsarConstants.PEARSON_RSQ + tag, pearsonRsq);
 		modelStatisticValues.put(DevQsarConstants.RMSE + tag, rmse);
-		modelStatisticValues.put("Count predicted", (double)countPredicted);
+//		modelStatisticValues.put("Count predicted", (double)countPredicted);
 		
 		if (tag.equals(DevQsarConstants.TAG_TEST)) {
 			modelStatisticValues.put(DevQsarConstants.Q2_TEST, coeffDet);

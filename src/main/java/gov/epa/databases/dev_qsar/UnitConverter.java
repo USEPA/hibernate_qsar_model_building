@@ -1,5 +1,7 @@
 package gov.epa.databases.dev_qsar;
 
+import org.checkerframework.checker.units.qual.mol;
+
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.databases.dsstox.DsstoxRecord;
 import gov.epa.endpoints.datasets.MappedPropertyValue;
@@ -37,10 +39,12 @@ public class UnitConverter {
 		String propertyName = propertyValue.getProperty().getName();
 		String chemicalId=propertyValue.getId()+"";
 		
-		return convertUnits(value, unitName, finalUnitName, dsstoxRecord, propertyName, chemicalId);
+		return convertUnits(value, unitName, finalUnitName, dsstoxRecord.molWeight, propertyName, chemicalId);
+		
 	}
 
-	public static Double convertUnits(double value, String unitName,String finalUnitName, 	DsstoxRecord dsstoxRecord,  String propertyName, String chemicalId) {
+	public static Double convertUnits(double value, String unitName,String finalUnitName, 	
+			Double molecularWeight,  String propertyName, String chemicalId) {
 
 		if (unitName.equals(finalUnitName)) {
 			return value;
@@ -52,14 +56,24 @@ public class UnitConverter {
 				propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_SCUD_LC50) ||
 				propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_RAINBOW_TROUT_LC50) ||
 				propertyName.equals(DevQsarConstants.NINETY_SIX_HOUR_BLUEGILL_LC50) ||
+				propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_TETRAHYMENA_PYRIFORMIS_IGC50) ||
 				propertyName.equals(DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50)) {
-			return handle_WATER_SOLUBILITY(propertyName, value, finalUnitName, chemicalId, dsstoxRecord, unitName);
+			return handle_WATER_SOLUBILITY(propertyName, value, finalUnitName, chemicalId, molecularWeight, unitName);
+		
+		
+		} else if (propertyName.equals(DevQsarConstants.ORAL_RAT_LD50)) {
+			return handle_ORAL_RAT_LD50(propertyName,value, finalUnitName, chemicalId, molecularWeight,unitName);
 		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
 			return handle_HENRYS_LAW_CONSTANT(propertyName,value, finalUnitName, chemicalId, unitName);
 		} else if (propertyName.equals(DevQsarConstants.KmHL) || propertyName.equals(DevQsarConstants.BIODEG_HL_HC)) {
 			return handle_KMHL(propertyName,value, finalUnitName, chemicalId, unitName);
 		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
 			return handle_VAPOR_PRESSURE(propertyName,value, finalUnitName, chemicalId, unitName);
+		} else if (propertyName.equals(DevQsarConstants.SURFACE_TENSION)) {
+			return handle_SURFACE_TENSION(propertyName,value, finalUnitName, chemicalId, unitName);
+
+		} else if (propertyName.equals(DevQsarConstants.VISCOSITY)) {
+			return handle_VISCOSITY(propertyName,value, finalUnitName, chemicalId, unitName);
 		} else if (propertyName.equals(DevQsarConstants.KOC) || propertyName.equals(DevQsarConstants.BCF)|| propertyName.equals(DevQsarConstants.BAF)) {
 			return handle_KOC(propertyName,value, finalUnitName, chemicalId, unitName);
 		} else if (propertyName.equals(DevQsarConstants.OH)) {
@@ -81,6 +95,38 @@ public class UnitConverter {
 	}
 
 	
+
+	private static Double handle_SURFACE_TENSION(String propertyName, double value, String finalUnitName,
+			String chemicalId, String unitName) {
+		
+		if (finalUnitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.LOG_CP))) {
+			if(unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.CP))) {
+				return Math.log10(value);
+			}
+			
+		} else if (finalUnitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.CP))) {
+			if(unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.LOG_CP))) {
+				return Math.pow(10, value);
+			}
+		}
+		
+		getErrorMessage(propertyName,finalUnitName, chemicalId, unitName);
+		return null;
+	}
+
+	private static Double handle_ORAL_RAT_LD50(String propertyName, double value, String finalUnitName,
+			String chemicalId, Double molecularWeight, String unitName) {
+		
+		if (finalUnitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.MOL_KG))) {
+			if(unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.NEG_LOG_MOL_KG))) {
+//				System.out.println(DevQsarConstants.NEG_LOG_MOL_KG+" to "+DevQsarConstants.getConstantNameByReflection(DevQsarConstants.MOL_KG));
+				return Math.pow(10, -value);
+			}
+		}
+		getErrorMessage(propertyName,finalUnitName, chemicalId, unitName);
+		return null;
+		
+	}
 
 	private static Double handle_inhalation_LC50(String propertyName, double value, String finalUnitName,
 			String chemicalId, String unitName) {
@@ -231,12 +277,27 @@ public class UnitConverter {
 		if (finalUnitName.equals("LOG_MMHG")) {
 			if (unitName.equals("MMHG")) {
 				return Math.log10(value);
-			} else {
-				System.out.println(chemicalId + ": Undefined property value conversion for unit: " + unitName);
-				return null;
-			}
+			} 
 		} else if (finalUnitName.equals("MMHG")) {
 			if (unitName.equals("LOG_MMHG")) {
+				return Math.pow(10, value);
+			} 
+		}
+		
+		getErrorMessage(propertyName,finalUnitName, chemicalId, unitName);
+		return null;
+
+	}
+	
+	private static Double handle_VISCOSITY(String propertyName, double value, String finalUnitName, String chemicalId,
+			String unitName) {
+		
+		if (finalUnitName.equals("LOG_CP")) {
+			if (unitName.equals("CP")) {
+				return Math.log10(value);
+			} 
+		} else if (finalUnitName.equals("CP")) {
+			if (unitName.equals("LOG_CP")) {
 				return Math.pow(10, value);
 			} 
 		}
@@ -273,7 +334,7 @@ public class UnitConverter {
 	}
 
 	private static Double handle_WATER_SOLUBILITY(String propertyName, double value, String finalUnitName, String chemicalId,
-			DsstoxRecord dsstoxRecord, String unitName) {
+			Double molecularWeight, String unitName) {
 
 		if (finalUnitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.NEG_LOG_M))) {
 			
@@ -283,14 +344,14 @@ public class UnitConverter {
 				return -Math.log10(value);
 			} else if (unitName.equals(DevQsarConstants.getConstantNameByReflection(DevQsarConstants.G_L))) {
 
-				if (dsstoxRecord.molWeight!=null) {
-					return -Math.log10(value/dsstoxRecord.molWeight);	
+				if (molecularWeight!=null) {
+					return -Math.log10(value/molecularWeight);	
 				} else if (value==0) {
-					System.out.println(chemicalId + ": value=0 for "+dsstoxRecord.dsstoxSubstanceId+", so cant convert to "+finalUnitName);
+					System.out.println(chemicalId + ": value=0 for "+chemicalId+", so cant convert to "+finalUnitName);
 					return null;
-				} else if (dsstoxRecord.molWeight==null) {
+				} else if (molecularWeight==null) {
 					//Will show up in discarded records spreadsheets as "Unit conversion failed" 
-					System.out.println(chemicalId + ": missing MW for "+dsstoxRecord.dsstoxSubstanceId+", so cant convert to "+finalUnitName);
+					System.out.println(chemicalId + ": missing MW for "+chemicalId+", so cant convert to "+finalUnitName);
 					return null;
 				}
 			} 

@@ -4,6 +4,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -89,6 +92,23 @@ public class PredictionReport {
 			this.qsar_exp_prop_property_values_id=dp.getQsar_exp_prop_property_values_id();
 			
 		}
+	}
+	
+	
+	public static PredictionReport loadFromJson(String jsonfilepath) {
+
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+		try {
+			Reader reader = Files.newBufferedReader(Paths.get(jsonfilepath));
+			PredictionReport predictionReport=gson.fromJson(reader, PredictionReport.class);
+			return predictionReport;
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return null;
 	}
 	
 	

@@ -20,7 +20,7 @@ import kong.unirest.Unirest;
 
 public class ReportGenerator {
 	private CompoundService compoundService;
-	private DsstoxCompoundService dsstoxCompoundService;
+	private DsstoxCompoundServiceImpl dsstoxCompoundService;
 	
 	public ReportGenerator() {
 		// Set logging providers for Hibernate and MChange
@@ -95,7 +95,12 @@ public class ReportGenerator {
 	private List<DsstoxRecord> getDsstoxRecordsFromDtxcids(Collection<String> dtxcids) {
 		List<DsstoxRecord> dsstoxRecords = new ArrayList<DsstoxRecord>();
 		if (dtxcids.size() <= 1000) {
+			
 			dsstoxRecords = dsstoxCompoundService.findAsDsstoxRecordsByDtxcidIn(dtxcids);
+			
+//			dsstoxRecords = dsstoxCompoundService.getCompoundsBySQL(dtxcids);
+			
+			
 		} else {
 			Set<String> subset = new HashSet<String>();
 			for (String dtxcid:dtxcids) {

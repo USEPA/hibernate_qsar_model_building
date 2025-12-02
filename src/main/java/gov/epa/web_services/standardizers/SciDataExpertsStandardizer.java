@@ -69,7 +69,7 @@ public class SciDataExpertsStandardizer {
 	public SciDataExpertsStandardizer(String workflow,String serverHost) {
 		this.standardizerName = DevQsarConstants.STANDARDIZER_SCI_DATA_EXPERTS + "_" + workflow.toUpperCase().replace("-","_");
 		
-		System.out.println(standardizerName);
+//		System.out.println(standardizerName);
 		
 		this.useBatchStandardize = false;
 		this.workflow=workflow;
@@ -80,6 +80,9 @@ public class SciDataExpertsStandardizer {
 		this.useBatchStandardize = false;
 		this.serverHost=serverHost;
 	}
+	
+	public SciDataExpertsStandardizer() {}
+		
 	
 
 //	@Override
@@ -416,7 +419,16 @@ public class SciDataExpertsStandardizer {
 	}
 	
 	
-	public HttpResponse<String> callQsarReadyStandardizePost(String smiles,boolean full,String workflow) {
+	/**
+	 * TODO delete this duplicate method...
+	 * 
+	 * @param smiles
+	 * @param serverHost
+	 * @param full
+	 * @param workflow
+	 * @return
+	 */
+	public static HttpResponse<String> callQsarReadyStandardizePost(String smiles,String serverHost, boolean full,String workflow) {
 		//		Unirest.setTimeouts(0, 0);
 		JsonObject joBody=new JsonObject();
 
@@ -433,6 +445,8 @@ public class SciDataExpertsStandardizer {
 		joBody.add("chemicals", chemicals);
 
 		//		System.out.println(Utilities.gson.toJson(joBody));
+		
+		
 
 		HttpResponse<String> response = Unirest.post(serverHost+"/api/stdizer/chemicals")
 				.header("Content-Type", "application/json")

@@ -13,6 +13,7 @@ public class ModelPrediction implements Comparable<ModelPrediction>{
 	public Boolean insideAD;
 	public CheckStructure checkStructure;
 
+	public String qsarClass;
 	
 	public ModelPrediction(String id, Double exp, Double pred, Integer split) {
 		this.id = id;
