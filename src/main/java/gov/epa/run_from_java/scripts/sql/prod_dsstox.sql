@@ -441,10 +441,22 @@ join compounds c on gsc.fk_compound_id = c.id
 where dsstox_compound_id='DTXCID9089572';
 
 
+SELECT dsstox_compound_id  FROM generic_substances gs
+join generic_substance_compounds gsc on gs.id = gsc.fk_generic_substance_id
+join compounds c on gsc.fk_compound_id = c.id
+where dsstox_substance_id='DTXSID4022072';
+
+
 SELECT gs.dsstox_substance_id,  gs.casrn,c.dsstox_compound_id,c.smiles FROM generic_substances gs
          join generic_substance_compounds gsc on gs.id = gsc.fk_generic_substance_id
 join compounds c on gsc.fk_compound_id = c.id
 where gs.dsstox_substance_id='DTXSID5021120';
+
+
+select distinct gs.dsstox_substance_id,gs.preferred_name from generic_substances gs
+join source_generic_substance_mappings sgsm on gs.id = sgsm.fk_generic_substance_id
+join source_substance_identifiers ssi on sgsm.fk_source_substance_id = ssi.fk_source_substance_id
+where ssi.identifier='108-65-6';
 
 
 SELECT * FROM generic_substances gs
@@ -480,3 +492,50 @@ GROUP BY
     gs.dsstox_substance_id
 order by dsstox_substance_id;
 
+
+
+select c.acd_iupac_name, c.acd_index_name
+from compounds c
+where c.dsstox_compound_id = 'DTXCID401865988';
+
+
+SELECT VERSION();
+
+SELECT gs.dsstox_substance_id,c.dsstox_compound_id,gs.casrn,c.smiles,gs.preferred_name FROM generic_substances gs
+	         join generic_substance_compounds gsc on gs.id = gsc.fk_generic_substance_id
+	join compounds c on gsc.fk_compound_id = c.id
+	where gs.dsstox_substance_id in ('DTXSID6036837');
+
+
+select mol_image_png, mol_image_png is null from prod_dsstox.compounds c
+where c.dsstox_compound_id='DTXCID001939060';
+
+
+SELECT CASE WHEN mol_image_png IS NULL THEN FALSE ELSE TRUE END
+FROM prod_dsstox.compounds c
+where c.dsstox_compound_id='DTXCID001939060';
+
+
+SELECT dsstox_compound_id,mol_file,smiles, jchem_inchi_key,indigo_inchi_key,mol_weight,gs.dsstox_substance_id, gs.casrn, gs.preferred_name, CASE WHEN mol_image_png IS NULL THEN FALSE ELSE TRUE END
+FROM compounds c
+left join generic_substance_compounds gsc on gsc.fk_compound_id =c.id
+left join generic_substances gs on gs.id=gsc.fk_generic_substance_id
+where dsstox_compound_id is not null
+ORDER BY dsstox_compound_id
+LIMIT 50000 OFFSET 1900000;
+
+
+SELECT dsstox_compound_id,mol_file,smiles, jchem_inchi_key,indigo_inchi_key,mol_weight,gs.dsstox_substance_id, gs.casrn, gs.preferred_name, gs.updated_at,CASE WHEN mol_image_png IS NULL THEN FALSE ELSE TRUE END
+FROM generic_substances gs
+left join generic_substance_compounds gsc on gs.id=gsc.fk_generic_substance_id
+left join compounds c on gsc.fk_compound_id=c.id
+ORDER BY dsstox_substance_id
+LIMIT 50000 OFFSET 0;
+
+
+
+select gs.dsstox_substance_id as dtxsid, oc.casrn, oc.cas_type,oc.source from other_casrns oc
+	join generic_substances gs on oc.fk_generic_substance_id = gs.id;
+
+
+# select count (gs.id) from prod_dsstox.generic_substances gs;
