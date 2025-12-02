@@ -1,7 +1,6 @@
 -- Distinct qsar ready standardizers:
 select distinct (c.standardizer) from qsar_descriptors.compounds c
 
-
 -- Mapped records for a dataset
 select * from qsar_datasets.data_points dp
 join qsar_datasets.data_point_contributors dpc on dpc.fk_data_point_id=dp.id
@@ -1286,3 +1285,38 @@ where c.smiles is not null
 group by c.standardizer
 
 select count (qsar_models.predictions_dashboard.id) from qsar_models.predictions_dashboard
+
+
+-- where d.name='HLC v1 modeling';
+
+
+select count (distinct (dtxsid))  from mv_predicted_data mv
+where source_name='OPERA2.8' and (prop_name='LogD7.4');
+
+select p.name, p.name_ccd as property_name_ccd, u.abbreviation_ccd as model_units,u2.abbreviation_ccd as contributor_units from qsar_datasets.datasets d
+join qsar_datasets.units u on d.fk_unit_id = u.id
+join qsar_datasets.units u2 on d.fk_unit_id_contributor=u2.id
+join qsar_datasets.properties p on d.fk_property_id = p.id
+         where d.name like '%TEST5.1.3'
+
+
+select prop_name,prop_value from public.mv_predicted_data mv
+where dtxsid='DTXSID20211176' and source_name='Percepta2023.1.2';
+
+
+select name,id from qsar_models.models m
+where fk_source_id=2;
+
+
+select headers_tsv from qsar_descriptors.descriptor_sets ds where ds.name='PaDEL-default'
+
+SELECT fk_model_id, dtxcid, COUNT(*) AS record_count
+FROM qsar_models.predictions_dashboard
+GROUP BY fk_model_id, dtxcid
+HAVING COUNT(*) > 1;
+
+select headers_tsv from qsar_descriptors.descriptor_sets ds where ds.name='Mordred-default';
+
+select d.name,u.name,u.abbreviation_ccd from qsar_datasets.datasets d
+         join qsar_datasets.units u on d.fk_unit_id=u.id
+where d.name like '%v1 modeling%';

@@ -1,7 +1,7 @@
 -- Export all predictions for asif:
 -- CREATE MATERIALIZED VIEW mv_predicted_data as
 select
---        row_number() over (order by dr.dtxsid, p."name",s.name) as id,
+       row_number() over (order by dr.dtxsid, p."name",s.name) as id,
        dr.dtxsid,dr.dtxcid,dr.smiles,
        pd.canon_qsar_smiles,
        dr.generic_substance_updated_at,
@@ -15,11 +15,10 @@ select
        s.description as source_description,
        pd.experimental_value as prop_value_experimental,
        pd.experimental_string as prop_value_experimental_string,
---        pd.prediction_value as prediction_value,
        pd.prediction_value as prop_value,
        u.abbreviation_ccd as prop_unit,
---        prediction_string,
---        prediction_error,
+       prediction_string,
+       prediction_error,
        prediction_string as prop_value_string,
        prediction_error as prop_value_error,
        adm.name as AD_method,
@@ -46,17 +45,16 @@ left join qsar_models.qsar_predicted_ad_estimates qpad2 on pd.id = qpad2.fk_pred
 left join qsar_models.ad_methods adm on m.fk_ad_method = adm.id
 left join qsar_datasets.properties_in_categories pic on p.id = pic.fk_property_id
 left join qsar_datasets.property_categories pc on pic.fk_property_category_id = pc.id
-
-where dr.fk_dsstox_snapshot_id=2 -- 2024-11-12 snapshot
-  and s.name='Percepta2023.1.2'
+-- where dr.fk_dsstox_snapshot_id=2 -- 2024-11-12 snapshot, not necessary to specify if dont have predictions for multiple snapshots stored
+--   and s.name='Percepta2023.1.2'
 --   and (s.name='OPERA2.8' or s.name='Percepta2023.1.2')
 --   and (s.name='TEST5.1.3')
 --   and (s.name='OPERA2.8' or s.name='Percepta2023.1.2') --omit sample records from other software
 --   and dr.dtxsid='DTXSID7021360'
--- and dr.dtxsid='DTXSID7020182' -- bisphenol-a
+where dr.dtxsid='DTXSID7020182' -- bisphenol-a
 -- and dr.dtxcid='DTXCID505'
 -- and dr.dtxsid='DTXSID40166952'
-and dr.dtxsid='DTXSID3039242' -- benzene
+-- and dr.dtxsid='DTXSID3039242' -- benzene
 -- and dr.dtxsid='DTXSID50281842' -- percepta not in mongo
 -- and dr.dtxsid='DTXSID001000007' -- null values in summary table
 -- and dr.dtxsid='DTXSID7020005'-- has TEST prediction outside AD for ST
@@ -65,11 +63,14 @@ and dr.dtxsid='DTXSID3039242' -- benzene
 -- order by dr.dtxsid, p."name",s.name -- this line slows things down when getting all records
 -- order by dr.dtxsid -- this line slows things down when getting all records
 -- limit 100
+-- limit 10
 ;
+
+
+select * from pg_stat_progress_vacuum;
 
 refresh materialized view "mv_predicted_data";
 VACUUM (ANALYZE, VERBOSE, FULL) qsar_models.predictions_dashboard;
-
 VACUUM (ANALYZE, VERBOSE, FULL) qsar_models.prediction_reports;
 VACUUM (ANALYZE, VERBOSE, FULL) qsar_models.qsar_predicted_neighbors;
 VACUUM (ANALYZE, VERBOSE, FULL) qsar_models.qsar_predicted_ad_estimates;
@@ -322,13 +323,6 @@ where s.name='TEST5.1.3';
 
 
 
-
-
-
-
-
-
-
 select dr.dtxcid
 from qsar_models.predictions_dashboard pd
 join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
@@ -336,3 +330,167 @@ join qsar_models.models m on m.id=pd.fk_model_id
 where m.fk_source_id=6 and dr.fk_dsstox_snapshot_id=2
 group by dr.dtxcid
 having count(dr.dtxcid)=28
+
+select count(pd.id) from qsar_models.predictions_dashboard pd
+join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
+join qsar_models.models m on m.id=pd.fk_model_id
+join qsar_models.sources s on m.fk_source_id = s.id
+where  s.name='Percepta2023.1.2' and dr.fk_dsstox_snapshot_id=1;
+
+
+
+select m.name,m.id from qsar_models.models m
+join qsar_models.sources s on m.fk_source_id = s.id
+where s.name='TEST5.1.3';
+
+
+select pd.dtxcid
+from qsar_models.predictions_dashboard pd
+join qsar_models.models m on m.id=pd.fk_model_id
+join qsar_models.sources s on s.id=m.fk_source_id
+where s.name='TEST5.1.3'
+group by pd.dtxcid
+having count(pd.dtxcid)=16;
+
+
+
+select * from qsar_models.predictions_dashboard pd
+join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
+where dr.fk_dsstox_snapshot_id=1;
+
+-- DELETE FROM qsar_models.predictions_dashboard
+-- WHERE fk_dsstox_records_id IN (
+--     SELECT dr.id
+--     FROM qsar_models.dsstox_records dr
+--     WHERE dr.fk_dsstox_snapshot_id = 1
+-- );
+
+-- compare join by string vs join by long:
+select * from qsar_models.predictions_dashboard pd
+join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
+where dr.fk_dsstox_snapshot_id=2 and dr.dtxcid='DTXCID30182';
+
+select dr.dtxsid from qsar_models.predictions_dashboard pd
+join qsar_models.dsstox_records dr on pd.dtxcid= dr.dtxcid
+where dr.fk_dsstox_snapshot_id=2 and dr.dtxcid='DTXCID30182';
+
+
+
+
+
+-- select p.name,s.name, m.name, prediction_value,u.abbreviation_ccd from qsar_models.predictions_dashboard pd
+select * from qsar_models.predictions_dashboard pd
+    join qsar_models.models m on pd.fk_model_id = m.id
+join qsar_models.sources s on m.fk_source_id = s.id
+join qsar_datasets.datasets d on d.name=m.dataset_name
+join qsar_datasets.properties p on d.fk_property_id = p.id
+join qsar_datasets.units u on d.fk_unit_id_contributor=u.id
+left join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
+where s.name='TEST5.1.3' and prediction_error like '%Markush%';
+-- where dr.dtxsid='DTXSID7020182'
+-- order by p.name, m.name;
+
+
+
+select * from qsar_models.predictions_dashboard pd
+    join qsar_models.models m on pd.fk_model_id = m.id
+join qsar_models.sources s on m.fk_source_id = s.id
+where s.name='TEST5.1.3' and pd.prediction_error like 'Markush%';
+
+UPDATE qsar_models.predictions_dashboard pd
+SET prediction_error = 'Invalid structure: Markush structure'
+WHERE pd.fk_model_id IN (
+    SELECT m.id
+    FROM qsar_models.models m
+    JOIN qsar_models.sources s ON m.fk_source_id = s.id
+    WHERE s.name = 'TEST5.1.3'
+)
+AND pd.prediction_error LIKE 'Markush%';
+
+
+-- select s.name, m.name, prediction_value from qsar_models.predictions_dashboard pd
+select dr.dtxsid,m.name,pd.prediction_value,u.abbreviation_ccd from qsar_models.predictions_dashboard pd
+    join qsar_models.models m on pd.fk_model_id = m.id
+join qsar_models.sources s on m.fk_source_id = s.id
+join qsar_datasets.datasets d on d.name=m.dataset_name
+join qsar_datasets.units u on d.fk_unit_id_contributor = u.id
+join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
+-- where pd.dtxcid='DTXCID30182' and s.name='TEST5.1.3'
+where s.name='TEST5.1.3';
+
+
+DELETE FROM qsar_models.predictions_dashboard
+WHERE dtxcid='DTXCID90722284' and fk_model_id IN (
+    SELECT m.id
+    FROM qsar_models.models m
+    JOIN qsar_models.sources s ON m.fk_source_id = s.id
+    WHERE s.name = 'TEST5.1.3'
+);
+
+-- select *  FROM qsar_models.predictions_dashboard
+DELETE FROM qsar_models.predictions_dashboard
+WHERE fk_model_id >=223 and fk_model_id<=240;
+
+
+-- AND dtxcid = 'DTXCID30182';
+
+
+
+
+select pd.dtxcid
+				from qsar_models.predictions_dashboard pd
+				join qsar_models.models m on m.id=pd.fk_model_id
+				join qsar_models.sources s on s.id=m.fk_source_id
+				where s.name='OPERA2.8'
+				group by pd.dtxcid
+				having count(pd.dtxcid)=28;
+
+
+
+select count (distinct (pd.dtxcid))
+from qsar_models.predictions_dashboard pd
+join qsar_models.models m on m.id=pd.fk_model_id
+join qsar_models.sources s on s.id=m.fk_source_id
+-- where s.name='TEST5.1.3' and prediction_error is null;
+where s.name='TEST5.1.3';
+
+
+SELECT * FROM pg_locks;
+
+select pd.dtxcid,count(pd.dtxcid)
+	from qsar_models.predictions_dashboard pd
+	join qsar_models.models m on m.id=pd.fk_model_id
+	join qsar_models.sources s on s.id=m.fk_source_id
+	where s.name='TEST5.1.3'
+	group by pd.dtxcid
+	having count(pd.dtxcid)<16;
+
+
+DELETE FROM qsar_models.predictions_dashboard
+WHERE dtxcid in ('DTXCID001611705','DTXCID40508257','DTXCID40508898','DTXCID501605056')
+    and fk_model_id IN
+    (SELECT m.id
+    FROM qsar_models.models m
+    JOIN qsar_models.sources s ON m.fk_source_id = s.id
+    WHERE s.name = 'TEST5.1.3');
+
+-- determine how many dtxcids are missing from dsstox records in the test predictions:
+SELECT count (distinct dtxcid) from qsar_models.dsstox_records dr
+-- SELECT distinct dtxcid,smiles from qsar_models.dsstox_records dr
+-- SELECT dr.dtxsid,dr.smiles from qsar_models.dsstox_records dr
+where dr.fk_dsstox_snapshot_id=3 and
+dr.smiles not like '%.%' and dr.smiles not like '%|%' and
+dr.smiles not like '%*%' and
+dr.dtxcid not in (
+    SELECT distinct pd.dtxcid from qsar_models.predictions_dashboard pd
+    join qsar_models.models m on m.id=pd.fk_model_id
+	join qsar_models.sources s on s.id=m.fk_source_id
+-- 	where s.name='TEST5.1.3');
+    where s.name='OPERA2.8');
+-- where s.name='Percepta2023.1.2');
+-- order by dtxcid;
+
+
+
+
+

@@ -340,3 +340,11 @@ order by p.name;
 
 
 select * from mv_experimental_data where dtxsid in ('DTXSID00192353','DTXSID6067331','DTXSID30891564','DTXSID6062599','DTXSID90868151','DTXSID8031863','DTXSID8031865','DTXSID1037303','DTXSID8047553','DTXSID60663110','DTXSID70191136','DTXSID3037709','DTXSID3059921','DTXSID3031860','DTXSID8037706','DTXSID8059920','DTXSID3031862','DTXSID30382063','DTXSID00379268','DTXSID20874028','DTXSID3037707') and prop_name='LogKow: Octanol-Water';
+
+
+
+-- select distinct prop_name, source_name from mv_experimental_data mv
+-- where prop_category='Env. Fate/transport' order by prop_name,source_name;
+
+    select distinct prop_name from mv_experimental_data mv
+where prop_category='Env. Fate/transport' order by prop_name;

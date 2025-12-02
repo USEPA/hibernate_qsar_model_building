@@ -29,6 +29,8 @@ and s.name='TEST5.1.3'
 -- and dr.dtxsid='DTXSID7020182';
 ;
 
+select count(distinct  dtxcid) from public.mv_predicted_reports;
+
 
 
 refresh materialized view mv_predicted_reports;
@@ -210,3 +212,9 @@ join qsar_datasets.datasets d on d."name" =m.dataset_name
 join qsar_datasets.properties p on p.id=d.fk_property_id
 join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id=dr.id
 where dr.dtxsid='DTXSID7020182' and m.name_ccd='OPERA_BP';
+
+
+select distinct s.name from qsar_models.prediction_reports pr
+join qsar_models.predictions_dashboard pd  on pr.fk_predictions_dashboard_id = pd.id
+join qsar_models.models m on pd.fk_model_id = m.id
+join qsar_models.sources s on m.fk_source_id = s.id;

@@ -1,0 +1,1 @@
+select distinct dtxsid from ccd_app.chemical_properties cp where source='Percepta2023.1.2' order by dtxsid;

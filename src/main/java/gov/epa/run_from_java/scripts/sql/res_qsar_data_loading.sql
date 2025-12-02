@@ -46,9 +46,11 @@ join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
 where ps.name='PubChem_2024_11_27';
 
 
-select distinct  p.name,ps.name from exp_prop.property_values pv
+select  p.name,ps.name,count(pv.id) from exp_prop.property_values pv
 join exp_prop.properties p on pv.fk_property_id = p.id
 join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
+where p.name like'%Koc%'
+group by p.name,ps.name
 order by p.name;
 
 
@@ -602,3 +604,63 @@ join qsar_datasets.data_points dp on d.id = dp.fk_dataset_id
 where  d.name='exp_prop_WATER_SOLUBILITY_v2.0'
 group by ps.name;
 
+
+
+select pv.id,sc.source_dtxsid,ps.name,pv.value_point_estimate from exp_prop.property_values pv
+join exp_prop.properties p on pv.fk_property_id = p.id
+join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
+join exp_prop.source_chemicals sc on pv.fk_source_chemical_id = sc.id
+where p.name='Soil Adsorption Coefficient (Koc)' and ps.name='OPERA2.9' and source_dtxsid like '%DTXSID2020686%';
+
+
+
+select * from qsar_datasets.datasets d
+where d.name like '%96%';
+
+
+select * from qsar_models.models m
+         where m.dataset_name like 'exp_prop_96HR%';
+-- where m.dataset_name like '%96%';
+-- where m.dataset_name='ECOTOX_2024_12_12_96HR_FHM_LC50_v3 modeling';
+
+
+
+select * from qsar_datasets.datasets d
+where name like 'exp_prop_96HR%v% modeling';
+
+
+select d.name,count(dp.id) from qsar_datasets.datasets d
+join qsar_datasets.data_points dp on d.id = dp.fk_dataset_id
+where name like '%96HR%v3%'
+group by d.name
+order by count(dp.id) desc;
+
+
+select * from qsar_models.models m
+where dataset_name like '%96HR%v3%';
+
+
+select * from exp_prop.property_values pv
+join exp_prop.properties p on pv.fk_property_id = p.id
+where name='Acute aquatic toxicity' and fk_public_source_id=312;
+
+
+
+delete from exp_prop.source_chemicals sc
+-- select * from exp_prop.source_chemicals sc
+where id>2051629;
+
+select from exp_prop.property_values pv
+where created_at>'2025-12-01' and created_at<'2025-12-03';
+
+
+select * from exp_prop.source_chemicals sc
+where id>2051629;
+
+
+-- SELECT count(id) from exp_prop.source_chemicals sc
+SELECT count(id) from exp_prop.source_chemicals sc
+-- delete from exp_prop.source_chemicals sc
+where created_at > '2025-12-01' and created_at < '2025-12-03'
+and fk_literature_source_id is null and fk_public_source_id is null;
+-- order by source_dtxsid;

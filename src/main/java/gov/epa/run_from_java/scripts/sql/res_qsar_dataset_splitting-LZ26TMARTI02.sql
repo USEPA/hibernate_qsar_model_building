@@ -352,16 +352,14 @@ join qsar_datasets.datasets d on dp.fk_dataset_id = d.id
 where d.name='WS v1 modeling' and dp.canon_qsar_smiles='CC(C)CC(N)C(O)=NC(CC1C=CC(O)=CC=1)C(O)=O'
 
 
-
-
-select distinct dp.qsar_dtxcid, dp.canon_qsar_smiles,dpis.split_num from qsar_datasets.data_points dp
--- join qsar_datasets.data_point_contributors dpc on dp.id = dpc.fk_data_point_id
-		    join qsar_datasets.datasets d on dp.fk_dataset_id = d.id
-		join qsar_datasets.data_points_in_splittings dpis on dp.id = dpis.fk_data_point_id
-		where dpis.fk_splitting_id=1 and d.name='WS v1 modeling' ;
-
-
-select d.name,count(dp.id) from qsar_datasets.datasets d
-         join qsar_datasets.data_points dp on d.id = dp.fk_dataset_id
-where d.name like '%BCF%'
-group by d.name;
+select dp.canon_qsar_smiles from qsar_datasets.data_points dp
+join qsar_datasets.datasets d on dp.fk_dataset_id = d.id
+join qsar_datasets.data_points_in_splittings dpis on dp.id = dpis.fk_data_point_id
+join qsar_datasets.splittings s on dpis.fk_splitting_id = s.id
+where d.name='BP v1 modeling' and s.name='RND_REPRESENTATIVE' and dpis.split_num=0 and dp.canon_qsar_smiles like '%F%'
+and dp.canon_qsar_smiles not in (select dp2.canon_qsar_smiles from qsar_datasets.data_points dp2
+join qsar_datasets.datasets d on dp2.fk_dataset_id = d.id
+join qsar_datasets.data_points_in_splittings dpis on dp2.id = dpis.fk_data_point_id
+join qsar_datasets.splittings s on dpis.fk_splitting_id = s.id
+where d.name='BP v1 modeling' and s.name='T=PFAS only, P=PFAS' and dpis.split_num=0)
+;

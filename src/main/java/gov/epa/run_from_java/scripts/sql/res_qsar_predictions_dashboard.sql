@@ -31,6 +31,11 @@ where fk_model_id>=223 and fk_model_id<=240;
 -- Deleting TEST predictions:
 delete from qsar_models.predictions_dashboard pd where fk_model_id>=223 and fk_model_id<=240; -- TEST models
 
+select dtxcid from qsar_models.predictions_dashboard pd where fk_model_id>=223 and fk_model_id<=240; -- TEST models
+
+delete from qsar_models.predictions_dashboard pd
+where dtxcid='DTXCID90149992' and fk_model_id>=223 and fk_model_id<=240; -- TEST models
+
 
 -- ******************************************************************************************
 -- Find TEST predictions with missing reports
@@ -71,7 +76,7 @@ order by dtxcid,p."name";
 -- unit is associated with the dataset not the property (different datasets can have different units for same property)
 select p."name" as property_name, s.name,m."name" as model_name ,canon_qsar_smiles,
        dr.smiles, dr.dtxsid,dr.dtxcid,
-       prediction_value,u.abbreviation as prediction_units,
+       experimental_value,prediction_value,u.abbreviation as prediction_units,
        prediction_string ,prediction_error
 from qsar_models.predictions_dashboard pd
 join qsar_models.models m on m.id=pd.fk_model_id
@@ -80,11 +85,12 @@ join qsar_datasets.datasets d on d."name" =m.dataset_name
 join qsar_datasets.properties p on p.id=d.fk_property_id
 join qsar_datasets.units u on u.id=d.fk_unit_id_contributor
 join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id=dr.id
-where s.name ='Percepta2020.2.1' and dr.dtxcid='DTXCID70411028'
+-- where s.name ='Percepta2020.2.1' and dr.dtxcid='DTXCID70411028'
+where s.name ='TEST5.1.3' and dr.dtxsid='DTXSID7020182';
 -- where dr.dtxcid='DTXCID70411028' and dr.fk_dsstox_snapshot_id=1
 -- order by prediction_value desc
 -- order by smiles,p."name"
-order by dr.dtxcid,p."name";
+-- order by dr.dtxcid,p."name";
 
 -- Export all predictions:
 select p."name" as property_name, s.name,m."name" as model_name ,canon_qsar_smiles,
@@ -194,3 +200,17 @@ where date_trunc('day',created_at)::date =current_date;
 
 
 ALTER TABLE qsar_models.qsar_predicted_neighbors DROP CONSTRAINT ukgc5ienluqj0hbf1qt22nwdtwe;
+
+
+
+select count(distinct (dtxsid)) from mv_predicted_reports where source_name='OPERA2.8';
+
+
+select prop_name, model_name,source_name,model_id from mv_predicted_data mv
+where dtxsid='DTXSID7020182' and source_name='OPERA2.8'
+order by source_name,prop_name
+
+
+select count(distinct (dtxsid)) from public.mv_predicted_data where source_name='OPERA2.8';
+
+
