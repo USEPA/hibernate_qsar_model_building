@@ -80,18 +80,24 @@ public class DsstoxOtherCASRN {
 	@Column(name="created_by")
 	private String createdBy;
 	
-	static void getRecordsFromDsstox() {
+	public static void getRecordsFromDsstox(File dsstoxRecordsJsonFile) {
+		
+		
+		Connection connDsstox = SqlUtilities.getConnectionDSSTOX();
+		
+		if(connDsstox==null) {
+			System.out.println("Couldn't connect to dsstox");
+			return;
+		}
 		
 		String user="tmarti02";
 		
-		File dsstoxRecordsJsonFile=PredictionDashboardTableMaps.fileJsonDsstoxRecords2025_10_30;
 		PredictionDashboardTableMaps ol=new PredictionDashboardTableMaps();
 		ol.getDsstoxRecordsFromJsonExport(dsstoxRecordsJsonFile);
 		
 //		System.out.println(ol.mapDsstoxRecordsBySID.get("DTXSID8023892").getId());
 		
 //		if(true)return;
-
 
 		TreeMap<String, DsstoxOtherCASRN>otherCasrnsMap=new TreeMap<>();
 		List<DsstoxOtherCASRN>otherCasrns=new ArrayList<>();
@@ -100,6 +106,9 @@ public class DsstoxOtherCASRN {
 				+ "join generic_substances gs on oc.fk_generic_substance_id = gs.id";
 		
 		try {
+			
+			
+			
 			
 			ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionDSSTOX(), sql);
 			
@@ -200,7 +209,7 @@ public class DsstoxOtherCASRN {
 	}		
 	
 	public static void main(String[] args) {
-		getRecordsFromDsstox();
+		getRecordsFromDsstox(PredictionDashboardTableMaps.fileJsonDsstoxRecords2025_10_30);
 	}
 
 

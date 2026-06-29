@@ -99,7 +99,9 @@ public class PropertyValueValidator {
 				|| propertyName.equals(DevQsarConstants.BOILING_POINT)
 				|| propertyName.equals(DevQsarConstants.FLASH_POINT)) {
 			return unitName.equals("DEG_C");
-		} else if (propertyName.equals(DevQsarConstants.FUB) || propertyName.equals(DevQsarConstants.TTR_BINDING)) {
+		} else if (propertyName.equals(DevQsarConstants.FUB) || 
+				propertyName.equals(DevQsarConstants.TTR_BINDING) ||
+				propertyName.equals(DevQsarConstants.PERCENTAGE_BIODEGRADATION)) {
 			return unitName.equals("DIMENSIONLESS");
 		} else if (propertyName.equals(DevQsarConstants.SURFACE_TENSION)) {
 			return unitName.equals("DYN_CM");
@@ -167,7 +169,8 @@ public class PropertyValueValidator {
 		} else if (propertyName.equals(DevQsarConstants.DENSITY) || 
 				propertyName.equals(DevQsarConstants.FUB)) {
 			return isRangeWithinTolerance(min, max, DevQsarConstants.DENSITY_RANGE_TOLERANCE);
-		
+		} else if (propertyName.equals(DevQsarConstants.PERCENTAGE_BIODEGRADATION)) {
+			return isRangeWithinTolerance(min, max, DevQsarConstants.PERCENTAGE_DEGRADATION_RANGE_TOLERANCE);
 		} else if (propertyName.equals(DevQsarConstants.TTR_BINDING)) {
 			return isRangeWithinTolerance(min, max, 10.0);
 			
@@ -233,6 +236,9 @@ public class PropertyValueValidator {
 				|| propertyName.equals(DevQsarConstants.BOILING_POINT)
 				|| propertyName.equals(DevQsarConstants.FLASH_POINT)) {
 			return isRangeWithinTolerance(median1, median2, DevQsarConstants.TEMP_RANGE_TOLERANCE);
+
+		} else if (propertyName.equals(DevQsarConstants.PERCENTAGE_BIODEGRADATION)) {
+			return isRangeWithinTolerance(median1, median2, DevQsarConstants.PERCENTAGE_DEGRADATION_RANGE_TOLERANCE);
 		} else if (propertyName.equals(DevQsarConstants.DENSITY) 
 				|| propertyName.equals(DevQsarConstants.FUB)) {
 			return isRangeWithinTolerance(median1, median2, DevQsarConstants.DENSITY_RANGE_TOLERANCE);

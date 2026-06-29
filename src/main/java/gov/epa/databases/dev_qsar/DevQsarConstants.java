@@ -44,6 +44,7 @@ public class DevQsarConstants {
 	public static final Double LOG_RANGE_TOLERANCE = 1.0;
 	public static final Double TEMP_RANGE_TOLERANCE = 10.0;
 	public static final Double DENSITY_RANGE_TOLERANCE = 0.1;
+	public static final Double PERCENTAGE_DEGRADATION_RANGE_TOLERANCE = 10.0;
 	public static final Double ZERO_TOLERANCE = Math.pow(10.0, -6.0);
 	
 	// Max realistic water solubility (in g/L)
@@ -124,7 +125,9 @@ public class DevQsarConstants {
 	public static final String Applicability_Domain_OPERA_local_index_description = "Local applicability domain index is relative to the similarity of the query chemical to its five nearest neighbors from the training set";
 	public static final String Applicability_Domain_OPERA_global_index_description = "Global applicability domain via the leverage approach";
 	
-	
+	public static final String Applicability_Domain_TEST_Fragment_Counts = "TEST Fragment Counts";
+
+			
 	public static final String Applicability_Domain_OPERA_confidence_level = "OPERA Confidence Level";
 	public static final String Applicability_Domain_Kernel_Density = "Kernel Density";
 
@@ -197,6 +200,7 @@ public class DevQsarConstants {
 
 	public static final String LOG_KOC = "LogKOC";//OLD OPERA
 	public static final String KOC = "Soil Adsorption Coefficient (Koc)";//OPERA
+	public static final String Kd = "Soil Adsorption Coefficient (Kd)";//OPERA
 	
 	public static final String LOG_HALF_LIFE = "LogHalfLife";//OLD OPERA
 	public static final String BIODEG_HL_HC = "Biodegradation half-life for hydrocarbons";//OPERA
@@ -206,10 +210,12 @@ public class DevQsarConstants {
 
 
 	public static final String LOG_BCF_FISH_WHOLEBODY = "LogBCF_Fish_WholeBody";//should just be Fish whole body bioconcentration factor
-	
-	//Additional OPERA properties:
 
+	public static final String PERCENTAGE_BIODEGRADATION = "Percentage biodegradation";
+
+	//Additional OPERA properties:
 	public static final String RBIODEG = "Ready biodegradability";//OPERA (binary)
+	
 	public static final String FUB = "Fraction unbound in human plasma";//OPERA
 	public static final String RT = "Liquid chromatography retention time";//OPERA
 	public static final String CLINT = "Human hepatic intrinsic clearance";//OPERA
@@ -602,6 +608,7 @@ public class DevQsarConstants {
 		map.put(ESTROGEN_RECEPTOR_RBA,"DIMENSIONLESS");
 		map.put(ESTROGEN_RECEPTOR_BINDING,"BINARY");
 		
+		map.put(PERCENTAGE_BIODEGRADATION,"DIMENSIONLESS");
 		
 		return map;
 	}
@@ -974,7 +981,7 @@ public class DevQsarConstants {
 		map.put(PARACHOR, "DIMENSIONLESS");//null in prod_chemprop, see https://www.epj-conferences.org/articles/epjconf/pdf/2015/11/epjconf_efm2014_02054.pdf
 		map.put(DIELECTRIC_CONSTANT, "DIMENSIONLESS");//https://byjus.com/physics/dielectric-constant/#what-is-dielectric-constant		
 		
-		
+		map.put(PERCENTAGE_BIODEGRADATION,"DIMENSIONLESS");
 		
 		return map;
 	}

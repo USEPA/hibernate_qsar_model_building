@@ -49,55 +49,55 @@ public class ParameterValue {
 	private ExpPropUnit unit;
 	
 	@Column(name="value_qualifier")
-	private String valueQualifier;
+	private String value_qualifier;
 	
 	@Column(name="value_point_estimate")
-	private Double valuePointEstimate;
+	private Double value_point_estimate;
 	
 	@Column(name="value_min")
-	private Double valueMin;
+	private Double value_min;
 	
 	@Column(name="value_max")
-	private Double valueMax;
+	private Double value_max;
 	
 	@Column(name="value_error")
-	private Double valueError;
+	private Double value_error;
 	
 	@Column(name="value_text")
-	private String valueText;
+	private String value_text;
 	
 	@Column(name="created_at")
 	@CreationTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
-	private Date createdAt;
+	private Date created_at;
 	
 	@NotNull(message="ParameterValue creator required")
 	@Column(name="created_by")
-	private String createdBy;
+	private String created_by;
 	
 	@Column(name="updated_at")
 	@UpdateTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
-	private Date updatedAt;
+	private Date updated_at;
 
 	@Column(name="updated_by")
-	private String updatedBy;
+	private String updated_by;
 	
 	public ParameterValue() {}
 	
 	public String generateConciseValueString() {
-		if (valueText!=null) {
-			return valueText;
+		if (value_text!=null) {
+			return value_text;
 		}
 		
-		if (valuePointEstimate!=null) {
-			String qual = valueQualifier==null ? "" : valueQualifier;
-			String error = valueError==null ? "" : ("+/-" + String.valueOf(valueError));
-			return qual + String.valueOf(valuePointEstimate) + error;
+		if (value_point_estimate!=null) {
+			String qual = value_qualifier==null ? "" : value_qualifier;
+			String error = value_error==null ? "" : ("+/-" + String.valueOf(value_error));
+			return qual + String.valueOf(value_point_estimate) + error;
 		}
 		
-		if (valueMin!=null || valueMax!=null) {
-			return String.valueOf(valueMin) + "-" + String.valueOf(valueMax);
+		if (value_min!=null || value_max!=null) {
+			return String.valueOf(value_min) + "-" + String.valueOf(value_max);
 		}
 		
 		return null;
@@ -136,83 +136,83 @@ public class ParameterValue {
 	}
 
 	public Double getValuePointEstimate() {
-		return valuePointEstimate;
+		return value_point_estimate;
 	}
 
 	public void setValuePointEstimate(Double valuePointEstimate) {
-		this.valuePointEstimate = valuePointEstimate;
+		this.value_point_estimate = valuePointEstimate;
 	}
 
 	public Double getValueMin() {
-		return valueMin;
+		return value_min;
 	}
 
 	public void setValueMin(Double valueMin) {
-		this.valueMin = valueMin;
+		this.value_min = valueMin;
 	}
 
 	public Double getValueMax() {
-		return valueMax;
+		return value_max;
 	}
 
 	public void setValueMax(Double valueMax) {
-		this.valueMax = valueMax;
+		this.value_max = valueMax;
 	}
 
 	public Double getValueError() {
-		return valueError;
+		return value_error;
 	}
 
 	public void setValueError(Double valueError) {
-		this.valueError = valueError;
+		this.value_error = valueError;
 	}
 
 	public String getValueText() {
-		return valueText;
+		return value_text;
 	}
 
 	public void setValueText(String valueText) {
-		this.valueText = valueText;
+		this.value_text = valueText;
 	}
 
 	public Date getCreatedAt() {
-		return createdAt;
+		return created_at;
 	}
 
 	public void setCreatedAt(Date createdAt) {
-		this.createdAt = createdAt;
+		this.created_at = createdAt;
 	}
 
 	public String getCreatedBy() {
-		return createdBy;
+		return created_by;
 	}
 
 	public void setCreatedBy(String createdBy) {
-		this.createdBy = createdBy;
+		this.created_by = createdBy;
 	}
 
 	public Date getUpdatedAt() {
-		return updatedAt;
+		return updated_at;
 	}
 
 	public void setUpdatedAt(Date updatedAt) {
-		this.updatedAt = updatedAt;
+		this.updated_at = updatedAt;
 	}
 
 	public String getUpdatedBy() {
-		return updatedBy;
+		return updated_by;
 	}
 
 	public void setUpdatedBy(String updatedBy) {
-		this.updatedBy = updatedBy;
+		this.updated_by = updatedBy;
 	}
 
 	public String getValueQualifier() {
-		return valueQualifier;
+		return value_qualifier;
 	}
 
 	public void setValueQualifier(String valueQualifier) {
-		this.valueQualifier = valueQualifier;
+		this.value_qualifier = valueQualifier;
 	}
 	
 	public static String getFormattedValue(Double dvalue,int nsig) {
@@ -259,49 +259,63 @@ public class ParameterValue {
 	public String toStringWithUnits() {
 		
 		int n=3;
-		String pointEstimate=getFormattedValue(valuePointEstimate,n);
-		String strValMin=getFormattedValue(valueMin,n);
-		String strValMax=getFormattedValue(valueMax,n);
+		String pointEstimate=getFormattedValue(value_point_estimate,n);
+		String strValMin=getFormattedValue(value_min,n);
+		String strValMax=getFormattedValue(value_max,n);
 
 		String unitAbbreviation=unit.getAbbreviation();
 		
-		if(valuePointEstimate!=null) {
-			if(valueQualifier!=null) {
-				return valueQualifier+" "+pointEstimate+" "+unitAbbreviation;
+		if(value_point_estimate!=null) {
+			if(value_qualifier!=null) {
+				return value_qualifier+" "+pointEstimate+" "+unitAbbreviation;
 			} else {
 				return pointEstimate+" "+unitAbbreviation;
 			}
-		} else if (valueMin!=null && valueMax!=null) {
+		} else if (value_min!=null && value_max!=null) {
 			return strValMin+ " "+unitAbbreviation+" < value < " +strValMax+ " "+unitAbbreviation;
-		} else if (valueMin!=null) {
+		} else if (value_min!=null) {
 			return " > "+strValMin+" "+unitAbbreviation;
-		} else if (valueMax!=null) {
+		} else if (value_max!=null) {
 			return " < "+strValMax+" "+unitAbbreviation;	
+		} else if (value_text!=null) {
+			return value_text+" "+unitAbbreviation;
 		} else {
 			return null;
 		}
 	}
 
 	
+	public String getDataType() {
+		
+		if(value_point_estimate !=null || value_max!=null || value_min!=null) {
+			return "Double";
+		} else if(value_text!=null) {
+			return "String";
+		} else return "Unknown";//TODO make class constructor not allow this to happen		
+	}
+	
+	
 	public String toStringNoUnits() {
 		
 		int n=3;
-		String pointEstimate=getFormattedValue(valuePointEstimate,n);
-		String strValMin=getFormattedValue(valueMin,n);
-		String strValMax=getFormattedValue(valueMax,n);
+		String pointEstimate=getFormattedValue(value_point_estimate,n);
+		String strValMin=getFormattedValue(value_min,n);
+		String strValMax=getFormattedValue(value_max,n);
 
-		if(valuePointEstimate!=null) {
-			if(valueQualifier!=null) {
-				return valueQualifier+" "+pointEstimate;
+		if(value_point_estimate!=null) {
+			if(value_qualifier!=null) {
+				return value_qualifier+" "+pointEstimate;
 			} else {
 				return pointEstimate;
 			}
-		} else if (valueMin!=null && valueMax!=null) {
+		} else if (value_min!=null && value_max!=null) {
 			return strValMin+ " < value < " +strValMax;
-		} else if (valueMin!=null) {
+		} else if (value_min!=null) {
 			return " > "+strValMin;
-		} else if (valueMax!=null) {
+		} else if (value_max!=null) {
 			return " < "+strValMax;	
+		} else if (value_text!=null) {
+			return value_text;
 		} else {
 			return null;
 		}

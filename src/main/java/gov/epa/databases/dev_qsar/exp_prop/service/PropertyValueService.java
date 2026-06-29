@@ -41,7 +41,7 @@ public interface PropertyValueService {
 
 	public void delete(List<PropertyValue> propertyValues, Session session);
 
-	public boolean createSql(List<PropertyValue> propertyValues, Connection connectionPostgres);
+	public int createSql(List<PropertyValue> propertyValues, Connection connectionPostgres);
 
 	
 }

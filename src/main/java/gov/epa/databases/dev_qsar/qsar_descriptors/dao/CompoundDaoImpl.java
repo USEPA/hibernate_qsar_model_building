@@ -16,6 +16,7 @@ public class CompoundDaoImpl implements CompoundDao {
 			"from Compound c where c.canonQsarSmiles = :canonQsarSmiles";
 	
 	private static final String HQL_BY_STANDARDIZER="from Compound c where c.smiles is not null and c.standardizer = :standardizer";
+//	private static final String HQL_BY_STANDARDIZER="from Compound c where c.standardizer = :standardizer";
 	
 //	@Override
 //	public Compound findByDtxcidAndStandardizer(String dtxcid, String standardizer, Session session) {

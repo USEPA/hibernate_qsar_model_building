@@ -40,6 +40,10 @@ public class Property {
 	@NotNull(message="Description required")
 	@Column(name="description")
 	private String description;
+	
+	@Column(name="abbreviation")
+	private String abbreviation;
+
 
 	@Column(name="updated_at")
 	@UpdateTimestamp
@@ -144,5 +148,13 @@ public class Property {
 
 	public void setName_ccd(String name_ccd) {
 		this.name_ccd = name_ccd;
+	}
+
+	public String getAbbreviation() {
+		return abbreviation;
+	}
+
+	public void setAbbreviation(String abbreviation) {
+		this.abbreviation = abbreviation;
 	}
 }

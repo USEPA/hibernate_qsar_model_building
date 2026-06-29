@@ -60,6 +60,14 @@ public class Dataset {
 	@Length(max=2047)
 	private String dsstoxMappingStrategy;
 	
+
+	@Column(name="dsstox_chemical_list_name", length=2047)
+	@Length(max=2047)
+	private String dsstoxChemicalListName;
+
+	
+	
+	
 	@OneToMany(mappedBy="dataset", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	private List<DataPoint> dataPoints;
 	
@@ -179,5 +187,13 @@ public class Dataset {
 
 	public void setUnitContributor(Unit unitContributor) {
 		this.unitContributor = unitContributor;
+	}
+
+	public String getDsstoxChemicalListName() {
+		return dsstoxChemicalListName;
+	}
+
+	public void setDsstoxChemicalListName(String dsstoxChemicalListName) {
+		this.dsstoxChemicalListName = dsstoxChemicalListName;
 	}
 }

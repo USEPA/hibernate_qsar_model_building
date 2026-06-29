@@ -67,6 +67,12 @@ public class DsstoxRecord {
 	@Column(name="jchem_inchi_key")
 	private String jchemInchikey;
 
+
+	@SerializedName(value="mol_file")
+	@Column(name="mol_file")
+	@Transient
+	private String molFile;
+
 	
 	@SerializedName(value="indigo_inchi_key")
 	@Column(name="indigo_inchi_key")
@@ -381,6 +387,16 @@ public class DsstoxRecord {
 
 	public void setGenericSubstanceUpdatedAt(Date genericSubstanceUpdatedAt) {
 		this.genericSubstanceUpdatedAt = genericSubstanceUpdatedAt;
+	}
+
+
+	public String getMolFile() {
+		return molFile;
+	}
+
+
+	public void setMolFile(String molFile) {
+		this.molFile = molFile;
 	}
 
 

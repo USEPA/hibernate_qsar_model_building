@@ -1,5 +1,9 @@
 package gov.epa.databases.dev_qsar.qsar_descriptors.service;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -16,6 +20,7 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.dao.CompoundDao;
 import gov.epa.databases.dev_qsar.qsar_descriptors.dao.CompoundDaoImpl;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.Compound;
 import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorValues;
+import gov.epa.run_from_java.scripts.SqlUtilities;
 
 public class CompoundServiceImpl implements CompoundService {
 	
@@ -106,6 +111,58 @@ public class CompoundServiceImpl implements CompoundService {
 		List<Compound> compounds = compoundDao.findAllWithStandardizerSmilesNotNull(standardizer, session);
 		t.rollback();
 		return compounds;
+	}
+	
+	
+	public List<Compound> findAllWithStandardizerSmilesNotNullSql(String standardizer) {
+		final String sql = """
+				select canon_qsar_smiles, dtxcid, smiles
+				from qsar_descriptors.compounds
+				where standardizer = ? and smiles is not null
+				""";
+
+		// Optional connection-level hints for read-only query
+
+		System.out.println("enter findAllWithStandardizerSmilesNotNullSql()");
+		
+		Connection conn = SqlUtilities.getConnectionPostgres();
+
+		try {
+
+			PreparedStatement ps = conn.prepareStatement(sql);
+			ps.setString(1, standardizer);
+
+			// Fetch size tuning (driver-specific):
+			// - PostgreSQL: a positive fetch size enables cursor-based streaming
+			ps.setFetchSize(500);
+			
+			// Optional timeout in seconds
+			ps.setQueryTimeout(60);
+
+			List<Compound> results = new ArrayList<>();
+			ResultSet rs = ps.executeQuery();
+
+			while (rs.next()) {
+				String canonSmiles = rs.getString(1);
+				String dtxcid = rs.getString(2);
+				String smiles = rs.getString(3);
+
+				Compound compound = new Compound();
+
+				compound.setCanonQsarSmiles(canonSmiles);
+				compound.setDtxcid(dtxcid);
+				compound.setSmiles(smiles);
+				compound.setStandardizer(standardizer);
+				results.add(compound);
+			}
+
+			return results;
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+
 	}
 
 	@Override

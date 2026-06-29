@@ -71,6 +71,9 @@ public class Model {
 	@Column(name="hyperparameters")
 	private String hyperparameters;
 
+	@Column(name="hyperparameter_grid")
+	private String hyperparameter_grid;
+
 	@Column(name="details")
 	private byte[] details;
 

@@ -522,16 +522,18 @@ public class PropertyValue {
 		if (getParameterValues() != null) {
 
 			for (ParameterValue parameterValue : getParameterValues()) {
-				if (parameterValue.getValueText() != null) {
-					jo.addProperty("parameter_" + parameterValue.getParameter().getName(),
-							parameterValue.getValueText());
-//				} else if (parameterValue.getValuePointEstimate() != null) {
-				
-				} else {
-					jo.addProperty("parameter_" + parameterValue.getParameter().getName(),
-							parameterValue.toString());
 
-				}
+				jo.addProperty("parameter_" + parameterValue.getParameter().getName(),
+						parameterValue.toString());
+
+				
+//				if (parameterValue.getValueText() != null) {
+//					jo.addProperty("parameter_" + parameterValue.getParameter().getName(),
+//							parameterValue.getValueText());
+//				} else {
+//					jo.addProperty("parameter_" + parameterValue.getParameter().getName(),
+//							parameterValue.toString());
+//				}
 			}
 		}
 

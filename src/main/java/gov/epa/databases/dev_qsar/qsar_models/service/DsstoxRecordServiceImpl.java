@@ -35,7 +35,7 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 public class DsstoxRecordServiceImpl  {
 
@@ -334,7 +334,7 @@ public class DsstoxRecordServiceImpl  {
 		Hashtable<String,DsstoxRecord>htID_to_FK=new Hashtable<>();
 		
 		try {
-			JsonArray ja = Utilities.gson.fromJson(new FileReader(fileJsonDsstoxRecords), JsonArray.class);
+			JsonArray ja = JsonUtilities.gson.fromJson(new FileReader(fileJsonDsstoxRecords), JsonArray.class);
 			
 //			System.out.println(ja.size());
 			

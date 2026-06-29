@@ -30,7 +30,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
+
 
 
 @Entity()
@@ -177,7 +178,7 @@ public class PredictionDashboard {
 	
 	public String toJson() {
 		JsonObject jo = toJsonObject();
-		return Utilities.gson.toJson(jo);
+		return JsonUtilities.gson.toJson(jo);
 	}
 	
 	/**
@@ -222,23 +223,27 @@ public class PredictionDashboard {
 
 		if(predictionReport!=null) {
 			String jsonReport=new String(predictionReport.getFileJson());
-			JsonObject joReport=Utilities.gson.fromJson(jsonReport, JsonObject.class);
+			JsonObject joReport=JsonUtilities.gson.fromJson(jsonReport, JsonObject.class);
 //			jo.addProperty("predictionReport", jsonReport);
-			jo.addProperty("predictionReport", Utilities.gson.toJson(joReport));
+			jo.addProperty("predictionReport", JsonUtilities.gson.toJson(joReport));
 		}
 		
 		JsonArray jaAD=new JsonArray();
 		
-		for (QsarPredictedADEstimate ad:qsarPredictedADEstimates) {
-			JsonObject joAD=new JsonObject();
-			joAD.addProperty("name", ad.getMethodAD().getName());
-			joAD.addProperty("value", ad.getApplicabilityValue());
-			joAD.addProperty("conclusion", ad.getConclusion());
-			joAD.addProperty("reasoning", ad.getReasoning());
-			jaAD.add(joAD);
+		if(qsarPredictedADEstimates!=null) {
+			for (QsarPredictedADEstimate ad:qsarPredictedADEstimates) {
+				JsonObject joAD=new JsonObject();
+				joAD.addProperty("name", ad.getMethodAD().getName());
+				joAD.addProperty("value", ad.getApplicabilityValue());
+				joAD.addProperty("conclusion", ad.getConclusion());
+				joAD.addProperty("reasoning", ad.getReasoning());
+				jaAD.add(joAD);
+			}
+			
+			jo.add("applicabilityDomains",jaAD);
+			
 		}
 		
-		jo.add("applicabilityDomains",jaAD);
 		
 //		jo.addProperty("createdAt", createdAt.toString());
 //		jo.addProperty("createdBy", createdBy);

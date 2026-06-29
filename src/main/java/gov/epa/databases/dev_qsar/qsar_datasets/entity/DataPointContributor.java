@@ -102,7 +102,11 @@ public class DataPointContributor {
 		String unitName=mpv.qsarPropertyUnits;
 		String finalUnitName=finalUnit.getName();
 		String chemicalId=dtxcid;
-		this.propertyValue=UnitConverter.convertUnits(mpv.qsarPropertyValue,unitName,finalUnitName,mpv.dsstoxRecord,propertyName,chemicalId);
+		
+		Double MW=mpv.dsstoxRecord.molWeight;
+
+		this.propertyValue=UnitConverter.convertUnits(mpv.qsarPropertyValue,unitName,finalUnitName,
+				MW,propertyName,chemicalId);
 	}
 	
 	

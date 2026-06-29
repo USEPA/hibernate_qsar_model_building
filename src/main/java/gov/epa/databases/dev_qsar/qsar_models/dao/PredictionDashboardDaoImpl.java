@@ -29,6 +29,15 @@ public class PredictionDashboardDaoImpl implements PredictionDashboardDao {
 			+ "join m.source s\r\n"
 			+ "join p.dsstoxRecord dr\r\n"
 			+ "where s.name = :sourceName and dr.dtxsid = :dtxsid";
+	
+	
+	private static final String HQL_BY_SOURCE_NAME_AND_DTXCID="select p from PredictionDashboard p\r\n"
+			+ "join FETCH p.qsarPredictedADEstimates\r\n" // avoids lazily loading error
+			+ "join p.model m \r\n"
+			+ "join m.source s\r\n"
+//			+ "join p.dsstoxRecord dr\r\n"
+			+ "where s.name = :sourceName and p.dtxcid = :dtxcid";
+
 			
 	@Override
 	public PredictionDashboard findByIds(Long modelId, Long dsstoxRecordId, Session session) {
@@ -52,6 +61,15 @@ public class PredictionDashboardDaoImpl implements PredictionDashboardDao {
 			
 		query.setParameter("sourceName", sourceName);
 		query.setParameter("dtxsid", dtxsid);
+		return query.list();
+	}
+
+	@Override
+	public List<PredictionDashboard> findBySourceNameAndDTXCID(String sourceName, String dtxcid, Session session) {
+		Query<PredictionDashboard> query = session.createQuery(HQL_BY_SOURCE_NAME_AND_DTXCID,PredictionDashboard.class);
+		
+		query.setParameter("sourceName", sourceName);
+		query.setParameter("dtxcid", dtxcid);
 		return query.list();
 	}
 

@@ -25,6 +25,7 @@ import gov.epa.databases.dev_qsar.exp_prop.dao.PropertyValueDaoImpl;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
 import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.util.JsonUtilities;
 
 
 public class PropertyValueServiceImpl implements PropertyValueService {
@@ -280,185 +281,150 @@ public class PropertyValueServiceImpl implements PropertyValueService {
 	
 
 	@Override
-	public boolean createSql(List<PropertyValue> propertyValues, Connection connectionPostgres) {
-		Connection conn=SqlUtilities.getConnectionPostgres();
-		int batchSize=1000;
+	public int createSql(List<PropertyValue> propertyValues, Connection conn) {
+	    final int batchSize = 1000;
+	    int insertedParents = 0;
 
-		try {
-//			conn.setAutoCommit(false);
-			long t1=System.currentTimeMillis();
+	    boolean oldAutoCommit;
+	    try {
+	        oldAutoCommit = conn.getAutoCommit();
+	        conn.setAutoCommit(false);
 
-			List<PropertyValue> propertyValues2=new ArrayList<>();
+	        long t1 = System.currentTimeMillis();
+	        List<PropertyValue> chunk = new ArrayList<>(batchSize);
 
-			for (PropertyValue propertyValue:propertyValues) {
-				
-				propertyValues2.add(propertyValue);
+	        for (PropertyValue pv : propertyValues) {
+	            chunk.add(pv);
+	            if (chunk.size() == batchSize) {
+	                insertedParents += saveToPropertyValuesTable(chunk, conn);
+	                saveToParameterValuesTable(chunk, conn); // only uses rows with IDs
+	                chunk.clear();
+	            }
+	        }
+	        if (!chunk.isEmpty()) {
+	            insertedParents += saveToPropertyValuesTable(chunk, conn);
+	            saveToParameterValuesTable(chunk, conn);
+	        }
 
-				if(propertyValues2.size()==batchSize) {
-					saveToPropertyValuesTable(propertyValues2, conn);//
-					saveToParameterValuesTable(propertyValues2, conn);
-					propertyValues2.clear();
-				}
-			}
+	        conn.commit();
+	        long t2 = System.currentTimeMillis();
+	        // log timing if desired
 
-			//Do what's left:
-			saveToPropertyValuesTable(propertyValues2, conn);//
-			saveToParameterValuesTable(propertyValues2, conn);
-
-			long t2=System.currentTimeMillis();
-//			System.out.println("using createSQL2, time to post "+predictionDashboards.size()+" predictions using batchsize=" +batchSize+":\t"+(t2-t1)/1000.0+" seconds");
-//			conn.commit();
-			return true;
-			
-//			conn.setAutoCommit(true);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
-		
-	}
-
-	private void saveToParameterValuesTable(List<PropertyValue> propertyValues, Connection conn) {
-
-		long t1 = System.currentTimeMillis();
-
-		String[] fieldNames = { "fk_property_value_id", "fk_parameter_id", "fk_unit_id", "value_qualifier",
-				"value_point_estimate", "value_min", "value_max", "value_error", "value_text", "created_by",
-				"created_at" };
-
-		String sql = SqlUtilities.createSqlInsertWithTimeStamp(fieldNames, "parameter_values", "exp_prop");
-
-		try {
-
-//		https://stackoverflow.com/questions/4224228/preparedstatement-with-statement-return-generated-keys
-//		PreparedStatement prep = conn.prepareStatement(sql, new String[] { "id" });
-			PreparedStatement prep = conn.prepareStatement(sql);
-
-			for (PropertyValue propertyValue : propertyValues) {
-
-				if(propertyValue.getParameterValues()==null)continue;
-				
-				for (ParameterValue pv : propertyValue.getParameterValues()) {
-
-					Integer i = 0;
-
-					prep.setLong(++i, pv.getPropertyValue().getId());
-					prep.setLong(++i, pv.getParameter().getId());
-					prep.setLong(++i, pv.getUnit().getId());
-
-					i = SqlUtilities.setString(prep, pv.getValueQualifier(), i);
-					i = SqlUtilities.setDouble(prep, pv.getValuePointEstimate(), i);
-					i = SqlUtilities.setDouble(prep, pv.getValueMin(), i);
-					i = SqlUtilities.setDouble(prep, pv.getValueMax(), i);
-					i = SqlUtilities.setDouble(prep, pv.getValueError(), i);
-					i = SqlUtilities.setString(prep, pv.getValueText(), i);
-					i = SqlUtilities.setString(prep, pv.getCreatedBy(), i);
-
-					prep.addBatch();
-				}
-
-				// System.out.println(prep);
-			}
-
-			prep.executeBatch();
-			long t2 = System.currentTimeMillis();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-
-	}
-
-	private void saveToPropertyValuesTable(List<PropertyValue> propertyValues, Connection conn) {
-
-		long t1 = System.currentTimeMillis();
-
-		String[] fieldNames = { "fk_source_chemical_id", "fk_property_id", "fk_unit_id", "fk_public_source_id",
-				"fk_public_source_original_id", "fk_literature_source_id", "page_url", "document_name", "file_name",
-				"value_qualifier", "value_point_estimate", "value_min", "value_max", "value_error", "value_text",
-				"value_original", "value_original_parsed", "notes", "keep", "keep_reason", "qc_flag", "qc_notes",
-				"created_by", "created_at" };
-
-		String sql = SqlUtilities.createSqlInsertWithTimeStamp(fieldNames, "property_values", "exp_prop");
-
-//		System.out.println(sql);
-		
-		try {
-
-//		https://stackoverflow.com/questions/4224228/preparedstatement-with-statement-return-generated-keys
-			PreparedStatement prep = conn.prepareStatement(sql, new String[] { "id" });// for some reason much faster
-																						// than using
-																						// Statement.RETURN_GENERATED_KEYS!
-//		PreparedStatement prep = conn.prepareStatement(sql);
-
-			for (PropertyValue pv : propertyValues) {
-
-				Integer i = 0;
-				
-				prep.setLong(++i, pv.getSourceChemical().getId());
-				prep.setLong(++i, pv.getProperty().getId());
-				prep.setLong(++i, pv.getUnit().getId());
-				prep.setLong(++i, pv.getPublicSource().getId());
-				
-				if(pv.getPublicSourceOriginal()==null) {
-					prep.setNull(++i,Types.BIGINT);
-				} else {
-					prep.setLong(++i, pv.getPublicSourceOriginal().getId());	
-				}
-				
-				if(pv.getLiteratureSource()==null) {
-					prep.setNull(++i,Types.BIGINT);
-				} else {
-					prep.setLong(++i, pv.getLiteratureSource().getId());	
-				}
-				
-				i = SqlUtilities.setString(prep, pv.getPageUrl(), i);
-				i = SqlUtilities.setString(prep, pv.getDocumentName(), i);
-				i = SqlUtilities.setString(prep, pv.getFileName(), i);
-
-				i = SqlUtilities.setString(prep, pv.getValueQualifier(), i);
-				i = SqlUtilities.setDouble(prep, pv.getValuePointEstimate(), i);
-				i = SqlUtilities.setDouble(prep, pv.getValueMin(), i);
-				i = SqlUtilities.setDouble(prep, pv.getValueMax(), i);
-				i = SqlUtilities.setDouble(prep, pv.getValueError(), i);
-				i = SqlUtilities.setString(prep, pv.getValueText(), i);
-				i = SqlUtilities.setString(prep, pv.getValueOriginal(), i);
-				i = SqlUtilities.setString(prep, pv.getValueOriginalParsed(), i);
-				
-				i = SqlUtilities.setString(prep, pv.getNotes(), i);
-				i = SqlUtilities.setBoolean(prep, pv.getKeep(), i);
-				i = SqlUtilities.setString(prep, pv.getKeepReason(), i);
-				i = SqlUtilities.setBoolean(prep, pv.getQcFlag(), i);
-				i = SqlUtilities.setString(prep, pv.getQcNotes(), i);
-				
-				i = SqlUtilities.setString(prep, pv.getCreatedBy(), i);
-
-//				System.out.println(prep);
-				
-//				if(true)return;
-				
-				prep.addBatch();
-				// System.out.println(prep);
-			}
-
-			prep.executeBatch();
-
-			long t1a = System.currentTimeMillis();
-
-			ResultSet keys = prep.getGeneratedKeys();
-
-			Iterator<PropertyValue> iterator = propertyValues.iterator();
-			while (keys != null && keys.next()) {
-				PropertyValue sc = iterator.next();
-				Long key = keys.getLong(1);
-				sc.setId(key);//store the newly generated id number
-			}
-
-			long t2 = System.currentTimeMillis();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-
+	        conn.setAutoCommit(oldAutoCommit);
+	    } catch (Exception e) {
+	        try { conn.rollback(); } catch (Exception ignore) {}
+	        e.printStackTrace();
+	    }
+	    return insertedParents;
 	}
 	
+
+	private void saveToParameterValuesTable(List<PropertyValue> propertyValues, Connection conn) {
+	    String[] fieldNames = {
+	        "fk_property_value_id","fk_parameter_id","fk_unit_id","value_qualifier",
+	        "value_point_estimate","value_min","value_max","value_error","value_text","created_by","created_at"
+	    };
+	    String sql = SqlUtilities.createSqlInsertWithTimeStamp(fieldNames, "parameter_values", "exp_prop");
+
+	    try (PreparedStatement prep = conn.prepareStatement(sql)) {
+	        for (PropertyValue parent : propertyValues) {
+	            // Skip if parent was not inserted (no id)
+	            if (parent.getId() == null) continue;
+	            if (parent.getParameterValues() == null) continue;
+
+	            for (ParameterValue pv : parent.getParameterValues()) {
+	                int i = 0;
+	                prep.setLong(++i, parent.getId()); // use the parent’s id we just set
+	                prep.setLong(++i, pv.getParameter().getId());
+	                prep.setLong(++i, pv.getUnit().getId());
+	                i = SqlUtilities.setString(prep, pv.getValueQualifier(), i);
+	                i = SqlUtilities.setDouble(prep, pv.getValuePointEstimate(), i);
+	                i = SqlUtilities.setDouble(prep, pv.getValueMin(), i);
+	                i = SqlUtilities.setDouble(prep, pv.getValueMax(), i);
+	                i = SqlUtilities.setDouble(prep, pv.getValueError(), i);
+	                i = SqlUtilities.setString(prep, pv.getValueText(), i);
+	                i = SqlUtilities.setString(prep, pv.getCreatedBy(), i);
+	                prep.addBatch();
+	            }
+	        }
+	        prep.executeBatch();
+	    } catch (Exception ex) {
+	        ex.printStackTrace();
+	    }
+	}
+	
+	
+	private int saveToPropertyValuesTable(List<PropertyValue> propertyValues, Connection conn) {
+	    String[] fieldNames = {
+	        "fk_source_chemical_id","fk_property_id","fk_unit_id","fk_public_source_id",
+	        "fk_public_source_original_id","fk_literature_source_id","page_url","document_name","file_name",
+	        "value_qualifier","value_point_estimate","value_min","value_max","value_error","value_text",
+	        "value_original","value_original_parsed","notes","keep","keep_reason","qc_flag","qc_notes",
+	        "created_by","created_at"
+	    };
+	    String sql = SqlUtilities.createSqlInsertWithTimeStamp(fieldNames, "property_values", "exp_prop");
+
+	    int inserted = 0;
+
+	    try (PreparedStatement prep = conn.prepareStatement(sql, new String[] { "id" })) {
+	        for (PropertyValue pv : propertyValues) {
+	            int i = 0;
+	            prep.setLong(++i, pv.getSourceChemical().getId());
+	            prep.setLong(++i, pv.getProperty().getId());
+	            prep.setLong(++i, pv.getUnit().getId());
+	            if (pv.getPublicSource() == null) prep.setNull(++i, java.sql.Types.BIGINT);
+	            else prep.setLong(++i, pv.getPublicSource().getId());
+	            if (pv.getPublicSourceOriginal() == null) prep.setNull(++i, java.sql.Types.BIGINT);
+	            else prep.setLong(++i, pv.getPublicSourceOriginal().getId());
+	            if (pv.getLiteratureSource() == null) prep.setNull(++i, java.sql.Types.BIGINT);
+	            else prep.setLong(++i, pv.getLiteratureSource().getId());
+	            i = SqlUtilities.setString(prep, pv.getPageUrl(), i);
+	            i = SqlUtilities.setString(prep, pv.getDocumentName(), i);
+	            i = SqlUtilities.setString(prep, pv.getFileName(), i);
+	            i = SqlUtilities.setString(prep, pv.getValueQualifier(), i);
+	            i = SqlUtilities.setDouble(prep, pv.getValuePointEstimate(), i);
+	            i = SqlUtilities.setDouble(prep, pv.getValueMin(), i);
+	            i = SqlUtilities.setDouble(prep, pv.getValueMax(), i);
+	            i = SqlUtilities.setDouble(prep, pv.getValueError(), i);
+	            i = SqlUtilities.setString(prep, pv.getValueText(), i);
+	            i = SqlUtilities.setString(prep, pv.getValueOriginal(), i);
+	            i = SqlUtilities.setString(prep, pv.getValueOriginalParsed(), i);
+	            i = SqlUtilities.setString(prep, pv.getNotes(), i);
+	            i = SqlUtilities.setBoolean(prep, pv.getKeep(), i);
+	            i = SqlUtilities.setString(prep, pv.getKeepReason(), i);
+	            i = SqlUtilities.setBoolean(prep, pv.getQcFlag(), i);
+	            i = SqlUtilities.setString(prep, pv.getQcNotes(), i);
+	            i = SqlUtilities.setString(prep, pv.getCreatedBy(), i);
+	            prep.addBatch();
+	        }
+
+	        int[] counts = prep.executeBatch();
+
+	        try (ResultSet keys = prep.getGeneratedKeys()) {
+	            int idx = 0;
+	            int assigned = 0;
+	            while (idx < counts.length) {
+	                int c = counts[idx];
+	                // Only advance keys for successful rows
+	                if (c != java.sql.Statement.EXECUTE_FAILED) {
+	                    if (keys != null && keys.next()) {
+	                        PropertyValue pv = propertyValues.get(idx);
+	                        pv.setId(keys.getLong(1));
+	                        assigned++;
+	                    } 
+	                    // For SUCCESS_NO_INFO we still advance keys if present
+	                } else {
+	                    PropertyValue pv = propertyValues.get(idx);
+	                    System.out.println("Failed to insert:"+JsonUtilities.gson.toJson(pv.createJsonObjectFromPropertyValue()));
+	                }
+	                idx++;
+	            }
+	            inserted = assigned;
+	        }
+	    } catch (Exception ex) {
+	        ex.printStackTrace();
+	    }
+	    return inserted;
+	}
 
 }

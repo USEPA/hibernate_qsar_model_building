@@ -268,7 +268,7 @@ public class SourceChemicalServiceImpl implements SourceChemicalService {
 				+ "where created_at > '"+dateMin+"' and created_at < '"+dateMax+"';";  
 
 		
-		System.out.println(sql);
+//		System.out.println(sql);
 
 		Connection conn=SqlUtilities.getConnectionPostgres();
 		

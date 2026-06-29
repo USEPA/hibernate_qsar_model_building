@@ -42,7 +42,7 @@ public class LiteratureSource {
 	private String author;
 	
 	@NotNull(message="Citation required")
-	@Column(name="citation", length=1000, unique=true)
+	@Column(name="citation", unique=true)
 	private String citation;
 
 

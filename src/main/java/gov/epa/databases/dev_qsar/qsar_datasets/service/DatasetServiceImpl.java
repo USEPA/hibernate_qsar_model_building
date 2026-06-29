@@ -107,67 +107,7 @@ public class DatasetServiceImpl implements DatasetService {
 		
 	}
 	
-	/**
-	 * Runs much faster deletes using a series of SQL command
-	 * Not necessary to delete each separately since cascades have been set up in fks
-	 * 
-	 * @param id
-	 */
-	@Deprecated
-	public void deleteSQL(long id) {
-
-		System.out.println("\nDeleting dataset id="+id);
-		
-		Connection conn=SqlUtilities.getConnectionPostgres();
-		
-		String sqlDID="delete from qsar_datasets.datasets_in_dashboard did\n"+ 
-		"where did.fk_datasets_id="+id+";";
-		SqlUtilities.runSQLUpdate(conn, sqlDID);
-
-		
-		String sqlDIS="delete from qsar_datasets.data_points_in_splittings dis\n"
-				+ "using qsar_datasets.data_points dp\r\n"
-				+ "where dp.id=dis.fk_data_point_id and dp.fk_dataset_id="+id+";";
-				
-		SqlUtilities.runSQLUpdate(conn, sqlDIS);
-
-		
-		String sqlDPC="delete from qsar_datasets.data_point_contributors dpc\n"+ 
-		"using qsar_datasets.data_points dp\n"+
-		"where dp.fk_dataset_id="+id+" and dpc.fk_data_point_id =dp.id;";
-		SqlUtilities.runSQLUpdate(conn, sqlDPC);
-		
-		String sqlDP="delete from qsar_datasets.data_points dp\n"+
-		"where dp.fk_dataset_id="+id+";";
-		
-		SqlUtilities.runSQLUpdate(conn, sqlDP);
-		
-		String sqlD="delete from qsar_datasets.datasets d\n"+
-		"where d.id="+id+";";
-		SqlUtilities.runSQLUpdate(conn, sqlD);
-		
-
-	}
 	
-
-	/**
-	 * Since everything cascade on deleting the dataset fk just need one sql command
-	 * @param id
-	 */
-	public void deleteSQLWithCascade(long id) {
-
-		System.out.println("\nDeleting dataset id="+id);
-		
-		Connection conn=SqlUtilities.getConnectionPostgres();
-		
-		String sqlD="delete from qsar_datasets.datasets d\n"+
-		"where d.id="+id+";";
-		SqlUtilities.runSQLUpdate(conn, sqlD);
-		
-
-	}
-	
-
 	@Override
 	public Dataset findById(Long datasetId) {
 		Session session = QsarDatasetsSession.getSessionFactory().getCurrentSession();

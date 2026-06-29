@@ -25,5 +25,8 @@ public interface DatasetService {
 	public List<Dataset> findAll();
 
 	public List<Dataset> findAll(Session session);
+	
+	
+	public void delete(long id);
 
 }

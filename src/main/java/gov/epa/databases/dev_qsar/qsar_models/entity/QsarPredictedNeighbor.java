@@ -460,6 +460,12 @@ public class QsarPredictedNeighbor {
 //				System.out.println("97964-54-0\t"+n.getDtxsid()+"\t"+propertyName);
 //			}
 			
+			
+			if(n.getDtxsid()!=null && !tableMaps.mapDsstoxRecordsBySID.containsKey(n.getDtxsid())) {
+//				System.out.println(n.getDtxsid()+"\tNot in tableMaps.mapDsstoxRecordsBySID\t"+n.getPredictionDashboard().getModel().getName_ccd());
+//				System.out.println(n.getCasrn()+"\tIn casrn map:"+tableMaps.mapDsstoxRecordsByCAS.containsKey(n.getCasrn())+"\n");
+			}
+			
 			if(n.getDtxsid()==null || tableMaps.mapDsstoxRecordsBySID.get(n.getDtxsid())==null) {
 
 				if(n.getCasrn()!=null) {

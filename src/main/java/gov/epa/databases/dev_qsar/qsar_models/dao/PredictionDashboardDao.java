@@ -11,5 +11,7 @@ public interface PredictionDashboardDao {
 	public PredictionDashboard findByIds(Long modelId, Long dsstoxRecordId, Session session);
 
 	public List<PredictionDashboard> findBySourceNameAndDTXSID(String sourceName, String dTXSID, Session session);
+	
+	public List<PredictionDashboard> findBySourceNameAndDTXCID(String sourceName, String dTXCID, Session session);
 
 }

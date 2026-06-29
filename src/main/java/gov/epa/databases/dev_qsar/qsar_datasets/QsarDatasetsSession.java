@@ -35,7 +35,9 @@ public class QsarDatasetsSession {
         	config.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
         	config.setProperty("hibernate.current_session_context_class", "thread");
         	config.setProperty("hibernate.show_sql", "false");
-        	config.setProperty("hibernate.hbm2ddl.auto", "update");
+//        	config.setProperty("hibernate.hbm2ddl.auto", "update");
+        	config.setProperty("hibernate.hbm2ddl.auto", "none");
+        	
         	config.setProperty("hibernate.jdbc.batch_size", "1000");
 
             
