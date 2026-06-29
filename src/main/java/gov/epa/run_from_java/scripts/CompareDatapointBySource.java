@@ -17,8 +17,8 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.util.MatlabChart;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02

@@ -24,7 +24,7 @@ import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDa
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelStatistic;
 import gov.epa.run_from_java.scripts.ApplicabilityDomainScript.ApplicabilityDomainPrediction;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 import gov.epa.web_services.ModelWebService;
 import gov.epa.web_services.embedding_service.CalculationInfo;
 import gov.epa.web_services.embedding_service.CalculationInfoGA;
@@ -402,7 +402,7 @@ public void runCaseStudyExpProp_All_Endpoints_modelSpecificAD_kNN() {
 			
 			//Write out new reports with AD info: (TODO later need to store this info in the database...
 			String filepathReport2 = "data/reports/" + modelSetName +"/"+ datasetName+"_"+methodName + "_PredictionReport_withAD.json";
-			Utilities.saveJson(predictionReport, filepathReport2);
+			JsonUtilities.saveJson(predictionReport, filepathReport2);
 
 		}//end loop over datasets
 		
@@ -544,7 +544,7 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 			predictionReport.predictionReportMetadata.AD=applicability_domain;
 
 			String filepathReport2 = "data/reports/" + modelSetName +"/"+ datasetName+"_"+methodName + "_PredictionReport_withAD.json";
-			Utilities.saveJson(predictionReport, filepathReport2);
+			JsonUtilities.saveJson(predictionReport, filepathReport2);
 
 		}//end loop over datasets
 		
@@ -633,7 +633,8 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 			
 		}
 		
-//			System.out.println(strResponse);
+				
+//		System.out.println(strResponse);
 //			String strResponse=strSampleResponse;
 
 
@@ -1030,7 +1031,7 @@ public void runCaseStudyExpProp_All_Endpoints_allDescriptorsAD_kNN() {
 		
 			ApplicabilityDomainPrediction pred=new ApplicabilityDomainPrediction();
 			
-			JsonObject jo=Utilities.gson.fromJson(line, JsonObject.class);
+			JsonObject jo=JsonUtilities.gson.fromJson(line, JsonObject.class);
 
 
 			pred.id=jo.get("idTest").getAsString();

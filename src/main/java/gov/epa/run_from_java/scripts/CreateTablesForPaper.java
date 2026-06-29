@@ -9,7 +9,7 @@ import java.util.Hashtable;
 import java.util.List;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02

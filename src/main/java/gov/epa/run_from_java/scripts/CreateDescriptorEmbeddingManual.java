@@ -20,7 +20,7 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.service.DescriptorEmbeddingServiceImpl;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 import gov.epa.web_services.embedding_service.CalculationInfoGA;
 
 public class CreateDescriptorEmbeddingManual {
@@ -212,7 +212,7 @@ public class CreateDescriptorEmbeddingManual {
 //				System.out.println(line);
 				
 				
-				DescriptorEmbedding deNew = Utilities.gson.fromJson(line, DescriptorEmbedding.class);
+				DescriptorEmbedding deNew = JsonUtilities.gson.fromJson(line, DescriptorEmbedding.class);
 
 				CalculationInfoGA ci=gson.fromJson(deNew.getDescription(), CalculationInfoGA.class);				
 				ci.datasetName=deNew.getDatasetName();
@@ -248,7 +248,7 @@ public class CreateDescriptorEmbeddingManual {
 
 //				System.out.println(desE.getDescription());
 //				System.out.println(desE.getEmbeddingTsv());
-				System.out.println(Utilities.gson.toJson(deNew));
+				System.out.println(JsonUtilities.gson.toJson(deNew));
 				desi.create(deNew);
 			}
 		} catch (IOException e) {
