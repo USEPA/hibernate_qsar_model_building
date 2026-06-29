@@ -1320,3 +1320,228 @@ select headers_tsv from qsar_descriptors.descriptor_sets ds where ds.name='Mordr
 select d.name,u.name,u.abbreviation_ccd from qsar_datasets.datasets d
          join qsar_datasets.units u on d.fk_unit_id=u.id
 where d.name like '%v1 modeling%';
+
+
+select m.name_ccd,adm.name from qsar_models.models m
+-- join qsar_datasets.datasets d on d.name=m.dataset_name
+-- join qsar_datasets.properties p on d.fk_property_id = p.id
+join qsar_models.ad_methods adm on m.fk_ad_method = adm.id
+where m.id=1068;
+;
+
+
+SELECT * FROM pg_stat_activity order by pid;
+
+SELECT pg_terminate_backend(23171);
+SELECT pg_terminate_backend(2864);
+SELECT pg_terminate_backend(9243);
+
+select m.name_ccd,d.name,d.dsstox_mapping_strategy,p.name_ccd, ds.descriptor_service, adm.name from qsar_models.models m
+join qsar_datasets.datasets d on d.name=m.dataset_name
+join qsar_datasets.properties p on d.fk_property_id = p.id
+join qsar_descriptors.descriptor_sets ds on m.descriptor_set_name=ds.name
+join qsar_models.ad_methods adm on m.fk_ad_method = adm.id
+where m.id=1068;
+
+select m.name_ccd,d.name,u.abbreviation_ccd,d.dsstox_mapping_strategy,p.name_ccd, ds.descriptor_service, adm.name,de.embedding_tsv from qsar_models.models m
+join qsar_datasets.datasets d on d.name=m.dataset_name
+join qsar_datasets.units u on d.fk_unit_id = u.id
+join qsar_datasets.properties p on d.fk_property_id = p.id
+join qsar_descriptors.descriptor_sets ds on m.descriptor_set_name=ds.name
+join qsar_models.ad_methods adm on m.fk_ad_method = adm.id
+join qsar_models.descriptor_embeddings de on m.fk_descriptor_embedding_id = de.id
+where m.id=1068;
+
+
+select m.name_ccd,d.name,u.abbreviation_ccd,d.dsstox_mapping_strategy,p.name_ccd, m.descriptor_set_name, ds.descriptor_service, adm.name,de.embedding_tsvfrom qsar_models.models m
+join qsar_datasets.datasets d on d.name=m.dataset_name
+join qsar_datasets.units u on d.fk_unit_id = u.id
+join qsar_datasets.properties p on d.fk_property_id = p.id
+join qsar_descriptors.descriptor_sets ds on m.descriptor_set_name=ds.name
+join qsar_models.ad_methods adm on m.fk_ad_method = adm.id
+join qsar_models.descriptor_embeddings de on m.fk_descriptor_embedding_id = de.id
+where m.id=1068;
+
+
+
+SELECT m.name_ccd,
+       d.id,
+       d.name,
+       u.abbreviation_ccd,
+       d.dsstox_mapping_strategy,
+       p.name_ccd,
+       ds.id,
+       ds.name,
+       ds.descriptor_service,
+       ds.headers_tsv,
+       s.id,
+       s.name,
+       adm.name,
+       de.embedding_tsv
+FROM qsar_models.models m
+         left JOIN qsar_datasets.datasets d ON d.name = m.dataset_name
+         left JOIN qsar_datasets.units u ON d.fk_unit_id = u.id
+         left JOIN qsar_datasets.properties p ON d.fk_property_id = p.id
+         left JOIN qsar_descriptors.descriptor_sets ds ON m.descriptor_set_name = ds.name
+         left JOIN qsar_datasets.splittings s ON m.splitting_name = s.name
+         left JOIN qsar_models.ad_methods adm ON m.fk_ad_method = adm.id
+         left JOIN qsar_models.descriptor_embeddings de ON m.fk_descriptor_embedding_id = de.id
+WHERE m.id = 1614;
+
+
+
+SELECT
+        m.id,
+    m.name_ccd,
+            d.id,
+            d.name,
+            u.abbreviation_ccd,
+            d.dsstox_mapping_strategy,
+            p.name_ccd,
+            ds.id,
+            ds.name,
+            ds.descriptor_service,
+            ds.headers_tsv,
+            s.id,
+            s.name,
+            adm.name
+        FROM qsar_models.models m
+        LEFT JOIN qsar_datasets.datasets d ON d.name = m.dataset_name
+        LEFT JOIN qsar_datasets.units u ON d.fk_unit_id = u.id
+        LEFT JOIN qsar_datasets.properties p ON d.fk_property_id = p.id
+        LEFT JOIN qsar_descriptors.descriptor_sets ds ON m.descriptor_set_name = ds.name
+        LEFT JOIN qsar_datasets.splittings s ON m.splitting_name = s.name
+        LEFT JOIN qsar_models.ad_methods adm ON m.fk_ad_method = adm.id
+        WHERE m.fk_source_id=3 and m.is_public=true;
+
+
+
+
+ SELECT
+            m.name_ccd,
+            d.id,
+            d.name,
+            u.abbreviation_ccd,
+            d.dsstox_mapping_strategy,
+            p.name_ccd,
+            ds.id,
+            ds.name,
+            ds.descriptor_service,
+            ds.headers_tsv,
+            s.id,
+            s.name,
+            adm.name
+        FROM qsar_models.models m
+        LEFT JOIN qsar_datasets.datasets d ON d.name = m.dataset_name
+        LEFT JOIN qsar_datasets.units u ON d.fk_unit_id = u.id
+        LEFT JOIN qsar_datasets.properties p ON d.fk_property_id = p.id
+        LEFT JOIN qsar_descriptors.descriptor_sets ds ON m.descriptor_set_name = ds.name
+        LEFT JOIN qsar_datasets.splittings s ON m.splitting_name = s.name
+        LEFT JOIN qsar_models.ad_methods adm ON m.fk_ad_method = adm.id
+        WHERE m.fk_source_id = 3 and m.is_public=true;
+
+
+
+select * from qsar_datasets.datasets d
+join qsar_datasets.data_points dp on d.id = dp.fk_dataset_id
+where d.name='HLC v1 modeling';
+
+
+
+
+
+select count(p.id)
+--select p.canon_qsar_smiles, p.qsar_predicted_value
+from qsar_models.predictions p
+join qsar_models.models m on m.id = p.fk_model_id
+where m.id = 1065 and fk_splitting_id=1;
+
+
+
+SELECT 
+                m.id,
+                m.name_ccd,
+                m.details,
+                d.id,
+                d.name,
+                u.abbreviation_ccd,
+                u2.abbreviation_ccd,
+                d.dsstox_mapping_strategy,
+                p.name_ccd,
+                p.description,
+                ds.id,
+                ds.name,
+                ds.descriptor_service,
+                ds.headers_tsv,
+                s.id,
+                s.name,
+                adm.name,
+                adm.description,
+                s2.name,
+                m.name,
+                m.description,
+                m.description_url
+            FROM qsar_models.models m
+            LEFT JOIN qsar_datasets.datasets d ON d.name = m.dataset_name
+            LEFT JOIN qsar_datasets.units u ON d.fk_unit_id = u.id
+            LEFT JOIN qsar_datasets.units u2 ON d.fk_unit_id_contributor = u2.id
+            LEFT JOIN qsar_datasets.properties p ON d.fk_property_id = p.id
+            LEFT JOIN qsar_descriptors.descriptor_sets ds ON m.descriptor_set_name = ds.name
+            LEFT JOIN qsar_datasets.splittings s ON m.splitting_name = s.name
+            LEFT JOIN qsar_models.ad_methods adm ON m.fk_ad_method = adm.id
+            LEFT JOIN qsar_models.sources s2 ON m.fk_source_id = s2.id
+            LEFT JOIN qsar_models.methods m ON m.fk_method_id = m.id
+            
+            
+            
+            
+select p.name, pc."name"  from qsar_datasets.properties p 
+left join qsar_datasets.properties_in_categories pic on pic.fk_property_id =p.id
+left join qsar_datasets.property_categories pc on pc.id=pic.fk_property_category_id 
+
+
+SELECT version();
+
+
+
+SELECT schemaname  AS schema_name,
+       relname     AS table_name,
+       n_live_tup  AS approx_rows
+FROM pg_stat_user_tables
+ORDER BY approx_rows DESC NULLS LAST, schema_name, table_name;
+
+
+SELECT pg_get_userbyid(lomowner) AS owner, count(*) AS lob_count
+FROM pg_largeobject_metadata
+GROUP BY 1
+ORDER BY lob_count DESC;
+
+
+ANALYZE;
+
+SELECT
+  n.nspname AS schema_name,
+  c.relname AS table_name,
+  CASE
+    WHEN c.relkind = 'p' THEN
+      COALESCE((
+        SELECT SUM(s.n_live_tup)
+        FROM pg_inherits i
+        JOIN pg_stat_all_tables s ON s.relid = i.inhrelid
+        WHERE i.inhparent = c.oid
+      ), 0)
+    ELSE COALESCE(s.n_live_tup, 0)
+  END::bigint AS approx_rows
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+LEFT JOIN pg_stat_all_tables s ON s.relid = c.oid
+WHERE n.nspname NOT IN ('pg_catalog','information_schema','public')
+  AND c.relkind IN ('r','m','p')  -- ordinary tables, matviews, partitioned parents
+ORDER BY schema_name, table_name;
+
+
+SELECT schemaname, relname, last_analyze, last_autoanalyze, n_live_tup
+FROM pg_stat_all_tables
+WHERE schemaname NOT IN ('pg_catalog','information_schema')
+  AND COALESCE(n_live_tup,0) = 0
+ORDER BY schemaname, relname;

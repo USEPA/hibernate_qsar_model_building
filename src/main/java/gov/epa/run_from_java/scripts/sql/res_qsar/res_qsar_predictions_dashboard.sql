@@ -39,9 +39,13 @@ where dtxcid='DTXCID90149992' and fk_model_id>=223 and fk_model_id<=240; -- TEST
 
 -- ******************************************************************************************
 -- Find TEST predictions with missing reports
-select count(pd.id) from qsar_models.predictions_dashboard pd
+select distinct dtxcid from qsar_models.predictions_dashboard pd
+join qsar_models.models m on pd.fk_model_id = m.id
+join qsar_models.sources s on m.fk_source_id = s.id
 left join qsar_models.prediction_reports pr on pd.id = pr.fk_predictions_dashboard_id
-where fk_model_id>=223 and fk_model_id<=240 and pr.file is null;
+-- where fk_model_id>=223 and fk_model_id<=240 and pr.file_json is null;
+-- where s.name='TEST5.1.3' and pr.file_json is null;;
+where s.name='OPERA2.8' and pr.file_json is null;;
 -- order by pd.id
 
 ----------------------------------------------------------------------------------------------------------------------
@@ -214,3 +218,79 @@ order by source_name,prop_name
 select count(distinct (dtxsid)) from public.mv_predicted_data where source_name='OPERA2.8';
 
 
+
+
+--update qsar_models.models m set fk_source_id =8 where m.descriptor_set_name ='Percepta 2025.1.4';
+update qsar_models.models m set name_ccd = name where m.descriptor_set_name ='Percepta 2025.1.4';
+
+
+select pd.dtxcid from qsar_models.predictions_dashboard pd
+where pd.fk_model_id>=1616 and pd.fk_model_id<=1631
+group by pd.dtxcid
+having count(pd.dtxcid)>=15; 
+
+
+
+select m.name, pd.prediction_value, pd.prediction_error, dr.dtxcid, dr.smiles from qsar_models.predictions_dashboard pd
+join qsar_models.dsstox_records dr on dr.dtxcid=pd.dtxcid  and dr.fk_dsstox_snapshot_id =4
+join qsar_models.models m on m.id=pd.fk_model_id 
+where pd.fk_model_id>=1616 and pd.fk_model_id<=1631 and dr.smiles like '%.%' and pd.prediction_value is not null;
+--where pd.fk_model_id>=1616 and pd.fk_model_id<=1631 and dr.smiles like '%.%' ;
+--where pd.fk_model_id>=1616 and pd.fk_model_id<=1631 and pd.dtxcid ='DTXCID501610869';
+ 
+
+update qsar_models.predictions_dashboard set prediction_value = null and prediction_error = 'Incorrect structure: Molecule contains too many fragments'
+join qsar_models.dsstox_records dr on dr.dtxcid=pd.dtxcid  and dr.fk_dsstox_snapshot_id =4
+where pd.fk_model_id>=1616 and pd.fk_model_id<=1631 and dr.smiles like '%.%' and pd.prediction_value is not null;
+
+UPDATE qsar_models.predictions_dashboard AS pd
+SET
+  prediction_value = NULL,
+  prediction_error = 'Incorrect structure: Molecule contains too many fragments'
+FROM qsar_models.dsstox_records AS dr
+WHERE dr.dtxcid = pd.dtxcid
+  AND dr.fk_dsstox_snapshot_id = 4
+  AND pd.fk_model_id BETWEEN 1616 AND 1631
+  AND dr.smiles LIKE '%.%'
+  AND pd.prediction_value IS NOT NULL;
+
+select m.name
+	from qsar_models.predictions_dashboard pd
+	join qsar_models.models m on m.id=pd.fk_model_id
+	join qsar_models.sources s on s.id=m.fk_source_id
+	where dtxcid='DTXCID001004835' and m.fk_source_id =8;
+
+
+
+DELETE FROM qsar_models.predictions_dashboard
+WHERE fk_model_id BETWEEN 1616 AND 1631
+  AND dtxcid IN (
+    SELECT dtxcid
+    FROM qsar_models.predictions_dashboard
+    WHERE fk_model_id BETWEEN 1616 AND 1631
+    GROUP BY dtxcid
+    HAVING COUNT(*) < 15
+  );
+
+
+
+select m.name, count(pd.id) from qsar_models.predictions_dashboard pd 
+join qsar_models.models m on m.id=pd.fk_model_id 
+where pd.fk_model_id>=1616 and pd.fk_model_id<=1631 and pd.prediction_value is not null
+group by m.name;
+
+
+SELECT m.name,
+       COUNT(*) FILTER (WHERE pd.prediction_value IS NOT NULL) AS non_null_count,
+       COUNT(*) FILTER (WHERE pd.prediction_value IS NULL)     AS null_count
+FROM qsar_models.predictions_dashboard AS pd
+JOIN qsar_models.models AS m ON m.id = pd.fk_model_id
+WHERE pd.fk_model_id BETWEEN 1616 AND 1631
+GROUP BY m.name
+ORDER BY m.name;
+
+
+
+select * from qsar_models.predictions_dashboard pd 
+order by id desc
+limit 1;

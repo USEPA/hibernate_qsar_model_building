@@ -14,6 +14,16 @@ where d.name='ECOTOX_2024_12_12_96HR_Fish_LC50_v3 modeling' and dpis.fk_splittin
 group by dpis.split_num;
 
 
+select dp.canon_qsar_smiles,dpis.split_num, dpis.fk_splitting_id  from  qsar_datasets.data_points dp
+join qsar_datasets.datasets d on dp.fk_dataset_id = d.id
+join qsar_datasets.data_points_in_splittings dpis on dp.id = dpis.fk_data_point_id
+where d.name='exp_prop_RBIODEG_301F v1 modeling'
+order by dpis.fk_splitting_id , dpis.split_num ;
+
+
+
+
+
 -- how to clone the splitting:
 select dp.id, split_num,dpis.fk_splitting_id from  qsar_datasets.data_points dp
 join qsar_datasets.datasets d on dp.fk_dataset_id = d.id
@@ -32,8 +42,15 @@ select dp.id, split_num,dpis.fk_splitting_id from  qsar_datasets.data_points dp
 select split_num, count(dpis) from qsar_datasets.datasets d
 join qsar_datasets.data_points dp on d.id = dp.fk_dataset_id
 join qsar_datasets.data_points_in_splittings dpis on dp.id = dpis.fk_data_point_id
-where d.name='exp_prop_RBIODEG_RIFM_BY_CAS' and fk_splitting_id=1
+where d.name='exp_prop_RBIODEG_NITE_OPPT v1.0' and fk_splitting_id=1
 group by split_num;
+
+
+select split_num, dpis.fk_splitting_id , count(dpis) from qsar_datasets.datasets d
+join qsar_datasets.data_points dp on d.id = dp.fk_dataset_id
+join qsar_datasets.data_points_in_splittings dpis on dp.id = dpis.fk_data_point_id
+where d.name='exp_prop_RBIODEG_NITE_OPPT v1.0'
+group by dpis.fk_splitting_id , dpis.split_num;
 
 
 select qsar_property_value, count(dp) from qsar_datasets.datasets d

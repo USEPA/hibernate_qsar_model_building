@@ -400,10 +400,10 @@ SELECT dsstox_substance_id,casrn, preferred_name, gs.updated_at FROM generic_sub
 
 
 
-SELECT casrn, preferred_name, smiles FROM compounds c
+SELECT c.dsstox_compound_id ,  casrn, preferred_name, smiles FROM compounds c
 left join generic_substance_compounds gsc on gsc.fk_compound_id =c.id
 left join generic_substances gs on gs.id=gsc.fk_generic_substance_id
-where gs.dsstox_substance_id='DTXSID101382351';
+where gs.dsstox_substance_id='DTXSID4029066';
 
 
 select distinct  ssi.identifier_type,ssi.label  from prod_dsstox.generic_substances gs
@@ -525,6 +525,12 @@ ORDER BY dsstox_compound_id
 LIMIT 50000 OFFSET 1900000;
 
 
+select gs.* FROM compounds c
+left join generic_substance_compounds gsc on gsc.fk_compound_id =c.id
+left join generic_substances gs on gs.id=gsc.fk_generic_substance_id
+where c.dsstox_compound_id ='DTXCID101014760';
+
+
 SELECT dsstox_compound_id,mol_file,smiles, jchem_inchi_key,indigo_inchi_key,mol_weight,gs.dsstox_substance_id, gs.casrn, gs.preferred_name, gs.updated_at,CASE WHEN mol_image_png IS NULL THEN FALSE ELSE TRUE END
 FROM generic_substances gs
 left join generic_substance_compounds gsc on gs.id=gsc.fk_generic_substance_id
@@ -539,3 +545,41 @@ select gs.dsstox_substance_id as dtxsid, oc.casrn, oc.cas_type,oc.source from ot
 
 
 # select count (gs.id) from prod_dsstox.generic_substances gs;
+
+
+ SELECT VERSION();
+ 
+ 
+ 
+ SELECT table_schema, table_name
+FROM information_schema.tables
+WHERE table_type = 'BASE TABLE'
+ORDER BY table_schema, table_name;
+
+
+SELECT dsstox_compound_id as cid,  gs.dsstox_substance_id as sid, gs.preferred_name,smiles 
+FROM compounds c
+left join generic_substance_compounds gsc on gsc.fk_compound_id =c.id
+left join generic_substances gs on gs.id=gsc.fk_generic_substance_id
+WHERE dsstox_compound_id = 'DTXCID001783033';
+
+
+
+SELECT c.smiles
+FROM compounds AS c
+JOIN (SELECT FLOOR(RAND() * (SELECT MAX(id) FROM compounds)) AS start_id) AS r
+WHERE c.id >= r.start_id
+ORDER BY c.id
+LIMIT 1000;
+
+
+
+
+SELECT dsstox_compound_id as cid,  c.smiles, gs.dsstox_substance_id as sid, gs.casrn, gs.preferred_name 
+            FROM compounds c
+            join generic_substance_compounds gsc on gsc.fk_compound_id =c.id
+            join generic_substances gs on gs.id=gsc.fk_generic_substance_id
+             WHERE dsstox_compound_id IN ("DTXCID201784601");
+             
+             
+             

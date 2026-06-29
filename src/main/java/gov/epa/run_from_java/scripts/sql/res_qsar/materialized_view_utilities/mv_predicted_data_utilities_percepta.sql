@@ -1,3 +1,45 @@
+SELECT pd.prop_name, MIN(pd.prop_value) AS min_pred, MAX(pd.prop_value) AS max_pred, pd.prop_unit
+FROM public.mv_predicted_data pd
+where source_name='Percepta2023.1.2'
+GROUP BY pd.prop_name,pd.prop_unit;
+
+-------------------------------------------------------------------------------------------------
+WITH params AS (
+  SELECT 'Percepta2023.1.2'::text AS src
+),
+MinValues AS (
+    SELECT prop_name, MIN(prop_value) AS min_value
+    FROM mv_predicted_data, params
+    WHERE source_name = params.src
+    GROUP BY prop_name
+),
+MaxValues AS (
+    SELECT prop_name, MAX(prop_value) AS max_value
+    FROM mv_predicted_data, params
+    WHERE source_name = params.src
+    GROUP BY prop_name
+)
+SELECT
+    mv.prop_name,
+    mv.min_value,
+    min_data.dtxsid AS min_dtxsid,
+    mx.max_value,
+    max_data.dtxsid AS max_dtxsid
+FROM MinValues mv
+JOIN mv_predicted_data min_data
+    ON min_data.prop_name = mv.prop_name
+    AND min_data.prop_value = mv.min_value
+JOIN MaxValues mx
+    ON mx.prop_name = mv.prop_name
+JOIN mv_predicted_data max_data
+    ON max_data.prop_name = mx.prop_name
+    AND max_data.prop_value = mx.max_value
+CROSS JOIN params
+WHERE min_data.source_name = params.src
+  AND max_data.source_name = params.src;
+
+
+---------------------------------------------------------------------------------------------------------------
 -- Get prediction count by snapshot for percepta
 select fk_dsstox_snapshot_id, count(pd.id) from qsar_models.predictions_dashboard pd
 join qsar_models.dsstox_records dr on pd.fk_dsstox_records_id = dr.id
@@ -95,3 +137,42 @@ join qsar_models.statistics s on ms.fk_statistic_id = s.id
 where fk_source_id=6 and s.name like '%CV%'
 order by m.name;
 
+-- prop names:
+select distinct p.name_ccd from qsar_models.models m  
+JOIN qsar_models.sources s       ON m.fk_source_id = s.id
+JOIN qsar_datasets.datasets d    ON d."name" = m.dataset_name
+JOIN qsar_datasets.properties p  ON p.id = d.fk_property_id
+WHERE s.name ='Percepta2025.1.4'
+order by p.name_ccd ;
+
+
+-- compare values over Percepta versions
+SELECT
+  pd.dtxcid,
+  MAX(CASE WHEN s.name = 'Percepta2023.1.2' THEN pd.prediction_value END) AS prop_value_percepta_2023_1_2,
+  MAX(CASE WHEN s.name = 'Percepta2025.1.4' THEN pd.prediction_value END)     AS prop_value_percepta_2025_1_4
+FROM qsar_models.predictions_dashboard pd
+JOIN qsar_models.models m        ON m.id = pd.fk_model_id
+JOIN qsar_models.sources s       ON m.fk_source_id = s.id
+JOIN qsar_datasets.datasets d    ON d."name" = m.dataset_name
+JOIN qsar_datasets.properties p  ON p.id = d.fk_property_id
+WHERE 
+--p.name_ccd ='Boiling Point' -- no change
+--p.name_ccd ='Density' -- no change
+--p.name_ccd ='Dielectric Constant' -- no change
+--p.name_ccd ='Flash Point' -- no change
+--p.name_ccd ='Index of Refraction' -- no change
+--p.name_ccd ='Molar Refractivity' -- no change
+--p.name_ccd ='Molar Volume' -- no change
+--p.name_ccd ='Polarizability' -- no change
+--p.name_ccd ='Surface Tension' -- no change
+--p.name_ccd ='Vapor Pressure' -- no change
+--p.name_ccd = 'Water Solubility' -- change
+--p.name_ccd = 'LogKow: Octanol-Water' -- slight change 
+--p.name_ccd = 'pKa Acidic Apparent' -- slight change
+--p.name_ccd = 'pKa Basic Apparent' -- slight change
+--p.name_ccd = 'LogD5.5' -- slight change
+p.name_ccd = 'LogD7.4' -- slight change
+AND s.name IN ('Percepta2023.1.2', 'Percepta2025.1.4')
+GROUP BY pd.dtxcid
+limit 100;

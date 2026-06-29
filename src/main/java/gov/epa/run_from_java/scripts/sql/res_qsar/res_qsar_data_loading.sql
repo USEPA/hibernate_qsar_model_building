@@ -19,6 +19,8 @@ where pv.fk_public_source_id=309 and keep=true --PubChem_2024_11_27
 group by ps.name;
 
 
+select m.id from qsar_models.models m WHERE m.fk_source_id = 3 and m.is_public=true order by m.id;
+
 
 select sc.source_chemical_name, sc.source_casrn,p.name  from exp_prop.property_values pv
 join exp_prop.properties p on pv.fk_property_id = p.id
@@ -45,13 +47,75 @@ join exp_prop.properties p on pv.fk_property_id = p.id
 join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
 where ps.name='PubChem_2024_11_27';
 
-
+------------------------------------------------------------------------------------------------
+-- get public sources for Koc data
 select  p.name,ps.name,count(pv.id) from exp_prop.property_values pv
 join exp_prop.properties p on pv.fk_property_id = p.id
 join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
 where p.name like'%Koc%'
 group by p.name,ps.name
-order by p.name;
+order by count(pv.id) desc, ps.name;
+------------------------------------------------------------------------------------------------
+-- figure out which Koc data needs to get deleted so can redo it
+select ps.name as ps_name,ls.name as ls_name, pv.created_at  from exp_prop.property_values pv
+--select distinct ps.name as ps_name,ls.name  from exp_prop.property_values pv
+join exp_prop.properties p on pv.fk_property_id = p.id
+left join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
+left join exp_prop.literature_sources ls  on pv.fk_literature_source_id = ls.id
+where p.name='Soil Adsorption Coefficient (Koc)' 
+and (ps.name !='OPERA2.8' and ps.name !='OPERA2.9' and ps.name !='ThreeM' and ps.name !='PhysPropNCCT') 
+order by pv.created_at asc
+
+
+SELECT
+  to_char(date_trunc('day', pv.created_at)::date, 'YYYY-MM-FMDD') AS created_date
+FROM exp_prop.property_values pv
+JOIN exp_prop.properties p         ON pv.fk_property_id = p.id
+LEFT JOIN exp_prop.public_sources ps ON pv.fk_public_source_id = ps.id
+LEFT JOIN exp_prop.literature_sources ls ON pv.fk_literature_source_id = ls.id
+WHERE p.name = 'Soil Adsorption Coefficient (Koc)'
+  AND ps.name NOT IN ('OPERA2.8', 'OPERA2.9', 'ThreeM', 'PhysPropNCCT')
+GROUP BY date_trunc('day', pv.created_at)::date
+ORDER BY date_trunc('day', pv.created_at)::date ASC;
+
+
+-- Cases that only have ls:
+select distinct ls.name  from exp_prop.property_values pv
+join exp_prop.properties p on pv.fk_property_id = p.id
+left join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
+left join exp_prop.literature_sources ls  on pv.fk_literature_source_id = ls.id
+where p.name='Soil Adsorption Coefficient (Koc)' and ps.name is null;
+
+---------------------------------------------------------------------------------------------
+--delete property values with a date range:
+
+select count(id) from exp_prop.property_values where fk_property_id=29 and created_at > DATE '2025-12-01' AND created_at <  DATE '2025-12-03';
+
+
+select distinct p.name, count(pv.id) from exp_prop.property_values pv
+join exp_prop.properties p on p.id=pv.fk_property_id 
+left join exp_prop.public_sources ps on ps.id=pv.fk_public_source_id  
+--left join exp_prop.literature_sources ls on ls.id=pv.fk_literature_source_id 
+--where fk_property_id=29 and pv.created_at > DATE '2025-12-01' AND pv.created_at <  DATE '2025-12-03';
+--where fk_property_id=29;
+where fk_public_source_id=312
+group by p.name
+
+select count(pv.id) from exp_prop.property_values pv where fk_public_source_id=312 and fk_property_id=29;
+
+delete from exp_prop.property_values where fk_property_id=29 and created_at > DATE '2025-12-01' AND created_at <  DATE '2025-12-03';
+
+--
+--delete property values but omit sources:
+--DELETE pv
+select count(pv.id)
+FROM exp_prop.property_values pv
+JOIN exp_prop.properties p       ON pv.fk_property_id = p.id
+LEFT JOIN exp_prop.public_sources ps ON pv.fk_public_source_id = ps.id
+WHERE p.name = 'Soil Adsorption Coefficient (Koc)'
+  AND (pv.fk_public_source_id is null or ps.name NOT IN ('OPERA2.8', 'OPERA2.9', 'ThreeM', 'PhysPropNCCT'));
+
+------------------------------------------------------------------------------------------------
 
 
 -- Get count of property values by property from a given public source
@@ -324,7 +388,8 @@ group by ps.name;
 select ps.name, count(pv.id) from exp_prop.property_values pv
 join exp_prop.properties p on pv.fk_property_id = p.id
 join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
-where p.name='Boiling point' and keep=true
+-- where p.name='Boiling point' and keep=true
+where fk_property_id=29 and keep=true
 group by ps.name
 order by ps.name;
 
@@ -650,7 +715,9 @@ delete from exp_prop.source_chemicals sc
 -- select * from exp_prop.source_chemicals sc
 where id>2051629;
 
-select from exp_prop.property_values pv
+-- deleting property values by date
+select * from exp_prop.property_values pv
+-- delete from exp_prop.property_values pv
 where created_at>'2025-12-01' and created_at<'2025-12-03';
 
 
@@ -659,8 +726,263 @@ where id>2051629;
 
 
 -- SELECT count(id) from exp_prop.source_chemicals sc
-SELECT count(id) from exp_prop.source_chemicals sc
+SELECT * from exp_prop.source_chemicals sc
 -- delete from exp_prop.source_chemicals sc
 where created_at > '2025-12-01' and created_at < '2025-12-03'
-and fk_literature_source_id is null and fk_public_source_id is null;
+-- and fk_literature_source_id is null and fk_public_source_id is null;
 -- order by source_dtxsid;
+;
+
+
+select count(dp.id) from qsar_datasets.data_points_in_splittings dpis
+join qsar_datasets.data_points dp on dpis.fk_data_point_id = dp.id
+-- where dp.fk_dataset_id=541 and dpis.fk_splitting_id=1 and dpis.split_num=1;
+where dp.fk_dataset_id=558 and dpis.fk_splitting_id=1;
+
+
+
+
+--select dp.canon_qsar_smiles, dp.qsar_property_value, dv.values_tsv from qsar_datasets.data_points dp
+select count(dp.id) from qsar_datasets.data_points dp
+inner join qsar_descriptors.descriptor_values dv
+	on dp.canon_qsar_smiles=dv.canon_qsar_smiles
+	where dp.fk_dataset_id=558 and dv.fk_descriptor_set_id=6;
+
+
+
+--select dp.canon_qsar_smiles  from qsar_datasets.data_points dp
+select dp.*  from qsar_datasets.data_points dp
+join qsar_datasets.datasets d on d.id=dp.fk_dataset_id 
+where d.name = 'KOC v1 modeling';
+
+select count(sc.id) from   exp_prop.source_chemicals sc 
+left join exp_prop.property_values pv on sc.id=pv.fk_source_chemical_id 
+where sc.created_at > '2025-12-01' and pv.id is null;
+--where pv.id is null;
+
+
+
+
+select count(id) from exp_prop.property_values where fk_property_id=29 and created_at > DATE '2026-01-20' AND created_at <  DATE '2026-02-18';
+
+select count(id) from exp_prop.property_values where fk_property_id=29 and created_at > DATE '2026-02-18';
+
+
+select count(pv.id) from exp_prop.property_values pv
+left join exp_prop.public_sources ps on ps.id = pv.fk_public_source_id  
+where fk_property_id=29 and (ps.name is null or (ps.name!='OPERA2.8' and ps.name!='OPERA2.9' and ps.name!='PhysPropNCCT'  and ps.name!='ThreeM'));
+
+
+
+select dp.canon_qsar_smiles  from qsar_datasets.datasets d 
+join qsar_datasets.data_points dp on d.id = dp.fk_dataset_id
+where d.name = 'KOC v1 external' 
+and dp.canon_qsar_smiles not in 
+	(select dp2.canon_qsar_smiles from qsar_datasets.datasets d2
+	join qsar_datasets.data_points dp2 on d2.id = dp2.fk_dataset_id
+	where d2.name = 'KOC v1 modeling');
+
+
+
+
+
+select count(dpis.id) from qsar_datasets.datasets d 
+join qsar_datasets.data_points dp on d.id = dp.fk_dataset_id
+join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id =dp.id
+where d.name = 'KOC v1 modeling'
+
+
+select p.name, pv2.value_text, pv2.value_point_estimate ,  pv.id from exp_prop.property_values pv 
+join exp_prop.source_chemicals sc on pv.fk_source_chemical_id = sc.id
+join exp_prop.parameter_values pv2 on pv.id = pv2.fk_property_value_id
+join exp_prop.parameters p  on p.id = pv2.fk_parameter_id 
+where sc.source_casrn ='50-28-2' and pv.fk_property_id =29 and pv.fk_public_source_id =312;
+
+
+
+select s.name , m.name,  convert_from(pr.file_html, 'UTF8') as report_html, pr.created_at   from qsar_models.prediction_reports pr 
+join qsar_models.predictions_dashboard pd on pd.id=pr.fk_predictions_dashboard_id 
+join qsar_models.models m on m.id = pd.fk_model_id 
+join qsar_models.sources s on s.id=m.fk_source_id 
+where pd.dtxcid ='DTXCID301866888' and s. name = 'OPERA2.8';
+
+
+select p.name_ccd as endpoint, pr.file_html, dr.dtxcid  as file_html from qsar_models.predictions_dashboard pd 
+join qsar_models.dsstox_records dr on pd.dtxcid =dr.dtxcid 
+join qsar_models.models m on m.id=pd.fk_model_id 
+join qsar_models.sources s on s.id=m.fk_source_id 
+join qsar_datasets.datasets d on d.name = m.dataset_name 
+join qsar_datasets.properties p on p.id = d.fk_property_id 
+join qsar_models.prediction_reports pr on pr.fk_predictions_dashboard_id =pd.id
+where dr.fk_dsstox_snapshot_id =4 and dr.dtxsid ='DTXSID6020482' and s."name" ='OPERA2.8';
+
+
+select pr.file_json, pr.file_html from qsar_models.predictions_dashboard pd
+join qsar_models.dsstox_records dr on pd.dtxcid =dr.dtxcid
+join qsar_models.prediction_reports pr on pr.fk_predictions_dashboard_id =pd.id
+join qsar_models.models m on m.id=pd.fk_model_id 
+join qsar_models.sources s on s.id = m.fk_source_id 
+where dr.fk_dsstox_snapshot_id =4 and dr.dtxsid ='DTXSID6020482' and s."name" ='OPERA2.8';
+
+
+--select pd.dtxcid , dr.id,  p.name_ccd as endpoint, pr.file_html, dr.dtxcid  as file_html from qsar_models.predictions_dashboard pd 
+--join qsar_models.dsstox_records dr on pd.dtxcid =dr.dtxcid 
+--join qsar_models.models m on m.id=pd.fk_model_id 
+--join qsar_models.sources s on s.id=m.fk_source_id 
+--join qsar_datasets.datasets d on d.name = m.dataset_name 
+--join qsar_datasets.properties p on p.id = d.fk_property_id 
+--join qsar_models.prediction_reports pr on pr.fk_predictions_dashboard_id =pd.id
+--where dr.dtxsid ='DTXSID6020482' and s."name" ='OPERA2.8';
+
+
+
+select count(dp.id),d.name from qsar_datasets.datasets d
+join qsar_datasets.data_points dp on dp.fk_dataset_id =d.id
+where d.name like '%Ready%' or d.id=533
+group by d.name;
+
+
+select ps.name,count(pv.id) from exp_prop.property_values pv 
+join exp_prop.public_sources ps on ps.id=pv.fk_public_source_id 
+where pv.fk_property_id =30
+group by ps.name;
+
+
+select * from qsar_datasets.datasets d 
+join qsar_datasets.properties p on d.fk_property_id = p.id
+where p.name='Ready biodegradability' and d."name"  like '%RIFM%'
+
+
+
+select count(pv.id), p.name from exp_prop.property_values pv 
+join exp_prop.public_sources ps on pv.fk_public_source_id = ps.id
+join exp_prop.properties p on p.id=pv.fk_property_id 
+where ps.name = 'QSAR_Toolbox'
+group by p.name;
+
+select m.id from qsar_models.models m
+         join qsar_models.methods m2 on m.fk_method_id = m2.id
+         where dataset_name ='KOC v1 modeling'
+           and splitting_name='RND_REPRESENTATIVE'
+           and m2.name='rf_regressor'
+           and descriptor_set_name='WebTEST-default'
+           and fk_descriptor_embedding_id is not null
+          order by m.id desc;
+
+
+select count(c.id) from qsar_descriptors.compounds c 
+where c.standardizer ='SCI_DATA_EXPERTS_QSAR_READY_04242025_0';
+
+SELECT version();
+
+
+SELECT pid, wait_event_type, wait_event, state, query
+FROM pg_stat_activity
+WHERE datname = current_database() AND state <> 'idle';
+
+SELECT
+  pid,
+  backend_type,                  -- 'client backend' for user sessions
+  usename,
+  datname,
+  client_addr,
+  state,                         -- active / idle / idle in transaction ...
+  backend_start,                 -- session start
+  xact_start,                    -- transaction start
+  query_start,                   -- current statement start
+  state_change,                  -- last state change
+  now() - backend_start AS conn_age,
+  CASE WHEN query_start IS NOT NULL THEN now() - query_start END AS query_age,
+  CASE WHEN xact_start  IS NOT NULL THEN now() - xact_start  END AS xact_age,
+  left(query, 200) AS query      -- truncate for readability
+FROM pg_stat_activity
+WHERE datname = current_database()          -- optional: limit to current DB
+ORDER BY COALESCE(query_start, backend_start) ASC NULLS LAST;
+
+
+SELECT pg_terminate_backend(5546);
+
+SELECT
+  a.pid,
+  a.usename,
+  a.state,
+  a.wait_event_type,
+  a.wait_event,
+  a.query_start,
+  now() - a.query_start AS query_age,
+  a.query,
+  pg_blocking_pids(a.pid) AS blocking_pids
+FROM pg_stat_activity a
+WHERE a.datname = current_database()
+ORDER BY a.query_start;
+
+
+select distinct dpc.dtxsid,  dp.canon_qsar_smiles, dpc.smiles  from qsar_datasets.data_point_contributors dpc 
+join qsar_datasets.data_points dp on dp.id =dpc.fk_data_point_id 
+join qsar_datasets.datasets d on dp.fk_dataset_id = d.id
+where d.name='KOC v1 modeling' and dtxsid='DTXSID0020315';
+
+
+select  dp.canon_qsar_smiles, dp.qsar_property_value,split_part(dp.qsar_dtxcid, '|', 1),
+dr.dtxsid, dr.smiles,dr.casrn  from qsar_datasets.data_points dp
+join qsar_datasets.datasets d on dp.fk_dataset_id = d.id
+join qsar_datasets.data_points_in_splittings dpis on dp.id = dpis.fk_data_point_id
+join qsar_models.dsstox_records dr on dr.dtxcid =split_part(dp.qsar_dtxcid, '|', 1)
+where dpis.fk_splitting_id=1 and d.id=561 and dpis.split_num=1 and dr.fk_dsstox_snapshot_id =4
+order by dp.canon_qsar_smiles ;
+
+
+--Select id from qsar_datasets.datasets where name='KOC v2 external';
+
+
+select distinct(sc.id) from exp_prop.property_values pv 
+join exp_prop.properties p on p.id=pv.fk_property_id 
+join exp_prop.public_sources ps on ps.id=pv.fk_public_source_id 
+join exp_prop.source_chemicals sc on sc.id=pv.fk_source_chemical_id 
+where p.name='Ready biodegradability' and ps.name='eChemPortal' ;
+
+
+select split_num, dpis.fk_splitting_id  from qsar_datasets.data_points dp 
+join qsar_datasets.datasets d on d.id=dp.fk_dataset_id 
+join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id =dp.id
+where d.name='exp_prop_RBIODEG_RIFM_CHEMREG' and dpis.fk_splitting_id!=1;
+
+
+
+SELECT count(dp.qsar_property_value) AS avg_qsar_property_value
+FROM qsar_datasets.datasets d
+JOIN qsar_datasets.data_points dp ON dp.fk_dataset_id = d.id
+JOIN qsar_descriptors.descriptor_values dv ON dp.canon_qsar_smiles = dv.canon_qsar_smiles
+JOIN qsar_descriptors.descriptor_sets ds ON ds.id = dv.fk_descriptor_set_id
+--WHERE d.name = 'exp_prop_RBIODEG_301F v1 modeling'
+where d.name='exp_prop_RBIODEG_RIFM_CHEMREG'
+  AND ds.name = 'WebTEST-default';
+
+SELECT dp.canon_qsar_smiles  AS avg_qsar_property_value
+FROM qsar_datasets.datasets d
+JOIN qsar_datasets.data_points dp ON dp.fk_dataset_id = d.id
+JOIN qsar_descriptors.descriptor_values dv ON dp.canon_qsar_smiles = dv.canon_qsar_smiles
+JOIN qsar_descriptors.descriptor_sets ds ON ds.id = dv.fk_descriptor_set_id
+--WHERE d.name = 'exp_prop_RBIODEG_301F v1 modeling'
+where d.name='exp_prop_RBIODEG_RIFM_CHEMREG'
+  AND ds.name = 'WebTEST-default';
+
+
+SELECT DISTINCT dp.canon_qsar_smiles
+FROM qsar_datasets.datasets d
+JOIN qsar_datasets.data_points dp
+  ON dp.fk_dataset_id = d.id
+JOIN qsar_descriptors.descriptor_values dv
+  ON dv.canon_qsar_smiles = dp.canon_qsar_smiles
+JOIN qsar_descriptors.descriptor_sets ds
+  ON ds.id = dv.fk_descriptor_set_id
+WHERE d.name = 'exp_prop_RBIODEG_RIFM_CHEMREG'
+  AND ds.name = 'WebTEST-default'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM qsar_datasets.datasets d2
+    JOIN qsar_datasets.data_points dp2
+      ON dp2.fk_dataset_id = d2.id
+    WHERE d2.name = 'exp_prop_RBIODEG_301F v1 modeling'
+      AND dp2.canon_qsar_smiles = dp.canon_qsar_smiles
+  );
