@@ -55,7 +55,7 @@ import gov.epa.databases.dev_qsar.exp_prop.service.PublicSourceServiceImpl;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalService;
 import gov.epa.databases.dev_qsar.exp_prop.service.SourceChemicalServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -186,6 +186,8 @@ public class PropertyValueCreator {
 //			System.out.println("Found "+name+" in map");
 			return publicSourcesMap.get(name);
 		} else {
+			
+//			System.out.println("Didnt find "+name+" in map");
 			
 			PublicSource ps=null;
 		
@@ -506,7 +508,7 @@ public class PropertyValueCreator {
         }
 		
 		for (String parameterName:parameterNames) {
-			System.out.println(parameterName+"\tparameter not in parameters");
+			System.out.println("\""+parameterName+"\" parameter not in parameters");
 		}
 		
 		return parameterNames;
@@ -770,7 +772,10 @@ public class PropertyValueCreator {
 	}
 
 	void loadSourceChemicalMap(String publicSourceName) {
-	
+		
+		if(publicSourceName==null)
+			return;
+			
 		PublicSource ps=this.publicSourceService.findByName(publicSourceName);
 	
 		if(ps==null) {
@@ -895,7 +900,7 @@ public class PropertyValueCreator {
 			SourceChemical sourceChemical =rec.getSourceChemical(lanId, ps, ls); 
 			
 			if(ps==null && ls==null) {
-				System.out.println("\nMissing both public and literature sources:"+Utilities.gson.toJson(rec));
+				System.out.println("\nMissing both public and literature sources:"+JsonUtilities.gson.toJson(rec));
 				continue;
 			}
 			
@@ -912,7 +917,7 @@ public class PropertyValueCreator {
 		List<SourceChemical> sourceChemicals2=new ArrayList<>();
 		int batchSize=1000;
 		
-		if(true)return;
+//		if(true)return;
 		
 		if(sourceChemicals.size()==0) return;
 		
@@ -962,14 +967,17 @@ public class PropertyValueCreator {
 	
 			for(ParameterValue parameterValue:er.parameter_values) {
 				
-				ExpPropUnit unit=parameterValue.getUnit();
 				Parameter parameter=parameterValue.getParameter();
-								
+
+				ExpPropUnit unit=parameterValue.getUnit();
 				String unitName=DevQsarConstants.getConstantNameByReflection(unit.getAbbreviation());
+				unit.setName(unitName);//or do we want to enforce that the unit name should have been set in the 
 				
+//				System.out.println(parameterValue.getParameter().getName()+"\t"+parameterValue.getUnit().getAbbreviation());
+								
 				if(!isAcceptableUnitForParameter(unit, parameter)) {
 					unitAbbrevs.add(unit.getAbbreviation());
-					System.out.println("Missing units:\t"+unitName+" for parameter:"+parameterValue.getParameter().getName()+", unitAbbrev="+unit.getAbbreviation());
+					System.out.println("Unacceptable units:\t"+unitName+" for parameter:"+parameterValue.getParameter().getName()+", unitAbbrev="+unit.getAbbreviation());
 				}
 			}
 	
@@ -993,10 +1001,17 @@ public class PropertyValueCreator {
 		for (ParameterAcceptableUnit pau:parameterAcceptableUnits) {
 			
 			if(pau.getParameter().getName().equals(parameter.getName())) {
-
+				
+//				if(parameter.getName().equals("Water concentration")) {
+//					System.out.println(pau.getUnit().getName()+"\t"+unit.getName());
+//				}
+				
+				
 				if(pau.getUnit().getName().equals(unit.getName())) {
 					isAcceptable=true;
 					break;
+				} else {
+//					System.out.println("mismatched units: "+unit.getName()+"\t"+pau.getUnit().getName());
 				}
 				
 			}

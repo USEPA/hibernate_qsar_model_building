@@ -12,7 +12,7 @@ import java.util.TreeMap;
 import com.google.gson.Gson;
 
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 
 public class ExperimentalRecords extends ArrayList<ExperimentalRecord> {
@@ -68,7 +68,8 @@ public class ExperimentalRecords extends ArrayList<ExperimentalRecord> {
 			if(er.parameter_values!=null) {
 				for(ParameterValue pv:er.parameter_values) {
 					String param=pv.getParameter().getName();
-					if(!params.contains(param))params.add(param);
+					String param2=param+"\t"+pv.getDataType();
+					if(!params.contains(param2))params.add(param2);
 				}
 			}
 		}
@@ -90,7 +91,7 @@ public class ExperimentalRecords extends ArrayList<ExperimentalRecord> {
 		File failedFile = new File(filePath);
 		if (failedFile.getParentFile()!=null) { failedFile.getParentFile().mkdirs(); }
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
-			bw.write(Utilities.gson.toJson(this));
+			bw.write(JsonUtilities.gson.toJson(this));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

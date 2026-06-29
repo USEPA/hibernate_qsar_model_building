@@ -16,8 +16,7 @@ import gov.epa.databases.dev_qsar.exp_prop.entity.LiteratureSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PublicSource;
 import gov.epa.databases.dev_qsar.exp_prop.entity.SourceChemical;
-
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 
 public class ExperimentalRecord {
@@ -345,6 +344,6 @@ public class ExperimentalRecord {
 
 		}
 
-		return Utilities.gson.toJson(jo);
+		return JsonUtilities.gson.toJson(jo);
 	}
 }

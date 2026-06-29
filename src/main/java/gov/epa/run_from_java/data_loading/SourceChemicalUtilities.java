@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -231,7 +232,9 @@ public class SourceChemicalUtilities {
 //		
 //		String sourceName="Arnot 2006";
 //		String sourceName="ECOTOX_2024_12_12";
-		String sourceName="QSAR_Toolbox";
+//		String sourceName="QSAR_Toolbox";
+
+		String sourceName="eChemPortal";
 
 		List<SourceChemical>sourceChemicals=loadSourceChemicalsForPublicSource(sourceName);
 		System.out.println(sourceChemicals.size());		
@@ -241,10 +244,9 @@ public class SourceChemicalUtilities {
 		
 //		String filepath=folder.getAbsolutePath()+File.separator+"exp_prop_2025_01_27_from_"+sourceName+".txt";
 
-		String date="2025_03_25";
+		String date="2026_05_08";
 		String filepath=folder.getAbsolutePath()+File.separator+"exp_prop_"+date+"_"+sourceName+".txt";
 		
-//		exp_prop_2025_03_25_Arnot 2006
 		File file=new File(filepath);
 		System.out.println(file.getAbsolutePath());
 		
@@ -252,6 +254,8 @@ public class SourceChemicalUtilities {
 		
 		
 	}
+	
+	
 
 	private void removePubChemSIDNames(List<SourceChemical> sourceChemicals) {
 		for (int i=0;i<sourceChemicals.size();i++) {
@@ -661,7 +665,7 @@ public class SourceChemicalUtilities {
 
 		SourceChemicalUtilities scu=new SourceChemicalUtilities();//i
 		
-		scu.deleteSourceChemicalsByDate();
+//		scu.deleteSourceChemicalsByDate();
 		
 //		scu.loadSourceChemicalsAll();
 		
@@ -670,7 +674,8 @@ public class SourceChemicalUtilities {
 //		scu.writeChemRegFilePublicSources();
 //		scu.writeChemRegFileLiteratureSources();//dont have any without dtxrids- all from chemprop
 
-//		scu.writeChemRegFileForPublicSource2();
+		scu.writeChemRegFileForPublicSource2();
+		
 		
 //		scu.findMissingSourceChemicalsForPublicSource();
 		

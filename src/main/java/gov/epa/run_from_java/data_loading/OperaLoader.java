@@ -32,7 +32,8 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.UnitService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.UnitServiceImpl;
 import gov.epa.endpoints.datasets.DatasetCreator;
 import gov.epa.endpoints.datasets.dsstox_mapping.DsstoxMapper;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfoUtilities;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -170,19 +171,19 @@ public class OperaLoader {
 		Hashtable<String,String> htOperaReferences=null;
 
 		if (propertyName.equals(DevQsarConstants.LOG_OH)) {
-			htOperaReferences = Utilities.createOpera_Reference_Lookup("AOH", "OH Reference");
+			htOperaReferences = GetExpPropInfoUtilities.createOpera_Reference_Lookup("AOH", "OH Reference");
 		} else if (propertyName.equals(DevQsarConstants.VAPOR_PRESSURE)) {
-			htOperaReferences = Utilities.createOpera_Reference_Lookup("VP", "VP Reference");
+			htOperaReferences = GetExpPropInfoUtilities.createOpera_Reference_Lookup("VP", "VP Reference");
 		} else if (propertyName.equals(DevQsarConstants.WATER_SOLUBILITY)) {
-			htOperaReferences = Utilities.createOpera_Reference_Lookup("WS", "WS Reference");
+			htOperaReferences = GetExpPropInfoUtilities.createOpera_Reference_Lookup("WS", "WS Reference");
 		} else if (propertyName.equals(DevQsarConstants.HENRYS_LAW_CONSTANT)) {
-			htOperaReferences = Utilities.createOpera_Reference_Lookup("HL", "HL Reference");
+			htOperaReferences = GetExpPropInfoUtilities.createOpera_Reference_Lookup("HL", "HL Reference");
 		} else if (propertyName.equals(DevQsarConstants.LOG_KOW)) {
-			htOperaReferences = Utilities.createOpera_Reference_Lookup("LogP", "Kow Reference");
+			htOperaReferences = GetExpPropInfoUtilities.createOpera_Reference_Lookup("LogP", "Kow Reference");
 		} else if (propertyName.equals(DevQsarConstants.LOG_KOC)) {
-			htOperaReferences = Utilities.createOpera_Reference_Lookup("KOC", "KocRef");
+			htOperaReferences = GetExpPropInfoUtilities.createOpera_Reference_Lookup("KOC", "KocRef");
 		} else if (propertyName.equals(DevQsarConstants.LOG_KOA)) {
-			htOperaReferences = Utilities.createOpera_Reference_Lookup("KOA", "LogKOA_Ref");
+			htOperaReferences = GetExpPropInfoUtilities.createOpera_Reference_Lookup("KOA", "LogKOA_Ref");
 		}
 		return htOperaReferences;
 	}

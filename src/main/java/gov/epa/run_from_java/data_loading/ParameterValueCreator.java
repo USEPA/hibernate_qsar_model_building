@@ -1,5 +1,6 @@
 package gov.epa.run_from_java.data_loading;
 
+import java.util.Hashtable;
 import java.util.regex.Matcher;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
@@ -8,6 +9,7 @@ import gov.epa.databases.dev_qsar.exp_prop.entity.Parameter;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterAcceptableUnit;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -145,6 +147,8 @@ public class ParameterValueCreator {
 			ParameterValue temperatureValue = new ParameterValue();
 			temperatureValue.setCreatedBy(pvc.lanId);
 			temperatureValue.setValuePointEstimate(rec.temperature_C);
+			
+//			System.out.println("In getTemperatureValue(), CASRN="+rec.casrn+"\ttemperature_C="+rec.temperature_C);			
 			return temperatureValue;
 		} else {
 			return null;
@@ -268,7 +272,7 @@ public class ParameterValueCreator {
 	}
 	
 	public  boolean addParameters(String type, ExperimentalRecord rec, PropertyValue pv) {
-		
+
 		if (type.equals(ExperimentalRecordLoader.typePhyschem)) {
 			addPhyschemParameterValues(rec, pv);
 		} else if (type.equals(ExperimentalRecordLoader.typeTox)) {
@@ -276,6 +280,7 @@ public class ParameterValueCreator {
 		} else {
 			//typeOther: dont need to pull parameters from fields in rec
 		}
+		
 		
 		setReliabilityValue(rec,pv);
 		
@@ -391,7 +396,9 @@ public class ParameterValueCreator {
 	 */
 	private void addParametersValues(ExperimentalRecord rec,PropertyValue propertyValue) {
 
-		if (rec.parameter_values==null) return;
+		if (rec.parameter_values==null) {
+			return;
+		}
 
 		for (ParameterValue parameterValue:rec.parameter_values) {
 
@@ -422,11 +429,17 @@ public class ParameterValueCreator {
 		//TODO should ParameterValue have been stored in experimental_parameters all along?
 		
 		//Store parameter values in experimental_parameters so as to not mess up serialized to json of loaded records:
+		
+		if(rec.experimental_parameters==null) rec.experimental_parameters=new Hashtable<>();
+		
 		if(rec.parameter_values!=null) {
-			for (int i=0;i<rec.parameter_values.size();i++) {
-				ParameterValue parameterValue=rec.parameter_values.get(i);
-				String strValue=parameterValue.getValuePointEstimate()+" "+parameterValue.getUnit().getAbbreviation();
-				rec.experimental_parameters.put(parameterValue.getParameter().getName(),strValue);
+			for (ParameterValue parameterValue:rec.parameter_values) {
+				
+				if(parameterValue.getParameter().getName()==null || parameterValue.toString()==null) {
+					System.out.println(rec.id_physchem+"\tnull in parameterValue");
+				}
+				
+				rec.experimental_parameters.put(parameterValue.getParameter().getName(),parameterValue.toString());
 			}
 			rec.parameter_values=null;
 		}

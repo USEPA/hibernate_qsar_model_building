@@ -132,7 +132,9 @@ public class JsonArrayToExcel {
         }
 
         // Enable filtering for the table
-        sheet.setAutoFilter(new CellRangeAddress(2, sheet.getLastRowNum(), 0, keysWithData.size() - 1));
+        
+        if (jsonArray.size()>0)        
+        	sheet.setAutoFilter(new CellRangeAddress(2, sheet.getLastRowNum(), 0, keysWithData.size() - 1));
 
         // Auto-size columns and limit maximum width
         for (int i = 0; i < keysWithData.size(); i++) {

@@ -14,7 +14,7 @@ import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueService;
 import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueServiceImpl;
 import gov.epa.endpoints.datasets.DatasetCreator;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 /**
  * 
@@ -200,8 +200,8 @@ public class PropertyValueUtilities {
 					pv1.setKeepReason("Chemprop loading duplicate");
 				}
 				
-				System.out.println(Utilities.gson.toJson(pv1.createJsonObjectFromPropertyValue()));
-				System.out.println(Utilities.gson.toJson(pv2.createJsonObjectFromPropertyValue()));
+				System.out.println(JsonUtilities.gson.toJson(pv1.createJsonObjectFromPropertyValue()));
+				System.out.println(JsonUtilities.gson.toJson(pv2.createJsonObjectFromPropertyValue()));
 				
 				i--;//go back one just in case
 			}
@@ -217,7 +217,7 @@ public class PropertyValueUtilities {
 		System.out.println("*************\nRecords to omit:"+propertyValues.size()+"\n***********");		
 
 		for (PropertyValue pv:propertyValues) {
-			System.out.println(Utilities.gson.toJson(pv.createJsonObjectFromPropertyValue()));
+			System.out.println(JsonUtilities.gson.toJson(pv.createJsonObjectFromPropertyValue()));
 
 		}
 		
