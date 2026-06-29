@@ -1,7 +1,7 @@
 package gov.epa.web_services.embedding_service;
 
 import gov.epa.endpoints.models.ModelData;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -23,7 +23,7 @@ public class CalculationInfo {
 	public String qsarMethodEmbedding;
 	
 	public String toString2() {
-		return Utilities.gson.toJson(this);
+		return JsonUtilities.gson.toJson(this);
 	}
 	
 	

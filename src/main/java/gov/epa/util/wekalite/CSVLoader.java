@@ -1,13 +1,16 @@
 package gov.epa.util.wekalite;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+
 
 public class CSVLoader {
 
@@ -70,6 +73,16 @@ public class CSVLoader {
 		
 	}
 	
+	
+	public Instances getDataSetFromString(String strInstances) {
+		try {
+			InputStream inputStream = new ByteArrayInputStream(strInstances.getBytes(StandardCharsets.UTF_8));
+			return getDatasetFromInputStream(inputStream,"\t");
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
 	
 	public Instances getDatasetFromInputStreamNoTox(InputStream is,String del) throws IOException {
 		

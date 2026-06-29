@@ -92,20 +92,78 @@
 			<version>42.5.0</version>
 		</dependency>
 
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.49</version> <!-- Or a compatible version for MySQL 5.7 -->
+		</dependency>
+
 
 		<!--https://stackoverflow.com/questions/28754323/slf4j-with-logback-still-prompt-failed-to-load-class-org-slf4j-impl-staticlogge
 		-->
 
+
+
+<dependency>
+    <groupId>ch.qos.logback</groupId>
+    <artifactId>logback-core</artifactId>
+    <version>1.5.6</version> 
+</dependency>
+<dependency>
+    <groupId>ch.qos.logback</groupId>
+    <artifactId>logback-classic</artifactId>
+    <version>1.5.6</version> 
+</dependency>		
+		
+		
 		<dependency>
-			<groupId>ch.qos.logback</groupId>
-			<artifactId>logback-classic</artifactId>
+			<groupId>org.jboss.logging</groupId>
+			<artifactId>jboss-logging</artifactId>
 		</dependency>
+		
+
+		<!--
+        <dependency>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-bundle</artifactId>
+			<version>2.1</version>
+		</dependency>
+		-->
 
 		<dependency>
-			<groupId>ch.qos.logback</groupId>
-			<artifactId>logback-core</artifactId>
+			<groupId>org.openscience.cdk</groupId>
+			<artifactId>cdk-bundle</artifactId>
+			<version>2.7.1</version>
+
+			<exclusions>
+				<exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
+
+		<!-- 
+		<dependency>
+			<groupId>nz.ac.waikato.cms.weka</groupId>
+			<artifactId>weka-stable</artifactId>
+			<version>3.8.6</version>
+		</dependency>
+		-->
+
+		<!-- https://mvnrepository.com/artifact/uk.ac.ebi.beam/beam-core wouldnt
+		run without it
+		<dependency>
+		    <groupId>uk.ac.ebi.beam</groupId>
+		    <artifactId>beam-core</artifactId>
+		    <version>1.3.10</version>
+		</dependency>
+-->
 
 		<!-- JAXB API for XML processing -->
 		<dependency>
@@ -148,6 +206,18 @@
 			<groupId>org.json</groupId>
 			<artifactId>json</artifactId>
 			<version>20231013</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>32.1.3-jre</version> <!-- Use a recent, stable version -->
 		</dependency>
 
 		<dependency>
@@ -202,33 +272,36 @@
 			<version>5.8</version>
 		</dependency>
 
+		<!--
 		<dependency>
 			<groupId>uk.ac.cam.ch.opsin</groupId>
 			<artifactId>opsin-core</artifactId>
-			<version>2.5.0</version>
-			<type>pom</type>
-
+			<version>2.8.0</version>
 			<exclusions>
 				<exclusion>
 					<groupId>log4j</groupId>
 					<artifactId>log4j</artifactId>
 				</exclusion>
-			</exclusions>
 
+				<exclusion>
+					<groupId>org.apache.logging.log4j</groupId>
+					<artifactId>log4j-api</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
+		-->
+
+		<dependency>
+			<groupId>uk.ac.cam.ch.opsin</groupId>
+			<artifactId>opsin-core</artifactId>
+			<version>2.8.0</version> <!-- Use the latest version available -->
+		</dependency>
+		<!-- Add opsin-inchi if you need InChI support -->
+
 		<dependency>
 			<groupId>uk.ac.cam.ch.opsin</groupId>
 			<artifactId>opsin-inchi</artifactId>
-			<version>2.5.0</version>
-			<type>pom</type>
-
-			<exclusions>
-				<exclusion>
-					<groupId>log4j</groupId>
-					<artifactId>log4j</artifactId>
-				</exclusion>
-			</exclusions>
-
+			<version>2.8.0</version> <!-- Use the latest version available -->
 		</dependency>
 
 
@@ -240,20 +313,27 @@
 		</dependency>
 -->
 
-
 		<dependency>
 			<groupId>com.openhtmltopdf</groupId>
 			<artifactId>openhtmltopdf-pdfbox</artifactId>
 			<version>1.0.10</version>
 		</dependency>
-    
+		
+		
+		<dependency>
+			<groupId>io.github.cdimascio</groupId>
+			<artifactId>dotenv-java</artifactId>
+			<version>2.3.2</version> <!-- Use the latest version -->
+		</dependency>
+
 
 
 	</dependencies>
 
 	<build>
+
+		<!--
 		<plugins>
-			<!-- Maven Compiler Plugin -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -263,5 +343,27 @@
 				</configuration>
 			</plugin>
 		</plugins>
+		-->
+
+		<plugins>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<archive>
+						<!--
+						<manifest>
+							<mainClass>fully.qualified.MainClass</mainClass>
+						</manifest>
+						-->
+						
+					</archive>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+				</configuration>
+			</plugin>
+		</plugins>
+
+
 	</build>
 </project>

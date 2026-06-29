@@ -2,6 +2,7 @@ package gov.epa.web_services;
 
 import java.io.File;
 
+import gov.epa.util.JsonUtilities;
 import kong.unirest.HttpResponse;
 import kong.unirest.MultipartBody;
 import kong.unirest.Unirest;
@@ -41,13 +42,39 @@ public class SplittingWebService extends WebService {
 //	}
 	
 
+	class RequestSplitting {
+		String tsv;
+		boolean remove_log_p;
+		int n_threads;
+		
+		public RequestSplitting(String tsv, boolean remove_log_p,int n_threads) {
+			this.tsv=tsv;
+			this.remove_log_p=remove_log_p;
+			this.n_threads=n_threads;
+		}
+	}
+	
 	public HttpResponse<SplittingCalculationResponse[]> callCalculation(String tsv, boolean removeLogP, int n_threads) {
+		
+		//Following doesnt work for large tsvs with flask
+//		HttpResponse<SplittingCalculationResponse[]> response = Unirest.post(address+"/calculation")
+//				.field("tsv", tsv)
+//				.field("remove_log_p", removeLogP+"")
+//				.field("n_threads", n_threads+"")
+//				.asObject(SplittingCalculationResponse[].class);		
+//		return response;
+		
+		RequestSplitting rs=new RequestSplitting(tsv, removeLogP, n_threads);
 		HttpResponse<SplittingCalculationResponse[]> response = Unirest.post(address+"/calculation")
-				.field("tsv", tsv)
-				.field("remove_log_p", removeLogP+"")
-				.field("n_threads", n_threads+"")
-				.asObject(SplittingCalculationResponse[].class);		
+				.header("Content-Type", "application/json")
+		        .header("Accept", "application/json")
+				.body(JsonUtilities.gson.toJson(rs))
+				.asObject(SplittingCalculationResponse[].class);	
+		
+		//If want to pass the body as an Object instead of json need to configure Unirest ObjectMapper which is more code  
+		
 		return response;
+		
 	}
 
 	

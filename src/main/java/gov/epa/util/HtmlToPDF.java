@@ -16,7 +16,7 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 public class HtmlToPDF {
 
 
-	private void generateHtmlToPdf(String HTML_INPUT,String PDF_OUTPUT ) throws IOException {
+	public void generateHtmlToPdf(String HTML_INPUT,String PDF_OUTPUT ) throws IOException {
 		File inputHTML = new File(HTML_INPUT);
 		Document doc = createWellFormedHtml(inputHTML);
 		

@@ -18,8 +18,10 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.SDE_Prediction_Request;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
-import org.slf4j.Logger;
-
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.GZIPOutputStream;
 /**
  * Model building class that handles web service access
  * @author GSINCL01
@@ -35,7 +37,7 @@ public class ModelWebService extends WebService {
 
 	public HttpResponse<byte[]> callTrain(String trainingSet, String predictionSet,Boolean removeLogDescriptors, String qsarMethod, String modelId,
 			boolean use_pmml,boolean include_standardization_in_pmml) {
-		HttpResponse<byte[]> response = Unirest.post(address+"/models/{qsar_method}/train")
+		HttpResponse<byte[]> response = Unirest.post(address+"/api/predictor_models/{qsar_method}/train")
 				.routeParam("qsar_method", qsarMethod)
 				.field("use_pmml", use_pmml+"")
 				.field("include_standardization_in_pmml", include_standardization_in_pmml+"")
@@ -81,7 +83,7 @@ public class ModelWebService extends WebService {
 	
 	public HttpResponse<byte[]> callTrainWithPreselectedDescriptors(String trainingSet,String predictionSet, Boolean removeLogDescriptors, 
 			String qsarMethod, String modelId, String embeddingTsv,boolean use_pmml,boolean include_standardization_in_pmml) {
-		HttpResponse<byte[]> response = Unirest.post(address+"/models/{qsar_method}/train")
+		HttpResponse<byte[]> response = Unirest.post(address+"/api/predictor_models/{qsar_method}/train")
 				.routeParam("qsar_method", qsarMethod)
 				.field("use_pmml", use_pmml+"")
 				.field("include_standardization_in_pmml", include_standardization_in_pmml+"")
@@ -98,7 +100,7 @@ public class ModelWebService extends WebService {
 
 	
 	public HttpResponse<String> callTrainPythonStorage(String trainingSet, Boolean removeLogPDescriptors, String qsarMethod, String modelId) {
-		HttpResponse<String> response = Unirest.post(address + "/models/{qsar_method}/trainsa")
+		HttpResponse<String> response = Unirest.post(address + "/api/predictor_models/{qsar_method}/trainsa")
 				.routeParam("qsar_method", qsarMethod)				
 				.field("training_tsv", trainingSet)
 				.field("embedding_tsv", "")
@@ -131,7 +133,7 @@ public class ModelWebService extends WebService {
 		
 //		System.out.println(address + "/models/prediction_applicability_domain");
 		
-		HttpResponse<String> response= Unirest.post(address + "/models/prediction_applicability_domain")
+		HttpResponse<String> response= Unirest.post(address + "/api/predictor_models/prediction_applicability_domain")
 				.field("training_tsv", trainingSet)
 				.field("test_tsv", testSet)
 				.field("embedding_tsv", embeddingTsv)
@@ -145,7 +147,7 @@ public class ModelWebService extends WebService {
 
 	public HttpResponse<String> callPredictionApplicabilityDomain(String trainingSet,String testSet, Boolean removeLogDescriptors,
 			String applicability_domain) {
-		HttpResponse<String> response= Unirest.post(address + "/models/prediction_applicability_domain")
+		HttpResponse<String> response= Unirest.post(address + "/api/predictor_models/prediction_applicability_domain")
 				.field("training_tsv", trainingSet)
 				.field("test_tsv", testSet)
 				.field("remove_log_p", String.valueOf(removeLogDescriptors))
@@ -190,16 +192,28 @@ public class ModelWebService extends WebService {
 	}
 	
 	public HttpResponse<String> callDetails(String modelId) {
-		System.out.println(address+"/models/" + modelId);
-		HttpResponse<String> response = Unirest.get(address+"/models/{model_id}")
+		
+		System.out.println(address+"/api/predictor_models/" + modelId);
+		HttpResponse<String> response = Unirest.get(address+"/api/predictor_models/{model_id}")
+				.routeParam("model_id", modelId)
+				.asString();
+		
+		return response;
+	}
+	
+	
+	public HttpResponse<String> callRegressionUnstandizedCoefficients(String modelId) {
+		System.out.println(address+"/models/reg_coeff/" + modelId);
+		HttpResponse<String> response = Unirest.get(address+"/models/reg_coeff/{model_id}")
 				.routeParam("model_id", modelId)
 				.asString();
 		
 		return response;
 	}
 
+
 	public HttpResponse<String> callInfo(String qsarMethod) {
-		HttpResponse<String> response = Unirest.get(address+"/models/{qsar_method}/info")
+		HttpResponse<String> response = Unirest.get(address+"/api/predictor_models/{qsar_method}/info")
 				.routeParam("qsar_method", qsarMethod)
 				.asString();
 		
@@ -214,7 +228,7 @@ public class ModelWebService extends WebService {
 	public HttpResponse<String> callInitPickle(byte[] modelBytes, String modelId) {
 		InputStream model = new BufferedInputStream(new ByteArrayInputStream(modelBytes));
 		
-		HttpResponse<String> response = Unirest.post(address+"/models/initPickle")
+		HttpResponse<String> response = Unirest.post(address+"/api/predictor_models/initPickle")
 				.field("model_id", modelId)
 				.field("model", model, "model.bin")
 				.asString();
@@ -240,7 +254,7 @@ public class ModelWebService extends WebService {
 				
 		String body=gson.toJson(jo);
 		
-		HttpResponse<String> response = Unirest.post(address+"/models/initPMML")
+		HttpResponse<String> response = Unirest.post(address+"/api/predictor_models/initPMML")
 				.header("Content-Type", "application/json")
 				.body(body)				
 				.asString();
@@ -297,7 +311,7 @@ public class ModelWebService extends WebService {
 	}
 
 	public HttpResponse<String> callPredict(String predictionSet, String modelId) {
-		HttpResponse<String> response = Unirest.post(address+"/models/predict")
+		HttpResponse<String> response = Unirest.post(address+"/api/predictor_models/predict")
 				.field("prediction_tsv", predictionSet)
 				.field("model_id", modelId)
 				.asString();
@@ -306,8 +320,64 @@ public class ModelWebService extends WebService {
 	}
 	
 	
+	public HttpResponse<String> callPredictZip(String predictionSet, String modelId) {
+	    try {
+	        byte[] gz = gzipUtf8(predictionSet);
+	        ByteArrayInputStream is = new ByteArrayInputStream(gz);
+
+	        return Unirest.post(address + "/api/predictor_models/predict")
+	                .field("model_id", modelId)
+	                .field("prediction_tsv", is, "prediction.tsv.gz")
+	                .asString();
+
+	    } catch (Exception e) {
+	        System.err.println("callPredictZip failed: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+	        return null;
+	    }
+	}
+
+	public HttpResponse<String> callPredictionApplicabilityDomainZip(
+	        String trainingSet,
+	        String testSet,
+	        Boolean removeLogDescriptors,
+	        String embeddingTsv,
+	        String applicability_domain
+	) {
+	    try {
+	        byte[] gzTrain = gzipUtf8(trainingSet);
+	        byte[] gzTest  = gzipUtf8(testSet);
+
+	        ByteArrayInputStream trainIs = new ByteArrayInputStream(gzTrain);
+	        ByteArrayInputStream testIs  = new ByteArrayInputStream(gzTest);
+
+	        return Unirest.post(address + "/api/predictor_models/prediction_applicability_domain")
+	                .field("training_tsv", trainIs, "training.tsv.gz")
+	                .field("test_tsv", testIs, "test.tsv.gz")
+	                .field("remove_log_p", String.valueOf(removeLogDescriptors))
+	                .field("applicability_domain", applicability_domain)
+	                .field("embedding_tsv", embeddingTsv) // leave uncompressed; gzip if needed
+	                .asString();
+
+	    } catch (Exception e) {
+	        System.err.println("callPredictionApplicabilityDomain (gz) failed: "
+	                + e.getClass().getSimpleName() + " - " + e.getMessage());
+	        return null;
+	    }
+	}
+
+	private static byte[] gzipUtf8(String text) throws IOException {
+	    if (text == null) text = "";
+	    byte[] raw = text.getBytes(StandardCharsets.UTF_8);
+	    try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	         GZIPOutputStream gzip = new GZIPOutputStream(baos)) {
+	        gzip.write(raw);
+	        gzip.finish();
+	        return baos.toByteArray();
+	    }
+	}
+	
 	public HttpResponse<String> callGeneratePlot(String trainingSet, String predictionSet, String modelId,String modelName,String plotType) {
-		HttpResponse<String> response = Unirest.post(address+"/models/plot")
+		HttpResponse<String> response = Unirest.post(address+"/api/predictor_models/plot")
 				.field("training_tsv", trainingSet)
 				.field("prediction_tsv", predictionSet)
 				.field("model_id", modelId)

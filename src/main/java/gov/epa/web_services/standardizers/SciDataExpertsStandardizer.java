@@ -23,8 +23,8 @@ import com.google.gson.JsonObject;
 
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.util.ExcelSourceReader;
+import gov.epa.util.JsonUtilities;
 //import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponseWithStatus;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -182,7 +182,7 @@ public class SciDataExpertsStandardizer {
 	}
 	
 	private static String handleFullOutputSingleChemical(String json) {
-		JsonObject jo=Utilities.gson.fromJson(json, JsonObject.class);
+		JsonObject jo=JsonUtilities.gson.fromJson(json, JsonObject.class);
 
 		JsonArray records=jo.get("records").getAsJsonArray();
 
@@ -221,7 +221,7 @@ public class SciDataExpertsStandardizer {
 		
 		String changes="";
 		
-		JsonObject jo=Utilities.gson.fromJson(json, JsonObject.class);
+		JsonObject jo=JsonUtilities.gson.fromJson(json, JsonObject.class);
 		JsonArray records=jo.get("records").getAsJsonArray();
 		
 		for (int i=0;i<records.size();i++) {
@@ -262,7 +262,7 @@ public class SciDataExpertsStandardizer {
 		
 		String messages="";
 		
-		JsonObject jo=Utilities.gson.fromJson(json, JsonObject.class);
+		JsonObject jo=JsonUtilities.gson.fromJson(json, JsonObject.class);
 		JsonArray records=jo.get("records").getAsJsonArray();
 		
 		for (int i=0;i<records.size();i++) {
@@ -335,7 +335,7 @@ public class SciDataExpertsStandardizer {
 	}
 
 	private static String handleSimpleOutputSingleChemical(String json) {
-		JsonArray results=Utilities.gson.fromJson(json, JsonArray.class);
+		JsonArray results=JsonUtilities.gson.fromJson(json, JsonArray.class);
 
 		if (results.size()==0) {
 			return null;
@@ -358,8 +358,8 @@ public class SciDataExpertsStandardizer {
 	 * Makes the json pretty (easy to read)
 	 */
 	public static String getResponseBody(HttpResponse<String> response, boolean full) {
-		Object responseBody=Utilities.gson.fromJson(response.getBody(), Object.class);
-		return Utilities.gson.toJson(responseBody);//convert back and forth to get prettyprinting
+		Object responseBody=JsonUtilities.gson.fromJson(response.getBody(), Object.class);
+		return JsonUtilities.gson.toJson(responseBody);//convert back and forth to get prettyprinting
 	}
 
 
@@ -410,7 +410,7 @@ public class SciDataExpertsStandardizer {
 
 		HttpResponse<String> response = Unirest.post(serverHost+"/api/stdizer/chemicals")
 				.header("Content-Type", "application/json")
-				.body(Utilities.gson.toJson(joBody))
+				.body(JsonUtilities.gson.toJson(joBody))
 				.asString();
 
 		return response;
@@ -450,7 +450,7 @@ public class SciDataExpertsStandardizer {
 
 		HttpResponse<String> response = Unirest.post(serverHost+"/api/stdizer/chemicals")
 				.header("Content-Type", "application/json")
-				.body(Utilities.gson.toJson(joBody))
+				.body(JsonUtilities.gson.toJson(joBody))
 				.asString();
 
 		return response;
@@ -481,7 +481,7 @@ public class SciDataExpertsStandardizer {
 
 		HttpResponse<String> response = Unirest.post(serverHost+"/api/stdizer/chemicals")
 				.header("Content-Type", "application/json")
-				.body(Utilities.gson.toJson(joBody))
+				.body(JsonUtilities.gson.toJson(joBody))
 				.asString();
 
 		return response;
@@ -503,7 +503,7 @@ public class SciDataExpertsStandardizer {
 		PostBody postBody=new PostBody(full,workflow,smiles);
 		HttpResponse<String> response = Unirest.post(serverHost+"/api/stdizer/chemicals")
 				.header("Content-Type", "application/json")
-				.body(Utilities.gson.toJson(postBody))
+				.body(JsonUtilities.gson.toJson(postBody))
 				.asString();
 
 		return response;
@@ -572,7 +572,7 @@ public class SciDataExpertsStandardizer {
 
 		HttpResponse<String> response = Unirest.post(serverHost+"/api/stdizer/chemicals")
 				.header("Content-Type", "application/json")
-				.body(Utilities.gson.toJson(joBody))
+				.body(JsonUtilities.gson.toJson(joBody))
 				.asString();
 
 		return response;

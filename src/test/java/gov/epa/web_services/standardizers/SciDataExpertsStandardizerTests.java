@@ -44,10 +44,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA_Old.Lookup;
 import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA_Old.SqliteUtilities;
-import gov.epa.web_services.standardizers.Standardizer.StandardizeResponseWithStatus;
+import gov.epa.util.JsonUtilities;
+import gov.epa.web_services.standardizers.Standardizer;
 import kong.unirest.HttpResponse;
 
 /**
@@ -62,7 +62,7 @@ public class SciDataExpertsStandardizerTests {
 
 	//	String serverEPA = "https://ccte-cced.epa.gov/api/stdizer/";
 	String serverEPA="https://hcd.rtpnc.epa.gov/api/stdizer";
-	static String serverHost="https://hcd.rtpnc.epa.gov";
+	static String serverHost="https://cim-dev.sciencedataexperts.com";
 //	static String serverHost="https://hazard-dev.sciencedataexperts.com";
 	
 
@@ -70,6 +70,8 @@ public class SciDataExpertsStandardizerTests {
 //		static String workflow="QSAR-ready_CNL_edits_TMM";
 //	static String workflow = "QSAR-ready_CNL_edits_TMM_2";
 	static String workflow = "qsar-ready_08232023";
+//	static String workflow = "qsar-ready_04242025_0";
+//	static String workflow = "qsar-ready_06182025";
 	
 	//	String workflow = "qsar-ready";
 
@@ -692,7 +694,7 @@ public class SciDataExpertsStandardizerTests {
 		InputStream inputStream = new FileInputStream("C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 qsar ready standardizer\\"+filename);
 		String csvAsString = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
 		String json = CDL.toJSONArray(csvAsString).toString();
-		JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+		JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 
 		Hashtable<String,JsonObject>htLookup=new Hashtable<>();
 
@@ -880,6 +882,14 @@ public class SciDataExpertsStandardizerTests {
 		ht.put("CCCC=C[O-]","CCCCC=O");//What is neutral form of C=C[O-]?
 		runChemicalsInHashtable(ht, "C=C[O-]");
 	}
+	
+	@Test
+	public void runCI() {
+		LinkedHashMap<String, String> ht = new LinkedHashMap<>();// preserves order
+		ht.put("CI","CI");//What is neutral form of C=C[O-]?
+		runChemicalsInHashtable(ht, "CI");
+	}
+
 
 	@Test
 	public void runSimpleSalt() {

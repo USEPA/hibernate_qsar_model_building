@@ -8,7 +8,7 @@ import java.util.Map;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 import gov.epa.web_services.WebService;
 import kong.unirest.HttpResponse;
 import kong.unirest.JsonNode;
