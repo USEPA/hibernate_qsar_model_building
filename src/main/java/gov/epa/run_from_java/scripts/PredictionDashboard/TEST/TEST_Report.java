@@ -2,19 +2,13 @@ package gov.epa.run_from_java.scripts.PredictionDashboard.TEST;
 
 import java.util.ArrayList;
 
-import ToxPredictor.Application.TESTConstants;
-import ToxPredictor.Application.model.CancerStats;
-import ToxPredictor.Application.model.ExternalPredChart;
-import ToxPredictor.Application.model.IndividualPredictionsForConsensus;
-import ToxPredictor.Application.model.PredictionResults;
-import ToxPredictor.Application.model.SimilarChemicals;
-
-//import ToxPredictor.Application.model.IndividualPredictionsForConsensus.PredictionIndividualMethod;
-//import ToxPredictor.misc.StatisticsCalculator;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
+import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.Performance;
+import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.Statistics;
+import gov.epa.run_from_java.scripts.PredictionDashboard.TEST.model.*;
 
 /**
 * @author TMARTI02
@@ -90,9 +84,85 @@ public class TEST_Report extends PredictionReport {
 
 	}
 	
+	public void setChemicalIdentifiers(PredictionDashboard pd,gov.epa.run_from_java.scripts.PredictionDashboard.TEST.model.PredictionResults pr) {
+
+		this.chemicalIdentifiers.dtxcid=pd.getDtxcid();
+
+//		if(pd.getDsstoxRecord()==null) {
+//			return;
+//		}
+//		
+//		DsstoxRecord dr=pd.getDsstoxRecord();
+//		
+//		this.chemicalIdentifiers.dtxsid=dr.getDtxsid();
+//		this.chemicalIdentifiers.casrn=dr.getCasrn();
+//		this.chemicalIdentifiers.preferredName=dr.getPreferredName();
+//		this.chemicalIdentifiers.smiles=dr.getSmiles();
+//		this.chemicalIdentifiers.molWeight=dr.getMolWeight();
+				
+		//TODO store this info in predictionResults (from sdf that was ran)
+		
+		this.chemicalIdentifiers.dtxsid=pr.getDTXSID();
+		this.chemicalIdentifiers.casrn=pr.getCAS();
+		this.chemicalIdentifiers.preferredName=pr.getName();
+		this.chemicalIdentifiers.smiles=pr.getSmiles();
+		this.chemicalIdentifiers.molWeight=pr.getMolWeight(); 
+		
+
+	}
+	
+	protected Performance setStatistics(PredictionResults pr) {
+		
+		Performance performance=new Performance();
+		
+		if(pr.getHmStats()==null) {
+			return null;
+		}
+		
+		for (String statName:pr.getHmStats().keySet()) {
+			
+			Statistics statistics=null;
+			
+			if (statName.contains(DevQsarConstants.TAG_TEST)) {
+				statistics=performance.external;
+			} else if (statName.contains(DevQsarConstants.TAG_CV)) {
+				statistics=performance.fiveFoldICV;
+			} else if (statName.contains(DevQsarConstants.TAG_TRAINING)) {
+				statistics=performance.train;
+			}
+						
+			Double statValue=pr.getHmStats().get(statName);
+			
+			if (statName.contains(DevQsarConstants.PEARSON_RSQ)) {
+				if (statName.contains(DevQsarConstants.TAG_CV)) {
+					statistics.Q2=statValue;					
+				} else {
+					statistics.R2=statValue;					
+				}
+			} else if (statName.contains(DevQsarConstants.COVERAGE)) {
+				statistics.COVERAGE=statValue;
+			} else if (statName.contains(DevQsarConstants.MAE)) {
+				statistics.MAE=statValue;
+			} else if (statName.contains(DevQsarConstants.RMSE)) {
+				statistics.RMSE=statValue;
+			} else if (statName.contains(DevQsarConstants.BALANCED_ACCURACY)) {
+				statistics.BA=statValue;
+			} else if (statName.contains(DevQsarConstants.SENSITIVITY)) {
+				statistics.SN=statValue;
+			} else if (statName.contains(DevQsarConstants.SPECIFICITY)) {
+				statistics.SP=statValue;
+			} 
+		}
+		
+		return performance;
+	}
+
+	
 	public void setModelResultsTest(PredictionDashboard pd,PredictionResults pr, String unitAbbreviation) {
 
 		modelResults.standardUnit=unitAbbreviation;
+		
+//		System.out.println(pr.getEndpoint()+"\t"+modelResults.standardUnit);
 
 //		modelResults.experimentalValue=getValueInCCD_Units(pr, pd.getExperimentalValue());
 //		modelResults.predictedValue=getValueInCCD_Units(pr, pd.getPredictionValue());
@@ -142,7 +212,7 @@ public class TEST_Report extends PredictionReport {
 		
 		modelResults.consensusPredictions.predictionsIndividualMethod=new ArrayList<>();
 		
-		for(ToxPredictor.Application.model.IndividualPredictionsForConsensus.PredictionIndividualMethod pim:ipfc.getConsensusPredictions()) {
+		for(IndividualPredictionsForConsensus.PredictionIndividualMethod pim:ipfc.getConsensusPredictions()) {
 			PredictionIndividualMethod pimNew=new PredictionIndividualMethod();
 			pimNew.method=pim.getMethod();
 			pimNew.predictedValue=pim.getPrediction();	

@@ -15,13 +15,8 @@ import java.util.List;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
-import ToxPredictor.Application.Calculations.RunFromCommandLine.RunFromSmiles;
-import ToxPredictor.Application.Calculations.RunFromCommandLine.RunFromSmiles.ReportCreator;
-import ToxPredictor.Application.model.ExternalPredChart;
-import ToxPredictor.Application.model.PredictionResults;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.run_from_java.scripts.QsarModelsScript;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.HTMLReportCreator;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.Factor;
@@ -30,6 +25,7 @@ import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.Neighb
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.PredictionIndividualMethod;
 //import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.Factor;
 //import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.Model;
+import gov.epa.util.JsonUtilities;
 
 /**
  * @author TMARTI02
@@ -253,22 +249,22 @@ public class HTMLReportCreatorEPISUITE extends HTMLReportCreator {
 	}
 	
 
-	@Deprecated
-	public static void displayHTMLReport(PredictionResults predictionResults, String fileName, String folder) {
-		String htmlReport = ReportCreator.getReportAsHTMLString(predictionResults);
-		// System.out.println(htmlReport);
-		try {
-			File file = new File(folder + fileName);
-			FileWriter fw = new FileWriter(file);
-			fw.write(htmlReport);
-			fw.flush();
-			fw.close();
-			Desktop desktop = Desktop.getDesktop();
-			desktop.browse(file.toURI());
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-	}
+//	@Deprecated
+//	public static void displayHTMLReport(PredictionResults predictionResults, String fileName, String folder) {
+//		String htmlReport = ReportCreator.getReportAsHTMLString(predictionResults);
+//		// System.out.println(htmlReport);
+//		try {
+//			File file = new File(folder + fileName);
+//			FileWriter fw = new FileWriter(file);
+//			fw.write(htmlReport);
+//			fw.flush();
+//			fw.close();
+//			Desktop desktop = Desktop.getDesktop();
+//			desktop.browse(file.toURI());
+//		} catch (Exception ex) {
+//			ex.printStackTrace();
+//		}
+//	}
 
 	public static void main(String[] args) {
 
@@ -293,7 +289,7 @@ public class HTMLReportCreatorEPISUITE extends HTMLReportCreator {
 			System.out.println(file.getName());
 			
 			try {
-				EpisuiteReport tr = Utilities.gson.fromJson(new FileReader(file), EpisuiteReport.class);
+				EpisuiteReport tr = JsonUtilities.gson.fromJson(new FileReader(file), EpisuiteReport.class);
 //				tr.modelDetails.loadPlotsFromDB=true;//load from postgres for testing
 				h.toHTMLFile(tr, folder);
 				

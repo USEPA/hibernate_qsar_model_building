@@ -39,6 +39,7 @@ public class CreatorScript {
 	
 	static ModelServiceImpl modelService=new ModelServiceImpl();
 	static DatasetServiceImpl datasetService=new DatasetServiceImpl();
+	static MethodADServiceImpl servMAD=new MethodADServiceImpl();
 
 	
 	public static Unit createUnit(String unitName,String lanId) {
@@ -213,9 +214,8 @@ public class CreatorScript {
 
 	public static TreeMap <String,Property> getPropertyMap() {
 		
-		PropertyServiceImpl ps=new PropertyServiceImpl();
-		List<Property>properties=ps.findAll();
-
+		List<Property>properties=propertyService.findAll();
+		
 		TreeMap <String,Property>mapProperties=new TreeMap<>();
 		for (Property property:properties) {
 			mapProperties.put(property.getName(), property);
@@ -226,8 +226,7 @@ public class CreatorScript {
 
 	public static TreeMap<String, Dataset> getDatasetsMap() {
 		
-		DatasetServiceImpl ps=new DatasetServiceImpl();
-		List<Dataset>datasets=ps.findAll();
+		List<Dataset>datasets=datasetService.findAll();
 
 		TreeMap <String,Dataset>mapDatasets=new TreeMap<>();
 		for (Dataset dataset:datasets) {
@@ -238,8 +237,7 @@ public class CreatorScript {
 
 	public static TreeMap<String, Model> getModelsMap() {
 		
-		ModelServiceImpl ps=new ModelServiceImpl();
-		List<Model>models=ps.getAll();
+		List<Model>models=modelService.getAll();
 
 		TreeMap <String,Model>mapModels=new TreeMap<>();
 		for (Model model:models) {
@@ -263,7 +261,6 @@ public class CreatorScript {
 
 	public static TreeMap<String,MethodAD> getMethodAD_Map() {
 	
-			MethodADServiceImpl servMAD=new MethodADServiceImpl();
 			
 			List<MethodAD>methodADs=servMAD.findAll();
 	

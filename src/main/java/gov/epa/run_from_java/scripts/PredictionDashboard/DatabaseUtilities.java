@@ -1,15 +1,29 @@
 package gov.epa.run_from_java.scripts.PredictionDashboard;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.List;
 
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
 import gov.epa.databases.dev_qsar.qsar_models.entity.Source;
 import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.util.JsonUtilities;
+import gov.epa.util.StructureUtil;
+import gov.epa.util.StructureUtil.APIMolecule;
 
 /**
 * @author TMARTI02
@@ -52,8 +66,8 @@ public class DatabaseUtilities {
 	}
 	
 	
-	public void deleteAllRecords(String sourceName) {
 		
+	public void deleteAllRecords(String sourceName) {
 		String sql="select id from qsar_models.sources where name='"+sourceName+"';";
 		
 		System.out.println(sql);
@@ -128,8 +142,8 @@ public class DatabaseUtilities {
 				}
 				long t3=System.currentTimeMillis();
 				
-				System.out.println("Time to get result set:"+(t2-t1));
-				System.out.println("Time to iterate result set:"+(t3-t2));
+				System.out.println("Time to get result set:"+(t2-t1)/1000.0);
+				System.out.println("Time to iterate result set:"+(t3-t2)/1000.0);
 				
 				if(count==0) break;
 				
@@ -181,7 +195,7 @@ public class DatabaseUtilities {
 
 	}
 	
-	public static HashSet<String>getLoadedKeys(String filepath) {
+	public static HashSet<String>getLoadedKeysFromFile(String filepath) {
 
 		HashSet<String>values=new HashSet<>();
 
@@ -413,11 +427,182 @@ public class DatabaseUtilities {
 	}
 
 
+	public List<DsstoxRecord> getUnpredictedBySource(String sourceName)  {
+
+		Connection conn=SqlUtilities.getConnectionPostgres();
+
+		final String sql = """
+				SELECT 
+				    dr.dtxcid,
+				    dr.dtxsid,
+				    dr.smiles,
+				    dr.created_at
+				FROM qsar_models.dsstox_records dr
+				WHERE dr.fk_dsstox_snapshot_id = 4
+				  AND NOT EXISTS (
+				    SELECT 1
+				    FROM qsar_models.predictions_dashboard pd
+				    JOIN qsar_models.models m
+				      ON m.id = pd.fk_model_id
+				    JOIN qsar_models.sources s
+				      ON s.id = m.fk_source_id
+				    WHERE s.name = ?
+				      AND pd.dtxcid = dr.dtxcid
+				  )
+				""";
+
+		try {
+
+			List<DsstoxRecord> results = new ArrayList<>();
+			try (PreparedStatement ps = conn.prepareStatement(sql)) {
+				ps.setString(1, sourceName);
+				try (ResultSet rs = ps.executeQuery()) {
+					while (rs.next()) {
+						DsstoxRecord dr= new DsstoxRecord();
+						dr.setDtxcid(rs.getString("dtxcid"));
+						dr.setDtxsid(rs.getString("dtxsid"));
+						dr.setSmiles(rs.getString("smiles"));
+						dr.setCreatedAt(rs.getTimestamp("created_at"));
+						results.add(dr);
+					}
+				}
+			}
+			return results;
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
+	
+	
+	public long getCountUnpredictedBySource(String sourceName)  {
+	    final String sql = """
+	        SELECT COUNT(*) AS missing_count
+	        FROM qsar_models.dsstox_records dr
+	        WHERE dr.fk_dsstox_snapshot_id = 4
+	          AND NOT EXISTS (
+	            SELECT 1
+	            FROM qsar_models.predictions_dashboard pd
+	            JOIN qsar_models.models m ON m.id = pd.fk_model_id
+	            WHERE m.fk_source_id = (
+	              SELECT id
+	              FROM qsar_models.sources
+	              WHERE name = ?
+	            )
+	            AND pd.dtxcid = dr.dtxcid
+	          )
+	        """;
+
+	    try (PreparedStatement ps = SqlUtilities.getConnectionPostgres().prepareStatement(sql)) {
+	        ps.setString(1, sourceName);
+	        try (ResultSet rs = ps.executeQuery()) {
+	            return rs.next() ? rs.getLong(1) : 0L;
+	        }
+	    } catch (Exception ex) {
+	    	ex.printStackTrace();
+	    	return 0;
+	    }
+	}
+
+	
+	void lookForMissingPredictionsInOperaOutputFiles() {
+		
+		String source="OPERA2.8";
+		List<DsstoxRecord>drs = getUnpredictedBySource(source);
+		Hashtable<String,DsstoxRecord>htDR_by_SID=new Hashtable<>();
+		
+		int count=0;
+		for (DsstoxRecord dr:drs) {
+			if (dr.getSmiles()==null) continue;
+			dr.setOtherCasrns(null);
+			htDR_by_SID.put(dr.getDtxsid(), dr);
+			if (dr.getSmiles().contains(".")) continue;
+			count++;
+//			System.out.println(JsonUtilities.gson.toJson(dr));
+		}
+		
+		String folderSDF="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\OPERA\\OPERA 2.8\\dsstox_2025_12_31_missing_opera2.8_predictions";
+		HashSet<String>mySIDs=new HashSet<>();
+		for (File file:new File(folderSDF).listFiles()) {
+			if (!file.getName().contains(".sdf")) continue;
+			List<APIMolecule>mols=StructureUtil.readSDF_to_API_Molecules(file.getAbsolutePath(), -1);
+			for (APIMolecule mol:mols) {
+//				System.out.println(file.getName()+"\t"+ mol.htProperties.get("DTXSID"));
+				mySIDs.add((String)mol.htProperties.get("DTXSID"));
+			}
+		}
+		
+		
+				
+		String folderSDF_Kamel="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\OPERA\\OPERA 2.8\\difference with 12-31-25 snapshot";
+		HashSet<String>kamelSIDs_SDF=new HashSet<>();
+		HashSet<String>kamelSIDs_Pred=new HashSet<>();
+		for (File file:new File(folderSDF_Kamel).listFiles()) {
+			if (file.getName().contains(".sdf")) {
+				List<APIMolecule>mols=StructureUtil.readSDF_to_API_Molecules(file.getAbsolutePath(), -1);
+				for (APIMolecule mol:mols) {
+//					System.out.println(file.getName()+"\t"+ mol.htProperties.get("DTXSID"));
+					kamelSIDs_SDF.add((String)mol.htProperties.get("DTXSID"));
+				}
+				
+			} else if (file.getName().contains("pred_")) {
+				try {
+					BufferedReader br=new BufferedReader(new FileReader(file));
+					while(true ) {
+						String Line=br.readLine();
+						if(Line==null) break;
+						String dtxsid=Line.substring(0,Line.indexOf(","));
+						kamelSIDs_Pred.add(dtxsid);
+					}
+					
+					br.close();
+					
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+		}
+		
+		
+		String dtxsidMissing="DTXSID50161110";
+		System.out.println("mySIDs.contains="+mySIDs.contains(dtxsidMissing));
+		System.out.println("kamelSIDs_SDF.contains="+kamelSIDs_SDF.contains(dtxsidMissing));
+		System.out.println("kamelSIDs_pred.contains="+kamelSIDs_Pred.contains(dtxsidMissing));
+		System.out.println("htDR_by_SID.contains="+htDR_by_SID.containsKey(dtxsidMissing));
+
+		for (String dtxsid:htDR_by_SID.keySet()) {
+			
+			if(!kamelSIDs_Pred.contains(dtxsid) && !kamelSIDs_SDF.contains(dtxsid))			
+				System.out.println(dtxsid+"\t"+kamelSIDs_SDF.contains(dtxsid)+"\t"+kamelSIDs_Pred.contains(dtxsid)+"\t"+htDR_by_SID.get(dtxsid).getSmiles());
+		}
+		
+		
+	}
 
 	public static void main(String[] args) {
+		
 		DatabaseUtilities d=new DatabaseUtilities();
 //		d.deleteAllRecords("Percepta2020.2.1");
 //		d.deleteAllRecords("Percepta2023.1.2");
+		
+		List<String>sources=Arrays.asList("OPERA2.8", "TEST5.1.3","Percepta2025.1.4");
+		
+//		for (String source:sources) {
+//			long count = d.getCountUnpredictedBySource(source);
+//			System.out.println(source+" "+count);
+//		}
+		
+		d.lookForMissingPredictionsInOperaOutputFiles();
+
+		
+		
+//		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\OPERA\\OPERA 2.8\\difference with 12-31-25 snapshot\\";
+//		String filepathKeys = folder+"loaded_keys.tsv"; 
+//		DatabaseUtilities.dumpLoadedKeysForSourceToFile("OPERA2.8", filepathKeys);
+//		HashSet<String>keys = DatabaseUtilities.loadLinesIntoHashSet(filepathKeys);
+//		System.out.println(keys.size()/28);
+		
 		
 	}
 
@@ -481,6 +666,189 @@ public class DatabaseUtilities {
 				+ "where s.name='"+sourceName+"'\n"+
 				"group by pd.dtxcid\n"+
 				"having count(pd.dtxcid)="+count+";";
+//		System.out.println(sql);
+		
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres() , sql);
+		
+		try {
+			while (rs.next()) {
+				values.add(rs.getString(1));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return values;
+	}
+	
+	public static HashSet<String> getLoadedCIDsWithCount2(String sourceName, int count) {
+		HashSet<String>values=new HashSet<>();
+		
+		String sql = null;
+
+		if (count<=0) {
+			sql = """
+				   WITH ms AS (
+					  SELECT m.id
+					  FROM qsar_models.models m
+					  JOIN qsar_models.sources s ON s.id = m.fk_source_id
+					  WHERE s.name = 'OPERA2.8'
+					)
+					SELECT DISTINCT pd.dtxcid
+					FROM qsar_models.predictions_dashboard pd
+					JOIN ms ON ms.id = pd.fk_model_id;
+					""";
+		} else {
+			sql = """
+				    WITH ms AS (
+				      SELECT m.id
+				      FROM qsar_models.models m
+				      JOIN qsar_models.sources s ON s.id = m.fk_source_id
+				      WHERE s.name = 'OPERA2.8'
+				    )
+				    SELECT pd.dtxcid
+				    FROM qsar_models.predictions_dashboard pd
+				    JOIN ms ON ms.id = pd.fk_model_id
+				    GROUP BY pd.dtxcid
+				    """;
+			sql+="\nHAVING COUNT(DISTINCT pd.fk_model_id) >= "+count+";";
+		}
+		
+//		System.out.println(sql);
+		
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres() , sql);
+		
+		try {
+			while (rs.next()) {
+				values.add(rs.getString(1));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return values;
+	}
+	
+	
+	public static HashSet<String> getLoadedKeysForSource(String sourceName) {
+		HashSet<String> values = new HashSet<>();
+
+		String sql = """
+				WITH ms AS (
+				  SELECT m.id
+				  FROM qsar_models.models m
+				  JOIN qsar_models.sources s ON s.id = m.fk_source_id
+				  WHERE s.name = ?
+				)
+				SELECT pd.canon_qsar_smiles, pd.dtxcid, pd.fk_model_id
+				FROM qsar_models.predictions_dashboard pd
+				JOIN ms ON ms.id = pd.fk_model_id;
+				""";
+
+		System.out.println("Getting keys in db for " + sourceName);
+
+		try (java.sql.Connection conn = SqlUtilities.getConnectionPostgres();
+				java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+			ps.setString(1, sourceName);
+			try (java.sql.ResultSet rs = ps.executeQuery()) {
+				while (rs.next()) {
+					values.add(rs.getString(1) + "\t" + rs.getString(2) + "\t" + rs.getLong(3));
+				}
+			}
+			System.out.println(values.size() + " keys in db for " + sourceName);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		return values;
+	}
+	
+	
+	
+	public static HashSet<String> loadLinesIntoHashSet(String path) {
+	    
+	    System.out.println("Loading pd_keys from file");
+
+		HashSet<String> set = new HashSet<>();
+	    try (BufferedReader br = Files.newBufferedReader(Path.of(path), StandardCharsets.UTF_8)) {
+	        String line;
+	        while ((line = br.readLine()) != null) {
+	            String s = line.strip();
+	            if (s.isEmpty()) continue;           // skip empty lines
+	            // if (s.startsWith("#")) continue;  // uncomment to skip comments
+	            set.add(s);
+	        }
+	        
+	    } catch (Exception ex) {
+	    	ex.printStackTrace();
+	    }
+	    return set;
+	}
+	
+	
+	
+	public static void dumpLoadedKeysForSourceToFile(String sourceName, String outFilePath) {
+	    String sql = """
+	        WITH ms AS (
+	          SELECT m.id
+	          FROM qsar_models.models m
+	          JOIN qsar_models.sources s ON s.id = m.fk_source_id
+	          WHERE s.name = ?
+	        )
+	        SELECT pd.canon_qsar_smiles, pd.dtxcid, pd.fk_model_id
+	        FROM qsar_models.predictions_dashboard pd
+	        JOIN ms ON ms.id = pd.fk_model_id
+	        """;
+
+	    
+	    int count=0;
+	    
+	    System.out.println("Dumping pd_keys to file");
+	    
+	    try (java.sql.Connection conn = SqlUtilities.getConnectionPostgres()) {
+	        conn.setAutoCommit(false); // required for cursor-based fetch on PG
+	        try (java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+	            ps.setFetchSize(1000);   // tune as appropriate
+	            ps.setString(1, sourceName);
+
+	            try (java.sql.ResultSet rs = ps.executeQuery();
+	                 BufferedWriter w = Files.newBufferedWriter(Path.of(outFilePath))) {
+
+	                while (rs.next()) {
+	                    String canon = rs.getString(1);
+	                    String dtxcid = rs.getString(2);
+	                    long modelId = rs.getLong(3);
+	                    w.write(canon);
+	                    w.write('\t');
+	                    w.write(dtxcid);
+	                    w.write('\t');
+	                    w.write(Long.toString(modelId));
+	                    w.newLine();
+	                    count++;
+	                    
+	                    if(count%100000==0) {
+	                    	System.out.println(count);
+	                    }
+	                }
+	            }
+	        }
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+	    
+	}
+	
+	
+	public static HashSet<String> getLoadedCIDs(String sourceName, String countCriterion) {
+		HashSet<String>values=new HashSet<>();
+		
+		String sql="select pd.dtxcid\r\n"
+				+ "from qsar_models.predictions_dashboard pd\r\n"
+				+ "join qsar_models.models m on m.id=pd.fk_model_id\r\n"
+				+ "join qsar_models.sources s on s.id=m.fk_source_id\r\n"
+				+ "where s.name='"+sourceName+"'\n"+
+				"group by pd.dtxcid\n"+
+				"having count(pd.dtxcid)"+countCriterion+";";
 				
 //		System.out.println(sql);
 		
@@ -496,6 +864,7 @@ public class DatabaseUtilities {
 		
 		return values;
 	}
+
 
 
 }

@@ -19,7 +19,7 @@ import com.google.gson.JsonObject;
 
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.DSSTOX_Loading.DSSTOX_Qsar_Ready_Script.DSSTOX_QSAR_Ready;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 /**
  * @author TMARTI02
@@ -162,7 +162,7 @@ public class DSSTOX_MS_Ready_Script {
 			inputStream.close();
 			
 			
-			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 
 			System.out.println("Number of records in csv:"+ja.size());
 

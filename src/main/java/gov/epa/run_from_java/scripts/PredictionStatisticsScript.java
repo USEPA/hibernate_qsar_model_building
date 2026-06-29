@@ -60,9 +60,9 @@ import gov.epa.run_from_java.scripts.ApplicabilityDomainScript.ApplicabilityDoma
 import gov.epa.run_from_java.scripts.PredictionStatisticsScript.MainTable.MainTableRow;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteValidation;
 import gov.epa.util.FileUtils;
+import gov.epa.util.JsonUtilities;
 import gov.epa.run_from_java.scripts.RecalcStatsScript.SplitPredictions;
 
 public class PredictionStatisticsScript {
@@ -1210,7 +1210,7 @@ public class PredictionStatisticsScript {
 			String folder = "data\\dev_qsar\\output\\";
 			String jsonPath = folder + "//" + dataSetName2 + "//" + dataSetName2 + "_Mapped_Records.json";
 
-			JsonArray ja = Utilities.getJsonArrayFromJsonFile(jsonPath);
+			JsonArray ja = JsonUtilities.getJsonArrayFromJsonFile(jsonPath);
 
 			ExcelCreator ec = new ExcelCreator();
 
@@ -1431,7 +1431,7 @@ public class PredictionStatisticsScript {
 		PredictionReport predictionReport = null;
 
 		try {
-			predictionReport = Utilities.gson.fromJson(new FileReader(jsonFile), PredictionReport.class);
+			predictionReport = JsonUtilities.gson.fromJson(new FileReader(jsonFile), PredictionReport.class);
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -2120,11 +2120,20 @@ public class PredictionStatisticsScript {
 //			modelIds.add(id);	
 //		}
 //		modelIds.add(1569L);
-		modelIds.add(1522L);
+//		modelIds.add(1522L);
 		
+//		modelIds.add(1613L);
+//		modelIds.add(1614L);
+//		modelIds.add(1615L);
+		
+		modelIds.add(1065L);		
+		
+		String outputFolder = "data/reports/prediction reports upload";
 //		String outputFolder = "data/reports/prediction reports upload/FishTox";
 //		String outputFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\0000 biodegradation OPPT\\biodegradation\\RIFM\\datasets\\unvetted with splitting";
-		String outputFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\000 Papers\\2025 aquatic tox";
+//		String outputFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\000 Papers\\2025 aquatic tox";
+
+		
 		File f = new File(outputFolder);
 		if (!f.exists())
 			f.mkdirs();
@@ -2421,7 +2430,7 @@ public class PredictionStatisticsScript {
 				}
 		
 				if (print)
-					System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
+					System.out.println(JsonUtilities.gson.toJson(prmm.predictionReportModelStatistics));
 		
 				//
 				// if(print) System.out.println("\ntraining set");
@@ -2501,7 +2510,7 @@ public class PredictionStatisticsScript {
 					}
 				}
 				if (print)
-					System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
+					System.out.println(JsonUtilities.gson.toJson(prmm.predictionReportModelStatistics));
 		
 			}
 		
@@ -2661,7 +2670,7 @@ public class PredictionStatisticsScript {
 				}
 		
 				if (print)
-					System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
+					System.out.println(JsonUtilities.gson.toJson(prmm.predictionReportModelStatistics));
 		
 				//
 				// if(print) System.out.println("\ntraining set");
@@ -2734,7 +2743,7 @@ public class PredictionStatisticsScript {
 				}
 		
 				if (print)
-					System.out.println(Utilities.gson.toJson(prmm.predictionReportModelStatistics));
+					System.out.println(JsonUtilities.gson.toJson(prmm.predictionReportModelStatistics));
 		
 			}
 		

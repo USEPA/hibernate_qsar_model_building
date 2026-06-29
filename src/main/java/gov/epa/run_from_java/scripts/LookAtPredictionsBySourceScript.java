@@ -13,7 +13,7 @@ import com.google.gson.JsonObject;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 public class LookAtPredictionsBySourceScript {
 	

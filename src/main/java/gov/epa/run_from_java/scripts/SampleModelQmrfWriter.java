@@ -14,7 +14,8 @@ import gov.epa.endpoints.reports.model_sets.ModelSetTable;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable.ModelSetTableRow;
 import gov.epa.endpoints.reports.model_sets.ModelSetTableGenerator;
 import gov.epa.util.FileUtils;
-import gov.epa.util.HtmlUtils;
+import gov.epa.util.HtmlToPDF;
+
 
 public class SampleModelQmrfWriter {
 
@@ -167,7 +168,9 @@ public class SampleModelQmrfWriter {
 				
 				try {
 					generateSampleQMRF(modelSetTableRow, modelMetadata, htmlPath);				
-					HtmlUtils.HtmlToPdf(htmlPath, pdfPath);
+					HtmlToPDF h=new HtmlToPDF();
+					
+					h.generateHtmlToPdf(htmlPath, pdfPath);
 					if (upload) script.uploadModelFile(modelMetadata.modelId, 1L, pdfPath);
 					
 				} catch (Exception e) {

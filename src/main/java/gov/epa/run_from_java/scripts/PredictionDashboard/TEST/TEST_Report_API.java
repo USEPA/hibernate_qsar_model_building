@@ -18,11 +18,11 @@ import gov.epa.databases.dev_qsar.qsar_models.service.PredictionReportServiceImp
 import gov.epa.databases.dev_qsar.qsar_models.service.QsarPredictedADEstimateServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.QsarPredictedNeighborServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.DatabaseUtilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.HTMLReportCreator;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
 import gov.epa.run_from_java.scripts.PredictionDashboard.ReportViewerFromDB;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -90,7 +90,7 @@ public class TEST_Report_API {
 		//TODO need the plots which arent stored in pd (stored in PredictionResults)
 		TEST_Report or=new TEST_Report(pd,null, property,unitAbbreviation,unitAbbreviationNeighbor, useLegacyModelIds);
 		
-		String json=Utilities.gson.toJson(or);
+		String json=JsonUtilities.gson.toJson(or);
 		
 		System.out.println(json);
 		
@@ -113,7 +113,7 @@ public class TEST_Report_API {
 		
 		HTMLReportCreatorTEST h=new HTMLReportCreatorTEST();
 		
-		PredictionDashboardScriptTEST p=new PredictionDashboardScriptTEST(); 
+		PredictionDashboardScriptTEST2 p=new PredictionDashboardScriptTEST2(); 
 		
 		
 		Long dsstoxRecordId = getDsstoxRecordId(id, fk_dsstox_snapshot_id);
@@ -146,7 +146,7 @@ public class TEST_Report_API {
 				
 				if(regenerateReport) {
 					or=getReportFromPredictionDashboard(id,modelName,useLegacyModelIds,dsstoxRecordId);
-					json=Utilities.gson.toJson(or);
+					json=JsonUtilities.gson.toJson(or);
 				}
 				else {
 					json=DatabaseUtilities.getJsonPredictionReport(id,modelName,dsstoxRecordId);
@@ -154,7 +154,7 @@ public class TEST_Report_API {
 				}
 
 				String filenameJson=id+"_"+or.modelDetails.modelName+".json";
-				Utilities.jsonToPrettyJson(json, destFolder+File.separator+filenameJson.replace(".html", ".json"));
+				JsonUtilities.jsonToPrettyJson(json, destFolder+File.separator+filenameJson.replace(".html", ".json"));
 
 				
 				h.toHTMLFile(or, destFolder,filename);

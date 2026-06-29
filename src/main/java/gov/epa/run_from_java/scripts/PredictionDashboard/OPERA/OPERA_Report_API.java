@@ -22,10 +22,10 @@ import gov.epa.databases.dev_qsar.qsar_models.service.PredictionReportServiceImp
 import gov.epa.databases.dev_qsar.qsar_models.service.QsarPredictedADEstimateServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.QsarPredictedNeighborServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.DatabaseUtilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.HTMLReportCreator;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -90,7 +90,7 @@ public class OPERA_Report_API {
 		String unitAbbreviation=dataset.getUnitContributor().getAbbreviation_ccd();
 		OPERA_Report or=new OPERA_Report(pd,property,unitAbbreviation,useLegacyModelIds);
 		
-		String json=Utilities.gson.toJson(or);
+		String json=JsonUtilities.gson.toJson(or);
 		
 		System.out.println(json);
 		
@@ -159,7 +159,7 @@ public class OPERA_Report_API {
 				
 				if(regenerateReportFromPredictionDashboard) {
 					or=getOperaReportFromPredictionDashboard(id,modelName,useLegacyModelIds,dsstoxRecordId);
-					json=Utilities.gson.toJson(or);
+					json=JsonUtilities.gson.toJson(or);
 				}
 				else {
 					json=DatabaseUtilities.getJsonPredictionReport(id,modelName,dsstoxRecordId);

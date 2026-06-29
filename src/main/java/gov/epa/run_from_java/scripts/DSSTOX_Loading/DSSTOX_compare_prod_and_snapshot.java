@@ -19,7 +19,7 @@ import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.entity.GenericSubstance;
 import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
 import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -33,7 +33,7 @@ public class DSSTOX_compare_prod_and_snapshot {
 		List<DsstoxCompound> compounds=new ArrayList<>();
 
 		try {
-			JsonArray ja=Utilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
 					
 			
 			for (int i=0;i<ja.size();i++) {

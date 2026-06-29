@@ -11,7 +11,7 @@ import com.google.gson.Gson;
 
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02

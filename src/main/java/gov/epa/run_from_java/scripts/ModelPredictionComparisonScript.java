@@ -10,7 +10,7 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.ModelStatisticCalculator;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -84,8 +84,8 @@ public class ModelPredictionComparisonScript {
 		Map<String, Double>mapstats1=ModelStatisticCalculator.calculateContinuousStatistics(mps1,1.0,DevQsarConstants.TAG_TEST);
 		Map<String, Double>mapstats2=ModelStatisticCalculator.calculateContinuousStatistics(mps2,1.0,DevQsarConstants.TAG_TEST);
 
-		System.out.println(Utilities.gson.toJson(mapstats1));
-		System.out.println(Utilities.gson.toJson(mapstats2));
+		System.out.println(JsonUtilities.gson.toJson(mapstats1));
+		System.out.println(JsonUtilities.gson.toJson(mapstats2));
 		
 	}
 	

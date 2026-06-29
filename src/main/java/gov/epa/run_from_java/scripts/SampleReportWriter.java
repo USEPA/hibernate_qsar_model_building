@@ -19,8 +19,8 @@ import gov.epa.endpoints.reports.model_sets.ModelSetTable;
 import gov.epa.endpoints.reports.model_sets.ModelSetTable.ModelSetTableRow;
 import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
+import gov.epa.util.JsonUtilities;
 import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelPredictionReportGenerator;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class SampleReportWriter {
 
@@ -184,13 +184,15 @@ public class SampleReportWriter {
 		}
 
 		String applicability_domain=null;
-//		if(modelSetName.equals("WebTEST2.0")) {
-//			applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
-//		} else if(modelSetName.equals("WebTEST2.1")) {
-//			applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
-//		}
+		
+		if(model.getDescriptorEmbedding()==null) {
+			applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
+		} else {
+			applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;	
+		}
+		
 		//Just use all descriptors- works more reliably:
-		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
+//		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_All_Descriptors_Euclidean;
 //		applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
 		
 		//TODO should get AD from models table
@@ -202,8 +204,7 @@ public class SampleReportWriter {
 		predictionReport.toFile(filepathReport);
 		System.out.println(filepathReport);
 		
-		
-		
+				
 		String fileNameExcel=String.join("_", datasetName, splittingName, methodName,"with_AD") + ".xlsx";
 		
 		if(useModelIdForExcelName)	
@@ -211,9 +212,8 @@ public class SampleReportWriter {
 		
 		String filepathExcel = outputFolder + File.separator + fileNameExcel;
 		createExcelReport(methodName, predictionReport, filepathExcel, overWriteJsonReport);
-//		System.out.println(filepathExcel);
+		System.out.println(filepathExcel);
 		
-
 		// Copy to folder:		
 //		try {
 //			
@@ -289,7 +289,7 @@ public class SampleReportWriter {
 		} else {
 			filepathReport = "data/reports/" + modelSetName + "/" + datasetName + "_PredictionReport_with_AD.json";
 		}
-		Utilities.saveJson(pr, filepathReport);
+		JsonUtilities.saveJson(pr, filepathReport);
 	}
 
 

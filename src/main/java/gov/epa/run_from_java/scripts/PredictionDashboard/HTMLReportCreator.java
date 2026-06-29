@@ -10,29 +10,29 @@ import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.nio.charset.Charset;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.TreeMap;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
-import ToxPredictor.Application.TESTConstants;
-import ToxPredictor.Application.Calculations.PredictToxicityWebPageCreatorFromJSON;
-import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.databases.dev_qsar.UnitConverter;
+import com.google.gson.Gson;
+
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
-import gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
-import gov.epa.databases.dsstox.DsstoxRecord;
+//import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport;
+
+import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
+
 import gov.epa.run_from_java.scripts.QsarModelsScript;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.Model;
-import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.OPERA_Report_API;
-import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.PredictionDashboardScriptOPERA;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.ADEstimate;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.PredictionIndividualMethod;
 
@@ -124,7 +124,7 @@ public class HTMLReportCreator {
 	
 	public static String getFormattedValue(boolean formatAsInteger, Double dvalue,String propertyName,int nsig) {
 
-		if(dvalue==null) {
+		if(dvalue==null || dvalue.isNaN()) {
 			return "N/A";
 		}
 		
@@ -156,9 +156,23 @@ public class HTMLReportCreator {
 		
 	}
 	
+	
+	public static String setSignificantDigits(double value, int significantDigits) {
+	    if (significantDigits < 0) throw new IllegalArgumentException();
+
+	    // this is more precise than simply doing "new BigDecimal(value);"
+	    BigDecimal bd = new BigDecimal(value, MathContext.DECIMAL64);
+	    bd = bd.round(new MathContext(significantDigits, RoundingMode.HALF_UP));
+	    final int precision = bd.precision();
+	    if (precision < significantDigits)
+	    bd = bd.setScale(bd.scale() + (significantDigits-precision));
+	    return bd.toPlainString();
+	}    
+	
+	
 	public static String getFormattedValue(boolean isBinary, Double dvalue,int nsig) {
 
-		if(dvalue==null) {
+		if(dvalue==null || dvalue.isNaN()) {
 			return "N/A";
 		}
 		
@@ -189,16 +203,21 @@ public class HTMLReportCreator {
 	}
 	
 	
-	protected void writeExperimental(PredictionReport or, Writer fw) throws IOException {
+	protected void writeExperimental(gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport or, Writer fw) throws IOException {
 		
 //		String strExp="<b>Experimental value: </b>";
-		
+
+		if (or.modelResults.experimentalValue!=null || or.modelResults.experimentalString!=null) {
+			if (or.modelDetails.propertyName.equals("Ready Binary Biodegradability")) {
+				System.out.println(or.chemicalIdentifiers.dtxsid+"\t"+or.modelDetails.propertyName+"\t"+or.modelResults.experimentalValue+"\t"+or.modelResults.experimentalString);
+			}
+		}
 		String strExp=("<div class=\"tooltip\"><b>Experimental value: </b> "+
 				  "<span class=\"tooltiptext\">Experimental value from "+or.modelDetails.modelSourceName+"</span></div>");
 
-		if (or.modelResults.experimentalValue!=null) {
+		if (or.modelResults.experimentalValue!=null && !or.modelResults.experimentalValue.isNaN()) {
 			
-			String formattedValue=getFormattedValue(or.modelDetails.propertyIsBinary,or.modelResults.experimentalValue,or.modelDetails.propertyName);
+			String formattedValue=getFormattedValue(or.modelDetails.propertyIsBinary, or.modelResults.experimentalValue, or.modelDetails.propertyName);
 			strExp+="&nbsp;"+formattedValue+"&nbsp;"+or.modelResults.standardUnit;//add units
 			
 			if(or.modelResults.experimentalString!=null) {
@@ -271,7 +290,7 @@ public class HTMLReportCreator {
 	
 
 	
-	protected void writePredNeighbor(PredictionReport or, Writer fw, Double predictedValue,String predictedString,String predictionToolTip) throws IOException {
+	protected void writePredNeighbor(gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport or, Writer fw, Double predictedValue,String predictedString,String predictionToolTip) throws IOException {
 
 		fw.write("<div class=\"tooltip\"><b>Predicted:</b>"+
 				  "<span class=\"tooltiptext\">"+predictionToolTip+"</span></div>");
@@ -351,16 +370,18 @@ public class HTMLReportCreator {
 
 	}
 	
-	protected void writePrediction(PredictionReport or, Writer fw) throws IOException {
+	protected void writePrediction(gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport or, Writer fw) throws IOException {
 		fw.write("<div class=\"tooltip\"><b>Predicted value: </b> "+
 				  "<span class=\"tooltiptext\">Predicted value from the model</span></div>");
 
 		String strPred="&nbsp;N/A";
 		
-		if(or.modelResults.predictedValue!=null) {
+		if(or.modelResults.predictedValue!=null && !or.modelResults.predictedValue.isNaN()) {
 			String formattedValue=getFormattedValue(or.modelDetails.propertyIsBinary, or.modelResults.predictedValue,or.modelDetails.propertyName);
 			strPred=" "+formattedValue+"&nbsp;"+or.modelResults.standardUnit;
 //			System.out.println("pred formattedValue="+formattedValue);
+			
+//			System.out.println(or.modelDetails.propertyName+"\t"+strPred);
 		}
 		
 		if(or.modelResults.predictedString!=null) {
@@ -397,17 +418,7 @@ public class HTMLReportCreator {
 
 
 	
-	public static String setSignificantDigits(double value, int significantDigits) {
-	    if (significantDigits < 0) throw new IllegalArgumentException();
-
-	    // this is more precise than simply doing "new BigDecimal(value);"
-	    BigDecimal bd = new BigDecimal(value, MathContext.DECIMAL64);
-	    bd = bd.round(new MathContext(significantDigits, RoundingMode.HALF_UP));
-	    final int precision = bd.precision();
-	    if (precision < significantDigits)
-	    bd = bd.setScale(bd.scale() + (significantDigits-precision));
-	    return bd.toPlainString();
-	}    
+	
 
 	
 	protected void writeCenteredTD(Writer fw, String text) throws IOException {
@@ -681,7 +692,7 @@ public class HTMLReportCreator {
 		
 		String chemicalName=or.chemicalIdentifiers.preferredName;
 		
-		fw.write("\t\t<td valign=\"top\"><img src=\""+imgURL+"\" height=150 width=150 border=2 "
+		fw.write("\t\t<td valign=\"top\"><img src=\""+imgURL+"\" hescript_dir = os.path.dirname(os.path.abspath(__file__))ight=150 width=150 border=2 "
 				+ "alt=\"Structural image of "+chemicalName+"\"></td>\n");
 		
 		fw.write("<td valign=\"top\">");
@@ -851,7 +862,8 @@ public class HTMLReportCreator {
 			new File(folder).mkdirs();
 			
 			String filepath=folder+File.separator+filename;
-			FileWriter fw=new FileWriter(filepath);
+			FileWriter fw=new FileWriter(filepath,Charset.forName("UTF-8"));
+			
 //			System.out.println(folder+File.separator+filename);
 			fw.write(strFileHtml);
 			fw.flush();
@@ -1022,8 +1034,6 @@ public class HTMLReportCreator {
 		
     	for (PredictionDashboard pd:listPredictionDashboard) {
     		
-    		
-    		
     		if(pd.getPredictionReport()==null) {
     			System.out.println(pd.getModel().getName()+"\tReport is null");
     			continue;
@@ -1050,129 +1060,457 @@ public class HTMLReportCreator {
 		return html;
 	}
 	
+	
 	private String getFooter() {
-		String footer="<script>\r\n"
-				+ "    // JavaScript to handle tab switching\r\n"
-				+ "    const tabs = document.querySelectorAll('.tab');\r\n"
-				+ "    const tabContents = document.querySelectorAll('.tab-content');\r\n"
-				+ "\r\n"
-				+ "    tabs.forEach(tab => {\r\n"
-				+ "        tab.addEventListener('click', () => {\r\n"
-				+ "            // Remove active class from all tabs and contents\r\n"
-				+ "            tabs.forEach(t => t.classList.remove('active'));\r\n"
-				+ "            tabContents.forEach(tc => tc.classList.remove('active'));\r\n"
-				+ "\r\n"
-				+ "            // Add active class to the clicked tab and corresponding content\r\n"
-				+ "            tab.classList.add('active');\r\n"
-				+ "            document.getElementById(tab.dataset.tab).classList.add('active');\r\n"
-				+ "        });\r\n"
-				+ "    });\r\n"
-				+ "</script>\r\n"
-				+ "\r\n"
-				+ "</body>\r\n"
-				+ "</html>";
-		
-		return footer;
+	    String footer = """
+	<script>
+	    // JavaScript to handle tab switching
+	    const tabs = document.querySelectorAll('.tab');
+	    const tabContents = document.querySelectorAll('.tab-content');
+
+	    tabs.forEach(tab => {
+	        tab.addEventListener('click', () => {
+	            // Remove active class from all tabs and contents
+	            tabs.forEach(t => t.classList.remove('active'));
+	            tabContents.forEach(tc => tc.classList.remove('active'));
+
+	            // Add active class to the clicked tab and corresponding content
+	            tab.classList.add('active');
+	            document.getElementById(tab.dataset.tab).classList.add('active');
+	        });
+	    });
+	</script>
+
+	</body>
+	</html>
+	""";
+	    return footer;
 	}
 	
+	
+	private String getFooterFancy() {
+	    String footer = """
+	<script>
+	(function() {
+	  const activateTab = (tabName) => {
+	    const tabs = document.querySelectorAll('.tab');
+	    const tabContents = document.querySelectorAll('.tab-content');
+	    const targetTab = Array.from(tabs).find(t => t.dataset.tab === tabName);
+	    if (!targetTab) return;
 
-	private String getHeader(String title) {
-		
-		int width=400;
-		
-		String header=
-				 "<!DOCTYPE html>\r\n"
-				+ "<html lang=\"en\">\r\n"
-				+ "<head>\r\n"
-				+ "    <meta charset=\"UTF-8\">\r\n"
-				+ "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n"
-				+ "    <title>"+title+"</title>\r\n"
-				+ "    <style>\r\n"
-				+ "        /* Basic styling for tabs */\r\n"
-				+ "        .tab-container {\r\n"
-				+ "            display: flex;\r\n"
-				+ "            position: fixed;\r\n"
-				+ "            top: 0;\r\n"
-				+ "            width: 100%;\r\n"
-				+ "            background-color: #f1f1f1;\r\n"
-				+ "            border-bottom: 1px solid #ccc;\r\n"
-				+ "            z-index: 1000; /* Ensure tabs are above other content */\r\n"
-				+ "        }\r\n"
-				+ "        .tab {\r\n"
-				+ "            padding: 10px 10px;\r\n"
-				+ "            cursor: pointer;\r\n"
-				+ "            border: 1px solid #ccc;\r\n"
-				+ "            border-bottom: none;\r\n"
-				+ "            background-color: #f1f1f1;\r\n"
-				+ "        }\r\n"
-				+ "        .tab.active {\r\n"
-				+ "            background-color: #fff;\r\n"
-				+ "            border-bottom: 1px solid #fff;\r\n"
-				+ "        }\r\n"
-				+ "        body {\r\n"
-				+ "            margin: 0;\r\n"
-				+ "            padding-top: 50px; /* Adjust based on tab height */\r\n"
-				+ "        }\r\n"
-				+ "        .tab-content {\r\n"
-				+ "            display: none;\r\n"
-				+ "            padding: 20px;\r\n"
-				+ "            border: 1px solid #ccc;\r\n"
-				+ "        }\r\n"
-				+ "        .tab-content.active {\r\n"
-				+ "            display: block;\r\n"
-				+ "        }\r\n"
-//				+ "        table {\r\n"
-//				+ "            width: auto; /* Fit to content */\r\n"
-//				+ "            border-collapse: collapse;\r\n"
-//				+ "            margin-bottom: 10px;\r\n"
-//				+ "        }\r\n"
-//				+ "        th, td {\r\n"
-//				+ "            border: 1px solid #ccc;\r\n"
-//				+ "            padding: 4px;\r\n"
-//				+ "            text-align: left;\r\n"
-//				+ "        }\r\n"
-				+ "        .tooltip {\r\n" 
-				+ "            position: relative;\r\n" 
-				+ "	           display: inline-block;\r\n"
-				+ "	           border-bottom: 1px dotted black;\r\n" 
-				+ "	           }\r\n" 
-				+ "        .tooltip .tooltiptext {\r\n"
-				+ "	           visibility: hidden;\r\n"
-				+ "	           width: "+width+"px;\r\n"
-				+ "	           background-color: #555;\r\n"
-				+ "	           color: #fff;\r\n"
-				+ "	           text-align: center;\r\n"
-				+ "	           border-radius: 6px;\r\n"
-				+ "	           padding: 5px 0;\r\n"
-				+ "	           position: absolute;\r\n"
-				+ "	           z-index: 1;\r\n"
-				+ "	           bottom: 125%;\r\n" 
-				+ "	           left: 50%;\r\n"
-				+ "	           margin-left: -60px;\r\n"
-				+ "	           opacity: 0;\r\n"
-				+ "	           transition: opacity 0.3s;\r\n" 
-				+ "	       }\r\n"
-				+ "	       .tooltip .tooltiptext::after {\r\n"
-				+ "	            content: \"\";\r\n" 
-				+ "	            position: absolute;\r\n"
-				+ "	            top: 100%;\r\n"
-				+ "         	left: 50%;\r\n"
-				+ "	            margin-left: -5px;\r\n"
-				+ "	            border-width: 5px;\r\n"
-				+ "	            border-style: solid;\r\n"
-				+ "	            border-color: #555 transparent transparent transparent;\r\n"
-				+ "	       }\r\n"
-				+ "	       .tooltip:hover .tooltiptext {\r\n"
-				+ "	            visibility: visible;\r\n"
-				+ "	            opacity: 1;\r\n"
-				+ "	        }\r\n"		
-				+ "    </style>\r\n"
-				+ "</head>\r\n"
-				+ "<body>";
-				
-		return header;
+	    tabs.forEach(t => t.classList.remove('active'));
+	    tabContents.forEach(tc => tc.classList.remove('active'));
+
+	    targetTab.classList.add('active');
+	    const content = document.getElementById(tabName);
+	    if (content) content.classList.add('active');
+
+	    // Keep the tab button visible
+	    try { targetTab.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' }); } catch (e) {}
+	  };
+
+	  // Existing tab click behavior
+	  document.querySelectorAll('.tab').forEach(tab => {
+	    tab.addEventListener('click', () => activateTab(tab.dataset.tab));
+	  });
+
+	  // New: clicking a property link in the summary table activates its tab
+	  document.addEventListener('click', (e) => {
+	    const link = e.target.closest('.prop-link');
+	    if (!link) return;
+	    e.preventDefault();
+	    activateTab(link.dataset.tab);
+	  });
+	})();
+	</script>
+
+	</body>
+	</html>
+	""";
+	    return footer;
 	}
+	
+	private String getHeader(String title) {
+	    int width = 400;
 
+	    String header = String.format("""
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+	    <meta charset="UTF-8">
+	    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	    <title>%s</title>
+	    <style>
+	        /* Tabs: 6 buttons per row with CSS Grid */
+	        .tab-container {
+	            display: grid;
+	            grid-template-columns: repeat(6, minmax(0, 1fr));
+	            gap: 8px;
+	            position: sticky; /* stays at top without overlapping content */
+	            top: 0;
+	            width: 100%%;
+	            background-color: #f7f7f9;
+	            border-bottom: 1px solid #d6d6d6;
+	            z-index: 1000;
+	            padding: 8px;
+	            box-sizing: border-box;
+	        }
+
+	        .tab {
+	            display: inline-flex;
+	            align-items: center;
+	            justify-content: center;
+	            padding: 8px 12px;
+	            cursor: pointer;
+	            border: 1px solid #b9b9b9;
+	            border-radius: 6px;
+	            background: linear-gradient(#ffffff, #ececec);
+	            color: #333;
+	            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+	            box-sizing: border-box;
+	            white-space: nowrap;
+	            overflow: hidden;
+	            text-overflow: ellipsis;
+	            transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.05s ease, border-color 0.2s ease;
+	            user-select: none;
+	            text-align: center;
+	        }
+
+	        .tab:hover {
+	            background: linear-gradient(#ffffff, #e7e7e7);
+	            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+	        }
+
+	        .tab:active {
+	            transform: translateY(1px);
+	        }
+
+	        .tab:focus-visible {
+	            outline: 2px solid #7aa7ff;
+	            outline pipelines: 2px;
+	            outline-offset: 2px;
+	        }
+
+	        .tab.active {
+	            background: linear-gradient(#eaf2ff, #dae7ff);
+	            border-color: #7aa7ff;
+	            color: #1a4fb3;
+	            box-shadow: 0 0 0 2px rgba(122,167,255,0.2) inset, 0 1px 2px rgba(0,0,0,0.08);
+	        }
+
+	        body {
+	            margin: 0;
+	        }
+
+	        .tab-content {
+	            display: none;
+	            padding: 20px;
+	            border: 1px solid #ccc;
+	        }
+
+	        .tab-content.active {
+	            display: block;
+	        }
+
+	        .tooltip {
+	            position: relative;
+	            display: inline-block;
+	            border-bottom: 1px dotted black;
+	        }
+	        .tooltip .tooltiptext {
+	            visibility: hidden;
+	            width: %dpx;
+	            background-color: #555;
+	            color: #fff;
+	            text-align: center;
+	            border-radius: 6px;
+	            padding: 5px 0;
+	            position: absolute;
+	            z-index: 1;
+	            bottom: 125%%;
+	            left: 50%%;
+	            margin-left: -60px;
+	            opacity: 0;
+	            transition: opacity 0.3s;
+	        }
+	        .tooltip .tooltiptext::after {
+	            content: "";
+	            position: absolute;
+	            top: 100%%;
+	            left: 50%%;
+	            margin-left: -5px;
+	            border-width: 5px;
+	            border-style: solid;
+	            border-color: #555 transparent transparent transparent;
+	        }
+	        .tooltip:hover .tooltiptext {
+	            visibility: visible;
+	            opacity: 1;
+	        }
+	    </style>
+	</head>
+	<body>""", title, width);
+
+	    return header;
+	}
+	
+	public String writeTabbedWebpage(String title, List<gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport> listPredictionReport) {
+
+	    StringBuffer sb = new StringBuffer();
+	    sb.append(getHeader(title));
+
+	    // Build (endpoint, report) pairs and sort by endpoint (case-insensitive)
+	    Gson gson = new Gson();
+	    List<java.util.Map.Entry<String, gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport>> items = new ArrayList<>();
+	    for (gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport prDB : listPredictionReport) {
+	        String json = new String(prDB.getFileJson());
+	        gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport pr =
+	                gson.fromJson(json, gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.class);
+	        String endpoint = pr.modelDetails.propertyName == null ? "" : pr.modelDetails.propertyName;
+	        items.add(new java.util.AbstractMap.SimpleEntry<>(endpoint, prDB));
+	    }
+	    items.sort(java.util.Comparator.comparing(java.util.Map.Entry::getKey, String.CASE_INSENSITIVE_ORDER));
+
+	    // Tab buttons (10 per row handled by CSS in getHeader)
+	    sb.append("<div class=\"tab-container\">\n");
+	    sb.append("<div class=\"tab active\" data-tab=\"Summary\" title=\"Summary\">Summary</div>\n");
+	    for (java.util.Map.Entry<String, gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport> e : items) {
+	        String endpoint = e.getKey();
+	        sb.append("<div class=\"tab\" data-tab=\"").append(endpoint).append("\" title=\"")
+	          .append(endpoint).append("\">").append(endpoint).append("</div>\n");
+	    }
+	    sb.append("</div>\n"); // end .tab-container
+
+	    // Sorted summary
+	    String strSummary = writeEndpointSummaryTableFancy(items);
+	    sb.append("<div id=\"Summary\" class=\"tab-content active\">").append(strSummary).append("</div>\n");
+
+	    // Endpoint contents (sorted)
+	    for (java.util.Map.Entry<String, gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport> e : items) {
+	        String endpoint = e.getKey();
+	        gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport prDB = e.getValue();
+
+	        String html = new String(prDB.getFileHtml());
+	        Document doc = Jsoup.parse(html);
+	        doc.outputSettings().indentAmount(2);
+
+	        sb.append("<div id=\"").append(endpoint).append("\" class=\"tab-content\">\n");
+	        sb.append(doc.body().html());
+	        sb.append("</div>\n");
+	    }
+
+	    sb.append(getFooterFancy());
+
+	    Document doc = Jsoup.parse(sb.toString());
+	    doc.outputSettings().indentAmount(2);
+
+	    return doc.html();
+	}
+	
+	public String writeEndpointSummaryTableFancy(
+		    List<java.util.Map.Entry<String, gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport>> items
+		) {
+
+		    StringWriter fw = new StringWriter();
+
+		    fw.write("""
+		<style>
+		/* Centered container with constrained width so panels don't span full page */
+		.summary-wrap {
+		  display: grid;
+		  grid-template-columns: minmax(520px, 680px) minmax(260px, 360px);
+		  gap: 16px;
+		  align-items: start;
+		  max-width: 1100px;
+		  margin: 12px auto 16px;
+		  padding: 0 8px;
+		}
+		@media (max-width: 900px) {
+		  .summary-wrap { grid-template-columns: 1fr; }
+		}
+
+		/* Panel styles (Predictions and Structure) */
+		.table-card, .chem-card {
+		  background: #fff;
+		  border: 1px solid #e5e7eb;
+		  border-radius: 8px;
+		  padding: 12px;
+		  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+		}
+		.table-card { width: 100%; max-width: 680px; }
+		.chem-card  { width: 100%; max-width: 360px; }
+
+		/* Modern table */
+		.table-modern {
+		  width: 100%;
+		  border-collapse: collapse;
+		  background: transparent; /* panel provides bg */
+		  table-layout: fixed;     /* enforce column widths */
+		}
+
+		/* Column widths: keep Property narrower and numeric columns consistent */
+		.table-modern col.col-property { width: clamp(160px, 28%, 300px); }
+		.table-modern col.col-num      { width: 140px; }
+		.table-modern col.col-units    { width: 120px; }
+
+		.table-modern caption {
+		  caption-side: top;
+		  padding: 0 4px 8px 4px;
+		  font-weight: 600;
+		  text-align: left;
+		  color: #111827;
+		}
+
+		.table-modern thead th {
+		  background: #f9fafb;
+		  border-bottom: 1px solid #e5e7eb;
+		  padding: 10px 12px;
+		  font-size: 13px;
+		  letter-spacing: .01em;
+		  color: #374151;
+		}
+
+		.table-modern tbody td {
+		  padding: 10px 12px;
+		  border-bottom: 1px solid #f3f4f6;
+		  vertical-align: top;
+		  font-size: 14px;
+		  color: #1f2937;
+		}
+		.table-modern tbody tr:last-child td { border-bottom: 0; }
+		.table-modern tbody tr:nth-child(even) { background: #fcfcfd; }
+		.table-modern tbody tr:hover { background: #f5faff; }
+
+		.table-modern th.num, .table-modern td.num {
+		  text-align: right;
+		  font-variant-numeric: tabular-nums;
+		}
+
+		/* Allow long Property names to wrap within constrained column */
+		.table-modern th.prop, .table-modern td.prop {
+		  word-break: break-word;
+		  overflow-wrap: anywhere;
+		  hyphens: auto;
+		}
+
+		/* Clickable property link */
+		.prop-link {
+		  color: #1a4fb3;
+		  text-decoration: none;
+		}
+		.prop-link:hover {
+		  text-decoration: underline;
+		}
+
+		/* Chemical info card */
+		.chem-card img {
+		  width: 100%;
+		  max-width: 240px;
+		  height: auto;
+		  border-radius: 4px;
+		  display: block;
+		  margin: 0 auto 12px;
+		}
+		.chem-card h3 {
+		  margin: 0 0 8px 0;
+		  font-size: 16px;
+		  color: #111827;
+		}
+		.chem-card dl { margin: 0; }
+		.chem-card dt {
+		  font-weight: 600;
+		  color: #374151;
+		}
+		.chem-card dd {
+		  margin: 0 0 8px 0;
+		  color: #1f2937;
+		  word-break: break-word;
+		}
+		</style>
+		""");
+
+		    fw.write("<div class=\"summary-wrap\">");
+
+		    // Left: Predictions table inside a bordered panel
+		    fw.write("<section class=\"table-card\">");
+		    fw.write("<table class=\"table-modern\">");
+		    fw.write("<caption>Predictions</caption>");
+
+		    // Column sizing
+		    fw.write("<colgroup>");
+		    fw.write("<col class=\"col-property\">");
+		    fw.write("<col class=\"col-num\">");
+		    fw.write("<col class=\"col-num\">");
+		    fw.write("<col class=\"col-units\">");
+		    fw.write("</colgroup>");
+
+		    fw.write("<thead><tr>");
+		    fw.write("<th class=\"prop\">Property</th>");
+		    fw.write("<th class=\"num\">Experimental value</th>");
+		    fw.write("<th class=\"num\">Predicted value</th>");
+		    fw.write("<th>Units</th>");
+		    fw.write("</tr></thead>");
+		    fw.write("<tbody>");
+
+		    Gson gson = new Gson();
+
+		    for (java.util.Map.Entry<String, gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport> e : items) {
+		        String endpoint = e.getKey();
+		        gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport prDB = e.getValue();
+
+		        String json = new String(prDB.getFileJson());
+		        gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport pr =
+		            gson.fromJson(json, gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.class);
+
+		        Double exp = pr.modelResults.experimentalValue;
+		        Double pred = pr.modelResults.predictedValue;
+
+		        String strExp = getFormattedValue(false, exp, 3);
+		        String strPred = getFormattedValue(false, pred, 3);
+		        String unitAbbreviation = pr.modelResults.standardUnit;
+
+		        fw.write("<tr>");
+//		        fw.write("<td>" + endpoint +"</td>");
+		        
+		        // Clickable property name: activates its tab (handled by footer JS)
+		        fw.write("<td class=\"prop\"><a href=\"#\" class=\"prop-link\" data-tab=\"" + endpoint + "\" title=\"Open " + endpoint + " tab\">" + endpoint + "</a></td>");
+		        fw.write("<td class=\"num\">" + strExp + "</td>");
+		        fw.write("<td class=\"num\">" + strPred + "</td>");
+		        fw.write("<td>" + unitAbbreviation + "</td>");
+		        fw.write("</tr>");
+		    }
+
+		    fw.write("</tbody>");
+		    fw.write("</table>");
+		    fw.write("</section>");
+
+		    // Right: Structure panel (chemical info from the first item, if present)
+		    if (!items.isEmpty()) {
+		        gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport prDB0 = items.get(0).getValue();
+		        String json0 = new String(prDB0.getFileJson());
+		        gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport pr0 =
+		            gson.fromJson(json0, gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.class);
+
+		        String imageUrl = "https://comptox.epa.gov/dashboard-api/ccdapp1/chemical-files/image/by-dtxcid/" + pr0.chemicalIdentifiers.dtxcid;
+
+		        fw.write("<aside class=\"chem-card\">");
+		        fw.write("<a href=\"" + imageUrl + "\"><img src=\"" + imageUrl + "\" alt=\"Structure\"></a>");
+		        fw.write("<h3>Chemical</h3>");
+		        fw.write("<dl>");
+		        fw.write("<dt>DTXSID</dt><dd>" + pr0.chemicalIdentifiers.dtxsid + "</dd>");
+		        fw.write("<dt>DTXCID</dt><dd>" + pr0.chemicalIdentifiers.dtxcid + "</dd>");
+		        fw.write("<dt>CASRN</dt><dd>" + pr0.chemicalIdentifiers.casrn + "</dd>");
+		        fw.write("<dt>Name</dt><dd>" + pr0.chemicalIdentifiers.preferredName + "</dd>");
+		        fw.write("<dt>SMILES</dt><dd>" + pr0.chemicalIdentifiers.smiles + "</dd>");
+		        fw.write("<dt>MW</dt><dd>" + pr0.chemicalIdentifiers.molWeight + "</dd>");
+		        fw.write("</dl>");
+		        fw.write("</aside>");
+		    }
+
+		    fw.write("</div>"); // end summary-wrap
+
+		    return fw.toString();
+		}
 	
 	public String writeEndpointSummaryTable(List<PredictionDashboard> pds,TreeMap<String, Dataset> mapDatasets)  {
 
@@ -1272,27 +1610,108 @@ public class HTMLReportCreator {
 		return fw.toString();
 		
 	}
-	
-	private Double getValueInCCD_Units(PredictionDashboard pd, Double predValue) {
-
-		if(predValue==null) return null; 
-
-		String endpoint=pd.getEndpoint();
-		Double valueInCCD_units=null;
-
-		//TODO make it work for both OPERA and TEST- use the units in the dataset and the converter
 		
-		if(endpoint.equals(TESTConstants.ChoiceFHM_LC50) || endpoint.equals(TESTConstants.ChoiceDM_LC50) || 
-				endpoint.equals(TESTConstants.ChoiceTP_IGC50) || endpoint.equals(TESTConstants.ChoiceRat_LD50)) {
-			valueInCCD_units=Math.pow(10,-predValue);
-		} else if (endpoint.equals(TESTConstants.ChoiceBCF) || endpoint.equals(TESTConstants.ChoiceViscosity) || 
-				endpoint.equals(TESTConstants.ChoiceVaporPressure)) {
-			valueInCCD_units=Math.pow(10,predValue);
-		} else {
-			valueInCCD_units=predValue;
+	
+	public String writeEndpointSummaryTable(List<gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport> prs)  {
+
+		StringWriter fw=new StringWriter();
+		
+		fw.write("<p><p>");
+		
+		
+		fw.write("<table cellpadding=\"3\" cellspacing=\"0\"><tr><td>\n");
+		
+		
+		fw.write("<table border=\"1\" cellpadding=\"3\" cellspacing=\"0\">\n");
+		fw.write("<caption>Predictions</caption>\r\n");
+
+		fw.write("<tr bgcolor=\"#D3D3D3\">\n");
+		fw.write("<th>Property</th>\n");
+
+//		fw.write("<th>Experimental value<br>" + units + "</th>\n");
+//		fw.write("<th>Predicted value<br>" + units + "</th>\n");
+		
+		fw.write("<th>Experimental value</th>\n");
+		fw.write("<th>Predicted value</th>\n");
+		fw.write("<th>Units</th>\n");
+
+		fw.write("</tr>\n");
+		
+		DecimalFormat df=new DecimalFormat("0.00");//TODO use sig digits
+		
+		Gson gson=new Gson();
+		
+		for (gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport prDB:prs) {
+
+			fw.write("<tr>\n");
+			
+			
+			String json = new String(prDB.getFileJson());
+			PredictionReport pr = gson.fromJson(json, PredictionReport.class);
+
+			Double exp=pr.modelResults.experimentalValue;
+			Double pred=pr.modelResults.predictedValue;
+			
+			System.out.println(pr.modelDetails.propertyName+"\t"+exp+"\t"+pred);
+			
+			String strExp=getFormattedValue(false, exp, 3);
+			String strPred=getFormattedValue(false, pred, 3);
+			String unitAbbreviation=pr.modelResults.standardUnit;
+
+			fw.write("<td>" + pr.modelDetails.propertyName + "</td>\n");
+			fw.write("<td>" + strExp + "</td>\n");
+			fw.write("<td>" + strPred + "</td>\n");
+			fw.write("<td>" + unitAbbreviation + "</td>\n");
+			fw.write("</tr>\n");
 		}
-		return valueInCCD_units;
+		fw.write("</table></td>\n");
+		
+		
+		gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport pr0=prs.get(0);
+		
+		String json = new String(pr0.getFileJson());
+		PredictionReport pr = gson.fromJson(json, PredictionReport.class);
+
+		
+//		String imageUrl="https://comptox.epa.gov/ctx-api/chemical/file/image/search/by-dtxcid/"+pd.getDsstoxRecord().getDtxcid();
+		String imageUrl="https://comptox.epa.gov/dashboard-api/ccdapp1/chemical-files/image/by-dtxcid/"+pr.chemicalIdentifiers.dtxcid;
+				
+		fw.write("<td>"
+				+ "<a href=\""+imageUrl+"\">"+"<img src=\"" +imageUrl+ "\" width=" + 200+ " border=0></a><br>"
+				+"DTXSID: "+pr.chemicalIdentifiers.dtxsid+"<br>"
+				+"DTXCID: "+pr.chemicalIdentifiers.dtxcid+"<br>"
+				+"CASRN: "+pr.chemicalIdentifiers.casrn+"<br>"
+				+"Name: "+pr.chemicalIdentifiers.preferredName+"<br>"
+				+"Smiles: "+pr.chemicalIdentifiers.smiles+"<br>"
+				+"MW: "+pr.chemicalIdentifiers.molWeight+"<br>"
+				+ "</td>\n");
+		
+		fw.write("</tr></table>\n");
+		
+		return fw.toString();
+		
 	}
+	
+//	private Double getValueInCCD_Units(PredictionDashboard pd, Double predValue) {
+//
+//		if(predValue==null) return null; 
+//
+//		String endpoint=pd.getEndpoint();
+//		Double valueInCCD_units=null;
+//
+//		//TODO make it work for both OPERA and TEST- use the units in the dataset and the converter
+//		
+//		if(endpoint.equals(TESTConstants.ChoiceFHM_LC50) || endpoint.equals(TESTConstants.ChoiceDM_LC50) || 
+//				endpoint.equals(TESTConstants.ChoiceTP_IGC50) || endpoint.equals(TESTConstants.ChoiceRat_LD50)) {
+//			valueInCCD_units=Math.pow(10,-predValue);
+//		} else if (endpoint.equals(TESTConstants.ChoiceBCF) || endpoint.equals(TESTConstants.ChoiceViscosity) || 
+//				endpoint.equals(TESTConstants.ChoiceVaporPressure)) {
+//			valueInCCD_units=Math.pow(10,predValue);
+//		} else {
+//			valueInCCD_units=predValue;
+//		}
+//		return valueInCCD_units;
+//	}
 
 	
 	public static void main(String[] args) {

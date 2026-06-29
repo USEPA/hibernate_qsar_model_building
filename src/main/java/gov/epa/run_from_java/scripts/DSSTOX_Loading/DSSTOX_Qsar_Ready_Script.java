@@ -35,9 +35,9 @@ import com.google.gson.JsonObject;
 
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.util.StructureImageUtil;
 import gov.epa.util.StructureUtil;
+import gov.epa.util.JsonUtilities;
 
 /**
  * @author TMARTI02
@@ -84,7 +84,7 @@ public class DSSTOX_Qsar_Ready_Script {
 			
 			System.out.println("Done loading results file");
 			
-			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 			
 			Random rn = new Random(42);
 			
@@ -197,7 +197,7 @@ public class DSSTOX_Qsar_Ready_Script {
 			String csvAsString = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
 			String json = CDL.toJSONArray(csvAsString).toString();
 
-			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 
 			System.out.println("Number of records in csv:"+ja.size());
 

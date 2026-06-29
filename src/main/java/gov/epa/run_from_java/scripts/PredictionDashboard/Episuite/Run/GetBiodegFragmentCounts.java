@@ -9,9 +9,9 @@ import org.jsoup.nodes.Element;
 import com.google.gson.Gson;
 //import com.srcinc.episuite.biodegradationrate.BiodegradationRateResults;
 
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.Factor;
 import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.Model;
+import gov.epa.util.JsonUtilities;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;

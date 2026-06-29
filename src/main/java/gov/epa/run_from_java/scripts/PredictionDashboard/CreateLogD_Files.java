@@ -14,10 +14,11 @@ import org.openscience.cdk.tools.manipulator.AtomContainerManipulator;
 
 import com.opencsv.CSVReader;
 
-import ToxPredictor.Database.DSSToxRecord;
+import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
+//import ToxPredictor.Database.DSSToxRecord;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.TEST.PredictionDashboardScriptTEST2;
+import gov.epa.util.JsonUtilities;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -167,25 +168,26 @@ public class CreateLogD_Files {
 		return sb.toString();
 	}
     
-    public static List<DSSToxRecord> getDsstoxRecords(HashSet<String>dtxsids) {
+    public static List<DsstoxRecord> getDsstoxRecords(HashSet<String>dtxsids) {
 
-		String sql="SELECT gs.dsstox_substance_id,c.dsstox_compound_id,gs.casrn,c.smiles,gs.preferred_name,c.mol_file FROM generic_substances gs\r\n"
+		String sql="SELECT gs.dsstox_substance_id,c.dsstox_compound_id,gs.casrn,c.smiles,"
+				+ "gs.preferred_name,c.mol_file FROM generic_substances gs\r\n"
 				+ "	         join generic_substance_compounds gsc on gs.id = gsc.fk_generic_substance_id\r\n"
 				+ "	join compounds c on gsc.fk_compound_id = c.id\r\n"
 				+ "	where gs.dsstox_substance_id in ("+convertToInClause(dtxsids)+");";
 
 //		System.out.println(sql);
-		List<DSSToxRecord>recs=new ArrayList<>();
+		List<DsstoxRecord>recs=new ArrayList<>();
 		try {
 			ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionDSSTOX(), sql);
 			while (rs.next()) {
-				DSSToxRecord dr=new DSSToxRecord();
-				dr.sid=rs.getString(1);
-				dr.cid=rs.getString(2);
-				dr.cas=rs.getString(3);
-				dr.smiles=rs.getString(4);
-				dr.name=rs.getString(5);
-				dr.mol=rs.getString(6);
+				DsstoxRecord dr=new DsstoxRecord();
+				dr.setDtxsid(rs.getString(1));
+				dr.setDtxcid(rs.getString(2));
+				dr.setCasrn(rs.getString(3));
+				dr.setSmiles(rs.getString(4));
+				dr.setPreferredName(rs.getString(5));
+				dr.setMolFile(rs.getString(6));
 				recs.add(dr);
 			}
 		}catch (Exception ex) {
@@ -205,13 +207,13 @@ public class CreateLogD_Files {
             	dtxsids.add(cd.dtxsid);
             }
             
-            List<DSSToxRecord>drs=getDsstoxRecords(dtxsids);
+            List<DsstoxRecord>drs=getDsstoxRecords(dtxsids);
             
-            Hashtable<String,DSSToxRecord>htDsstox=new Hashtable<>();
+            Hashtable<String,DsstoxRecord>htDsstox=new Hashtable<>();
 
             
-            for(DSSToxRecord dr:drs) {
-            	htDsstox.put(dr.sid, dr);
+            for(DsstoxRecord dr:drs) {
+            	htDsstox.put(dr.getDtxsid(), dr);
             }
             
             for(ChemicalData cd:dataList) {
@@ -221,10 +223,9 @@ public class CreateLogD_Files {
             		continue;
             	}
             	
-            	DSSToxRecord dr=htDsstox.get(cd.dtxsid);
-            	
-            	cd.smiles=dr.smiles;
-            	cd.mol=dr.mol;
+            	DsstoxRecord dr=htDsstox.get(cd.dtxsid);
+            	cd.smiles=dr.getSmiles();
+            	cd.mol=dr.getMolFile();
             	
             }
             return dataList;
@@ -275,7 +276,7 @@ public class CreateLogD_Files {
             	op.calculateLogD7_2();
             }
             
-            System.out.println(Utilities.gson.toJson(operaPredictions));
+            System.out.println(JsonUtilities.gson.toJson(operaPredictions));
             
             createExcelFile(operaPredictions, folder+"Opera2.8 LogD predictions.xlsx");
             
@@ -517,9 +518,9 @@ public class CreateLogD_Files {
         
     	CreateLogD_Files g=new CreateLogD_Files();
     	
-//    	String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 scientists\\kelsey vitense";
-//    	String filename="All_Mapped_to_DTXSIDs.xlsx";
-//    	List<ChemicalData> dataList=g.getChemicalListFromExcel(folder,filename);
+    	String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 scientists\\kelsey vitense";
+    	String filename="All_Mapped_to_DTXSIDs.xlsx";
+    	List<ChemicalData> dataList=g.getChemicalListFromExcel(folder,filename);
 //    	g.writeToSDF(dataList, folder+File.separator+"All_Mapped_to_DTXSIDs.sdf");
 
     	g.parsePerceptaOutputToLogD_Excel();

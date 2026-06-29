@@ -26,8 +26,7 @@ import com.google.gson.JsonObject;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
-//import gov.epa.exp_data_gathering.parse.ExperimentalRecord;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 
 

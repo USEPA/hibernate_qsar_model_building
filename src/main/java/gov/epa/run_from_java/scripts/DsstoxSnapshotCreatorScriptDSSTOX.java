@@ -40,7 +40,9 @@ import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.entity.GenericSubstance;
 import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
 import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
+import gov.epa.util.StructureUtil;
+import gov.epa.util.StructureUtil.APIMolecule;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 import kong.unirest.HttpResponse;
 
@@ -234,7 +236,7 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 				assignSmilesUsingCDK(compound, dtxsid);
 			} catch (Exception ex) {
 //				System.out.println(compound.getMolFile());
-				System.out.println("Couldnt assign smiles for "+compound.getDsstoxCompoundId()+"\t"+dtxsid);
+				System.out.println("Couldnt assign smiles for "+compound.getDsstoxCompoundId()+"\t"+dtxsid+"\t"+compound.getAcdIupacName());
 			}
 		}
 
@@ -477,12 +479,48 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 
 		}
 	}
+	
+
+	void createDsstoxSnapshotUsingCharlieSDFs(String date) {
+		
+		boolean requireSID=true;
+		
+		int totalCount=0;
+		
+		String name="DSSTOX Snapshot "+date;
+		String description ="DSSTOX snapshot taken on "+date;
+		DsstoxSnapshot snapshot=getSnapshot(name,description);
+		HashSet<String>sids=getSidsAlreadyInSnapshot(snapshot);
+		String folder="data\\dsstox\\snapshot-"+date;
+		File Folder=new File(folder);
+
+		
+		for(File file:Folder.listFiles()) {
+
+			if(!file.getName().contains("sdf")) {
+				continue;
+			}
+			
+			if(!file.getName().toLowerCase().contains("snapshot")) {
+				continue;
+			}
+			
+			int count=createDsstoxRecordsUsingCompoundsRecordsFromCharlieSDF(snapshot, sids, file);
+			totalCount += count;
+			
+			System.out.println(file.getName()+"\t"+count+"\t"+totalCount);
+
+			
+//			if(true)break;
+
+		}
+	}
 
 
 	private int createDsstoxRecordsUsingCompoundsRecordsFromJson(DsstoxSnapshot snapshot,
 			HashSet<String> sids, Type listDsstoxCompoundType, File file) {
 		try {
-			List<DsstoxCompound>dsstoxCompounds=Utilities.gson.fromJson(new FileReader(file), listDsstoxCompoundType);
+			List<DsstoxCompound>dsstoxCompounds=JsonUtilities.gson.fromJson(new FileReader(file), listDsstoxCompoundType);
 
 //				standardize(compounds, hmStandardized);
 
@@ -498,6 +536,52 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 					addSmiles(dsstoxCompound);
 				}
 			}
+
+			if(dsstoxCompounds.size()>0) {//post them
+				List<DsstoxRecord> records = DsstoxRecord.getRecords(dsstoxCompounds, snapshot,lanId);
+				try {
+					System.out.println("Posting "+dsstoxCompounds.size()+" from "+file.getName());
+					dsstoxRecordService.createBatchSQL(records);
+				} catch (Exception ex) {
+					System.out.println(ex.getMessage());
+				}
+			} else {
+				System.out.println("Already have all compounds in records table from query");
+			}
+
+			return dsstoxCompounds.size();
+		
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return 0;
+		}
+		
+	}
+	
+	
+	private int createDsstoxRecordsUsingCompoundsRecordsFromCharlieSDF(DsstoxSnapshot snapshot,
+			HashSet<String> sids, File file) {
+		try {
+
+			
+			List<APIMolecule>apiMolecules=StructureUtil.readSDF_to_API_Molecules(file.getAbsolutePath(), -1);
+			List<DsstoxCompound>dsstoxCompounds=new ArrayList<>();
+
+			for (APIMolecule apiMolecule:apiMolecules) {
+				DsstoxCompound dsstoxCompound=new DsstoxCompound(apiMolecule);
+				
+//				System.out.println(JsonUtilities.gson.toJson(dsstoxCompound));
+				
+				if(sids.contains(dsstoxCompound.getGenericSubstanceCompound().getGenericSubstance().getDsstoxSubstanceId())) {//already have in db so remove it
+//				if(cids.contains(dsstoxCompound.getDsstoxCompoundId())) {//already have in db so remove it
+					continue;
+				} else {
+					addSmiles(dsstoxCompound);
+					dsstoxCompounds.add(dsstoxCompound);
+				}
+			}
+			
+//			if(true)return dsstoxCompounds.size();
 
 			if(dsstoxCompounds.size()>0) {//post them
 				List<DsstoxRecord> records = DsstoxRecord.getRecords(dsstoxCompounds, snapshot,lanId);
@@ -835,7 +919,7 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 
 			Type listOfMyClassObject = new TypeToken<List<DsstoxCompound>>() {}.getType();
 
-			List<DsstoxCompound>dsstoxCompounds=Utilities.gson.fromJson(new FileReader(filepath), listOfMyClassObject);
+			List<DsstoxCompound>dsstoxCompounds=JsonUtilities.gson.fromJson(new FileReader(filepath), listOfMyClassObject);
 		
 			List<String>dtxsids=new ArrayList<>();
 			List<String>dtxcids=new ArrayList<>();
@@ -892,7 +976,7 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 			try {
 				
 				FileWriter fw=new FileWriter(folder+"previous snapshot compounds that were updated after 2024-11-12.json");
-				fw.write(Utilities.gson.toJson(oldRecords));
+				fw.write(JsonUtilities.gson.toJson(oldRecords));
 				fw.flush();
 				fw.close();
 			} catch (Exception ex) {
@@ -914,7 +998,7 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 
 			Type listOfMyClassObject = new TypeToken<List<DsstoxCompound>>() {}.getType();
 
-			List<DsstoxCompound>dsstoxCompounds=Utilities.gson.fromJson(new FileReader(filepath), listOfMyClassObject);
+			List<DsstoxCompound>dsstoxCompounds=JsonUtilities.gson.fromJson(new FileReader(filepath), listOfMyClassObject);
 		
 			List<String>dtxsids=new ArrayList<>();
 			List<String>dtxcids=new ArrayList<>();
@@ -969,7 +1053,7 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 			try {
 				
 				FileWriter fw=new FileWriter(folder+"previous markush snapshot compounds that were updated after 2024-11-12.json");
-				fw.write(Utilities.gson.toJson(oldRecords));
+				fw.write(JsonUtilities.gson.toJson(oldRecords));
 				fw.flush();
 				fw.close();
 			} catch (Exception ex) {
@@ -1008,7 +1092,7 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 			Type listDsstoxCompoundType = new TypeToken<List<DsstoxCompound>>() {}.getType();
 			String folder="data\\dsstox\\snapshot-2024-11-12\\json\\";
 			File file=new File(folder+"/prod_compounds_updated_gte_2024-11-12.json");
-			List<DsstoxCompound>dsstoxCompounds=Utilities.gson.fromJson(new FileReader(file), listDsstoxCompoundType);
+			List<DsstoxCompound>dsstoxCompounds=JsonUtilities.gson.fromJson(new FileReader(file), listDsstoxCompoundType);
 //			System.out.println(dsstoxCompounds.size());
 			
 			Connection conn=SqlUtilities.getConnectionPostgres();
@@ -1052,10 +1136,11 @@ public class DsstoxSnapshotCreatorScriptDSSTOX {
 
 //		d.create_Snapshot_11_2024();
 		
-		String date="2025-10-30";
-		d.createDsstoxRecordsUsingCompoundsRecordsFromJsons(date);
+//		String date="2025-10-30";
+//		d.createDsstoxRecordsUsingCompoundsRecordsFromJsons(date);
 		
-		
+		String date="2025-12-31";
+		d.createDsstoxSnapshotUsingCharlieSDFs(date);
 
 //		d.getSnapshot();
 		

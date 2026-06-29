@@ -17,6 +17,7 @@ import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.service.DsstoxCompoundService;
 import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.util.JsonUtilities;
 import gov.epa.util.wekalite.CSVLoader;
 import gov.epa.util.wekalite.Instances;
 
@@ -47,8 +48,8 @@ public class GetExpPropInfoOld {
 		outputFileName="Water solubility PFAS training records.json";
 		getRecords(id_dataset,conn, connDSSTOX, folder, inputFileName,outputFileName);
 
-		JsonArray jaTraining=Utilities.getJsonArrayFromJsonFile(folder+"Water solubility PFAS training records.json");
-		JsonArray jaPrediction=Utilities.getJsonArrayFromJsonFile(folder+"Water solubility PFAS prediction records.json");
+		JsonArray jaTraining=JsonUtilities.getJsonArrayFromJsonFile(folder+"Water solubility PFAS training records.json");
+		JsonArray jaPrediction=JsonUtilities.getJsonArrayFromJsonFile(folder+"Water solubility PFAS prediction records.json");
 		JsonArray jaOverall=new JsonArray();
 		jaOverall.addAll(jaTraining);
 		jaOverall.addAll(jaPrediction);
@@ -129,7 +130,7 @@ public class GetExpPropInfoOld {
 
 			
 			FileWriter fw=new FileWriter(folder+dataSetName+"//"+dataSetName+"_flat.json");			
-			fw.write(Utilities.gson.toJson(jaRecords));
+			fw.write(JsonUtilities.gson.toJson(jaRecords));
 			fw.flush();
 			fw.close();
 
@@ -258,7 +259,7 @@ public class GetExpPropInfoOld {
 
 			String filepath=folder+dataSetName+"//"+dataSetName+".json";
 
-			Utilities.saveJson(jaRecords, filepath);
+			JsonUtilities.saveJson(jaRecords, filepath);
 
 			Hashtable<String,String>htDescriptions=ExcelCreator.getColumnDescriptions();
 			ExcelCreator.createExcel2(jaRecords, folder+dataSetName+"//"+dataSetName+".xlsx",GetExpPropInfo.fieldsFinal,htDescriptions);
@@ -288,7 +289,7 @@ public class GetExpPropInfoOld {
 			}
 
 			FileWriter fw=new FileWriter(folder+outputFileName);			
-			fw.write(Utilities.gson.toJson(ja));
+			fw.write(JsonUtilities.gson.toJson(ja));
 			fw.flush();
 			fw.close();
 

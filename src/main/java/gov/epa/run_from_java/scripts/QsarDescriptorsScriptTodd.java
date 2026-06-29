@@ -37,9 +37,8 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServi
 import gov.epa.endpoints.datasets.descriptor_values.DescriptorValuesCalculator;
 import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValuesCalculator;
 import gov.epa.endpoints.datasets.descriptor_values.TestDescriptorValuesCalculator;
-
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.DashboardPredictionUtilities;
+import gov.epa.util.JsonUtilities;
 import gov.epa.util.wekalite.*;
 import gov.epa.web_services.descriptors.SciDataExpertsDescriptorWebService.SciDataExpertsChemical;
 import gov.epa.web_services.descriptors.SciDataExpertsDescriptorWebService.SciDataExpertsDescriptorResponse;
@@ -142,15 +141,16 @@ public class QsarDescriptorsScriptTodd {
 	
 	void generateDescriptorsForDatasets() {
 		
-//		String descriptorSetName="WebTEST-default";
+		String descriptorSetName="WebTEST-default";
 //		String descriptorSetName="ToxPrints-default";
 //		String descriptorSetName="RDKit-default";
-		String descriptorSetName="PaDEL-default";
+//		String descriptorSetName="PaDEL-default";
 //		String descriptorSetName="Mordred-default";
 //		
 //		String server="https://ccte-cced.epa.gov/";
-		String server="https://hcd.rtpnc.epa.gov/";
+//		String server="https://hcd.rtpnc.epa.gov/";
 //		String server = "https://hazard-dev.sciencedataexperts.com";
+		String server ="https://cim-dev.sciencedataexperts.com";
 		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
 		
 		List<String>datasetNames=new ArrayList<>();
@@ -219,7 +219,24 @@ public class QsarDescriptorsScriptTodd {
 		
 //		datasetNames.add("QSAR_Toolbox_96HR_Fish_LC50_v3 modeling");
 //		datasetNames.add("exp_prop_LOG_KOW_external_validation");
-		datasetNames.add("LogP v1 modeling");
+//		datasetNames.add("LogP v1 modeling");
+		
+//		datasetNames.add("KOC v1 modeling");
+//		datasetNames.add("KOC v1 external");
+//		datasetNames.add("KOC v2 external");
+//		datasetNames.add("KOC v3 external");
+		
+//		datasetNames.add("exp_prop_RBIODEG_RIFM_BY_DTXSID");
+//		datasetNames.add("exp_prop_RBIODEG_NITE_OPPT v1.0");
+//		datasetNames.add("exp_prop_RBIODEG_RIFM_CHEMREG");
+		
+//		datasetNames.add("Koc eChemPortal v1");
+		
+		datasetNames.add("exp_prop_RBIODEG_301F v1 modeling");
+		datasetNames.add("exp_prop_RBIODEG_RIFM_CHEMREG");
+		datasetNames.add("exp_prop_PERCENT_BIODEGRADATION_301F v1 modeling");
+		datasetNames.add("exp_prop_PERCENT_BIODEGRADATION_RIFM_CHEMREG");
+
 		
 		
 		int batchSize=1;//right now if one chemical in batch fails, the batch run fails, so run 1 at a time
@@ -395,7 +412,7 @@ public class QsarDescriptorsScriptTodd {
 			String json = CDL.toJSONArray(csvAsString).toString();
 			inputStream.close();
 			
-			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 //			System.out.println("Number of records in csv:"+ja.size());
 
 			List<String> smilesList=new ArrayList<>();

@@ -2,6 +2,9 @@ package gov.epa.run_from_java.scripts.DSSTOX_Loading;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -49,8 +52,8 @@ import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
 import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
 import gov.epa.run_from_java.scripts.DsstoxSnapshotCreatorScriptDSSTOX;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.util.StructureUtil;
+import gov.epa.util.JsonUtilities;
 import gov.epa.util.StructureUtil.Inchi;
 
 /**
@@ -608,6 +611,9 @@ public class DSSTOX_Compounds_Script {
 
 	}
 	
+
+    
+	
 	void substancesToJsonFiles() {
 
 		//		DsstoxCompoundServiceImpl compoundService=new DsstoxCompoundServiceImpl();
@@ -709,7 +715,7 @@ public class DSSTOX_Compounds_Script {
 
 				try {
 					FileWriter fw=new FileWriter(file);
-					fw.write(Utilities.gson.toJson(compounds));
+					fw.write(JsonUtilities.gson.toJson(compounds));
 					
 					totalChemicals+=compounds.size();
 
@@ -767,7 +773,7 @@ public class DSSTOX_Compounds_Script {
 
 				try {
 					FileWriter fw=new FileWriter(file);
-					fw.write(Utilities.gson.toJson(compounds));
+					fw.write(JsonUtilities.gson.toJson(compounds));
 					
 					totalChemicals+=compounds.size();
 
@@ -814,7 +820,7 @@ public class DSSTOX_Compounds_Script {
 		
 		try {
 			FileWriter fw=new FileWriter(file);
-			fw.write(Utilities.gson.toJson(compounds));
+			fw.write(JsonUtilities.gson.toJson(compounds));
 			fw.flush();
 			fw.close();
 		} catch (IOException e) {
@@ -851,7 +857,7 @@ public class DSSTOX_Compounds_Script {
 		
 		try {
 			FileWriter fw=new FileWriter(file);
-			fw.write(Utilities.gson.toJson(compounds));
+			fw.write(JsonUtilities.gson.toJson(compounds));
 			fw.flush();
 			fw.close();
 		} catch (IOException e) {
@@ -890,7 +896,7 @@ public class DSSTOX_Compounds_Script {
 		
 		try {
 			FileWriter fw=new FileWriter(file);
-			fw.write(Utilities.gson.toJson(compounds));
+			fw.write(JsonUtilities.gson.toJson(compounds));
 			fw.flush();
 			fw.close();
 		} catch (IOException e) {
@@ -1358,7 +1364,7 @@ public class DSSTOX_Compounds_Script {
 				
 
 				try {
-					List<DsstoxCompound>compounds=Utilities.gson.fromJson(new FileReader(file), listOfMyClassObject);
+					List<DsstoxCompound>compounds=JsonUtilities.gson.fromJson(new FileReader(file), listOfMyClassObject);
 
 					String filename=file.getName().replace(".json", ".sdf");
 					String filepath=destFolder+filename;
@@ -1441,7 +1447,7 @@ public class DSSTOX_Compounds_Script {
 				
 
 				try {
-					List<DsstoxCompound>compounds=Utilities.gson.fromJson(new FileReader(file), listOfMyClassObject);
+					List<DsstoxCompound>compounds=JsonUtilities.gson.fromJson(new FileReader(file), listOfMyClassObject);
 
 					String filename=file.getName().replace(".json", ".sdf");
 					String filepath=destFolder+filename;
@@ -1904,7 +1910,7 @@ public class DSSTOX_Compounds_Script {
 				System.out.println(file.getName());
 
 				try {
-					List<DsstoxCompound>compounds=Utilities.gson.fromJson(new FileReader(file), listOfMyClassObject);
+					List<DsstoxCompound>compounds=JsonUtilities.gson.fromJson(new FileReader(file), listOfMyClassObject);
 
 					assignIsOrganicForCompounds(mr, compounds,fw);
 
@@ -2153,7 +2159,7 @@ public class DSSTOX_Compounds_Script {
 			}
 			
 			try {
-				List<DsstoxCompound>compounds=Utilities.gson.fromJson(new FileReader(file), listOfMyClassObject);
+				List<DsstoxCompound>compounds=JsonUtilities.gson.fromJson(new FileReader(file), listOfMyClassObject);
 				
 				int countRemoved=0;
 				for(int i=0;i<compounds.size();i++)  {
@@ -2203,7 +2209,7 @@ public class DSSTOX_Compounds_Script {
 			if(compoundsChunk.size()==50000) {
 				String filename="prod_compounds"+num+".json";
 				System.out.println(filename+"\t"+compoundsChunk.size());
-				ToxPredictor.Utilities.Utilities.toJsonFile(compoundsChunk, folderDest+filename);
+				JsonUtilities.toJsonFile(compoundsChunk, folderDest+filename);
 				compoundsChunk.clear();
 				num++;
 			}

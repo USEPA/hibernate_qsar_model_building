@@ -47,12 +47,12 @@ import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.ModelStatisticCalculator;
 import gov.epa.run_from_java.scripts.ApplicabilityDomainScript.ApplicabilityDomainPrediction;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.HTMLReportCreator;
 import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteValidation;
 import gov.epa.util.ExcelSourceReader;
 import gov.epa.util.StructureImageUtil;
 import gov.epa.util.StructureUtil;
+import gov.epa.util.JsonUtilities;
 import gov.epa.web_services.ModelWebService;
 import gov.epa.web_services.embedding_service.CalculationInfo;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
@@ -92,7 +92,7 @@ public class PredictScript {
 
 		try {
 			
-			JsonObject jo2 = Utilities.gson.fromJson(new FileReader(filepath), JsonObject.class);
+			JsonObject jo2 = JsonUtilities.gson.fromJson(new FileReader(filepath), JsonObject.class);
 			JsonArray ja =jo2.get("select * from qsar_models.dsstox_records where fk_dsstox_snapshot_id=2").getAsJsonArray();
 			
 //			JsonArray ja = Utilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
@@ -195,7 +195,7 @@ public class PredictScript {
 
 			//		System.out.println("Splitting id = "+splitting.getId());
 			String predictResponse = modelWebService.callPredict(predictionTSV, strModelId).getBody();
-			ModelPrediction[] modelPredictionsArray = Utilities.gson.fromJson(predictResponse, ModelPrediction[].class);
+			ModelPrediction[] modelPredictionsArray = JsonUtilities.gson.fromJson(predictResponse, ModelPrediction[].class);
 			
 			
 			List<DsstoxRecord>records=getDsstoxRecords();
@@ -220,11 +220,11 @@ public class PredictScript {
 			}
 			
 			
-			String json=Utilities.gson.toJson(htPredWS);
+			String json=JsonUtilities.gson.toJson(htPredWS);
 			
 			System.out.println(json);
 			
-			Hashtable<String,Double>htPredWS2=Utilities.gson.fromJson(json, (Hashtable.class));
+			Hashtable<String,Double>htPredWS2=JsonUtilities.gson.fromJson(json, (Hashtable.class));
 			
 			System.out.println(htPredWS2.get("DTXSID6021953"));
 			
@@ -267,15 +267,34 @@ public class PredictScript {
 			String strModelId = String.valueOf(modelId);
 
 			//Following may not be necessary if webservice hasnt been restarted:
-			if (use_pmml) {
-				String details=new String(model.getDetails());
-				modelWebService.callInitPmml(bytes, strModelId, details,use_sklearn2pmml);
-			} else {
-				modelWebService.callInitPickle(bytes,strModelId);
-			}
+//			if (use_pmml) {
+//				String details=new String(model.getDetails());
+//				modelWebService.callInitPmml(bytes, strModelId, details,use_sklearn2pmml);
+//			} else {
+//				modelWebService.callInitPickle(bytes,strModelId);
+//			}
 
-			String predictResponse = modelWebService.callPredict(predictionTSV, strModelId).getBody();
-			ModelPrediction[] modelPredictionsArray = Utilities.gson.fromJson(predictResponse, ModelPrediction[].class);
+			HttpResponse<String> details= modelWebService.callDetails(modelId+"");//this will init model
+			
+			System.out.println("Model details, PredictScript.predict():\n"+details.getBody().toString());
+						
+//			System.out.println("PredictionTSV:"+predictionTSV+"\n\n");
+			
+
+//			String predictResponse = modelWebService.callPredict(predictionTSV, strModelId).getBody();
+			
+
+			String predictResponse = modelWebService.callPredictZip(predictionTSV, strModelId).getBody();
+			
+			if (predictResponse ==null) {
+				System.out.println("predictResponse is null");
+				return null;
+			}
+			
+			System.out.println("predictResponse:"+predictResponse+"\n\n");
+			
+			
+			ModelPrediction[] modelPredictionsArray = JsonUtilities.gson.fromJson(predictResponse, ModelPrediction[].class);
 			
 			Hashtable<String,Double>htPredWS=new Hashtable<>();
 			
@@ -284,7 +303,7 @@ public class PredictScript {
 				htPredWS.put(dtxsid, mp.pred);
 			}
 			
-			String json=Utilities.gson.toJson(htPredWS);
+			String json=JsonUtilities.gson.toJson(htPredWS);
 			
 //			System.out.println(json);
 //			Hashtable<String,Double>htPredWS2=Utilities.gson.fromJson(json, (Hashtable.class));
@@ -307,6 +326,83 @@ public class PredictScript {
 		}
 	}
 	
+	
+
+	public Hashtable<String,Double> predictForTsv(String filePathOut, Long modelId,String predictionTSV) throws ConstraintViolationException {
+		
+		try {
+			
+			boolean use_pmml=false;
+			boolean use_sklearn2pmml=false;
+					
+			Model model=modelService.findById(modelId);
+			
+//			System.out.println(predictionTSV);
+			
+			byte[] bytes = modelBytesService.getBytesSql(modelId, use_pmml);
+
+			String strModelId = String.valueOf(modelId);
+
+			//Following may not be necessary if webservice hasnt been restarted:
+//			if (use_pmml) {
+//				String details=new String(model.getDetails());
+//				modelWebService.callInitPmml(bytes, strModelId, details,use_sklearn2pmml);
+//			} else {
+//				modelWebService.callInitPickle(bytes,strModelId);
+//			}
+
+			//following inits model:
+			HttpResponse<String> details= modelWebService.callDetails(modelId+"");
+			
+			System.out.println("Model details, PredictScript.predict():\n"+details.getBody().toString());
+						
+//			System.out.println("PredictionTSV:"+predictionTSV+"\n\n");
+			
+
+//			String predictResponse = modelWebService.callPredict(predictionTSV, strModelId).getBody();
+			
+
+			String predictResponse = modelWebService.callPredictZip(predictionTSV, strModelId).getBody();
+			
+			if (predictResponse ==null) {
+				System.out.println("predictResponse is null");
+				return null;
+			}
+			
+			System.out.println("predictResponse:"+predictResponse+"\n\n");
+			
+			
+			ModelPrediction[] modelPredictionsArray = JsonUtilities.gson.fromJson(predictResponse, ModelPrediction[].class);
+			
+			Hashtable<String,Double>htPredWS=new Hashtable<>();
+			
+			for (ModelPrediction mp:modelPredictionsArray) {
+				String dtxsid=mp.id;												
+				htPredWS.put(dtxsid, mp.pred);
+			}
+			
+			String json=JsonUtilities.gson.toJson(htPredWS);
+			
+//			System.out.println(json);
+//			Hashtable<String,Double>htPredWS2=Utilities.gson.fromJson(json, (Hashtable.class));
+//			System.out.println(htPredWS2.get("DTXSID6021953"));
+
+			if (filePathOut!=null) {				
+				System.out.println("New file for model predictions:\t"+filePathOut);
+				FileWriter fw=new FileWriter(filePathOut);
+				fw.write(json);
+				fw.flush();
+				fw.close();
+			}
+			
+			return htPredWS;			
+//			System.out.println(predictResponse);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 
 	public ModelPrediction[] predict(Long modelId,String predictionTSV) throws ConstraintViolationException {
 		
@@ -332,7 +428,7 @@ public class PredictScript {
 			}
 
 			String predictResponse = modelWebService.callPredict(predictionTSV, strModelId).getBody();
-			ModelPrediction[] modelPredictionsArray = Utilities.gson.fromJson(predictResponse, ModelPrediction[].class);
+			ModelPrediction[] modelPredictionsArray = JsonUtilities.gson.fromJson(predictResponse, ModelPrediction[].class);
 			
 			return modelPredictionsArray;
 			
@@ -396,7 +492,7 @@ public class PredictScript {
 		}
 
 		String predictResponse = modelWebService.callPredict(predictionTSV, strModelId).getBody();
-		ModelPrediction[] modelPredictionsArray = Utilities.gson.fromJson(predictResponse, ModelPrediction[].class);
+		ModelPrediction[] modelPredictionsArray = JsonUtilities.gson.fromJson(predictResponse, ModelPrediction[].class);
 	
 		List<ModelPrediction>modelTestPredictions=Arrays.asList(modelPredictionsArray);			
 
@@ -418,7 +514,7 @@ public class PredictScript {
 		
 
 //		System.out.println(Utilities.gson.toJson(modelPredictionsArray));
-		System.out.println("\nOverall:"+Utilities.gson.toJson(modelTestStatisticValues));
+		System.out.println("\nOverall:"+JsonUtilities.gson.toJson(modelTestStatisticValues));
 		
 		String strResponse=null;
 
@@ -450,8 +546,8 @@ public class PredictScript {
 		Map<String, Double> statsInside=PredictionStatisticsScript.StatsAD.getStats(htAD, modelTestPredictions, isBinary,true);
 		Map<String, Double> statsOutside=PredictionStatisticsScript.StatsAD.getStats(htAD, modelTestPredictions, isBinary,false);
 		
-		System.out.println("\nInsideAD:"+Utilities.gson.toJson(statsInside));
-		System.out.println("\nOutsideAD:"+Utilities.gson.toJson(statsOutside));
+		System.out.println("\nInsideAD:"+JsonUtilities.gson.toJson(statsInside));
+		System.out.println("\nOutsideAD:"+JsonUtilities.gson.toJson(statsOutside));
 		
 	}
 	
@@ -487,7 +583,7 @@ public class PredictScript {
 		}
 
 		String predictResponse = modelWebService.callPredict(predictionTSV, strModelId).getBody();
-		ModelPrediction[] modelPredictionsArray = Utilities.gson.fromJson(predictResponse, ModelPrediction[].class);
+		ModelPrediction[] modelPredictionsArray = JsonUtilities.gson.fromJson(predictResponse, ModelPrediction[].class);
 	
 		List<ModelPrediction>modelTestPredictions=Arrays.asList(modelPredictionsArray);			
 
@@ -522,8 +618,12 @@ public class PredictScript {
 			modelWebService.callInitPickle(bytes,strModelId);
 		}
 
-		String predictResponse = modelWebService.callPredict(predictionTSV, strModelId).getBody();
-		ModelPrediction[] modelPredictionsArray = Utilities.gson.fromJson(predictResponse, ModelPrediction[].class);
+//		String predictResponse = modelWebService.callPredict(predictionTSV, strModelId).getBody();
+		String predictResponse = modelWebService.callPredictZip(predictionTSV, strModelId).getBody();
+
+//		System.out.println(predictResponse);
+		
+		ModelPrediction[] modelPredictionsArray = JsonUtilities.gson.fromJson(predictResponse, ModelPrediction[].class);
 	
 		List<ModelPrediction>modelTestPredictions=Arrays.asList(modelPredictionsArray);			
 
@@ -629,7 +729,7 @@ public class PredictScript {
 		}
 
 		String predictResponse = modelWebService.callPredict(predictionTSV, strModelId).getBody();
-		ModelPrediction[] modelPredictionsArray = Utilities.gson.fromJson(predictResponse, ModelPrediction[].class);
+		ModelPrediction[] modelPredictionsArray = JsonUtilities.gson.fromJson(predictResponse, ModelPrediction[].class);
 	
 		List<ModelPrediction>modelTestPredictions=Arrays.asList(modelPredictionsArray);			
 
@@ -691,11 +791,11 @@ public class PredictScript {
 		System.out.println(predictionTSV);
 
 		String predictResponse = modelWebService.callPredict(predictionTSV, modelId+"").getBody();
-		ModelPrediction[] modelPredictionsArray = Utilities.gson.fromJson(predictResponse, ModelPrediction[].class);
+		ModelPrediction[] modelPredictionsArray = JsonUtilities.gson.fromJson(predictResponse, ModelPrediction[].class);
 	
 		List<ModelPrediction>modelTestPredictions=Arrays.asList(modelPredictionsArray);			
 
-		System.out.println(Utilities.gson.toJson(modelTestPredictions));
+		System.out.println(JsonUtilities.gson.toJson(modelTestPredictions));
 		 
 				
 		
@@ -791,8 +891,8 @@ public class PredictScript {
 		
 		ExcelSourceReader esr=new ExcelSourceReader();
 		String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\000 scientists\\catherine sumner\\";
-		String jsonPreds=Utilities.gson.toJson(modelPredictions1);
-		JsonArray ja=Utilities.gson.fromJson(jsonPreds,JsonArray.class);
+		String jsonPreds=JsonUtilities.gson.toJson(modelPredictions1);
+		JsonArray ja=JsonUtilities.gson.fromJson(jsonPreds,JsonArray.class);
 		esr.convertJsonArrayToExcel(ja, folder+"logKow predictions.xlsx");
 
 		
@@ -1028,7 +1128,7 @@ public class PredictScript {
 				String predictResponse = modelWebService.callPredict(predictionTSV, modelId+"").getBody();
 
 
-				ModelPrediction[] modelPredictionsArray = Utilities.gson.fromJson(predictResponse, ModelPrediction[].class);
+				ModelPrediction[] modelPredictionsArray = JsonUtilities.gson.fromJson(predictResponse, ModelPrediction[].class);
 
 
 				String sqlUnits="select u.abbreviation_ccd from qsar_datasets.datasets d ";
@@ -1067,7 +1167,7 @@ public class PredictScript {
 				double pred=modelPredictionsArray[0].pred;
 
 				System.out.println(propertyAbbrev+"\t"+modelId+"\t"+modelPredictionsArray[0].pred+"\t"+units+"\tAD="+adp.AD+"/n");
-				System.out.println(Utilities.gson.toJson(htAD)+"\n");
+				System.out.println(JsonUtilities.gson.toJson(htAD)+"\n");
 
 				writePredictionHtml(smiles, MW, fw, propertyAbbrev, modelId, units, pred, adp);
 				
@@ -1084,6 +1184,31 @@ public class PredictScript {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		
+		
+	}
+	
+	
+	void getUnstandardizedCoeffcients(long modelId) {
+		
+		boolean initModels=true;//set to false if model already loaded in web service 
+		boolean use_pmml=false;
+		boolean use_sklearn2pmml=false;
+		boolean useFullStandardize=false;
+
+		Model model=modelService.findById(modelId);
+		byte[] bytes = modelBytesService.getBytesSql(modelId, use_pmml);
+		if(initModels) {
+			if (use_pmml) {
+				String details=new String(model.getDetails());
+				modelWebService.callInitPmml(bytes, modelId+"", details,use_sklearn2pmml);
+			} else {
+				modelWebService.callInitPickle(bytes,modelId+"");
+			}
+		}
+		
+		System.out.println(modelWebService.callRegressionUnstandizedCoefficients(modelId+"").getBody().toString());
 		
 		
 		
@@ -1127,10 +1252,10 @@ public class PredictScript {
 				}
 			}
 			
-
 			//String applicability_domain=DevQsarConstants.Applicability_Domain_TEST_Embedding_Euclidean;
 			String sql="select name from qsar_models.ad_methods where id="+model.getFk_ad_method();
 			String applicability_domain=SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sql);
+			//if model class is refactored, then get applicability_domain directly from the model object using hibernate
 			
 			DescriptorSet descriptorSet = descriptorSetService.findByName(model.getDescriptorSetName());
 			String descriptors=calc.calculateDescriptors(qsarSmiles, descriptorSet);
@@ -1138,14 +1263,14 @@ public class PredictScript {
 			String predictionTSV="ID\tProperty\t"+descriptorSet.getHeadersTsv()+"\r\n";
 			predictionTSV+=qsarSmiles+"\t-9999.0\t"+  descriptors+"\r\n";
 
-			//			System.out.println(predictionTSV);
+			System.out.println(predictionTSV);
 
 			String predictResponse = modelWebService.callPredict(predictionTSV, modelId+"").getBody();
 
 			System.out.println(predictResponse);
 			
 
-			ModelPrediction[] modelPredictionsArray = Utilities.gson.fromJson(predictResponse, ModelPrediction[].class);
+			ModelPrediction[] modelPredictionsArray = JsonUtilities.gson.fromJson(predictResponse, ModelPrediction[].class);
 			double pred=modelPredictionsArray[0].pred;
 
 			String sqlUnits="select u.abbreviation_ccd from qsar_datasets.datasets d ";
@@ -1183,7 +1308,7 @@ public class PredictScript {
 
 			System.out.println(model.getName()+"\t"+modelId+"\t"+pred+"\t"+units+"\tAD="+adp.AD+"\n");
 			System.out.println("Applicability domain="+applicability_domain);
-			System.out.println("Neighbors used in AD calcs:"+Utilities.gson.toJson(htAD)+"\n");
+			System.out.println("Neighbors used in AD calcs:"+JsonUtilities.gson.toJson(htAD)+"\n");
 
 
 			
@@ -1276,6 +1401,9 @@ public class PredictScript {
 		
 		
 		ps.runPredictionWithAD("c1ccccc1", 1068L);
+		
+		
+//		ps.getUnstandardizedCoeffcients(1615L);
 		
 //		ps.runPredictionWithAD("CCC(C)C(C(=O)N)NC(=O)C(CC(C)C)NC(=O)C", 1069L);
 //		ps.runPredictionWithAD("CCO", 1069L);

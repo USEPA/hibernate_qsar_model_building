@@ -21,7 +21,7 @@ import com.opencsv.CSVReader;
 
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 
 
@@ -56,7 +56,7 @@ public class CompareToChemprop {
 //		Utilities.saveJson(map, folder+"percepta_chemprop_sample.json");
 
 		SortedMap<String, List<Prediction>>map=getResultsMapList(dtxsids, folder, filename);
-		Utilities.saveJson(map, folder+"percepta_chemprop_sample_simple.json");
+		JsonUtilities.saveJson(map, folder+"percepta_chemprop_sample_simple.json");
 		
 	}
 
@@ -380,7 +380,7 @@ private HashSet<String> printLines(String folder, String filename,String dtxsid)
 			System.out.println(file.getName()+"\t"+map.size()+"\t"+mapAll.size());
 		}
 		
-		Utilities.saveJson(mapAll, "data\\percepta\\percepta_res_qsar_sample.json");
+		JsonUtilities.saveJson(mapAll, "data\\percepta\\percepta_res_qsar_sample.json");
 	}
 
 	private SortedMap<String, SortedMap<String,Prediction>> getPredictionMap(String filepathChemPropSample) {

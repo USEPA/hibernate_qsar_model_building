@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.AtomContainerSet;
@@ -37,7 +39,10 @@ import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Unit;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImplSql;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.PropertyService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.PropertyServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_datasets.service.PropertyServiceImplSql;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DescriptorEmbedding;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxSnapshot;
@@ -57,6 +62,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.MethodADServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelStatisticServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardServiceImplSql;
 import gov.epa.databases.dev_qsar.qsar_models.service.SourceService;
 import gov.epa.databases.dev_qsar.qsar_models.service.SourceServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticService;
@@ -65,16 +71,15 @@ import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.ModelStatisticCalculator;
 import gov.epa.run_from_java.scripts.QsarModelsScript;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.CreatorScript;
 import gov.epa.run_from_java.scripts.PredictionDashboard.DatabaseUtilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.HTMLReportCreator;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionDashboardTableMaps;
 import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA_Old.Lookup;
 import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA_Old.SqliteUtilities;
-import gov.epa.run_from_java.scripts.PredictionDashboard.TEST.HTMLReportCreatorTEST;
 import gov.epa.util.ExcelSourceReader;
 import gov.epa.util.StructureUtil;
+import gov.epa.util.JsonUtilities;
 
 /**
  * 
@@ -85,6 +90,7 @@ import gov.epa.util.StructureUtil;
 public class PredictionDashboardScriptOPERA {
 
 	static final String STR_DTXCID="DSSTOX_COMPOUND_ID";
+	static final String STR_MOLECULE_ID="MoleculeID";
 	public static String version="2.8";
 	String userName="tmarti02";
 
@@ -166,7 +172,7 @@ public class PredictionDashboardScriptOPERA {
 
 			ConsensusModelPredictions cmpSDF=null;
 			try {
-				cmpSDF=Utilities.gson.fromJson(new FileReader("data\\OPERA2.8\\reports\\plots\\CATMoS-LD50 OPERA2.8_from_sdf.json"), ConsensusModelPredictions.class);
+				cmpSDF=JsonUtilities.gson.fromJson(new FileReader("data\\OPERA2.8\\reports\\plots\\CATMoS-LD50 OPERA2.8_from_sdf.json"), ConsensusModelPredictions.class);
 				//				System.out.println(Utilities.gson.toJson(cmpSDF));
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -192,8 +198,8 @@ public class PredictionDashboardScriptOPERA {
 			Map<String, Double>statsTraining=ModelStatisticCalculator.calculateContinuousStatistics(mpsTrain, meanExpTraining, DevQsarConstants.TAG_TRAINING);
 			Map<String, Double>statsEval=ModelStatisticCalculator.calculateContinuousStatistics(mpsEval, meanExpTraining, DevQsarConstants.TAG_TEST);
 
-			System.out.println(Utilities.gson.toJson(statsTraining));
-			System.out.println(Utilities.gson.toJson(statsEval));
+			System.out.println(JsonUtilities.gson.toJson(statsTraining));
+			System.out.println(JsonUtilities.gson.toJson(statsEval));
 
 			ConsensusModelPredictions cmp=new ConsensusModelPredictions();
 			cmp.mpsTest=mpsEval;
@@ -204,7 +210,7 @@ public class PredictionDashboardScriptOPERA {
 
 			try {
 				FileWriter fw = new FileWriter("data\\OPERA2.8\\reports\\plots\\CATMoS-LD50 OPERA2.8.json");
-				fw.write(Utilities.gson.toJson(cmp));
+				fw.write(JsonUtilities.gson.toJson(cmp));
 				fw.flush();
 				fw.close();
 
@@ -424,7 +430,7 @@ public class PredictionDashboardScriptOPERA {
 				}
 
 				FileWriter fw = new FileWriter(folder+modelName+".json");
-				fw.write(Utilities.gson.toJson(cmp));
+				fw.write(JsonUtilities.gson.toJson(cmp));
 				fw.flush();
 				fw.close();
 
@@ -600,7 +606,7 @@ public class PredictionDashboardScriptOPERA {
 
 				if(mpsId.size()>1) {//Somehow, the same qsar ready smiles can have diff preds!
 
-					System.out.println(Utilities.gson.toJson(mpsId));					
+					System.out.println(JsonUtilities.gson.toJson(mpsId));					
 					ModelPrediction mpNew=new ModelPrediction(mpsId.get(0).id,null,null,mpsId.get(0).split);
 
 					//Try to assemble a complete mp from the list:
@@ -969,9 +975,9 @@ public class PredictionDashboardScriptOPERA {
 	//	}
 
 
-	private void compareOPERAStructure(Hashtable<String, OPERA_Structure> htDTXCIDToOperaStructure,
+	private void compareOPERAStructure(Hashtable<String, OPERA_Structure> htMoleculeNameToOperaStructure,
 			PredictionDashboard pd) {
-		String smilesOPERA=htDTXCIDToOperaStructure.get(pd.getDtxcid()).Original_SMILES;
+		String smilesOPERA=htMoleculeNameToOperaStructure.get(pd.getDtxcid()).Original_SMILES;
 		String smilesSnapshot=pd.getDsstoxRecord().getSmiles();
 
 		String inchiKeyOPERA=StructureUtil.indigoInchikey1FromSmiles(smilesOPERA);
@@ -1077,9 +1083,9 @@ public class PredictionDashboardScriptOPERA {
 
 
 				List<OPERA_Structure>operaStructures=OPERA_Structure.readStructureTableFromSqlite(sqliteStatement);
-				Hashtable<String,OPERA_Structure>htDTXCIDToOperaStructure=new Hashtable<>();
-				for (OPERA_Structure s:operaStructures) htDTXCIDToOperaStructure.put(s.DSSTOX_COMPOUND_ID, s);
-				//			System.out.println(Utilities.gson.toJson(htDTXCIDToOperaStructure));
+				Hashtable<String,OPERA_Structure>htMoleculeNameToOperaStructure=new Hashtable<>();
+				for (OPERA_Structure s:operaStructures) htMoleculeNameToOperaStructure.put(s.Molecule_name, s);
+				//			System.out.println(Utilities.gson.toJson(htMoleculeNameToOperaStructure));
 
 
 				ResultSet rs=SqliteUtilities.getRecords(sqliteStatement, sql);
@@ -1135,7 +1141,7 @@ public class PredictionDashboardScriptOPERA {
 
 
 					List<PredictionDashboard>predictionsDashboard=converter.convertValuesToRecords(false, colNamesAll, values, htColNamesProperty, lookups,
-							htDTXCIDToOperaStructure, pd_keys);
+							htMoleculeNameToOperaStructure, pd_keys);
 
 					for(PredictionDashboard pd:predictionsDashboard) {
 
@@ -1241,6 +1247,63 @@ public class PredictionDashboardScriptOPERA {
 
 	class Loader {
 
+		PredictionDashboardServiceImplSql predictionDashboardService=new PredictionDashboardServiceImplSql();
+		
+		public void createRecordsFromCSVsInFolder(boolean writeToDB) {
+			
+			String folderPath = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\OPERA\\OPERA 2.8\\difference with 12-31-25 snapshot\\";
+			
+			
+			int start = 1;
+			int stop = 10;
+			
+//			int count=40;//number of rows in the csv to use
+			int count=-1;
+//			int count=5;
+			
+			int batchSize=1000;
+			
+			createReports=true;
+			boolean writeReportsToHardDrive=true;
+			if (count==-1) {
+				writeReportsToHardDrive=false;
+			}
+			
+			String sourceName=initializeDB.getSource();
+
+//			HashSet<String> pd_keys=DatabaseUtilities.getLoadedKeysForSource(sourceName);
+			
+			
+			String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\OPERA\\OPERA 2.8\\difference with 12-31-25 snapshot\\";
+			String filepathKeys = folder+"loaded_keys.tsv"; 
+//			DatabaseUtilities.dumpLoadedKeysForSourceToFile("OPERA2.8", filepathKeys);
+			HashSet<String>pd_keys = DatabaseUtilities.loadLinesIntoHashSet(filepathKeys);
+
+//			HashSet<String> pd_keys = DatabaseUtilities.getPredictionsDashboardKeysInDB(minModelId,maxModelId);
+//			HashSet<String> pd_keys = new HashSet<>();
+
+//			System.out.println("Number of OPERA predictions already in the database:"+pd_keys.size());
+			System.out.println("Number of pd_keys with OPERA predictions in the database:"+pd_keys.size());
+			PredictionDashboardTableMaps lookups=new PredictionDashboardTableMaps(PredictionDashboardTableMaps.fileJsonDsstoxRecords2025_12_31,PredictionDashboardTableMaps.fileJsonOtherCAS2025_12_31);//creates lookup maps for database objects so dont have to keep query the database
+
+			
+			for (int i=start;i<=stop;i++) {
+				String filepathPredictionCsv = folderPath + "pred_"+i+".csv";
+				String filepathStructureCSV = folderPath+"compounds_part_"+i+"_Summary_file.csv";
+				
+				System.out.println("\nLoading pred_"+i+".csv");
+				
+				loadFromCSV(writeReportsToHardDrive, writeToDB, filepathPredictionCsv, filepathStructureCSV,
+						batchSize, count, pd_keys, lookups);
+				
+				System.out.println("After loading "+"pred_"+i+".csv, # pd_keys with OPERA predictions in the database:"+pd_keys.size());
+
+			}
+			
+		}
+		
+		
+		
 		/**
 		 * TODO This method needs to be updated to match the one for loading from sqlite
 		 * 
@@ -1248,53 +1311,81 @@ public class PredictionDashboardScriptOPERA {
 		 */
 		public void createRecordsFromCSV(boolean writeToDB) {
 
-			ConvertToPredictionDashboard converter=new ConvertToPredictionDashboard();
-
 
 			PredictionDashboardServiceImpl predictionDashboardService=new PredictionDashboardServiceImpl();
 
 //			String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\OPERA\\OPERA 2.9\\";
-			String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\OPERA\\OPERA 2.8\\difference with 11_12_24 snapshot\\results\\";
+//			String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\OPERA\\OPERA 2.8\\difference with 11_12_24 snapshot\\results\\";
+			String folder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\Comptox\\OPERA\\OPERA 2.8\\difference with 12-31-25 snapshot\\";
 
 			//		String filepathPredictionCsv=folder+"OPERA2.8_DSSTox_082021_1_sample.csv";
 			//		String filepathStructureCSV=folder+"OPERA2.8_DSSTox_082021_1_sample_Structures.csv";
-			String filepathPredictionCsv=folder+"OPERA2.8_DSSTox_082021_1_first1000.csv";
-			String filepathStructureCSV=folder+"OPERA2.8_DSSTox_082021_1_first1000_structures.csv";
+//			String filepathPredictionCsv=folder+"OPERA2.8_DSSTox_082021_1_first1000.csv";
+//			String filepathStructureCSV=folder+"OPERA2.8_DSSTox_082021_1_first1000_structures.csv";
 
+			String filepathPredictionCsv=folder+"pred_1.csv";
+			String filepathStructureCSV=folder+"compounds_part_1_Summary_file.csv";
+			
+			
 			int batchSize=1000;
-			int count=40;//number of rows in the csv to use
-			//		int count=-1;
+//			int count=40;//number of rows in the csv to use
+//			int count=-1;
+			int count=1;
+			
+			createReports=true;
+			boolean writeReportsToHardDrive=true;
+			
+			if (count==-1) {
+				writeReportsToHardDrive=false;
+			}
+			
 
-
-			long minModelId=1019;//OPERA2.9
-			long maxModelId=1051;//OPERA2.9
-
-			HashSet<String> pd_keys = DatabaseUtilities.getPredictionsDashboardKeysInDB(minModelId,maxModelId);
-
-			//TODO update as follows:
-			//		HashSet<String> pd_keys=DatabaseUtilities.getLoadedKeys(source, snapshot);
+			String sourceName=initializeDB.getSource();
+			int numOperaModels=28;
+			
+//			HashSet<String> pd_keys=DatabaseUtilities.getLoadedCIDsWithCount(sourceName, numOperaModels);
+//			HashSet<String> pd_keys = DatabaseUtilities.getPredictionsDashboardKeysInDB(minModelId,maxModelId);
+			HashSet<String> pd_keys = new HashSet<>();
 
 			System.out.println("Number of OPERA predictions already in the database:"+pd_keys.size());
 
-			PredictionDashboardTableMaps lookups=new PredictionDashboardTableMaps(PredictionDashboardTableMaps.fileJsonDsstoxRecords2023_04_04,PredictionDashboardTableMaps.fileJsonOtherCAS2023_04_04);//creates lookup maps for database objects so dont have to keep query the database
+//			PredictionDashboardTableMaps lookups=new PredictionDashboardTableMaps(PredictionDashboardTableMaps.fileJsonDsstoxRecords2023_04_04,PredictionDashboardTableMaps.fileJsonOtherCAS2023_04_04);//creates lookup maps for database objects so dont have to keep query the database
+			PredictionDashboardTableMaps lookups=new PredictionDashboardTableMaps(PredictionDashboardTableMaps.fileJsonDsstoxRecords2025_12_31,PredictionDashboardTableMaps.fileJsonOtherCAS2025_12_31);//creates lookup maps for database objects so dont have to keep query the database
 
 			//Note opera_lookups depends on two json files which make it run faster than pulling the info from a database:
 			//		data\\dsstox\\json\\2023_04_snapshot_dsstox_records.json
 			//		data\\dsstox\\json\\2023_04_snapshot_other_casrn lookup.json
 			// 		These files are used to fix the neighbors which are missing dtxsids- but might need to pull info from prod_dsstox instead???
 
-			System.out.println("\nGoing through csv");
+//			System.out.println("\nGoing through csv");
 
+			loadFromCSV(writeReportsToHardDrive, writeToDB, filepathPredictionCsv, filepathStructureCSV,
+					batchSize, count, pd_keys, lookups);
+
+		}
+
+		private void loadFromCSV(boolean writeReportToHardDrive, boolean writeToDB, String filepathPredictionCsv,
+				String filepathStructureCSV, int batchSize, int count, HashSet<String> pd_keys,
+				PredictionDashboardTableMaps lookups) {
 			List<OPERA_Structure>operaStructures=OPERA_Structure.readStructureCSV(filepathStructureCSV, count);
-			Hashtable<String,OPERA_Structure>htDTXCIDToOperaStructure=new Hashtable<>();
-			for (OPERA_Structure s:operaStructures) htDTXCIDToOperaStructure.put(s.DSSTOX_COMPOUND_ID, s);
+			
+			Hashtable<String,OPERA_Structure>htMoleculeNameToOperaStructure=new Hashtable<>();
+			for (OPERA_Structure s:operaStructures) htMoleculeNameToOperaStructure.put(s.Molecule_name, s);
 
+			
+//			OPERA_Structure os = htMoleculeNameToOperaStructure.get("DTXCID301866888");
+//			System.out.println(JsonUtilities.gson.toJson(os));
+			
 			List<PredictionDashboard>predictionsDashboard=new ArrayList<>();
 
 			try {
 				CSVReader reader = new CSVReader(new FileReader(filepathPredictionCsv));
 				String []colNames=reader.readNext();
 				List<String>colNamesAll=Arrays.asList(colNames);
+				
+//				colNamesAll.set(0, STR_DTXCID);
+				colNamesAll.set(0, STR_MOLECULE_ID);
+				
 				TreeMap<String, List<String>>htColNames=converter.columnHandler.assignColumnsByProperty(colNamesAll);
 
 				int linesRead=0;
@@ -1307,31 +1398,31 @@ public class PredictionDashboardScriptOPERA {
 					List<String>values2=Arrays.asList(values);
 
 
-					if(linesRead%100==0) {
-						System.out.println(linesRead);
+					if(linesRead%1000==0) {
+						System.out.println("\t"+linesRead);
 					}
 
-
-					List<PredictionDashboard>predictionsDashboard2=converter.convertValuesToRecords(writeToDB,colNamesAll, values2, htColNames, lookups,
-							htDTXCIDToOperaStructure, pd_keys);
+					
+					List<PredictionDashboard>predictionsDashboard2=converter.convertValuesToRecords(writeReportToHardDrive, colNamesAll, values2, htColNames, lookups,
+							htMoleculeNameToOperaStructure, pd_keys);
 
 					predictionsDashboard.addAll(predictionsDashboard2);
 
-					if(writeToDB && predictionsDashboard.size()==batchSize) {
+					if(writeToDB && predictionsDashboard.size() > batchSize) {
 						//					System.out.println(counter);
-						predictionDashboardService.createSQL(predictionsDashboard);
+						predictionDashboardService.createBatch(predictionsDashboard);
 						predictionsDashboard.clear();
 					}
 
 					if(linesRead==count) break;
 				}
+				
 
-				if(writeToDB) predictionDashboardService.createSQL(predictionsDashboard);//do last ones
+				if(writeToDB) predictionDashboardService.createBatch(predictionsDashboard);//do last ones
 
 			}catch (Exception  ex) {
 				ex.printStackTrace();
 			}
-
 		}
 
 		public void createRecordsFromOPERA2_8_SqliteDB(boolean writeToDB, int offset) {
@@ -1366,7 +1457,7 @@ public class PredictionDashboardScriptOPERA {
 			String filepathKeys="data\\OPERA2.8\\reports\\keys.csv";
 			
 //			HashSet<String> pd_keys=DatabaseUtilities.getLoadedKeys(source, snapshot);
-			HashSet<String> pd_keys=DatabaseUtilities.getLoadedKeys(filepathKeys);
+			HashSet<String> pd_keys=DatabaseUtilities.getLoadedKeysFromFile(filepathKeys);
 			
 //			HashSet<String> pd_keys=new HashSet<>();
 			
@@ -1392,15 +1483,15 @@ public class PredictionDashboardScriptOPERA {
 				List<OPERA_Structure>operaStructures=OPERA_Structure.readStructureTableFromSqlite(sqliteStatement);
 
 				//Following is needed to lookup OPERA QSAR ready smiles:
-				Hashtable<String,OPERA_Structure>htDTXCIDToOperaStructure=new Hashtable<>();
-				for (OPERA_Structure s:operaStructures) htDTXCIDToOperaStructure.put(s.DSSTOX_COMPOUND_ID, s);
-				//			System.out.println(Utilities.gson.toJson(htDTXCIDToOperaStructure));
+				Hashtable<String,OPERA_Structure>htMoleculeNameToOperaStructure=new Hashtable<>();
+				for (OPERA_Structure s:operaStructures) htMoleculeNameToOperaStructure.put(s.Molecule_name, s);
+				//			System.out.println(Utilities.gson.toJson(htMoleculeNameToOperaStructure));
 
 
 				ResultSet rsResultsTable=SqliteUtilities.getRecords(sqliteStatement, sql);
 
 				goThroughResultsRecords(writeToDB,writeReportsToHardDrive, batchSize, count,
-						skipMissingDsstoxRecordID, pd_keys, tableMaps, predictionsDashboard, htDTXCIDToOperaStructure,
+						skipMissingDsstoxRecordID, pd_keys, tableMaps, predictionsDashboard, htMoleculeNameToOperaStructure,
 						rsResultsTable,false);
 
 
@@ -1462,14 +1553,14 @@ public class PredictionDashboardScriptOPERA {
 				List<OPERA_Structure>operaStructures=OPERA_Structure.readStructureTableFromSqlite(sqliteStatement);
 
 				//Following is needed to lookup OPERA QSAR ready smiles:
-				Hashtable<String,OPERA_Structure>htDTXCIDToOperaStructure=new Hashtable<>();
-				for (OPERA_Structure s:operaStructures) htDTXCIDToOperaStructure.put(s.DSSTOX_COMPOUND_ID, s);
-				//			System.out.println(Utilities.gson.toJson(htDTXCIDToOperaStructure));
+				Hashtable<String,OPERA_Structure>htMoleculeNameToOperaStructure=new Hashtable<>();
+				for (OPERA_Structure s:operaStructures) htMoleculeNameToOperaStructure.put(s.Molecule_name, s);
+				//			System.out.println(Utilities.gson.toJson(htMoleculeNameToOperaStructure));
 
 				ResultSet rsResultsTable=SqliteUtilities.getRecords(sqliteStatement, sql);
 
 				goThroughResultsRecords(modelsKeep, folderpath, count,
-						skipMissingDsstoxRecordID, pd_keys, tableMaps, predictionsDashboard, htDTXCIDToOperaStructure,
+						skipMissingDsstoxRecordID, pd_keys, tableMaps, predictionsDashboard, htMoleculeNameToOperaStructure,
 						rsResultsTable,false);
 
 
@@ -1538,15 +1629,15 @@ public class PredictionDashboardScriptOPERA {
 				List<OPERA_Structure>operaStructures=OPERA_Structure.readStructureTableFromSqlite(sqliteStatement);
 
 				//Following is needed to lookup OPERA QSAR ready smiles:
-				Hashtable<String,OPERA_Structure>htDTXCIDToOperaStructure=new Hashtable<>();
-				for (OPERA_Structure s:operaStructures) htDTXCIDToOperaStructure.put(s.DSSTOX_COMPOUND_ID, s);
-				//			System.out.println(Utilities.gson.toJson(htDTXCIDToOperaStructure));
+				Hashtable<String,OPERA_Structure>htMoleculeNameToOperaStructure=new Hashtable<>();
+				for (OPERA_Structure s:operaStructures) htMoleculeNameToOperaStructure.put(s.Molecule_name, s);
+				//			System.out.println(Utilities.gson.toJson(htMoleculeNameToOperaStructure));
 
 
 				ResultSet rsResultsTable=SqliteUtilities.getRecords(sqliteStatement, sql);
 
 				goThroughResultsRecords(writeToDB,writeReportsToHardDrive, batchSize, count,
-						skipMissingDsstoxRecordID, pd_keys, tableMaps, predictionsDashboard, htDTXCIDToOperaStructure,
+						skipMissingDsstoxRecordID, pd_keys, tableMaps, predictionsDashboard, htMoleculeNameToOperaStructure,
 						rsResultsTable,printValues);
 
 
@@ -1594,8 +1685,8 @@ public class PredictionDashboardScriptOPERA {
 				
 				//Following is needed to lookup OPERA QSAR ready smiles:
 				OPERA_Structure operaStructure=OPERA_Structure.readStructureTableFromSqlite(sqliteStatement,dtxcid);
-				Hashtable<String,OPERA_Structure>htDTXCIDToOperaStructure=new Hashtable<>();
-				htDTXCIDToOperaStructure.put(operaStructure.DSSTOX_COMPOUND_ID, operaStructure);
+				Hashtable<String,OPERA_Structure>htMoleculeNameToOperaStructure=new Hashtable<>();
+				htMoleculeNameToOperaStructure.put(operaStructure.Molecule_name, operaStructure);
 
 
 				ResultSet rsResultsTable=SqliteUtilities.getRecords(sqliteStatement, sql);
@@ -1624,7 +1715,7 @@ public class PredictionDashboardScriptOPERA {
 					}
 			
 					List<PredictionDashboard>predictionsDashboard2=converter.convertValuesToRecords(colNamesAll, values, htColNames, tableMaps,
-							htDTXCIDToOperaStructure);
+							htMoleculeNameToOperaStructure);
 					
 					predictionsDashboard.addAll(predictionsDashboard2);
 				}
@@ -1650,8 +1741,10 @@ public class PredictionDashboardScriptOPERA {
 				HTMLReportCreator hrc=new HTMLReportCreator();
 				
 				String title="OPERA2.8 predictions for "+dtxsid;
-				String htmlTabbed=hrc.writeTabbedWebpage(title, predictionsDashboardFiltered,tableMaps);
+				String htmlTabbed=hrc.writeTabbedWebpage(title, predictionsDashboardFiltered,tableMaps.mapDatasets);
 
+				
+				
 				String folder="data\\OPERA2.8\\reports\\"+dtxsid+"\\";
 				String filename=dtxsid+".html";
 				
@@ -1667,7 +1760,7 @@ public class PredictionDashboardScriptOPERA {
 
 		private void goThroughResultsRecords(List<String>modelsKeep, String folder, int count,
 				boolean skipMissingDsstoxRecordID, HashSet<String> pd_keys, PredictionDashboardTableMaps tableMaps,
-				List<PredictionDashboard> predictionsDashboard, Hashtable<String, OPERA_Structure> htDTXCIDToOperaStructure,
+				List<PredictionDashboard> predictionsDashboard, Hashtable<String, OPERA_Structure> htMoleculeNameToOperaStructure,
 				ResultSet rsResultsTable,boolean printValues) throws SQLException {
 		
 			PredictionDashboardServiceImpl predictionDashboardService=new PredictionDashboardServiceImpl();
@@ -1718,7 +1811,7 @@ public class PredictionDashboardScriptOPERA {
 					//			if (values==null) break;
 
 					List<PredictionDashboard>predictionsDashboard2=converter.convertValuesToRecords(false,colNamesAll, values, htColNames, tableMaps,
-							htDTXCIDToOperaStructure, pd_keys);
+							htMoleculeNameToOperaStructure, pd_keys);
 
 
 					if(skipMissingDsstoxRecordID && predictionsDashboard2.size()>0) {
@@ -1773,11 +1866,8 @@ public class PredictionDashboardScriptOPERA {
 
 		private void goThroughResultsRecords(boolean writeToDB, boolean writeReportsToHarddrive,int batchSize, int count,
 				boolean skipMissingDsstoxRecordID, HashSet<String> pd_keys, PredictionDashboardTableMaps tableMaps,
-				List<PredictionDashboard> predictionsDashboard, Hashtable<String, OPERA_Structure> htDTXCIDToOperaStructure,
+				List<PredictionDashboard> predictionsDashboard, Hashtable<String, OPERA_Structure> htMoleculeNameToOperaStructure,
 				ResultSet rsResultsTable,boolean printValues) throws SQLException {
-		
-		
-			PredictionDashboardServiceImpl predictionDashboardService=new PredictionDashboardServiceImpl();
 		
 		
 			long t1=System.currentTimeMillis();
@@ -1823,7 +1913,7 @@ public class PredictionDashboardScriptOPERA {
 				}
 		
 				List<PredictionDashboard>predictionsDashboard2=converter.convertValuesToRecords(writeReportsToHarddrive,colNamesAll, values, htColNames, tableMaps,
-						htDTXCIDToOperaStructure, pd_keys);
+						htMoleculeNameToOperaStructure, pd_keys);
 		
 		
 		
@@ -1839,7 +1929,7 @@ public class PredictionDashboardScriptOPERA {
 		
 				if(predictionsDashboard.size()>=batchSize) {					
 					//					System.out.println(predictionsDashboard.size());					
-					if(writeToDB) predictionDashboardService.createSQL(predictionsDashboard);
+					if(writeToDB) predictionDashboardService.createBatch(predictionsDashboard);
 					predictionsDashboard.clear();
 				}
 		
@@ -1848,7 +1938,7 @@ public class PredictionDashboardScriptOPERA {
 		
 			if(writeToDB) {
 				//				System.out.println("Here1");
-				predictionDashboardService.createSQL(predictionsDashboard);//do last ones
+				predictionDashboardService.createBatch(predictionsDashboard);//do last ones
 			}
 		
 			long t2=System.currentTimeMillis();
@@ -1961,9 +2051,9 @@ public class PredictionDashboardScriptOPERA {
 			Statement sqliteStatement=SqliteUtilities.getStatement(Lookup.conn);
 			List<OPERA_Structure>operaStructures=OPERA_Structure.readStructureTableFromSqlite(sqliteStatement);
 			//Following is needed to lookup OPERA QSAR ready smiles:
-			Hashtable<String,OPERA_Structure>htDTXCIDToOperaStructure=new Hashtable<>();
-			for (OPERA_Structure s:operaStructures) htDTXCIDToOperaStructure.put(s.DSSTOX_COMPOUND_ID, s);
-			System.out.println("Loaded OPERA structure lookup:"+htDTXCIDToOperaStructure.size());
+			Hashtable<String,OPERA_Structure>htMoleculeNameToOperaStructure=new Hashtable<>();
+			for (OPERA_Structure s:operaStructures) htMoleculeNameToOperaStructure.put(s.Molecule_name, s);
+			System.out.println("Loaded OPERA structure lookup:"+htMoleculeNameToOperaStructure.size());
 						
 			PredictionDashboardTableMaps tableMaps=new PredictionDashboardTableMaps(PredictionDashboardTableMaps.fileJsonDsstoxRecords2024_11_12,PredictionDashboardTableMaps.fileJsonOtherCAS2024_11_12);//creates lookup maps for database objects so dont have to keep query the database
 			System.out.println("Loaded tableMaps");
@@ -1989,9 +2079,9 @@ public class PredictionDashboardScriptOPERA {
 						continue;
 					}
 					
-					if(!htDTXCIDToOperaStructure.containsKey(dtxcid)) continue;
+					if(!htMoleculeNameToOperaStructure.containsKey(dtxcid)) continue;
 					
-					String qsarSmiles=htDTXCIDToOperaStructure.get(dtxcid).Canonical_QSARr;
+					String qsarSmiles=htMoleculeNameToOperaStructure.get(dtxcid).Canonical_QSARr;
 					DsstoxRecord dsstoxRecord=tableMaps.mapDsstoxRecordsByCID.get(dtxcid);
 					
 					for (String propertyName:propertyNamesOPERA) {
@@ -2019,7 +2109,7 @@ public class PredictionDashboardScriptOPERA {
 		void runMissingDtxcids(boolean writeToDB) {
 			
 			boolean writeReportsToHardDrive=false;
-			boolean useLegacyModelIds=false;
+//			boolean useLegacyModelIds=false;
 
 			version="2.8";
 			int batchSize=1000;
@@ -2027,8 +2117,8 @@ public class PredictionDashboardScriptOPERA {
 			int count=-1;
 //			int count=1;
 
-			int limit=-1;
-			if(count!=-1) limit=count;
+//			int limit=-1;
+//			if(count!=-1) limit=count;
 			
 			boolean skipMissingDsstoxRecordID=true;
 			
@@ -2053,9 +2143,9 @@ public class PredictionDashboardScriptOPERA {
 			Statement sqliteStatement=SqliteUtilities.getStatement(Lookup.conn);
 			List<OPERA_Structure>operaStructures=OPERA_Structure.readStructureTableFromSqlite(sqliteStatement);
 			//Following is needed to lookup OPERA QSAR ready smiles:
-			Hashtable<String,OPERA_Structure>htDTXCIDToOperaStructure=new Hashtable<>();
-			for (OPERA_Structure s:operaStructures) htDTXCIDToOperaStructure.put(s.DSSTOX_COMPOUND_ID, s);
-			System.out.println("Loaded OPERA structure lookup:"+htDTXCIDToOperaStructure.size());
+			Hashtable<String,OPERA_Structure>htMoleculeNameToOperaStructure=new Hashtable<>();
+			for (OPERA_Structure s:operaStructures) htMoleculeNameToOperaStructure.put(s.Molecule_name, s);
+			System.out.println("Loaded OPERA structure lookup:"+htMoleculeNameToOperaStructure.size());
 						
 			PredictionDashboardTableMaps tableMaps=new PredictionDashboardTableMaps(PredictionDashboardTableMaps.fileJsonDsstoxRecords2024_11_12,PredictionDashboardTableMaps.fileJsonOtherCAS2024_11_12);//creates lookup maps for database objects so dont have to keep query the database
 			System.out.println("Loaded tableMaps");
@@ -2069,10 +2159,10 @@ public class PredictionDashboardScriptOPERA {
 				HashSet<String> dtxcidsInOperaResults = getDtxcidsInOperaResults();
 
 				HashSet<String> dtxcidsMissing = getDtxcidsWithNoPredictionsDashboard(dtxcidsLoaded,
-						htDTXCIDToOperaStructure, tableMaps, dtxcidsInOperaResults);
+						htMoleculeNameToOperaStructure, tableMaps, dtxcidsInOperaResults);
 				
 				HashSet<String> dtxcidsMissingSnapshot = getSnapshotDtxcidsWithNoOPERA_Predictions(dtxcidsLoaded,
-						htDTXCIDToOperaStructure, tableMaps, dtxcidsInOperaResults);
+						htMoleculeNameToOperaStructure, tableMaps, dtxcidsInOperaResults);
 
 				
 				
@@ -2095,7 +2185,7 @@ public class PredictionDashboardScriptOPERA {
 						ResultSet rsResultsTable=SqliteUtilities.getRecords(sqliteStatement, sql);
 						
 						goThroughResultsRecords(writeToDB,writeReportsToHardDrive, batchSize, count,
-								skipMissingDsstoxRecordID, pd_keys, tableMaps, predictionsDashboard, htDTXCIDToOperaStructure,
+								skipMissingDsstoxRecordID, pd_keys, tableMaps, predictionsDashboard, htMoleculeNameToOperaStructure,
 								rsResultsTable,false);
 						
 						dtxcidsToLoad.clear();
@@ -2107,7 +2197,7 @@ public class PredictionDashboardScriptOPERA {
 				String sql=Lookup.createSQLByDTXCIDs(dtxcidsToLoad);
 				ResultSet rsResultsTable=SqliteUtilities.getRecords(sqliteStatement, sql);
 				goThroughResultsRecords(writeToDB,writeReportsToHardDrive, batchSize, count,
-						skipMissingDsstoxRecordID, pd_keys, tableMaps, predictionsDashboard, htDTXCIDToOperaStructure,
+						skipMissingDsstoxRecordID, pd_keys, tableMaps, predictionsDashboard, htMoleculeNameToOperaStructure,
 						rsResultsTable,false);
 				System.out.println(dtxcidsLoaded.size());
 				
@@ -2131,7 +2221,7 @@ public class PredictionDashboardScriptOPERA {
 		}
 
 		private HashSet<String> getDtxcidsWithNoPredictionsDashboard(HashSet<String> dtxcidsLoaded,
-				Hashtable<String, OPERA_Structure> htDTXCIDToOperaStructure, PredictionDashboardTableMaps tableMaps,
+				Hashtable<String, OPERA_Structure> htMoleculeNameToOperaStructure, PredictionDashboardTableMaps tableMaps,
 				HashSet<String> dtxcidsInOperaResults) throws SQLException {
 			
 			HashSet<String>dtxcidsMissing=new HashSet<>();
@@ -2143,7 +2233,7 @@ public class PredictionDashboardScriptOPERA {
 					continue;
 				}
 			
-				if(!htDTXCIDToOperaStructure.containsKey(dtxcid)) continue;
+				if(!htMoleculeNameToOperaStructure.containsKey(dtxcid)) continue;
 				if(dtxcidsLoaded.contains(dtxcid)) continue;
 				
 				dtxcidsMissing.add(dtxcid);
@@ -2153,7 +2243,7 @@ public class PredictionDashboardScriptOPERA {
 		
 		
 		private HashSet<String> getSnapshotDtxcidsWithNoOPERA_Predictions(HashSet<String> dtxcidsLoaded,
-				Hashtable<String, OPERA_Structure> htDTXCIDToOperaStructure, PredictionDashboardTableMaps tableMaps,
+				Hashtable<String, OPERA_Structure> htMoleculeNameToOperaStructure, PredictionDashboardTableMaps tableMaps,
 				HashSet<String> dtxcidsInOperaResults) throws SQLException {
 			
 			HashSet<String>dtxcidsMissing=new HashSet<>();
@@ -2184,6 +2274,8 @@ public class PredictionDashboardScriptOPERA {
 		version="2.8";
 		useLegacyModelIds=false;
 
+		//TODO fix units for oral rat LD50 (should be in mol/kg to match TEST)
+		
 		//****************************************************************************************
 //		DatabaseUtilities d=new DatabaseUtilities();
 //		d.deleteAllRecords("OPERA2.8");
@@ -2200,11 +2292,14 @@ public class PredictionDashboardScriptOPERA {
 //		o.loader.createRecordsFromOPERA2_8_SqliteDB(true,0);//already loaded these);
 //		o.loader.createRecordsFromOPERA2_8_SqliteDB(true,"DTXSID301346793",false);
 
-		o.loader.createRecordsFromCSV(false);
-
+//		o.loader.createRecordsFromCSV(false);
 		
+//		o.loader.createRecordsFromCSVsInFolder(false);
+		o.loader.createRecordsFromCSVsInFolder(true);
 		
-		o.loader.createReportsAsTabbedWebpage("DTXSID3039242");
+//		testLoadMaps();
+		
+//		o.loader.createReportsAsTabbedWebpage("DTXSID3039242");
 
 //		o.loader.findMissingPredictionDashboardKeysOpera();
 		
@@ -2251,6 +2346,26 @@ public class PredictionDashboardScriptOPERA {
 		//		o.extraMethods.printColumnValues("CERAPP_Bind_exp");
 		//		o.extraMethods.compareResultsToToxVal();
 
+	}
+
+
+	private static void testLoadMaps() {
+		long t1=System.currentTimeMillis();
+
+    PropertyServiceImpl ps=new PropertyServiceImpl();
+//		PropertyServiceImplSql ps=new PropertyServiceImplSql();
+		List<Property>properties=ps.findAll();
+//		System.out.println(JsonUtilities.gson.toJson(properties));
+		long t2=System.currentTimeMillis();
+		System.out.println("done in "+(t2-t1)/1000+" seconds");
+		
+				
+		DatasetServiceImplSql dss=new DatasetServiceImplSql();
+		List<Dataset>datasets=dss.findAll();		
+//		System.out.println(JsonUtilities.gson.toJson(datasets));
+		
+		long t3=System.currentTimeMillis();
+		System.out.println("done in "+(t3-t2)/1000+" seconds");
 	}
 
 
@@ -2321,7 +2436,7 @@ public class PredictionDashboardScriptOPERA {
 					property.setCreatedBy(userName);
 					property.setDescription(DevQsarConstants.getPropertyDescription(propertyName));
 
-					System.out.println(Utilities.gson.toJson(property));
+					System.out.println(JsonUtilities.gson.toJson(property));
 					ps.create(property);
 					mapProperties.put(propertyName,property);
 				} 
@@ -2846,6 +2961,9 @@ public class PredictionDashboardScriptOPERA {
 		NeighborMethods neighborMethods=new NeighborMethods();
 
 
+//		HashSet<String>missingNeighborDtxsids=new HashSet<>();
+		
+		
 		class ColumnHandler {
 
 
@@ -2859,10 +2977,11 @@ public class PredictionDashboardScriptOPERA {
 				value=value.trim();
 				if (value.isBlank() || value.equals("?")) value=null;
 				if(value!=null && value.equals("NA")) value=null;
+				if(value!=null && value.equals("NaN")) value=null;
 				return value;
 			}
 
-			private void handleColumn(PredictionDashboardTableMaps lookups, Hashtable<String, OPERA_Structure> htDTXCIDToOperaStructure,
+			private void handleColumn(PredictionDashboardTableMaps lookups, Hashtable<String, OPERA_Structure> htMoleculeNameToOperaStructure,
 					String propertyName, PredictionDashboard pd, List<QsarPredictedADEstimate> qsarPredictedADEstimates,
 					String unitName, String unitNameContributor, String colName,
 					String value) {
@@ -2870,8 +2989,8 @@ public class PredictionDashboardScriptOPERA {
 
 				List<QsarPredictedNeighbor>neighbors=pd.getQsarPredictedNeighbors();
 
-				if (colName.equals(STR_DTXCID)) {
-					handleDTXCID(lookups, htDTXCIDToOperaStructure, pd, value);
+				if (colName.equals(STR_MOLECULE_ID)) {
+					handleMoleculeName(lookups, htMoleculeNameToOperaStructure, pd, value);
 				} else if (colName.contains("AD_") || colName.contains("AD_index") || colName.contains("Conf_index") ) {
 					handleAD(lookups, pd, qsarPredictedADEstimates, colName, value);
 					//					System.out.println(fieldName+"\t"+value+"\t"+unitNameContributor);
@@ -3005,7 +3124,8 @@ public class PredictionDashboardScriptOPERA {
 				Set<String> keys=ht.keySet();		
 				for (String key:keys) {
 					List<String> colNames = ht.get(key);
-					colNames.add(0,"DSSTOX_COMPOUND_ID");
+//					colNames.add(0,"DSSTOX_COMPOUND_ID");
+					colNames.add(0,"MoleculeID");
 					//			if(colNames.size()!=26) {
 					//				System.out.println(key+"\t"+colNames.size());	
 					//			}
@@ -3188,25 +3308,32 @@ public class PredictionDashboardScriptOPERA {
 				//		System.out.println(methodAD.getName());
 			}
 
-			private void handleDTXCID(PredictionDashboardTableMaps lookups, Hashtable<String, OPERA_Structure> htDTXCIDToOperaStructure,
-					PredictionDashboard pd, String dtxcid) {
+			private void handleMoleculeName(PredictionDashboardTableMaps lookups, Hashtable<String, OPERA_Structure> htMoleculeNameToOperaStructure,
+					PredictionDashboard pd, String moleculeName) {
 
-				if(lookups.mapDsstoxRecordsByCID.get(dtxcid)!=null) {
-					pd.setDsstoxRecord(lookups.mapDsstoxRecordsByCID.get(dtxcid));
-					pd.setDtxcid(dtxcid);
-					//				OPERA_Structure opera_structure=htDTXCIDToOperaStructure.get(value);
-					//TODO check if DTXSID in OPERA_2.8.db "IDs" table matches the one from the snapshot ht 
-
-				} else {
-					pd.setDtxcid(dtxcid);
-					//				DsstoxRecord dr=new DsstoxRecord();
-					//				dr.setDtxcid(value);
-					//				dr.setId(-1L);
-					//				pd.setDsstoxRecord(dr);
-					//System.out.println("no matching  dsstoxRecord for "+value);
+				if (moleculeName.contains("DTXSID")) {
+					
+					if(lookups.mapDsstoxRecordsBySID.containsKey(moleculeName)) {
+						DsstoxRecord dr = lookups.mapDsstoxRecordsBySID.get(moleculeName);
+						pd.setDsstoxRecord(dr);
+						pd.setDtxcid(dr.getDtxcid());
+					} else {
+						System.out.println("Couldnt get dsstox record for molecule name = "+moleculeName);
+					}
+					
+					
+				} else if (moleculeName.contains("DTXCID")) {
+					if(lookups.mapDsstoxRecordsByCID.containsKey(moleculeName)) {
+						pd.setDsstoxRecord(lookups.mapDsstoxRecordsByCID.get(moleculeName));
+						pd.setDtxcid(moleculeName);
+					} else {
+						pd.setDtxcid(moleculeName);
+					}
 				}
+				
+			
 				//Look up qsar ready smiles used by OPERA:
-				pd.setCanonQsarSmiles(htDTXCIDToOperaStructure.get(dtxcid).Canonical_QSARr);
+				pd.setCanonQsarSmiles(htMoleculeNameToOperaStructure.get(moleculeName).Canonical_QSARr);
 
 				//		if(pd.getCanonQsarSmiles()==null) {
 				//			System.out.println(pd.getDtxcid()+"\tNo qsarSmiles");
@@ -3485,12 +3612,12 @@ public class PredictionDashboardScriptOPERA {
 		 * @param values
 		 * @param htColNames
 		 * @param lookups
-		 * @param htDTXCIDToOperaStructure 
+		 * @param htMoleculeNameToOperaStructure 
 		 * @param  
 		 */
 		private List<PredictionDashboard> convertValuesToRecords(boolean writeReportToHardDrive, List<String> colNamesCSV, List<String> values,
 				TreeMap<String, List<String>> htColNames, PredictionDashboardTableMaps lookups,
-				Hashtable<String, OPERA_Structure> htDTXCIDToOperaStructure, HashSet<String> pd_keys) {
+				Hashtable<String, OPERA_Structure> htMoleculeNameToOperaStructure, HashSet<String> pd_keys) {
 			//		String regex = "^[-+]?\\d*[.]?\\d+|^[-+]?\\d+[.]?\\d*";//used to detect numerical values vs text
 
 			List<String>propertyNamesOPERA=DevQsarConstants.getOPERA_PropertyNames();
@@ -3530,23 +3657,31 @@ public class PredictionDashboardScriptOPERA {
 				boolean skip=false;
 
 				for (String colName:colNamesCSV_Property) {
+					
 					if(colNamesCSV.indexOf(colName)==-1) {
 						System.out.println(colName+" missing for "+propertyName);
 						continue;
 					}
 
 					String value = columnHandler.getValue(colNamesCSV, values, colName);
-					//System.out.println(propertyName+"\t"+colName+"\t"+value);
+					
+//					System.out.println(propertyName+"\t"+colName+"\t"+value);
 
 					if (value==null) {
 						continue;
 					}
 
-					columnHandler.handleColumn(lookups, htDTXCIDToOperaStructure, propertyName, pd, qsarPredictedADEstimates, 
+					columnHandler.handleColumn(lookups, htMoleculeNameToOperaStructure, propertyName, pd, qsarPredictedADEstimates, 
 							unitName, unitNameContributor, colName, value);
+					
 					
 					if(pd.getDsstoxRecord()!=null && pd_keys.contains(pd.getKey()) && !writeReportToHardDrive) {
 //						System.out.println("skip:\t"+pd.getKey());
+					
+						if(pd.getDsstoxRecord().getDtxcid().equals("DTXCID301768397")) {
+							System.out.println("Found DTXCID301768397");
+						}
+						
 						skip=true;
 						break;
 					}
@@ -3554,7 +3689,7 @@ public class PredictionDashboardScriptOPERA {
 					
 				}//done iterating over col names for property
 
-//				System.out.println(pd.getDtxcid()+"\t"+pd.getModel().getName_ccd()+"\t"+pd.getPredictionValue());
+//				System.out.println(pd.getDtxcid()+"\t"+pd.getModel().getName_ccd()+"\t"+pd.getPredictionValue()+"\tskip="+skip);
 
 				if(skip)continue;
 				
@@ -3564,7 +3699,7 @@ public class PredictionDashboardScriptOPERA {
 //				}
 				
 				if(pd.getDsstoxRecord()==null) {
-//					System.out.println("Null DsstoxRecord for "+pd.getDtxcid());
+					System.out.println("Null DsstoxRecord for "+pd.getDtxcid());
 					continue;
 				}
 
@@ -3590,7 +3725,9 @@ public class PredictionDashboardScriptOPERA {
 				pd.setPredictionString(columnHandler.getBinaryConclusion(propertyName, pd.getPredictionValue()));
 
 				if(storeNeighbors) {
+					
 					neighborMethods.neighborsUpdate(lookups, propertyName, pd);
+					
 					//	System.out.println("\nAfter cloning");
 					//	printNeighbors(propertyName, neighbors);
 				}
@@ -3608,6 +3745,8 @@ public class PredictionDashboardScriptOPERA {
 				//			if(propertyName.equals(DevQsarConstants.OH)) {
 				//				System.out.println(pd.getDsstoxRecord().getDtxsid()+"\t"+pd.getDsstoxRecord().getDtxcid()+"\t"+pd.getDsstoxRecord().getCasrn()+"\t"+pd.getDsstoxRecord().getSmiles());
 				//			}
+				
+				
 
 			}//end loop over properties
 
@@ -3615,8 +3754,11 @@ public class PredictionDashboardScriptOPERA {
 
 			if(compareOperaStructure) {
 				PredictionDashboard pd=predictionsDashboard.get(0);
-				if(pd.getDsstoxRecord()!=null) compareOPERAStructure(htDTXCIDToOperaStructure, pd);
+				if(pd.getDsstoxRecord()!=null) compareOPERAStructure(htMoleculeNameToOperaStructure, pd);
 			}
+			
+			
+			
 
 			return predictionsDashboard;
 		}
@@ -3624,7 +3766,7 @@ public class PredictionDashboardScriptOPERA {
 		
 		private List<PredictionDashboard> convertValuesToRecords(List<String> colNamesCSV, List<String> values,
 				TreeMap<String, List<String>> htColNames, PredictionDashboardTableMaps lookups,
-				Hashtable<String,OPERA_Structure> htDTXCIDToOperaStructure) {
+				Hashtable<String,OPERA_Structure> htMoleculeNameToOperaStructure) {
 
 			List<String>propertyNamesOPERA=DevQsarConstants.getOPERA_PropertyNames();
 			List<PredictionDashboard>predictionsDashboard=new ArrayList<>();
@@ -3676,7 +3818,7 @@ public class PredictionDashboardScriptOPERA {
 						continue;
 					}
 
-					columnHandler.handleColumn(lookups, htDTXCIDToOperaStructure, propertyName, pd, qsarPredictedADEstimates, 
+					columnHandler.handleColumn(lookups, htMoleculeNameToOperaStructure, propertyName, pd, qsarPredictedADEstimates, 
 							unitName, unitNameContributor, colName, value);
 					
 				}//done iterating over col names for property
@@ -3745,6 +3887,8 @@ public class PredictionDashboardScriptOPERA {
 
 				String filename=or.chemicalIdentifiers.dtxsid+"_"+or.modelDetails.modelName+".html";
 
+				System.out.println(folder+"\\"+filename);
+				
 				h.writeStringToFile(fileHtml,folder,filename);
 				h.writeStringToFile(fileJson,folder,filename.replace(".html",".json"));
 			}

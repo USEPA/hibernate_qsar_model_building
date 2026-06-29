@@ -30,7 +30,7 @@ import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.ModelStatisticCalculator;
 //import gov.epa.exp_data_gathering.parse.CompareExperimentalRecords;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02

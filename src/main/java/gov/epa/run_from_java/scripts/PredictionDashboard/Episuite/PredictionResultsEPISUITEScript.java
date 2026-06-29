@@ -33,9 +33,9 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelService;
 import gov.epa.databases.dev_qsar.qsar_models.service.ModelServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardService;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardServiceImpl;
+import gov.epa.databases.dev_qsar.qsar_models.service.PredictionDashboardServiceImplSql;
 import gov.epa.databases.dev_qsar.qsar_models.service.SourceService;
 import gov.epa.databases.dev_qsar.qsar_models.service.SourceServiceImpl;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.CreatorScript;
 import gov.epa.run_from_java.scripts.PredictionDashboard.DashboardPredictionUtilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionDashboardTableMaps;
@@ -45,6 +45,7 @@ import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteRe
 import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA.RecordToxValModel;
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.ValeryBody;
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.WebTEST2PredictionResponse;
+import gov.epa.util.JsonUtilities;
 import kong.unirest.HttpResponse;
 import kong.unirest.json.JSONObject;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,7 +59,7 @@ public class PredictionResultsEPISUITEScript {
 	DatasetService datasetService = new DatasetServiceImpl();
 	ModelService modelService = new ModelServiceImpl();
 	MethodServiceImpl methodService=new MethodServiceImpl();
-	PredictionDashboardServiceImpl predictionDashboardService=new PredictionDashboardServiceImpl();
+	PredictionDashboardServiceImplSql predictionDashboardService=new PredictionDashboardServiceImplSql();
 
 	String version="API_1.0";
 	String lanId="tmarti02";
@@ -727,7 +728,7 @@ public class PredictionResultsEPISUITEScript {
 
 			//		System.out.println(Utilities.gson.toJson(resultsAll));
 
-			if(writeToDB) predictionDashboardService.createSQL(resultsAll);//write to DB
+			if(writeToDB) predictionDashboardService.createBatch(resultsAll);//write to DB
 
 			//		writeRemainingSnapshotChemicalsToRunFile(folderpath, dtxsids);
 
@@ -836,7 +837,7 @@ public class PredictionResultsEPISUITEScript {
 		
 				String json=new String(pd.getPredictionReport().getFileJson());
 				String filepathJsonReport="data\\episuite\\sample reports\\"+pd.getModel().getName()+".json";
-				String json2=Utilities.jsonToPrettyJson(json,filepathJsonReport);
+				String json2=JsonUtilities.jsonToPrettyJson(json,filepathJsonReport);
 		
 				if(json.contains("output")) {
 					System.out.println(pd.getModel().getName()+"\tHas output");
@@ -854,7 +855,7 @@ public class PredictionResultsEPISUITEScript {
 				//			System.out.println(dtxsid+"\t"+pd.getModel().getName()+"\t"+pd.getExperimentalValue()+"\t"+pd.getPredictionValue()+"\t"+pd.getPredictionString()+"\t"+pd.getPredictionError());
 			}
 		
-			if(writeToDB) predictionDashboardService.createSQL(results);//write to DB
+			if(writeToDB) predictionDashboardService.createBatch(results);//write to DB
 		
 		}
 
@@ -863,8 +864,8 @@ public class PredictionResultsEPISUITEScript {
 			String json=GetJson(dtxsid, filepath);
 			if(json==null) return null;
 		
-			JsonObject jo=Utilities.gson.fromJson(json, JsonObject.class);		
-			System.out.println(Utilities.gson.toJson(jo));
+			JsonObject jo=JsonUtilities.gson.fromJson(json, JsonObject.class);		
+			System.out.println(JsonUtilities.gson.toJson(jo));
 		
 			EpisuiteResults results=EpisuiteResults.getResults(json);
 		
@@ -966,7 +967,7 @@ public class PredictionResultsEPISUITEScript {
 					
 					String filepathJsonReport=folder+pd.getModel().getName()+".json";
 		//			Utilities.saveJson(pr2,filepathJsonReport);
-					Utilities.saveJson(json,filepathJsonReport);
+					JsonUtilities.saveJson(json,filepathJsonReport);
 					
 		
 					if(json.contains("output")) {
@@ -978,7 +979,7 @@ public class PredictionResultsEPISUITEScript {
 					//			System.out.println(dtxsid+"\t"+pd.getModel().getName()+"\t"+pd.getExperimentalValue()+"\t"+pd.getPredictionValue()+"\t"+pd.getPredictionString()+"\t"+pd.getPredictionError());
 				}
 		
-				if(writeToDB) predictionDashboardService.createSQL(results);//write to DB
+				if(writeToDB) predictionDashboardService.createBatch(results);//write to DB
 		
 			}
 
@@ -998,7 +999,7 @@ public class PredictionResultsEPISUITEScript {
 			
 			
 			
-			Utilities.saveJson(json, filepathJson);
+			JsonUtilities.saveJson(json, filepathJson);
 			
 			
 			

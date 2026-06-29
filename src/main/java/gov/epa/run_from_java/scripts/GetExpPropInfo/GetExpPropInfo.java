@@ -80,7 +80,10 @@ import gov.epa.endpoints.reports.Outliers.Outlier;
 import gov.epa.run_from_java.data_loading.ExperimentalRecords;
 import gov.epa.run_from_java.data_loading.ExperimentalRecord;
 import gov.epa.run_from_java.scripts.SqlUtilities;
+import gov.epa.util.JsonUtilities;
 import gov.epa.util.MathUtil;
+
+
 import gov.epa.util.wekalite.CSVLoader;
 import gov.epa.util.wekalite.Instances;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
@@ -160,7 +163,7 @@ public class GetExpPropInfo {
 
 		String jsonPath=folder+"//"+dataSetName+"//"+dataSetName+"_Mapped_Records.json";
 
-		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
+		JsonArray ja=JsonUtilities.getJsonArrayFromJsonFile(jsonPath);
 
 		Hashtable<String,JsonArray>htRecsBySmiles=new Hashtable<>();
 
@@ -271,7 +274,7 @@ public class GetExpPropInfo {
 
 		//Getting mapped records:
 		String jsonPath=folder+"//"+dataSetName+"//"+dataSetName+"_Mapped_Records.json";
-		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
+		JsonArray ja=JsonUtilities.getJsonArrayFromJsonFile(jsonPath);
 		Hashtable<String,JsonArray>htRecsBySmiles=new Hashtable<>();
 
 		//Getting flattened datapoints:
@@ -400,7 +403,7 @@ public class GetExpPropInfo {
 		//			System.out.println(file.getAbsolutePath());
 		//		}
 
-		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
+		JsonArray ja=JsonUtilities.getJsonArrayFromJsonFile(jsonPath);
 
 		JsonObject joMin=new JsonObject();
 		joMin.addProperty("qsar_property_value", 999999999);
@@ -422,7 +425,7 @@ public class GetExpPropInfo {
 		System.out.println("mapped record bounds:"+exp_prop_Min+"\t"+exp_prop_Max+"\t"+dataset_exp_prop.getUnit().getName());
 
 		//		System.out.println(Utilities.gson.toJson(joMin));
-				System.out.println(Utilities.gson.toJson(joMax));
+		System.out.println(JsonUtilities.gson.toJson(joMax));
 
 	}
 
@@ -458,7 +461,7 @@ public class GetExpPropInfo {
 		}
 
 
-		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
+		JsonArray ja=JsonUtilities.getJsonArrayFromJsonFile(jsonPath);
 		JsonArray ja2=new JsonArray();
 
 		
@@ -518,7 +521,7 @@ public class GetExpPropInfo {
 
 			} catch (Exception ex) {
 				ex.printStackTrace();
-				System.out.println("Error:\n"+Utilities.gson.toJson(jo));
+				System.out.println("Error:\n"+JsonUtilities.gson.toJson(jo));
 			}
 		}
 
@@ -686,7 +689,7 @@ public class GetExpPropInfo {
 
 		String jsonPath=folder+"//"+dataSetName+"//"+dataSetName+"_Mapped_Records.json";
 
-		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
+		JsonArray ja=JsonUtilities.getJsonArrayFromJsonFile(jsonPath);
 
 		System.out.println(ja.size());
 
@@ -996,10 +999,10 @@ public class GetExpPropInfo {
 
 			Hashtable<String,String> htOperaReferences=null;
 
-			if (abbrev.equals("LogP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("LogP","Kow Reference");
-			if (abbrev.equals("WS")) htOperaReferences=Utilities.createOpera_Reference_Lookup("WS Reference","WS");
-			if (abbrev.equals("VP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("VP","VP Reference");
-			if (abbrev.equals("HL")) htOperaReferences=Utilities.createOpera_Reference_Lookup("HL","HL Reference");
+			if (abbrev.equals("LogP")) htOperaReferences=GetExpPropInfoUtilities.createOpera_Reference_Lookup("LogP","Kow Reference");
+			if (abbrev.equals("WS")) htOperaReferences=GetExpPropInfoUtilities.createOpera_Reference_Lookup("WS Reference","WS");
+			if (abbrev.equals("VP")) htOperaReferences=GetExpPropInfoUtilities.createOpera_Reference_Lookup("VP","VP Reference");
+			if (abbrev.equals("HL")) htOperaReferences=GetExpPropInfoUtilities.createOpera_Reference_Lookup("HL","HL Reference");
 			//	if (abbrev.equals("MP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("MP","MP");//Has no references
 			//	if (abbrev.equals("BP")) htOperaReferences=Utilities.createOpera_Reference_Lookup("BP","BP");//Has no references
 
@@ -1019,8 +1022,13 @@ public class GetExpPropInfo {
 	static void createPFAS_text_File() {
 		boolean standardize=true;
 
-		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer("qsar-ready","https://hcd.rtpnc.epa.gov");
+//		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer("qsar-ready","https://hcd.rtpnc.epa.gov");
 
+		String serverHost ="https://cim-dev.sciencedataexperts.com";
+		String workflow = "qsar-ready_04242025_0";
+		SciDataExpertsStandardizer standardizer = new SciDataExpertsStandardizer(workflow, serverHost);
+
+		
 		CompoundServiceImpl compoundService=new CompoundServiceImpl();
 
 
@@ -1034,7 +1042,7 @@ public class GetExpPropInfo {
 		Connection conn=SqlUtilities.getConnectionPostgres();
 
 		String folder="data/dev_qsar/dataset_files/";
-		String filePath=folder+listName+"_qsar_ready_smiles.txt";
+		String filePath=folder+listName+"_qsar_ready_smiles_2026_06_25.txt";
 
 		FileWriter fw;
 		try {
@@ -1336,7 +1344,7 @@ public class GetExpPropInfo {
 		paramList.add(new DatasetParameters(DevQsarConstants.LOG_KOW,"LogP OChem_2024_04_03","PFAS LogP for EPA_23-07-18.xlsx"));
 		
 		String filePathAqSolDBRecords="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\AqSolDB\\AqSolDB Experimental Records.json";
-		ExperimentalRecords erAqSolDB=ExperimentalRecords.loadFromJson(filePathAqSolDBRecords, Utilities.gson);
+		ExperimentalRecords erAqSolDB=ExperimentalRecords.loadFromJson(filePathAqSolDBRecords, JsonUtilities.gson);
 		
 		String folderICF_Results="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\ICF\\primary source checking results\\";
 		String copyFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\ICF\\checking spreadsheets OChem_2024_04_03\\";
@@ -1363,7 +1371,7 @@ public class GetExpPropInfo {
 		paramList.add(new DatasetParameters(DevQsarConstants.LOG_KOW,"LogP "+sourceName,"PFAS LogP for EPA_23-07-18.xlsx"));
 		
 		String filePathAqSolDBRecords="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\data\\experimental\\AqSolDB\\AqSolDB Experimental Records.json";
-		ExperimentalRecords erAqSolDB=ExperimentalRecords.loadFromJson(filePathAqSolDBRecords, Utilities.gson);
+		ExperimentalRecords erAqSolDB=ExperimentalRecords.loadFromJson(filePathAqSolDBRecords, JsonUtilities.gson);
 		
 		String folderICF_Results="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\ICF\\primary source checking results\\";
 		String copyFolder="C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\pfas phys prop\\ICF\\checking spreadsheets PubChem_2024_03_20\\";
@@ -1407,12 +1415,12 @@ public class GetExpPropInfo {
 			String listName="PFASSTRUCTV4";
 //			List<DsstoxRecord>dsstoxRecords=getChemicalsFromDSSTOXList(listName);
 			Type listType = new TypeToken<ArrayList<DsstoxRecord>>(){}.getType();
-			List<DsstoxRecord>dsstoxRecords=Utilities.gson.fromJson(new FileReader("data\\dev_qsar\\output\\"+listName+".json"),listType);
+			List<DsstoxRecord>dsstoxRecords=JsonUtilities.gson.fromJson(new FileReader("data\\dev_qsar\\output\\"+listName+".json"),listType);
 
 			HashSet<String>arrayPFAS_CIDs=new HashSet<>();
 			for (DsstoxRecord dr:dsstoxRecords) arrayPFAS_CIDs.add(dr.dsstoxCompoundId);
 
-			JsonArray jaNew=Utilities.getJsonArrayFromJsonFile(filePathMapped);
+			JsonArray jaNew=JsonUtilities.getJsonArrayFromJsonFile(filePathMapped);
 			
 			System.out.println("For "+dp.propertyName+", number of records="+jaNew.size());
 			
@@ -1756,7 +1764,7 @@ public class GetExpPropInfo {
 		try {
 			List<DsstoxRecord>dsstoxRecords=getChemicalsFromDSSTOXList(listName);
 			FileWriter fw=new FileWriter("data\\dev_qsar\\output\\"+listName+".json");
-			fw.write(Utilities.gson.toJson(dsstoxRecords));
+			fw.write(JsonUtilities.gson.toJson(dsstoxRecords));
 			fw.flush();
 			fw.close();
 			
@@ -1772,11 +1780,12 @@ public class GetExpPropInfo {
 //		g.writePFASDsstoxRecords();
 
 //		g.compareNewOChemDataToICF();
-		g.compareNewPubChemDataToICF();
+//		g.compareNewPubChemDataToICF();
 		
 //		createCheckingSpreadsheets();
 //		checkOmittedRecordsCVError();
-		//		createPFAS_text_File();
+		
+		createPFAS_text_File();
 
 
 		//		detectBadLogPvalues();

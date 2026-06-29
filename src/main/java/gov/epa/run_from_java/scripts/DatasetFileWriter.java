@@ -48,7 +48,7 @@ import gov.epa.endpoints.models.ModelBuilder;
 import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.splittings.Splitter;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 import gov.epa.web_services.SplittingWebService;
 
 public class DatasetFileWriter {
@@ -81,6 +81,7 @@ public class DatasetFileWriter {
 		String instances = ModelData.generateInstancesWithoutSplitting(datasetName,descriptorSetName,fetchDtxcids);
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(outputFilePath))) {
 			bw.write(instances);
+			bw.flush();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

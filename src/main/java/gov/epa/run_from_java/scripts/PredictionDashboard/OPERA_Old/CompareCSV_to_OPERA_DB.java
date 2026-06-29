@@ -9,7 +9,7 @@ import com.google.gson.JsonObject;
 import gov.epa.databases.dsstox.DsstoxRecord;
 import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -55,7 +55,7 @@ public class CompareCSV_to_OPERA_DB {
 			String csvAsString = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
 			String json = CDL.toJSONArray(csvAsString).toString();
 			
-			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 			
 			System.out.println(file.getName()+"\t"+ja.size());
 			
@@ -85,7 +85,7 @@ public class CompareCSV_to_OPERA_DB {
         
 			String fileNameNew=file.getName().replace(".csv", ".json");
 			
-            Utilities.saveJson(ja2, "data\\opera\\csv2\\json random sample\\"+fileNameNew);
+            JsonUtilities.saveJson(ja2, "data\\opera\\csv2\\json random sample\\"+fileNameNew);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -129,7 +129,7 @@ public class CompareCSV_to_OPERA_DB {
 		Reader reader;
 		try {
 			reader = Files.newBufferedReader(Paths.get(file.getAbsolutePath()));
-			JsonArray ja=Utilities.gson.fromJson(reader, JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(reader, JsonArray.class);
 			
 			Connection connPG=SqlUtilities.getConnectionPostgres();
 			
@@ -140,7 +140,7 @@ public class CompareCSV_to_OPERA_DB {
 				JsonObject jo=ja.get(i).getAsJsonObject();
 				
 				
-				RecordOpera ro=Utilities.gson.fromJson(jo, RecordOpera.class);				
+				RecordOpera ro=JsonUtilities.gson.fromJson(jo, RecordOpera.class);				
 				String sid=ro.DSSTOX_SUBSTANCE_ID;
 				String cid=ro.DSSTOX_COMPOUND_ID;
 				
@@ -158,7 +158,7 @@ public class CompareCSV_to_OPERA_DB {
 					String modelResults=rs.getString(1);
 					String nearestNeighbors=rs.getString(2);
 					
-					JsonObject joModelResults=Utilities.gson.fromJson(modelResults, JsonObject.class);
+					JsonObject joModelResults=JsonUtilities.gson.fromJson(modelResults, JsonObject.class);
 					
 					if (joModelResults==null) {
 						System.out.println(property+"\t"+sid+"\tjoModelResults==null");
@@ -249,7 +249,7 @@ public class CompareCSV_to_OPERA_DB {
 
 	private void checkNeighbors(File file, RecordOpera ro, String sid, String nearestNeighbors)
 			throws NoSuchFieldException, IllegalAccessException {
-		JsonArray jaNeighbors=Utilities.gson.fromJson(nearestNeighbors, JsonArray.class);
+		JsonArray jaNeighbors=JsonUtilities.gson.fromJson(nearestNeighbors, JsonArray.class);
 		
 		for (int j=1;j<=5;j++) {
 			compareNeighborExpAndPred(file, ro, sid, jaNeighbors, j);

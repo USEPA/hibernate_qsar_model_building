@@ -23,8 +23,8 @@ import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.ModelStatisticCalculator;
 import gov.epa.run_from_java.scripts.PredictionStatisticsScript;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.DashboardPredictionUtilities;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -441,7 +441,7 @@ public class CompareADs {
 		String json = CDL.toJSONArray(csvAsString).toString();
 //		System.out.println("Done loading results file");
 		
-		JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+		JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 		
 		for (int i=0;i<ja.size();i++) {
 			JsonObject jo=ja.get(i).getAsJsonObject();
@@ -494,7 +494,7 @@ public class CompareADs {
 			String json = CDL.toJSONArray(csvAsString).toString();
 //			System.out.println("Done loading results file");
 			
-			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 			
 			
 			for (int i=0;i<ja.size();i++) {
@@ -540,7 +540,7 @@ public class CompareADs {
 			String json = CDL.toJSONArray(csvAsString).toString();
 //			System.out.println("Done loading results file");
 			
-			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 			
 			for (int i=0;i<ja.size();i++) {
 				JsonObject jo=ja.get(i).getAsJsonObject();

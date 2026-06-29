@@ -28,7 +28,7 @@ import gov.epa.databases.dev_qsar.exp_prop.service.ParameterService;
 import gov.epa.databases.dev_qsar.exp_prop.service.ParameterServiceImpl;
 import gov.epa.databases.dev_qsar.exp_prop.service.PropertyValueServiceImpl;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 import gov.epa.databases.dev_qsar.exp_prop.entity.Parameter;
 
 public class FixExpPropRecordsScript {

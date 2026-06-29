@@ -4,6 +4,7 @@ import java.io.FileReader;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 
 import com.opencsv.CSVReader;
@@ -15,7 +16,8 @@ import gov.epa.run_from_java.scripts.PredictionDashboard.OPERA_Old.SqliteUtiliti
 */
 public class OPERA_Structure {
 	
-	String DSSTOX_COMPOUND_ID;
+//	String DSSTOX_COMPOUND_ID;
+	String Molecule_name;
 	String Original_SMILES;
 	int  Number_of_connected_components;
 	String Canonical_QSARr;
@@ -41,21 +43,26 @@ public class OPERA_Structure {
 				linesRead++;
 
 				OPERA_Structure s=new OPERA_Structure();
-
-				s.DSSTOX_COMPOUND_ID=values[0];
-				s.Original_SMILES=values[1];
-				s.Number_of_connected_components=Integer.parseInt(values[2]);
-				s.Canonical_QSARr=values[3];
-				s.Salt_Solvent=values[4];
-				s.InChI_Code_QSARr=values[5];
-				s.InChI_Key_QSARr=values[6];
-				s.Salt_Solvent_ID=values[7];
-
+				
+				Hashtable<String,String>ht=new Hashtable<>();
+				
+				for(int i=0;i<colNames.length;i++) {
+					String colName=colNames[i];
+					String colValue=values[i];
+					ht.put(colName,colValue);
+				}
+				
+				s.Molecule_name=ht.get("Molecule name");
+				s.Original_SMILES=ht.get("Original_SMILES");
+				s.Number_of_connected_components=Integer.parseInt(ht.get("Number of connected components"));
+				s.Canonical_QSARr=ht.get("Canonical_QSARr");
+				s.InChI_Code_QSARr=ht.get("InChI_Code_QSARr");
+				s.InChI_Key_QSARr=ht.get("InChI Key_QSARr");
+				s.Salt_Solvent=ht.get("Salt_Solvent");
+				s.Salt_Solvent_ID=ht.get("Salt_Solvent_ID");
 				operaStructures.add(s);
 
-
 				//				System.out.println(values[0]);
-
 				if(linesRead==count) break;
 			}
 
@@ -83,7 +90,7 @@ public class OPERA_Structure {
 	
 				OPERA_Structure s=new OPERA_Structure();
 	
-				s.DSSTOX_COMPOUND_ID=rs.getString(2);
+				s.Molecule_name=rs.getString(2);
 				s.Original_SMILES=rs.getString(3);
 				s.Number_of_connected_components=rs.getInt(4);
 				s.Canonical_QSARr=rs.getString(5);
@@ -115,7 +122,7 @@ public class OPERA_Structure {
 	
 			while (rs.next()) {
 				OPERA_Structure s=new OPERA_Structure();
-				s.DSSTOX_COMPOUND_ID=rs.getString(2);
+				s.Molecule_name=rs.getString(2);
 				s.Original_SMILES=rs.getString(3);
 				s.Number_of_connected_components=rs.getInt(4);
 				s.Canonical_QSARr=rs.getString(5);

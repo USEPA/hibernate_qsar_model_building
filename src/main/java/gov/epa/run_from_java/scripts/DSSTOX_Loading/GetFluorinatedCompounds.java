@@ -32,7 +32,7 @@ import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.entity.GenericSubstance;
 import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 import org.openscience.cdk.AtomContainer;
 import org.openscience.cdk.DefaultChemObjectBuilder;
@@ -76,7 +76,7 @@ public class GetFluorinatedCompounds {
 
 		try {
 			FileWriter fw=new FileWriter(file);
-			fw.write(Utilities.gson.toJson(compounds));
+			fw.write(JsonUtilities.gson.toJson(compounds));
 			fw.flush();
 			fw.close();
 		} catch (IOException e) {
@@ -198,7 +198,7 @@ public class GetFluorinatedCompounds {
 			File fileOut=new File("data/dsstox/json/fluorinated_compounds.json");
 			
 			FileWriter fw=new FileWriter(fileOut);
-			fw.write(Utilities.gson.toJson(compounds));
+			fw.write(JsonUtilities.gson.toJson(compounds));
 			fw.flush();
 			fw.close();
 
@@ -295,7 +295,7 @@ public class GetFluorinatedCompounds {
 			Type listOfMyClassObject = new TypeToken<List<DsstoxCompound>>() {}.getType();
 			
 			File fileIn=new File("data/dsstox/json/fluorinated_compounds.json");
-			List<DsstoxCompound>compounds=Utilities.gson.fromJson(new FileReader(fileIn), listOfMyClassObject);
+			List<DsstoxCompound>compounds=JsonUtilities.gson.fromJson(new FileReader(fileIn), listOfMyClassObject);
 
 			String filename=fileIn.getName().replace(".json", ".sdf");
 

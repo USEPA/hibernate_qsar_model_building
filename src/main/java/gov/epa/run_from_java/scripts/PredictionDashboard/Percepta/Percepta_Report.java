@@ -9,8 +9,8 @@ import com.google.gson.Gson;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -69,7 +69,7 @@ public class Percepta_Report extends PredictionReport {
 	 */
 	public static PredictionReport updatePerceptaReport(String json) {
 
-		PredictionReport pr=Utilities.gson.fromJson(json, PredictionReport.class);
+		PredictionReport pr=JsonUtilities.gson.fromJson(json, PredictionReport.class);
 		pr.updated=false;
 		
 		if(pr.modelDetails.propertyName.equals("Molar Volume") && pr.modelResults.standardUnit.equals("cm^3")) {

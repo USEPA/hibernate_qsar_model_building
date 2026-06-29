@@ -25,8 +25,10 @@ import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.entity.GenericSubstance;
 import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.DashboardPredictionUtilities;
+import gov.epa.util.JsonUtilities;
+import gov.epa.util.StructureUtil;
+import gov.epa.util.StructureUtil.APIMolecule;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -38,9 +40,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-import ToxPredictor.Application.Calculations.RunFromCommandLine.RunFromSDF;
-import ToxPredictor.Application.Calculations.RunFromCommandLine.RunFromSDF.APIMolecule;
-import ToxPredictor.Application.model.PredictionResults;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -265,7 +264,7 @@ private boolean lookForField(File file,String fieldName,String fieldValue) {
 //		AtomContainerSet acs2 = dpu.filterAtomContainerSet(acs, skipMissingSID, maxCount);
 //		Iterator<IAtomContainer> iterator= acs2.atomContainers().iterator();
 
-		List<APIMolecule>molecules=RunFromSDF.readSDF_to_API_Molecules(file.getAbsolutePath(), -1, false);
+		List<APIMolecule>molecules=StructureUtil.readSDF_to_API_Molecules(file.getAbsolutePath(), -1);
 		
 		
 		System.out.println(file.getName()+"\t"+molecules.size());
@@ -1074,7 +1073,7 @@ private boolean lookForField(File file,String fieldName,String fieldValue) {
 //			String encoding=encodingUTF8;
 //			if(ansiFiles.contains(file.getName())) encoding=encodingANSI;
 
-			List<APIMolecule>molecules=RunFromSDF.readSDF_to_API_Molecules(file.getAbsolutePath(), -1, false,encoding);
+			List<APIMolecule>molecules=StructureUtil.readSDF_to_API_Molecules(file.getAbsolutePath(), -1, false,null, encoding);
 			
 			storeOutputNames(htOutput, file, molecules);
 			 
@@ -1114,7 +1113,7 @@ private boolean lookForField(File file,String fieldName,String fieldValue) {
 						
 			String encoding=encodingUTF8;
 			
-			List<APIMolecule>molecules=RunFromSDF.readSDF_to_API_Molecules(file.getAbsolutePath(), -1, false,encoding);
+			List<APIMolecule>molecules=StructureUtil.readSDF_to_API_Molecules(file.getAbsolutePath(), -1, false,null, encoding);
 			
 			for(APIMolecule mol:molecules) {
 				htInput.put(mol.htProperties.get("DTXCID")+"",mol.htProperties);
@@ -1288,7 +1287,7 @@ private boolean lookForField(File file,String fieldName,String fieldValue) {
 //			if(!file.getName().equals("50k_chunk_from_50001_out.sdf")) continue;
 			
 			System.out.println(file.getName());
-			List<APIMolecule>molecules=RunFromSDF.readSDF_to_API_Molecules(file.getAbsolutePath(), -1, false);
+			List<APIMolecule>molecules=StructureUtil.readSDF_to_API_Molecules(file.getAbsolutePath(), -1);
 			
 			for(APIMolecule mol:molecules) {
 				String dtxcid=mol.htProperties.get("DTXCID")+"";
@@ -1312,8 +1311,8 @@ private boolean lookForField(File file,String fieldName,String fieldValue) {
 		
 		String sdfInput=folder+"50k_missing_2.sdf";
 		String sdfOutput=folder+"50k_missing_2_out.sdf";
-		List<APIMolecule>moleculesIn=RunFromSDF.readSDF_to_API_Molecules(sdfInput, -1, false);
-		List<APIMolecule>moleculesOut=RunFromSDF.readSDF_to_API_Molecules(sdfOutput, -1, false);
+		List<APIMolecule>moleculesIn=StructureUtil.readSDF_to_API_Molecules(sdfInput, -1);
+		List<APIMolecule>moleculesOut=StructureUtil.readSDF_to_API_Molecules(sdfOutput, -1);
 
 		
 		Hashtable<String,APIMolecule>htInput=new Hashtable<>();

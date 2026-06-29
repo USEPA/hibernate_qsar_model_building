@@ -31,7 +31,7 @@ import gov.epa.databases.dsstox.entity.GenericSubstance;
 import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.DSSTOX_Loading.DSSTOX_Name_Script.DSSTOX_Name;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -245,7 +245,7 @@ public class ToxPrintsScript {
 		
 		System.out.println(compounds.size());
 
-		Utilities.saveJson(compounds, file.getAbsolutePath());
+		JsonUtilities.saveJson(compounds, file.getAbsolutePath());
 
 	}
 	
@@ -261,7 +261,7 @@ public class ToxPrintsScript {
 			
 			Type listOfMyClassObject = new TypeToken<List<DsstoxCompound>>() {}.getType();
 			File fileJson=new File("data/dsstox/json/snapshot_compounds_for_toxprints.json");
-			List<DsstoxCompound>compounds=Utilities.gson.fromJson(new FileReader(fileJson), listOfMyClassObject);
+			List<DsstoxCompound>compounds=JsonUtilities.gson.fromJson(new FileReader(fileJson), listOfMyClassObject);
 			
 			System.out.println("loaded json file for dsstox lookup");
 			

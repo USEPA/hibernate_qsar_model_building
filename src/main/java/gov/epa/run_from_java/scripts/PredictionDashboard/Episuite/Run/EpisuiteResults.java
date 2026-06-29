@@ -13,10 +13,10 @@ import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionReport;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.EpisuiteReport;
 import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.HTMLReportCreatorEPISUITE;
 import gov.epa.run_from_java.scripts.PredictionDashboard.Episuite.Run.EpisuiteResults.PropertyResult2;
+import gov.epa.util.JsonUtilities;
 
 //import com.fasterxml.jackson.databind.ObjectMapper; // version 2.11.1
 import java.util.ArrayList;
@@ -70,7 +70,7 @@ public class EpisuiteResults {
 	private transient static Gson gson=new Gson();
 	
 	public static EpisuiteResults getResults(String json) throws JsonSyntaxException {
-		return Utilities.gson.fromJson(json, EpisuiteResults.class);
+		return JsonUtilities.gson.fromJson(json, EpisuiteResults.class);
 	}
 	
 	
@@ -478,7 +478,7 @@ public class EpisuiteResults {
 //		String htmlReport=rc.createReport(null);//TODO
 		
 		
-		return new PredictionReport(pd,Utilities.gson.toJson(obj),null,pd.getCreatedBy());//TODO add html report
+		return new PredictionReport(pd,JsonUtilities.gson.toJson(obj),null,pd.getCreatedBy());//TODO add html report
 	}
 		
 	

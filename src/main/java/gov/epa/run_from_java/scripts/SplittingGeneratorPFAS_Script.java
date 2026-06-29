@@ -46,9 +46,9 @@ import gov.epa.web_services.standardizers.SciDataExpertsStandardizer.Standardize
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
-import wekalite.CSVLoader;
-import wekalite.Instance;
-import wekalite.Instances;
+import gov.epa.util.wekalite.CSVLoader;
+import gov.epa.util.wekalite.Instance;
+import gov.epa.util.wekalite.Instances;
 
 public class SplittingGeneratorPFAS_Script {
 
@@ -843,8 +843,8 @@ public class SplittingGeneratorPFAS_Script {
 	public static void main(String[] args) {
 		SplittingGeneratorPFAS_Script p = new SplittingGeneratorPFAS_Script();
 //		p.getCounts();
-//		p.createSplittings();
-		p.createSpecialFluorineSplittings();
+		p.createSplittings();
+//		p.createSpecialFluorineSplittings();
 //		p.deleteSplittings();
 //		p.write_exp_prop_datasets();		
 //		p.createFiveFoldExternalSplittings(folder, datasetName,"T.E.S.T. 5.1", smilesArray);

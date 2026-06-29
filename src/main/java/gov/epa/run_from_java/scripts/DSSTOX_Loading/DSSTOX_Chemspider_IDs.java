@@ -27,7 +27,8 @@ import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.entity.GenericSubstance;
 import gov.epa.databases.dsstox.entity.GenericSubstanceCompound;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
+
 
 
 /**
@@ -275,7 +276,7 @@ public class DSSTOX_Chemspider_IDs {
 			String json = CDL.toJSONArray(csvAsString).toString();
 			inputStream.close();
 
-			JsonArray ja = Utilities.gson.fromJson(json, JsonArray.class);
+			JsonArray ja = JsonUtilities.gson.fromJson(json, JsonArray.class);
 
 			// List<DsstoxCompound>compounds=new ArrayList<>();
 
@@ -362,7 +363,7 @@ public class DSSTOX_Chemspider_IDs {
 			String json = CDL.toJSONArray(csvAsString).toString();
 			inputStream.close();
 
-			JsonArray ja = Utilities.gson.fromJson(json, JsonArray.class);
+			JsonArray ja = JsonUtilities.gson.fromJson(json, JsonArray.class);
 
 			Hashtable<String, DsstoxCompound> htCompounds = new Hashtable<>();
 

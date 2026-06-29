@@ -28,8 +28,8 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetServiceI
 import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValuesCalculator;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.util.ExcelSourceReader;
+import gov.epa.util.JsonUtilities;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 import kong.unirest.HttpResponse;
 
@@ -294,7 +294,7 @@ public class TTR_Binding_Challenge {
 			String json = CDL.toJSONArray(csvAsString).toString();
 //			System.out.println(json);
 			
-			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 			
 			JsonObject jo0=ja.get(0).getAsJsonObject();
 			Set<Map.Entry<String, JsonElement>> entrySet = jo0.entrySet();
@@ -424,7 +424,7 @@ public class TTR_Binding_Challenge {
 			
 			
 			FileWriter fw=new FileWriter(filepath.replace(".xlsx", ".json"));
-			fw.write(Utilities.gson.toJson(ja));
+			fw.write(JsonUtilities.gson.toJson(ja));
 			fw.flush();
 			fw.close();
 					
@@ -454,7 +454,7 @@ public class TTR_Binding_Challenge {
 			JsonArray ja=ExcelSourceReader.parseRecordsFromExcel(sheet);
 			
 			FileWriter fw=new FileWriter(filepath.replace(".xlsx", ".json"));
-			fw.write(Utilities.gson.toJson(ja));
+			fw.write(JsonUtilities.gson.toJson(ja));
 			fw.flush();
 			fw.close();
 					
@@ -671,7 +671,7 @@ public class TTR_Binding_Challenge {
 			String server="https://hazard-dev.sciencedataexperts.com";
 			SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
 
-			JsonArray ja=Utilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
 //			createDescriptorsFile(ja,"WebTEST-default",calc);
 			createDescriptorsFile(ja,"PaDEL-default",calc);
 //			createDescriptorsFile(ja,"Mordred-default",calc);
@@ -694,7 +694,7 @@ public class TTR_Binding_Challenge {
 		int countFailsTotal=0;
 		
 		try {
-			JsonArray ja=Utilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
 			
 			int countFailsQsarSmiles=filterOnQsarSmiles(ja);
 			int countFailsMaxConc=filterOnMaxConc(ja, tolerance);
@@ -787,7 +787,7 @@ public class TTR_Binding_Challenge {
 		int countFailsTotal=0;
 		
 		try {
-			JsonArray ja=Utilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
 			
 			int countFailsQsarSmiles=filterOnQsarSmiles(ja);
 			int countFailsMaxConc=filterOnMaxConc(ja, tolerance);
@@ -876,7 +876,7 @@ public class TTR_Binding_Challenge {
 		String filepath=folder+"ttr-supplemental-tables.json";
 		
 		try {
-			JsonArray ja=Utilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
 			
 			FileWriter fw=new FileWriter(folder+"modeling\\TTR predictions.csv");
 			fw.write("DTXSID,QsarSmiles,dataset\r\n");
@@ -926,7 +926,7 @@ public class TTR_Binding_Challenge {
 		String filepath=folder+"ttr-supplemental-tables-with-leaderboard_values.json";
 		
 		try {
-			JsonArray ja=Utilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
 			
 			FileWriter fw=new FileWriter(folder+"modeling\\TTR blind.csv");
 			fw.write("DTXSID,QsarSmiles,dataset\r\n");
@@ -982,8 +982,8 @@ public class TTR_Binding_Challenge {
 		int countFailsTotal=0;
 		
 		try {
-			JsonArray ja=Utilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
-			JsonArray jaAQC=Utilities.gson.fromJson(new FileReader(filepathAqc), JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(new FileReader(filepath), JsonArray.class);
+			JsonArray jaAQC=JsonUtilities.gson.fromJson(new FileReader(filepathAqc), JsonArray.class);
 
 			int countFailsAQC=filterOnAQC(ja,jaAQC);
 			int countFailsQsarSmiles=filterOnQsarSmiles(ja);

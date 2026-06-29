@@ -12,7 +12,7 @@ import org.json.CDL;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -45,7 +45,7 @@ public class CompareOPERA2_6 {
 				String json = CDL.toJSONArray(csvAsString).toString();
 				inputStream.close();
 				
-				JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+				JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 
 				JsonObject jo=ja.get(0).getAsJsonObject();
 				

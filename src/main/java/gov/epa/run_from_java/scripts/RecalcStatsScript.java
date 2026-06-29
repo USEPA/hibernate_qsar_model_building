@@ -56,8 +56,8 @@ import gov.epa.endpoints.reports.predictions.PredictionReport;
 import gov.epa.endpoints.reports.predictions.QsarPredictedValue;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDataPoint;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.DatabaseLookup;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.RecalcStatsScript.SplitPredictions;
+import gov.epa.util.JsonUtilities;
 
 
 

@@ -1,25 +1,24 @@
 package gov.epa.run_from_java.scripts.PredictionDashboard.TEST;
 
-import java.awt.Desktop;
+//import java.awt.Desktop;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
+//import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.text.DecimalFormat;
 
 
-
-import ToxPredictor.Application.Calculations.RunFromCommandLine.RunFromSmiles.ReportCreator;
-import ToxPredictor.Application.model.PredictionResults;
+//import ToxPredictor.Application.Calculations.RunFromCommandLine.RunFromSmiles.ReportCreator;
+//import ToxPredictor.Application.model.PredictionResults;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.HTMLReportCreator;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.ADEstimate;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.Neighbor;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.NeighborResults;
+import gov.epa.util.JsonUtilities;
 
 /**
  * @author TMARTI02
@@ -761,22 +760,22 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 
 	}
 
-	@Deprecated
-	public static void displayHTMLReport(PredictionResults predictionResults, String fileName, String folder) {
-		String htmlReport = ReportCreator.getReportAsHTMLString(predictionResults);
-		// System.out.println(htmlReport);
-		try {
-			File file = new File(folder + fileName);
-			FileWriter fw = new FileWriter(file);
-			fw.write(htmlReport);
-			fw.flush();
-			fw.close();
-			Desktop desktop = Desktop.getDesktop();
-			desktop.browse(file.toURI());
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-	}
+//	@Deprecated
+//	public static void displayHTMLReport(PredictionResults predictionResults, String fileName, String folder) {
+//		String htmlReport = ReportCreator.getReportAsHTMLString(predictionResults);
+//		// System.out.println(htmlReport);
+//		try {
+//			File file = new File(folder + fileName);
+//			FileWriter fw = new FileWriter(file);
+//			fw.write(htmlReport);
+//			fw.flush();
+//			fw.close();
+//			Desktop desktop = Desktop.getDesktop();
+//			desktop.browse(file.toURI());
+//		} catch (Exception ex) {
+//			ex.printStackTrace();
+//		}
+//	}
 
 	public static void main(String[] args) {
 
@@ -793,7 +792,7 @@ public class HTMLReportCreatorTEST extends HTMLReportCreator {
 			if(file.getName().contains("TEST_PredictionResults")) continue;
 			
 			try {
-				TEST_Report tr = Utilities.gson.fromJson(new FileReader(file), TEST_Report.class);
+				TEST_Report tr = JsonUtilities.gson.fromJson(new FileReader(file), TEST_Report.class);
 
 				tr.modelDetails.loadPlotsFromDB=true;//load from postgres for testing
 				

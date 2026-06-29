@@ -47,7 +47,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 import gov.epa.databases.dsstox.entity.DsstoxCompound;
 import gov.epa.databases.dsstox.entity.OtherCasrn;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 
 /**
@@ -81,11 +81,13 @@ public class PredictionDashboardTableMaps {
 	public static File fileJsonDsstoxRecords2023_04_04=new File("data\\dsstox\\snapshot-2023-04-04\\json\\2023_04_snapshot_dsstox_records_2024_01_09.json");
 	public static File fileJsonDsstoxRecords2024_11_12=new File("data\\dsstox\\snapshot-2024-11-12\\json\\2024_11_12_snapshot_dsstox_records.json");
 	public static File fileJsonDsstoxRecords2025_10_30=new File("data\\dsstox\\snapshot-2025-10-30\\json\\2025_10_30_snapshot_dsstox_records.json");
+	public static File fileJsonDsstoxRecords2025_12_31=new File("data\\dsstox\\snapshot-2025-12-31\\json\\2025_12_31_snapshot_dsstox_records.json");
 	
 	
 	public static File fileJsonOtherCAS2023_04_04=new File("data\\dsstox\\snapshot-2023-04-04\\json\\2023_04_snapshot_other_casrn lookup.json");
 	public static File fileJsonOtherCAS2024_11_12=new File("data\\dsstox\\snapshot-2024-11-12\\json\\2024_11_12_snapshot_other_casrn lookup.json");
 	public static File fileJsonOtherCAS2025_10_30=new File("data\\dsstox\\snapshot-2025-10-30\\json\\2025_10_30_snapshot_other_casrn lookup.json");
+	public static File fileJsonOtherCAS2025_12_31=new File("data\\dsstox\\snapshot-2025-12-31\\json\\2025_12_31_snapshot_other_casrn lookup.json");
 
 	
 	public static class OtherCAS {
@@ -239,10 +241,12 @@ public class PredictionDashboardTableMaps {
 
 	public static void createOtherCasJsonLookupJson() {
 		
-		String date="2025-10-30";
-		
-		int fk_dsstox_snapshot_id=3;
-		
+//		String date="2025-10-30";
+//		int fk_dsstox_snapshot_id=3;
+
+		String date="2025-12-31";
+		int fk_dsstox_snapshot_id=4;
+
 		String filename=date.replace("-","_")+"_snapshot_other_casrn lookup.json";
 		String filepath="data\\dsstox\\snapshot-"+date+"\\json\\"+filename;
 		
@@ -265,8 +269,10 @@ public class PredictionDashboardTableMaps {
 				otherCasrns.add(oc);
 			}
 			
+			System.out.println("otherCasrns="+otherCasrns.size());
+			
 			FileWriter fw=new FileWriter(filepath);
-			fw.write(Utilities.gson.toJson(otherCasrns));
+			fw.write(JsonUtilities.gson.toJson(otherCasrns));
 			fw.flush();
 			fw.close();
 			
@@ -282,8 +288,8 @@ public class PredictionDashboardTableMaps {
 	
 	public static void exportDsstoxRecordsFromDb() {
 
-		String date="2025-10-30";
-		int fk_snapshot_id=3;
+		String date="2025-12-31";
+		int fk_snapshot_id=4;
 		int batchSize=25000;
 		JsonArray jaAll=new JsonArray();
 		
@@ -305,7 +311,10 @@ public class PredictionDashboardTableMaps {
 		
 		try {
 			String date2=date.replace("-", "_");
-			String filepath="data\\dsstox\\snapshot-"+date+"\\json\\"+date2+"_snapshot_dsstox_records_test.json";
+			String filepath="data\\dsstox\\snapshot-"+date+"\\json\\"+date2+"_snapshot_dsstox_records.json";
+			
+			new File(filepath).mkdirs();
+			
 			FileWriter fw=new FileWriter(filepath);
 			
 			GsonBuilder gb=new GsonBuilder();
@@ -416,7 +425,7 @@ public class PredictionDashboardTableMaps {
 		Type listType2 = new TypeToken<ArrayList<OtherCAS>>(){}.getType();
 		
 		try {
-			recsOtherCAS = Utilities.gson.fromJson(new FileReader(fileJsonOtherCAS), listType2);
+			recsOtherCAS = JsonUtilities.gson.fromJson(new FileReader(fileJsonOtherCAS), listType2);
 			
 			for (OtherCAS oc:recsOtherCAS) {
 				
@@ -505,7 +514,7 @@ public class PredictionDashboardTableMaps {
 //			JsonArray ja = Utilities.gson.fromJson(new FileReader(fileJsonDsstoxRecords), JsonArray.class);
 
 			//When exporting from dbeaver it puts array inside a json object with the query as the object name:
-			JsonObject jo2 = Utilities.gson.fromJson(new FileReader(fileJsonDsstoxRecords), JsonObject.class);
+			JsonObject jo2 = JsonUtilities.gson.fromJson(new FileReader(fileJsonDsstoxRecords), JsonObject.class);
 			JsonArray ja =jo2.get("select * from qsar_models.dsstox_records where fk_dsstox_snapshot_id=2").getAsJsonArray();
 			
 //			System.out.println(ja.size());
@@ -718,8 +727,10 @@ public class PredictionDashboardTableMaps {
 	}
 	
 	public static void main(String[] args) {
-		exportDsstoxRecordsFromDb();
-//		createOtherCasJsonLookupJson();
+//		exportDsstoxRecordsFromDb();
+		
+//		DsstoxOtherCASRN.getRecordsFromDsstox(PredictionDashboardTableMaps.fileJsonDsstoxRecords2025_12_31);
+		createOtherCasJsonLookupJson();
 		
 	}
 

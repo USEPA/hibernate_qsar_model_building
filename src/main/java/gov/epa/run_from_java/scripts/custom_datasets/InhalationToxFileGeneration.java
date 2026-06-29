@@ -18,7 +18,7 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorSet;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorSetServiceImpl;
 import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValuesCalculator;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 import kong.unirest.HttpResponse;
 
@@ -125,7 +125,7 @@ public static Hashtable<String,String> getDescriptorsHashtableOPERA(String filep
 			}
 
 			String json = CDL.toJSONArray(csvAsString).toString();
-			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 			DescriptorSet descriptorSet = descriptorSetService.findByName(descriptorSetName);
 			String fileNameDescriptors="LC50_Tr_descriptors_"+descriptorSet.getDescriptorService()+".tsv";
 			Hashtable<String,String>htDesc= getDescriptorsHashtable(folder+fileNameDescriptors);
@@ -234,7 +234,7 @@ public static Hashtable<String,String> getDescriptorsHashtableOPERA(String filep
 
 			String json = CDL.toJSONArray(csvAsString).toString();
 
-			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 
 
 			
@@ -369,7 +369,7 @@ public static Hashtable<String,String> getDescriptorsHashtableOPERA(String filep
 			String json = CDL.toJSONArray(csvAsString).toString();
 			//		System.out.println("Done loading results file");
 
-			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 
 
 			FileWriter fw=new FileWriter(outputFilePath,of.exists());
@@ -461,7 +461,7 @@ public static Hashtable<String,String> getDescriptorsHashtableOPERA(String filep
 			String json = CDL.toJSONArray(csvAsString).toString();
 			//		System.out.println("Done loading results file");
 
-			JsonArray ja=Utilities.gson.fromJson(json, JsonArray.class);
+			JsonArray ja=JsonUtilities.gson.fromJson(json, JsonArray.class);
 
 			
 			FileWriter fw=new FileWriter(outputFilePath,of.exists());

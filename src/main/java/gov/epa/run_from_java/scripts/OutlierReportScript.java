@@ -56,11 +56,10 @@ import gov.epa.endpoints.models.ModelData;
 import gov.epa.endpoints.reports.Outliers.Analog;
 import gov.epa.endpoints.reports.Outliers.Outlier;
 import gov.epa.util.StructureImageUtil;
-
+import gov.epa.util.JsonUtilities;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 
 public class OutlierReportScript {
 	
@@ -68,10 +67,15 @@ public class OutlierReportScript {
 	void runGenOutlierReport() {
 		
 //		String dataset = "Standard Water solubility from exp_prop";
-		String dataset = "Standard Henry's law constant from exp_prop";
-		String folderOutput="data/Reports/Outlier testing";
+//		String dataset = "Standard Henry's law constant from exp_prop";
+		String dataset = "KOC v1 modeling";
+		String descriptorSetName="WebTEST-default";
+		
+		String folderOutput="data/Reports/Outlier testing/"+dataset;		
+		new File(folderOutput).mkdirs();
+		
 		String jsonFilePath=folderOutput+"/"+dataset+".json";
-		String descriptorSetName="T.E.S.T. 5.1";
+		
 		String folderTSV="data/dev_qsar/dataset_files/";
 		String tsvFilePath=folderTSV+ dataset + "_" + descriptorSetName + "_full.tsv";	
 		File f=new File(folderOutput);
@@ -79,20 +83,24 @@ public class OutlierReportScript {
 				
 		boolean genOverallSetTSV=true;//if false saves time by not having to create overall tsv
 		boolean genOutliersJSON=true;//if false saves time by not having to find the outliers using web service
-
+		boolean useDtxcids=true;
+		
 		String tsv=null;
 		
 		try {
 
 			if (genOverallSetTSV) {
 				DatasetFileWriter writer = new DatasetFileWriter();
-				tsv=writer.writeWithoutSplitting(dataset, descriptorSetName, folderTSV,true);		
+				tsv=writer.writeWithoutSplitting(dataset, descriptorSetName, folderTSV,useDtxcids);		
 				System.out.println("Tsv creation done");
 			} else {
 				tsv = Files.readString(Path.of(tsvFilePath));
 				System.out.println("Tsv loaded");
 			}
 
+//			if(true) return;
+			
+			
 			String json=null;
 
 			if (genOutliersJSON) {
@@ -100,13 +108,13 @@ public class OutlierReportScript {
 				//			String server="http://v2626umcth819.rtord.epa.gov";//TODO 819 not working...
 
 				
-				QueryOutlierDetectionAPI q=new QueryOutlierDetectionAPI(true);
+				QueryOutlierDetectionAPI q=new QueryOutlierDetectionAPI(false );
 				
-				json=q.callPythonOutlierDetection(tsv, false, server);		
+				json=q.callPythonOutlierDetectionPost(tsv, false, server);		
 				FileWriter fw=new FileWriter(jsonFilePath);
 				
 				fw.write(json);
-				System.out.println(json);
+				
 				fw.flush();
 				fw.close();
 
@@ -115,17 +123,16 @@ public class OutlierReportScript {
 				System.out.println(json);
 			}
 
-			Outlier[] recordsOutliers= new Gson().fromJson(json, Outlier[].class);		
+			Outlier[] recordsOutliers= new Gson().fromJson(json, Outlier[].class);	
+			
+			System.out.println(recordsOutliers.length);
+			
 
 			findAnalogs(tsv, recordsOutliers);
 			String outputFileName="outlier report "+dataset+".html";
 			
 			Connection conn=SqlUtilities.getConnectionPostgres();
 			createReport(conn, dataset,recordsOutliers, folderOutput,outputFileName,outputFileName,null);
-
-			
-			
-			
 
 			
 			
@@ -173,9 +180,9 @@ public class OutlierReportScript {
 
 					json=q.callPythonOutlierDetection(tsv, false, server);
 
-					Object obj=Utilities.gson.fromJson(json, Object.class);
+					Object obj=JsonUtilities.gson.fromJson(json, Object.class);
 
-					json=Utilities.gson.toJson(obj);
+					json=JsonUtilities.gson.toJson(obj);
 					FileWriter fw=new FileWriter(jsonFilePath);
 					fw.write(json);
 					fw.flush();
@@ -291,8 +298,8 @@ public class OutlierReportScript {
 	
 	public static void main(String[] args)  {
 		 OutlierReportScript og=new OutlierReportScript();
-//		 og.runGenOutlierReport();
-		 og.runGenOutlierReportExpProp();
+		 og.runGenOutlierReport();
+//		 og.runGenOutlierReportExpProp();
 	
 	}
 	
@@ -396,6 +403,8 @@ public class OutlierReportScript {
 				String sql="select dp.qsar_exp_prop_property_values_id from qsar_datasets.data_points dp\n"+ 
 				"inner join qsar_datasets.datasets d on dp.fk_dataset_id =d.id\n"+ 
 				"where dp.qsar_dtxcid ='"+rec.ID+"' and d.\"name\"='"+datasetName+"';";
+				
+//				System.out.println(sql);
 
 				if (conn!=null) {
 					String exp_prop_id=SqlUtilities.runSQL(conn, sql);
@@ -899,10 +908,14 @@ public class OutlierReportScript {
 		public int port=5006; 
 		
 		QueryOutlierDetectionAPI(boolean config) {
-			Unirest.config()
-	        .followRedirects(true)   
-			.socketTimeout(000)
-	           .connectTimeout(000);
+			
+			if (config) {
+				Unirest.config()
+		        .followRedirects(true)   
+				.socketTimeout(000)
+		           .connectTimeout(000);
+			}
+			
 
 		}
 		
@@ -915,6 +928,39 @@ public class OutlierReportScript {
 					.queryString("remove_log_p", removeLogP)
 					.asString();
 			return response.getBody();
+		}
+		
+		
+		class RequestOutlier {
+			public String tsv;
+			public boolean remove_log_p;
+			RequestOutlier(String tsv,boolean remove_log_p) {
+				this.tsv=tsv;
+				this.remove_log_p=remove_log_p;
+			}
+		}
+		
+		
+		public String callPythonOutlierDetectionPost(String tsv, boolean removeLogP, String server) {
+		    
+		    
+			String url = server+":"+port+"/calculation";
+			
+		    RequestOutlier ro = new RequestOutlier(tsv, removeLogP);
+		    
+		    System.out.println(JsonUtilities.gson.toJson(ro));
+		    
+
+		    HttpResponse<String> response = Unirest.post(url)
+		        .header("Content-Type", "application/json")
+		        .header("Accept", "application/json")
+		        .body(JsonUtilities.gson.toJson(ro))
+		        .asString();
+		    
+//		    System.out.println(response.getBody().toString());
+		    
+		    return response.getBody();
+		    
 		}
 	}
 		// 

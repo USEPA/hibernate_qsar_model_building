@@ -39,9 +39,45 @@ public class SplittingGeneratorScript {
 		
 	}
 	
+
+	private static void cloneSplitsRBiodeg() {
+		String lanId = "tmarti02";
+		String datasetNameSrc="exp_prop_RBIODEG_301F v1 modeling";
+		String datasetNameDest="exp_prop_RBIODEG_RIFM_CHEMREG";
+		Splitter.cloneSplit(datasetNameSrc, datasetNameDest,lanId);
+	}
+	
+	
+	
+	private static void cloneAllSplits() {
+		
+//		boolean writeToDB=false;
+		boolean writeToDB=true;
+		
+		String lanId = "tmarti02";
+
+		String datasetNameSrc="exp_prop_RBIODEG_301F v1 modeling";
+		String datasetNameDest="exp_prop_PERCENT_BIODEGRADATION_301F v1 modeling";
+		Splitter.cloneAllSplits(datasetNameSrc, datasetNameDest,lanId, writeToDB);
+
+		
+		datasetNameSrc="exp_prop_RBIODEG_301F v1 modeling";
+		datasetNameDest="exp_prop_PERCENT_BIODEGRADATION_RIFM_CHEMREG";
+		Splitter.cloneAllSplits(datasetNameSrc, datasetNameDest,lanId, writeToDB);
+
+//		exp_prop_PERCENT_BIODEGRADATION_301F v1 modeling
+//		exp_prop_RBIODEG_301F v1 modeling
+//		exp_prop_PERCENT_BIODEGRADATION_RIFM_CHEMREG
+//		exp_prop_RBIODEG_RIFM_CHEMREG
+		
+		
+	}
+
+	
 	
 	private static void splitDatasets() {
-		String lanId = "lbatts";
+		String lanId = "tmarti02";
+		int numSplitsCV=5;
 		int portSplittingWS=DevQsarConstants.PORT_REPRESENTATIVE_SPLIT;//matches value in dataset_splitting_ws.py if running local
 		
 		
@@ -54,27 +90,6 @@ public class SplittingGeneratorScript {
 		String descriptorSetName = DevQsarConstants.DESCRIPTOR_SET_WEBTEST;
 		
 		List<String>datasetNames=new ArrayList<>();
-//		datasetNames.add("HLC from exp_prop and chemprop");
-//		datasetNames.add("ExpProp BCF Fish_TMM");
-//		datasetNames.add("VP from exp_prop and chemprop");
-//		datasetNames.add("LogP from exp_prop and chemprop");
-//		datasetNames.add("BP from exp_prop and chemprop");
-//		datasetNames.add("pKa_a from exp_prop and chemprop");
-//		datasetNames.add("pKa_b from exp_prop and chemprop");
-		
-//		datasetNames.add("HLC v1");
-//		datasetNames.add("VP v1");
-//		datasetNames.add("WS v1");
-//		datasetNames.add("BP v1");
-//		datasetNames.add("LogP v1");
-//		datasetNames.add("MP v1");
-
-//		datasetNames.add("HLC v1 modeling");
-//		datasetNames.add("WS v1 modeling");
-//		datasetNames.add("VP v1 modeling");
-//		datasetNames.add("LogP v1 modeling");
-//		datasetNames.add("BP v1 modeling");
-//		datasetNames.add("MP v1 modeling");
 		
 
 //		String abbrev="BG";
@@ -89,24 +104,34 @@ public class SplittingGeneratorScript {
 //		datasetNames.add("exp_prop_48HR_DM_LC50_v5 modeling");
 		
 //		datasetNames.add("ECOTOX_2024_12_12_96HR_Fish_LC50_v1 modeling");
-		datasetNames.add("exp_prop_RBIODEG_RIFM_BY_CAS");
+//		datasetNames.add("exp_prop_RBIODEG_RIFM_BY_CAS");
 
+		datasetNames.add("KOC v1 modeling");
+		
 //		datasetNames.add("exp_prop_96HR_scud_v1 modeling");
 		
 		System.out.println(splittingWebService.address);
 		
 //		HttpResponse<String> bob=splittingWebService.callBob();
 //		System.out.println(bob.getBody());
-
 				
 		for (String datasetName:datasetNames) {
-			splitter.split(datasetName, descriptorSetName, 10);
+			String result=splitter.split(datasetName, descriptorSetName, 10);
+			
+			if(result.toLowerCase().contains("fail")) {
+				System.out.println("aborting splitting creation");
+				return;
+			}
+			
+			splitter.splitCV(datasetName,numSplitsCV);
 		}
 	}
 
 	public static void main(String[] args) {
-		splitDatasets();
+//		splitDatasets();
 //		cloneSplits();
+//		cloneSplitsRBiodeg();
+		cloneAllSplits();
 	}
 
 }

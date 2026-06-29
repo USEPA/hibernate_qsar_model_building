@@ -19,6 +19,7 @@ import gov.epa.databases.dsstox.entity.SourceSubstance;
 import gov.epa.databases.dsstox.entity.SourceSubstanceIdentifier;
 import gov.epa.databases.dsstox.service.GenericSubstanceServiceImpl;
 import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
+import gov.epa.util.JsonUtilities;
 
 public class DatabaseLookup {
 	
@@ -53,7 +54,7 @@ public class DatabaseLookup {
 //			System.out.println(identifier.getIdentifierType()+"\t"+identifier.getIdentifier());
 			jo.addProperty(identifier.getIdentifierType(), identifier.getIdentifier());
 		}
-		return Utilities.gson.toJson(jo);
+		return JsonUtilities.gson.toJson(jo);
 
 	}
 	

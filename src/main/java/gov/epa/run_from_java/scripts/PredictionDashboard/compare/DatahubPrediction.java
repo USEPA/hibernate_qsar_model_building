@@ -16,7 +16,7 @@ import java.util.List;
 import com.google.gson.Gson;
 
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 /**
  * 
@@ -278,7 +278,7 @@ public class DatahubPrediction {
 				String line=br.readLine();
 				if(line==null) break;
 				
-				DatahubPrediction pred=Utilities.gson.fromJson(line,DatahubPrediction.class);
+				DatahubPrediction pred=JsonUtilities.gson.fromJson(line,DatahubPrediction.class);
 
 				if(omitConsensus &&  pred.source.equals("ACD/Labs Consensus")) continue;
 				
@@ -294,7 +294,7 @@ public class DatahubPrediction {
 			
 			br.close();
 			
-			System.out.println(Utilities.gson.toJson(ht));
+			System.out.println(JsonUtilities.gson.toJson(ht));
 			
 			
 		} catch (Exception ex) {
@@ -317,7 +317,7 @@ public class DatahubPrediction {
 				String line=br.readLine();
 				if(line==null) break;
 				
-				DatahubPrediction pred=Utilities.gson.fromJson(line,DatahubPrediction.class);
+				DatahubPrediction pred=JsonUtilities.gson.fromJson(line,DatahubPrediction.class);
 
 				ResQsarPrediction predRQ=new ResQsarPrediction(pred);
 				
@@ -335,7 +335,7 @@ public class DatahubPrediction {
 			
 			br.close();
 			
-			System.out.println(Utilities.gson.toJson(ht));
+			System.out.println(JsonUtilities.gson.toJson(ht));
 			
 			
 		} catch (Exception ex) {

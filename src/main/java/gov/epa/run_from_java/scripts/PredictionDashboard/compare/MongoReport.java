@@ -22,9 +22,9 @@ import com.mongodb.client.MongoDatabase;
 //import static com.mongodb.client.model.Filter.gt;
 
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.compare.ChemicalProperty.Datum;
 import gov.epa.run_from_java.scripts.PredictionDashboard.compare.ChemicalProperty.Rawdatum;
+import gov.epa.util.JsonUtilities;
 
 
 /**
@@ -128,7 +128,7 @@ public class MongoReport {
 				String line=br.readLine();
 				if(line==null) break;
 				
-				ResQsarPrediction predRQ=Utilities.gson.fromJson(line,ResQsarPrediction.class);
+				ResQsarPrediction predRQ=JsonUtilities.gson.fromJson(line,ResQsarPrediction.class);
 
 				if(ht.containsKey(predRQ.dtxsid)) {
 					List<ResQsarPrediction>preds=ht.get(predRQ.dtxsid);
@@ -170,7 +170,7 @@ public class MongoReport {
 				String line=br.readLine();
 				if(line==null) break;
 				
-				ChemicalProperty cp=Utilities.gson.fromJson(line,ChemicalProperty.class);
+				ChemicalProperty cp=JsonUtilities.gson.fromJson(line,ChemicalProperty.class);
 
 				for (ChemicalProperty.Datum datum: cp.data) {
 					Result result=getResult(datum);

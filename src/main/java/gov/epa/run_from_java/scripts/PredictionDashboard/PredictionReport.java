@@ -10,8 +10,6 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import ToxPredictor.Application.Calculations.PredictToxicityWebPageCreator;
-import ToxPredictor.Application.model.PredictionResults;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 import gov.epa.databases.dev_qsar.qsar_models.entity.DsstoxRecord;
@@ -19,8 +17,8 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.ModelStatistic;
 import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedADEstimate;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedNeighbor;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.Factor;
+import gov.epa.util.JsonUtilities;
 
 
 /**
@@ -296,7 +294,7 @@ public class PredictionReport {
 			
 			if(qpn.getSimilarityCoefficient()!=null) {
 				this.similarityCoefficient=qpn.getSimilarityCoefficient();
-				this.backgroundColor=PredictToxicityWebPageCreator.getColorString(similarityCoefficient);
+				this.backgroundColor=getColorString(similarityCoefficient);
 			}
 			
 			
@@ -325,9 +323,42 @@ public class PredictionReport {
 	}
 	
 	
+	public static Color getColor(double SCi) {
+
+		Color color = null;
+
+		if (SCi ==1.0) {
+			color = Color.LIGHT_GRAY;
+		} else if (SCi >= 0.9) {
+			color = Color.green;
+		} else if (SCi < 0.9 && SCi >= 0.8) {
+			// color=Color.blue;
+			color = new Color(100, 100, 255);// light blue
+		} else if (SCi < 0.8 && SCi >= 0.7) {
+			color = Color.yellow;
+		} else if (SCi < 0.7 && SCi >= 0.6) {
+			color = Color.orange;
+		} else if (SCi < 0.6) {
+			// color=Color.red;//255,153,153
+			color = new Color(255, 100, 100);// light red
+		}
+
+		if (color == null)
+			System.out.println("null color for " + SCi);
+		// System.out.println(SCi+"\t"+color.getRGB());
+		return color;
+	}
+
+	public static String getColorString(double SC) {
+		Color color = getColor(SC);
+		String strColor = String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+		return strColor;
+	}
+	
+	
 	protected void setModelDetails(PredictionDashboard pd,Property property,boolean useLegacyModelIds,boolean propertyIsBinary) {
 
-		this.modelDetails.urlModelAPI="https://ctx-api-dev.ccte.epa.gov/chemical/property/model/file/search/";
+		this.modelDetails.urlModelAPI="https://comptox.epa.gov/ctx-api/chemical/property/model/file/search/";
 		
 //		this.modelDetails.urlHistogramAPI="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/histo-graph/by-modelid/";
 //		this.modelDetails.urlScatterPlotAPI="https://comptox.epa.gov/dashboard-api/ccdapp2/opera-image/scatter-graph/by-modelid/";
@@ -412,81 +443,11 @@ public class PredictionReport {
 	
 	
 
-	protected Performance setStatistics(PredictionResults pr) {
-		
-		Performance performance=new Performance();
-		
-		if(pr.getHmStats()==null) {
-			return null;
-		}
-		
-		for (String statName:pr.getHmStats().keySet()) {
-			
-			Statistics statistics=null;
-			
-			if (statName.contains(DevQsarConstants.TAG_TEST)) {
-				statistics=performance.external;
-			} else if (statName.contains(DevQsarConstants.TAG_CV)) {
-				statistics=performance.fiveFoldICV;
-			} else if (statName.contains(DevQsarConstants.TAG_TRAINING)) {
-				statistics=performance.train;
-			}
-						
-			Double statValue=pr.getHmStats().get(statName);
-			
-			if (statName.contains(DevQsarConstants.PEARSON_RSQ)) {
-				if (statName.contains(DevQsarConstants.TAG_CV)) {
-					statistics.Q2=statValue;					
-				} else {
-					statistics.R2=statValue;					
-				}
-			} else if (statName.contains(DevQsarConstants.COVERAGE)) {
-				statistics.COVERAGE=statValue;
-			} else if (statName.contains(DevQsarConstants.MAE)) {
-				statistics.MAE=statValue;
-			} else if (statName.contains(DevQsarConstants.RMSE)) {
-				statistics.RMSE=statValue;
-			} else if (statName.contains(DevQsarConstants.BALANCED_ACCURACY)) {
-				statistics.BA=statValue;
-			} else if (statName.contains(DevQsarConstants.SENSITIVITY)) {
-				statistics.SN=statValue;
-			} else if (statName.contains(DevQsarConstants.SPECIFICITY)) {
-				statistics.SP=statValue;
-			} 
-		}
-		
-		return performance;
-	}
 
 
 	
 
-	public void setChemicalIdentifiers(PredictionDashboard pd,PredictionResults pr) {
-
-		this.chemicalIdentifiers.dtxcid=pd.getDtxcid();
-
-//		if(pd.getDsstoxRecord()==null) {
-//			return;
-//		}
-//		
-//		DsstoxRecord dr=pd.getDsstoxRecord();
-//		
-//		this.chemicalIdentifiers.dtxsid=dr.getDtxsid();
-//		this.chemicalIdentifiers.casrn=dr.getCasrn();
-//		this.chemicalIdentifiers.preferredName=dr.getPreferredName();
-//		this.chemicalIdentifiers.smiles=dr.getSmiles();
-//		this.chemicalIdentifiers.molWeight=dr.getMolWeight();
-				
-		//TODO store this info in predictionResults (from sdf that was ran)
-		
-		this.chemicalIdentifiers.dtxsid=pr.getDTXSID();
-		this.chemicalIdentifiers.casrn=pr.getCAS();
-		this.chemicalIdentifiers.preferredName=pr.getName();
-		this.chemicalIdentifiers.smiles=pr.getSmiles();
-		this.chemicalIdentifiers.molWeight=pr.getMolWeight(); 
-		
-
-	}
+	
 	
 	
 	public void setChemicalIdentifiers(PredictionDashboard pd) {
@@ -634,17 +595,17 @@ public class PredictionReport {
 	}
 	
 	public static PredictionReport fromJson(String json) {
-		return Utilities.gson.fromJson(json, PredictionReport.class);
+		return JsonUtilities.gson.fromJson(json, PredictionReport.class);
 	}
 	
 	public String toJson() {
-		return Utilities.gson.toJson(this);
+		return JsonUtilities.gson.toJson(this);
 	}
 	
 	
 	public static PredictionReport fromJsonFile(String filepath) {
 		try {
-			return Utilities.gson.fromJson(new FileReader(filepath), PredictionReport.class);
+			return JsonUtilities.gson.fromJson(new FileReader(filepath), PredictionReport.class);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

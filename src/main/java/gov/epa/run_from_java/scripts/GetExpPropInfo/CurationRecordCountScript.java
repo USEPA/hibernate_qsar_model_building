@@ -11,6 +11,7 @@ import com.google.gson.JsonObject;
 
 import gov.epa.endpoints.reports.predictions.ExcelReports.ExcelPredictionReportGenerator;
 import gov.epa.run_from_java.scripts.SplittingGeneratorPFAS_Script;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -47,7 +48,7 @@ public class CurationRecordCountScript {
 		for (String datasetName:datasetNames) {
 			String jsonPath=ExcelPredictionReportGenerator.getMappedJsonPath(datasetName);
 			
-			JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
+			JsonArray ja=JsonUtilities.getJsonArrayFromJsonFile(jsonPath);
 			
 			Hashtable<String,List<Double>>ht=new Hashtable<>();
 			

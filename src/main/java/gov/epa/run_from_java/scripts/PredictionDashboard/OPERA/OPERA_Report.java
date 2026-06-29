@@ -22,10 +22,10 @@ import gov.epa.databases.dev_qsar.qsar_models.entity.PredictionDashboard;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedADEstimate;
 import gov.epa.databases.dev_qsar.qsar_models.entity.QsarPredictedNeighbor;
 import gov.epa.run_from_java.scripts.QsarModelsScript;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.CreatorScript;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport;
 import gov.epa.run_from_java.scripts.PredictionDashboard.PredictionReport.ADEstimate;
+import gov.epa.util.JsonUtilities;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Property;
 
 /**

@@ -324,11 +324,39 @@ public class RecalculateStatistics {
 		return modelPredictions;
 	}
 	
+	void updatePredictModuleModels() {
+		
+		
+		String sql="select id from qsar_models.models\n"				
+				+ "where fk_source_id=3 and is_public=true and fk_splitting_id=1"
+				+ "\n order by id";
+		System.out.println(sql);
+		
+		ResultSet rs=SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sql);
+		
+		try {
+			while (rs.next()) {
+				long modelId=rs.getLong(1);
+				System.out.println(modelId);
+				
+				
+			
+			if(true)break;
+		}
+		
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+	}
+	
+	
 	public static void main(String[] args) {
 		
 		RecalculateStatistics r=new RecalculateStatistics();
 //		r.recalcStatsDataSets();
-		r.recalcStatsDataSets2();
+//		r.recalcStatsDataSets2();
+		r.updatePredictModuleModels();
 	}
 
 }

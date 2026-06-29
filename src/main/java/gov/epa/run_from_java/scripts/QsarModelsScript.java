@@ -55,7 +55,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.ModelSetServiceImpl;
 import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.endpoints.models.WebServiceModelBuilder;
 import gov.epa.run_from_java.scripts.RecalcStatsScript.SplitPredictions;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 import gov.epa.web_services.ModelWebService;
 import kong.unirest.Unirest;
 

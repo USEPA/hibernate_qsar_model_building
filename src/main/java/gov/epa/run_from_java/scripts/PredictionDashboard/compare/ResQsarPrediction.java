@@ -16,7 +16,7 @@ import java.util.List;
 import com.google.gson.Gson;
 
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -146,7 +146,7 @@ public class ResQsarPrediction {
 				String line=br.readLine();
 				if(line==null) break;
 				
-				ResQsarPrediction pred=Utilities.gson.fromJson(line,ResQsarPrediction.class);
+				ResQsarPrediction pred=JsonUtilities.gson.fromJson(line,ResQsarPrediction.class);
 
 				
 				if(ht.containsKey(pred.dtxsid)) {

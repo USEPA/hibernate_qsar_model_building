@@ -19,7 +19,7 @@ import gov.epa.databases.dsstox.service.DsstoxCompoundServiceImpl;
 import gov.epa.databases.dsstox.service.GenericSubstanceService;
 import gov.epa.databases.dsstox.service.GenericSubstanceServiceImpl;
 import gov.epa.databases.dsstox.service.SourceSubstanceService;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 /**
 * @author TMARTI02
@@ -124,7 +124,7 @@ public class NaiveMapperScript {
 //			}
 			
 			FileWriter fw=new FileWriter(filepath.replace(".txt", ".json"));
-			fw.write(Utilities.gson.toJson(identifiersMapped));
+			fw.write(JsonUtilities.gson.toJson(identifiersMapped));
 			fw.flush();
 			fw.close();
 //			System.out.println(Utilities.gson.toJson(identifiers));

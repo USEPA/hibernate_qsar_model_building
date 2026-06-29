@@ -23,3 +23,8 @@ join PFASSTRUCTV5 p on p.dtxsid=hr.dtxsid
 where listType!='QSAR Model'
 group by hazardName,hr.source
 order by hazardName,hr.source;
+
+
+
+select distinct hr.source, sourceOriginal, hr.listType  from HazardRecords hr
+where hazardName LIKE '%Endo%'

@@ -18,8 +18,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import gov.epa.databases.dev_qsar.DevQsarConstants;
-//import gov.epa.exp_data_gathering.parse.ExperimentalRecord;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 
 
@@ -143,7 +142,7 @@ public class RawExpDataTableGenerator {
 			ResultSet rs = prep.executeQuery();
 
 			JsonArray ja = getJsonArray(rs);
-			System.out.println(Utilities.gson.toJson(ja));
+			System.out.println(JsonUtilities.gson.toJson(ja));
 			return ja;
 
 		} catch (SQLException e) {
@@ -347,7 +346,7 @@ public class RawExpDataTableGenerator {
 
 			ResultSet rs = prep.executeQuery();
 			JsonArray ja = getJsonArray(rs);
-			System.out.println(Utilities.gson.toJson(ja));
+			System.out.println(JsonUtilities.gson.toJson(ja));
 			return ja;
 
 		} catch (SQLException e) {
