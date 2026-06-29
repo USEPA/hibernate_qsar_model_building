@@ -33,7 +33,7 @@ import gov.epa.databases.dev_qsar.qsar_models.service.PredictionService;
 import gov.epa.databases.dev_qsar.qsar_models.service.PredictionServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticService;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 import kong.unirest.Unirest;
 
 public class ModelBuilder {
@@ -114,7 +114,7 @@ public class ModelBuilder {
 			System.out.println("done");
 		} else {
 //			System.out.println(model.getName());
-			System.out.println(Utilities.gson.toJson(allStats));
+			System.out.println(JsonUtilities.gson.toJson(allStats));
 		} 
 	}
 	
@@ -172,8 +172,8 @@ public class ModelBuilder {
 			System.out.println("done");
 		} else {
 //			System.out.println(model.getName());
-			System.out.println(Utilities.gson.toJson(modelTestStatisticValues));
-			System.out.println(Utilities.gson.toJson(modelTrainingStatisticValues));
+			System.out.println(JsonUtilities.gson.toJson(modelTestStatisticValues));
+			System.out.println(JsonUtilities.gson.toJson(modelTrainingStatisticValues));
 		} 
 	}
 

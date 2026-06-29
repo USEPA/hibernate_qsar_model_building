@@ -51,7 +51,7 @@ import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDa
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportMetadata;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelStatistic;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 public class PredictionReportGenerator extends ReportGenerator {
 	private DatasetService datasetService;

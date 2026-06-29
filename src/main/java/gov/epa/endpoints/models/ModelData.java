@@ -135,7 +135,7 @@ public class ModelData {
 		sql="select dp."+idField+", dp.qsar_property_value, dv.values_tsv, dpis.split_num from qsar_datasets.data_points dp\n"+ 
 		"join qsar_descriptors.descriptor_values dv on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
 		"join qsar_datasets.data_points_in_splittings dpis on dpis.fk_data_point_id = dp.id\n"+ 
-		"where dp.fk_dataset_id="+dataset.getId()+" and dv.fk_descriptor_set_id="+descriptorSet.getId()+" and dpis.fk_splitting_id="+splitting.getId()+
+		"where dp.fk_dataset_id="+dataset.getId()+" and dv.fk_descriptor_set_id="+descriptorSet.getId()+" and dpis.fk_splitting_id="+splitting.getId()+"\n"+
 		"order by dp."+idField+";";
 		
 //		System.out.println("\n"+sql);
@@ -366,6 +366,65 @@ public class ModelData {
 	}
 	
 	
+
+public static String getInstancesByQsarSmiles(Hashtable<String,String>htDescValuesByQsarSmiles, String descriptorSetName) {
+		
+		Connection conn=SqlUtilities.getConnectionPostgres();
+		
+
+//		Splitting splitting=splittingService.findByName(splittingName);
+//		DescriptorSet descriptorSet=descriptorSetService.findByName(descriptorSetName);
+		
+//		System.out.println("descriptorSetName"+descriptorSetName);
+		
+		String sql="select headers_tsv from qsar_descriptors.descriptor_sets d\n"+					
+					"where d.\"name\"='"+descriptorSetName+"';";
+		String instanceHeader="ID\tProperty\t"+SqlUtilities.runSQL(conn, sql)+"\r\n";
+//		System.out.println(instanceHeader+"\n");
+		
+//		System.out.println("\n"+sql);
+
+		StringBuilder sbOverall = new StringBuilder(instanceHeader);
+
+		int counterOverall=0;
+		
+		
+		try {
+			
+			ResultSet rs=SqlUtilities.runSQL2(conn, sql);
+			
+			for(String qsarSmiles:htDescValuesByQsarSmiles.keySet()) {
+				
+//				if (counter%1000==0) System.out.println(counter+ "\tbuilding instances");
+				
+				String id=qsarSmiles;
+				String qsar_property_value="-9999";
+				String descriptors=htDescValuesByQsarSmiles.get(qsarSmiles);
+
+				String instance=generateInstance(id, qsar_property_value, descriptors);
+				
+				if (instance==null) {
+					System.out.println(id+"\tnull instance");
+					continue;
+				}
+
+				sbOverall.append(instance);
+				counterOverall++;
+
+			}
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+				
+		if (debug) {
+			System.out.println("Instances created:"+counterOverall);
+			
+		}
+		
+		return sbOverall.toString();
+	}
+	
 	/**
 	 * Get training and prediction set tsvs using sql 
 	 */
@@ -421,11 +480,11 @@ public class ModelData {
 
 		
 		sql="select dp."+idField+", dp.qsar_property_value, dv.values_tsv from qsar_datasets.data_points dp\n"+ 
-		"inner join qsar_descriptors.descriptor_values dv\n"+ 
+		"left join qsar_descriptors.descriptor_values dv\n"+ 
 		"on dp.canon_qsar_smiles=dv.canon_qsar_smiles\n"+ 
 		"where dp.fk_dataset_id="+dataset.getId()+" and dv.fk_descriptor_set_id="+descriptorSet.getId();
 		
-//		System.out.println("\n"+sql+"\n");
+		System.out.println("\n"+sql+"\n");
 		
 		try {
 			
@@ -443,12 +502,18 @@ public class ModelData {
 				String descriptors=rs.getString(3);
 				
 				String instance=generateInstance(id, qsar_property_value, descriptors);
-				if (instance==null) continue;
+				
+				if (instance==null) {
+					System.out.println("Null instance for "+id);
+					continue;
+				}
 
 				sbOverall.append(instance);
 				
 //				if(counter==100) break; 
 			}
+			
+			System.out.println("Instance count="+counter);
 			
 		} catch (Exception ex) {
 			ex.printStackTrace();

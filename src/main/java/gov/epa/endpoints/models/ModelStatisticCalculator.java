@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import gov.epa.databases.dev_qsar.DevQsarConstants;
+import gov.epa.run_from_java.scripts.PredictionDashboard.TEST.model.TESTConstants;
 
 /**
  * Class to calculate model statistics
@@ -78,7 +79,74 @@ public class ModelStatisticCalculator {
 		return q2;
 	}
 	
+	
+	public HashMap<String, Double> getTEST_Statistics(String endpoint,String method,List<ModelPrediction> mps) {
 
+		String endpointAbbrev=TESTConstants.getAbbrevEndpoint(endpoint);
+		String methodAbbrev=TESTConstants.getAbbrevMethod(method);
+		
+		if(endpointAbbrev.equals("?")) {
+			System.out.println("getStatistics(), Failed to get abbrev:\t"+endpoint);
+			return null;
+		}
+		
+		List<ModelPrediction>mpsTrain=new ArrayList<>();
+		List<ModelPrediction>mpsTest=new ArrayList<>();
+		
+		for(ModelPrediction mp:mps) {
+			
+//			System.out.println(methodAbbrev+"\t"+mp.methodAbbrev+"\t"+mp.split);
+			
+			if(!mp.methodAbbrev.equals(methodAbbrev)) continue;
+			
+			if(mp.split==0)mpsTrain.add(mp);
+			else if(mp.split==1)mpsTest.add(mp);
+			else {
+				System.out.println("Invalid split for "+endpointAbbrev+" for "+methodAbbrev+" for "+mp.id);
+			}
+		}
+		
+//		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().serializeSpecialFloatingPointValues().create();
+//		System.out.println(gson.toJson(mps));
+		return calculateTestStatistics(mpsTrain, mpsTest, endpoint);
+//		System.out.println(mpsTest.size()+"\t"+mpsTraining.size());
+		
+	}
+
+	public HashMap<String, Double> calculateTestStatistics(List<ModelPrediction> trainingSetPredictions, List<ModelPrediction> testSetPredictions,
+			String  endpoint) {
+		
+		double meanExpTraining= calcMeanExpTraining(trainingSetPredictions);
+		
+		HashMap<String, Double>mapStats=new HashMap<>();
+		
+		if (TESTConstants.isBinary(endpoint)) {
+			calculateBinaryStatistics(testSetPredictions, DevQsarConstants.BINARY_CUTOFF,DevQsarConstants.TAG_TEST,mapStats);
+			calculateBinaryStatistics(trainingSetPredictions,DevQsarConstants.BINARY_CUTOFF,DevQsarConstants.TAG_TRAINING,mapStats);
+		} else {
+			calculateContinuousStatistics(testSetPredictions,meanExpTraining,DevQsarConstants.TAG_TEST,mapStats);
+//			double Q2_TEST=modelTestStatisticValues.get(DevQsarConstants.Q2_TEST);
+			Double valQ2_F3_TEST=calculateQ2_F3(trainingSetPredictions, testSetPredictions);
+			mapStats.put(DevQsarConstants.Q2_F3_TEST,valQ2_F3_TEST);
+			calculateContinuousStatistics(trainingSetPredictions,meanExpTraining,DevQsarConstants.TAG_TRAINING,mapStats);
+		}
+		
+		return mapStats;
+	}
+	
+	
+	void calculateBinaryStatistics(List<ModelPrediction> modelPredictions, double cutoff, String  tag,HashMap<String, Double>mapStatsAll) {
+		Map<String, Double>mapStats=calculateBinaryStatistics(modelPredictions, cutoff, tag);
+		mapStatsAll.putAll(mapStats);
+	}
+	
+	void calculateContinuousStatistics(List<ModelPrediction> modelPredictions, double meanExpTraining, String  tag,HashMap<String, Double>mapStatsAll) {
+		Map<String, Double>mapStats=calculateContinuousStatistics(modelPredictions, meanExpTraining, tag);
+		mapStatsAll.putAll(mapStats);
+	}
+
+
+	
 //	/**
 //	 * 
 //	 * Calculates Q2_F3 see eqn 2 of Consonni et al, 2019 (https://onlinelibrary.wiley.com/doi/full/10.1002/minf.201800029)
@@ -290,6 +358,14 @@ public class ModelStatisticCalculator {
 		return modelStatisticValues;
 	}
 
+	/**
+	 * In this method both training and prediction set values are in the same list of ModelPredictions
+	 * 
+	 * @param htMPs
+	 * @param insideTraining
+	 * @param insideAD
+	 * @return
+	 */
 	public static Map<String, Double> calculateContinuousStatistics(Hashtable<String, ModelPrediction> htMPs,
 			Boolean insideTraining, Boolean insideAD) {
 
@@ -434,3 +510,4 @@ public class ModelStatisticCalculator {
 	}
 
 }
+

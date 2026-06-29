@@ -64,9 +64,9 @@ import gov.epa.run_from_java.data_loading.SourceChemicalUtilities;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.GetExpPropInfo;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.util.ExcelSourceReader;
 import gov.epa.util.StructureUtil;
+import gov.epa.util.JsonUtilities;
 import gov.epa.util.StructureUtil.SimpleOpsinResult;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 import gov.epa.web_services.standardizers.Standardizer;
@@ -1511,7 +1511,7 @@ public class DsstoxMapper {
 		File importFile = new File(importFilePath);
 		importFile.getParentFile().mkdirs();
 		
-		System.out.println("Writing chemreg file at:\n"+importFilePath);
+		System.out.println("Writing chemreg file at:\n"+importFile.getAbsolutePath());
 
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(importFile))) {
 			bw.write(EXTERNAL_ID_HEADER + "\t" + SOURCE_DTXSID_HEADER + "\t" + SOURCE_DTXCID_HEADER + "\t"
@@ -1749,20 +1749,31 @@ public class DsstoxMapper {
 		List<DiscardedPropertyValue> values = new ArrayList<>();
 		values.addAll(discardedPropertyValues);
 
-		String[] fields = { "reason_discarded", "mapped_connection_reason","exp_prop_id", "source_dtxrid", "source_dtxsid", "source_dtxcid",
+		List<String> fields = Arrays.asList( "reason_discarded", "mapped_connection_reason","exp_prop_id", "source_dtxrid", "source_dtxsid", "source_dtxcid",
 				"source_casrn", "source_smiles", "source_chemical_name", 
 				"public_source_name", "public_source_description", "public_source_url",
 				"public_source_original_name", "public_source_original_description", "public_source_original_url",
 				"literature_source_citation", "literature_source_doi", "page_url", "notes", "document_name",
 				"file_name",
 				"qc_flag", "temperature_c", "pressure_mmHg", "pH", "value_qualifier", "value_original","value_original_parsed", "value_text",
-				"value_max", "value_min", "value_point_estimate", "value_units" };
+				"value_max", "value_min", "value_point_estimate", "value_units");
 
 		JsonArray jaAll = convertDiscardedRecordsToJsonArray(values);
 		String filePathAll = datasetFolderPath + File.separator + datasetFileName + "_Discarded_Records" + ".json";
-		Utilities.saveJson(jaAll, filePathAll.replace(".xlsx", ".json"));// Save to json so we can limit to PFAS records
-																			// later
-
+		JsonUtilities.saveJson(jaAll, filePathAll.replace(".xlsx", ".json"));// Save to json so we can limit to PFAS records
+											
+		Set<String>parameterNames = new HashSet<>();
+		for (DiscardedPropertyValue dpv:discardedPropertyValues) {
+			for(ParameterValue pv:dpv.propertyValue.getParameterValues()) {
+				parameterNames.add(pv.getParameter().getName());
+			}
+		}
+		List<String>parameterNameList=new ArrayList<>(parameterNames);
+		Collections.sort(parameterNameList);
+		fields = new ArrayList<>(fields);//make modifiable
+		fields.addAll(parameterNameList);
+		String[] fields2 = fields.toArray(new String[fields.size()]);
+		
 		if (!createExcel)
 			return;
 
@@ -1789,7 +1800,7 @@ public class DsstoxMapper {
 			}
 
 //			System.out.println(gson.toJson(fields));
-			ExcelCreator.createExcel2(ja, filePath, fields, null);
+			ExcelCreator.createExcel2(ja, filePath, fields2, null);
 
 			fileNum++;
 			if (values.size() == 0)
@@ -1882,6 +1893,8 @@ public class DsstoxMapper {
 	public List<ExplainedResponse> mapByExternalID(String listName) {
 		String folder="data\\dev_qsar\\output\\000 new chemreg lists\\";
 		String filepathOut=folder+listName + "_mapping_results.txt";
+		
+		System.out.println(filepathOut);
 		return mapByExternalID(listName, filepathOut);
 	}
 	
@@ -1959,7 +1972,7 @@ public class DsstoxMapper {
 		List<DsstoxRecord> dsstoxRecords = sourceSubstanceService
 				.findAsDsstoxRecordsWithSourceSubstanceByChemicalListName(listName);
 
-		System.out.println("Records in list="+dsstoxRecords.size());
+		System.out.println(listName+" dsstoxRecords.size()="+dsstoxRecords.size());
 		
 		try {
 
@@ -1985,7 +1998,8 @@ public class DsstoxMapper {
 				
 //				if(!start) continue;
 				
-				// System.out.println(gson.toJson(dr));
+//				 System.out.println(gson.toJson(dr));
+				
 				ExplainedResponse response = this.acceptMapping(dr, mapList.get(dr.externalId));
 				response.record = dr;
 				responses.add(response);

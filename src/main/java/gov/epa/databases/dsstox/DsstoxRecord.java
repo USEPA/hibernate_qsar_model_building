@@ -18,7 +18,7 @@ import gov.epa.databases.dsstox.entity.SourceSubstance;
 import gov.epa.databases.dsstox.entity.SourceSubstanceIdentifier;
 import gov.epa.databases.dsstox.service.SourceSubstanceServiceImpl;
 import gov.epa.endpoints.datasets.ExplainedResponse;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 public class DsstoxRecord {
 	public String dsstoxRecordId;
@@ -455,10 +455,10 @@ public class DsstoxRecord {
 //		String rid="DTXRID405797250";
 
 		DsstoxRecord dr=getDsstoxRecordByDTXRID("DTXRID2020689619");
-		System.out.println(Utilities.gson.toJson(dr)+"\n");
+		System.out.println(JsonUtilities.gson.toJson(dr)+"\n");
 
 		DsstoxRecord dr2=getDsstoxRecordByDTXRID("DTXRID405797179");
-		System.out.println(Utilities.gson.toJson(dr2));
+		System.out.println(JsonUtilities.gson.toJson(dr2));
 		
 		
 		

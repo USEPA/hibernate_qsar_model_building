@@ -49,9 +49,9 @@ import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
 import gov.epa.databases.dev_qsar.qsar_models.service.StatisticServiceImpl;
 import gov.epa.run_from_java.scripts.SqlUtilities;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.SDE_Prediction_Response;
 import gov.epa.run_from_java.scripts.PredictionDashboard.valery.SDE_Prediction_Response.Prediction;
+import gov.epa.util.JsonUtilities;
 import gov.epa.web_services.ModelWebService;
 import gov.epa.web_services.embedding_service.CalculationInfo;
 import gov.epa.web_services.embedding_service.CalculationInfoGA;
@@ -123,7 +123,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 
 		
 		String details=new String(model.getDetails());
-		JsonObject joDetails=Utilities.gson.fromJson(details, JsonObject.class); 
+		JsonObject joDetails=JsonUtilities.gson.fromJson(details, JsonObject.class); 
 		boolean use_pmml=joDetails.get("use_pmml").getAsBoolean();
 		boolean use_sklearn2pmml=false;//if use true you cant have standarization included in pmml
 
@@ -163,7 +163,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 
 		
 		String details=new String(model.getDetails());
-		JsonObject joDetails=Utilities.gson.fromJson(details, JsonObject.class); 
+		JsonObject joDetails=JsonUtilities.gson.fromJson(details, JsonObject.class); 
 		boolean use_pmml=joDetails.get("use_pmml").getAsBoolean();
 		boolean use_sklearn2pmml=false;//if use true you cant have standarization included in pmml
 
@@ -488,6 +488,31 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		int numSplits=5;
 		
 		
+//		private  Hashtable<Integer,List<String>> createSplitHashtable(List<String> ids) {
+//			Hashtable<Integer,List<String>>htSplits=new Hashtable<>();
+//
+//			
+//			while (true) {
+//				for (int fold=1;fold<=numSplits;fold++) {
+//
+//					if(htSplits.get(fold)==null) {
+//						List<String>ids_i=new ArrayList<>();
+//						htSplits.put(fold, ids_i);
+//						ids_i.add(ids.remove(0));
+//					} else {
+//						List<String>ids_i=htSplits.get(fold);
+//						ids_i.add(ids.remove(0));
+//					}
+//					
+//					if(ids.size()==0) {
+//						return htSplits;
+//					}
+//
+//				}
+//			}
+//			
+//		}
+		
 		public void crossValidate(Model model, boolean remove_log_p, int num_jobs, boolean postPredictions,boolean use_pmml) {
 			
 			System.out.println(model.getSplittingName());
@@ -495,7 +520,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 			Dataset dataset=datasetService.findByName(model.getDatasetName());
 			
 			
-			addCV_DPIS(model,dataset);
+//			addCV_DPIS(model,dataset);//should happen in SplittingGeneratorScript instead
 			
 			DescriptorEmbedding descriptorEmbedding=model.getDescriptorEmbedding();
 			
@@ -517,94 +542,96 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		}
 		
 
-		public void addCV_DPIS(Model model,Dataset dataset) {
-//			System.out.println(model.getSplittingName());
-			Splitting splittingCV1=splittingService.findByName(model.getSplittingName()+"_CV1");
-			
-			if (splittingCV1==null)  {
-				createSplittings(model);
-				splittingCV1=splittingService.findByName(model.getSplittingName()+"_CV1");
-			}
-			
-			 createDataPointInSplittings(model, dataset,splittingCV1);
-		}
-
-
-		private void createDataPointInSplittings(Model model, Dataset dataset, Splitting splittingCV1) {
-
-			//Check if have DPIS:
-			String sql="select count(dpis.id) from qsar_datasets.data_points_in_splittings dpis\n"+ 
-			"join qsar_datasets.data_points dp on dp.id=dpis.fk_data_point_id\n"+ 
-			"where dp.fk_dataset_id="+dataset.getId()+" and dpis.fk_splitting_id="+splittingCV1.getId()+";"; 
-			
-//			System.out.println(sql);
-			
-			int countDPIS=Integer.parseInt(SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sql));
-			
-			if (countDPIS!=0) return;
-						
-//			System.out.println(countDPIS);
-			
-			Splitting splittingModel=splittingService.findByName(model.getSplittingName());
-			
-			List<String>ids=ModelData.getTrainingIds(dataset, splittingModel, false);
-			Collections.shuffle(ids);
-			
-//			for (String id:ids) {
-//				System.out.println(id);
+//		public void addCV_DPIS(Model model,Dataset dataset) {
+////			System.out.println(model.getSplittingName());
+//			Splitting splittingCV1=splittingService.findByName(model.getSplittingName()+"_CV1");
+//			
+//			if (splittingCV1==null)  {
+//				createSplittings(model);
+//				splittingCV1=splittingService.findByName(model.getSplittingName()+"_CV1");
 //			}
-			
-			
-//			System.out.println(idCount);
-			
-			Hashtable<Integer,List<String>>htSplits=createSplitHashtable(ids);
-			
-			
-			List<DataPoint> dataPoints = 
-					dataPointService.findByDatasetName(model.getDatasetName());
-
-			Map<String, DataPoint> dpMap = dataPoints.stream()
-					.collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp));
-
-			
-			for (int fold=1;fold<=numSplits;fold++) {
-				
-				List<String>idsTrain=new ArrayList<>();
-				List<String>idsTest=new ArrayList<>();
-				
-				for (int i=1;i<=numSplits;i++) {
-					List<String>idsFold=htSplits.get(i);
-					
-					if (i!=fold) {
-						idsTrain.addAll(idsFold);						
-					} else {
-						idsTest.addAll(idsFold);
-					}
-				}
-				
-//				System.out.println(fold+"\t"+idsTrain.size()+"\t"+idsTest.size());
-				
-				Splitting splittingFold=splittingService.findByName(model.getSplittingName()+"_CV"+fold);
-				List<DataPointInSplitting> dpisTrain = createDPIS(dpMap, idsTrain, splittingFold,DevQsarConstants.TRAIN_SPLIT_NUM);
-				List<DataPointInSplitting> dpisTest = createDPIS(dpMap, idsTest, splittingFold,DevQsarConstants.TEST_SPLIT_NUM);
-				
-//				System.out.println(fold+"\t"+dpisTrain.size()+"\t"+dpisTest.size());
-				
-			}
-			
-		}
+//			
+//			 createDataPointInSplittings(model, dataset,splittingCV1);
+//		}
 
 
-		private List<DataPointInSplitting> createDPIS(Map<String, DataPoint> dpMap, List<String> idsSet,
-				Splitting splittingFold, int splitNum) {
-			List<DataPointInSplitting>dpisTrain=new ArrayList<>();
-			for(String id:idsSet) {
-				DataPointInSplitting dpis=new DataPointInSplitting(dpMap.get(id), splittingFold, splitNum, lanId);
-				dpisTrain.add(dpis);
-			}				
-			dataPointInSplittingService.createSQL(dpisTrain);
-			return dpisTrain;
-		}
+//		private void createDataPointInSplittings(Model model, Dataset dataset, Splitting splittingCV1) {
+//
+//			//Check if have DPIS:
+//			String sql="select count(dpis.id) from qsar_datasets.data_points_in_splittings dpis\n"+ 
+//			"join qsar_datasets.data_points dp on dp.id=dpis.fk_data_point_id\n"+ 
+//			"where dp.fk_dataset_id="+dataset.getId()+" and dpis.fk_splitting_id="+splittingCV1.getId()+";"; 
+//			
+////			System.out.println(sql);
+//			
+//			int countDPIS=Integer.parseInt(SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sql));
+//			
+//			if (countDPIS!=0) return;
+//						
+////			System.out.println(countDPIS);
+//			
+//			Splitting splittingModel=splittingService.findByName(model.getSplittingName());
+//			
+//			List<String>ids=ModelData.getTrainingIds(dataset, splittingModel, false);
+//			Collections.shuffle(ids);
+//			
+////			for (String id:ids) {
+////				System.out.println(id);
+////			}
+//			
+//			
+////			System.out.println(idCount);
+//			
+//			Hashtable<Integer,List<String>>htSplits=createSplitHashtable(ids);
+//			
+//			
+//			List<DataPoint> dataPoints = 
+//					dataPointService.findByDatasetName(model.getDatasetName());
+//
+//			Map<String, DataPoint> dpMap = dataPoints.stream()
+//					.collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp));
+//
+//			
+//			for (int fold=1;fold<=numSplits;fold++) {
+//				
+//				List<String>idsTrain=new ArrayList<>();
+//				List<String>idsTest=new ArrayList<>();
+//				
+//				for (int i=1;i<=numSplits;i++) {
+//					List<String>idsFold=htSplits.get(i);
+//					
+//					if (i!=fold) {
+//						idsTrain.addAll(idsFold);						
+//					} else {
+//						idsTest.addAll(idsFold);
+//					}
+//				}
+//				
+////				System.out.println(fold+"\t"+idsTrain.size()+"\t"+idsTest.size());
+//				
+//				Splitting splittingFold=splittingService.findByName(model.getSplittingName()+"_CV"+fold);
+//				List<DataPointInSplitting> dpisTrain = createDPIS(dpMap, idsTrain, splittingFold,DevQsarConstants.TRAIN_SPLIT_NUM);
+//				List<DataPointInSplitting> dpisTest = createDPIS(dpMap, idsTest, splittingFold,DevQsarConstants.TEST_SPLIT_NUM);
+//				
+////				System.out.println(fold+"\t"+dpisTrain.size()+"\t"+dpisTest.size());
+//				
+//			}
+//			
+//		}
+		
+		
+		
+
+//		private List<DataPointInSplitting> createDPIS(Map<String, DataPoint> dpMap, List<String> idsSet,
+//				Splitting splittingFold, int splitNum) {
+//			List<DataPointInSplitting>dpisTrain=new ArrayList<>();
+//			for(String id:idsSet) {
+//				DataPointInSplitting dpis=new DataPointInSplitting(dpMap.get(id), splittingFold, splitNum, lanId);
+//				dpisTrain.add(dpis);
+//			}				
+//			dataPointInSplittingService.createSQL(dpisTrain);
+//			return dpisTrain;
+//		}
 
 
 		private void createSplittings(Model model) {
@@ -620,30 +647,7 @@ public class WebServiceModelBuilder extends ModelBuilder {
 		}
 
 
-		private  Hashtable<Integer,List<String>> createSplitHashtable(List<String> ids) {
-			Hashtable<Integer,List<String>>htSplits=new Hashtable<>();
-
-			
-			while (true) {
-				for (int fold=1;fold<=numSplits;fold++) {
-
-					if(htSplits.get(fold)==null) {
-						List<String>ids_i=new ArrayList<>();
-						htSplits.put(fold, ids_i);
-						ids_i.add(ids.remove(0));
-					} else {
-						List<String>ids_i=htSplits.get(fold);
-						ids_i.add(ids.remove(0));
-					}
-					
-					if(ids.size()==0) {
-						return htSplits;
-					}
-
-				}
-			}
-			
-		}
+		
 
 		void calcCV_Folds( Model model, boolean remove_log_p, int num_jobs,Map<String, Double> expMap,boolean postPredictions,boolean use_pmml) {
 			

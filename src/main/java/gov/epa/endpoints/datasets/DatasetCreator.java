@@ -60,11 +60,15 @@ import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundService;
 import gov.epa.databases.dev_qsar.qsar_descriptors.service.CompoundServiceImpl;
 import gov.epa.databases.dsstox.DsstoxRecord;
 import gov.epa.endpoints.datasets.DatasetParams.MappingParams;
+import gov.epa.endpoints.datasets.descriptor_values.SciDataExpertsDescriptorValuesCalculator;
 import gov.epa.endpoints.datasets.dsstox_mapping.DsstoxMapper;
+import gov.epa.endpoints.models.ModelData;
+import gov.epa.endpoints.models.ModelPrediction;
 import gov.epa.run_from_java.data_loading.ChangeKeptPropertyValues;
+import gov.epa.run_from_java.scripts.PredictScript;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
 import gov.epa.util.MathUtil;
+import gov.epa.util.JsonUtilities;
 import gov.epa.web_services.standardizers.SciDataExpertsStandardizer;
 //import gov.epa.web_services.standardizers.Standardizer;
 //import gov.epa.web_services.standardizers.Standardizer.BatchStandardizeResponse;
@@ -81,7 +85,7 @@ public class DatasetCreator {
 	public static boolean postToDB = false;// stops creation of dataset in database but allows recreation of json and
 											// excel files for dataset
 
-	private static CompoundService compoundService;
+	private static CompoundServiceImpl compoundService;
 
 	private UnitService unitService;
 	private PropertyService propertyService;
@@ -699,12 +703,13 @@ public class DatasetCreator {
 		System.out.println("Raw records:" + propertyValues.size());
 		excludePropertyValues(excludedSources, propertyValues);
 		
-		PropertyValue.getPropertyValuesBySource(propertyValues);
-		
 		
 		if (excludedSources.size() > 0)
 			System.out.println("Raw records after source exclusion:" + propertyValues.size());
 
+		PropertyValue.getPropertyValuesBySource(propertyValues);
+
+		
 		return convertPropertyValuesToDatapoints(propertyValues, params, useStdevFilter);
 
 	}
@@ -820,8 +825,8 @@ public class DatasetCreator {
 	 * @param datasetNameOriginal 
 	 * @return
 	 */
-	public Dataset convertPropertyValuesToDatapoints2(List<PropertyValue> propertyValues, DatasetParams params,
-			boolean useStdevFilter, boolean excludeBasedOnPredictedWS, boolean excludeBasedOnBaselineToxicity,String typeAnimal, String datasetNameOriginal) {
+	public Dataset convertPropertyValuesToDatapointsAcuteAquaticToxicity(List<PropertyValue> propertyValues, DatasetParams params,
+			boolean useStdevFilter, boolean excludeBasedOnPredictedWS, boolean excludeBasedOnBaselineToxicity,String typeAnimal) {
 
 		System.out.println("\npostToDb=" + postToDB + "\n");
 
@@ -876,7 +881,133 @@ public class DatasetCreator {
 		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(
 				mappedPropertyValues, useStdevFilter, params.mappingParams.validateStructure);
 
-		checkMappedPropertyValues(datasetNameOriginal, unifiedPropertyValues,excludeBasedOnPredictedWS, excludeBasedOnBaselineToxicity,typeAnimal);
+		//*********************************************************************************************************
+		List<MappedPropertyValue>discardedPropertyValues=checkMappedPropertyValuesAcuteAquaticToxicity(unifiedPropertyValues,excludeBasedOnPredictedWS, excludeBasedOnBaselineToxicity,typeAnimal);
+		
+		Map<String, List<MappedPropertyValue>> discardedPropertyValuesMap=new Hashtable<>();
+		
+		for(MappedPropertyValue mpv:discardedPropertyValues) {
+			if(discardedPropertyValuesMap.containsKey(mpv.standardizedSmiles)) {
+				List<MappedPropertyValue>values=discardedPropertyValuesMap.get(mpv.standardizedSmiles);
+				values.add(mpv);
+			} else {
+				List<MappedPropertyValue>values=new ArrayList<>();
+				values.add(mpv);
+				discardedPropertyValuesMap.put(mpv.standardizedSmiles, values);
+			}
+		}
+		
+		
+		//*********************************************************************************************************
+		
+		
+		System.out.println("#Unified structures:\t"+unifiedPropertyValues.keySet().size());
+		
+		System.out.println("Saving unification data to examine...");
+//		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit);redundant- we have excel and json
+		saveUnifiedData(unifiedPropertyValues, params.datasetName, unit, createExcelFiles);
+		saveDiscarded2(discardedPropertyValuesMap, params.datasetName, unit, createExcelFiles);
+
+		Gson gson = new Gson();
+
+		Dataset dataset = new Dataset(params.datasetName, params.datasetDescription, property, unit,
+				unitDatapointContributor, gson.toJson(params.mappingParams), lanId);
+
+		Dataset dataset2 = dataset;// used to look at datapoints later
+
+		if(!postToDB) {
+			System.out.println("postToDB=false for "+params.datasetName);
+			return null;
+		}
+		
+		
+		dataset = initializeDataset(dataset);
+
+		System.out.println("Posting final merged values...");
+		long t7 = System.currentTimeMillis();
+
+		if (dataset != null) {// We can post:
+//			postDataPoints(unifiedPropertyValues, dataset);//old method doesnt have CIDs or exp_prop_ids 
+			postDataPointsWithCIDs(unifiedPropertyValues, dataset, unitDatapointContributor,params.mappingParams.validateMedian);
+
+		} else {// Data set already exists lets look at datapoints:
+			lookatDataPoints(unifiedPropertyValues, dataset2,params.mappingParams.validateMedian);
+		}
+
+		long t8 = System.currentTimeMillis();
+		System.out.println("Time to post: " + (t8 - t7) / 1000.0 + " s\n");
+
+		if (dataset == null) {
+			System.out.println("*** Warning dataset already exists! New dataset not created ***");
+		}
+		
+		return dataset;
+		
+	}
+	
+	
+	
+	public Dataset convertPropertyValuesToDatapointsBCF(List<PropertyValue> propertyValues, DatasetParams params,
+			boolean useStdevFilter, boolean excludeBasedOnWaterConcentration, boolean excludeBasedOnExposureDuration) {
+
+		System.out.println("\npostToDb=" + postToDB + "\n");
+
+		if (propertyValues == null || propertyValues.isEmpty()) {
+//			logger.error(params.datasetName + ": Experimental property data unavailable");
+			System.out.println(params.datasetName + ": Experimental property data unavailable");
+			return null;
+		}
+
+		HashMap<String, Compound> hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
+
+		System.out.println("Retrieving DSSTox structure data...");
+		List<MappedPropertyValue> mappedPropertyValues = null;
+		try {
+			mappedPropertyValues = mapPropertyValuesToDsstoxRecords(propertyValues, params, hmQsarSmilesLookup);
+		} catch (Exception e) {
+//			logger.error("Failed DSSTox query: " + e.getMessage());
+			e.printStackTrace();
+			return null;
+		}
+
+		if (mappedPropertyValues == null || mappedPropertyValues.isEmpty()) {
+			System.out.println(params.datasetName + ": DSSTox structure data unavailable");
+			return null;
+		}
+
+		// TODO store mapping of source chemicals to dtxsid/dtxcid in
+		// source_chemical_mappings table or use datasets with contributer table
+
+		Property property = initializeProperty(propertyValues);
+		if (property.getId() == null) {
+			return null;
+		}
+
+		String finalUnitName = finalUnitsNameMap.get(params.propertyName);
+		Unit unit = initializeUnit(finalUnitName);
+
+		String contributorUnitName = contributorUnitsNameMap.get(params.propertyName);
+		Unit unitDatapointContributor = initializeUnit(contributorUnitName);
+
+		if (unit.getId() == null) {
+			return null;
+		}
+
+		System.out.println("Standardizing structures using " + standardizerName + "...");
+		long t1 = System.currentTimeMillis();
+		standardizeMappedPropertyValues(mappedPropertyValues, hmQsarSmilesLookup, useFullStandardize);
+		long t2 = System.currentTimeMillis();
+		System.out.println("Standardization time: " + (t2 - t1) / 1000.0 + " s");
+
+		System.out.println("Unifying structures...");
+		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(
+				mappedPropertyValues, useStdevFilter, params.mappingParams.validateStructure);
+		
+		//*************************************************************************************
+		//Check the mapped property values in terms of the water concentration and exposure duration:
+		Map<String, List<MappedPropertyValue>>removedMap=checkMappedPropertyValuesBCF(unifiedPropertyValues,excludeBasedOnWaterConcentration, excludeBasedOnExposureDuration);
+		saveRemovedUnifiedData(removedMap, params.datasetName, unit, createExcelFiles);
+		//*************************************************************************************
 		
 		System.out.println("#Unified structures:\t"+unifiedPropertyValues.keySet().size());
 		
@@ -922,20 +1053,99 @@ public class DatasetCreator {
 		
 	}
 	
-	
 
-	private void checkMappedPropertyValues(String datasetNameOriginal, Map<String, List<MappedPropertyValue>> unifiedPropertyValues, boolean excludeBasedOnPredictedWS, boolean excludeBasedOnBaselineToxicity,String typeAnimal) {
+	private List<MappedPropertyValue> checkMappedPropertyValuesAcuteAquaticToxicity(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, boolean excludeBasedOnPredictedWS, boolean excludeBasedOnBaselineToxicity,String typeAnimal) {
 
+		Set<String>setQsarSmiles=unifiedPropertyValues.keySet();
+		String server ="https://cim-dev.sciencedataexperts.com";
+		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
+		
+		boolean writeToDB=true;
+		int batchSize=1;
+		String descriptorSetName="WebTEST-default";
+		//add any missing descriptor values to database:
+		calc.calculateDescriptors_useSqlToExcludeExisting(setQsarSmiles, descriptorSetName, writeToDB, batchSize);
+				
+		Hashtable<String, String>htDescriptors=calc.getDescriptorTsvForSmiles(setQsarSmiles, descriptorSetName);
+		String datasetTsv=ModelData.getInstancesByQsarSmiles(htDescriptors, descriptorSetName);
+
+
+		double factor=10.0;
+		
+		List<MappedPropertyValue>discardedAll=new ArrayList<>();
+		
 		if(excludeBasedOnPredictedWS) {
-			int removed=ChangeKeptPropertyValues.removeBasedOnPredictedWS(datasetNameOriginal, unifiedPropertyValues);
-			System.out.println("Removed based on predicted WS="+removed);
+			List<MappedPropertyValue>discarded=ChangeKeptPropertyValues.removeBasedOnPredictedWS2(datasetTsv, unifiedPropertyValues, factor);
+			System.out.println("Removed based on predicted WS="+discarded.size());
+			discardedAll.addAll(discarded);
 		}
 		
 		if(excludeBasedOnBaselineToxicity) {
-			int removed=ChangeKeptPropertyValues.removeBasedOnBaselineToxicity(datasetNameOriginal, unifiedPropertyValues, typeAnimal);
-			System.out.println("Removed based on baseline toxicity="+removed);
+			List<MappedPropertyValue>discarded=ChangeKeptPropertyValues.removeBasedOnBaselineToxicity2(datasetTsv, unifiedPropertyValues, typeAnimal);
+			System.out.println("Removed based on baseline toxicity="+discarded.size());
+			discardedAll.addAll(discarded);
 		}
+		return discardedAll;
 	}
+	
+	
+	private Map<String, List<MappedPropertyValue>>checkMappedPropertyValuesBCF(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, boolean excludeBasedOnWaterConcentration, boolean excludeBasedOnDuration) {
+
+		Set<String>setQsarSmiles=unifiedPropertyValues.keySet();
+		
+		String server ="https://cim-dev.sciencedataexperts.com";
+		SciDataExpertsDescriptorValuesCalculator calc=new SciDataExpertsDescriptorValuesCalculator(server, "tmarti02");
+		
+		boolean writeToDB=true;
+		int batchSize=1;
+		String descriptorSetName="WebTEST-default";
+		//add any missing descriptor values to database:
+		calc.calculateDescriptors_useSqlToExcludeExisting(setQsarSmiles, descriptorSetName, writeToDB, batchSize);
+				
+		Hashtable<String, String>htDescriptors=calc.getDescriptorTsvForSmiles(setQsarSmiles, descriptorSetName);
+		String datasetTsv=ModelData.getInstancesByQsarSmiles(htDescriptors, descriptorSetName);
+//		System.out.println(datasetTsv);
+		
+		ChangeKeptPropertyValues.addPredictedWaterSolubilityAsParameter(datasetTsv, unifiedPropertyValues);
+		ChangeKeptPropertyValues.addT80_From_PredictedLogKow(datasetTsv, unifiedPropertyValues);
+				
+		List<MappedPropertyValue>propertyValuesRemovedAll=new ArrayList<>();
+		
+		if(excludeBasedOnWaterConcentration) {
+			boolean skipMissing=false;//ECHA REACH doesnt have water conc. field
+			double factor=10;//remove if concentration > factor * water solubility
+			List<MappedPropertyValue>propertyValuesRemoved=ChangeKeptPropertyValues.removeBasedOnWaterConcentrationAndPredictedWS2(datasetTsv, unifiedPropertyValues, factor, skipMissing);
+			System.out.println("\nRemoved based on predicted WS="+propertyValuesRemoved.size()+"\n");
+			propertyValuesRemovedAll.addAll(propertyValuesRemoved);
+		}
+		
+		if(excludeBasedOnDuration) {
+			boolean skipMissing=false;
+			double factor=10;//remove if concentration > factor * water solubility
+			List<MappedPropertyValue>propertyValuesRemoved=ChangeKeptPropertyValues.removeBasedOnExposureDurationAndPredictedLogKow(datasetTsv, unifiedPropertyValues, factor, skipMissing);
+			System.out.println("\nRemoved based on exposure duration="+propertyValuesRemoved.size()+"\n");
+			propertyValuesRemovedAll.addAll(propertyValuesRemoved);
+		}
+
+		System.out.println("\nRemoved based on both="+propertyValuesRemovedAll.size()+"\n");
+
+		Map<String, List<MappedPropertyValue>>removedMap=new HashMap<>();
+		
+		for (MappedPropertyValue mpv:propertyValuesRemovedAll) {
+			if(removedMap.containsKey(mpv.standardizedSmiles)) {
+				List<MappedPropertyValue>mpvs=removedMap.get(mpv.standardizedSmiles);
+				mpvs.add(mpv);
+			} else {
+				List<MappedPropertyValue>mpvs=new ArrayList<>();
+				mpvs.add(mpv);
+				removedMap.put(mpv.standardizedSmiles,mpvs);
+			}
+		}
+		
+		
+		return removedMap;
+	}
+
 
 
 
@@ -1021,9 +1231,13 @@ public class DatasetCreator {
 	 */
 	public Dataset createPropertyDatasetWithSpecifiedSources(DatasetParams params, boolean useStdevFilter,
 			List<String> includedSources) {
+		
+		
+		System.out.println("Finding standardized compounds...");
+		
 		HashMap<String, Compound> hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
 
-		System.out.println("Enter createPropertyDatasetWithSpecifiedSources");
+		
 		Dataset datasetDB = datasetService.findByName(params.datasetName);
 
 		if (datasetDB != null && postToDB) {
@@ -1095,8 +1309,10 @@ public class DatasetCreator {
 		}
 
 		
+		double factor=10.0;
+		
 		if(excludeBasedOnPredictedWS) {
-			int removed=ChangeKeptPropertyValues.removeBasedOnPredictedWS(datasetNameOriginal, propertyValues);
+			int removed=ChangeKeptPropertyValues.removeBasedOnPredictedWS(datasetNameOriginal, propertyValues, factor);
 			System.out.println("Removed based on predicted WS="+removed);
 			System.out.println("Remaining="+propertyValues.size());
 		}
@@ -1120,12 +1336,44 @@ public class DatasetCreator {
 	}
 	
 	
+	public Dataset createPropertyDatasetWithSpecifiedSources(DatasetParams params, boolean useStdevFilter,
+			List<String> includedSources, String parameterName,String parameterValue) {
+		
+//		HashMap<String, Compound> hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
+
+		System.out.println("Enter createPropertyDatasetWithSpecifiedSources");
+		Dataset datasetDB = datasetService.findByName(params.datasetName);
+
+		if (datasetDB != null && postToDB) {
+			System.out.println("already have " + params.datasetName + " in db");
+			return null;
+		}
+
+		System.out.println("Selecting experimental property data for " + params.propertyName + "...");
+		long t5 = System.currentTimeMillis();
+		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(params.propertyName,
+				true, true);
+		long t6 = System.currentTimeMillis();
+		System.out.println("Selection time = " + (t6 - t5) / 1000.0 + " s");
+
+		
+		excludePropertyValues2(includedSources, propertyValues);
+		if (includedSources.size() > 0)
+			System.out.println("Raw records after source exclusion:" + propertyValues.size());
+
+		
+		int removed=ChangeKeptPropertyValues.removeBasedOnParameterText(propertyValues, parameterName, parameterValue);
+		
+		return convertPropertyValuesToDatapoints(propertyValues, params, useStdevFilter);
+
+	}
+	
 	public Dataset createPropertyDatasetWithSpecifiedSources(String datasetNameOriginal, DatasetParams params, boolean useStdevFilter,
 			List<String> includedSources, boolean excludeBasedOnPredictedWS, 
 			boolean excludeBasedOnBaselineToxicity,Double observationDurationDays,
 			String speciesSupercategory, 
 			List<String> listSpeciesCommon, boolean excludeBasedOnConcentrationType,
-			String typeAnimal,boolean excludeModelBasedBeforeMapping) {
+			String typeAnimal) {
 		
 //		HashMap<String, Compound> hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
 
@@ -1179,30 +1427,99 @@ public class DatasetCreator {
 		}
 
 
-		if(excludeModelBasedBeforeMapping) {
-
-			if(excludeBasedOnPredictedWS) {
-				int removed=ChangeKeptPropertyValues.removeBasedOnPredictedWS(datasetNameOriginal, propertyValues);
-				System.out.println("Removed based on predicted WS="+removed);
-				System.out.println("Remaining="+propertyValues.size());
-			}
-			
-			if(excludeBasedOnBaselineToxicity) {
-				int removed=ChangeKeptPropertyValues.removeBasedOnBaselineToxicity(datasetNameOriginal, propertyValues, typeAnimal);
-				System.out.println("Removed based on baseline toxicity="+removed);
-				System.out.println("Remaining="+propertyValues.size());
-			}
-
-			return convertPropertyValuesToDatapoints(propertyValues, params, useStdevFilter);
-			
-		} else {
-			return convertPropertyValuesToDatapoints2(propertyValues, params, useStdevFilter,
-					excludeBasedOnPredictedWS,excludeBasedOnBaselineToxicity,typeAnimal,datasetNameOriginal);
-
+		if(excludeBasedOnPredictedWS) {
+			double factor=10.0;
+			int removed=ChangeKeptPropertyValues.removeBasedOnPredictedWS(datasetNameOriginal, propertyValues, factor);
+			System.out.println("Removed based on predicted WS="+removed);
+			System.out.println("Remaining="+propertyValues.size());
 		}
+		
+		if(excludeBasedOnBaselineToxicity) {
+			int removed=ChangeKeptPropertyValues.removeBasedOnBaselineToxicity(datasetNameOriginal, propertyValues, typeAnimal);
+			System.out.println("Removed based on baseline toxicity="+removed);
+			System.out.println("Remaining="+propertyValues.size());
+		}
+
+		return convertPropertyValuesToDatapoints(propertyValues, params, useStdevFilter);
 		
 
 	}
+	
+	
+	public Dataset createPropertyDatasetWithSpecifiedSourcesAcuteAquaticToxicity(DatasetParams params, boolean useStdevFilter,
+			List<String> includedSources, boolean excludeBasedOnPredictedWS, 
+			boolean excludeBasedOnBaselineToxicity,	String typeAnimal) {
+		
+//		HashMap<String, Compound> hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
+
+		System.out.println("Enter createPropertyDatasetWithSpecifiedSourcesAcuteAquaticToxicity");
+		Dataset datasetDB = datasetService.findByName(params.datasetName);
+
+		if (datasetDB != null && postToDB) {
+			System.out.println("already have " + params.datasetName + " in db");
+			return null;
+		}
+
+		System.out.println("Selecting experimental property data for " + params.propertyName + "...");
+		long t5 = System.currentTimeMillis();
+		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(params.propertyName,
+				true, true);
+		long t6 = System.currentTimeMillis();
+		System.out.println("Selection time = " + (t6 - t5) / 1000.0 + " s");
+
+		System.out.println("Raw records:" + propertyValues.size());
+		
+		
+		excludePropertyValues2(includedSources, propertyValues);
+		if (includedSources.size() > 0)
+			System.out.println("Raw records after source exclusion:" + propertyValues.size());
+
+		
+		System.out.println("Before removal, propertyValues.size()="+propertyValues.size());
+				
+		return convertPropertyValuesToDatapointsAcuteAquaticToxicity(propertyValues, params, useStdevFilter,
+				excludeBasedOnPredictedWS,excludeBasedOnBaselineToxicity,typeAnimal);
+	}
+	
+	
+	
+	public Dataset createPropertyDatasetWithSpecifiedSourcesBCF2(DatasetParams params, boolean useStdevFilter,
+			List<String> includedSources, boolean excludeBasedOnWaterConcentration, boolean excludeBasedOnExposureDuration) {
+		
+//		HashMap<String, Compound> hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
+
+		System.out.println("Enter createPropertyDatasetWithSpecifiedSources");
+		Dataset datasetDB = datasetService.findByName(params.datasetName);
+
+		if (datasetDB != null && postToDB) {
+			System.out.println("already have " + params.datasetName + " in db");
+			return null;
+		}
+
+		System.out.println("Selecting experimental property data for " + params.propertyName + "...");
+		long t5 = System.currentTimeMillis();
+		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(params.propertyName,
+				true, true);
+		long t6 = System.currentTimeMillis();
+		System.out.println("Selection time = " + (t6 - t5) / 1000.0 + " s");
+
+		System.out.println("Raw records:" + propertyValues.size());
+		
+		//Exclude property values if source(s) arent in includedSources:
+		excludePropertyValues2(includedSources, propertyValues);
+				
+		System.out.println("Raw records after source exclusion:" + propertyValues.size());
+		
+		//TODO normalize BCF values to 5% lipids, maybe convert dry to wet?
+		
+		
+		return convertPropertyValuesToDatapointsBCF(propertyValues, params, useStdevFilter,
+				excludeBasedOnWaterConcentration, excludeBasedOnExposureDuration);
+
+	}
+	
+	
+	
 	
 	
 	/**
@@ -1271,6 +1588,62 @@ public class DatasetCreator {
 		return convertPropertyValuesToDatapoints(propertyValues, params, useStdevFilter);
 
 	}
+	
+	
+	/**
+	 * Create dataset with data only from specified sources
+	 * 
+	 * @param params
+	 * @param useStdevFilter
+	 * @param includedSources
+	 * @return
+	 */
+	public Dataset createPropertyDatasetWithSpecifiedSourcesAndParameterValues(String datasetNameOriginal, 
+			DatasetParams params, boolean useStdevFilter,
+			List<String> includedSources, 
+			Map<String,List<String>>acceptableParameterValueMap, boolean omitIfMissingParameter) {
+		
+//		HashMap<String, Compound> hmQsarSmilesLookup = getQsarSmilesLookupFromDB();
+
+		System.out.println("Enter createPropertyDatasetWithSpecifiedSources");
+		Dataset datasetDB = datasetService.findByName(params.datasetName);
+
+		if (datasetDB != null && postToDB) {
+			System.out.println("already have " + params.datasetName + " in db");
+			return null;
+		}
+
+		System.out.println("Selecting experimental property data for " + params.propertyName + "...");
+		long t5 = System.currentTimeMillis();
+		List<PropertyValue> propertyValues = propertyValueService.findByPropertyNameWithOptions(params.propertyName,
+				true, true);
+		long t6 = System.currentTimeMillis();
+		System.out.println("Selection time = " + (t6 - t5) / 1000.0 + " s");
+
+		System.out.println("Raw records:" + propertyValues.size());
+		excludePropertyValues2(includedSources, propertyValues);
+		if (includedSources.size() > 0)
+			System.out.println("Raw records after source exclusion:" + propertyValues.size());
+
+		
+		System.out.println("Before removal, propertyValues.size()="+propertyValues.size());
+		
+		for(String parameterName:acceptableParameterValueMap.keySet()) {
+			List<String>acceptableParameterValues=acceptableParameterValueMap.get(parameterName);
+			int removed=ChangeKeptPropertyValues.removeBasedOnParameterText(propertyValues, parameterName, acceptableParameterValues, omitIfMissingParameter);
+			System.out.println("Removed based on " +parameterName + "=" + removed);
+		}
+		
+		System.out.println("Remaining="+propertyValues.size());
+		
+//		int removed=ChangeKeptPropertyValues.removeBasedOnWaterConcentrationAndPredictedWS(datasetNameOriginal, propertyValues);
+//		ChangeKeptPropertyValues.removeBasedOnExposureDurationAndPredictedLogKow(datasetNameOriginal, propertyValues);
+
+		
+		//Check Water solubility, exposure duration... 
+		return convertPropertyValuesToDatapoints(propertyValues, params, useStdevFilter);
+
+	}
 
 
 	/**
@@ -1294,18 +1667,27 @@ public class DatasetCreator {
 			}
 
 			if (pv.getPublicSource() != null) {
-				if (excludedSources.contains(pv.getPublicSource().getName()))
+				if (excludedSources.contains(pv.getPublicSource().getName())) {
 					propertyValues.remove(i--);
+					
+//					if(!pv.getPublicSource().getName().contains("OPERA"))					
+//						System.out.println("Excluded by PS:"+pv.getPublicSource().getName());
+				}
 			}
 
 			if (pv.getPublicSourceOriginal() != null) {
-				if (excludedSources.contains(pv.getPublicSourceOriginal().getName()))
+				if (excludedSources.contains(pv.getPublicSourceOriginal().getName())) {
 					propertyValues.remove(i--);
+//					System.out.println("Excluded by PS original:"+pv.getPublicSource().getName());
+				}
 			}
 
 			if (pv.getLiteratureSource() != null) {
-				if (excludedSources.contains(pv.getLiteratureSource().getName()))
+				if (excludedSources.contains(pv.getLiteratureSource().getName())) {
 					propertyValues.remove(i--);
+//					System.out.println("Excluded by LS:"+pv.getPublicSource().getName());
+
+				}
 			}
 		}
 	}
@@ -1409,7 +1791,7 @@ public class DatasetCreator {
 		String datasetFolderPath = DevQsarConstants.OUTPUT_FOLDER_PATH + File.separator + datasetFileName;
 		JsonArray jaAll = makeJsonArrayFromUnifiedRecords(unifiedPropertyValues, unit, keys);
 		String filePathJson = datasetFolderPath + "/" + datasetFileName + "_Mapped_Records.json";
-		Utilities.saveJson(jaAll, filePathJson.replace(".xlsx", ".json"));// Save to json first in case excel writing
+		JsonUtilities.saveJson(jaAll, filePathJson.replace(".xlsx", ".json"));// Save to json first in case excel writing
 																			// fails
 
 		if (!createExcel)
@@ -1418,7 +1800,7 @@ public class DatasetCreator {
 		int max = 50000;
 		int fileNum = 1;
 		
-		System.out.println("\n"+datasetFolderPath+"\n"); 
+		System.out.println("\n"+new File(datasetFolderPath).getAbsolutePath()+"\n"); 
 
 		while (keys.size() > 0) {
 
@@ -1448,10 +1830,137 @@ public class DatasetCreator {
 				break;
 		}
 	}
+	
+	public void saveRemovedUnifiedData(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, String datasetName,
+			Unit unit, boolean createExcel) {
+//		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, false);
+
+		System.out.println("Enter saveUnifiedData - creates excel file for mapped records");
+
+		String []fields = createFieldsArray(unifiedPropertyValues);
+		
+
+		List<String> keys = new ArrayList<>();
+
+		for (String key : unifiedPropertyValues.keySet()) {
+			keys.add(key);
+		}
+
+		String datasetFileName = datasetName.replaceAll("[^A-Za-z0-9-_]+", "_");
+		String datasetFolderPath = DevQsarConstants.OUTPUT_FOLDER_PATH + File.separator + datasetFileName;
+		JsonArray jaAll = makeJsonArrayFromUnifiedRecords(unifiedPropertyValues, unit, keys);
+		String filePathJson = datasetFolderPath + "/" + datasetFileName + "_Removed_Mapped_Records.json";
+		JsonUtilities.saveJson(jaAll, filePathJson.replace(".xlsx", ".json"));// Save to json first in case excel writing
+																			// fails
+
+		if (!createExcel)
+			return;
+
+		int max = 50000;
+		int fileNum = 1;
+		
+		System.out.println("\n"+new File(datasetFolderPath).getAbsolutePath()+"\n"); 
+
+		while (keys.size() > 0) {
+
+			List<String> keys2 = new ArrayList<>();
+
+			for (int i = 1; i <= max; i++) {
+				keys2.add(keys.remove(0));
+				if (keys.size() == 0)
+					break;
+			}
+
+			JsonArray ja = makeJsonArrayFromUnifiedRecords(unifiedPropertyValues, unit, keys2);
+
+			try {
+				String filePath = null;
+				if (keys.size() < max) {
+					filePath = datasetFolderPath + "/" + datasetFileName + "_Removed_Mapped_Records.xlsx";
+				} else {
+					filePath = datasetFolderPath + "/" + datasetFileName + "_Removed_Mapped_Records" + fileNum + ".xlsx";
+				}
+				ExcelCreator.createExcel2(ja, filePath, fields, null);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			fileNum++;
+			if (keys.size() == 0)
+				break;
+		}
+	}
+	
+	
+	/**
+	 * Saves mapped data as json and xlsx
+	 * 
+	 * @param unifiedPropertyValues
+	 * @param datasetName
+	 * @param unit
+	 * @param createExcel
+	 */
+	public void saveDiscarded2(Map<String, List<MappedPropertyValue>> unifiedPropertyValues, String datasetName,
+			Unit unit, boolean createExcel) {
+//		Map<String, List<MappedPropertyValue>> unifiedPropertyValues = unifyPropertyValuesByStructure(mappedPropertyValues, false);
+
+		System.out.println("Enter saveUnifiedData - creates excel file for mapped records");
+
+		String []fields = createFieldsArray(unifiedPropertyValues);
+		
+
+		List<String> keys = new ArrayList<>();
+
+		for (String key : unifiedPropertyValues.keySet()) {
+			keys.add(key);
+		}
+
+		String datasetFileName = datasetName.replaceAll("[^A-Za-z0-9-_]+", "_");
+		String datasetFolderPath = DevQsarConstants.OUTPUT_FOLDER_PATH + File.separator + datasetFileName;
+		JsonArray jaAll = makeJsonArrayFromUnifiedRecords(unifiedPropertyValues, unit, keys);
+		String filePathJson = datasetFolderPath + "/" + datasetFileName + "_Discarded_Mapped_Records.json";
+		JsonUtilities.saveJson(jaAll, filePathJson);
+
+		if (!createExcel)
+			return;
+
+		int max = 50000;
+		int fileNum = 1;
+		
+		System.out.println("\n"+new File(datasetFolderPath).getAbsolutePath()+"\n"); 
+
+		while (keys.size() > 0) {
+
+			List<String> keys2 = new ArrayList<>();
+
+			for (int i = 1; i <= max; i++) {
+				keys2.add(keys.remove(0));
+				if (keys.size() == 0)
+					break;
+			}
+
+			JsonArray ja = makeJsonArrayFromUnifiedRecords(unifiedPropertyValues, unit, keys2);
+
+			try {
+				String filePath = null;
+				if (keys.size() < max) {
+					filePath = datasetFolderPath + "/" + datasetFileName + "_Discarded_Mapped_Records.xlsx";
+				} else {
+					filePath = datasetFolderPath + "/" + datasetFileName + "_Discarded_Mapped_Records" + fileNum + ".xlsx";
+				}
+				ExcelCreator.createExcel2(ja, filePath, fields, null);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			fileNum++;
+			if (keys.size() == 0)
+				break;
+		}
+	}
+
 
 	private String [] createFieldsArray(Map<String, List<MappedPropertyValue>> unifiedPropertyValues) {
 		
-		List<String> fields = new ArrayList<String>(Arrays.asList("canon_qsar_smiles", "exp_prop_id", "source_chemical_id", "source_dtxrid", "source_dtxsid",
+		List<String> fields = new ArrayList<String>(Arrays.asList("keep_reason","canon_qsar_smiles", "exp_prop_id", "source_chemical_id", "source_dtxrid", "source_dtxsid",
 				"source_dtxcid", "source_casrn", "source_smiles", "source_chemical_name", "mapped_dtxcid",
 				"mapped_dtxsid", "mapped_chemical_name", "mapped_cas", "mapped_smiles", "mapped_molweight",
 				"mapped_connection_reason", "public_source_name", "public_source_description", "public_source_url",
@@ -1551,6 +2060,7 @@ public class DatasetCreator {
 
 		
 		jo.addProperty("property_name", pv.getProperty().getName());
+		jo.addProperty("keep_reason", pv.getKeepReason());
 		
 		jo.addProperty("canon_qsar_smiles", structure);
 		jo.addProperty("exp_prop_id", String.valueOf(pv.getId()));
@@ -1617,9 +2127,7 @@ public class DatasetCreator {
 			
 			if(name.equals("Temperature")) {
 				jo.addProperty("temperature_c", parameterValue.getValuePointEstimate());
-				
 //				System.out.println("tempc="+parameterValue.getValuePointEstimate());
-				
 			} else if(name.equals("Pressure")) {
 				jo.addProperty("pressure_mmHg", parameterValue.getValuePointEstimate());
 			} else if(name.equals("pH")) {
@@ -1627,9 +2135,18 @@ public class DatasetCreator {
 			} else if(parameterValue.getUnit().getName().equals("TEXT")) {
 				jo.addProperty(name, parameterValue.getValueText());	
 			} else if(parameterValue.getValuePointEstimate()!=null) {
-				jo.addProperty(name, parameterValue.getValuePointEstimate());
+				jo.addProperty(name, parameterValue.getValuePointEstimate()+" "+parameterValue.getUnit().getAbbreviation());
 //				System.out.println(structure+"\t"+name+"\t"+parameterValue.getValuePointEstimate()+"\t"+parameterValue.getValueText()+"\t"+parameterValue.getUnit().getName());
+			} else if(parameterValue.getValueMin()!=null && parameterValue.getValueMax()!=null) {
+				jo.addProperty(name, parameterValue.getValueMin()+" - "+ parameterValue.getValueMax() +" "+parameterValue.getUnit().getAbbreviation());
+			} else if(parameterValue.getValueMin()!=null) {
+				jo.addProperty(name, parameterValue.getValueMin()+" "+parameterValue.getUnit().getAbbreviation());
+			} else if(parameterValue.getValueMax()!=null) {
+				jo.addProperty(name, parameterValue.getValueMax()+" "+parameterValue.getUnit().getAbbreviation());
+			} else if(parameterValue.getValueText()!=null) {
+				jo.addProperty(name, parameterValue.getValueText());
 			} else {//TODO
+				
 			}
 
 		}

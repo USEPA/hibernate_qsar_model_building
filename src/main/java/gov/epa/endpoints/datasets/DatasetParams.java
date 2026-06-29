@@ -22,6 +22,8 @@ public class DatasetParams {
 		public boolean omitOpsinAmbiguousNames;
 		public boolean omitUvcbKeywords;
 		public boolean omitSalts;
+		public String qsarReadyRuleSet;
+		
 		public boolean validateStructure;//set to false when we are just creating a dataset for exposing raw data to dashboard
 //		public boolean validatePropertyValue;
 		
@@ -101,7 +103,7 @@ public class DatasetParams {
 	 * @return
 	 */
 	public ExplainedResponse testParameterValues(PropertyValue propertyValue) {
-		if (mappingParams.boundsParameterValues==null) {
+		if (mappingParams.boundsParameterValues==null || mappingParams.boundsParameterValues.size()==0) {
 			// If no parameter value bounds, don't eliminate anything
 			return new ExplainedResponse(true, "No bounds to test");
 		}

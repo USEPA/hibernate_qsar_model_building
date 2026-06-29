@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -14,22 +17,14 @@ import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPoint;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.DataPointInSplitting;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Dataset;
 import gov.epa.databases.dev_qsar.qsar_datasets.entity.Splitting;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointInSplittingServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DataPointServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.DatasetServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingService;
 import gov.epa.databases.dev_qsar.qsar_datasets.service.SplittingServiceImpl;
-import gov.epa.databases.dev_qsar.qsar_descriptors.entity.DescriptorValues;
-import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesService;
-import gov.epa.databases.dev_qsar.qsar_descriptors.service.DescriptorValuesServiceImpl;
 import gov.epa.endpoints.models.ModelData;
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.web_services.SplittingWebService;
 import gov.epa.web_services.SplittingWebService.SplittingCalculationResponse;
-import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 
 public class Splitter {
@@ -38,11 +33,11 @@ public class Splitter {
 	private Splitting splitting;
 	private String lanId;
 	
-	private SplittingService splittingService = new SplittingServiceImpl();
-	private DatasetService datasetService = new DatasetServiceImpl();
-	private DescriptorValuesService descriptorValuesService = new DescriptorValuesServiceImpl();
-	private DataPointService dataPointService = new DataPointServiceImpl();
-	private static DataPointInSplittingService dataPointInSplittingService = new DataPointInSplittingServiceImpl();
+	private SplittingServiceImpl splittingService = new SplittingServiceImpl();
+	private DatasetServiceImpl datasetService = new DatasetServiceImpl();
+//	private DescriptorValuesServiceImpl descriptorValuesService = new DescriptorValuesServiceImpl();
+	private DataPointServiceImpl dataPointService = new DataPointServiceImpl();
+	private static DataPointInSplittingServiceImpl dataPointInSplittingService = new DataPointInSplittingServiceImpl();
 	
 	public Splitter(SplittingWebService splittingWebService, String lanId) {
 		// Set logging providers for Hibernate and MChange
@@ -85,7 +80,98 @@ public class Splitter {
 		split(dataset.getName(), descriptorSetName,n_threads);
 	}
 	
-	public void split(String datasetName, String descriptorSetName, int n_threads) {
+	
+	
+	private  Hashtable<Integer,List<String>> createSplitHashtable(List<String> ids, int numSplits) {
+		Hashtable<Integer,List<String>>htSplits=new Hashtable<>();
+
+		
+		while (true) {
+			for (int fold=1;fold<=numSplits;fold++) {
+
+				if(htSplits.get(fold)==null) {
+					List<String>ids_i=new ArrayList<>();
+					htSplits.put(fold, ids_i);
+					ids_i.add(ids.remove(0));
+				} else {
+					List<String>ids_i=htSplits.get(fold);
+					ids_i.add(ids.remove(0));
+				}
+				
+				if(ids.size()==0) {
+					return htSplits;
+				}
+
+			}
+		}
+		
+	}
+	
+	public void splitCV(String datasetName, int numSplits) {
+
+		Dataset dataset=datasetService.findByName(datasetName);
+		
+//		System.out.println(countDPIS);
+
+		String modelSplitting=DevQsarConstants.SPLITTING_RND_REPRESENTATIVE;
+		Splitting splittingModel=splittingService.findByName(modelSplitting);
+		
+		List<String>ids=ModelData.getTrainingIds(dataset, splittingModel, false);
+		Collections.shuffle(ids);
+		
+//		for (String id:ids) {
+//			System.out.println(id);
+//		}
+//		System.out.println(idCount);
+		
+		Hashtable<Integer,List<String>>htSplits=createSplitHashtable(ids, numSplits);
+		
+		
+		List<DataPoint> dataPoints = 
+				dataPointService.findByDatasetName(dataset.getName());
+
+		Map<String, DataPoint> dpMap = dataPoints.stream()
+				.collect(Collectors.toMap(dp -> dp.getCanonQsarSmiles(), dp -> dp));
+
+		for (int fold=1;fold<=numSplits;fold++) {
+			
+			List<String>idsTrain=new ArrayList<>();
+			List<String>idsTest=new ArrayList<>();
+			
+			for (int i=1;i<=numSplits;i++) {
+				List<String>idsFold=htSplits.get(i);
+				
+				if (i!=fold) {
+					idsTrain.addAll(idsFold);						
+				} else {
+					idsTest.addAll(idsFold);
+				}
+			}
+			
+//			System.out.println(fold+"\t"+idsTrain.size()+"\t"+idsTest.size());
+			
+			Splitting splittingFold=splittingService.findByName(modelSplitting+"_CV"+fold);
+			List<DataPointInSplitting> dpisTrain = createDPIS(dpMap, idsTrain, splittingFold,DevQsarConstants.TRAIN_SPLIT_NUM);
+			List<DataPointInSplitting> dpisTest = createDPIS(dpMap, idsTest, splittingFold,DevQsarConstants.TEST_SPLIT_NUM);
+			
+//			System.out.println(fold+"\t"+dpisTrain.size()+"\t"+dpisTest.size());
+		}
+	}
+
+	
+	private List<DataPointInSplitting> createDPIS(Map<String, DataPoint> dpMap, List<String> idsSet,
+			Splitting splittingFold, int splitNum) {
+		List<DataPointInSplitting>dpisTrain=new ArrayList<>();
+		for(String id:idsSet) {
+			DataPointInSplitting dpis=new DataPointInSplitting(dpMap.get(id), splittingFold, splitNum, lanId);
+			dpisTrain.add(dpis);
+		}				
+		dataPointInSplittingService.createSQL(dpisTrain);
+		return dpisTrain;
+	}
+
+		
+	public String split(String datasetName, String descriptorSetName, int n_threads) {
 		System.out.println("Splitting " + datasetName);
 		List<DataPoint> dataPoints = dataPointService.findByDatasetName(datasetName);
 		
@@ -112,8 +198,8 @@ public class Splitter {
 	            splittingWebService.callCalculation(tsv, false, n_threads).getBody();
 	    
 	    if (splittingResponse==null) {
-	    	System.out.println("Splitting failed");
-	        return;
+	    	System.out.println("Splitting failed for "+datasetName);
+	        return "splitting failed";
 	    } else {
 	    	System.out.println("Splitting succeeded");
 //	    	if(true) return;
@@ -143,14 +229,21 @@ public class Splitter {
 	        	dpisList.add(dpis);	        	
 	        } else {
 	        	System.out.println("Cant create datapoint for smiles:"+smiles);
-	        	return;
+	        	return "Failed to create datapoint for smiles:"+smiles;
 	        }
 	    }
 	    dataPointInSplittingService.createSQL(dpisList);
 	    System.out.println("Training size: " + countTrain + ", test size:  " + countTest);
+	    
+	    return "splitting succeeded";
 	}
 	
-	
+	/**
+	 * Just clones the REPRESENTATIVE_SPLIT (fk_splitting_id=1)
+	 * @param datasetNameSrc
+	 * @param datasetNameDest
+	 * @param lanId
+	 */
 	public static void cloneSplit(String datasetNameSrc,String datasetNameDest,String lanId) {
 
 		System.out.println("Splitting " + datasetNameDest);
@@ -208,6 +301,88 @@ public class Splitter {
 	    
 	}
 	
+	
+	public static void cloneAllSplits(String datasetNameSrc, String datasetNameDest, String lanId, boolean writeToDB) {
+
+	    System.out.println("Splitting " + datasetNameDest);
+
+	    String sqlDatasetSource = "select id from qsar_datasets.datasets where name='" + datasetNameSrc + "';";
+	    String sqlDatasetDest   = "select id from qsar_datasets.datasets where name='" + datasetNameDest + "';";
+
+	    String datasetIdSrc  = SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sqlDatasetSource);
+	    String datasetIdDest = SqlUtilities.runSQL(SqlUtilities.getConnectionPostgres(), sqlDatasetDest);
+	    System.out.println("Source dataset id: " + datasetIdSrc);
+	    System.out.println("Dest dataset id: " + datasetIdDest);
+
+	    // Clone ALL splits from source to destination for matching SMILES.
+	    // Skip rows that already exist in destination (avoid duplicates).
+	    String sqlDPIS =
+	        "select dp_dest.id as dest_dp_id, dpis_src.split_num, dpis_src.fk_splitting_id " +
+	        "from qsar_datasets.data_points dp_dest " +
+	        "join qsar_datasets.data_points dp_src " +
+	        "  on dp_dest.canon_qsar_smiles = dp_src.canon_qsar_smiles " +
+	        " and dp_src.fk_dataset_id = " + datasetIdSrc + " " +
+	        "join qsar_datasets.data_points_in_splittings dpis_src " +
+	        "  on dp_src.id = dpis_src.fk_data_point_id " +
+	        "left join qsar_datasets.data_points_in_splittings dpis_dest " +
+	        "  on dpis_dest.fk_data_point_id = dp_dest.id " +
+	        " and dpis_dest.fk_splitting_id = dpis_src.fk_splitting_id " +
+	        "where dp_dest.fk_dataset_id = " + datasetIdDest + " " +
+	        "  and dpis_dest.fk_data_point_id is null " + // only new pairs
+	        "order by dpis_src.fk_splitting_id, dp_dest.id;";
+	    
+	    System.out.println(sqlDPIS);
+	    
+
+	    ResultSet rs = SqlUtilities.runSQL2(SqlUtilities.getConnectionPostgres(), sqlDPIS);
+
+	    try {
+	        List<DataPointInSplitting> dpisList = new ArrayList<>();
+
+	        // Track counts per splitting id: [0] = train (split_num==0), [1] = test (split_num==1)
+	        Map<Long, int[]> countsBySplitId = new LinkedHashMap<>();
+
+	        while (rs.next()) {
+	            long destDpId      = rs.getLong(1);
+	            int splitNum       = rs.getInt(2);
+	            long splittingId   = rs.getLong(3);
+
+	            // Build objects for insertion
+	            DataPoint dp = new DataPoint();
+	            dp.setId(destDpId);
+
+	            Splitting splitting = new Splitting();
+	            splitting.setId(splittingId);
+
+	            DataPointInSplitting dpis = new DataPointInSplitting(dp, splitting, splitNum, lanId);
+	            dpisList.add(dpis);
+
+	            // Count by splitting id
+	            int[] cnt = countsBySplitId.computeIfAbsent(splittingId, k -> new int[2]);
+	            if (splitNum == 0) cnt[0]++; // train
+	            if (splitNum == 1) cnt[1]++; // test
+	        }
+
+	        // Report counts
+	        if (countsBySplitId.isEmpty()) {
+	            System.out.println("No new split assignments to clone (all up to date or no matches).");
+	        } else {
+	            for (Map.Entry<Long, int[]> e : countsBySplitId.entrySet()) {
+	                long splittingId = e.getKey();
+	                int[] cnt = e.getValue();
+	                System.out.println("Splitting " + splittingId + " -> Training size: " + cnt[0] + ", test size: " + cnt[1]);
+	            }
+	        }
+
+	        // Bulk insert
+	        if (!dpisList.isEmpty() && writeToDB) {
+	            dataPointInSplittingService.createSQL(dpisList);
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+	}
+	
 	public void unsplit(String datasetName) {
 		List<DataPointInSplitting> dataPointsInSplitting = 
 				dataPointInSplittingService.findByDatasetNameAndSplittingName(datasetName, splittingWebService.splittingName);
@@ -235,5 +410,6 @@ public class Splitter {
 //			splitter.unsplit(l);
 		}
 	}
+
 
 }

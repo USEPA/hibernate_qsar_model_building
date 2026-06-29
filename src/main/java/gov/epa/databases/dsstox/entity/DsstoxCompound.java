@@ -1,6 +1,7 @@
 package gov.epa.databases.dsstox.entity;
 
 import java.util.Date;
+import java.util.Hashtable;
 import java.util.List;
 
 import jakarta.persistence.Basic;
@@ -22,6 +23,8 @@ import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.google.gson.annotations.SerializedName;
+
+import gov.epa.util.StructureUtil.APIMolecule;
 
 @Entity
 @Table(name="compounds")
@@ -160,6 +163,30 @@ public class DsstoxCompound {
     private List<CompoundRelationship> predecessorRelationships;
 	
 	public DsstoxCompound() {}
+
+	
+	public DsstoxCompound(APIMolecule apiMolecule) {
+		this.molFile=apiMolecule.strStructure;
+		this.dsstoxCompoundId = (String)apiMolecule.htProperties.get("DTXCID");
+		this.indigoInchikey = (String)apiMolecule.htProperties.get("INCHIKEY");
+		this.acdIupacName = (String)apiMolecule.htProperties.get("IUPAC_NAME");
+		this.smiles = (String)apiMolecule.htProperties.get("SMILES");
+		this.molFormula = (String)apiMolecule.htProperties.get("MOLECULAR_FORMULA");
+		
+		if (apiMolecule.htProperties.get("AVERAGE_MASS")!=null)		
+			this.molWeight = Double.parseDouble((String)apiMolecule.htProperties.get("AVERAGE_MASS"));
+		
+		this.genericSubstanceCompound=new GenericSubstanceCompound();
+		GenericSubstance gs=new GenericSubstance();
+		gs.setDsstoxSubstanceId((String)apiMolecule.htProperties.get("DTXSID"));
+		gs.setPreferredName((String)apiMolecule.htProperties.get("PREFERRED_NAME"));
+		gs.setCasrn((String)apiMolecule.htProperties.get("CASRN"));
+		this.genericSubstanceCompound.setGenericSubstance(gs);
+
+	}
+	
+	
+	
 
 	public Long getId() {
 		return id;

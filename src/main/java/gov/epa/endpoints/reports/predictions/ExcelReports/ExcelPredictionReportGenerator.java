@@ -60,7 +60,7 @@ import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportDa
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelMetadata;
 import gov.epa.endpoints.reports.predictions.PredictionReport.PredictionReportModelStatistic;
 import gov.epa.run_from_java.scripts.GetExpPropInfo.ExcelCreator;
-import gov.epa.run_from_java.scripts.GetExpPropInfo.Utilities;
+import gov.epa.util.JsonUtilities;
 
 
 public class ExcelPredictionReportGenerator {
@@ -234,7 +234,7 @@ public class ExcelPredictionReportGenerator {
 	
 	JsonArray addExperimentalRecordsSheet(Workbook wb,String jsonPath) {
 		
-		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
+		JsonArray ja=JsonUtilities.getJsonArrayFromJsonFile(jsonPath);
 		
 		Hashtable<String,String>htDescriptions=ExcelCreator.getColumnDescriptions();
 		
@@ -249,8 +249,8 @@ public class ExcelPredictionReportGenerator {
 	
 	String [] getMappedRecordsFields (JsonArray ja) {
 		List<String> fieldsMappedRecords =new ArrayList<String> (Arrays.asList( "exp_prop_id", "canon_qsar_smiles", "page_url", 			
-				"public_source_name","public_source_url",
-				"public_source_original_name","public_source_original_url",
+				"public_source_name","public_source_url","public_source_description",
+				"public_source_original_name","public_source_original_url","public_source_original_description",
 				"literature_source_citation","literature_source_doi",
 //				"source_url", "source_doi",	"source_name", "source_description", "source_authors", "source_title", 
 				"source_dtxrid","source_dtxsid", "source_casrn", "source_chemical_name", "source_smiles", 
@@ -285,7 +285,7 @@ public class ExcelPredictionReportGenerator {
 	
 	JsonArray addExperimentalRecordsSheet(Workbook wb,String jsonPath,HashSet<String>smilesList) {
 		
-		JsonArray ja=Utilities.getJsonArrayFromJsonFile(jsonPath);
+		JsonArray ja=JsonUtilities.getJsonArrayFromJsonFile(jsonPath);
 		
 		for (int i=0;i<ja.size();i++) {
 			JsonObject jo=ja.get(i).getAsJsonObject();
