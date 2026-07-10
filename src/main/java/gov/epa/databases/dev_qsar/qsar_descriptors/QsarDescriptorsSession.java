@@ -6,6 +6,8 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistry;
 
+import gov.epa.run_from_java.scripts.SqlUtilities;
+
 public class QsarDescriptorsSession {
 	private static SessionFactory sessionFactory = null;
  
@@ -19,11 +21,16 @@ public class QsarDescriptorsSession {
         	
         	config.setProperty("hibernate.connection.driver_class", "org.postgresql.Driver");
         	
-        	config.setProperty("hibernate.connection.url","jdbc:postgresql://"+System.getenv("DEV_QSAR_HOST")
-        	+ ":" + System.getenv("DEV_QSAR_PORT")
-        	+ "/" + System.getenv("DEV_QSAR_DATABASE") + "?currentSchema=qsar_descriptors");
-            config.setProperty("hibernate.connection.username", System.getenv("DEV_QSAR_USER"));
-            config.setProperty("hibernate.connection.password", System.getenv("DEV_QSAR_PASS"));
+String host = SqlUtilities.getEnv("DEV_QSAR_HOST");
+        String port = SqlUtilities.getEnv("DEV_QSAR_PORT");
+        String database = SqlUtilities.getEnv("DEV_QSAR_DATABASE");
+        String user = SqlUtilities.getEnv("DEV_QSAR_USER");
+        String password = SqlUtilities.getEnv("DEV_QSAR_PASS");
+		config.setProperty("hibernate.connection.url","jdbc:postgresql://"+host
+        	+ ":" + port
+        	+ "/" + database + "?currentSchema=qsar_descriptors");
+            config.setProperty("hibernate.connection.username", user);
+            config.setProperty("hibernate.connection.password", password);
             
         	config.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
         	config.setProperty("hibernate.current_session_context_class", "thread");

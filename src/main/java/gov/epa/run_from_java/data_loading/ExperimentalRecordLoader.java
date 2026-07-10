@@ -39,6 +39,8 @@ public class ExperimentalRecordLoader {
 	boolean debug = false;
 	String lanId;
 
+	String dataGatheringRoot = SqlUtilities.getEnv("DATA_GATHERING_ROOT");
+
 	ExperimentalRecordLoader(String lanId) {
 		this.lanId = lanId;
 		pvc = new PropertyValueCreator(lanId, debug);
@@ -509,17 +511,21 @@ public class ExperimentalRecordLoader {
 
 			boolean createDBEntries = false;
 
-			loadBCFArnot(propertyName, createDBEntries);
-//			loadBCFDataEcotox(propertyName, createDBEntries);
-//			loadBCFDataBurkhard(propertyName, createDBEntries);
+			// loadBCFArnot(propertyName, createDBEntries);
+			// loadBCFDataEcotox(propertyName, createDBEntries);
+			// loadBCFDataBurkhard(propertyName, createDBEntries);
 			
-//			loadBCF_QSAR_Toolbox(propertyName, "Bioconcentration and logKow NITE v.4.8.2", createDBEntries);//need to run
-//			loadBCF_QSAR_Toolbox(propertyName, "BCFBAF ECHA REACH v.4.8.2", createDBEntries);//need to run
-//			loadBCF_QSAR_Toolbox(propertyName, "bioaccumulation fish CEFIC LRI v.4.8.2", createDBEntries);//need to run
+			// loadBCF_QSAR_Toolbox(propertyName, "Bioconcentration and logKow NITE v.4.8.2", createDBEntries);//need to run
+			// loadBCF_QSAR_Toolbox(propertyName, "BCFBAF ECHA REACH v.4.8.2", createDBEntries);//need to run
+			// loadBCF_QSAR_Toolbox(propertyName, "bioaccumulation fish CEFIC LRI v.4.8.2", createDBEntries);//need to run
+			loadBCF_QSAR_Toolbox(propertyName, "bioaccumulation canada v.4.8.2", createDBEntries);//need to run
+			
+			// TODO: write this method
+			// loadBCFDataITRC(propertyName, createDBEntries);//need to run
 
-			//Do we want to load ITRC?
-//			sourcesAll.add(new Source("ITRC July 2023", "BCF ITRC"));
-//			sourcesAll.add(new Source("QSAR_Toolbox","bioaccumulation canada v.4.8.2"));
+			// Do we want to load ITRC?
+			// sourcesAll.add(new Source("ITRC July 2023", "BCF ITRC"));
+			// sourcesAll.add(new Source("QSAR_Toolbox","bioaccumulation canada v.4.8.2"));
 			
 		}
 
@@ -691,11 +697,15 @@ public class ExperimentalRecordLoader {
 
 			String sourceName = "Burkhard";
 
-			String mainFolder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
-			String filePath = mainFolder + "data\\experimental\\" + sourceName + "\\" + propertyName + "\\" + sourceName
-					+ " Experimental Records.json";
-			File jsonFile = new File(filePath);
-			System.out.println(filePath + "\t" + jsonFile.exists());
+			// String mainFolder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+			// String filePath = mainFolder + "data\\experimental\\" + sourceName + "\\" + propertyName + "\\" + sourceName
+			// 		+ " Experimental Records.json";
+			// File jsonFile = new File(filePath);
+			// System.out.println(filePath + "\t" + jsonFile.exists());
+
+			String filePath = getFilePath(sourceName, propertyName);
+			if (filePath == null)
+				return;
 
 			pvc.mapTables(sourceName);
 
@@ -742,13 +752,17 @@ public class ExperimentalRecordLoader {
 			String sourceName = "QSAR_Toolbox";
 			
 
-			String mainFolder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+			// String mainFolder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
 			
-			String filePath = mainFolder + "data\\experimental\\" + sourceName + "\\" + subfolder + "\\" + sourceName + " Experimental Records.json";
-			File jsonFile = new File(filePath);
-			System.out.println(filePath + "\t" + jsonFile.exists());
+			// String filePath = mainFolder + "data\\experimental\\" + sourceName + "\\" + subfolder + "\\" + sourceName + " Experimental Records.json";
+			// File jsonFile = new File(filePath);
+			// System.out.println(filePath + "\t" + jsonFile.exists());
 
-			if (!jsonFile.exists())
+			// if (!jsonFile.exists())
+			// 	return;
+
+			String filePath = getFilePath(sourceName, subfolder);
+			if (filePath == null)
 				return;
 
 			pvc.mapTables(sourceName);
@@ -794,14 +808,21 @@ public class ExperimentalRecordLoader {
 //			}
 			
 
-			String mainFolder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
-			String filePath = mainFolder + "data\\experimental\\" + sourceName + "\\" + propertyName + "\\" + sourceName
-					+ " Experimental Records.json";
-			File jsonFile = new File(filePath);
+			// String mainFolder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+			// String filePath = mainFolder + "data\\experimental\\" + sourceName + "\\" + propertyName + "\\" + sourceName
+			// 		+ " Experimental Records.json";
 
-			System.out.println(filePath + "\t" + jsonFile.exists());
+			// String dataGatheringRoot = SqlUtilities.getEnv("DATA_GATHERING_ROOT");
+			// String filePath = dataGatheringRoot + "data\\experimental\\" + sourceName + "\\" + propertyName + "\\" + sourceName + " Experimental Records.json";
+			// File jsonFile = new File(filePath);
 
-			if (!jsonFile.exists())
+			// System.out.println(filePath + "\t" + jsonFile.exists());
+
+			// if (!jsonFile.exists())
+			// 	return;
+
+			String filePath = getFilePath(sourceName, propertyName);
+			if (filePath == null)
 				return;
 
 			// **********************************************************************************************
@@ -877,14 +898,18 @@ public class ExperimentalRecordLoader {
 			String propertyName = DevQsarConstants.KOC;
 
 			String sourceName = "Koc List of Publications";
-			String mainFolder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
-			String filePath = mainFolder + "data\\experimental\\" + sourceName + "\\" + sourceName
-					+ " Experimental Records.json";
-			File jsonFile = new File(filePath);
+			// String mainFolder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+			// String filePath = mainFolder + "data\\experimental\\" + sourceName + "\\" + sourceName
+			// 		+ " Experimental Records.json";
+			// File jsonFile = new File(filePath);
 
-			System.out.println(filePath + "\t" + jsonFile.exists());
+			// System.out.println(filePath + "\t" + jsonFile.exists());
 
-			if (!jsonFile.exists())
+			// if (!jsonFile.exists())
+			// 	return;
+
+			String filePath = getFilePath(sourceName, sourceName);
+			if (filePath == null)
 				return;
 
 			// **********************************************************************************************
@@ -1420,12 +1445,16 @@ public class ExperimentalRecordLoader {
 //			String sourceName = "ECOTOX_2024_12_12";
 			String sourceName = "ECOTOX_2026_03_12";
 
-			String mainFolder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
-			String filePath = mainFolder + "data\\experimental\\" + sourceName + "\\" + propertyName + "\\" + sourceName
-					+ " Experimental Records.json";
-			File jsonFile = new File(filePath);
+			// String mainFolder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+			// String filePath = mainFolder + "data\\experimental\\" + sourceName + "\\" + propertyName + "\\" + sourceName
+			// 		+ " Experimental Records.json";
+			// File jsonFile = new File(filePath);
 
-			System.out.println(filePath + "\t" + jsonFile.exists());
+			// System.out.println(filePath + "\t" + jsonFile.exists());
+
+			String filePath = getFilePath(sourceName, propertyName);
+			if (filePath == null)
+				return;
 
 			pvc.mapTables(sourceName);
 
@@ -2214,12 +2243,38 @@ public class ExperimentalRecordLoader {
 			}
 		}
 
+		private String getFilePath(String sourceName, String propertyName) {
+			String dataGatheringRoot = SqlUtilities.getEnv("DATA_GATHERING_ROOT");
+			String filePath = dataGatheringRoot + "data\\experimental\\" + sourceName + "\\" + propertyName + "\\" + sourceName + " Experimental Records.json";
+			File jsonFile = new File(filePath);
+
+			System.out.println(filePath + "\t" + jsonFile.exists());
+
+			if (!jsonFile.exists())
+				return null;
+			
+			return filePath;
+		}
+
+		private String getFilePath(String sourceName, String propertyName, String subfolder) {
+			String dataGatheringRoot = SqlUtilities.getEnv("DATA_GATHERING_ROOT");
+			String filePath = dataGatheringRoot + "data\\experimental\\" + sourceName + "\\" + subfolder + "\\" + sourceName + " Experimental Records " + propertyName + ".json";
+			File jsonFile = new File(filePath);
+
+			System.out.println(filePath + "\t" + jsonFile.exists());
+
+			if (!jsonFile.exists())
+				return null;
+			
+			return filePath;
+		}
+
 	}
 
 	public static void main(String[] args) {
 
-		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("tmarti02");
-
+		// ExperimentalRecordLoader loader = new ExperimentalRecordLoader("tmarti02");
+		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("murdock.weston");
 
 		//*****************************************************************************
 //		String sourceName="RIFM_2026_01";

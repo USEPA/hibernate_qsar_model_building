@@ -1,8 +1,12 @@
 package gov.epa.run_from_java.scripts;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -50,11 +54,54 @@ public class SqlUtilities {
 
 	
 	private static Map<String, MongoDatabase> mongoPool = new HashMap<>();
-	
-	
-	
 
-	
+	public static String getEnv(String key) {
+		String value = System.getenv(key);
+		if (value != null && !value.isBlank()) {
+			return value;
+		}
+
+		value = System.getProperty(key);
+		if (value != null && !value.isBlank()) {
+			return value;
+		}
+
+		Path cwd = Paths.get("").toAbsolutePath().normalize();
+		Path[] candidates = { cwd, cwd.getParent() };
+		for (Path candidate : candidates) {
+			if (candidate == null) {
+				continue;
+			}
+			Path envFile = candidate.resolve(".env");
+			if (Files.exists(envFile)) {
+				try {
+					for (String line : Files.readAllLines(envFile)) {
+						String trimmed = line.trim();
+						if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+							continue;
+						}
+						int separatorIndex = trimmed.indexOf('=');
+						if (separatorIndex < 0) {
+							continue;
+						}
+						String envKey = trimmed.substring(0, separatorIndex).trim();
+						String envValue = trimmed.substring(separatorIndex + 1).trim();
+						if (envKey.equals(key)) {
+							if ((envValue.startsWith("\"") && envValue.endsWith("\""))
+									|| (envValue.startsWith("'") && envValue.endsWith("'"))) {
+								envValue = envValue.substring(1, envValue.length() - 1);
+							}
+							return envValue;
+						}
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return null;
+	}
+
 	/**
 	 * Gives you connection to Postgres database based on the environment variables
 	 * connPool allows the next call to be instantaneous
@@ -73,16 +120,16 @@ public class SqlUtilities {
 			e.printStackTrace();
 		}
 
-		String host = System.getenv().get("DEV_QSAR_HOST");
-		String port = System.getenv().get("DEV_QSAR_PORT");
-		String db = System.getenv().get("DEV_QSAR_DATABASE");
+		String host = getEnv("DEV_QSAR_HOST");
+		String port = getEnv("DEV_QSAR_PORT");
+		String db = getEnv("DEV_QSAR_DATABASE");
 
 		String url = "jdbc:postgresql://" + host + ":" + port + "/" + db;
 		
 //		System.out.println(url);
 		
-		String user = System.getenv().get("DEV_QSAR_USER");
-		String password = System.getenv().get("DEV_QSAR_PASS");
+		String user = getEnv("DEV_QSAR_USER");
+		String password = getEnv("DEV_QSAR_PASS");
 
 		try {
 			Connection conn = DriverManager.getConnection(url, user, password);
@@ -224,9 +271,9 @@ public class SqlUtilities {
 		}
 
 
-		String host = System.getenv().get("DSSTOX_HOST");
-		String port = System.getenv().get("DSSTOX_PORT");
-		String db = System.getenv().get("DSSTOX_DATABASE");
+		String host = getEnv("DSSTOX_HOST");
+		String port = getEnv("DSSTOX_PORT");
+		String db = getEnv("DSSTOX_DATABASE");
 
 
 		String url = "jdbc:mysql://" + host + ":" + port + "/" + db;
@@ -261,13 +308,13 @@ public class SqlUtilities {
 		}
 
 
-		String host = System.getenv().get("DSSTOX_HOST");
-		String port = System.getenv().get("DSSTOX_PORT");
+		String host = getEnv("DSSTOX_HOST");
+		String port = getEnv("DSSTOX_PORT");
 		String db = "prod_toxval_v93";
 
 		String url = "jdbc:mysql://" + host + ":" + port + "/" + db;
-		String user = System.getenv().get("DSSTOX_USER");
-		String password = System.getenv().get("DSSTOX_PASS");
+		String user = getEnv("DSSTOX_USER");
+		String password = getEnv("DSSTOX_PASS");
 
 		try {
 			Connection conn = DriverManager.getConnection(url, user, password);
@@ -292,12 +339,12 @@ public class SqlUtilities {
 			e.printStackTrace();
 		}
 
-		String host = System.getenv().get("MONGO_HOST");
-		String port = System.getenv().get("MONGO_PORT");
-		String user = System.getenv().get("MONGO_USER");
-		String password = System.getenv().get("MONGO_PASS");
-		String db = System.getenv().get("MONGO_DATABASE");
-		String replica_set = System.getenv().get("MONGO_REPLICA_SET");
+		String host = getEnv("MONGO_HOST");
+		String port = getEnv("MONGO_PORT");
+		String user = getEnv("MONGO_USER");
+		String password = getEnv("MONGO_PASS");
+		String db = getEnv("MONGO_DATABASE");
+		String replica_set = getEnv("MONGO_REPLICA_SET");
 
 //		List<ServerAddress> seeds = Arrays.asList(new ServerAddress(host, port));
 

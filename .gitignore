@@ -21,3 +21,4 @@ src/main/java/gov/epa/run_from_java/scripts/Rachel.java
 .idea/
 *.docx
 *.iml
+*.env

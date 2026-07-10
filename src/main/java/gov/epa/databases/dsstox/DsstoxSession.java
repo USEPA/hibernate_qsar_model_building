@@ -6,6 +6,8 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistry;
 import org.openscience.cdk.DefaultChemObjectBuilder;
+
+import gov.epa.run_from_java.scripts.SqlUtilities;
 import org.openscience.cdk.depict.DepictionGenerator;
 import org.openscience.cdk.smiles.SmilesParser;
 
@@ -34,13 +36,19 @@ public class DsstoxSession {
         	
         	config.setProperty("hibernate.connection.driver_class", "com.mysql.jdbc.Driver");
 
-            config.setProperty("hibernate.connection.url","jdbc:mysql://"+System.getenv("DSSTOX_HOST")
-            	+ ":" + System.getenv("DSSTOX_PORT")
-            	+ "/"+System.getenv("DSSTOX_DATABASE")+"?useSSL=false&amp;autoReconnect=true");//TMM 1/7/23 to suppress SSL warning
+            String host = SqlUtilities.getEnv("DSSTOX_HOST");
+            String port = SqlUtilities.getEnv("DSSTOX_PORT");
+            String database = SqlUtilities.getEnv("DSSTOX_DATABASE");
+            String user = SqlUtilities.getEnv("DSSTOX_USER");
+            String password = SqlUtilities.getEnv("DSSTOX_PASS");
+
+            config.setProperty("hibernate.connection.url","jdbc:mysql://"+host
+            	+ ":" + port
+            	+ "/"+database+"?useSSL=false&amp;autoReconnect=true");//TMM 1/7/23 to suppress SSL warning
             
             
-            config.setProperty("hibernate.connection.username", System.getenv("DSSTOX_USER"));
-            config.setProperty("hibernate.connection.password", System.getenv("DSSTOX_PASS"));
+            config.setProperty("hibernate.connection.username", user);
+            config.setProperty("hibernate.connection.password", password);
             
 //            System.out.println( System.getenv("DSSTOX_DATABASE"));
             

@@ -435,11 +435,12 @@ public class ParameterValueCreator {
 		if(rec.parameter_values!=null) {
 			for (ParameterValue parameterValue:rec.parameter_values) {
 				
-				if(parameterValue.getParameter().getName()==null || parameterValue.toString()==null) {
-					System.out.println(rec.id_physchem+"\tnull in parameterValue");
+				if(parameterValue.getParameter().getName() == null || parameterValue.toString() == null) {
+					System.out.println(rec.id_physchem+"\n\tNull value in parameter:"+"\n\t\tName:\t"+parameterValue.getParameter().getName()+"\n\t\tValue:\t"+parameterValue.toString());
+				} else {
+					rec.experimental_parameters.put(parameterValue.getParameter().getName(), parameterValue.toString());
 				}
-				
-				rec.experimental_parameters.put(parameterValue.getParameter().getName(),parameterValue.toString());
+				// rec.experimental_parameters.put(parameterValue.getParameter().getName(),parameterValue.toString());
 			}
 			rec.parameter_values=null;
 		}
