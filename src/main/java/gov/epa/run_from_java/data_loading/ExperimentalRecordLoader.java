@@ -509,16 +509,20 @@ public class ExperimentalRecordLoader {
 			String propertyName=DevQsarConstants.BCF;
 //			String propertyName = DevQsarConstants.BAF;
 
-			boolean createDBEntries = false;
+			boolean createDBEntries = true;
 
+			// Ran on 2026-07-14
 			// loadBCFArnot(propertyName, createDBEntries);
 			// loadBCFDataEcotox(propertyName, createDBEntries);
 			// loadBCFDataBurkhard(propertyName, createDBEntries);
 			
-			// loadBCF_QSAR_Toolbox(propertyName, "Bioconcentration and logKow NITE v.4.8.2", createDBEntries);//need to run
+			// Ran with errors on 2026-07-14
+			loadBCF_QSAR_Toolbox(propertyName, "Bioconcentration and logKow NITE v.4.8.2", createDBEntries);//need to run
 			// loadBCF_QSAR_Toolbox(propertyName, "BCFBAF ECHA REACH v.4.8.2", createDBEntries);//need to run
+
+			// Ran on 2026-07-14
 			// loadBCF_QSAR_Toolbox(propertyName, "bioaccumulation fish CEFIC LRI v.4.8.2", createDBEntries);//need to run
-			loadBCF_QSAR_Toolbox(propertyName, "bioaccumulation canada v.4.8.2", createDBEntries);//need to run
+			// loadBCF_QSAR_Toolbox(propertyName, "bioaccumulation canada v.4.8.2", createDBEntries);//need to run
 			
 			// TODO: write this method
 			// loadBCFDataITRC(propertyName, createDBEntries);//need to run
@@ -867,6 +871,87 @@ public class ExperimentalRecordLoader {
 			pvc.createTextParameter("Water concentration type",
 					"Whether or not water concentration is the total or freely dissolved value");
 			
+			pvc.getUnit("CI_MOL", "Ci/mol");
+			pvc.getUnit("BQ_ML", "Bq/mL");
+			pvc.getUnit("DPM_ML", "dpm/mL");
+
+			HashSet<String> abbrevsWaterConc = getUnitAbbreviations(records, "Water concentration");
+			pvc.createParameter("Water concentration", "Concentration in water", abbrevsWaterConc);
+			
+
+			HashSet<String> abbrevsExposureDuration = getUnitAbbreviations(records, "Exposure duration");
+			pvc.createParameter("Exposure duration", "Time exposed to chemical", abbrevsExposureDuration);
+
+			// Old parameter:
+//			pvc.createTextParameter("Exposure Duration (in days or Lifetime)","Exposure Duration (in days or Lifetime)");
+
+			loadBatchWise(records, type, createDBEntries, sourceName, propertyName);
+
+		}
+
+		private void loadBCFDataITRC(String propertyName, boolean createDBEntries) {
+
+			debug = true;// prints values loaded from database like property
+
+//			boolean createDBEntries = true;
+
+			String type = typeOther;
+			String sourceName = "ITRC July 2023";
+			pvc.mapTables(sourceName);
+			
+			
+//			for(ParameterAcceptableUnit pau:pvc.parameterAcceptableUnits) {
+//				System.out.println(pau.getParameter().getName()+"\t"+pau.getUnit().getName());
+//			}
+			
+
+			// String mainFolder = "C:\\Users\\TMARTI02\\OneDrive - Environmental Protection Agency (EPA)\\0 java\\0 model_management\\ghs-data-gathering\\";
+			// String filePath = mainFolder + "data\\experimental\\" + sourceName + "\\" + propertyName + "\\" + sourceName
+			// 		+ " Experimental Records.json";
+
+			// String dataGatheringRoot = SqlUtilities.getEnv("DATA_GATHERING_ROOT");
+			// String filePath = dataGatheringRoot + "data\\experimental\\" + sourceName + "\\" + propertyName + "\\" + sourceName + " Experimental Records.json";
+			// File jsonFile = new File(filePath);
+
+			// System.out.println(filePath + "\t" + jsonFile.exists());
+
+			// if (!jsonFile.exists())
+			// 	return;
+
+			String filePath = getFilePath(sourceName, propertyName);
+			if (filePath == null)
+				return;
+
+			// **********************************************************************************************
+			// First create the property
+			ExpPropProperty property = pvc.getProperty(propertyName, DevQsarConstants.BCF);
+
+			// **********************************************************************************************
+			// Add entries for properties_acceptable_units:
+
+			// Note: first time you run this property, uncomment out the following lines:
+			pvc.addPropertyAcceptableUnit(pvc.getUnit("L_KG", DevQsarConstants.L_KG), property);
+
+			// *******************************************************************************************************
+
+			ExperimentalRecords records = ExperimentalRecords.loadFromJson(filePath, gson);
+			records.printUniqueUnitsListInExperimentalRecords();
+			System.out.println("experimentalRecords.size()=" + records.size());
+
+			records.printPropertiesInExperimentalRecords();
+
+			pvc.createTextParameter("Species supercategory", "Type of organism (e.g. fish)");
+			pvc.createTextParameter("Organism classification", "Organism classification (e.g. vertebrate)");
+
+			pvc.createTextParameter("Test specificity", "Wet vs dry mass basis for BCF measurement");
+			pvc.createParameter("Lipid content percentage" , "Lipid content in the organism", pvc.getUnit("DIMENSIONLESS", "Dimensionless"));
+
+			pvc.createTextParameter("Water concentration type",
+					"Whether or not water concentration is the total or freely dissolved value");
+			
+			// Modified location to be handled via the er.updateNote method instead of a parameter, since the location is not a parameter in the database
+			// pvc.createTextParameter("Location", "The geographic location where the test was performed");
+
 			pvc.getUnit("CI_MOL", "Ci/mol");
 			pvc.getUnit("BQ_ML", "Bq/mL");
 			pvc.getUnit("DPM_ML", "dpm/mL");
