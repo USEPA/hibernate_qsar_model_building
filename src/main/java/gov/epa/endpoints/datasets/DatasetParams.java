@@ -13,7 +13,7 @@ public class DatasetParams {
 	public static class MappingParams {
 		public String dsstoxMappingId;
 		public String chemicalListName;
-		public ArrayList<String> chemRegListNameList;
+		public List<String> chemRegListNameList;
 		public boolean isNaive;
 		public boolean useCuratorValidation;
 		public boolean requireCuratorValidation;
@@ -40,7 +40,7 @@ public class DatasetParams {
 		public MappingParams(String dsstoxMappingId, String chemicalListName, boolean isNaive, boolean useValidation, 
 				boolean requireValidation, boolean resolveConflicts,
 				boolean validateConflictsTogether, boolean omitOpsinAmbiguousNames, boolean omitUvcbNames,
-				ArrayList<String> chemRegListNameList,boolean omitSalts,
+				List<String> chemRegListNameList,boolean omitSalts,
 				boolean validateStructure, boolean validateMedian,
 				List<BoundParameterValue> boundsParametersValues, BoundPropertyValue boundPropertyValue) {
 			

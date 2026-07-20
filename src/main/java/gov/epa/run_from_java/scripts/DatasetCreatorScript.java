@@ -330,21 +330,28 @@ public class DatasetCreatorScript {
 		boolean allowMissing = false;
 		boolean useStdevFilter = false;//test to see how many data points we lose
 		
-		boolean excludeBasedOnWaterConcentration = true;
-		boolean excludeBasedOnExposureDuration = true;
+		boolean excludeBasedOnWaterConcentration = false;
+		boolean excludeBasedOnExposureDuration = false;
 
+		
+		String parameterNameSpeciesSupercategory="Species supercategory";
+		String parameterValueFish="Fish";
+
+		String parameterNameResponseSite="Response site";
+		String parameterValueWholeBody="whole body";
+
+		String parameterNameTestSpecificity="Test specificity";
+		String parameterValueWet = "Wet";
+
+		
 		//Constants- TODO move to DevQsarConstants class
 		String parameterNameWaterType = "Media type";
-		String parameterValueFreshWater = "Fresh water";
+		String parameterValueFreshWater = "Fresh water";//Are salt water values different for matched pair median values?
 		
 		String parameterNameTestLocation="Test location";
 		String parameterValueLab = "Lab";
 
-		String parameterNameTestSpecificity="Test specificity";
-		String parameterValueWet = "Wet";
 		
-		String parameterNameSpeciesSupercategory="Species supercategory";
-		String parameterValueFish="Fish";
 		
 		String parameterNameConcentrationType="concentration_type";
 		String parameterValueMeasured="Measured";
@@ -352,8 +359,9 @@ public class DatasetCreatorScript {
 		String parameterNameMeasurementMethod="Measurement method";
 		List<String>parameterValuesMeasurementMethod=Arrays.asList("kinetic", "steady state");
 		
-		String parameterNameResponseSite="Response site";
-		String parameterValueWholeBody="whole body";
+		
+		String parameterNameTestGuideline="Test guideline";
+		List<String>parameterValuesTestGuideline=Arrays.asList("305");//TODO add complete list of valid strings
 		
 		String responseSite="whole body";
 		String typeAnimal=parameterValueFish;
@@ -368,14 +376,16 @@ public class DatasetCreatorScript {
 		BoundParameterValue bpvResponseSite = new BoundParameterValue(parameterNameResponseSite, parameterValueWholeBody, allowMissing);
 		boundsParameterValues.add(bpvResponseSite);
 
+		BoundParameterValue bpvTestSpecificity = new BoundParameterValue(parameterNameTestSpecificity, parameterValueWet, allowMissing);
+		boundsParameterValues.add(bpvTestSpecificity);
+
+		
 //		BoundParameterValue bpvWaterType = new BoundParameterValue(parameterNameWaterType, parameterValueFreshWater, allowMissing);
 //		boundsParameterValues.add(bpvWaterType);
 //				
 //		BoundParameterValue bpvTestLocation = new BoundParameterValue(parameterNameTestLocation, parameterValueLab, allowMissing);
 //		boundsParameterValues.add(bpvTestLocation);
 //
-//		BoundParameterValue bpvTestSpecificity = new BoundParameterValue(parameterNameTestSpecificity, parameterValueWet, allowMissing);
-//		boundsParameterValues.add(bpvTestSpecificity);
 		
 //		BoundParameterValue bpvConcentrationType = new BoundParameterValue(parameterNameConcentrationType, parameterValueMeasured, allowMissing);
 //		boundsParameterValues.add(bpvConcentrationType);
@@ -384,8 +394,6 @@ public class DatasetCreatorScript {
 //		boundsParameterValues.add(bpvMeasurementMethod);
 		
 
-
-		
 		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
 		
 		ArrayList<String> listNameArray = new ArrayList<String>(Arrays.asList("exp_prop_Arnot 2006"));
@@ -675,6 +683,8 @@ public class DatasetCreatorScript {
 //		dcs.createBCF_modeling();
 		dcs.createBCF_modeling2();
 		
+//		System.out.println(System.getenv("DEV_QSAR_DATABASE"));
+		
 //		dcs.createDatasetsForDashboard();
 		
 //		dcs.createSingleSourceDatasets();
@@ -683,6 +693,8 @@ public class DatasetCreatorScript {
 //		dcs.create_LC50_Ecotox_modeling();
 //		dcs.create_LC50_Ecotox_modeling2();
 //		dcs.create_LC50_Ecotox_modeling3();
+//		dcs.create_LC50_Ecotox_modeling4();
+
 		
 //		dcs.create_LC50_Qsar_toolbox();
 //		dcs.create_LC50_Qsar_toolbox2();
@@ -2224,6 +2236,9 @@ public class DatasetCreatorScript {
 		excludedSources.add("OPERA2.9");
 		excludedSources.add("PhysPropNCCT");
 		excludedSources.add("ThreeM");
+		excludedSources.add("eChemPortal");
+		excludedSources.add("QSAR_Toolbox");
+		
 		
 //		if(true) return;
 		
@@ -3888,9 +3903,8 @@ public class DatasetCreatorScript {
 	
 	
 	/**
-	 * TODO make this version use BoundParameterValues
+	 * this method to create acute fish tox datasets use BoundParameterValues
 	 */
-
 	public void create_LC50_Ecotox_modeling3() {	
 		String dsstoxMappingId = DevQsarConstants.MAPPING_BY_DTXSID;
 		isNaive=true;
@@ -4031,6 +4045,152 @@ public class DatasetCreatorScript {
 	
 	}
 	
+	
+	/**
+	 * this method to create acute fish tox datasets use BoundParameterValues and includes ECOTOX + ECHA REACH data
+	 */
+	public void create_LC50_Ecotox_modeling4() {	
+		String dsstoxMappingId = DevQsarConstants.MAPPING_BY_LIST;
+		isNaive=false;
+
+		String serverHost ="https://cim-dev.sciencedataexperts.com";
+		String workflow = "qsar-ready_04242025_0";
+		SciDataExpertsStandardizer sciDataExpertsStandardizer = new SciDataExpertsStandardizer(workflow, serverHost);
+
+		
+		DatasetCreator creator = new DatasetCreator(sciDataExpertsStandardizer, "tmarti02");
+//		DatasetCreator.postToDB = true;//otherwise wont create the dataset
+		DatasetCreator.postToDB = false;//otherwise wont create the dataset
+		
+		String sourceNameEcotox="ECOTOX_2024_12_12";
+		String chemicalListNameEcotox="exp_prop_"+sourceNameEcotox;		
+		String sourceNameQsarToolbox="QSAR_Toolbox";
+		String chemicalListNameQsarToolbox="exp_prop_2025_05_07_QSAR_Toolbox_ECHA_REACH";				
+		List<String> chemRegListNameList=Arrays.asList(chemicalListNameEcotox, chemicalListNameQsarToolbox);
+				
+		
+		double observationDurationDays=4;
+		
+		String propertyName = DevQsarConstants.ACUTE_AQUATIC_TOXICITY;
+		
+		String duration="96HR";
+		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFish;
+		String animalAbbrev=typeAnimal;
+		
+		List<String> listSpeciesCommon=null;
+		List<String>concentrationTypes=null;
+		
+		
+		String speciesSupercategory="Fish";
+		
+//		String duration="96HR";
+//		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFish;
+//		String animalAbbrev="Fish_Top_11";
+//		List<String> listSpeciesCommon = Arrays.asList("Bluegill", "Channel Catfish", "Common Carp", "Fathead Minnow",
+//				"Rainbow Trout", "Goldfish", "Guppy", "Japanese Medaka", "Silver Salmon", "Western Mosquitofish",
+//				"Zebra Danio");
+//		String speciesSupercategory="Fish";
+		
+		
+//		String duration="96HR";
+//		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFish;
+//		String animalAbbrev="Fish_Top_3";
+//		List<String> listSpeciesCommon = Arrays.asList("Bluegill", "Fathead Minnow","Rainbow Trout");
+//		String speciesSupercategory="Fish";
+
+		
+//		String duration="96HR";
+//		String animalAbbrev="FHM";
+//		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFatheadMinnow;		
+//		String speciesCommon="Fathead minnow";
+//		List<String> listSpeciesCommon = Arrays.asList("Fathead minnow");
+//		String speciesSupercategory="Fish";
+
+//		String duration="96HR";
+//		String animalAbbrev="BG";
+//		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFish;		
+//		String speciesSupercategory="Fish";
+////		String speciesCommon="Bluegill";
+//		List<String> listSpeciesCommon = Arrays.asList("Bluegill");
+		
+		
+//		String duration="96HR";
+//		String animalAbbrev="RT";
+//		String typeAnimal=ChangeKeptPropertyValues.typeAnimalFish;		
+//		String speciesSupercategory="Fish";
+//		String speciesCommon="Rainbow trout";
+//		List<String> listSpeciesCommon = Arrays.asList("Rainbow trout");
+		
+//		String duration="48HR";
+//		String animalAbbrev="DM";
+//		String typeAnimal=ChangeKeptPropertyValues.typeAnimalDaphnid;		
+//		String propertyName = DevQsarConstants.FORTY_EIGHT_HR_DAPHNIA_MAGNA_LC50;
+		
+		
+		String endpoint=duration+"_"+animalAbbrev+"_LC50";
+		
+//		excludeBasedOnPredictedWS=false;
+//		excludeBasedOnBaselineToxicity=false;
+//		String datasetName = sourceName+"_"+endpoint+"_v1b modeling";
+		
+//		excludeBasedOnPredictedWS=true;
+//		excludeBasedOnBaselineToxicity=false;
+//		String datasetName = sourceName+"_"+endpoint+"_v2b modeling";
+
+		excludeBasedOnPredictedWS=true;
+		excludeBasedOnBaselineToxicity=true;
+		String datasetName = endpoint+"_v3_ECOTOX_ECHA_REACH_modeling";
+
+//		excludeBasedOnPredictedWS=true;
+//		excludeBasedOnBaselineToxicity=true;
+//		excludeBasedOnConcentrationType=true;
+//		concentrationTypes=Arrays.asList("Active ingredient");
+//		String datasetName = sourceName+"_"+endpoint+"_v4b modeling";
+
+
+		List<BoundParameterValue> boundsParameterValues = new ArrayList<>();
+
+		BoundParameterValue bpvSpeciesSupercategory = new BoundParameterValue("Species supercategory", speciesSupercategory, false);
+		boundsParameterValues.add(bpvSpeciesSupercategory);
+
+		//assume observation duration values are in days
+		BoundParameterValue bpvObservationDuration = new BoundParameterValue("Observation duration", observationDurationDays, false);
+		bpvObservationDuration.setValuePointEstimateTolerance(0.1);// in days
+		boundsParameterValues.add(bpvObservationDuration);
+
+		if(listSpeciesCommon!=null) {
+			BoundParameterValue bpvSpeciesCommon = new BoundParameterValue("Species common", listSpeciesCommon, false);
+			boundsParameterValues.add(bpvSpeciesCommon);
+		}
+		
+		if(concentrationTypes!=null) {
+			BoundParameterValue bpvConcentrationTypes = new BoundParameterValue("concentration_type", concentrationTypes, false);
+			boundsParameterValues.add(bpvConcentrationTypes);
+		}
+		
+		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
+
+		MappingParams listMappingParams = new MappingParams(dsstoxMappingId, null, isNaive,
+				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
+				omitUvcbNames, chemRegListNameList, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
+
+		listMappingParams.qsarReadyRuleSet = workflow;
+		
+
+		String datasetDescription = endpoint+" from "+sourceNameEcotox+ " and "+ sourceNameQsarToolbox+
+				", excludeBasedOnPredictedWS="+excludeBasedOnPredictedWS+
+				", excludeBasedOnBaselineToxicity="+excludeBasedOnBaselineToxicity+
+				", excludeBasedOnConcentrationType="+excludeBasedOnConcentrationType;
+		
+		DatasetParams listMappedParams = new DatasetParams(datasetName, datasetDescription, propertyName,
+				listMappingParams);
+
+		List<String> includedSources = Arrays.asList(sourceNameEcotox,sourceNameQsarToolbox);
+		
+		creator.createPropertyDatasetWithSpecifiedSourcesAcuteAquaticToxicity(listMappedParams, false, includedSources,
+				excludeBasedOnPredictedWS, excludeBasedOnBaselineToxicity, typeAnimal);
+	
+	}
 
 	public void create_LC50_Qsar_toolbox() {
 
