@@ -336,6 +336,9 @@ public class PropertyValueServiceImpl implements PropertyValueService {
 	                int i = 0;
 	                prep.setLong(++i, parent.getId()); // use the parent’s id we just set
 	                prep.setLong(++i, pv.getParameter().getId());
+
+					// System.out.println(parent.getId() + "\t" + pv.getParameter().getId() + "\t" + pv.getValueText());
+
 	                prep.setLong(++i, pv.getUnit().getId());
 	                i = SqlUtilities.setString(prep, pv.getValueQualifier(), i);
 	                i = SqlUtilities.setDouble(prep, pv.getValuePointEstimate(), i);

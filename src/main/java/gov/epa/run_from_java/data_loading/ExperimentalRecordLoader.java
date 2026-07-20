@@ -511,20 +511,20 @@ public class ExperimentalRecordLoader {
 
 			boolean createDBEntries = true;
 
-			// Ran on 2026-07-14
+			// Ran on 2026-07-16
 			// loadBCFArnot(propertyName, createDBEntries);
 			// loadBCFDataEcotox(propertyName, createDBEntries);
 			// loadBCFDataBurkhard(propertyName, createDBEntries);
 			
-			// Ran with errors on 2026-07-14
-			loadBCF_QSAR_Toolbox(propertyName, "Bioconcentration and logKow NITE v.4.8.2", createDBEntries);//need to run
-			// loadBCF_QSAR_Toolbox(propertyName, "BCFBAF ECHA REACH v.4.8.2", createDBEntries);//need to run
+			// Ran with errors on 2026-07-16
+			loadBCF_QSAR_Toolbox(propertyName, "BCFBAF ECHA REACH v.4.8.2", createDBEntries);//need to run
 
-			// Ran on 2026-07-14
+			// Ran on 2026-07-16
 			// loadBCF_QSAR_Toolbox(propertyName, "bioaccumulation fish CEFIC LRI v.4.8.2", createDBEntries);//need to run
 			// loadBCF_QSAR_Toolbox(propertyName, "bioaccumulation canada v.4.8.2", createDBEntries);//need to run
+			// loadBCF_QSAR_Toolbox(propertyName, "Bioconcentration and logKow NITE v.4.8.2", createDBEntries);//need to run
 			
-			// TODO: write this method
+			// Ran on 2026-07-16
 			// loadBCFDataITRC(propertyName, createDBEntries);//need to run
 
 			// Do we want to load ITRC?
@@ -2361,34 +2361,39 @@ public class ExperimentalRecordLoader {
 		// ExperimentalRecordLoader loader = new ExperimentalRecordLoader("tmarti02");
 		ExperimentalRecordLoader loader = new ExperimentalRecordLoader("murdock.weston");
 
-		//*****************************************************************************
-//		String sourceName="RIFM_2026_01";
-//		String sourceName="RIFM DB";
-//		String sourceName="eChemPortal";
-		
-//		String propertyName= DevQsarConstants.RBIODEG;			
-//		String propertyName= DevQsarConstants.PERCENTAGE_BIODEGRADATION;
-//		loader.delete.deleteByPublicSourceNameAndProperty(sourceName,propertyName);
+		// *****************************************************************************
+		// String sourceName="RIFM_2026_01";
+		// String sourceName="RIFM DB";
+		// String sourceName="eChemPortal";
 
-//		loader.loaders.loadRBIODEG_RIFM();
-//		loader.loaders.loadRBIODEG_eChemPortal();
+		// String propertyName= DevQsarConstants.RBIODEG;			
+		// String propertyName= DevQsarConstants.PERCENTAGE_BIODEGRADATION;
+		// loader.delete.deleteByPublicSourceNameAndProperty(sourceName,propertyName);
 
-		//*****************************************************************************
+		// loader.loaders.loadRBIODEG_RIFM();
+		// loader.loaders.loadRBIODEG_eChemPortal();
+
+		// *****************************************************************************
 
 
-		
-//		loader.delete.deleteExpPropData();
-//		loader.delete.deleteByPublicSourceName();
-		
-		
-//		boolean runDelete=true;
-//		loader.delete.deleteByPublicSourceNameAndProperty(DevQsarConstants.sourceNameArnot2006, DevQsarConstants.BCF, runDelete);
-//		loader.delete.deleteByPublicSourceNameAndProperty(DevQsarConstants.sourceNameArnot2006, DevQsarConstants.BAF, runDelete);
-		
-		
-//		loader.delete.deleteByPublicSourceName();
+
+		// loader.delete.deleteExpPropData();
+		// loader.delete.deleteByPublicSourceName();
+
+
+		// boolean runDelete=true;
+		// loader.delete.deleteByPublicSourceNameAndProperty(DevQsarConstants.sourceNameArnot2006, DevQsarConstants.BCF, runDelete);
+		// loader.delete.deleteByPublicSourceNameAndProperty("ECOTOX_2026_03_12", DevQsarConstants.BCF, runDelete);
+		// loader.delete.deleteByPublicSourceNameAndProperty("Burkhard", DevQsarConstants.BCF, runDelete);
+		// loader.delete.deleteByPublicSourceNameAndProperty("ITRC July 2023", DevQsarConstants.BCF, runDelete);
+		// loader.delete.deleteByPublicSourceNameAndProperty("QSAR_Toolbox", DevQsarConstants.BCF, runDelete);
+
+		// loader.delete.deleteByPublicSourceNameAndProperty(DevQsarConstants.sourceNameArnot2006, DevQsarConstants.BAF, runDelete);
 
 		loader.loaders.loadBCF_data();
+		
+		// loader.delete.deleteByPublicSourceName();
+
 
 		
 
