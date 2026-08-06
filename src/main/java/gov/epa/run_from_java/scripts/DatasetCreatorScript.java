@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -314,24 +315,30 @@ public class DatasetCreatorScript {
 		DatasetCreator.postToDB = false;
 
 		String endpoint = DevQsarConstants.BCF;
-		String sourceArnot="Arnot 2006";
 
+		String sourceArnot="Arnot 2006";
+		String sourceEcotox="ECOTOX_2026_03_12";
+		String sourceBurkhard="Burkhard";
+		String sourceNITE="Bioconcentration and logKow NITE";
+		String sourceECHA_REACH="ECHA REACH";
+				
+		
 		String datasetName="exp_prop_BCF_v1_modeling";
 		
 //		String datasetDescription = endpoint+" from "+sourceArnot+" map by list";
 		String dsstoxMappingId=DevQsarConstants.MAPPING_BY_LIST;
 		boolean isNaive=false;
 
-		List<String> includedSources = Arrays.asList(sourceArnot);		
-//		List<String> includedSources = Arrays.asList(sourceECOTOX,sourceBurkhard,sourceOPERA);
+//		List<String> includedSources = Arrays.asList(sourceArnot);		
+		List<String> includedSources = Arrays.asList(sourceArnot, sourceBurkhard, sourceEcotox,  sourceNITE, sourceECHA_REACH);
 		
 		List<BoundParameterValue> boundsParameterValues = new ArrayList<>();
 
 		boolean allowMissing = false;
 		boolean useStdevFilter = false;//test to see how many data points we lose
 		
-		boolean excludeBasedOnWaterConcentration = false;
-		boolean excludeBasedOnExposureDuration = false;
+		boolean excludeBasedOnWaterConcentration = true;
+		boolean excludeBasedOnExposureDuration = true;
 
 		
 		String parameterNameSpeciesSupercategory="Species supercategory";
@@ -341,7 +348,8 @@ public class DatasetCreatorScript {
 		String parameterValueWholeBody="whole body";
 
 		String parameterNameTestSpecificity="Test specificity";
-		String parameterValueWet = "Wet";
+//		String parameterValueWet = "Wet";
+		List<String>parameterValuesWet=Arrays.asList("Wet", "Not Reported","Not Classified");
 
 		
 		//Constants- TODO move to DevQsarConstants class
@@ -371,17 +379,16 @@ public class DatasetCreatorScript {
 		//TODO add parameter filters and source names to description
 
 		BoundParameterValue bpvSpeciesSupercategory = new BoundParameterValue(parameterNameSpeciesSupercategory, parameterValueFish, allowMissing);
-		boundsParameterValues.add(bpvSpeciesSupercategory);
+		boundsParameterValues.add(bpvSpeciesSupercategory);//limit to fish
 
 		BoundParameterValue bpvResponseSite = new BoundParameterValue(parameterNameResponseSite, parameterValueWholeBody, allowMissing);
-		boundsParameterValues.add(bpvResponseSite);
+		boundsParameterValues.add(bpvResponseSite);//limit to whole body
 
-		BoundParameterValue bpvTestSpecificity = new BoundParameterValue(parameterNameTestSpecificity, parameterValueWet, allowMissing);
-		boundsParameterValues.add(bpvTestSpecificity);
-
+		BoundParameterValue bpvTestSpecificity = new BoundParameterValue(parameterNameTestSpecificity, parameterValuesWet, true);
+		boundsParameterValues.add(bpvTestSpecificity);//limit to wet weight
 		
-//		BoundParameterValue bpvWaterType = new BoundParameterValue(parameterNameWaterType, parameterValueFreshWater, allowMissing);
-//		boundsParameterValues.add(bpvWaterType);
+		BoundParameterValue bpvWaterType = new BoundParameterValue(parameterNameWaterType, parameterValueFreshWater, allowMissing);
+		boundsParameterValues.add(bpvWaterType);//limit to fresh water
 //				
 //		BoundParameterValue bpvTestLocation = new BoundParameterValue(parameterNameTestLocation, parameterValueLab, allowMissing);
 //		boundsParameterValues.add(bpvTestLocation);
@@ -396,8 +403,12 @@ public class DatasetCreatorScript {
 
 		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(null, null);
 		
-		ArrayList<String> listNameArray = new ArrayList<String>(Arrays.asList("exp_prop_Arnot 2006"));
+//		ArrayList<String> listNameArray = new ArrayList<String>(Arrays.asList("exp_prop_Arnot 2006"));		
+		List<String>listNameArray=DatasetCreatorScript.getChemRegListNames(includedSources);
+		
 
+//		System.out.println(JsonUtilities.gson.toJson(listNameArray));
+		
 		MappingParams listMappingParams = new MappingParams(dsstoxMappingId, null, isNaive,
 				useValidation, requireValidation, resolveConflicts, validateConflictsTogether, omitOpsinAmbiguousNames,
 				omitUvcbNames, listNameArray, omitSalts, validateStructure, validateMedian, boundsParameterValues, boundPropertyValue);
@@ -4465,47 +4476,52 @@ public class DatasetCreatorScript {
 	
 	
 	public static ArrayList<String> getChemRegListNames(List<String> sources) {
-		ArrayList<String> listNames = new ArrayList<String>();
+		
+		    Set<String> names = new LinkedHashSet<>();//avoids duplicate list names
 
-		for (String source : sources) {
+		    for (String source : sources) {
+		        if (source.equals(DevQsarConstants.sourceNameOChem)) {
+		            for (int i = 1; i <= 12; i++) {
+		                names.add("exp_prop_2024_02_02_from_OChem_40000_" + i);
+		            }
+		        } else if (source.equals(DevQsarConstants.sourceNameOChem_2024_04_03)) {
+		            for (int i = 1; i <= 13; i++) {
+		                names.add("exp_prop_2024_04_03_from_OChem_40000_" + i);
+		            }
+		        } else if (source.equals(DevQsarConstants.sourceNamePubChem_2024_03_20)) {
+		            for (int i = 1; i <= 5; i++) {
+		                names.add("exp_prop_PubChem_2024_03_20_" + i);
+		            }
+		        } else if (source.equals(DevQsarConstants.sourceNamePubChem_2024_11_27)) {
+		            for (int i = 1; i <= 2; i++) {
+		                names.add("exp_prop_PubChem_2024_11_27_20000_" + i);
+		            }
+		        } else if (source.equals("Sander_v5_2")) {
+		            names.add("exp_prop_2024_04_04_from_Sander_v5_2");
+		        } else if (source.equals("NITE_OPPT")) {
+		            names.add("exp_prop_2025_03_24_NITE_OPPT");
+		        } else if (source.equals("Arnot 2006")) {
+		            names.add("exp_prop_Arnot 2006");
+		        } else if (source.equals("Burkhard")) {
+		            names.add("exp_prop_Burkhard");
+		        } else if (source.equals("Bioconcentration and logKow NITE") || source.equals("ECHA REACH")) {
+		            names.add("exp_prop_2025_03_25_QSAR_Toolbox");
+		        } else if (source.equals("ECOTOX_2026_03_12")) {
+		            names.add("exp_prop_2026_07_21_" + source);
+		        } else if (source.equals("ECOTOX_2024_12_12") || source.equals("QSAR_Toolbox")) {
+		            names.add("exp_prop_2025_03_25_" + source);
+		        } else if (source.equals("RIFM_2026_1")) {
+		            names.add("exp_prop_RBIODEG_2026_01");
+		        } else {
+		            names.add("exp_prop_2024_02_02_from_" + source);
+		        }
+		    }
 
-			if (source.equals(DevQsarConstants.sourceNameOChem)) {
-				for (int i = 1; i <= 12; i++) { 
-					listNames.add("exp_prop_2024_02_02_from_OChem_40000_" + i);
-				}
-			} else if (source.equals(DevQsarConstants.sourceNameOChem_2024_04_03)) {
-				for (int i = 1; i <= 13; i++) {
-					listNames.add("exp_prop_2024_04_03_from_OChem_40000_" + i);
-				}
-			} else if (source.equals(DevQsarConstants.sourceNamePubChem_2024_03_20)) {
-				for (int i = 1; i <= 5; i++) {
-					listNames.add("exp_prop_PubChem_2024_03_20_" + i);
-				}
-			} else if (source.equals(DevQsarConstants.sourceNamePubChem_2024_11_27)) {
-				for (int i = 1; i <= 2; i++) {
-					listNames.add("exp_prop_PubChem_2024_11_27_20000_" + i);
-				}
-			} else if (source.equals("Sander_v5_2")) {
-				listNames.add("exp_prop_2024_04_04_from_Sander_v5_2");
-			} else if (source.equals("NITE_OPPT")) {
-				listNames.add("exp_prop_2025_03_24_NITE_OPPT");//update
-			} else if (source.equals("Arnot 2006")) {
-				listNames.add("exp_prop_Arnot 2006");//created
-			} else if (source.equals("Burkhard")) {
-				listNames.add("exp_prop_Burkhard");
-			} else if (source.equals("ECOTOX_2024_12_12") ||source.equals("QSAR_Toolbox")) {
-				listNames.add("exp_prop_2025_03_25_"+source);
-			} else if (source.equals("RIFM_2026_1")) {
-				listNames.add("exp_prop_RBIODEG_2026_01");
-			} else {
-				listNames.add("exp_prop_2024_02_02_from_" + source);
-			}
-			
-		}
+		
 
 		boolean haveMissing=false;
 		
-		for (String listName : listNames) {
+		for (String listName : names) {
 			String sql = "select id from chemical_lists cl where cl.name='" + listName + "';";
 //			System.out.println(sql);
 			String id = SqlUtilities.runSQL(SqlUtilities.getConnectionDSSTOX(), sql);
@@ -4517,8 +4533,7 @@ public class DatasetCreatorScript {
 		}
 		
 		if(haveMissing)return null;
-
-		return listNames;
+	    return new ArrayList<>(names);//convert to simple ArrayList
 	}
 
 	/**
