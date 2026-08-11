@@ -162,7 +162,7 @@ public class DatasetCreatorScript {
 
 		String datasetDescription = "96 hour fathead minnow LC50 data taken from toxval v93. SQL filter: toxval_type = LC50, "
 				+ "rs.quality not like '3%' AND rs.quality not like '4%' AND "
-				+ "tv.media in ('-', 'Fresh water') AND ttd.toxval_type_supercategory in ('Point of Departure', 'Toxicity Value', 'Lethality Effect Level') AND "
+				+ "tv.media in ('-', 'freshwater') AND ttd.toxval_type_supercategory in ('Point of Departure', 'Toxicity Value', 'Lethality Effect Level') AND "
 				+ "tv.toxval_numeric > 0";
 
 		BoundPropertyValue boundPropertyValue = new BoundPropertyValue(0.0, 1000.0);// TODO
@@ -346,7 +346,7 @@ public class DatasetCreatorScript {
 		
 		//Constants- TODO move to DevQsarConstants class
 		String parameterNameWaterType = "Media type";
-		String parameterValueFreshWater = "Fresh water";//Are salt water values different for matched pair median values?
+		String parameterValueFreshWater = "freshwater";//Are salt water values different for matched pair median values?
 		
 		String parameterNameTestLocation="Test location";
 		String parameterValueLab = "Lab";

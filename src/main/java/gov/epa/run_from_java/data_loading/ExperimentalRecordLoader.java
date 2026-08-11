@@ -2,9 +2,11 @@ package gov.epa.run_from_java.data_loading;
 
 import java.io.File;
 import java.sql.Connection;
-import java.util.*;
-
-import org.springframework.format.annotation.DurationFormat.Unit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -15,10 +17,8 @@ import gov.epa.databases.dev_qsar.DevQsarConstants;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropProperty;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ExpPropUnit;
 import gov.epa.databases.dev_qsar.exp_prop.entity.Parameter;
-import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterAcceptableUnit;
 import gov.epa.databases.dev_qsar.exp_prop.entity.ParameterValue;
 import gov.epa.databases.dev_qsar.exp_prop.entity.PropertyValue;
-
 import gov.epa.run_from_java.scripts.SqlUtilities;
 import gov.epa.util.JsonUtilities;
 
@@ -511,21 +511,22 @@ public class ExperimentalRecordLoader {
 
 			boolean createDBEntries = true;
 
-			// Ran on 2026-07-16
-			// loadBCFArnot(propertyName, createDBEntries);
-			// loadBCFDataEcotox(propertyName, createDBEntries);
-			// loadBCFDataBurkhard(propertyName, createDBEntries);
+			// Ran on 2026-07-30
+			loadBCFArnot(propertyName, createDBEntries);
+			loadBCFDataEcotox(propertyName, createDBEntries);
+			loadBCFDataBurkhard(propertyName, createDBEntries);
 			
-			// Ran with errors on 2026-07-16
-			loadBCF_QSAR_Toolbox(propertyName, "BCFBAF ECHA REACH v.4.8.2", createDBEntries);//need to run
+			// Ran on 2026-07-30
+			loadBCF_QSAR_Toolbox(propertyName, "BCFBAF ECHA REACH v.4.9", createDBEntries);
 
-			// Ran on 2026-07-16
-			// loadBCF_QSAR_Toolbox(propertyName, "bioaccumulation fish CEFIC LRI v.4.8.2", createDBEntries);//need to run
-			// loadBCF_QSAR_Toolbox(propertyName, "bioaccumulation canada v.4.8.2", createDBEntries);//need to run
-			// loadBCF_QSAR_Toolbox(propertyName, "Bioconcentration and logKow NITE v.4.8.2", createDBEntries);//need to run
+			// Ran on 2026-07-30
+			loadBCF_QSAR_Toolbox(propertyName, "bioaccumulation fish CEFIC LRI v.4.9", createDBEntries);//need to run
+			loadBCF_QSAR_Toolbox(propertyName, "bioaccumulation canada v.4.9", createDBEntries);//need to run
+			loadBCF_QSAR_Toolbox(propertyName, "Bioconcentration and logKow NITE v.4.9", createDBEntries);//need to run
+			loadBCF_QSAR_Toolbox(propertyName, "REACH Bioaccumulation database (normalized) v.4.9", createDBEntries);
 			
-			// Ran on 2026-07-16
-			// loadBCFDataITRC(propertyName, createDBEntries);//need to run
+			// Ran on 2026-07-30
+			loadBCFDataITRC(propertyName, createDBEntries);//need to run
 
 			// Do we want to load ITRC?
 			// sourcesAll.add(new Source("ITRC July 2023", "BCF ITRC"));
@@ -694,8 +695,8 @@ public class ExperimentalRecordLoader {
 		// long t = System.currentTimeMillis();
 		// System.out.println("Loading completed in " + (t - t0)/1000.0 + " s");
 		// }
-
 		private void loadBCFDataBurkhard(String propertyName, boolean createDBEntries) {
+
 
 			debug = true;// prints values loaded from database like property
 
@@ -2381,14 +2382,13 @@ public class ExperimentalRecordLoader {
 		// loader.delete.deleteByPublicSourceName();
 
 
-		// boolean runDelete=true;
-		// loader.delete.deleteByPublicSourceNameAndProperty(DevQsarConstants.sourceNameArnot2006, DevQsarConstants.BCF, runDelete);
-		// loader.delete.deleteByPublicSourceNameAndProperty("ECOTOX_2026_03_12", DevQsarConstants.BCF, runDelete);
-		// loader.delete.deleteByPublicSourceNameAndProperty("Burkhard", DevQsarConstants.BCF, runDelete);
-		// loader.delete.deleteByPublicSourceNameAndProperty("ITRC July 2023", DevQsarConstants.BCF, runDelete);
-		// loader.delete.deleteByPublicSourceNameAndProperty("QSAR_Toolbox", DevQsarConstants.BCF, runDelete);
-
-		// loader.delete.deleteByPublicSourceNameAndProperty(DevQsarConstants.sourceNameArnot2006, DevQsarConstants.BAF, runDelete);
+		boolean runDelete=true;
+		loader.delete.deleteByPublicSourceNameAndProperty(DevQsarConstants.sourceNameArnot2006, DevQsarConstants.BCF, runDelete);
+		loader.delete.deleteByPublicSourceNameAndProperty(DevQsarConstants.sourceNameArnot2006, DevQsarConstants.BAF, runDelete);
+		loader.delete.deleteByPublicSourceNameAndProperty("ECOTOX_2026_03_12", DevQsarConstants.BCF, runDelete);
+		loader.delete.deleteByPublicSourceNameAndProperty("Burkhard", DevQsarConstants.BCF, runDelete);
+		loader.delete.deleteByPublicSourceNameAndProperty("ITRC July 2023", DevQsarConstants.BCF, runDelete);
+		loader.delete.deleteByPublicSourceNameAndProperty("QSAR_Toolbox", DevQsarConstants.BCF, runDelete);
 
 		loader.loaders.loadBCF_data();
 		
